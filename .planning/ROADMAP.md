@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans (Wave 1: scaffold+state, Wave 2: modules+assembler || returns+verify)
 
 Plans:
-- [ ] 01-01: Project scaffolding and state management core (STAT-01, STAT-02, STAT-03) [Wave 1]
+- [x] 01-01: Project scaffolding and state management core (STAT-01, STAT-02, STAT-03) [Wave 1]
 - [ ] 01-02: Agent module system and assembler (AGNT-01) [Wave 2, depends: 01-01]
 - [ ] 01-03: Structured returns and verification (AGNT-02, AGNT-03) [Wave 2, depends: 01-01]
 

@@ -51,9 +51,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### State Management
 
-- [ ] **STAT-01**: All project state lives in `.planning/` directory, committed to git (JSON for machine state, Markdown for human-readable)
-- [ ] **STAT-02**: Concurrent state access is prevented via mkdir-based atomic lock files with PID + timestamp
-- [ ] **STAT-03**: Stale locks are detected and recovered automatically (crashed process left a lock behind)
+- [x] **STAT-01**: All project state lives in `.planning/` directory, committed to git (JSON for machine state, Markdown for human-readable)
+- [x] **STAT-02**: Concurrent state access is prevented via mkdir-based atomic lock files with PID + timestamp
+- [x] **STAT-03**: Stale locks are detected and recovered automatically (crashed process left a lock behind)
 - [ ] **STAT-04**: Developer can run `/rapid:help` to see all available commands and workflow guidance
 
 ### Agent Architecture
@@ -104,9 +104,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGNT-01 | Phase 1: Agent Framework and State Management | Pending |
 | AGNT-02 | Phase 1: Agent Framework and State Management | Pending |
 | AGNT-03 | Phase 1: Agent Framework and State Management | Pending |
-| STAT-01 | Phase 1: Agent Framework and State Management | Pending |
-| STAT-02 | Phase 1: Agent Framework and State Management | Pending |
-| STAT-03 | Phase 1: Agent Framework and State Management | Pending |
+| STAT-01 | Phase 1: Agent Framework and State Management | Complete |
+| STAT-02 | Phase 1: Agent Framework and State Management | Complete |
+| STAT-03 | Phase 1: Agent Framework and State Management | Complete |
 | INIT-01 | Phase 2: Plugin Shell and Initialization | Pending |
 | INIT-05 | Phase 2: Plugin Shell and Initialization | Pending |
 | STAT-04 | Phase 2: Plugin Shell and Initialization | Pending |
