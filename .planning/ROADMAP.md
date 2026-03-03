@@ -34,12 +34,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Agent task completion is verified by checking filesystem artifacts (files exist, tests pass, commits land) -- not by trusting agent self-reports
   4. All project state persists in `.planning/` as JSON (machine state) and Markdown (human-readable), committed to git
   5. Concurrent state writes are prevented by mkdir-based atomic locks with PID + timestamp, and stale locks from crashed processes are detected and recovered automatically
-**Plans**: TBD
+**Plans**: 3 plans (Wave 1: scaffold+state, Wave 2: modules+assembler || returns+verify)
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01: Project scaffolding and state management core (STAT-01, STAT-02, STAT-03) [Wave 1]
+- [ ] 01-02: Agent module system and assembler (AGNT-01) [Wave 2, depends: 01-01]
+- [ ] 01-03: Structured returns and verification (AGNT-02, AGNT-03) [Wave 2, depends: 01-01]
 
 ### Phase 2: Plugin Shell and Initialization
 **Goal**: Developers can install RAPID and scaffold a new project with validated prerequisites
