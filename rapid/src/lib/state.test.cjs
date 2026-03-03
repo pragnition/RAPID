@@ -126,4 +126,56 @@ describe('state.cjs', () => {
       assert.ok(content.includes('2026-03-04'), 'Last session should be updated');
     });
   });
+
+  describe('plain format support (non-bold fields)', () => {
+    let plainDir;
+
+    beforeEach(() => {
+      plainDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-state-plain-'));
+      const planningDir = path.join(plainDir, '.planning');
+      fs.mkdirSync(planningDir, { recursive: true });
+      // STATE.md with plain (non-bold) field format, matching actual GSD STATE.md
+      fs.writeFileSync(path.join(planningDir, 'STATE.md'), [
+        '# Project State',
+        '',
+        'Status: Ready to plan',
+        'Last activity: 2026-03-03 -- Roadmap created',
+        'Phase: 1 of 9',
+        '',
+        '**Last session:** 2026-03-03',
+      ].join('\n'));
+    });
+
+    afterEach(() => {
+      fs.rmSync(plainDir, { recursive: true, force: true });
+    });
+
+    it('reads plain format fields', () => {
+      const value = state.stateGet(plainDir, 'Status');
+      assert.equal(value, 'Ready to plan');
+    });
+
+    it('reads plain format fields with spaces in name', () => {
+      const value = state.stateGet(plainDir, 'Last activity');
+      assert.equal(value, '2026-03-03 -- Roadmap created');
+    });
+
+    it('prefers bold format over plain when both exist', () => {
+      const value = state.stateGet(plainDir, 'Last session');
+      assert.equal(value, '2026-03-03');
+    });
+
+    it('updates plain format fields', async () => {
+      const result = await state.stateUpdate(plainDir, 'Status', 'Executing');
+      assert.equal(result.updated, true);
+      const onDisk = state.stateGet(plainDir, 'Status');
+      assert.equal(onDisk, 'Executing');
+    });
+
+    it('updates plain format while preserving other fields', async () => {
+      await state.stateUpdate(plainDir, 'Status', 'Executing');
+      const phase = state.stateGet(plainDir, 'Phase');
+      assert.equal(phase, '1 of 9', 'Other fields should be preserved');
+    });
+  });
 });
