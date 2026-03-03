@@ -101,46 +101,46 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INIT-01 | — | Pending |
-| INIT-02 | — | Pending |
-| INIT-03 | — | Pending |
-| INIT-04 | — | Pending |
-| INIT-05 | — | Pending |
-| PLAN-01 | — | Pending |
-| PLAN-02 | — | Pending |
-| PLAN-03 | — | Pending |
-| PLAN-04 | — | Pending |
-| PLAN-05 | — | Pending |
-| PLAN-06 | — | Pending |
-| WORK-01 | — | Pending |
-| WORK-02 | — | Pending |
-| WORK-03 | — | Pending |
-| WORK-04 | — | Pending |
-| EXEC-01 | — | Pending |
-| EXEC-02 | — | Pending |
-| EXEC-03 | — | Pending |
-| EXEC-04 | — | Pending |
-| EXEC-05 | — | Pending |
-| EXEC-06 | — | Pending |
-| EXEC-07 | — | Pending |
-| EXEC-08 | — | Pending |
-| MERG-01 | — | Pending |
-| MERG-02 | — | Pending |
-| MERG-03 | — | Pending |
-| MERG-04 | — | Pending |
-| STAT-01 | — | Pending |
-| STAT-02 | — | Pending |
-| STAT-03 | — | Pending |
-| STAT-04 | — | Pending |
-| AGNT-01 | — | Pending |
-| AGNT-02 | — | Pending |
-| AGNT-03 | — | Pending |
+| AGNT-01 | Phase 1: Agent Framework and State Management | Pending |
+| AGNT-02 | Phase 1: Agent Framework and State Management | Pending |
+| AGNT-03 | Phase 1: Agent Framework and State Management | Pending |
+| STAT-01 | Phase 1: Agent Framework and State Management | Pending |
+| STAT-02 | Phase 1: Agent Framework and State Management | Pending |
+| STAT-03 | Phase 1: Agent Framework and State Management | Pending |
+| INIT-01 | Phase 2: Plugin Shell and Initialization | Pending |
+| INIT-05 | Phase 2: Plugin Shell and Initialization | Pending |
+| STAT-04 | Phase 2: Plugin Shell and Initialization | Pending |
+| INIT-02 | Phase 3: Context Generation | Pending |
+| INIT-03 | Phase 3: Context Generation | Pending |
+| INIT-04 | Phase 3: Context Generation | Pending |
+| PLAN-01 | Phase 4: Planning Engine and Contracts | Pending |
+| PLAN-02 | Phase 4: Planning Engine and Contracts | Pending |
+| PLAN-03 | Phase 4: Planning Engine and Contracts | Pending |
+| PLAN-04 | Phase 4: Planning Engine and Contracts | Pending |
+| PLAN-05 | Phase 4: Planning Engine and Contracts | Pending |
+| PLAN-06 | Phase 4: Planning Engine and Contracts | Pending |
+| WORK-01 | Phase 5: Worktree Orchestration | Pending |
+| WORK-02 | Phase 5: Worktree Orchestration | Pending |
+| WORK-03 | Phase 5: Worktree Orchestration | Pending |
+| WORK-04 | Phase 5: Worktree Orchestration | Pending |
+| EXEC-01 | Phase 6: Execution Core | Pending |
+| EXEC-02 | Phase 6: Execution Core | Pending |
+| EXEC-03 | Phase 6: Execution Core | Pending |
+| EXEC-04 | Phase 7: Execution Lifecycle | Pending |
+| EXEC-05 | Phase 7: Execution Lifecycle | Pending |
+| EXEC-07 | Phase 7: Execution Lifecycle | Pending |
+| EXEC-08 | Phase 7: Execution Lifecycle | Pending |
+| MERG-01 | Phase 8: Merge Pipeline | Pending |
+| MERG-02 | Phase 8: Merge Pipeline | Pending |
+| MERG-03 | Phase 8: Merge Pipeline | Pending |
+| MERG-04 | Phase 8: Merge Pipeline | Pending |
+| EXEC-06 | Phase 9: Agent Teams Integration | Pending |
 
 **Coverage:**
 - v1 requirements: 34 total
-- Mapped to phases: 0
-- Unmapped: 34
+- Mapped to phases: 34
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-03 after initial definition*
+*Last updated: 2026-03-03 after roadmap creation*
