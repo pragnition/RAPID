@@ -1,0 +1,146 @@
+# Requirements: RAPID
+
+**Defined:** 2026-03-03
+**Core Value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
+
+## v1 Requirements
+
+Requirements for initial release. Each maps to roadmap phases.
+
+### Initialization
+
+- [ ] **INIT-01**: Developer can run `/rapid:init` to scaffold `.planning/` directory with all required state files
+- [ ] **INIT-02**: Init detects existing codebase and offers brownfield mapping before planning
+- [ ] **INIT-03**: Init auto-generates CLAUDE.md with full project context (code style, architecture patterns, API conventions, project knowledge)
+- [ ] **INIT-04**: Init auto-generates style guide for cross-worktree consistency (naming conventions, file structure, error handling patterns)
+- [ ] **INIT-05**: Init configures git repo and validates prerequisites (git 2.30+, jq 1.6+, Node.js 18+)
+
+### Set Planning
+
+- [ ] **PLAN-01**: Developer can run `/rapid:plan` to decompose work into parallelizable sets with explicit boundaries
+- [ ] **PLAN-02**: Each set has a machine-verifiable interface contract defining API surfaces, data shapes, and behavioral expectations between sets
+- [ ] **PLAN-03**: Planning produces a set dependency graph (DAG) showing which sets can run in parallel and which have ordering constraints
+- [ ] **PLAN-04**: Planning assigns shared-file ownership (package.json, configs, shared types) to specific sets to prevent merge conflicts
+- [ ] **PLAN-05**: Developer can run `/rapid:assumptions` to surface Claude's mental model about a set's approach before planning begins
+- [ ] **PLAN-06**: Planning respects loose sync gates — shared planning gate must complete before any set begins execution
+
+### Worktree Orchestration
+
+- [ ] **WORK-01**: Each set gets its own git worktree and dedicated branch created automatically
+- [ ] **WORK-02**: Developer can run `/rapid:status` to see all active worktrees, their set assignments, and lifecycle phase
+- [ ] **WORK-03**: Completed worktrees are cleaned up automatically (worktree removed, branch optionally deleted after merge)
+- [ ] **WORK-04**: Each worktree gets a scoped CLAUDE.md containing only its set's contracts, relevant context, and style guide
+
+### Execution
+
+- [ ] **EXEC-01**: Each set executes in a fresh context window (subagent per set) with only relevant contracts and context loaded
+- [ ] **EXEC-02**: Each set goes through its own discuss → plan → execute phase lifecycle independently
+- [ ] **EXEC-03**: Changes within sets are committed atomically per task (bisectable, blame-friendly history)
+- [ ] **EXEC-04**: Developer can run `/rapid:status` to see progress across all sets and all phases
+- [ ] **EXEC-05**: Developer can pause work on a set and resume later with full state restoration (handoff files)
+- [ ] **EXEC-06**: RAPID detects EXPERIMENTAL_AGENT_TEAMS env var and offers agent teams execution mode with subagent fallback
+- [ ] **EXEC-07**: Loose sync gates enforce: all sets must finish planning before any begins execution; execution is independent per set
+- [ ] **EXEC-08**: Mandatory reconciliation after each execution wave — compare plan vs actual, create SUMMARY with pass/fail on acceptance criteria, block next wave until reconciled
+
+### Merge & Review
+
+- [ ] **MERG-01**: Merge reviewer agent performs deep code review (style, correctness, contract compliance) before any set merges to main
+- [ ] **MERG-02**: Merge reviewer validates all interface contracts are satisfied — blocks merge if contracts violated or tests fail
+- [ ] **MERG-03**: Cleanup agent can be spawned when merge reviewer finds fixable issues (style violations, missing tests, minor contract gaps)
+- [ ] **MERG-04**: Sets merge in dependency-graph order — independent sets can merge in parallel, dependent sets merge sequentially
+
+### State Management
+
+- [ ] **STAT-01**: All project state lives in `.planning/` directory, committed to git (JSON for machine state, Markdown for human-readable)
+- [ ] **STAT-02**: Concurrent state access is prevented via mkdir-based atomic lock files with PID + timestamp
+- [ ] **STAT-03**: Stale locks are detected and recovered automatically (crashed process left a lock behind)
+- [ ] **STAT-04**: Developer can run `/rapid:help` to see all available commands and workflow guidance
+
+### Agent Architecture
+
+- [ ] **AGNT-01**: Agents are built from composable prompt modules (core behavior + role-specific + context modules) rather than monolithic prompts
+- [ ] **AGNT-02**: All agents use structured return protocol (COMPLETE/CHECKPOINT/BLOCKED tables) for machine-parseable results
+- [ ] **AGNT-03**: Agent completion is verified by checking filesystem artifacts (files exist, tests pass, commits land) — never trust agent self-reports alone
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Advanced Team Features
+
+- **TEAM-01**: Real-time team status broadcasting (who is working on what set, current phase)
+- **TEAM-02**: Cross-agent-tool support (Codex CLI, Gemini CLI alongside Claude Code)
+- **TEAM-03**: Role-based task assignment (lead assigns sets to specific developers)
+- **TEAM-04**: Conflict detection across concurrent sets (beyond contract validation)
+
+### Polish
+
+- **PLSH-01**: Replan workflow (`/rapid:replan`) to restructure sets mid-project
+- **PLSH-02**: Custom merge strategies per set
+- **PLSH-03**: Issue tracker integration (GitHub Issues, Linear)
+- **PLSH-04**: Plugin/extension system for community contributions
+- **PLSH-05**: Codebase mapping integration for brownfield projects
+- **PLSH-06**: Verification/UAT phase beyond merge review
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Standalone CLI | RAPID is a Claude Code plugin, not its own binary |
+| Central server/service | All state is git-native, zero infrastructure required |
+| Ad-hoc set creation during execution | Sets defined at planning time only — keeps isolation guarantees tight |
+| Fully synchronized phase gates | Loose sync is the model — shared planning gate, independent execution |
+| CARL or external rule engine coupling | Rule enforcement is self-contained within RAPID |
+| Real-time inter-set messaging | Sets communicate through contracts, not messages |
+| Auto-merge conflict resolution | Merge reviewer flags issues, humans/cleanup agents resolve them |
+| Cross-platform GUI | CLI-first, terminal-first experience |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| INIT-01 | — | Pending |
+| INIT-02 | — | Pending |
+| INIT-03 | — | Pending |
+| INIT-04 | — | Pending |
+| INIT-05 | — | Pending |
+| PLAN-01 | — | Pending |
+| PLAN-02 | — | Pending |
+| PLAN-03 | — | Pending |
+| PLAN-04 | — | Pending |
+| PLAN-05 | — | Pending |
+| PLAN-06 | — | Pending |
+| WORK-01 | — | Pending |
+| WORK-02 | — | Pending |
+| WORK-03 | — | Pending |
+| WORK-04 | — | Pending |
+| EXEC-01 | — | Pending |
+| EXEC-02 | — | Pending |
+| EXEC-03 | — | Pending |
+| EXEC-04 | — | Pending |
+| EXEC-05 | — | Pending |
+| EXEC-06 | — | Pending |
+| EXEC-07 | — | Pending |
+| EXEC-08 | — | Pending |
+| MERG-01 | — | Pending |
+| MERG-02 | — | Pending |
+| MERG-03 | — | Pending |
+| MERG-04 | — | Pending |
+| STAT-01 | — | Pending |
+| STAT-02 | — | Pending |
+| STAT-03 | — | Pending |
+| STAT-04 | — | Pending |
+| AGNT-01 | — | Pending |
+| AGNT-02 | — | Pending |
+| AGNT-03 | — | Pending |
+
+**Coverage:**
+- v1 requirements: 34 total
+- Mapped to phases: 0
+- Unmapped: 34
+
+---
+*Requirements defined: 2026-03-03*
+*Last updated: 2026-03-03 after initial definition*
