@@ -100,20 +100,25 @@ describe('lock.cjs', () => {
   });
 
   describe('stale lock recovery', () => {
-    it('acquires lock when existing lock is stale (dead PID)', async () => {
+    it('acquires lock when existing lock is stale (old mtime)', async () => {
       // Manually create a stale lock target
       lock.ensureLocksDir(tmpDir);
       const lockTarget = path.join(tmpDir, '.planning', '.locks', 'staletest.target');
       fs.writeFileSync(lockTarget, JSON.stringify({
-        pid: 999999999, // PID that almost certainly doesn't exist
-        timestamp: Date.now() - 400000, // Well past stale threshold
+        pid: process.pid,
+        timestamp: Date.now(),
       }));
 
-      // Create the .lock directory manually to simulate a stale lock
+      // Create the .lock directory manually to simulate a held lock
       const lockDir = lockTarget + '.lock';
       fs.mkdirSync(lockDir, { recursive: true });
 
-      // acquireLock should succeed because the lock is stale
+      // Set the mtime of the .lock directory to be well past the stale threshold
+      // proper-lockfile uses mtime to detect staleness
+      const staleTime = new Date(Date.now() - 400000); // 400 seconds ago (past 300s threshold)
+      fs.utimesSync(lockDir, staleTime, staleTime);
+
+      // acquireLock should succeed because the lock is stale (mtime too old)
       const release = await lock.acquireLock(tmpDir, 'staletest');
       assert.ok(typeof release === 'function', 'Should acquire stale lock');
 

@@ -1,0 +1,9 @@
+{
+  "name": "rapid",
+  "version": "0.1.0",
+  "description": "RAPID - Multi-agent orchestration plugin for Claude Code",
+  "private": true,
+  "dependencies": {
+    "proper-lockfile": "^4.1.2"
+  }
+}
