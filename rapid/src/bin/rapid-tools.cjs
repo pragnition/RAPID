@@ -23,6 +23,9 @@ Commands:
   prereqs                Check prerequisites (git, Node.js, jq)
   prereqs --git-check    Check if current directory is a git repository
   prereqs --json         Output raw prerequisite results as JSON
+  init detect            Check if .planning/ already exists
+  init scaffold --name <n> --desc <d> --team-size <N>  Create .planning/ files
+               [--mode fresh|reinitialize|upgrade|cancel]
 
 Options:
   --help, -h             Show this help message
@@ -43,6 +46,10 @@ async function main() {
   // Commands that don't need project root
   if (command === 'prereqs') {
     await handlePrereqs(args.slice(1));
+    return;
+  }
+  if (command === 'init') {
+    handleInit(args.slice(1));
     return;
   }
 
@@ -311,6 +318,67 @@ function handleVerifyArtifacts(args) {
   } else {
     process.stdout.write(JSON.stringify(results) + '\n');
   }
+}
+
+function handleInit(args) {
+  const { scaffoldProject, detectExisting } = require('../lib/init.cjs');
+
+  const subcommand = args[0];
+
+  if (!subcommand) {
+    error('Usage: rapid-tools init <detect|scaffold> [options]');
+    process.exit(1);
+  }
+
+  if (subcommand === 'detect') {
+    const result = detectExisting(process.cwd());
+    process.stdout.write(JSON.stringify(result) + '\n');
+    return;
+  }
+
+  if (subcommand === 'scaffold') {
+    // Parse named arguments
+    let name = null;
+    let desc = null;
+    let teamSize = null;
+    let mode = 'fresh';
+
+    for (let i = 1; i < args.length; i++) {
+      switch (args[i]) {
+        case '--name':
+          name = args[++i];
+          break;
+        case '--desc':
+          desc = args[++i];
+          break;
+        case '--team-size':
+          teamSize = parseInt(args[++i], 10);
+          break;
+        case '--mode':
+          mode = args[++i];
+          break;
+      }
+    }
+
+    // Cancel mode doesn't require other args
+    if (mode === 'cancel') {
+      const result = scaffoldProject(process.cwd(), {}, mode);
+      process.stdout.write(JSON.stringify(result) + '\n');
+      return;
+    }
+
+    if (!name || !desc || !teamSize) {
+      error('Usage: rapid-tools init scaffold --name <name> --desc <description> --team-size <N> [--mode fresh|reinitialize|upgrade|cancel]');
+      process.exit(1);
+    }
+
+    const result = scaffoldProject(process.cwd(), { name, description: desc, teamSize }, mode);
+    process.stdout.write(JSON.stringify(result) + '\n');
+    return;
+  }
+
+  error(`Unknown init subcommand: ${subcommand}. Use 'detect' or 'scaffold'.`);
+  process.exit(1);
 }
 
 async function handlePrereqs(args) {
