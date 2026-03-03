@@ -13,7 +13,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **INIT-02**: Init detects existing codebase and offers brownfield mapping before planning
 - [ ] **INIT-03**: Init auto-generates CLAUDE.md with full project context (code style, architecture patterns, API conventions, project knowledge)
 - [ ] **INIT-04**: Init auto-generates style guide for cross-worktree consistency (naming conventions, file structure, error handling patterns)
-- [ ] **INIT-05**: Init configures git repo and validates prerequisites (git 2.30+, jq 1.6+, Node.js 18+)
+- [x] **INIT-05**: Init configures git repo and validates prerequisites (git 2.30+, jq 1.6+, Node.js 18+)
 
 ### Set Planning
 
@@ -108,7 +108,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAT-02 | Phase 1: Agent Framework and State Management | Complete |
 | STAT-03 | Phase 1: Agent Framework and State Management | Complete |
 | INIT-01 | Phase 2: Plugin Shell and Initialization | Pending |
-| INIT-05 | Phase 2: Plugin Shell and Initialization | Pending |
+| INIT-05 | Phase 2: Plugin Shell and Initialization | Complete |
 | STAT-04 | Phase 2: Plugin Shell and Initialization | Pending |
 | INIT-02 | Phase 3: Context Generation | Pending |
 | INIT-03 | Phase 3: Context Generation | Pending |
