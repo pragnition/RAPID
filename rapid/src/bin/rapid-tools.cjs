@@ -20,6 +20,9 @@ Commands:
   verify-artifacts <file1> [file2...]  Verify artifact files exist (lightweight)
   verify-artifacts --heavy --test "<cmd>" <file1> [file2...]  Heavy verification with tests
   verify-artifacts --report <file1> [file2...]  Generate verification report
+  prereqs                Check prerequisites (git, Node.js, jq)
+  prereqs --git-check    Check if current directory is a git repository
+  prereqs --json         Output raw prerequisite results as JSON
 
 Options:
   --help, -h             Show this help message
@@ -37,6 +40,13 @@ async function main() {
   const command = args[0];
   const subcommand = args[1];
 
+  // Commands that don't need project root
+  if (command === 'prereqs') {
+    await handlePrereqs(args.slice(1));
+    return;
+  }
+
+  // All other commands need project root
   let cwd;
   try {
     cwd = findProjectRoot();
@@ -301,6 +311,31 @@ function handleVerifyArtifacts(args) {
   } else {
     process.stdout.write(JSON.stringify(results) + '\n');
   }
+}
+
+async function handlePrereqs(args) {
+  const { validatePrereqs, checkGitRepo, formatPrereqSummary } = require('../lib/prereqs.cjs');
+
+  // --git-check: Check if cwd is a git repository
+  if (args.includes('--git-check')) {
+    const result = checkGitRepo(process.cwd());
+    process.stdout.write(JSON.stringify(result) + '\n');
+    return;
+  }
+
+  // Run prerequisite validation
+  const results = await validatePrereqs();
+
+  // --json: Output raw JSON array
+  if (args.includes('--json')) {
+    process.stdout.write(JSON.stringify(results) + '\n');
+    return;
+  }
+
+  // Default: Output formatted summary with results
+  const summary = formatPrereqSummary(results);
+  const output = { results, summary: { table: summary.table, hasBlockers: summary.hasBlockers, hasWarnings: summary.hasWarnings } };
+  process.stdout.write(JSON.stringify(output) + '\n');
 }
 
 main().catch((err) => {
