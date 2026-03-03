@@ -1,0 +1,31 @@
+{
+  "agents": {
+    "rapid-planner": {
+      "role": "planner",
+      "core": ["core-identity.md", "core-returns.md", "core-state-access.md", "core-git.md", "core-context-loading.md"],
+      "context": ["project", "contracts", "style"]
+    },
+    "rapid-executor": {
+      "role": "executor",
+      "core": ["core-identity.md", "core-returns.md", "core-state-access.md", "core-git.md"],
+      "context": ["project", "style"]
+    },
+    "rapid-reviewer": {
+      "role": "reviewer",
+      "core": ["core-identity.md", "core-returns.md", "core-state-access.md"],
+      "context": ["project", "contracts", "style"]
+    },
+    "rapid-verifier": {
+      "role": "verifier",
+      "core": ["core-identity.md", "core-returns.md", "core-state-access.md"],
+      "context": ["project"]
+    },
+    "rapid-orchestrator": {
+      "role": "orchestrator",
+      "core": ["core-identity.md", "core-returns.md", "core-state-access.md", "core-git.md", "core-context-loading.md"],
+      "context": ["project", "contracts", "style"]
+    }
+  },
+  "lock_timeout_ms": 300000,
+  "agent_size_warn_kb": 15
+}

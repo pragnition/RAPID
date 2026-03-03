@@ -12,6 +12,9 @@ Commands:
   lock release <name>    Release a named lock (not typically used directly)
   state get [field]      Read a field from STATE.md (or full content with --all)
   state update <field> <value>  Update a field in STATE.md
+  assemble-agent <role>  Assemble an agent from modules (planner|executor|reviewer|verifier|orchestrator)
+  assemble-agent --list  List available modules
+  assemble-agent --validate  Validate agent assembly config
 
 Options:
   --help, -h             Show this help message
@@ -44,6 +47,10 @@ async function main() {
 
     case 'state':
       await handleState(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'assemble-agent':
+      handleAssembleAgent(cwd, args.slice(1));
       break;
 
     default:
@@ -135,6 +142,72 @@ async function handleState(cwd, subcommand, args) {
       process.stdout.write(USAGE);
       process.exit(1);
   }
+}
+
+function handleAssembleAgent(cwd, args) {
+  const { assembleAgent, listModules, validateConfig } = require('../lib/assembler.cjs');
+  const { loadConfig, resolveRapidDir } = require('../lib/core.cjs');
+  const path = require('path');
+
+  // Handle --list flag
+  if (args.includes('--list')) {
+    const modules = listModules();
+    output('Available modules:');
+    output(`  Core (${modules.core.length}):`);
+    for (const mod of modules.core) {
+      output(`    - ${mod}`);
+    }
+    output(`  Roles (${modules.roles.length}):`);
+    for (const mod of modules.roles) {
+      output(`    - ${mod}`);
+    }
+    return;
+  }
+
+  // Handle --validate flag
+  if (args.includes('--validate')) {
+    const config = loadConfig(cwd);
+    const result = validateConfig(config);
+    if (result.valid) {
+      output('Configuration is valid.');
+    } else {
+      error('Configuration errors:');
+      for (const err of result.errors) {
+        error(`  - ${err}`);
+      }
+      process.exit(1);
+    }
+    return;
+  }
+
+  // assemble-agent <role>
+  const role = args[0];
+  if (!role) {
+    error('Usage: rapid-tools assemble-agent <role> | --list | --validate');
+    process.exit(1);
+  }
+
+  const config = loadConfig(cwd);
+  const agentName = `rapid-${role}`;
+  const agentConfig = config.agents[agentName];
+
+  if (!agentConfig) {
+    error(`Unknown agent: ${agentName}. Available: ${Object.keys(config.agents).join(', ')}`);
+    process.exit(1);
+  }
+
+  const rapidDir = resolveRapidDir();
+  const agentsDir = path.join(rapidDir, 'agents');
+  const outputPath = path.join(agentsDir, `${agentName}.md`);
+
+  const result = assembleAgent({
+    role: agentConfig.role,
+    coreModules: agentConfig.core,
+    context: {},
+    outputPath,
+  });
+
+  output(`Assembled ${agentName} -> ${result}`);
 }
 
 main().catch((err) => {
