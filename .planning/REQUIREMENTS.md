@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Initialization
 
-- [ ] **INIT-01**: Developer can run `/rapid:init` to scaffold `.planning/` directory with all required state files
+- [x] **INIT-01**: Developer can run `/rapid:init` to scaffold `.planning/` directory with all required state files
 - [ ] **INIT-02**: Init detects existing codebase and offers brownfield mapping before planning
 - [ ] **INIT-03**: Init auto-generates CLAUDE.md with full project context (code style, architecture patterns, API conventions, project knowledge)
 - [ ] **INIT-04**: Init auto-generates style guide for cross-worktree consistency (naming conventions, file structure, error handling patterns)
@@ -54,7 +54,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **STAT-01**: All project state lives in `.planning/` directory, committed to git (JSON for machine state, Markdown for human-readable)
 - [x] **STAT-02**: Concurrent state access is prevented via mkdir-based atomic lock files with PID + timestamp
 - [x] **STAT-03**: Stale locks are detected and recovered automatically (crashed process left a lock behind)
-- [ ] **STAT-04**: Developer can run `/rapid:help` to see all available commands and workflow guidance
+- [x] **STAT-04**: Developer can run `/rapid:help` to see all available commands and workflow guidance
 
 ### Agent Architecture
 
@@ -107,9 +107,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAT-01 | Phase 1: Agent Framework and State Management | Complete |
 | STAT-02 | Phase 1: Agent Framework and State Management | Complete |
 | STAT-03 | Phase 1: Agent Framework and State Management | Complete |
-| INIT-01 | Phase 2: Plugin Shell and Initialization | Pending |
+| INIT-01 | Phase 2: Plugin Shell and Initialization | Complete |
 | INIT-05 | Phase 2: Plugin Shell and Initialization | Complete |
-| STAT-04 | Phase 2: Plugin Shell and Initialization | Pending |
+| STAT-04 | Phase 2: Plugin Shell and Initialization | Complete |
 | INIT-02 | Phase 3: Context Generation | Pending |
 | INIT-03 | Phase 3: Context Generation | Pending |
 | INIT-04 | Phase 3: Context Generation | Pending |
