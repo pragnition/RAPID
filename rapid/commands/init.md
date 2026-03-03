@@ -36,18 +36,20 @@ Parse the JSON output.
 
 ## Step 3: Existing Project Detection
 
-Check if `.planning/` directory already exists:
+Run the existing project detector:
 
 ```bash
-test -d .planning && echo "EXISTS" || echo "NOT_FOUND"
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs init detect
 ```
 
-- If EXISTS: Present exactly 3 options:
-  1. **Reinitialize** -- Back up `.planning/` to `.planning.backup/` and create fresh
+Parse the JSON output (`exists` boolean, `files` string array).
+
+- If `exists` is true: Show the existing `files`, then present exactly 3 options:
+  1. **Reinitialize** -- Back up `.planning/` to `.planning.backup.{timestamp}/` and create fresh
   2. **Upgrade** -- Add any missing files to existing `.planning/`, keep existing content
   3. **Cancel** -- Stop initialization
   NEVER proceed without the user's explicit choice.
-- If NOT_FOUND: Continue to Step 4.
+- If `exists` is false: Continue to Step 4.
 
 ## Step 4: Conversational Setup
 
@@ -61,45 +63,38 @@ Ask ONE question at a time. Wait for the user's answer before asking the next qu
 
 ## Step 5: Scaffold .planning/ Directory
 
-Using the Write tool, create the following files:
+Run the scaffold command with the answers from Step 4:
 
-1. `.planning/PROJECT.md` -- Populate with:
-   - Project name from Question A
-   - Description from Question B
-   - Team size from Question C
-   - Creation date
-   - Key Decisions table (empty)
+**Fresh** (default):
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs init scaffold --name "{project name}" --desc "{description}" --team-size {N}
+```
 
-2. `.planning/STATE.md` -- Initialize with:
-   - Phase: 0 (not started)
-   - Status: Initialized
-   - Progress: 0%
+**Reinitialize** (Option 1 from Step 3):
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs init scaffold --name "{project name}" --desc "{description}" --team-size {N} --mode reinitialize
+```
 
-3. `.planning/ROADMAP.md` -- Empty template with section headers
+**Upgrade** (Option 2 from Step 3):
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs init scaffold --name "{project name}" --desc "{description}" --team-size {N} --mode upgrade
+```
 
-4. `.planning/REQUIREMENTS.md` -- Empty template with section headers
+**Cancel** (Option 3 from Step 3):
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs init scaffold --mode cancel
+```
 
-5. `.planning/config.json` -- Default configuration:
-   ```json
-   {
-     "mode": "yolo",
-     "depth": "comprehensive",
-     "parallelization": true,
-     "commit_docs": true,
-     "model_profile": "quality",
-     "workflow": {
-       "research": true,
-       "plan_check": true,
-       "verifier": true
-     }
-   }
-   ```
+Parse the JSON result: `created` lists files created, `skipped` lists preserved files, `backed_up_to` shows backup location (reinitialize), `cancelled` confirms no-op (cancel).
 
 Do NOT create `.planning/phases/` -- phase directories are created on-demand during planning.
 
 ## Step 6: Confirmation
 
-Display a summary of what was created:
-- List all files created
+Using the JSON output from Step 5, display a summary:
+- List files from the `created` array
+- For reinitialize: note backup location from `backed_up_to`
+- For upgrade: list `created` and `skipped` separately
+- For cancel: confirm no changes and stop
 - Show the project name and description
 - Suggest running `/rapid:help` to see available commands and workflow guidance
