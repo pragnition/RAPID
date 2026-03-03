@@ -49,11 +49,11 @@ Plans:
   1. Developer can run `/rapid:init` and get a complete `.planning/` directory with all required state files scaffolded
   2. Init validates prerequisites (git 2.30+, jq 1.6+, Node.js 18+) and reports clear errors for missing or outdated dependencies
   3. Developer can run `/rapid:help` and see all available commands with workflow guidance explaining what to do next
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: plugin structure+prereqs, Wave 2: init scaffolding+docs)
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01: Plugin structure, command/skill registration, and prerequisite validation (INIT-05) [Wave 1]
+- [ ] 02-02: Init scaffolding library, CLI subcommand, and DOCS.md (INIT-01, STAT-04) [Wave 2, depends: 02-01]
 
 ### Phase 3: Context Generation
 **Goal**: Every developer working on the project has consistent, comprehensive context about code style, architecture, and conventions
