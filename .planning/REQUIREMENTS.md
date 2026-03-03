@@ -59,8 +59,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Agent Architecture
 
 - [x] **AGNT-01**: Agents are built from composable prompt modules (core behavior + role-specific + context modules) rather than monolithic prompts
-- [ ] **AGNT-02**: All agents use structured return protocol (COMPLETE/CHECKPOINT/BLOCKED tables) for machine-parseable results
-- [ ] **AGNT-03**: Agent completion is verified by checking filesystem artifacts (files exist, tests pass, commits land) — never trust agent self-reports alone
+- [x] **AGNT-02**: All agents use structured return protocol (COMPLETE/CHECKPOINT/BLOCKED tables) for machine-parseable results
+- [x] **AGNT-03**: Agent completion is verified by checking filesystem artifacts (files exist, tests pass, commits land) — never trust agent self-reports alone
 
 ## v2 Requirements
 
@@ -102,8 +102,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | AGNT-01 | Phase 1: Agent Framework and State Management | Complete |
-| AGNT-02 | Phase 1: Agent Framework and State Management | Pending |
-| AGNT-03 | Phase 1: Agent Framework and State Management | Pending |
+| AGNT-02 | Phase 1: Agent Framework and State Management | Complete |
+| AGNT-03 | Phase 1: Agent Framework and State Management | Complete |
 | STAT-01 | Phase 1: Agent Framework and State Management | Complete |
 | STAT-02 | Phase 1: Agent Framework and State Management | Complete |
 | STAT-03 | Phase 1: Agent Framework and State Management | Complete |
