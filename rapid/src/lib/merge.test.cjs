@@ -456,6 +456,17 @@ describe('runProgrammaticGate', { concurrency: 1 }, () => {
   beforeEach(() => {
     tmpDir = createMockProject();
 
+    // Create source files at project root (contract tests resolve relative to set dir -> project root)
+    fs.mkdirSync(path.join(tmpDir, 'src', 'auth'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'src', 'auth', 'token.cjs'), [
+      "'use strict';",
+      "module.exports = { createToken: () => 'tok' };",
+    ].join('\n'), 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'src', 'auth', 'verify.cjs'), [
+      "'use strict';",
+      "module.exports = { verifyToken: () => ({}) };",
+    ].join('\n'), 'utf-8');
+
     // Create a git repo for the worktree
     const wtDir = path.join(tmpDir, '.rapid-worktrees', 'auth-core');
     fs.mkdirSync(path.join(wtDir, 'src', 'auth'), { recursive: true });
@@ -599,7 +610,7 @@ describe('prepareReviewContext', () => {
 // ────────────────────────────────────────────────────────────────
 // runIntegrationTests
 // ────────────────────────────────────────────────────────────────
-describe('runIntegrationTests', () => {
+describe('runIntegrationTests', { concurrency: 1 }, () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -630,11 +641,12 @@ describe('runIntegrationTests', () => {
   it('fails when tests fail', () => {
     const merge = require('./merge.cjs');
 
-    // Create a failing test file
+    // Create a failing test file that throws at top level
+    // (node:test describe/it within nested node --test can swallow failures)
     fs.writeFileSync(path.join(tmpDir, 'rapid', 'src', 'lib', 'fail.test.cjs'), [
       "'use strict';",
-      "const assert = require('node:assert/strict');",
-      "assert.strictEqual(1, 2, 'deliberate failure');",
+      "process.exitCode = 1;",
+      "throw new Error('deliberate test failure');",
     ].join('\n'), 'utf-8');
 
     const result = merge.runIntegrationTests(tmpDir);
