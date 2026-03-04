@@ -1,5 +1,5 @@
 ---
-description: Execute sets in wave order -- drives discuss/plan/execute lifecycle per set via subagent spawning
+description: Execute sets in wave order -- drives discuss/plan/execute lifecycle per set via subagent spawning, with pause/resume and wave reconciliation
 allowed-tools: Read, Write, Bash, Agent
 ---
 
@@ -40,6 +40,57 @@ Show the user the execution plan:
 
 Ask the user: "Ready to begin execution? (yes/no)" If they want to start from a specific wave or skip already-completed sets, accommodate that.
 
+## Step 1.5: Check for Paused Sets
+
+After loading the DAG and wave status, check for any sets with HANDOFF.md files:
+
+```bash
+ls .planning/sets/*/HANDOFF.md 2>/dev/null
+```
+
+If any HANDOFF.md files exist, read each one to get pause details:
+
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute resume {setName} 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));console.log(JSON.stringify(d.handoff,null,2))"
+```
+
+**Do NOT actually run `execute resume` yet** -- just read the HANDOFF.md directly to inspect it:
+
+```bash
+cat .planning/sets/{setName}/HANDOFF.md
+```
+
+Parse the frontmatter to get `tasks_completed`, `tasks_total`, and `pause_cycle`.
+
+Present the paused sets to the user:
+
+> **Paused sets detected:**
+> - {setName}: paused at task {tasks_completed}/{tasks_total}, cycle {pause_cycle}
+>
+> Options:
+> 1. **Resume** -- Continue from where execution left off
+> 2. **Restart** -- Discard handoff and re-execute from scratch
+> 3. **Skip** -- Proceed with other sets, leave paused set for later
+
+If the user chooses **Resume**:
+- Run the resume command:
+  ```bash
+  node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute resume {setName}
+  ```
+- Parse the JSON output to get the handoff data
+- When spawning the executor subagent in Step 7, prepend the handoff content to the prompt (see Step 7 for the resume prompt template)
+
+If the user chooses **Restart**:
+- Delete the HANDOFF.md:
+  ```bash
+  rm .planning/sets/{setName}/HANDOFF.md
+  ```
+- Proceed with normal execution for that set
+
+If the user chooses **Skip**:
+- Leave the set paused
+- Continue with other sets in the wave
+
 ## Step 2: Process Each Wave
 
 For each wave (in order), perform Steps 3-7. If a wave's sets are already in 'Done' phase (per registry), skip that wave and inform the user.
@@ -50,10 +101,23 @@ Before starting a wave, check the planning gate:
 node ~/RAPID/rapid/src/bin/rapid-tools.cjs plan check-gate {waveNumber}
 ```
 
-If the gate is not open, STOP and inform the user:
-> Planning gate for Wave {N} is not open. All sets in this wave must complete their planning phase first.
-> Missing: {list of sets that haven't completed planning}
-> Run `/rapid:plan` to complete set planning before execution.
+If the gate is not open, check the JSON output for details. The output includes `missingArtifacts` for disk-level verification:
+
+- If the gate is blocked and the user wants to override:
+  ```bash
+  # Log the override for audit trail
+  node -e "const p=require('$HOME/RAPID/rapid/src/lib/plan.cjs');p.logGateOverride(process.cwd(), {waveNumber}, {missingSetsList})"
+  ```
+  Show the override confirmation prompt:
+  > Gate blocked: {sets without plans}. Ready: {planned sets}.
+  > Override? This will proceed despite incomplete planning.
+  > Sets that would execute without plans: {list}
+  > [yes/no]:
+
+- If the user confirms override, proceed. If not, STOP and inform:
+  > Planning gate for Wave {N} is not open. All sets in this wave must complete their planning phase first.
+  > Missing: {list of sets that haven't completed planning}
+  > Run `/rapid:plan` to complete set planning before execution.
 
 ## Step 3: Create Worktrees (if needed)
 
@@ -205,51 +269,115 @@ For each set:
    > - Run verification after each task
    > - When complete, emit a RAPID:RETURN with status COMPLETE listing all artifacts and commit hashes
    > - If blocked, emit RAPID:RETURN with status BLOCKED and the appropriate category
+   >
+   > ## Context Window Management
+   > If you are approaching your context window limit and have more tasks to complete:
+   > 1. Commit all current work
+   > 2. Emit a RAPID:RETURN with status CHECKPOINT and include:
+   >    - handoff_done: bullet list of completed tasks with commit hashes
+   >    - handoff_remaining: bullet list of remaining tasks
+   >    - handoff_resume: specific instructions for the next session
+   >    - tasks_completed: number of tasks finished
+   >    - tasks_total: total tasks in the plan
+   > 3. This will trigger an automatic pause and your state will be saved
 
-4. After the subagent returns, parse the structured return and run verification:
-   ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute verify {setName} --branch main
-   ```
+   **If resuming from a pause (HANDOFF.md exists):**
 
-   (Note: Replace 'main' with the actual base branch name)
+   Prepend the following to the executor prompt before the Implementation Plan section:
 
-5. Update registry phase based on results:
-   ```bash
-   # On success:
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute update-phase {setName} Done
+   > ## Resuming from Pause
+   > You are continuing execution of set '{setName}' from a previous session.
+   >
+   > ### Previously Completed
+   > {handoff.completedWork}
+   >
+   > ### Remaining Work
+   > {handoff.remainingWork}
+   >
+   > ### Resume Instructions
+   > {handoff.resumeInstructions}
+   >
+   > Start from the first incomplete task. Do NOT redo completed work.
 
-   # On failure:
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute update-phase {setName} Error
-   ```
+4. After the subagent returns, check the return status:
 
-6. Clean up stubs:
+   **If return status is COMPLETE:**
+   - Parse the structured return and run verification:
+     ```bash
+     node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute verify {setName} --branch main
+     ```
+     (Note: Replace 'main' with the actual base branch name)
+   - Update registry phase based on results:
+     ```bash
+     # On success:
+     node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute update-phase {setName} Done
+
+     # On failure:
+     node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute update-phase {setName} Error
+     ```
+
+   **If return status is CHECKPOINT (context window limit reached):**
+   - Pipe the checkpoint data to the pause CLI:
+     ```bash
+     echo '{"handoff_done":"...","handoff_remaining":"...","handoff_resume":"...","tasks_completed":N,"tasks_total":M}' | node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute pause {setName}
+     ```
+   - Inform the user:
+     > Set '{setName}' was paused (context limit reached). Resume with `/rapid:execute` or manage with `/rapid:pause`.
+   - Mark the set as paused and move on to the next set in the wave (do NOT stop the whole wave)
+
+   **If return status is BLOCKED:**
+   - Update registry phase to Error:
+     ```bash
+     node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute update-phase {setName} Error
+     ```
+
+5. Clean up stubs (for COMPLETE and BLOCKED, not for CHECKPOINT/paused):
    ```bash
    node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute cleanup-stubs {setName}
    ```
 
-## Step 8: Wave Completion
+## Step 8: Wave Reconciliation
 
-After all sets in the wave complete, present results:
+After all sets in a wave complete (or are paused), run mandatory reconciliation:
 
-> **Wave {N} Execution Results:**
->
-> | Set | Status | Tasks | Commits | Issues |
-> |-----|--------|-------|---------|--------|
-> | {name} | {COMPLETE/BLOCKED/ERROR} | {N/M} | {count} | {any verification failures} |
->
-> **Verification Summary:**
-> - Passed: {count}
-> - Failed: {count}
-> - {details of any failures}
+1. Run reconciliation:
+   ```bash
+   node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute reconcile {waveNumber}
+   ```
 
-If any set failed verification:
-> **Verification failures detected.** Options:
-> 1. **Review failures** -- I will show the specific issues for each failed set
-> 2. **Re-execute failed sets** -- Re-run execution for sets that failed
-> 3. **Accept as-is** -- Proceed despite failures (user accepts responsibility)
-> 4. **Cancel** -- Stop execution
+2. Parse the JSON output for overall result and details.
 
-If all sets passed, move to the next wave (back to Step 2).
+3. Present results to the user:
+
+   > **Wave {N} Reconciliation Results:**
+   >
+   > **Overall:** {PASS/PASS_WITH_WARNINGS/FAIL}
+   >
+   > {Per-set details from WAVE-{N}-SUMMARY.md}
+   >
+   > **Hard Blocks:** {list or "None"}
+   > **Soft Blocks:** {list or "None"}
+
+4. Handle based on result:
+
+   **If hard blocks exist:**
+   > Hard blocks must be resolved before Wave {N+1} can proceed.
+   > Options:
+   > 1. **Fix** -- Re-execute the failed sets
+   > 2. **Cancel** -- Stop execution
+
+   **If only soft blocks:**
+   > Soft blocks detected. Options:
+   > 1. **Proceed** -- Accept soft blocks and continue to Wave {N+1}
+   > 2. **Fix** -- Re-execute to address soft blocks
+
+   **If PASS:**
+   > All contract obligations satisfied. Proceeding to Wave {N+1}.
+
+5. Wait for developer acknowledgment before proceeding to next wave. Even for PASS, confirm:
+   > Wave {N} reconciliation complete. Continue to Wave {N+1}? (yes/no)
+
+Then move to the next wave (back to Step 2).
 
 ## Step 9: Execution Complete
 
@@ -269,10 +397,12 @@ Present final summary:
 > - Total sets: {N}
 > - Total commits: {sum}
 > - Verification: {pass/fail counts}
+> - Paused sets: {count, if any}
 >
 > **Next steps:**
 > - Run `/rapid:status` to review worktree state
 > - Each set's changes are on their respective `rapid/{set-name}` branches
+> - If any sets are paused, run `/rapid:execute` again to resume them
 > - Run the merge pipeline when ready (Phase 8)
 
 ## Important Notes
@@ -280,5 +410,8 @@ Present final summary:
 - **Agent tool usage:** This skill uses the Agent tool to spawn subagents. Each subagent runs in its own context window. Subagents CANNOT spawn other subagents -- this skill (the orchestrator) drives all 3 lifecycle phases.
 - **Rate limiting:** If spawning multiple parallel subagents causes rate limit errors, reduce to sequential execution within the wave and inform the user.
 - **Registry updates:** Always update the worktree registry phase after each lifecycle transition via the CLI. This ensures `/rapid:status` reflects current progress.
-- **Stub cleanup:** Always clean up stub files after execution completes, even if execution failed. Stubs should not be committed.
+- **Stub cleanup:** Always clean up stub files after execution completes, even if execution failed. Stubs should not be committed. Do NOT clean up stubs for paused sets (they may need them on resume).
 - **Idempotent re-entry:** If execution is interrupted and restarted, check registry state to determine which sets/phases have already completed. Skip completed work and resume from the current point.
+- **Pause handling:** CHECKPOINT returns trigger automatic pause via the pause CLI. The handoff file preserves state for the next session. Paused sets do not block the rest of the wave.
+- **Wave reconciliation:** Mandatory after every wave. Contract test failures are hard blocks (must fix). Missing artifacts are soft blocks (can be overridden). Developer must acknowledge results before the next wave proceeds.
+- **Gate overrides:** If the planning gate is blocked but the user wants to proceed, log the override for audit trail and show explicit confirmation before continuing.
