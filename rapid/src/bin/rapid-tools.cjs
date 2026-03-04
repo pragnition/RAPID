@@ -28,6 +28,14 @@ Commands:
                [--mode fresh|reinitialize|upgrade|cancel]
   context detect         Detect codebase characteristics (languages, frameworks, configs)
   context generate       Ensure .planning/context/ directory exists and return its path
+  plan create-set             Create a set from JSON on stdin
+  plan decompose              Decompose sets from JSON array on stdin
+  plan write-dag              Write DAG.json from JSON on stdin
+  plan check-gate <wave>      Check planning gate status for a wave
+  plan update-gate <set>      Mark a set as planned (update gate)
+  plan list-sets              List all defined sets
+  plan load-set <name>        Load a set's definition and contract
+  assumptions [set-name]      Surface assumptions about a set (or list sets)
 
 Options:
   --help, -h             Show this help message
@@ -87,6 +95,14 @@ async function main() {
 
     case 'verify-artifacts':
       handleVerifyArtifacts(args.slice(1));
+      break;
+
+    case 'plan':
+      handlePlan(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'assumptions':
+      handleAssumptions(cwd, args.slice(1));
       break;
 
     default:
@@ -457,6 +473,113 @@ async function handlePrereqs(args) {
   const summary = formatPrereqSummary(results);
   const output = { results, summary: { table: summary.table, hasBlockers: summary.hasBlockers, hasWarnings: summary.hasWarnings } };
   process.stdout.write(JSON.stringify(output) + '\n');
+}
+
+function handlePlan(cwd, subcommand, args) {
+  const fs = require('fs');
+  const plan = require('../lib/plan.cjs');
+
+  switch (subcommand) {
+    case 'create-set': {
+      // Reads set definition from stdin (JSON)
+      // Usage: echo '{"name":"auth",...}' | rapid-tools plan create-set
+      const input = fs.readFileSync(0, 'utf-8');
+      const setDef = JSON.parse(input);
+      const result = plan.createSet(cwd, setDef);
+      process.stdout.write(JSON.stringify(result) + '\n');
+      break;
+    }
+
+    case 'decompose': {
+      // Reads array of set definitions from stdin (JSON)
+      // Usage: echo '[{...}, {...}]' | rapid-tools plan decompose
+      const input = fs.readFileSync(0, 'utf-8');
+      const setDefs = JSON.parse(input);
+      const result = plan.decomposeIntoSets(cwd, setDefs);
+      process.stdout.write(JSON.stringify(result) + '\n');
+      break;
+    }
+
+    case 'write-dag': {
+      // Reads DAG object from stdin
+      const input = fs.readFileSync(0, 'utf-8');
+      const dagObj = JSON.parse(input);
+      plan.writeDAG(cwd, dagObj);
+      process.stdout.write(JSON.stringify({ written: true, path: '.planning/sets/DAG.json' }) + '\n');
+      break;
+    }
+
+    case 'check-gate': {
+      // Usage: rapid-tools plan check-gate <wave-number>
+      const wave = parseInt(args[0], 10);
+      if (isNaN(wave)) {
+        error('Usage: rapid-tools plan check-gate <wave-number>');
+        process.exit(1);
+      }
+      const result = plan.checkPlanningGate(cwd, wave);
+      process.stdout.write(JSON.stringify(result) + '\n');
+      break;
+    }
+
+    case 'update-gate': {
+      // Usage: rapid-tools plan update-gate <set-name>
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools plan update-gate <set-name>');
+        process.exit(1);
+      }
+      plan.updateGate(cwd, setName);
+      process.stdout.write(JSON.stringify({ updated: true, set: setName }) + '\n');
+      break;
+    }
+
+    case 'list-sets': {
+      const sets = plan.listSets(cwd);
+      process.stdout.write(JSON.stringify({ sets }) + '\n');
+      break;
+    }
+
+    case 'load-set': {
+      // Usage: rapid-tools plan load-set <set-name>
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools plan load-set <set-name>');
+        process.exit(1);
+      }
+      const set = plan.loadSet(cwd, setName);
+      process.stdout.write(JSON.stringify(set) + '\n');
+      break;
+    }
+
+    default:
+      error(`Unknown plan subcommand: ${subcommand}. Use: create-set, decompose, write-dag, check-gate, update-gate, list-sets, load-set`);
+      process.stdout.write(USAGE);
+      process.exit(1);
+  }
+}
+
+function handleAssumptions(cwd, args) {
+  const plan = require('../lib/plan.cjs');
+
+  const setName = args[0];
+  if (!setName) {
+    // If no set name, list available sets
+    const sets = plan.listSets(cwd);
+    if (sets.length === 0) {
+      error('No sets found. Run /rapid:plan first to create sets.');
+      process.exit(1);
+    }
+    process.stdout.write(JSON.stringify({ availableSets: sets, usage: 'rapid-tools assumptions <set-name>' }) + '\n');
+    return;
+  }
+
+  try {
+    const assumptions = plan.surfaceAssumptions(cwd, setName);
+    process.stdout.write(assumptions + '\n');
+  } catch (err) {
+    error(`Cannot surface assumptions for set "${setName}": ${err.message}`);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
