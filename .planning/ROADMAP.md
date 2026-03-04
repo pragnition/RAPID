@@ -69,7 +69,7 @@ Plans:
 Plans:
 - [x] 03-01: Brownfield detection library with config parsing and scan manifest (INIT-02) [Wave 1]
 - [x] 03-02: Context CLI, subagent module, /rapid:context skill, assembler extension (INIT-02, INIT-03, INIT-04) [Wave 2, depends: 03-01]
-- [ ] 03-03: Wire handleAssembleAgent to pass context files to assembleAgent (INIT-02, INIT-03, INIT-04) [Wave 3, depends: 03-02, gap closure]
+- [x] 03-03: Wire handleAssembleAgent to pass context files to assembleAgent (INIT-02, INIT-03, INIT-04) [Wave 3, depends: 03-02, gap closure]
 
 ### Phase 4: Planning Engine and Contracts
 **Goal**: Work is decomposed into parallelizable sets with machine-verifiable interface contracts that define how sets interact
@@ -170,7 +170,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Agent Framework and State Management | 3/3 | Complete | 2026-03-03 |
 | 2. Plugin Shell and Initialization | 3/3 | Complete | 2026-03-04 |
-| 3. Context Generation | 2/2 | Complete | 2026-03-04 |
+| 3. Context Generation | 3/3 | Complete | 2026-03-04 |
 | 4. Planning Engine and Contracts | 0/3 | Not started | - |
 | 5. Worktree Orchestration | 0/2 | Not started | - |
 | 6. Execution Core | 0/2 | Not started | - |
