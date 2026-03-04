@@ -141,12 +141,12 @@ describe('assembler', () => {
   });
 
   describe('listModules', () => {
-    it('returns correct counts (5 core, 5 roles)', () => {
+    it('returns correct counts (5 core, 6 roles)', () => {
       const result = assembler.listModules();
       assert.ok(result.core, 'Should have core array');
       assert.ok(result.roles, 'Should have roles array');
       assert.equal(result.core.length, 5, `Expected 5 core modules, got ${result.core.length}`);
-      assert.equal(result.roles.length, 5, `Expected 5 role modules, got ${result.roles.length}`);
+      assert.equal(result.roles.length, 6, `Expected 6 role modules, got ${result.roles.length}`);
     });
 
     it('lists the correct core module files', () => {
@@ -164,6 +164,7 @@ describe('assembler', () => {
     it('lists the correct role module files', () => {
       const result = assembler.listModules();
       const expectedRoles = [
+        'role-context-generator.md',
         'role-executor.md',
         'role-orchestrator.md',
         'role-planner.md',
