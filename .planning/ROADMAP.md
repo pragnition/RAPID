@@ -129,7 +129,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 07-01: TBD
+- [x] 07-01: Status dashboard and gate enforcement (EXEC-04, EXEC-07) [Wave 1]
 - [ ] 07-02: TBD
 
 ### Phase 8: Merge Pipeline
@@ -174,6 +174,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Planning Engine and Contracts | 0/3 | Not started | - |
 | 5. Worktree Orchestration | 1/2 | In Progress|  |
 | 6. Execution Core | 0/2 | Not started | - |
-| 7. Execution Lifecycle | 0/2 | Not started | - |
+| 7. Execution Lifecycle | 1/2 | In Progress | - |
 | 8. Merge Pipeline | 0/3 | Not started | - |
 | 9. Agent Teams Integration | 0/1 | Not started | - |
