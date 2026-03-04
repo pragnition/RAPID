@@ -181,7 +181,7 @@ async function handleState(cwd, subcommand, args) {
 }
 
 function handleAssembleAgent(cwd, args) {
-  const { assembleAgent, listModules, validateConfig } = require('../lib/assembler.cjs');
+  const { assembleAgent, listModules, validateConfig, loadContextFiles } = require('../lib/assembler.cjs');
   const { loadConfig, resolveRapidDir } = require('../lib/core.cjs');
   const path = require('path');
 
@@ -236,10 +236,12 @@ function handleAssembleAgent(cwd, args) {
   const agentsDir = path.join(rapidDir, 'agents');
   const outputPath = path.join(agentsDir, `${agentName}.md`);
 
+  const contextFiles = loadContextFiles(cwd, agentConfig.context_files || []);
+
   const result = assembleAgent({
     role: agentConfig.role,
     coreModules: agentConfig.core,
-    context: {},
+    context: { contextFiles },
     outputPath,
   });
 
