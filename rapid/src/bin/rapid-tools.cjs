@@ -49,6 +49,9 @@ Commands:
   execute cleanup-stubs <set>    Remove stub files from a set's worktree
   execute wave-status             Show execution progress per wave
   execute update-phase <set> <phase>  Update a set's lifecycle phase in registry
+  execute pause <set>             Pause execution and write HANDOFF.md (reads CHECKPOINT JSON from stdin)
+  execute resume <set>            Resume execution from HANDOFF.md
+  execute reconcile <wave>        Reconcile a wave and write WAVE-{N}-SUMMARY.md
 
 Options:
   --help, -h             Show this help message
@@ -943,8 +946,151 @@ async function handleExecute(cwd, subcommand, args) {
       break;
     }
 
+    case 'pause': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools execute pause <set-name>');
+        process.exit(1);
+      }
+      // Validate registry entry exists and phase is Executing
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setName];
+      if (!entry) {
+        error(`No worktree registered for set "${setName}"`);
+        process.exit(1);
+      }
+      if (entry.phase !== 'Executing') {
+        error(`Set "${setName}" is in phase "${entry.phase}", not Executing. Pause is only available during execution.`);
+        process.exit(1);
+      }
+      // Read CHECKPOINT data from stdin (JSON)
+      let checkpointData;
+      try {
+        const input = fs.readFileSync(0, 'utf-8');
+        checkpointData = JSON.parse(input);
+      } catch (err) {
+        error(`Failed to read CHECKPOINT JSON from stdin: ${err.message}`);
+        process.exit(1);
+      }
+      // Load current pauseCycles from registry entry (default 0), increment
+      const pauseCycles = (entry.pauseCycles || 0) + 1;
+      if (pauseCycles >= 3) {
+        process.stderr.write(`Warning: Set "${setName}" has been paused ${pauseCycles} times. Consider replanning this set.\n`);
+      }
+      // Generate HANDOFF.md content
+      const handoffContent = execute.generateHandoff(checkpointData, setName, pauseCycles);
+      const handoffPath = path.join(cwd, '.planning', 'sets', setName, 'HANDOFF.md');
+      fs.mkdirSync(path.dirname(handoffPath), { recursive: true });
+      fs.writeFileSync(handoffPath, handoffContent, 'utf-8');
+      // Update registry: phase = Paused, pauseCycles, updatedAt
+      await wt.registryUpdate(cwd, (reg) => {
+        if (reg.worktrees[setName]) {
+          reg.worktrees[setName].phase = 'Paused';
+          reg.worktrees[setName].pauseCycles = pauseCycles;
+          reg.worktrees[setName].updatedAt = new Date().toISOString();
+        }
+        return reg;
+      });
+      process.stdout.write(JSON.stringify({ paused: true, setName, pauseCycles, handoffPath }) + '\n');
+      break;
+    }
+
+    case 'resume': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools execute resume <set-name>');
+        process.exit(1);
+      }
+      // Validate HANDOFF.md exists
+      const handoffPath = path.join(cwd, '.planning', 'sets', setName, 'HANDOFF.md');
+      if (!fs.existsSync(handoffPath)) {
+        error(`No HANDOFF.md found for set "${setName}" at ${handoffPath}`);
+        process.exit(1);
+      }
+      // Read and parse HANDOFF.md
+      const handoffRaw = fs.readFileSync(handoffPath, 'utf-8');
+      const handoff = execute.parseHandoff(handoffRaw);
+      if (!handoff) {
+        error(`Failed to parse HANDOFF.md for set "${setName}"`);
+        process.exit(1);
+      }
+      // Get definition and contract paths for the orchestrator
+      const definitionPath = path.join('.planning', 'sets', setName, 'DEFINITION.md');
+      const contractPath = path.join('.planning', 'sets', setName, 'CONTRACT.json');
+      // Update registry: phase = Executing, updatedAt
+      await wt.registryUpdate(cwd, (reg) => {
+        if (reg.worktrees[setName]) {
+          reg.worktrees[setName].phase = 'Executing';
+          reg.worktrees[setName].updatedAt = new Date().toISOString();
+        }
+        return reg;
+      });
+      process.stdout.write(JSON.stringify({
+        resumed: true,
+        setName,
+        handoff,
+        definitionPath,
+        contractPath,
+      }) + '\n');
+      break;
+    }
+
+    case 'reconcile': {
+      const dag = require('../lib/dag.cjs');
+      const waveNum = parseInt(args[0], 10);
+      if (isNaN(waveNum)) {
+        error('Usage: rapid-tools execute reconcile <wave-number>');
+        process.exit(1);
+      }
+      // Load DAG.json and registry
+      let dagJson;
+      try {
+        const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
+        dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+      } catch (err) {
+        error(`Cannot read DAG.json: ${err.message}`);
+        process.exit(1);
+      }
+      const registry = wt.loadRegistry(cwd);
+      // Run reconciliation
+      const reconcileResult = execute.reconcileWave(cwd, waveNum, dagJson, registry);
+      // Generate summary
+      const summaryContent = execute.generateWaveSummary(waveNum, reconcileResult, new Date().toISOString());
+      // Write summary
+      const wavesDir = path.join(cwd, '.planning', 'waves');
+      fs.mkdirSync(wavesDir, { recursive: true });
+      const summaryPath = path.join(wavesDir, `WAVE-${waveNum}-SUMMARY.md`);
+      fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
+      // JSON output on stdout
+      process.stdout.write(JSON.stringify({
+        waveNum,
+        overall: reconcileResult.overall,
+        hardBlocks: reconcileResult.hardBlocks,
+        softBlocks: reconcileResult.softBlocks,
+        summaryPath,
+      }) + '\n');
+      // Human-readable summary on stderr
+      process.stderr.write(`\nWave ${waveNum} Reconciliation: ${reconcileResult.overall}\n`);
+      if (reconcileResult.hardBlocks.length > 0) {
+        process.stderr.write(`  Hard blocks: ${reconcileResult.hardBlocks.length}\n`);
+        for (const b of reconcileResult.hardBlocks) {
+          process.stderr.write(`    - ${b.set}: ${b.type} -- ${b.detail}\n`);
+        }
+      }
+      if (reconcileResult.softBlocks.length > 0) {
+        process.stderr.write(`  Soft blocks: ${reconcileResult.softBlocks.length}\n`);
+        for (const b of reconcileResult.softBlocks) {
+          process.stderr.write(`    - ${b.set}: ${b.type} -- ${b.detail}\n`);
+        }
+      }
+      if (reconcileResult.hardBlocks.length === 0 && reconcileResult.softBlocks.length === 0) {
+        process.stderr.write(`  All contract obligations satisfied.\n`);
+      }
+      break;
+    }
+
     default:
-      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase`);
+      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
