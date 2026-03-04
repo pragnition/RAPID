@@ -47,7 +47,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **MERG-01**: Merge reviewer agent performs deep code review (style, correctness, contract compliance) before any set merges to main
 - [x] **MERG-02**: Merge reviewer validates all interface contracts are satisfied — blocks merge if contracts violated or tests fail
 - [x] **MERG-03**: Cleanup agent can be spawned when merge reviewer finds fixable issues (style violations, missing tests, minor contract gaps)
-- [ ] **MERG-04**: Sets merge in dependency-graph order — independent sets can merge in parallel, dependent sets merge sequentially
+- [x] **MERG-04**: Sets merge in dependency-graph order — independent sets can merge in parallel, dependent sets merge sequentially
 
 ### State Management
 
@@ -133,7 +133,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MERG-01 | Phase 8: Merge Pipeline | Complete |
 | MERG-02 | Phase 8: Merge Pipeline | Complete |
 | MERG-03 | Phase 8: Merge Pipeline | Complete |
-| MERG-04 | Phase 8: Merge Pipeline | Pending |
+| MERG-04 | Phase 8: Merge Pipeline | Complete |
 | EXEC-06 | Phase 9: Agent Teams Integration | Pending |
 
 **Coverage:**
