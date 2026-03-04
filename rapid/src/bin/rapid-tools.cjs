@@ -36,6 +36,10 @@ Commands:
   plan list-sets              List all defined sets
   plan load-set <name>        Load a set's definition and contract
   assumptions [set-name]      Surface assumptions about a set (or list sets)
+  worktree create <set-name>  Create worktree and branch for a set
+  worktree list               List all registered worktrees with status
+  worktree cleanup <set-name> Remove a worktree (blocks if dirty)
+  worktree reconcile          Sync registry with actual git state
 
 Options:
   --help, -h             Show this help message
@@ -103,6 +107,10 @@ async function main() {
 
     case 'assumptions':
       handleAssumptions(cwd, args.slice(1));
+      break;
+
+    case 'worktree':
+      await handleWorktree(cwd, subcommand, args.slice(2));
       break;
 
     default:
@@ -579,6 +587,113 @@ function handleAssumptions(cwd, args) {
   } catch (err) {
     error(`Cannot surface assumptions for set "${setName}": ${err.message}`);
     process.exit(1);
+  }
+}
+
+async function handleWorktree(cwd, subcommand, args) {
+  const path = require('path');
+  const wt = require('../lib/worktree.cjs');
+
+  switch (subcommand) {
+    case 'create': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools worktree create <set-name>');
+        process.exit(1);
+      }
+      try {
+        const { branch, path: wtPath } = wt.createWorktree(cwd, setName);
+        // Register in REGISTRY.json
+        await wt.registryUpdate(cwd, (reg) => {
+          reg.worktrees[setName] = {
+            setName,
+            branch,
+            path: path.relative(cwd, wtPath),
+            phase: 'Created',
+            status: 'active',
+            wave: null,
+            createdAt: new Date().toISOString(),
+          };
+          return reg;
+        });
+        process.stdout.write(JSON.stringify({ created: true, branch, path: wtPath, setName }) + '\n');
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ created: false, error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'list': {
+      const registry = await wt.reconcileRegistry(cwd);
+      process.stdout.write(JSON.stringify({ worktrees: Object.values(registry.worktrees) }) + '\n');
+      break;
+    }
+
+    case 'cleanup': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools worktree cleanup <set-name>');
+        process.exit(1);
+      }
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setName];
+      if (!entry) {
+        error(`No worktree registered for set "${setName}"`);
+        process.exit(1);
+      }
+      // Resolve absolute path from the stored relative path
+      const absolutePath = path.resolve(cwd, entry.path);
+      const result = wt.removeWorktree(cwd, absolutePath);
+      if (result.removed) {
+        // Deregister from REGISTRY.json
+        await wt.registryUpdate(cwd, (reg) => {
+          delete reg.worktrees[setName];
+          return reg;
+        });
+        process.stdout.write(JSON.stringify({ removed: true, setName }) + '\n');
+      } else {
+        process.stdout.write(JSON.stringify({ removed: false, reason: result.reason, setName, message: result.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'reconcile': {
+      const beforeRegistry = wt.loadRegistry(cwd);
+      const beforeEntries = Object.keys(beforeRegistry.worktrees);
+      const beforeStatuses = {};
+      for (const [k, v] of Object.entries(beforeRegistry.worktrees)) {
+        beforeStatuses[k] = v.status;
+      }
+
+      const reconciled = await wt.reconcileRegistry(cwd);
+      const afterEntries = Object.keys(reconciled.worktrees);
+
+      // Count orphaned: entries that changed to 'orphaned' status
+      let orphaned = 0;
+      for (const [k, v] of Object.entries(reconciled.worktrees)) {
+        if (v.status === 'orphaned' && beforeStatuses[k] !== 'orphaned') {
+          orphaned++;
+        }
+      }
+
+      // Count discovered: new entries that weren't in before
+      let discovered = 0;
+      for (const k of afterEntries) {
+        if (!beforeEntries.includes(k)) {
+          discovered++;
+        }
+      }
+
+      process.stdout.write(JSON.stringify({ reconciled: true, orphaned, discovered }) + '\n');
+      break;
+    }
+
+    default:
+      error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile`);
+      process.stdout.write(USAGE);
+      process.exit(1);
   }
 }
 

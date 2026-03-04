@@ -1,0 +1,5 @@
+# RAPID worktree working directories
+.rapid-worktrees/
+
+# Worktree registry lock files
+.planning/worktrees/*.lock
