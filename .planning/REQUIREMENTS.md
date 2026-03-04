@@ -37,10 +37,10 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **EXEC-02**: Each set goes through its own discuss → plan → execute phase lifecycle independently
 - [x] **EXEC-03**: Changes within sets are committed atomically per task (bisectable, blame-friendly history)
 - [x] **EXEC-04**: Developer can run `/rapid:status` to see progress across all sets and all phases
-- [ ] **EXEC-05**: Developer can pause work on a set and resume later with full state restoration (handoff files)
+- [x] **EXEC-05**: Developer can pause work on a set and resume later with full state restoration (handoff files)
 - [ ] **EXEC-06**: RAPID detects EXPERIMENTAL_AGENT_TEAMS env var and offers agent teams execution mode with subagent fallback
 - [x] **EXEC-07**: Loose sync gates enforce: all sets must finish planning before any begins execution; execution is independent per set
-- [ ] **EXEC-08**: Mandatory reconciliation after each execution wave — compare plan vs actual, create SUMMARY with pass/fail on acceptance criteria, block next wave until reconciled
+- [x] **EXEC-08**: Mandatory reconciliation after each execution wave — compare plan vs actual, create SUMMARY with pass/fail on acceptance criteria, block next wave until reconciled
 
 ### Merge & Review
 
@@ -127,9 +127,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXEC-02 | Phase 6: Execution Core | Complete |
 | EXEC-03 | Phase 6: Execution Core | Complete |
 | EXEC-04 | Phase 7: Execution Lifecycle | Complete (07-01) |
-| EXEC-05 | Phase 7: Execution Lifecycle | Pending |
+| EXEC-05 | Phase 7: Execution Lifecycle | Complete |
 | EXEC-07 | Phase 7: Execution Lifecycle | Complete (07-01) |
-| EXEC-08 | Phase 7: Execution Lifecycle | Pending |
+| EXEC-08 | Phase 7: Execution Lifecycle | Complete |
 | MERG-01 | Phase 8: Merge Pipeline | Pending |
 | MERG-02 | Phase 8: Merge Pipeline | Pending |
 | MERG-03 | Phase 8: Merge Pipeline | Pending |
