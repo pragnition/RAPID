@@ -34,7 +34,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Execution
 
 - [x] **EXEC-01**: Each set executes in a fresh context window (subagent per set) with only relevant contracts and context loaded
-- [ ] **EXEC-02**: Each set goes through its own discuss → plan → execute phase lifecycle independently
+- [x] **EXEC-02**: Each set goes through its own discuss → plan → execute phase lifecycle independently
 - [x] **EXEC-03**: Changes within sets are committed atomically per task (bisectable, blame-friendly history)
 - [ ] **EXEC-04**: Developer can run `/rapid:status` to see progress across all sets and all phases
 - [ ] **EXEC-05**: Developer can pause work on a set and resume later with full state restoration (handoff files)
@@ -124,7 +124,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WORK-03 | Phase 5: Worktree Orchestration | Complete |
 | WORK-04 | Phase 5: Worktree Orchestration | Complete |
 | EXEC-01 | Phase 6: Execution Core | Complete |
-| EXEC-02 | Phase 6: Execution Core | Pending |
+| EXEC-02 | Phase 6: Execution Core | Complete |
 | EXEC-03 | Phase 6: Execution Core | Complete |
 | EXEC-04 | Phase 7: Execution Lifecycle | Pending |
 | EXEC-05 | Phase 7: Execution Lifecycle | Pending |
