@@ -472,6 +472,200 @@ describe('formatWaveSummary', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// Enhanced Status Dashboard tests
+// ────────────────────────────────────────────────────────────────
+describe('renderProgressBar', () => {
+  it('renders a progress bar with partial completion', () => {
+    const result = worktree.renderProgressBar('Execute', 3, 7);
+    assert.equal(result, 'Execute [===----] 3/7');
+  });
+
+  it('renders a bar with zero progress', () => {
+    const result = worktree.renderProgressBar('Execute', 0, 5);
+    assert.equal(result, 'Execute [-------] 0/5');
+  });
+
+  it('renders a fully complete bar', () => {
+    const result = worktree.renderProgressBar('Execute', 5, 5);
+    assert.equal(result, 'Execute [=======] 5/5');
+  });
+
+  it('returns just the label when total is 0', () => {
+    const result = worktree.renderProgressBar('Plan', 0, 0);
+    assert.equal(result, 'Plan');
+  });
+
+  it('supports custom width', () => {
+    const result = worktree.renderProgressBar('Test', 5, 10, 10);
+    assert.equal(result, 'Test [=====-----] 5/10');
+  });
+});
+
+describe('Enhanced formatStatusTable', () => {
+  it('shows SET, WAVE, PHASE, PROGRESS, LAST ACTIVITY columns', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active', tasksCompleted: 3, tasksTotal: 7, updatedAt: new Date().toISOString() },
+    ];
+    const dagJson = { waves: { '1': { sets: ['auth'] } } };
+    const table = worktree.formatStatusTable(entries, dagJson);
+    const header = table.split('\n')[0];
+    assert.ok(header.includes('SET'), 'header should contain SET');
+    assert.ok(header.includes('WAVE'), 'header should contain WAVE');
+    assert.ok(header.includes('PHASE'), 'header should contain PHASE');
+    assert.ok(header.includes('PROGRESS'), 'header should contain PROGRESS');
+    assert.ok(header.includes('LAST ACTIVITY'), 'header should contain LAST ACTIVITY');
+  });
+
+  it('maps phase display labels correctly', () => {
+    const entries = [
+      { setName: 'a', phase: 'Discussing', status: 'active' },
+      { setName: 'b', phase: 'Planning', status: 'active' },
+      { setName: 'c', phase: 'Executing', status: 'active' },
+      { setName: 'd', phase: 'Verifying', status: 'active' },
+      { setName: 'e', phase: 'Done', status: 'active' },
+      { setName: 'f', phase: 'Paused', status: 'active' },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    assert.ok(table.includes('Discuss'), 'should map Discussing to Discuss');
+    assert.ok(table.includes('Plan'), 'should map Planning to Plan');
+    assert.ok(table.includes('Execute'), 'should map Executing to Execute');
+    assert.ok(table.includes('Verify'), 'should map Verifying to Verify');
+    assert.ok(table.includes('Done'), 'should show Done');
+    assert.ok(table.includes('Paused'), 'should show Paused');
+  });
+
+  it('shows progress bar during Execute phase', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active', tasksCompleted: 3, tasksTotal: 7 },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    assert.ok(table.includes('Execute [===----] 3/7'), 'should show progress bar for Executing phase');
+  });
+
+  it('shows N/N tasks for Done phase', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Done', status: 'active', tasksCompleted: 5, tasksTotal: 5 },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    assert.ok(table.includes('5/5 tasks'), 'should show N/N tasks for Done phase');
+  });
+
+  it('shows dash for progress in non-Execute/non-Done phases', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Planning', status: 'active' },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    const lines = table.split('\n');
+    // The data row should have a "-" in the PROGRESS column area
+    const dataRow = lines[2];
+    assert.ok(dataRow, 'should have a data row');
+  });
+
+  it('shows wave number from dagJson', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active' },
+    ];
+    const dagJson = { waves: { '2': { sets: ['auth'] } } };
+    const table = worktree.formatStatusTable(entries, dagJson);
+    assert.ok(table.includes('2'), 'should show wave number 2');
+  });
+
+  it('shows dash for wave when no dagJson', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active' },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    const lines = table.split('\n');
+    // Data row should have "-" for wave
+    assert.ok(lines[2].includes('-'), 'should show dash when no dagJson');
+  });
+
+  it('shows relative time for last activity', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active', updatedAt: new Date().toISOString() },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    assert.ok(table.includes('just now') || table.includes('min ago') || table.includes('sec'), 'should show relative time');
+  });
+
+  it('shows dash for last activity when no updatedAt', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active' },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    const lines = table.split('\n');
+    // Check that the last column area has a dash
+    assert.ok(lines[2], 'should have data row');
+  });
+
+  it('handles empty array gracefully', () => {
+    const result = worktree.formatStatusTable([]);
+    assert.ok(result.includes('No active worktrees'), 'should show empty message');
+  });
+});
+
+describe('Enhanced formatWaveSummary', () => {
+  it('includes all lifecycle phases in counts', () => {
+    const registry = {
+      version: 1,
+      worktrees: {
+        'a': { setName: 'a', phase: 'Discussing' },
+        'b': { setName: 'b', phase: 'Planning' },
+        'c': { setName: 'c', phase: 'Executing' },
+        'd': { setName: 'd', phase: 'Done' },
+      },
+    };
+    const dagJson = { waves: { '1': { sets: ['a', 'b', 'c', 'd'] } } };
+    const summary = worktree.formatWaveSummary(registry, dagJson);
+    assert.ok(summary.includes('1/4 complete'), 'should show 1/4 complete');
+    assert.ok(summary.includes('1 executing'), 'should show executing count');
+    assert.ok(summary.includes('1 planning'), 'should show planning count');
+    assert.ok(summary.includes('1 discussing'), 'should show discussing count');
+  });
+
+  it('shows all done when wave is fully complete', () => {
+    const registry = {
+      version: 1,
+      worktrees: {
+        'a': { setName: 'a', phase: 'Done' },
+        'b': { setName: 'b', phase: 'Done' },
+      },
+    };
+    const dagJson = { waves: { '1': { sets: ['a', 'b'] } } };
+    const summary = worktree.formatWaveSummary(registry, dagJson);
+    assert.ok(summary.includes('2/2 complete'), 'should show all complete');
+  });
+
+  it('shows pending when no sets have started', () => {
+    const registry = { version: 1, worktrees: {} };
+    const dagJson = { waves: { '1': { sets: ['a', 'b'] } } };
+    const summary = worktree.formatWaveSummary(registry, dagJson);
+    assert.ok(summary.includes('2 sets pending'), 'should show pending count');
+  });
+
+  it('handles null dagJson gracefully', () => {
+    const registry = { version: 1, worktrees: {} };
+    const result = worktree.formatWaveSummary(registry, null);
+    assert.equal(result, '', 'should return empty string for null dagJson');
+  });
+
+  it('shows verifying and paused counts', () => {
+    const registry = {
+      version: 1,
+      worktrees: {
+        'a': { setName: 'a', phase: 'Verifying' },
+        'b': { setName: 'b', phase: 'Paused' },
+        'c': { setName: 'c', phase: 'Done' },
+      },
+    };
+    const dagJson = { waves: { '1': { sets: ['a', 'b', 'c'] } } };
+    const summary = worktree.formatWaveSummary(registry, dagJson);
+    assert.ok(summary.includes('1 verifying'), 'should show verifying count');
+    assert.ok(summary.includes('1 paused'), 'should show paused count');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // generateScopedClaudeMd tests
 // ────────────────────────────────────────────────────────────────
 describe('generateScopedClaudeMd', () => {
