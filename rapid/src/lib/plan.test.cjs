@@ -667,3 +667,179 @@ describe('surfaceAssumptions', () => {
     assert.throws(() => surfaceAssumptions(tmpDir, 'nonexistent'), /does not exist|ENOENT/);
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// checkPlanningGateArtifact
+// ────────────────────────────────────────────────────────────────
+describe('checkPlanningGateArtifact', () => {
+  const { checkPlanningGateArtifact } = require('./plan.cjs');
+
+  it('returns open=true when GATES.json is open AND all artifacts exist on disk', () => {
+    // Create set directories with DEFINITION.md and CONTRACT.json
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'set-a');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'DEFINITION.md'), '# Definition');
+    fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), '{}');
+
+    // Write GATES.json as open
+    const gatesData = {
+      version: 1,
+      gates: {
+        'wave-1': {
+          planning: { required: ['set-a'], completed: ['set-a'], status: 'open' },
+          execution: { status: 'ready' },
+        },
+      },
+    };
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), JSON.stringify(gatesData, null, 2));
+
+    const result = checkPlanningGateArtifact(tmpDir, 1);
+    assert.equal(result.open, true, 'gate should be open');
+    assert.deepStrictEqual(result.missingArtifacts, [], 'no artifacts should be missing');
+  });
+
+  it('returns open=false when GATES.json is open BUT DEFINITION.md is missing', () => {
+    // Create set directory WITHOUT DEFINITION.md
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'set-a');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), '{}');
+
+    const gatesData = {
+      version: 1,
+      gates: {
+        'wave-1': {
+          planning: { required: ['set-a'], completed: ['set-a'], status: 'open' },
+          execution: { status: 'ready' },
+        },
+      },
+    };
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), JSON.stringify(gatesData, null, 2));
+
+    const result = checkPlanningGateArtifact(tmpDir, 1);
+    assert.equal(result.open, false, 'gate should be blocked');
+    assert.ok(result.missingArtifacts.some(a => a.set === 'set-a' && a.file === 'DEFINITION.md'), 'should identify missing DEFINITION.md');
+  });
+
+  it('returns open=false when GATES.json is open BUT CONTRACT.json is missing', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'set-a');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'DEFINITION.md'), '# Definition');
+    // No CONTRACT.json
+
+    const gatesData = {
+      version: 1,
+      gates: {
+        'wave-1': {
+          planning: { required: ['set-a'], completed: ['set-a'], status: 'open' },
+          execution: { status: 'ready' },
+        },
+      },
+    };
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), JSON.stringify(gatesData, null, 2));
+
+    const result = checkPlanningGateArtifact(tmpDir, 1);
+    assert.equal(result.open, false, 'gate should be blocked');
+    assert.ok(result.missingArtifacts.some(a => a.set === 'set-a' && a.file === 'CONTRACT.json'), 'should identify missing CONTRACT.json');
+  });
+
+  it('correctly identifies which files are missing for which sets', () => {
+    // set-a: has both files; set-b: missing DEFINITION.md; set-c: missing both
+    const setDirA = path.join(tmpDir, '.planning', 'sets', 'set-a');
+    fs.mkdirSync(setDirA, { recursive: true });
+    fs.writeFileSync(path.join(setDirA, 'DEFINITION.md'), '# A');
+    fs.writeFileSync(path.join(setDirA, 'CONTRACT.json'), '{}');
+
+    const setDirB = path.join(tmpDir, '.planning', 'sets', 'set-b');
+    fs.mkdirSync(setDirB, { recursive: true });
+    fs.writeFileSync(path.join(setDirB, 'CONTRACT.json'), '{}');
+
+    const setDirC = path.join(tmpDir, '.planning', 'sets', 'set-c');
+    fs.mkdirSync(setDirC, { recursive: true });
+
+    const gatesData = {
+      version: 1,
+      gates: {
+        'wave-1': {
+          planning: { required: ['set-a', 'set-b', 'set-c'], completed: ['set-a', 'set-b', 'set-c'], status: 'open' },
+          execution: { status: 'ready' },
+        },
+      },
+    };
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), JSON.stringify(gatesData, null, 2));
+
+    const result = checkPlanningGateArtifact(tmpDir, 1);
+    assert.equal(result.open, false, 'gate should be blocked');
+    assert.equal(result.missingArtifacts.length, 3, 'should have 3 missing artifacts');
+    assert.ok(result.missingArtifacts.some(a => a.set === 'set-b' && a.file === 'DEFINITION.md'));
+    assert.ok(result.missingArtifacts.some(a => a.set === 'set-c' && a.file === 'DEFINITION.md'));
+    assert.ok(result.missingArtifacts.some(a => a.set === 'set-c' && a.file === 'CONTRACT.json'));
+  });
+
+  it('preserves base result fields (required, completed, missing)', () => {
+    const gatesData = {
+      version: 1,
+      gates: {
+        'wave-1': {
+          planning: { required: ['set-x'], completed: [], status: 'blocked' },
+          execution: { status: 'blocked' },
+        },
+      },
+    };
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), JSON.stringify(gatesData, null, 2));
+
+    const result = checkPlanningGateArtifact(tmpDir, 1);
+    assert.deepStrictEqual(result.required, ['set-x']);
+    assert.deepStrictEqual(result.completed, []);
+    assert.deepStrictEqual(result.missing, ['set-x']);
+    assert.ok(Array.isArray(result.missingArtifacts));
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// logGateOverride
+// ────────────────────────────────────────────────────────────────
+describe('logGateOverride', () => {
+  const { logGateOverride } = require('./plan.cjs');
+
+  it('appends override entry to GATES.json overrides array', async () => {
+    const gatesData = {
+      version: 1,
+      gates: {
+        'wave-1': {
+          planning: { required: ['a'], completed: ['a'], status: 'open' },
+          execution: { status: 'ready' },
+        },
+      },
+    };
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), JSON.stringify(gatesData, null, 2));
+
+    await logGateOverride(tmpDir, 1, ['missing-set']);
+
+    const updated = JSON.parse(fs.readFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), 'utf-8'));
+    assert.ok(Array.isArray(updated.overrides), 'should have overrides array');
+    assert.equal(updated.overrides.length, 1, 'should have one override entry');
+    assert.equal(updated.overrides[0].wave, 1);
+    assert.deepStrictEqual(updated.overrides[0].missingSets, ['missing-set']);
+    assert.ok(updated.overrides[0].timestamp, 'should have timestamp');
+  });
+
+  it('appends to existing overrides array', async () => {
+    const gatesData = {
+      version: 1,
+      gates: {
+        'wave-1': {
+          planning: { required: ['a'], completed: ['a'], status: 'open' },
+          execution: { status: 'ready' },
+        },
+      },
+      overrides: [{ wave: 1, timestamp: '2026-01-01T00:00:00Z', missingSets: ['old'] }],
+    };
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), JSON.stringify(gatesData, null, 2));
+
+    await logGateOverride(tmpDir, 2, ['new-set']);
+
+    const updated = JSON.parse(fs.readFileSync(path.join(tmpDir, '.planning', 'sets', 'GATES.json'), 'utf-8'));
+    assert.equal(updated.overrides.length, 2, 'should now have two override entries');
+    assert.equal(updated.overrides[1].wave, 2);
+  });
+});
