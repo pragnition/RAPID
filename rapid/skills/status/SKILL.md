@@ -3,52 +3,89 @@ description: Show all active worktrees, their set assignments, lifecycle phase, 
 allowed-tools: Bash, Read
 ---
 
-# /rapid:status -- Worktree Status Dashboard
+# /rapid:status -- Unified Lifecycle Dashboard
 
-You are the RAPID status viewer. This skill shows the current state of all RAPID worktrees -- which sets are active, what lifecycle phase they are in, and wave-level progress. This skill is **read-only** and never modifies any state. Follow these steps IN ORDER.
+You are the RAPID status viewer. This skill shows a unified dashboard of all RAPID sets across their 5-phase lifecycle (Discuss, Plan, Execute, Verify, Merge), wave-level progress, gate status, and actionable next steps. This skill is **read-only** and never modifies any state. Follow these steps IN ORDER.
 
-## Step 1: Run Status Command
+## Step 1: Load Data
 
-Run the worktree status command to get the current state:
+Run two CLI commands to gather dashboard data:
 
 ```bash
 node ~/RAPID/rapid/src/bin/rapid-tools.cjs worktree status
 ```
 
-This outputs a human-readable status dashboard with two sections:
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute wave-status
+```
 
-1. **Wave Summary** (appears above the table when DAG data is available):
-   - Shows per-wave completion progress
-   - Format: `Wave N: X/Y done, Z executing`
+The first command outputs the formatted dashboard. The second provides per-wave execution progress (JSON on stdout, human-readable on stderr).
 
-2. **Worktree Table** with these columns:
-   - **SET**: The set name (e.g., `auth-core`)
-   - **BRANCH**: The git branch (`rapid/<set-name>`)
-   - **PHASE**: Lifecycle phase (`Created` / `Executing` / `Done` / `Error`)
-   - **STATUS**: Whether the worktree is `active` or `orphaned`
-   - **PATH**: Relative worktree path (`.rapid-worktrees/<set-name>`)
+## Step 2: Display Unified Dashboard
 
-## Step 2: Display Output
+Present the output as a combined dashboard with two sections:
 
-Present the formatted output directly to the user. The table is already formatted with aligned columns.
+**Wave Summary** (header lines at top):
+- Shows per-wave completion: `Wave N: X/Y complete | Z executing | W planning | ...`
+- Only non-zero counts are displayed
+- Fully complete waves show: `Wave N: X/X complete`
+- Waves with no activity show: `Wave N: Y sets pending`
+
+**Status Table** with these columns:
+- **SET**: The set name (e.g., `auth-core`)
+- **WAVE**: Which wave this set belongs to (from DAG)
+- **PHASE**: Lifecycle phase with short display labels:
+  - `Discuss` (Discussing), `Plan` (Planning), `Execute` (Executing), `Verify` (Verifying), `Done`, `Error`, `Paused`
+- **PROGRESS**: ASCII progress bar during Execute phase (`Execute [===----] 3/7`), task count for Done (`5/5 tasks`), `-` for other phases
+- **LAST ACTIVITY**: Relative timestamp (`2 min ago`, `1 hr ago`, `3 days ago`) or `-` if no activity recorded
 
 **If no worktrees exist** (the output shows "No active worktrees"):
 Inform the user:
 
 > No worktrees are currently active. Worktrees are created during set execution. If sets have been defined (via `/rapid:plan`), worktrees will be created when execution begins.
 
-## Step 3: JSON Output (Optional)
+## Step 3: Gate Status
 
-If the user needs machine-readable output (for piping to other tools or programmatic use), mention that JSON output is available:
+Check the planning gate for the next pending wave:
+
+1. From the wave-status output, find the first wave that is NOT fully complete (not all sets at `Done`)
+2. Run the gate check for that wave:
+
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs plan check-gate <nextWave>
+```
+
+3. Report gate status:
+   - **If gate is open**: "Gate for Wave N: Ready to execute"
+   - **If gate is blocked with missing artifacts**: Show which sets are missing DEFINITION.md or CONTRACT.json on disk
+   - **If gate is blocked with unplanned sets**: Show which sets still need planning
+
+The check-gate command now verifies actual artifacts on disk (DEFINITION.md and CONTRACT.json), not just registry status.
+
+## Step 4: Summary Guidance
+
+Based on current state, suggest the next action:
+
+- **No sets exist**: "No sets found. Run `/rapid:plan` to decompose your project into parallel work sets."
+- **Sets exist but no worktrees**: "Sets are defined but not yet executing. Run `/rapid:execute` to begin."
+- **All sets Done**: "All sets complete. Ready for merge. Run `/rapid:merge` to begin integration."
+- **Sets are Paused**: List paused sets and suggest: "Resume paused sets with `/rapid:execute resume <set>`."
+- **Gate is blocked**: "Wave N gate blocked. Run `/rapid:plan` to complete planning for: {missing sets}."
+- **Sets are Executing**: "Execution in progress. {N} sets active across {W} waves."
+
+## Step 5: JSON Output (Optional)
+
+If the user needs machine-readable output, mention the `--json` flag:
 
 ```bash
 node ~/RAPID/rapid/src/bin/rapid-tools.cjs worktree status --json
 ```
 
-This returns a JSON object with `worktrees` (array of worktree entries) and `waves` (wave data from DAG if available).
+Returns a JSON object with `worktrees` (array of worktree entries) and `waves` (wave data from DAG if available).
 
 ## Important Notes
 
 - **Read-only skill:** This skill only reads worktree state. It never creates, modifies, or removes worktrees.
 - **Reconciliation:** The status command automatically reconciles the registry with actual git state before displaying. Orphaned entries (registry entries with no matching git worktree) are marked accordingly.
 - **Wave progress:** Wave summary requires DAG.json to be present (created during `/rapid:plan` decomposition). If no DAG exists, only the worktree table is shown.
+- **Artifact verification:** Gate checks now verify that DEFINITION.md and CONTRACT.json physically exist on disk for each required set, not just that GATES.json says "open".
