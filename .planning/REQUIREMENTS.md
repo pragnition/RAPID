@@ -10,7 +10,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Initialization
 
 - [x] **INIT-01**: Developer can run `/rapid:init` to scaffold `.planning/` directory with all required state files
-- [ ] **INIT-02**: Init detects existing codebase and offers brownfield mapping before planning
+- [x] **INIT-02**: Init detects existing codebase and offers brownfield mapping before planning
 - [ ] **INIT-03**: Init auto-generates CLAUDE.md with full project context (code style, architecture patterns, API conventions, project knowledge)
 - [ ] **INIT-04**: Init auto-generates style guide for cross-worktree consistency (naming conventions, file structure, error handling patterns)
 - [x] **INIT-05**: Init configures git repo and validates prerequisites (git 2.30+, jq 1.6+, Node.js 18+)
@@ -110,7 +110,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INIT-01 | Phase 2: Plugin Shell and Initialization | Complete |
 | INIT-05 | Phase 2: Plugin Shell and Initialization | Complete |
 | STAT-04 | Phase 2: Plugin Shell and Initialization | Complete |
-| INIT-02 | Phase 3: Context Generation | Pending |
+| INIT-02 | Phase 3: Context Generation | Complete |
 | INIT-03 | Phase 3: Context Generation | Pending |
 | INIT-04 | Phase 3: Context Generation | Pending |
 | PLAN-01 | Phase 4: Planning Engine and Contracts | Pending |
