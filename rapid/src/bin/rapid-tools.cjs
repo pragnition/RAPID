@@ -31,7 +31,7 @@ Commands:
   plan create-set             Create a set from JSON on stdin
   plan decompose              Decompose sets from JSON array on stdin
   plan write-dag              Write DAG.json from JSON on stdin
-  plan check-gate <wave>      Check planning gate status for a wave
+  plan check-gate <wave>      Check planning gate status for a wave (verifies artifacts on disk)
   plan update-gate <set>      Mark a set as planned (update gate)
   plan list-sets              List all defined sets
   plan load-set <name>        Load a set's definition and contract
@@ -537,8 +537,17 @@ function handlePlan(cwd, subcommand, args) {
         error('Usage: rapid-tools plan check-gate <wave-number>');
         process.exit(1);
       }
-      const result = plan.checkPlanningGate(cwd, wave);
+      const result = plan.checkPlanningGateArtifact(cwd, wave);
       process.stdout.write(JSON.stringify(result) + '\n');
+      // Enhanced stderr output for actionable guidance
+      if (result.missingArtifacts && result.missingArtifacts.length > 0) {
+        const blockers = result.missingArtifacts.map(a => `${a.set} (missing ${a.file})`).join(', ');
+        const readySets = result.required.filter(s => !result.missingArtifacts.some(a => a.set === s));
+        const readyText = readySets.length > 0 ? ` Ready: ${readySets.join(', ')}.` : '';
+        process.stderr.write(`Gate blocked: ${blockers}.${readyText} Run /rapid:plan to continue.\n`);
+      } else if (!result.open && result.missing.length > 0) {
+        process.stderr.write(`Gate blocked: ${result.missing.join(', ')} not yet planned. Run /rapid:plan to continue.\n`);
+      }
       break;
     }
 
@@ -907,7 +916,7 @@ async function handleExecute(cwd, subcommand, args) {
         error('Usage: rapid-tools execute update-phase <set-name> <phase>');
         process.exit(1);
       }
-      const validPhases = ['Discussing', 'Planning', 'Executing', 'Verifying', 'Done', 'Error'];
+      const validPhases = ['Discussing', 'Planning', 'Executing', 'Verifying', 'Done', 'Error', 'Paused'];
       if (!validPhases.includes(phase)) {
         error(`Invalid phase: "${phase}". Must be one of: ${validPhases.join(', ')}`);
         process.exit(1);
@@ -915,6 +924,7 @@ async function handleExecute(cwd, subcommand, args) {
       await wt.registryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
           reg.worktrees[setName].phase = phase;
+          reg.worktrees[setName].updatedAt = new Date().toISOString();
         } else {
           // Create entry if not present (set may not have a worktree yet)
           reg.worktrees[setName] = {
@@ -924,6 +934,7 @@ async function handleExecute(cwd, subcommand, args) {
             phase,
             status: 'active',
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           };
         }
         return reg;

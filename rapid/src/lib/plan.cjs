@@ -286,6 +286,64 @@ function checkPlanningGate(cwd, wave) {
 }
 
 /**
+ * Check the planning gate status for a given wave, with artifact verification on disk.
+ * Extends checkPlanningGate by also verifying that DEFINITION.md and CONTRACT.json
+ * exist on disk for each required set in the wave.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {number} wave - Wave number to check
+ * @returns {{ open: boolean, required: string[], completed: string[], missing: string[], missingArtifacts: Array<{set: string, file: string}> }}
+ */
+function checkPlanningGateArtifact(cwd, wave) {
+  const baseResult = checkPlanningGate(cwd, wave);
+  const missingArtifacts = [];
+
+  for (const setName of baseResult.required) {
+    const setDir = path.join(cwd, '.planning', 'sets', setName);
+    if (!fs.existsSync(path.join(setDir, 'DEFINITION.md'))) {
+      missingArtifacts.push({ set: setName, file: 'DEFINITION.md' });
+    }
+    if (!fs.existsSync(path.join(setDir, 'CONTRACT.json'))) {
+      missingArtifacts.push({ set: setName, file: 'CONTRACT.json' });
+    }
+  }
+
+  return {
+    ...baseResult,
+    open: baseResult.open && missingArtifacts.length === 0,
+    missingArtifacts,
+  };
+}
+
+/**
+ * Log a gate override event in GATES.json for audit trail.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {number} wave - Wave number that was overridden
+ * @param {string[]} missingSets - Sets whose artifacts were missing but override was granted
+ * @returns {Promise<void>}
+ */
+async function logGateOverride(cwd, wave, missingSets) {
+  const { acquireLock } = require('./lock.cjs');
+  const release = await acquireLock(cwd, 'gates-json');
+  try {
+    const gatesPath = path.join(cwd, '.planning', 'sets', 'GATES.json');
+    const gatesObj = JSON.parse(fs.readFileSync(gatesPath, 'utf-8'));
+    if (!Array.isArray(gatesObj.overrides)) {
+      gatesObj.overrides = [];
+    }
+    gatesObj.overrides.push({
+      wave,
+      timestamp: new Date().toISOString(),
+      missingSets,
+    });
+    fs.writeFileSync(gatesPath, JSON.stringify(gatesObj, null, 2), 'utf-8');
+  } finally {
+    await release();
+  }
+}
+
+/**
  * Mark a set as planned in GATES.json.
  * Transitions the wave's planning status to "open" when all sets are complete.
  *
@@ -538,6 +596,8 @@ module.exports = {
   writeManifest,
   writeGates,
   checkPlanningGate,
+  checkPlanningGateArtifact,
+  logGateOverride,
   updateGate,
   surfaceAssumptions,
 };
