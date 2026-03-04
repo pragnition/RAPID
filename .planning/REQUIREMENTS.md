@@ -17,12 +17,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Set Planning
 
-- [ ] **PLAN-01**: Developer can run `/rapid:plan` to decompose work into parallelizable sets with explicit boundaries
+- [x] **PLAN-01**: Developer can run `/rapid:plan` to decompose work into parallelizable sets with explicit boundaries
 - [x] **PLAN-02**: Each set has a machine-verifiable interface contract defining API surfaces, data shapes, and behavioral expectations between sets
 - [x] **PLAN-03**: Planning produces a set dependency graph (DAG) showing which sets can run in parallel and which have ordering constraints
 - [x] **PLAN-04**: Planning assigns shared-file ownership (package.json, configs, shared types) to specific sets to prevent merge conflicts
 - [ ] **PLAN-05**: Developer can run `/rapid:assumptions` to surface Claude's mental model about a set's approach before planning begins
-- [ ] **PLAN-06**: Planning respects loose sync gates — shared planning gate must complete before any set begins execution
+- [x] **PLAN-06**: Planning respects loose sync gates — shared planning gate must complete before any set begins execution
 
 ### Worktree Orchestration
 
@@ -113,12 +113,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INIT-02 | Phase 3: Context Generation | Complete |
 | INIT-03 | Phase 3: Context Generation | Complete |
 | INIT-04 | Phase 3: Context Generation | Complete |
-| PLAN-01 | Phase 4: Planning Engine and Contracts | Pending |
+| PLAN-01 | Phase 4: Planning Engine and Contracts | Complete |
 | PLAN-02 | Phase 4: Planning Engine and Contracts | Complete |
 | PLAN-03 | Phase 4: Planning Engine and Contracts | Complete |
 | PLAN-04 | Phase 4: Planning Engine and Contracts | Complete |
 | PLAN-05 | Phase 4: Planning Engine and Contracts | Pending |
-| PLAN-06 | Phase 4: Planning Engine and Contracts | Pending |
+| PLAN-06 | Phase 4: Planning Engine and Contracts | Complete |
 | WORK-01 | Phase 5: Worktree Orchestration | Pending |
 | WORK-02 | Phase 5: Worktree Orchestration | Pending |
 | WORK-03 | Phase 5: Worktree Orchestration | Pending |
