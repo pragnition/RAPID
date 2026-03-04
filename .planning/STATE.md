@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-last_updated: "2026-03-04T09:50:46.000Z"
+last_updated: "2026-03-04T09:58:30.000Z"
 progress:
   total_phases: 9
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-03)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 5: Worktree Orchestration -- In Progress. Plan 01 complete (worktree lifecycle management), Plan 02 pending.
+**Current focus:** Phase 5: Worktree Orchestration -- Complete. Both plans delivered (lifecycle management + status/skills).
 
 ## Current Position
 
-Phase: 5 of 9 (Worktree Orchestration)
-Plan: 1 of 2 in current phase
-Status: Plan 05-01 Complete
-Last activity: 2026-03-04 - Completed 05-01-PLAN.md (Worktree Lifecycle Management)
+Phase: 5 of 9 (Worktree Orchestration -- Complete)
+Plan: 2 of 2 in current phase
+Status: Phase 05 Complete
+Last activity: 2026-03-04 - Completed 05-02-PLAN.md (Status Display, Scoped CLAUDE.md, Skills)
 
-Progress: [█████████░] 72%
+Progress: [██████████] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 4 min
-- Total execution time: 0.89 hours
+- Total execution time: 0.97 hours
 
 **By Phase:**
 
@@ -44,10 +44,10 @@ Progress: [█████████░] 72%
 | 02 | 3 | 11 min | 4 min |
 | 03 | 3 | 12 min | 4 min |
 | 04 | 3 | 13 min | 4 min |
-| 05 | 1/2 | 4 min | 4 min |
+| 05 | 2/2 | 9 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (2 min), 04-01 (5 min), 04-02 (5 min), 04-03 (3 min), 05-01 (4 min)
+- Last 5 plans: 04-01 (5 min), 04-02 (5 min), 04-03 (3 min), 05-01 (4 min), 05-02 (5 min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -111,6 +111,12 @@ Recent decisions affecting current work:
 - [05-01]: Registry operations use acquireLock from lock.cjs for cross-process safety
 - [05-01]: reconcileRegistry marks orphaned entries and auto-discovers unregistered rapid/* worktrees
 - [05-01]: Dirty worktree removal returns status object with reason field rather than throwing
+- [05-02]: formatStatusTable uses docker-ps-style ASCII table with auto-calculated column widths
+- [05-02]: formatWaveSummary aggregates Done/Executing/Error counts per wave from registry
+- [05-02]: generateScopedClaudeMd builds deny list by filtering OWNERSHIP.json for files NOT owned by target set
+- [05-02]: Deny list grouped by owning set for clarity in scoped CLAUDE.md
+- [05-02]: Cleanup skill preserves branches by default, only removes worktree directory
+- [05-02]: Skills follow established SKILL.md pattern with frontmatter and step-by-step bash commands
 
 ### Pending Todos
 
@@ -130,5 +136,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed 05-01-PLAN.md (Worktree Lifecycle Management)
+Stopped at: Completed 05-02-PLAN.md (Status Display, Scoped CLAUDE.md, Skills) -- Phase 05 complete
 Resume file: None
