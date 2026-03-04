@@ -353,3 +353,232 @@ describe('Integration: createWorktree + listWorktrees round-trip', () => {
     assert.equal(entry.path, created.path);
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// formatStatusTable tests
+// ────────────────────────────────────────────────────────────────
+describe('formatStatusTable', () => {
+  it('renders ASCII table with correct headers and rows', () => {
+    const entries = [
+      { setName: 'auth-core', branch: 'rapid/auth-core', phase: 'Executing', status: 'active', path: '.rapid-worktrees/auth-core' },
+      { setName: 'ui-shell', branch: 'rapid/ui-shell', phase: 'Created', status: 'active', path: '.rapid-worktrees/ui-shell' },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    const lines = table.split('\n');
+
+    // Should have header, separator, and 2 data rows
+    assert.equal(lines.length, 4, 'should have header + separator + 2 rows');
+
+    // Header should contain all column names
+    assert.ok(lines[0].includes('SET'), 'header should contain SET');
+    assert.ok(lines[0].includes('BRANCH'), 'header should contain BRANCH');
+    assert.ok(lines[0].includes('PHASE'), 'header should contain PHASE');
+    assert.ok(lines[0].includes('STATUS'), 'header should contain STATUS');
+    assert.ok(lines[0].includes('PATH'), 'header should contain PATH');
+
+    // Separator should be dashes
+    assert.ok(lines[1].includes('---'), 'separator should contain dashes');
+
+    // Data rows should contain actual values
+    assert.ok(lines[2].includes('auth-core'), 'first row should contain auth-core');
+    assert.ok(lines[2].includes('Executing'), 'first row should contain Executing');
+    assert.ok(lines[3].includes('ui-shell'), 'second row should contain ui-shell');
+  });
+
+  it('returns "No active worktrees" message for empty array', () => {
+    const result = worktree.formatStatusTable([]);
+    assert.ok(result.includes('No active worktrees'), 'should contain no active worktrees message');
+  });
+
+  it('auto-calculates column widths based on content', () => {
+    const entries = [
+      { setName: 'very-long-set-name-here', branch: 'rapid/very-long-set-name-here', phase: 'Done', status: 'active', path: '.rapid-worktrees/very-long-set-name-here' },
+    ];
+    const table = worktree.formatStatusTable(entries);
+    const lines = table.split('\n');
+
+    // The SET column should be wide enough for 'very-long-set-name-here'
+    // Header SET is 3 chars but data is 23 chars, so column must be at least 23 wide
+    assert.ok(lines[2].includes('very-long-set-name-here'), 'data row should contain long name');
+
+    // Separator dashes should match widths
+    const headerParts = lines[0].split(/  +/);
+    const sepParts = lines[1].split(/  +/);
+    assert.equal(headerParts.length, sepParts.length, 'separator should have same number of columns');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// formatWaveSummary tests
+// ────────────────────────────────────────────────────────────────
+describe('formatWaveSummary', () => {
+  it('produces per-wave summary lines with completion info', () => {
+    const registry = {
+      version: 1,
+      worktrees: {
+        'auth-core': { setName: 'auth-core', phase: 'Done', status: 'active' },
+        'api-routes': { setName: 'api-routes', phase: 'Executing', status: 'active' },
+        'ui-shell': { setName: 'ui-shell', phase: 'Created', status: 'active' },
+      },
+    };
+    const dagJson = {
+      waves: {
+        '1': { sets: ['auth-core', 'api-routes'] },
+        '2': { sets: ['ui-shell'] },
+      },
+    };
+
+    const summary = worktree.formatWaveSummary(registry, dagJson);
+    const lines = summary.split('\n');
+
+    assert.equal(lines.length, 2, 'should have 2 wave lines');
+    assert.ok(lines[0].includes('Wave 1'), 'first line should reference Wave 1');
+    assert.ok(lines[0].includes('1/2 done'), 'should show 1/2 done');
+    assert.ok(lines[0].includes('1 executing'), 'should show 1 executing');
+    assert.ok(lines[1].includes('Wave 2'), 'second line should reference Wave 2');
+    assert.ok(lines[1].includes('pending'), 'Wave 2 should show pending');
+  });
+
+  it('returns empty string when dagJson is null', () => {
+    const registry = { version: 1, worktrees: {} };
+    const result = worktree.formatWaveSummary(registry, null);
+    assert.equal(result, '');
+  });
+
+  it('returns empty string when dagJson has no waves', () => {
+    const registry = { version: 1, worktrees: {} };
+    const result = worktree.formatWaveSummary(registry, { nodes: [] });
+    assert.equal(result, '');
+  });
+
+  it('shows error count when sets have Error phase', () => {
+    const registry = {
+      version: 1,
+      worktrees: {
+        'fail-set': { setName: 'fail-set', phase: 'Error', status: 'active' },
+        'ok-set': { setName: 'ok-set', phase: 'Done', status: 'active' },
+      },
+    };
+    const dagJson = {
+      waves: { '1': { sets: ['fail-set', 'ok-set'] } },
+    };
+
+    const summary = worktree.formatWaveSummary(registry, dagJson);
+    assert.ok(summary.includes('1 error'), 'should show error count');
+    assert.ok(summary.includes('1/2 done'), 'should show done count');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// generateScopedClaudeMd tests
+// ────────────────────────────────────────────────────────────────
+describe('generateScopedClaudeMd', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-scoped-md-'));
+    // Create minimal .planning structure
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'my-set'), { recursive: true });
+    // Write DEFINITION.md
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'my-set', 'DEFINITION.md'),
+      '# Set: my-set\n\n## Scope\nMy set scope\n\n## File Ownership\nFiles:\n- src/my/**\n',
+      'utf-8'
+    );
+    // Write CONTRACT.json
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'my-set', 'CONTRACT.json'),
+      JSON.stringify({
+        exports: { functions: [{ name: 'doThing', file: 'src/my/index.cjs', params: [], returns: 'void' }], types: [] },
+      }, null, 2),
+      'utf-8'
+    );
+    // Write OWNERSHIP.json
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'OWNERSHIP.json'),
+      JSON.stringify({
+        version: 1,
+        generated: '2026-03-04',
+        ownership: {
+          'src/my/index.cjs': 'my-set',
+          'src/my/helper.cjs': 'my-set',
+          'src/other/api.cjs': 'other-set',
+          'src/shared/types.cjs': 'shared-set',
+        },
+      }, null, 2),
+      'utf-8'
+    );
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('produces Markdown with set name header', () => {
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(md.includes('# Set: my-set'), 'should contain set name header');
+  });
+
+  it('includes scope section', () => {
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(md.includes('## Your Scope'), 'should contain Your Scope section');
+    assert.ok(md.includes('my-set'), 'should reference set name in scope');
+  });
+
+  it('includes contract JSON block', () => {
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(md.includes('## Interface Contract'), 'should contain Interface Contract section');
+    assert.ok(md.includes('doThing'), 'should contain exported function name');
+  });
+
+  it('includes owned files list', () => {
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(md.includes('## File Ownership'), 'should contain File Ownership section');
+    assert.ok(md.includes('src/my/index.cjs'), 'should list owned file');
+    assert.ok(md.includes('src/my/helper.cjs'), 'should list second owned file');
+  });
+
+  it('includes deny list from OWNERSHIP.json for files NOT owned by set', () => {
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(md.includes('DO NOT TOUCH'), 'should contain DO NOT TOUCH section');
+    assert.ok(md.includes('src/other/api.cjs'), 'should list file owned by other-set');
+    assert.ok(md.includes('src/shared/types.cjs'), 'should list file owned by shared-set');
+    // Should NOT list own files in deny list
+    assert.ok(!md.includes('DO NOT TOUCH') || !md.split('DO NOT TOUCH')[1].includes('src/my/index.cjs'),
+      'deny list should not include own files');
+  });
+
+  it('groups deny list by owning set', () => {
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(md.includes('other-set'), 'should reference other-set as owner');
+    assert.ok(md.includes('shared-set'), 'should reference shared-set as owner');
+  });
+
+  it('gracefully handles missing OWNERSHIP.json', () => {
+    // Remove OWNERSHIP.json
+    fs.unlinkSync(path.join(tmpDir, '.planning', 'sets', 'OWNERSHIP.json'));
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    // Should still produce output (reduced content)
+    assert.ok(md.includes('# Set: my-set'), 'should still have header');
+    assert.ok(md.includes('## Interface Contract'), 'should still have contract section');
+  });
+
+  it('includes style guide when STYLE_GUIDE.md exists', () => {
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'context', 'STYLE_GUIDE.md'),
+      '# Style Guide\nUse strict mode everywhere.\n',
+      'utf-8'
+    );
+
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(md.includes('## Style Guide'), 'should contain Style Guide section');
+    assert.ok(md.includes('Use strict mode everywhere'), 'should contain style guide content');
+  });
+
+  it('skips style guide section when STYLE_GUIDE.md does not exist', () => {
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    // Style Guide section should not appear
+    assert.ok(!md.includes('## Style Guide'), 'should not contain Style Guide section when file missing');
+  });
+});
