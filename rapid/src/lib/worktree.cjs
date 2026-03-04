@@ -266,23 +266,114 @@ async function reconcileRegistry(cwd) {
 // ────────────────────────────────────────────────────────────────
 
 /**
- * Format an ASCII status table for worktree entries.
+ * Display label map for internal phase values.
+ * @type {Object<string, string>}
+ */
+const PHASE_DISPLAY = {
+  Discussing: 'Discuss',
+  Planning: 'Plan',
+  Executing: 'Execute',
+  Verifying: 'Verify',
+  Done: 'Done',
+  Error: 'Error',
+  Paused: 'Paused',
+  Created: 'Created',
+  Pending: 'Pending',
+};
+
+/**
+ * Render an ASCII progress bar.
  *
- * @param {Array<{ setName: string, branch: string, phase: string, status: string, path: string }>} worktrees
+ * @param {string} label - Phase label (e.g., 'Execute')
+ * @param {number} completed - Number of completed items
+ * @param {number} total - Total number of items
+ * @param {number} [width=7] - Width of the bar in characters
+ * @returns {string} Formatted progress bar or just the label if total is 0
+ */
+function renderProgressBar(label, completed, total, width = 7) {
+  if (total === 0) return label;
+  const filled = Math.round((completed / total) * width);
+  const empty = width - filled;
+  const bar = '='.repeat(filled) + '-'.repeat(empty);
+  return `${label} [${bar}] ${completed}/${total}`;
+}
+
+/**
+ * Calculate a relative time string from an ISO date string.
+ *
+ * @param {string|null|undefined} isoString - ISO 8601 timestamp
+ * @returns {string} Human-readable relative time or "-" if falsy
+ */
+function relativeTime(isoString) {
+  if (!isoString) return '-';
+  const diff = Date.now() - Date.parse(isoString);
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} days ago`;
+}
+
+/**
+ * Look up which wave a set belongs to from DAG data.
+ *
+ * @param {string} setName - The set to look up
+ * @param {Object|null} dagJson - DAG object with waves property
+ * @returns {string} Wave number or "-" if unknown
+ */
+function lookupWave(setName, dagJson) {
+  if (!dagJson || !dagJson.waves) return '-';
+  for (const [waveNum, waveData] of Object.entries(dagJson.waves)) {
+    if (waveData.sets && waveData.sets.includes(setName)) {
+      return waveNum;
+    }
+  }
+  return '-';
+}
+
+/**
+ * Format an ASCII status table for worktree entries.
+ * Enhanced with 5-column layout: SET, WAVE, PHASE, PROGRESS, LAST ACTIVITY
+ *
+ * @param {Array<Object>} worktrees - Array of worktree registry entries
+ * @param {Object|null} [dagJson=null] - Optional DAG object for wave lookup
  * @returns {string} Formatted ASCII table or empty-state message
  */
-function formatStatusTable(worktrees) {
+function formatStatusTable(worktrees, dagJson = null) {
   if (!worktrees || worktrees.length === 0) {
     return 'No active worktrees. Run worktree create to get started.';
   }
 
-  const headers = ['SET', 'BRANCH', 'PHASE', 'STATUS', 'PATH'];
-  const keys = ['setName', 'branch', 'phase', 'status', 'path'];
+  const headers = ['SET', 'WAVE', 'PHASE', 'PROGRESS', 'LAST ACTIVITY'];
 
-  // Calculate column widths: max of header length and all row value lengths
+  // Build row data
+  const rows = worktrees.map(entry => {
+    const phase = entry.phase || 'Pending';
+    const displayPhase = PHASE_DISPLAY[phase] || phase;
+
+    // Wave lookup
+    const wave = lookupWave(entry.setName, dagJson);
+
+    // Progress column
+    let progress = '-';
+    if (phase === 'Executing' && typeof entry.tasksCompleted === 'number' && typeof entry.tasksTotal === 'number') {
+      progress = renderProgressBar('Execute', entry.tasksCompleted, entry.tasksTotal);
+    } else if (phase === 'Done' && typeof entry.tasksTotal === 'number') {
+      progress = `${entry.tasksTotal}/${entry.tasksTotal} tasks`;
+    }
+
+    // Last activity
+    const lastActivity = relativeTime(entry.updatedAt);
+
+    return [entry.setName, wave, displayPhase, progress, lastActivity];
+  });
+
+  // Calculate column widths
   const widths = headers.map((h, i) => {
-    const key = keys[i];
-    const maxDataLen = Math.max(...worktrees.map(w => String(w[key] || '').length));
+    const maxDataLen = Math.max(...rows.map(r => String(r[i] || '').length));
     return Math.max(h.length, maxDataLen);
   });
 
@@ -291,8 +382,8 @@ function formatStatusTable(worktrees) {
 
   const headerLine = join(headers.map((h, i) => pad(h, widths[i])));
   const separator = join(widths.map(w => '-'.repeat(w)));
-  const rowLines = worktrees.map(entry =>
-    join(keys.map((k, i) => pad(entry[k], widths[i])))
+  const rowLines = rows.map(row =>
+    join(row.map((cell, i) => pad(cell, widths[i])))
   );
 
   return [headerLine, separator, ...rowLines].join('\n');
@@ -300,6 +391,7 @@ function formatStatusTable(worktrees) {
 
 /**
  * Format a per-wave progress summary from registry and DAG data.
+ * Enhanced to include all lifecycle phases: discussing, planning, executing, verifying, paused, error, done.
  *
  * @param {{ version: number, worktrees: Object }} registry
  * @param {Object|null} dagJson - DAG object with waves property
@@ -320,23 +412,42 @@ function formatWaveSummary(registry, dagJson) {
     let done = 0;
     let executing = 0;
     let errorCount = 0;
+    let discussing = 0;
+    let planning = 0;
+    let verifying = 0;
+    let paused = 0;
 
     for (const setName of waveSets) {
       const entry = registry.worktrees[setName];
       if (entry) {
-        if (entry.phase === 'Done') done++;
-        else if (entry.phase === 'Executing') executing++;
-        else if (entry.phase === 'Error') errorCount++;
+        switch (entry.phase) {
+          case 'Done': done++; break;
+          case 'Executing': executing++; break;
+          case 'Error': errorCount++; break;
+          case 'Discussing': discussing++; break;
+          case 'Planning': planning++; break;
+          case 'Verifying': verifying++; break;
+          case 'Paused': paused++; break;
+        }
       }
     }
 
-    if (done === 0 && executing === 0 && errorCount === 0) {
+    const hasActivity = done > 0 || executing > 0 || errorCount > 0 ||
+      discussing > 0 || planning > 0 || verifying > 0 || paused > 0;
+
+    if (!hasActivity) {
       lines.push(`Wave ${waveNum}: ${total} sets pending`);
+    } else if (done === total) {
+      lines.push(`Wave ${waveNum}: ${done}/${total} complete`);
     } else {
-      let line = `Wave ${waveNum}: ${done}/${total} done`;
-      if (executing > 0) line += `, ${executing} executing`;
-      if (errorCount > 0) line += `, ${errorCount} error`;
-      lines.push(line);
+      const parts = [`Wave ${waveNum}: ${done}/${total} complete`];
+      if (executing > 0) parts.push(`${executing} executing`);
+      if (verifying > 0) parts.push(`${verifying} verifying`);
+      if (planning > 0) parts.push(`${planning} planning`);
+      if (discussing > 0) parts.push(`${discussing} discussing`);
+      if (paused > 0) parts.push(`${paused} paused`);
+      if (errorCount > 0) parts.push(`${errorCount} error`);
+      lines.push(parts.join(' | '));
     }
   }
 
@@ -464,5 +575,6 @@ module.exports = {
   ensureWorktreeDir,
   formatStatusTable,
   formatWaveSummary,
+  renderProgressBar,
   generateScopedClaudeMd,
 };

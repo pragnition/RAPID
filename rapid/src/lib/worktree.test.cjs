@@ -355,13 +355,13 @@ describe('Integration: createWorktree + listWorktrees round-trip', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
-// formatStatusTable tests
+// formatStatusTable tests (legacy -- updated for enhanced columns)
 // ────────────────────────────────────────────────────────────────
 describe('formatStatusTable', () => {
   it('renders ASCII table with correct headers and rows', () => {
     const entries = [
-      { setName: 'auth-core', branch: 'rapid/auth-core', phase: 'Executing', status: 'active', path: '.rapid-worktrees/auth-core' },
-      { setName: 'ui-shell', branch: 'rapid/ui-shell', phase: 'Created', status: 'active', path: '.rapid-worktrees/ui-shell' },
+      { setName: 'auth-core', phase: 'Executing', status: 'active' },
+      { setName: 'ui-shell', phase: 'Created', status: 'active' },
     ];
     const table = worktree.formatStatusTable(entries);
     const lines = table.split('\n');
@@ -369,19 +369,19 @@ describe('formatStatusTable', () => {
     // Should have header, separator, and 2 data rows
     assert.equal(lines.length, 4, 'should have header + separator + 2 rows');
 
-    // Header should contain all column names
+    // Header should contain new column names
     assert.ok(lines[0].includes('SET'), 'header should contain SET');
-    assert.ok(lines[0].includes('BRANCH'), 'header should contain BRANCH');
+    assert.ok(lines[0].includes('WAVE'), 'header should contain WAVE');
     assert.ok(lines[0].includes('PHASE'), 'header should contain PHASE');
-    assert.ok(lines[0].includes('STATUS'), 'header should contain STATUS');
-    assert.ok(lines[0].includes('PATH'), 'header should contain PATH');
+    assert.ok(lines[0].includes('PROGRESS'), 'header should contain PROGRESS');
+    assert.ok(lines[0].includes('LAST ACTIVITY'), 'header should contain LAST ACTIVITY');
 
     // Separator should be dashes
     assert.ok(lines[1].includes('---'), 'separator should contain dashes');
 
     // Data rows should contain actual values
     assert.ok(lines[2].includes('auth-core'), 'first row should contain auth-core');
-    assert.ok(lines[2].includes('Executing'), 'first row should contain Executing');
+    assert.ok(lines[2].includes('Execute'), 'first row should contain Execute display label');
     assert.ok(lines[3].includes('ui-shell'), 'second row should contain ui-shell');
   });
 
@@ -392,10 +392,10 @@ describe('formatStatusTable', () => {
 
   it('auto-calculates column widths based on content', () => {
     const short = [
-      { setName: 'a', branch: 'b', phase: 'c', status: 'd', path: 'e' },
+      { setName: 'a', phase: 'Done', status: 'active' },
     ];
     const long = [
-      { setName: 'very-long-set-name-here', branch: 'rapid/very-long-set-name-here', phase: 'Done', status: 'active', path: '.rapid-worktrees/x' },
+      { setName: 'very-long-set-name-here', phase: 'Done', status: 'active' },
     ];
     const shortTable = worktree.formatStatusTable(short);
     const longTable = worktree.formatStatusTable(long);
@@ -411,7 +411,7 @@ describe('formatStatusTable', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
-// formatWaveSummary tests
+// formatWaveSummary tests (legacy -- updated for enhanced output)
 // ────────────────────────────────────────────────────────────────
 describe('formatWaveSummary', () => {
   it('produces per-wave summary lines with completion info', () => {
@@ -435,7 +435,7 @@ describe('formatWaveSummary', () => {
 
     assert.equal(lines.length, 2, 'should have 2 wave lines');
     assert.ok(lines[0].includes('Wave 1'), 'first line should reference Wave 1');
-    assert.ok(lines[0].includes('1/2 done'), 'should show 1/2 done');
+    assert.ok(lines[0].includes('1/2 complete'), 'should show 1/2 complete');
     assert.ok(lines[0].includes('1 executing'), 'should show 1 executing');
     assert.ok(lines[1].includes('Wave 2'), 'second line should reference Wave 2');
     assert.ok(lines[1].includes('pending'), 'Wave 2 should show pending');
@@ -467,7 +467,7 @@ describe('formatWaveSummary', () => {
 
     const summary = worktree.formatWaveSummary(registry, dagJson);
     assert.ok(summary.includes('1 error'), 'should show error count');
-    assert.ok(summary.includes('1/2 done'), 'should show done count');
+    assert.ok(summary.includes('1/2 complete'), 'should show done count');
   });
 });
 

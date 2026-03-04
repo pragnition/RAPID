@@ -732,7 +732,7 @@ async function handleWorktree(cwd, subcommand, args) {
           // Graceful -- no DAG available
         }
         const waveSummary = wt.formatWaveSummary(registry, dagJson);
-        const table = wt.formatStatusTable(Object.values(registry.worktrees));
+        const table = wt.formatStatusTable(Object.values(registry.worktrees), dagJson);
         let output = '';
         if (waveSummary) {
           output += waveSummary + '\n\n';
