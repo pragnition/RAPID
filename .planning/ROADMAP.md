@@ -64,11 +64,12 @@ Plans:
   1. Init detects an existing codebase and offers brownfield mapping -- surfacing existing patterns, structure, and conventions before planning begins
   2. Init auto-generates a CLAUDE.md file containing project context: code style, architecture patterns, API conventions, and project knowledge
   3. Init auto-generates a style guide covering naming conventions, file structure, and error handling patterns to ensure cross-worktree consistency
-**Plans**: 2 plans (Wave 1: detection library, Wave 2: CLI + subagent + skill + assembler extension)
+**Plans**: 3 plans (Wave 1: detection library, Wave 2: CLI + subagent + skill + assembler extension, Wave 3: gap closure)
 
 Plans:
 - [x] 03-01: Brownfield detection library with config parsing and scan manifest (INIT-02) [Wave 1]
 - [x] 03-02: Context CLI, subagent module, /rapid:context skill, assembler extension (INIT-02, INIT-03, INIT-04) [Wave 2, depends: 03-01]
+- [ ] 03-03: Wire handleAssembleAgent to pass context files to assembleAgent (INIT-02, INIT-03, INIT-04) [Wave 3, depends: 03-02, gap closure]
 
 ### Phase 4: Planning Engine and Contracts
 **Goal**: Work is decomposed into parallelizable sets with machine-verifiable interface contracts that define how sets interact
