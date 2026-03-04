@@ -652,7 +652,236 @@ describe('handleWorktree CLI integration', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
-// USAGE includes plan, assumptions, and worktree
+// Execute CLI subcommand tests
+// ────────────────────────────────────────────────────────────────
+describe('handleExecute CLI integration', () => {
+  let tmpDir;
+
+  function createTestRepoWithSets() {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-exec-cli-'));
+    execSync('git init', { cwd: dir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: dir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: dir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "init"', { cwd: dir, stdio: 'pipe' });
+
+    // Create .planning/ structure
+    fs.mkdirSync(path.join(dir, '.planning', 'sets'), { recursive: true });
+    fs.mkdirSync(path.join(dir, '.planning', 'worktrees'), { recursive: true });
+
+    // Create auth-core set
+    const authDir = path.join(dir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(path.join(authDir, 'DEFINITION.md'), [
+      '# Set: auth-core', '', '## Scope', 'Authentication', '',
+      '## File Ownership', 'Files this set owns (exclusive write access):', '- src/auth/token.cjs', '',
+      '## Tasks', '1. Token generation', '', '## Interface Contract', 'See: CONTRACT.json', '',
+      '## Wave Assignment', 'Wave: 1 (parallel with: none)', '', '## Acceptance Criteria', '- Works', '',
+    ].join('\n'), 'utf-8');
+    fs.writeFileSync(path.join(authDir, 'CONTRACT.json'), JSON.stringify({
+      exports: {
+        functions: [
+          { name: 'createToken', file: 'src/auth/token.cjs', params: [{ name: 'payload', type: 'object' }], returns: 'string' },
+        ],
+        types: [],
+      },
+    }, null, 2), 'utf-8');
+
+    // Create api-routes set that imports from auth-core
+    const apiDir = path.join(dir, '.planning', 'sets', 'api-routes');
+    fs.mkdirSync(apiDir, { recursive: true });
+    fs.writeFileSync(path.join(apiDir, 'DEFINITION.md'), [
+      '# Set: api-routes', '', '## Scope', 'API routes', '',
+      '## File Ownership', 'Files this set owns (exclusive write access):', '- src/routes/index.cjs', '',
+      '## Tasks', '1. Route setup', '', '## Interface Contract', 'See: CONTRACT.json', '',
+      '## Wave Assignment', 'Wave: 2 (parallel with: none)', '', '## Acceptance Criteria', '- Routes work', '',
+    ].join('\n'), 'utf-8');
+    fs.writeFileSync(path.join(apiDir, 'CONTRACT.json'), JSON.stringify({
+      exports: { functions: [], types: [] },
+      imports: { fromSets: [{ set: 'auth-core', functions: ['createToken'] }] },
+    }, null, 2), 'utf-8');
+
+    // Create OWNERSHIP.json
+    fs.writeFileSync(path.join(dir, '.planning', 'sets', 'OWNERSHIP.json'), JSON.stringify({
+      version: 1, ownership: { 'src/auth/token.cjs': 'auth-core', 'src/routes/index.cjs': 'api-routes' },
+    }, null, 2), 'utf-8');
+
+    return dir;
+  }
+
+  function cleanupTestRepo(dir) {
+    try {
+      const result = execSync('git worktree list --porcelain', { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const blocks = result.trim().split('\n\n');
+      for (const block of blocks) {
+        const lines = block.trim().split('\n');
+        const pathLine = lines.find(l => l.startsWith('worktree '));
+        if (pathLine) {
+          const wtPath = pathLine.replace('worktree ', '');
+          if (wtPath !== dir) {
+            try { execSync(`git worktree remove --force "${wtPath}"`, { cwd: dir, stdio: 'pipe' }); } catch { /* ignore */ }
+          }
+        }
+      }
+    } catch { /* ignore */ }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  beforeEach(() => {
+    tmpDir = createTestRepoWithSets();
+  });
+
+  afterEach(() => {
+    cleanupTestRepo(tmpDir);
+  });
+
+  it('execute prepare-context outputs JSON with context summary', () => {
+    const stdout = execSync(`node "${CLI_PATH}" execute prepare-context auth-core`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.setName, 'auth-core');
+    assert.ok(result.scopedMdPreview, 'should have scopedMdPreview');
+    assert.ok(typeof result.definitionLength === 'number', 'should have definitionLength');
+    assert.ok(Array.isArray(result.contractKeys), 'should have contractKeys');
+    assert.ok(result.contractKeys.includes('exports'), 'contractKeys should include exports');
+  });
+
+  it('execute prepare-context for missing set exits non-zero', () => {
+    try {
+      execSync(`node "${CLI_PATH}" execute prepare-context nonexistent`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  it('execute generate-stubs creates stub files for set with imports', () => {
+    // Create worktree for api-routes first
+    execSync(`node "${CLI_PATH}" worktree create api-routes`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    const stdout = execSync(`node "${CLI_PATH}" execute generate-stubs api-routes`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.setName, 'api-routes');
+    assert.ok(Array.isArray(result.stubs), 'should have stubs array');
+    assert.equal(result.stubs.length, 1, 'should have 1 stub file');
+    assert.ok(result.stubs[0].includes('auth-core-stub.cjs'), 'stub should be for auth-core');
+  });
+
+  it('execute generate-stubs returns empty for set with no imports', () => {
+    // Create worktree for auth-core (no imports)
+    execSync(`node "${CLI_PATH}" worktree create auth-core`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    const stdout = execSync(`node "${CLI_PATH}" execute generate-stubs auth-core`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.setName, 'auth-core');
+    assert.deepStrictEqual(result.stubs, []);
+  });
+
+  it('execute cleanup-stubs removes stubs and outputs result', () => {
+    // Create worktree for api-routes
+    execSync(`node "${CLI_PATH}" worktree create api-routes`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    // Generate stubs first
+    execSync(`node "${CLI_PATH}" execute generate-stubs api-routes`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+
+    // Now cleanup
+    const stdout = execSync(`node "${CLI_PATH}" execute cleanup-stubs api-routes`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.cleaned, true);
+    assert.equal(result.count, 1);
+  });
+
+  it('execute cleanup-stubs returns not_found when no stubs exist', () => {
+    // Create worktree for auth-core (no stubs directory)
+    execSync(`node "${CLI_PATH}" worktree create auth-core`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    const stdout = execSync(`node "${CLI_PATH}" execute cleanup-stubs auth-core`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.cleaned, false);
+    assert.equal(result.reason, 'not_found');
+  });
+
+  it('execute verify exits non-zero when LAST_RETURN.json missing', () => {
+    // Create worktree
+    execSync(`node "${CLI_PATH}" worktree create auth-core`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    try {
+      execSync(`node "${CLI_PATH}" execute verify auth-core --branch main`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  it('unknown execute subcommand exits non-zero', () => {
+    try {
+      execSync(`node "${CLI_PATH}" execute bogus`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// USAGE includes plan, assumptions, worktree, and execute
 // ────────────────────────────────────────────────────────────────
 describe('USAGE help text', () => {
   it('--help includes plan commands', () => {
@@ -684,5 +913,16 @@ describe('USAGE help text', () => {
     assert.ok(stdout.includes('worktree reconcile'), 'should document worktree reconcile');
     assert.ok(stdout.includes('worktree status'), 'should document worktree status');
     assert.ok(stdout.includes('generate-claude-md'), 'should document worktree generate-claude-md');
+  });
+
+  it('--help includes execute commands', () => {
+    const stdout = execSync(`node "${CLI_PATH}" --help`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    assert.ok(stdout.includes('execute prepare-context'), 'should document execute prepare-context');
+    assert.ok(stdout.includes('execute verify'), 'should document execute verify');
+    assert.ok(stdout.includes('execute generate-stubs'), 'should document execute generate-stubs');
+    assert.ok(stdout.includes('execute cleanup-stubs'), 'should document execute cleanup-stubs');
   });
 });

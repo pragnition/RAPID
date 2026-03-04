@@ -43,6 +43,10 @@ Commands:
   worktree status             Show all worktrees with status table
   worktree status --json      Machine-readable worktree status
   worktree generate-claude-md <set>  Generate scoped CLAUDE.md for a worktree
+  execute prepare-context <set>  Prepare execution context for a set
+  execute verify <set> --branch <branch>  Verify set execution results
+  execute generate-stubs <set>   Generate contract stubs for a set's imports
+  execute cleanup-stubs <set>    Remove stub files from a set's worktree
 
 Options:
   --help, -h             Show this help message
@@ -114,6 +118,10 @@ async function main() {
 
     case 'worktree':
       await handleWorktree(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'execute':
+      await handleExecute(cwd, subcommand, args.slice(2));
       break;
 
     default:
@@ -755,6 +763,101 @@ async function handleWorktree(cwd, subcommand, args) {
 
     default:
       error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, generate-claude-md`);
+      process.stdout.write(USAGE);
+      process.exit(1);
+  }
+}
+
+async function handleExecute(cwd, subcommand, args) {
+  const fs = require('fs');
+  const path = require('path');
+  const execute = require('../lib/execute.cjs');
+  const stub = require('../lib/stub.cjs');
+  const wt = require('../lib/worktree.cjs');
+
+  switch (subcommand) {
+    case 'prepare-context': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools execute prepare-context <set-name>');
+        process.exit(1);
+      }
+      const context = execute.prepareSetContext(cwd, setName);
+      const result = {
+        setName: context.setName,
+        scopedMdPreview: context.scopedMd.slice(0, 200) + '...',
+        definitionLength: context.definition.length,
+        contractKeys: Object.keys(JSON.parse(context.contractStr)),
+      };
+      process.stdout.write(JSON.stringify(result) + '\n');
+      break;
+    }
+
+    case 'verify': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools execute verify <set-name> --branch <branch>');
+        process.exit(1);
+      }
+      // Parse --branch flag
+      let branch = 'main';
+      const branchIdx = args.indexOf('--branch');
+      if (branchIdx !== -1 && args[branchIdx + 1]) {
+        branch = args[branchIdx + 1];
+      }
+      // Load registry to find worktree path
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setName];
+      if (!entry) {
+        error(`No worktree registered for set "${setName}"`);
+        process.exit(1);
+      }
+      const worktreePath = path.resolve(cwd, entry.path);
+      // Try to load LAST_RETURN.json
+      const returnPath = path.join(cwd, '.planning', 'sets', setName, 'LAST_RETURN.json');
+      let returnData;
+      try {
+        returnData = JSON.parse(fs.readFileSync(returnPath, 'utf-8'));
+      } catch (err) {
+        error(`Cannot read ${returnPath}: ${err.message}. Create LAST_RETURN.json first.`);
+        process.exit(1);
+      }
+      const results = execute.verifySetExecution(cwd, setName, returnData, worktreePath, branch);
+      process.stdout.write(JSON.stringify(results) + '\n');
+      break;
+    }
+
+    case 'generate-stubs': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools execute generate-stubs <set-name>');
+        process.exit(1);
+      }
+      const stubPaths = stub.generateStubFiles(cwd, setName);
+      process.stdout.write(JSON.stringify({ setName, stubs: stubPaths }) + '\n');
+      break;
+    }
+
+    case 'cleanup-stubs': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools execute cleanup-stubs <set-name>');
+        process.exit(1);
+      }
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setName];
+      if (!entry) {
+        error(`No worktree registered for set "${setName}"`);
+        process.exit(1);
+      }
+      const worktreePath = path.resolve(cwd, entry.path);
+      const result = stub.cleanupStubFiles(worktreePath);
+      process.stdout.write(JSON.stringify(result) + '\n');
+      break;
+    }
+
+    default:
+      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
