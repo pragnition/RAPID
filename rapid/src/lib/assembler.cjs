@@ -48,6 +48,28 @@ model: inherit
 }
 
 /**
+ * Load context files from .planning/context/ for injection into agent prompts.
+ *
+ * Reads files from the project's .planning/context/ directory based on a list
+ * of filenames. Missing files are silently skipped.
+ *
+ * @param {string} projectRoot - Absolute path to the project root
+ * @param {string[]} fileList - Array of filenames to load (e.g., ['STYLE_GUIDE.md', 'CONVENTIONS.md'])
+ * @returns {Object} Object mapping filename to file content (only for files that exist)
+ */
+function loadContextFiles(projectRoot, fileList) {
+  const contextDir = path.join(projectRoot, '.planning', 'context');
+  const loaded = {};
+  for (const file of fileList) {
+    const fp = path.join(contextDir, file);
+    if (fs.existsSync(fp)) {
+      loaded[file] = fs.readFileSync(fp, 'utf-8');
+    }
+  }
+  return loaded;
+}
+
+/**
  * Assemble an agent prompt from composable modules.
  *
  * Concatenates YAML frontmatter + core modules (in order) + role module + optional context sections.
@@ -92,6 +114,14 @@ function assembleAgent({ role, coreModules, context = {}, outputPath }) {
   }
   if (context.style) {
     sections.push(`<style_guide>\n${context.style}\n</style_guide>`);
+  }
+
+  // 5. Context files from .planning/context/ (role-specific)
+  if (context.contextFiles && typeof context.contextFiles === 'object') {
+    for (const [filename, content] of Object.entries(context.contextFiles)) {
+      const tag = filename.replace('.md', '').toLowerCase().replace(/_/g, '-');
+      sections.push(`<context-${tag}>\n${content}\n</context-${tag}>`);
+    }
   }
 
   const assembled = sections.join('\n\n');
@@ -186,4 +216,5 @@ module.exports = {
   listModules,
   validateConfig,
   generateFrontmatter,
+  loadContextFiles,
 };

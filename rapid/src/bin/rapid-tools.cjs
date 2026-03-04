@@ -26,6 +26,8 @@ Commands:
   init detect            Check if .planning/ already exists
   init scaffold --name <n> --desc <d> --team-size <N>  Create .planning/ files
                [--mode fresh|reinitialize|upgrade|cancel]
+  context detect         Detect codebase characteristics (languages, frameworks, configs)
+  context generate       Ensure .planning/context/ directory exists and return its path
 
 Options:
   --help, -h             Show this help message
@@ -50,6 +52,10 @@ async function main() {
   }
   if (command === 'init') {
     handleInit(args.slice(1));
+    return;
+  }
+  if (command === 'context') {
+    handleContext(args.slice(1));
     return;
   }
 
@@ -378,6 +384,51 @@ function handleInit(args) {
   }
 
   error(`Unknown init subcommand: ${subcommand}. Use 'detect' or 'scaffold'.`);
+  process.exit(1);
+}
+
+function handleContext(args) {
+  const fs = require('fs');
+  const path = require('path');
+
+  const subcommand = args[0];
+  if (!subcommand) {
+    error('Usage: rapid-tools context <detect|generate> [options]');
+    process.exit(1);
+  }
+
+  if (subcommand === 'detect') {
+    // Can run without .planning/ -- just scans for source code
+    const { detectCodebase, buildScanManifest } = require('../lib/context.cjs');
+    const codebase = detectCodebase(process.cwd());
+    if (!codebase.hasSourceCode) {
+      process.stdout.write(JSON.stringify({ hasSourceCode: false, message: 'No source code detected. Run /rapid:context later when code exists.' }) + '\n');
+      return;
+    }
+    const manifest = buildScanManifest(process.cwd());
+    process.stdout.write(JSON.stringify({ hasSourceCode: true, manifest }) + '\n');
+    return;
+  }
+
+  if (subcommand === 'generate') {
+    // Needs project root -- writes to .planning/context/
+    let cwd;
+    try {
+      cwd = findProjectRoot();
+    } catch (err) {
+      error(`Cannot find project root: ${err.message}`);
+      process.exit(1);
+    }
+    // generate just ensures .planning/context/ dir exists and outputs the path
+    const contextDir = path.join(cwd, '.planning', 'context');
+    if (!fs.existsSync(contextDir)) {
+      fs.mkdirSync(contextDir, { recursive: true });
+    }
+    process.stdout.write(JSON.stringify({ contextDir, ready: true }) + '\n');
+    return;
+  }
+
+  error(`Unknown context subcommand: ${subcommand}. Use 'detect' or 'generate'.`);
   process.exit(1);
 }
 

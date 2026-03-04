@@ -244,6 +244,106 @@ describe('assembler', () => {
     });
   });
 
+  describe('loadContextFiles', () => {
+    it('returns empty object when no context files exist', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-test-'));
+      try {
+        const result = assembler.loadContextFiles(tmpDir, ['STYLE_GUIDE.md', 'CONVENTIONS.md']);
+        assert.deepEqual(result, {}, 'Should return empty object when no files exist');
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it('returns file contents keyed by filename when files exist', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-test-'));
+      const contextDir = path.join(tmpDir, '.planning', 'context');
+      fs.mkdirSync(contextDir, { recursive: true });
+      fs.writeFileSync(path.join(contextDir, 'STYLE_GUIDE.md'), '# Style Guide\nUse camelCase', 'utf-8');
+      fs.writeFileSync(path.join(contextDir, 'CONVENTIONS.md'), '# Conventions\nUse strict mode', 'utf-8');
+      try {
+        const result = assembler.loadContextFiles(tmpDir, ['STYLE_GUIDE.md', 'CONVENTIONS.md']);
+        assert.equal(Object.keys(result).length, 2, 'Should return 2 files');
+        assert.ok(result['STYLE_GUIDE.md'].includes('camelCase'), 'STYLE_GUIDE.md content should be loaded');
+        assert.ok(result['CONVENTIONS.md'].includes('strict mode'), 'CONVENTIONS.md content should be loaded');
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it('skips missing files without error', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-test-'));
+      const contextDir = path.join(tmpDir, '.planning', 'context');
+      fs.mkdirSync(contextDir, { recursive: true });
+      fs.writeFileSync(path.join(contextDir, 'STYLE_GUIDE.md'), '# Style Guide', 'utf-8');
+      try {
+        const result = assembler.loadContextFiles(tmpDir, ['STYLE_GUIDE.md', 'NONEXISTENT.md']);
+        assert.equal(Object.keys(result).length, 1, 'Should only return existing files');
+        assert.ok(result['STYLE_GUIDE.md'], 'Should include existing file');
+        assert.equal(result['NONEXISTENT.md'], undefined, 'Should not include missing file');
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('contextFiles injection in assembleAgent', () => {
+    it('adds XML-wrapped sections for contextFiles', () => {
+      const result = assembler.assembleAgent({
+        role: 'executor',
+        coreModules: ['core-identity.md'],
+        context: {
+          contextFiles: {
+            'STYLE_GUIDE.md': '# Style Guide\nUse camelCase for variables',
+            'CONVENTIONS.md': '# Conventions\nUse strict mode',
+          },
+        },
+      });
+      assert.ok(result.includes('<context-style-guide>'), 'Should have <context-style-guide> tag');
+      assert.ok(result.includes('</context-style-guide>'), 'Should have </context-style-guide> closing tag');
+      assert.ok(result.includes('camelCase for variables'), 'Should include style guide content');
+      assert.ok(result.includes('<context-conventions>'), 'Should have <context-conventions> tag');
+      assert.ok(result.includes('</context-conventions>'), 'Should have </context-conventions> closing tag');
+      assert.ok(result.includes('strict mode'), 'Should include conventions content');
+    });
+
+    it('derives correct tag names from filenames', () => {
+      const result = assembler.assembleAgent({
+        role: 'executor',
+        coreModules: ['core-identity.md'],
+        context: {
+          contextFiles: {
+            'STYLE_GUIDE.md': 'style content',
+            'ARCHITECTURE.md': 'arch content',
+            'API_PATTERNS.md': 'api content',
+          },
+        },
+      });
+      // STYLE_GUIDE.md -> context-style-guide
+      assert.ok(result.includes('<context-style-guide>'), 'STYLE_GUIDE.md should become context-style-guide');
+      // ARCHITECTURE.md -> context-architecture
+      assert.ok(result.includes('<context-architecture>'), 'ARCHITECTURE.md should become context-architecture');
+      // API_PATTERNS.md -> context-api-patterns
+      assert.ok(result.includes('<context-api-patterns>'), 'API_PATTERNS.md should become context-api-patterns');
+    });
+
+    it('does not add context sections when contextFiles is empty or absent', () => {
+      const result1 = assembler.assembleAgent({
+        role: 'executor',
+        coreModules: ['core-identity.md'],
+        context: { contextFiles: {} },
+      });
+      assert.ok(!result1.includes('<context-'), 'Should not have context- tags with empty object');
+
+      const result2 = assembler.assembleAgent({
+        role: 'executor',
+        coreModules: ['core-identity.md'],
+        context: {},
+      });
+      assert.ok(!result2.includes('<context-'), 'Should not have context- tags without contextFiles');
+    });
+  });
+
   describe('assembled agent size', () => {
     it('assembled planner agent is under 15KB', () => {
       const result = assembler.assembleAgent({
