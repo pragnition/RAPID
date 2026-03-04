@@ -44,9 +44,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Merge & Review
 
-- [ ] **MERG-01**: Merge reviewer agent performs deep code review (style, correctness, contract compliance) before any set merges to main
-- [ ] **MERG-02**: Merge reviewer validates all interface contracts are satisfied — blocks merge if contracts violated or tests fail
-- [ ] **MERG-03**: Cleanup agent can be spawned when merge reviewer finds fixable issues (style violations, missing tests, minor contract gaps)
+- [x] **MERG-01**: Merge reviewer agent performs deep code review (style, correctness, contract compliance) before any set merges to main
+- [x] **MERG-02**: Merge reviewer validates all interface contracts are satisfied — blocks merge if contracts violated or tests fail
+- [x] **MERG-03**: Cleanup agent can be spawned when merge reviewer finds fixable issues (style violations, missing tests, minor contract gaps)
 - [ ] **MERG-04**: Sets merge in dependency-graph order — independent sets can merge in parallel, dependent sets merge sequentially
 
 ### State Management
@@ -130,9 +130,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXEC-05 | Phase 7: Execution Lifecycle | Complete |
 | EXEC-07 | Phase 7: Execution Lifecycle | Complete (07-01) |
 | EXEC-08 | Phase 7: Execution Lifecycle | Complete |
-| MERG-01 | Phase 8: Merge Pipeline | Pending |
-| MERG-02 | Phase 8: Merge Pipeline | Pending |
-| MERG-03 | Phase 8: Merge Pipeline | Pending |
+| MERG-01 | Phase 8: Merge Pipeline | Complete |
+| MERG-02 | Phase 8: Merge Pipeline | Complete |
+| MERG-03 | Phase 8: Merge Pipeline | Complete |
 | MERG-04 | Phase 8: Merge Pipeline | Pending |
 | EXEC-06 | Phase 9: Agent Teams Integration | Pending |
 
