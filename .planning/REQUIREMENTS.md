@@ -26,9 +26,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Worktree Orchestration
 
-- [ ] **WORK-01**: Each set gets its own git worktree and dedicated branch created automatically
+- [x] **WORK-01**: Each set gets its own git worktree and dedicated branch created automatically
 - [ ] **WORK-02**: Developer can run `/rapid:status` to see all active worktrees, their set assignments, and lifecycle phase
-- [ ] **WORK-03**: Completed worktrees are cleaned up automatically (worktree removed, branch optionally deleted after merge)
+- [x] **WORK-03**: Completed worktrees are cleaned up automatically (worktree removed, branch optionally deleted after merge)
 - [ ] **WORK-04**: Each worktree gets a scoped CLAUDE.md containing only its set's contracts, relevant context, and style guide
 
 ### Execution
@@ -119,9 +119,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAN-04 | Phase 4: Planning Engine and Contracts | Complete |
 | PLAN-05 | Phase 4: Planning Engine and Contracts | Complete |
 | PLAN-06 | Phase 4: Planning Engine and Contracts | Complete |
-| WORK-01 | Phase 5: Worktree Orchestration | Pending |
+| WORK-01 | Phase 5: Worktree Orchestration | Complete |
 | WORK-02 | Phase 5: Worktree Orchestration | Pending |
-| WORK-03 | Phase 5: Worktree Orchestration | Pending |
+| WORK-03 | Phase 5: Worktree Orchestration | Complete |
 | WORK-04 | Phase 5: Worktree Orchestration | Pending |
 | EXEC-01 | Phase 6: Execution Core | Pending |
 | EXEC-02 | Phase 6: Execution Core | Pending |
