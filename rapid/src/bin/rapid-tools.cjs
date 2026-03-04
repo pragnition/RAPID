@@ -40,6 +40,9 @@ Commands:
   worktree list               List all registered worktrees with status
   worktree cleanup <set-name> Remove a worktree (blocks if dirty)
   worktree reconcile          Sync registry with actual git state
+  worktree status             Show all worktrees with status table
+  worktree status --json      Machine-readable worktree status
+  worktree generate-claude-md <set>  Generate scoped CLAUDE.md for a worktree
 
 Options:
   --help, -h             Show this help message
@@ -591,6 +594,7 @@ function handleAssumptions(cwd, args) {
 }
 
 async function handleWorktree(cwd, subcommand, args) {
+  const fs = require('fs');
   const path = require('path');
   const wt = require('../lib/worktree.cjs');
 
@@ -690,8 +694,67 @@ async function handleWorktree(cwd, subcommand, args) {
       break;
     }
 
+    case 'status': {
+      const registry = await wt.reconcileRegistry(cwd);
+      const isJson = args.includes('--json');
+
+      if (isJson) {
+        // Machine-readable JSON output
+        let dagJson = null;
+        try {
+          const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
+          dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+        } catch (err) {
+          // Graceful -- no DAG available
+        }
+        const waveSummary = dagJson && dagJson.waves ? dagJson.waves : null;
+        process.stdout.write(JSON.stringify({
+          worktrees: Object.values(registry.worktrees),
+          waves: waveSummary,
+        }) + '\n');
+      } else {
+        // Human-readable table output
+        let dagJson = null;
+        try {
+          const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
+          dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+        } catch (err) {
+          // Graceful -- no DAG available
+        }
+        const waveSummary = wt.formatWaveSummary(registry, dagJson);
+        const table = wt.formatStatusTable(Object.values(registry.worktrees));
+        let output = '';
+        if (waveSummary) {
+          output += waveSummary + '\n\n';
+        }
+        output += table;
+        process.stdout.write(output + '\n');
+      }
+      break;
+    }
+
+    case 'generate-claude-md': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools worktree generate-claude-md <set-name>');
+        process.exit(1);
+      }
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setName];
+      if (!entry) {
+        error(`No worktree registered for set "${setName}"`);
+        process.exit(1);
+      }
+      const md = wt.generateScopedClaudeMd(cwd, setName);
+      const wtClaudeMdPath = path.join(path.resolve(cwd, entry.path), 'CLAUDE.md');
+      fs.mkdirSync(path.dirname(wtClaudeMdPath), { recursive: true });
+      fs.writeFileSync(wtClaudeMdPath, md, 'utf-8');
+      process.stdout.write(JSON.stringify({ generated: true, setName, path: wtClaudeMdPath }) + '\n');
+      break;
+    }
+
     default:
-      error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile`);
+      error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, generate-claude-md`);
       process.stdout.write(USAGE);
       process.exit(1);
   }

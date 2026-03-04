@@ -567,6 +567,88 @@ describe('handleWorktree CLI integration', () => {
       assert.ok(err.status !== 0, 'should exit non-zero');
     }
   });
+
+  it('worktree status outputs human-readable table', () => {
+    // Create a worktree first
+    execSync(`node "${CLI_PATH}" worktree create status-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    const stdout = execSync(`node "${CLI_PATH}" worktree status`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    // Should contain table headers
+    assert.ok(stdout.includes('SET'), 'should contain SET header');
+    assert.ok(stdout.includes('BRANCH'), 'should contain BRANCH header');
+    assert.ok(stdout.includes('status-set'), 'should contain the set name');
+  });
+
+  it('worktree status --json outputs machine-readable JSON', () => {
+    execSync(`node "${CLI_PATH}" worktree create json-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    const stdout = execSync(`node "${CLI_PATH}" worktree status --json`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.ok(Array.isArray(result.worktrees), 'should have worktrees array');
+    const found = result.worktrees.find(w => w.setName === 'json-set');
+    assert.ok(found, 'should find json-set in worktrees');
+  });
+
+  it('worktree status with no worktrees shows empty message', () => {
+    const stdout = execSync(`node "${CLI_PATH}" worktree status`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    assert.ok(stdout.includes('No active worktrees'), 'should show no active worktrees message');
+  });
+
+  it('worktree generate-claude-md creates CLAUDE.md in worktree dir', () => {
+    // First create a worktree
+    execSync(`node "${CLI_PATH}" worktree create claude-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    // Create the required set structure
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'claude-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(setDir, 'DEFINITION.md'),
+      '# Set: claude-set\n\n## Scope\nTest\n',
+      'utf-8'
+    );
+    fs.writeFileSync(
+      path.join(setDir, 'CONTRACT.json'),
+      JSON.stringify({ exports: { functions: [], types: [] } }),
+      'utf-8'
+    );
+
+    const stdout = execSync(`node "${CLI_PATH}" worktree generate-claude-md claude-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.generated, true);
+    assert.equal(result.setName, 'claude-set');
+    assert.ok(result.path.includes('CLAUDE.md'), 'path should include CLAUDE.md');
+
+    // Verify the file exists
+    assert.ok(fs.existsSync(result.path), 'CLAUDE.md should exist at the specified path');
+  });
 });
 
 // ────────────────────────────────────────────────────────────────
@@ -600,5 +682,7 @@ describe('USAGE help text', () => {
     assert.ok(stdout.includes('worktree list'), 'should document worktree list');
     assert.ok(stdout.includes('worktree cleanup'), 'should document worktree cleanup');
     assert.ok(stdout.includes('worktree reconcile'), 'should document worktree reconcile');
+    assert.ok(stdout.includes('worktree status'), 'should document worktree status');
+    assert.ok(stdout.includes('generate-claude-md'), 'should document worktree generate-claude-md');
   });
 });

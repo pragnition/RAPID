@@ -261,6 +261,197 @@ async function reconcileRegistry(cwd) {
   }
 }
 
+// ────────────────────────────────────────────────────────────────
+// Status Formatting
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Format an ASCII status table for worktree entries.
+ *
+ * @param {Array<{ setName: string, branch: string, phase: string, status: string, path: string }>} worktrees
+ * @returns {string} Formatted ASCII table or empty-state message
+ */
+function formatStatusTable(worktrees) {
+  if (!worktrees || worktrees.length === 0) {
+    return 'No active worktrees. Run worktree create to get started.';
+  }
+
+  const headers = ['SET', 'BRANCH', 'PHASE', 'STATUS', 'PATH'];
+  const keys = ['setName', 'branch', 'phase', 'status', 'path'];
+
+  // Calculate column widths: max of header length and all row value lengths
+  const widths = headers.map((h, i) => {
+    const key = keys[i];
+    const maxDataLen = Math.max(...worktrees.map(w => String(w[key] || '').length));
+    return Math.max(h.length, maxDataLen);
+  });
+
+  const pad = (str, width) => String(str || '').padEnd(width);
+  const join = (cells) => cells.join('  ');
+
+  const headerLine = join(headers.map((h, i) => pad(h, widths[i])));
+  const separator = join(widths.map(w => '-'.repeat(w)));
+  const rowLines = worktrees.map(entry =>
+    join(keys.map((k, i) => pad(entry[k], widths[i])))
+  );
+
+  return [headerLine, separator, ...rowLines].join('\n');
+}
+
+/**
+ * Format a per-wave progress summary from registry and DAG data.
+ *
+ * @param {{ version: number, worktrees: Object }} registry
+ * @param {Object|null} dagJson - DAG object with waves property
+ * @returns {string} Wave summary lines or empty string
+ */
+function formatWaveSummary(registry, dagJson) {
+  if (!dagJson || !dagJson.waves) {
+    return '';
+  }
+
+  const waveNums = Object.keys(dagJson.waves).sort((a, b) => Number(a) - Number(b));
+  const lines = [];
+
+  for (const waveNum of waveNums) {
+    const waveSets = dagJson.waves[waveNum].sets || [];
+    const total = waveSets.length;
+
+    let done = 0;
+    let executing = 0;
+    let errorCount = 0;
+
+    for (const setName of waveSets) {
+      const entry = registry.worktrees[setName];
+      if (entry) {
+        if (entry.phase === 'Done') done++;
+        else if (entry.phase === 'Executing') executing++;
+        else if (entry.phase === 'Error') errorCount++;
+      }
+    }
+
+    if (done === 0 && executing === 0 && errorCount === 0) {
+      lines.push(`Wave ${waveNum}: ${total} sets pending`);
+    } else {
+      let line = `Wave ${waveNum}: ${done}/${total} done`;
+      if (executing > 0) line += `, ${executing} executing`;
+      if (errorCount > 0) line += `, ${errorCount} error`;
+      lines.push(line);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+// ────────────────────────────────────────────────────────────────
+// Scoped CLAUDE.md Generation
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Generate a scoped CLAUDE.md for a worktree's set, constraining the agent
+ * to only its owned files with contracts, deny list, and style guide.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setName - Name of the set
+ * @returns {string} Assembled Markdown string
+ */
+function generateScopedClaudeMd(cwd, setName) {
+  const plan = require('./plan.cjs');
+
+  // Load set definition and contract
+  const setData = plan.loadSet(cwd, setName);
+  const contractJson = setData.contract;
+
+  // Load OWNERSHIP.json (graceful if missing)
+  let ownership = null;
+  try {
+    const ownershipPath = path.join(cwd, '.planning', 'sets', 'OWNERSHIP.json');
+    ownership = JSON.parse(fs.readFileSync(ownershipPath, 'utf-8'));
+  } catch (err) {
+    // Graceful -- proceed with reduced content
+  }
+
+  // Load style guide (graceful if missing)
+  let styleGuide = null;
+  try {
+    const stylePath = path.join(cwd, '.planning', 'context', 'STYLE_GUIDE.md');
+    styleGuide = fs.readFileSync(stylePath, 'utf-8');
+  } catch (err) {
+    // Graceful -- skip style guide section
+  }
+
+  // Build owned files and deny list from OWNERSHIP.json
+  const ownedFiles = [];
+  const denyByOwner = {}; // { ownerSetName: [filePaths] }
+
+  if (ownership && ownership.ownership) {
+    for (const [filePath, owner] of Object.entries(ownership.ownership)) {
+      if (owner === setName) {
+        ownedFiles.push(filePath);
+      } else {
+        if (!denyByOwner[owner]) denyByOwner[owner] = [];
+        denyByOwner[owner].push(filePath);
+      }
+    }
+  }
+
+  // Assemble Markdown sections
+  const sections = [];
+
+  // 1. Header
+  sections.push(`# Set: ${setName} -- Scoped Agent Context`);
+  sections.push('');
+
+  // 2. Your Scope
+  sections.push('## Your Scope');
+  sections.push(`You are working on the '${setName}' set. ONLY modify files listed under File Ownership.`);
+  sections.push('');
+
+  // 3. Interface Contract
+  sections.push('## Interface Contract');
+  sections.push('');
+  sections.push('```json');
+  sections.push(JSON.stringify(contractJson, null, 2));
+  sections.push('```');
+  sections.push('');
+
+  // 4. File Ownership
+  sections.push('## File Ownership');
+  sections.push('You may ONLY modify these files:');
+  if (ownedFiles.length > 0) {
+    for (const f of ownedFiles.sort()) {
+      sections.push(`- ${f}`);
+    }
+  } else {
+    sections.push('- (no files listed in OWNERSHIP.json)');
+  }
+  sections.push('');
+
+  // 5. DO NOT TOUCH
+  const denyOwners = Object.keys(denyByOwner).sort();
+  if (denyOwners.length > 0) {
+    sections.push('## DO NOT TOUCH');
+    sections.push('These files are owned by other sets. Do NOT modify them:');
+    sections.push('');
+    for (const owner of denyOwners) {
+      sections.push(`**${owner}:**`);
+      for (const f of denyByOwner[owner].sort()) {
+        sections.push(`- ${f}`);
+      }
+      sections.push('');
+    }
+  }
+
+  // 6. Style Guide (if available)
+  if (styleGuide) {
+    sections.push('## Style Guide');
+    sections.push(styleGuide.trim());
+    sections.push('');
+  }
+
+  return sections.join('\n');
+}
+
 module.exports = {
   gitExec,
   detectMainBranch,
@@ -271,4 +462,7 @@ module.exports = {
   registryUpdate,
   reconcileRegistry,
   ensureWorktreeDir,
+  formatStatusTable,
+  formatWaveSummary,
+  generateScopedClaudeMd,
 };

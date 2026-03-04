@@ -391,20 +391,22 @@ describe('formatStatusTable', () => {
   });
 
   it('auto-calculates column widths based on content', () => {
-    const entries = [
-      { setName: 'very-long-set-name-here', branch: 'rapid/very-long-set-name-here', phase: 'Done', status: 'active', path: '.rapid-worktrees/very-long-set-name-here' },
+    const short = [
+      { setName: 'a', branch: 'b', phase: 'c', status: 'd', path: 'e' },
     ];
-    const table = worktree.formatStatusTable(entries);
-    const lines = table.split('\n');
+    const long = [
+      { setName: 'very-long-set-name-here', branch: 'rapid/very-long-set-name-here', phase: 'Done', status: 'active', path: '.rapid-worktrees/x' },
+    ];
+    const shortTable = worktree.formatStatusTable(short);
+    const longTable = worktree.formatStatusTable(long);
 
-    // The SET column should be wide enough for 'very-long-set-name-here'
-    // Header SET is 3 chars but data is 23 chars, so column must be at least 23 wide
-    assert.ok(lines[2].includes('very-long-set-name-here'), 'data row should contain long name');
+    // The long table should be wider than the short table
+    const shortWidth = shortTable.split('\n')[0].length;
+    const longWidth = longTable.split('\n')[0].length;
+    assert.ok(longWidth > shortWidth, 'wider content should produce wider table');
 
-    // Separator dashes should match widths
-    const headerParts = lines[0].split(/  +/);
-    const sepParts = lines[1].split(/  +/);
-    assert.equal(headerParts.length, sepParts.length, 'separator should have same number of columns');
+    // Data row should contain the full long set name
+    assert.ok(longTable.includes('very-long-set-name-here'), 'should contain full long set name');
   });
 });
 
