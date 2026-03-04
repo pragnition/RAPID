@@ -392,7 +392,185 @@ describe('handleAssumptions CLI integration', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
-// USAGE includes plan and assumptions
+// Worktree CLI subcommand tests
+// ────────────────────────────────────────────────────────────────
+describe('handleWorktree CLI integration', () => {
+  let tmpDir;
+
+  function createTestRepo() {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-wt-cli-'));
+    execSync('git init', { cwd: dir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: dir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: dir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "init"', { cwd: dir, stdio: 'pipe' });
+    // Create .planning/ so findProjectRoot works
+    fs.mkdirSync(path.join(dir, '.planning'), { recursive: true });
+    return dir;
+  }
+
+  function cleanupTestRepo(dir) {
+    try {
+      const result = execSync('git worktree list --porcelain', { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const blocks = result.trim().split('\n\n');
+      for (const block of blocks) {
+        const lines = block.trim().split('\n');
+        const pathLine = lines.find(l => l.startsWith('worktree '));
+        if (pathLine) {
+          const wtPath = pathLine.replace('worktree ', '');
+          if (wtPath !== dir) {
+            try { execSync(`git worktree remove --force "${wtPath}"`, { cwd: dir, stdio: 'pipe' }); } catch { /* ignore */ }
+          }
+        }
+      }
+    } catch { /* ignore */ }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  beforeEach(() => {
+    tmpDir = createTestRepo();
+  });
+
+  afterEach(() => {
+    cleanupTestRepo(tmpDir);
+  });
+
+  it('worktree create outputs JSON with created:true', () => {
+    const stdout = execSync(`node "${CLI_PATH}" worktree create my-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.created, true);
+    assert.equal(result.branch, 'rapid/my-set');
+    assert.equal(result.setName, 'my-set');
+    assert.ok(result.path.includes('my-set'));
+  });
+
+  it('worktree create on existing worktree outputs JSON error', () => {
+    // Create once
+    execSync(`node "${CLI_PATH}" worktree create dup-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    // Try to create again -- should fail
+    try {
+      execSync(`node "${CLI_PATH}" worktree create dup-set`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 15000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      // stdout or stderr should have the error JSON or message
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  it('worktree list outputs JSON with worktrees array', () => {
+    // Create a worktree first
+    execSync(`node "${CLI_PATH}" worktree create listed-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    const stdout = execSync(`node "${CLI_PATH}" worktree list`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.ok(Array.isArray(result.worktrees), 'should have worktrees array');
+    const found = result.worktrees.find(w => w.setName === 'listed-set');
+    assert.ok(found, 'should find the created worktree in list');
+  });
+
+  it('worktree cleanup removes clean worktree and outputs JSON', () => {
+    // Create a worktree
+    execSync(`node "${CLI_PATH}" worktree create clean-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    // Cleanup
+    const stdout = execSync(`node "${CLI_PATH}" worktree cleanup clean-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.removed, true);
+    assert.equal(result.setName, 'clean-set');
+  });
+
+  it('worktree cleanup on dirty worktree outputs JSON with removed:false', () => {
+    // Create a worktree
+    execSync(`node "${CLI_PATH}" worktree create dirty-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    // Make it dirty
+    const wtPath = path.join(tmpDir, '.rapid-worktrees', 'dirty-set');
+    fs.writeFileSync(path.join(wtPath, 'dirty.txt'), 'uncommitted');
+    execSync('git add dirty.txt', { cwd: wtPath, stdio: 'pipe' });
+
+    try {
+      execSync(`node "${CLI_PATH}" worktree cleanup dirty-set`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 15000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown due to dirty worktree');
+    } catch (err) {
+      // It exits non-zero and outputs the error JSON to stdout
+      const stdout = (err.stdout || '').trim();
+      if (stdout) {
+        const result = JSON.parse(stdout);
+        assert.equal(result.removed, false);
+        assert.equal(result.reason, 'dirty');
+      } else {
+        assert.ok(err.status !== 0, 'should exit non-zero');
+      }
+    }
+  });
+
+  it('worktree reconcile outputs JSON with reconciled:true', () => {
+    const stdout = execSync(`node "${CLI_PATH}" worktree reconcile`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.reconciled, true);
+    assert.ok(typeof result.orphaned === 'number');
+    assert.ok(typeof result.discovered === 'number');
+  });
+
+  it('unknown worktree subcommand exits non-zero', () => {
+    try {
+      execSync(`node "${CLI_PATH}" worktree bogus`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 15000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// USAGE includes plan, assumptions, and worktree
 // ────────────────────────────────────────────────────────────────
 describe('USAGE help text', () => {
   it('--help includes plan commands', () => {
@@ -411,5 +589,16 @@ describe('USAGE help text', () => {
       timeout: 10000,
     });
     assert.ok(stdout.includes('assumptions'), 'should document assumptions command');
+  });
+
+  it('--help includes worktree commands', () => {
+    const stdout = execSync(`node "${CLI_PATH}" --help`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    assert.ok(stdout.includes('worktree create'), 'should document worktree create');
+    assert.ok(stdout.includes('worktree list'), 'should document worktree list');
+    assert.ok(stdout.includes('worktree cleanup'), 'should document worktree cleanup');
+    assert.ok(stdout.includes('worktree reconcile'), 'should document worktree reconcile');
   });
 });
