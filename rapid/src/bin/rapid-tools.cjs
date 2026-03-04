@@ -52,6 +52,12 @@ Commands:
   execute pause <set>             Pause execution and write HANDOFF.md (reads CHECKPOINT JSON from stdin)
   execute resume <set>            Resume execution from HANDOFF.md
   execute reconcile <wave>        Reconcile a wave and write WAVE-{N}-SUMMARY.md
+  merge review <set>              Run programmatic gate + write REVIEW.md
+  merge execute <set>             Merge set branch into main (--no-ff)
+  merge status                    Show merge pipeline status (per-set verdicts)
+  merge integration-test          Run post-wave integration test suite on main
+  merge order                     Show merge order from DAG (wave-grouped)
+  merge update-status <set> <status>  Update merge status in registry (reviewing/cleanup/merged/failed)
 
 Options:
   --help, -h             Show this help message
@@ -127,6 +133,10 @@ async function main() {
 
     case 'execute':
       await handleExecute(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'merge':
+      await handleMerge(cwd, subcommand, args.slice(2));
       break;
 
     default:
@@ -1091,6 +1101,111 @@ async function handleExecute(cwd, subcommand, args) {
 
     default:
       error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile`);
+      process.stdout.write(USAGE);
+      process.exit(1);
+  }
+}
+
+async function handleMerge(cwd, subcommand, args) {
+  const path = require('path');
+  const merge = require('../lib/merge.cjs');
+  const wt = require('../lib/worktree.cjs');
+
+  switch (subcommand) {
+    case 'review': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools merge review <set-name>');
+        process.exit(1);
+      }
+      const result = merge.runProgrammaticGate(cwd, setName);
+      const setDir = path.join(cwd, '.planning', 'sets', setName);
+      // Write initial REVIEW.md with programmatic results only (agent review added by skill)
+      merge.writeReviewMd(setDir, {
+        setName,
+        verdict: result.passed ? 'PENDING_REVIEW' : 'BLOCK',
+        contractResults: { valid: result.contractValid },
+        ownershipResults: { violations: result.ownershipViolations },
+        testResults: { pass: result.testsPass, output: result.testOutput },
+        findings: {
+          blocking: result.ownershipViolations.map(v => `Ownership: ${v.file} owned by ${v.owner}`),
+          fixable: [],
+          suggestions: [],
+        },
+      });
+      output(JSON.stringify(result));
+      break;
+    }
+
+    case 'execute': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools merge execute <set-name>');
+        process.exit(1);
+      }
+      const baseBranch = wt.detectMainBranch(cwd);
+      const result = merge.mergeSet(cwd, setName, baseBranch);
+      if (result.merged) {
+        // Update registry with merge status
+        await wt.registryUpdate(cwd, (reg) => {
+          if (reg.worktrees[setName]) {
+            reg.worktrees[setName].mergeStatus = 'merged';
+            reg.worktrees[setName].mergedAt = new Date().toISOString();
+            reg.worktrees[setName].mergeCommit = result.commitHash;
+          }
+          return reg;
+        });
+      }
+      output(JSON.stringify(result));
+      break;
+    }
+
+    case 'status': {
+      const registry = wt.loadRegistry(cwd);
+      const statuses = {};
+      for (const [name, entry] of Object.entries(registry.worktrees || {})) {
+        statuses[name] = {
+          phase: entry.phase || 'unknown',
+          mergeStatus: entry.mergeStatus || 'pending',
+          mergedAt: entry.mergedAt || null,
+          mergeCommit: entry.mergeCommit || null,
+        };
+      }
+      output(JSON.stringify(statuses));
+      break;
+    }
+
+    case 'integration-test': {
+      const result = merge.runIntegrationTests(cwd);
+      output(JSON.stringify(result));
+      break;
+    }
+
+    case 'order': {
+      const order = merge.getMergeOrder(cwd);
+      output(JSON.stringify(order));
+      break;
+    }
+
+    case 'update-status': {
+      const setName = args[0];
+      const status = args[1];
+      if (!setName || !status) {
+        error('Usage: rapid-tools merge update-status <set> <status>');
+        process.exit(1);
+      }
+      await wt.registryUpdate(cwd, (reg) => {
+        if (reg.worktrees[setName]) {
+          reg.worktrees[setName].mergeStatus = status;
+        }
+        return reg;
+      });
+      output(JSON.stringify({ updated: true, set: setName, mergeStatus: status }));
+      break;
+    }
+
+    default:
+      error(`Unknown merge subcommand: ${subcommand}. Use: review, execute, status, integration-test, order, update-status`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
