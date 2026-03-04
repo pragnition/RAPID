@@ -97,11 +97,11 @@ Plans:
   2. Developer can run `/rapid:status` and see all active worktrees, their set assignments, and which lifecycle phase each is in
   3. Completed worktrees are cleaned up automatically -- worktree removed, branch optionally deleted after successful merge
   4. Each worktree gets a scoped CLAUDE.md containing only its set's contracts, relevant context, and style guide (not the full project context)
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: worktree library+CLI, Wave 2: status display+scoped context+skills)
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01: Worktree lifecycle library (worktree.cjs) and CLI subcommands (WORK-01, WORK-03) [Wave 1]
+- [ ] 05-02: Status display, scoped CLAUDE.md generation, /rapid:status and /rapid:cleanup skills (WORK-02, WORK-04) [Wave 2, depends: 05-01]
 
 ### Phase 6: Execution Core
 **Goal**: Sets execute independently in isolated contexts, each going through its own development lifecycle with clean git history
