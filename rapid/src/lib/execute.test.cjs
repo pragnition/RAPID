@@ -568,7 +568,7 @@ describe('parseHandoff', () => {
 // ────────────────────────────────────────────────────────────────
 // reconcileWave
 // ────────────────────────────────────────────────────────────────
-describe('reconcileWave', () => {
+describe('reconcileWave', { concurrency: 1 }, () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -675,15 +675,13 @@ describe('reconcileWave', () => {
   });
 
   it('reports hard block when contract test fails', () => {
-    // Overwrite with a failing test
+    // Overwrite with a failing test (use plain throw to avoid node:test TAP conflicts)
     const authDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
     fs.writeFileSync(path.join(authDir, 'contract.test.cjs'), [
       "'use strict';",
-      "const { describe, it } = require('node:test');",
       "const assert = require('node:assert/strict');",
-      "describe('auth-core contract', () => {",
-      "  it('fails deliberately', () => { assert.strictEqual(1, 2); });",
-      "});",
+      "// Deliberate failure for reconciliation test",
+      "assert.strictEqual(1, 2, 'contract test fails deliberately');",
     ].join('\n'), 'utf-8');
 
     const dagJson = {

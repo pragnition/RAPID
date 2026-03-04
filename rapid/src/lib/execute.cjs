@@ -17,6 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const worktree = require('./worktree.cjs');
 const plan = require('./plan.cjs');
 const verify = require('./verify.cjs');
@@ -290,6 +291,352 @@ function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// ────────────────────────────────────────────────────────────────
+// Handoff generation and parsing (pause/resume support)
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Generate HANDOFF.md content from CHECKPOINT return data.
+ *
+ * Produces a Markdown document with YAML frontmatter containing
+ * set metadata and pause state, followed by Markdown sections for
+ * completed work, remaining work, resume instructions, and decisions.
+ *
+ * @param {Object} checkpointData - Parsed CHECKPOINT return
+ * @param {string} checkpointData.handoff_done - Description of completed work
+ * @param {string} checkpointData.handoff_remaining - Description of remaining work
+ * @param {string} checkpointData.handoff_resume - Instructions for resuming
+ * @param {number} checkpointData.tasks_completed - Number of tasks completed
+ * @param {number} checkpointData.tasks_total - Total number of tasks
+ * @param {string[]} [checkpointData.decisions] - Decisions made during execution
+ * @param {string} setName - Name of the set being paused
+ * @param {number} pauseCycle - Current pause cycle count (incremented)
+ * @returns {string} Markdown content for HANDOFF.md
+ */
+function generateHandoff(checkpointData, setName, pauseCycle) {
+  const frontmatter = [
+    '---',
+    `set: ${setName}`,
+    `paused_at: ${new Date().toISOString()}`,
+    `pause_cycle: ${pauseCycle}`,
+    `tasks_completed: ${checkpointData.tasks_completed || 0}`,
+    `tasks_total: ${checkpointData.tasks_total || 0}`,
+    '---',
+  ].join('\n');
+
+  const sections = [
+    frontmatter,
+    '',
+    '## Completed Work',
+    checkpointData.handoff_done || '(none recorded)',
+    '',
+    '## Remaining Work',
+    checkpointData.handoff_remaining || '(none recorded)',
+    '',
+    '## Resume Instructions',
+    checkpointData.handoff_resume || 'Continue from where execution stopped.',
+  ];
+
+  if (checkpointData.decisions && checkpointData.decisions.length > 0) {
+    sections.push('', '## Decisions Made');
+    for (const d of checkpointData.decisions) {
+      sections.push(`- ${d}`);
+    }
+  }
+
+  return sections.join('\n') + '\n';
+}
+
+/**
+ * Parse HANDOFF.md content into a structured object.
+ *
+ * Extracts YAML frontmatter fields and Markdown section content
+ * from a HANDOFF.md file produced by generateHandoff().
+ *
+ * @param {string} handoffContent - Raw Markdown content of HANDOFF.md
+ * @returns {{ set: string, pauseCycle: number, tasksCompleted: number, tasksTotal: number, completedWork: string, remainingWork: string, resumeInstructions: string, decisions: string[] } | null}
+ *   Parsed handoff data, or null if content is empty/falsy
+ */
+function parseHandoff(handoffContent) {
+  if (!handoffContent) return null;
+
+  const content = handoffContent.trim();
+  if (content.length === 0) return null;
+
+  // Parse frontmatter between --- markers
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const frontmatter = {};
+  if (fmMatch) {
+    const fmLines = fmMatch[1].split('\n');
+    for (const line of fmLines) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx === -1) continue;
+      const key = line.slice(0, colonIdx).trim();
+      const value = line.slice(colonIdx + 1).trim();
+      frontmatter[key] = value;
+    }
+  }
+
+  // Parse sections: extract text under each ## heading
+  const sections = {};
+  const sectionRegex = /^## (.+)$/gm;
+  let match;
+  const sectionStarts = [];
+
+  while ((match = sectionRegex.exec(content)) !== null) {
+    sectionStarts.push({ name: match[1], index: match.index + match[0].length });
+  }
+
+  for (let i = 0; i < sectionStarts.length; i++) {
+    const start = sectionStarts[i].index;
+    const end = i + 1 < sectionStarts.length
+      ? content.lastIndexOf('## ', sectionStarts[i + 1].index)
+      : content.length;
+    const sectionContent = content.slice(start, end).trim();
+    sections[sectionStarts[i].name] = sectionContent;
+  }
+
+  // Parse decisions from "Decisions Made" section
+  const decisions = [];
+  if (sections['Decisions Made']) {
+    const lines = sections['Decisions Made'].split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('- ')) {
+        decisions.push(trimmed.slice(2));
+      }
+    }
+  }
+
+  return {
+    set: frontmatter.set || '',
+    pauseCycle: parseInt(frontmatter.pause_cycle, 10) || 0,
+    tasksCompleted: parseInt(frontmatter.tasks_completed, 10) || 0,
+    tasksTotal: parseInt(frontmatter.tasks_total, 10) || 0,
+    completedWork: sections['Completed Work'] || '',
+    remainingWork: sections['Remaining Work'] || '',
+    resumeInstructions: sections['Resume Instructions'] || '',
+    decisions,
+  };
+}
+
+// ────────────────────────────────────────────────────────────────
+// Wave reconciliation engine
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Parse file ownership paths from a DEFINITION.md content string.
+ *
+ * Looks for the "## File Ownership" section and extracts file paths
+ * from bullet lines (- path/to/file).
+ *
+ * @param {string} definitionContent - Raw DEFINITION.md content
+ * @returns {string[]} Array of owned file paths
+ */
+function parseOwnedFiles(definitionContent) {
+  const files = [];
+  const lines = definitionContent.split('\n');
+  let inOwnership = false;
+
+  for (const line of lines) {
+    if (line.startsWith('## File Ownership')) {
+      inOwnership = true;
+      continue;
+    }
+    if (inOwnership && line.startsWith('## ')) {
+      break; // Next section
+    }
+    if (inOwnership) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('- ')) {
+        const filePath = trimmed.slice(2).trim();
+        // Filter out non-path descriptive text
+        if (filePath && !filePath.startsWith('Files ') && filePath.includes('/')) {
+          files.push(filePath);
+        }
+      }
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Reconcile a wave: compare planned deliverables vs actual execution results.
+ *
+ * For each set in the wave, checks:
+ * 1. Contract test compliance (hard block if tests fail)
+ * 2. Artifact file existence (soft block if missing)
+ * 3. Commit count on the set's branch
+ *
+ * @param {string} cwd - Project root directory
+ * @param {number} waveNum - Wave number to reconcile
+ * @param {Object} dagJson - DAG data with waves object
+ * @param {Object} registry - Worktree registry with worktrees object
+ * @returns {{ hardBlocks: Array, softBlocks: Array, setResults: Object, overall: string }}
+ */
+function reconcileWave(cwd, waveNum, dagJson, registry) {
+  const waveSets = dagJson.waves[waveNum]?.sets || [];
+  const hardBlocks = [];
+  const softBlocks = [];
+  const setResults = {};
+
+  for (const setName of waveSets) {
+    const entry = registry.worktrees[setName];
+    if (!entry) continue;
+
+    const worktreePath = path.resolve(cwd, entry.path);
+    const setDir = path.join(cwd, '.planning', 'sets', setName);
+
+    // Initialize set result
+    setResults[setName] = {
+      contractCompliance: 'PASS',
+      artifactsPlanned: 0,
+      artifactsDelivered: 0,
+      missingArtifacts: [],
+      commitCount: 0,
+    };
+
+    // 1. Run contract tests (hard block if fail)
+    // Use plain `node` instead of `node --test` to avoid nested TAP stream
+    // conflicts when reconcileWave is called inside a node:test runner.
+    // Contract test files that use node:test describe/it will auto-run.
+    const testFile = path.join(setDir, 'contract.test.cjs');
+    if (fs.existsSync(testFile)) {
+      try {
+        execSync(`node "${testFile}"`, { cwd, stdio: 'pipe', timeout: 30000 });
+        setResults[setName].contractCompliance = 'PASS';
+      } catch (err) {
+        hardBlocks.push({
+          set: setName,
+          type: 'contract_violation',
+          detail: err.stderr?.toString() || err.message,
+        });
+        setResults[setName].contractCompliance = 'FAIL';
+      }
+    }
+
+    // 2. Check artifact existence (soft block if missing)
+    try {
+      const defPath = path.join(setDir, 'DEFINITION.md');
+      if (fs.existsSync(defPath)) {
+        const defContent = fs.readFileSync(defPath, 'utf-8');
+        const ownedFiles = parseOwnedFiles(defContent);
+        setResults[setName].artifactsPlanned = ownedFiles.length;
+
+        let delivered = 0;
+        for (const filePath of ownedFiles) {
+          const fullPath = path.join(worktreePath, filePath);
+          if (fs.existsSync(fullPath)) {
+            delivered++;
+          } else {
+            softBlocks.push({
+              set: setName,
+              type: 'missing_artifact',
+              detail: `${filePath} not found in worktree`,
+            });
+            setResults[setName].missingArtifacts.push(filePath);
+          }
+        }
+        setResults[setName].artifactsDelivered = delivered;
+      }
+    } catch {
+      // Graceful -- skip artifact check if DEFINITION.md not parseable
+    }
+
+    // 3. Commit count
+    try {
+      const baseBranch = 'main';
+      setResults[setName].commitCount = getCommitCount(worktreePath, baseBranch);
+    } catch {
+      setResults[setName].commitCount = 0;
+    }
+  }
+
+  // Determine overall result
+  let overall = 'PASS';
+  if (hardBlocks.length > 0) {
+    overall = 'FAIL';
+  } else if (softBlocks.length > 0) {
+    overall = 'PASS_WITH_WARNINGS';
+  }
+
+  return { hardBlocks, softBlocks, setResults, overall };
+}
+
+/**
+ * Generate a formatted Markdown summary for wave reconciliation results.
+ *
+ * Produces content for .planning/waves/WAVE-{N}-SUMMARY.md with per-set
+ * details, contract compliance, hard/soft blocks, and action items.
+ *
+ * @param {number} waveNum - Wave number
+ * @param {Object} reconcileResult - Result from reconcileWave()
+ * @param {string} timestamp - ISO timestamp of reconciliation
+ * @returns {string} Formatted Markdown string
+ */
+function generateWaveSummary(waveNum, reconcileResult, timestamp) {
+  const { overall, hardBlocks, softBlocks, setResults } = reconcileResult;
+
+  const lines = [
+    `# Wave ${waveNum} Reconciliation Summary`,
+    '',
+    `**Reconciled:** ${timestamp}`,
+    `**Result:** ${overall}`,
+    '',
+    '## Sets',
+    '',
+  ];
+
+  // Per-set sections
+  for (const [setName, result] of Object.entries(setResults)) {
+    lines.push(`### ${setName}`);
+    lines.push(`**Status:** ${result.contractCompliance}`);
+    lines.push(`**Planned artifacts:** ${result.artifactsPlanned} | **Delivered:** ${result.artifactsDelivered}`);
+    lines.push(`**Contract compliance:** ${result.contractCompliance === 'PASS' ? 'All exports verified' : 'FAILED'}`);
+    lines.push(`**Commits:** ${result.commitCount}`);
+    if (result.missingArtifacts.length > 0) {
+      lines.push(`**Missing:** ${result.missingArtifacts.join(', ')}`);
+    }
+    lines.push('');
+  }
+
+  // Hard blocks
+  lines.push('## Hard Blocks');
+  if (hardBlocks.length === 0) {
+    lines.push('None');
+  } else {
+    for (const block of hardBlocks) {
+      lines.push(`- **${block.set}** (${block.type}): ${block.detail}`);
+    }
+  }
+  lines.push('');
+
+  // Soft blocks
+  lines.push('## Soft Blocks');
+  if (softBlocks.length === 0) {
+    lines.push('None');
+  } else {
+    for (const block of softBlocks) {
+      lines.push(`- **${block.set}** (${block.type}): ${block.detail}`);
+    }
+  }
+  lines.push('');
+
+  // Developer action
+  lines.push('## Developer Action Required');
+  if (overall === 'PASS') {
+    lines.push('All contract obligations satisfied. Proceed to next wave.');
+  } else if (overall === 'PASS_WITH_WARNINGS') {
+    lines.push('Review soft blocks above. Approve to proceed to next wave.');
+  } else {
+    lines.push('Hard blocks must be resolved before proceeding to next wave.');
+  }
+  lines.push('');
+
+  return lines.join('\n');
+}
+
 module.exports = {
   prepareSetContext,
   assembleExecutorPrompt,
@@ -297,4 +644,8 @@ module.exports = {
   getChangedFiles,
   getCommitCount,
   getCommitMessages,
+  generateHandoff,
+  parseHandoff,
+  reconcileWave,
+  generateWaveSummary,
 };
