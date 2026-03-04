@@ -47,6 +47,8 @@ Commands:
   execute verify <set> --branch <branch>  Verify set execution results
   execute generate-stubs <set>   Generate contract stubs for a set's imports
   execute cleanup-stubs <set>    Remove stub files from a set's worktree
+  execute wave-status             Show execution progress per wave
+  execute update-phase <set> <phase>  Update a set's lifecycle phase in registry
 
 Options:
   --help, -h             Show this help message
@@ -856,8 +858,82 @@ async function handleExecute(cwd, subcommand, args) {
       break;
     }
 
+    case 'wave-status': {
+      const dag = require('../lib/dag.cjs');
+      // Load DAG.json
+      let dagJson = null;
+      try {
+        const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
+        dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+      } catch (err) {
+        error('No DAG.json found. Run /rapid:plan first to create sets and DAG.');
+        process.exit(1);
+      }
+      // Load and reconcile registry
+      const registry = await wt.reconcileRegistry(cwd);
+      const executionOrder = dag.getExecutionOrder(dagJson);
+
+      // Build wave status
+      const waves = executionOrder.map((sets, index) => {
+        const waveNum = index + 1;
+        const setStatuses = sets.map(setName => {
+          const entry = registry.worktrees[setName];
+          return {
+            name: setName,
+            phase: entry ? entry.phase : 'Pending',
+            status: entry ? entry.status : 'not-started',
+          };
+        });
+        // Gate is open if all sets in the wave are Done
+        const gateOpen = setStatuses.every(s => s.phase === 'Done');
+        return { wave: waveNum, sets: setStatuses, gateOpen };
+      });
+
+      // JSON output
+      process.stdout.write(JSON.stringify({ waves }) + '\n');
+
+      // Human-readable fallback on stderr
+      const waveSummary = wt.formatWaveSummary(registry, dagJson);
+      if (waveSummary) {
+        process.stderr.write(waveSummary + '\n');
+      }
+      break;
+    }
+
+    case 'update-phase': {
+      const setName = args[0];
+      const phase = args[1];
+      if (!setName || !phase) {
+        error('Usage: rapid-tools execute update-phase <set-name> <phase>');
+        process.exit(1);
+      }
+      const validPhases = ['Discussing', 'Planning', 'Executing', 'Verifying', 'Done', 'Error'];
+      if (!validPhases.includes(phase)) {
+        error(`Invalid phase: "${phase}". Must be one of: ${validPhases.join(', ')}`);
+        process.exit(1);
+      }
+      await wt.registryUpdate(cwd, (reg) => {
+        if (reg.worktrees[setName]) {
+          reg.worktrees[setName].phase = phase;
+        } else {
+          // Create entry if not present (set may not have a worktree yet)
+          reg.worktrees[setName] = {
+            setName,
+            branch: `rapid/${setName}`,
+            path: `.rapid-worktrees/${setName}`,
+            phase,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+          };
+        }
+        return reg;
+      });
+      process.stdout.write(JSON.stringify({ updated: true, setName, phase }) + '\n');
+      break;
+    }
+
     default:
-      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs`);
+      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase`);
       process.stdout.write(USAGE);
       process.exit(1);
   }

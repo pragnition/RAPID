@@ -924,5 +924,191 @@ describe('USAGE help text', () => {
     assert.ok(stdout.includes('execute verify'), 'should document execute verify');
     assert.ok(stdout.includes('execute generate-stubs'), 'should document execute generate-stubs');
     assert.ok(stdout.includes('execute cleanup-stubs'), 'should document execute cleanup-stubs');
+    assert.ok(stdout.includes('execute wave-status'), 'should document execute wave-status');
+    assert.ok(stdout.includes('execute update-phase'), 'should document execute update-phase');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// Execute wave-status and update-phase CLI tests
+// ────────────────────────────────────────────────────────────────
+describe('handleExecute wave-status and update-phase', () => {
+  let tmpDir;
+
+  function createTestRepoWithDAG() {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-wave-cli-'));
+    execSync('git init', { cwd: dir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: dir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: dir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "init"', { cwd: dir, stdio: 'pipe' });
+
+    // Create .planning/ structure
+    fs.mkdirSync(path.join(dir, '.planning', 'sets'), { recursive: true });
+    fs.mkdirSync(path.join(dir, '.planning', 'worktrees'), { recursive: true });
+
+    // Create DAG.json with 2 waves
+    const dagObj = {
+      nodes: [
+        { id: 'auth-core', wave: 1, status: 'pending' },
+        { id: 'data-layer', wave: 1, status: 'pending' },
+        { id: 'api-routes', wave: 2, status: 'pending' },
+      ],
+      edges: [
+        { from: 'auth-core', to: 'api-routes' },
+      ],
+      waves: {
+        1: { sets: ['auth-core', 'data-layer'], checkpoint: {} },
+        2: { sets: ['api-routes'], checkpoint: {} },
+      },
+      metadata: { totalSets: 3, totalWaves: 2, maxParallelism: 2 },
+    };
+    fs.writeFileSync(
+      path.join(dir, '.planning', 'sets', 'DAG.json'),
+      JSON.stringify(dagObj, null, 2),
+      'utf-8'
+    );
+
+    return dir;
+  }
+
+  function cleanupTestRepo(dir) {
+    try {
+      const result = execSync('git worktree list --porcelain', { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const blocks = result.trim().split('\n\n');
+      for (const block of blocks) {
+        const lines = block.trim().split('\n');
+        const pathLine = lines.find(l => l.startsWith('worktree '));
+        if (pathLine) {
+          const wtPath = pathLine.replace('worktree ', '');
+          if (wtPath !== dir) {
+            try { execSync(`git worktree remove --force "${wtPath}"`, { cwd: dir, stdio: 'pipe' }); } catch { /* ignore */ }
+          }
+        }
+      }
+    } catch { /* ignore */ }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  beforeEach(() => {
+    tmpDir = createTestRepoWithDAG();
+  });
+
+  afterEach(() => {
+    cleanupTestRepo(tmpDir);
+  });
+
+  it('execute wave-status outputs JSON with waves array', () => {
+    const stdout = execSync(`node "${CLI_PATH}" execute wave-status`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.ok(Array.isArray(result.waves), 'should have waves array');
+    assert.equal(result.waves.length, 2, 'should have 2 waves');
+    assert.equal(result.waves[0].wave, 1, 'first wave should be 1');
+    assert.equal(result.waves[0].sets.length, 2, 'wave 1 should have 2 sets');
+    assert.equal(result.waves[1].wave, 2, 'second wave should be 2');
+    assert.equal(result.waves[1].sets.length, 1, 'wave 2 should have 1 set');
+  });
+
+  it('execute wave-status shows Pending phase for sets without worktrees', () => {
+    const stdout = execSync(`node "${CLI_PATH}" execute wave-status`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    const authSet = result.waves[0].sets.find(s => s.name === 'auth-core');
+    assert.equal(authSet.phase, 'Pending', 'set without worktree should be Pending');
+    assert.equal(authSet.status, 'not-started', 'set without worktree should be not-started');
+  });
+
+  it('execute wave-status reflects registry phase after update-phase', () => {
+    // First update a set's phase
+    execSync(`node "${CLI_PATH}" execute update-phase auth-core Executing`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+
+    const stdout = execSync(`node "${CLI_PATH}" execute wave-status`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    const authSet = result.waves[0].sets.find(s => s.name === 'auth-core');
+    assert.equal(authSet.phase, 'Executing', 'should reflect updated phase');
+  });
+
+  it('execute update-phase outputs JSON with updated:true', () => {
+    const stdout = execSync(`node "${CLI_PATH}" execute update-phase auth-core Discussing`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.updated, true);
+    assert.equal(result.setName, 'auth-core');
+    assert.equal(result.phase, 'Discussing');
+  });
+
+  it('execute update-phase rejects invalid phase', () => {
+    try {
+      execSync(`node "${CLI_PATH}" execute update-phase auth-core InvalidPhase`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 15000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+      assert.ok(err.stderr.includes('Invalid phase'), 'should mention invalid phase');
+    }
+  });
+
+  it('execute update-phase without args exits non-zero', () => {
+    try {
+      execSync(`node "${CLI_PATH}" execute update-phase`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 15000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  it('execute wave-status without DAG exits non-zero', () => {
+    // Remove DAG.json
+    fs.unlinkSync(path.join(tmpDir, '.planning', 'sets', 'DAG.json'));
+    try {
+      execSync(`node "${CLI_PATH}" execute wave-status`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 15000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  it('execute update-phase creates entry for unregistered set', () => {
+    // update-phase for a set not in registry should create an entry
+    const stdout = execSync(`node "${CLI_PATH}" execute update-phase new-set Planning`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 15000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.updated, true);
+    assert.equal(result.setName, 'new-set');
+    assert.equal(result.phase, 'Planning');
   });
 });
