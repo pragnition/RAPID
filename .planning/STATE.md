@@ -18,7 +18,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-03)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** All 9 phases complete. Agent teams integration wired into execute and status skills with dual-mode dispatch, fallback, and mode-aware output.
+**Current focus:** Phase 09.1 (INSERTED) -- Package for plugin marketplace. Fix portability, write comprehensive DOCS.md, create marketplace.json, prepare for official directory submission.
 
 ## Current Position
 
@@ -155,6 +155,10 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 None yet.
+
+### Roadmap Evolution
+
+- Phase 09.1 inserted after Phase 09: Package for plugin marketplace (URGENT)
 
 ### Blockers/Concerns
 

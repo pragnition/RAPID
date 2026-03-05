@@ -178,3 +178,22 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Execution Lifecycle | 1/2 | In Progress | - |
 | 8. Merge Pipeline | 2/2 | Complete | 2026-03-04 |
 | 9. Agent Teams Integration | 1/2 | In Progress | - |
+
+### Phase 09.1: Package for Plugin Marketplace (INSERTED)
+
+**Goal:** RAPID is packaged, documented, and distributed via both self-hosted marketplace and official Anthropic plugin directory
+**Depends on:** Phase 9
+**Requirements**: PKG-01, PKG-02, PKG-03, PKG-04, PKG-05, PKG-06
+**Success Criteria** (what must be TRUE):
+  1. All SKILL.md files use portable paths that work when installed from marketplace (no hardcoded ~/RAPID/rapid/ references)
+  2. Version numbers are synchronized to 1.0.0 across plugin.json and package.json
+  3. MIT LICENSE file exists in the plugin directory
+  4. DOCS.md comprehensively documents all 10 skills, 6 agents, architecture, workflow, and installation
+  5. Self-hosted marketplace.json enables `/plugin marketplace add fishjojo1/RAPID`
+  6. Plugin passes `claude plugin validate .` and is ready for official directory submission
+**Plans:** 3 plans (Wave 1: portability fixes, Wave 2: docs || marketplace packaging)
+
+Plans:
+- [ ] 09.1-01: Fix portability -- portable paths, version sync, LICENSE, help update (PKG-01, PKG-02, PKG-03) [Wave 1]
+- [ ] 09.1-02: Comprehensive DOCS.md rewrite (PKG-04) [Wave 2, depends: 09.1-01]
+- [ ] 09.1-03: Marketplace packaging and submission (PKG-05, PKG-06) [Wave 2, depends: 09.1-01]

@@ -62,6 +62,15 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **AGNT-02**: All agents use structured return protocol (COMPLETE/CHECKPOINT/BLOCKED tables) for machine-parseable results
 - [x] **AGNT-03**: Agent completion is verified by checking filesystem artifacts (files exist, tests pass, commits land) — never trust agent self-reports alone
 
+### Packaging (Phase 09.1 -- INSERTED)
+
+- [ ] **PKG-01**: All SKILL.md files use portable paths that work when installed from marketplace (no hardcoded development paths)
+- [ ] **PKG-02**: Version numbers are synchronized to 1.0.0 across plugin.json and package.json
+- [ ] **PKG-03**: MIT LICENSE file exists in the plugin directory and help command reflects all 10 implemented skills
+- [ ] **PKG-04**: DOCS.md comprehensively documents all 10 skills, 6 agents, architecture, installation, workflow, and configuration
+- [ ] **PKG-05**: Self-hosted marketplace.json enables distribution via `/plugin marketplace add fishjojo1/RAPID`
+- [ ] **PKG-06**: Plugin passes validation and is ready for submission to official Anthropic plugin directory
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -135,10 +144,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MERG-03 | Phase 8: Merge Pipeline | Complete |
 | MERG-04 | Phase 8: Merge Pipeline | Complete |
 | EXEC-06 | Phase 9: Agent Teams Integration | Complete |
+| PKG-01 | Phase 9.1: Package for Plugin Marketplace | Planned |
+| PKG-02 | Phase 9.1: Package for Plugin Marketplace | Planned |
+| PKG-03 | Phase 9.1: Package for Plugin Marketplace | Planned |
+| PKG-04 | Phase 9.1: Package for Plugin Marketplace | Planned |
+| PKG-05 | Phase 9.1: Package for Plugin Marketplace | Planned |
+| PKG-06 | Phase 9.1: Package for Plugin Marketplace | Planned |
 
 **Coverage:**
-- v1 requirements: 34 total
-- Mapped to phases: 34
+- v1 requirements: 34 total (all complete)
+- v1 packaging requirements: 6 total (Phase 9.1 INSERTED)
+- Mapped to phases: 40
 - Unmapped: 0
 
 ---
