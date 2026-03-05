@@ -5,7 +5,7 @@ Agents operate under a finite context budget. Load the minimum context needed fo
 ## Loading Strategy
 
 1. **Start with your PLAN.md and any referenced SUMMARY.md files.** These contain the task specification and what has already been built. They are your primary context.
-2. **For state information:** Use `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" state get <field>` rather than reading STATE.md directly. The CLI returns only the field you need.
+2. **For state information:** Use `node "${RAPID_TOOLS}" state get <field>` rather than reading STATE.md directly. The CLI returns only the field you need.
 3. **For codebase exploration:** Use Grep and Glob to find relevant files before reading them. Identify the specific files you need rather than reading directories.
 4. **Never load more than 5 files speculatively.** Each file consumes context budget. If you are unsure whether a file is relevant, check its existence and size first.
 5. **Prefer targeted reads over full-file reads.** If you only need a function signature, read the file with a line range rather than the entire file.

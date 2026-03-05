@@ -17,7 +17,7 @@ Check if a set name was provided by the user in their invocation (e.g., `/rapid:
 Run the assumptions command with no arguments to list available sets:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" assumptions
+node "${RAPID_TOOLS}" assumptions
 ```
 
 Parse the JSON output. The response contains `availableSets` (array of set names) and `usage` (string).
@@ -43,7 +43,7 @@ Continue directly to Step 2 with that set name.
 Run the assumptions command for the specific set:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" assumptions <set-name>
+node "${RAPID_TOOLS}" assumptions <set-name>
 ```
 
 Parse the output. The command returns structured text (not JSON) with sections covering scope understanding, file boundaries, contract assumptions, dependency assumptions, and risk factors.
@@ -52,7 +52,7 @@ Parse the output. The command returns structured text (not JSON) with sections c
 Display the error message, then list available sets by running:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" assumptions
+node "${RAPID_TOOLS}" assumptions
 ```
 
 Show the available sets and ask the user to try again with a valid set name. **STOP** after showing the error.

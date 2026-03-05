@@ -12,7 +12,7 @@ You are the RAPID execution orchestrator. This skill executes sets in dependency
 Check if agent teams mode is available:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute detect-mode
+node "${RAPID_TOOLS}" execute detect-mode
 ```
 
 Parse the JSON output to get `agentTeamsAvailable`.
@@ -37,13 +37,13 @@ Silently set `executionMode = 'Subagents'`. Do NOT prompt or inform the user abo
 Read the DAG to determine wave order:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" plan list-sets
+node "${RAPID_TOOLS}" plan list-sets
 ```
 
 Then load the DAG for wave ordering:
 
 ```bash
-cat "$(node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" plan list-sets 2>/dev/null | node -e "const j=require('fs').readFileSync('/dev/stdin','utf-8');const d=JSON.parse(j);console.log(d.projectRoot || '.')")/.planning/sets/DAG.json" 2>/dev/null || echo '{"waves":{}}'
+cat "$(node "${RAPID_TOOLS}" plan list-sets 2>/dev/null | node -e "const j=require('fs').readFileSync('/dev/stdin','utf-8');const d=JSON.parse(j);console.log(d.projectRoot || '.')")/.planning/sets/DAG.json" 2>/dev/null || echo '{"waves":{}}'
 ```
 
 Parse the DAG to get waves. Each wave contains a list of sets that can execute in parallel. Waves execute sequentially (Wave 1 before Wave 2).
@@ -51,7 +51,7 @@ Parse the DAG to get waves. Each wave contains a list of sets that can execute i
 Also check current execution state:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute wave-status
+node "${RAPID_TOOLS}" execute wave-status
 ```
 
 Show the user the execution plan:
@@ -76,7 +76,7 @@ ls .planning/sets/*/HANDOFF.md 2>/dev/null
 If any HANDOFF.md files exist, read each one to get pause details:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute resume {setName} 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));console.log(JSON.stringify(d.handoff,null,2))"
+node "${RAPID_TOOLS}" execute resume {setName} 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));console.log(JSON.stringify(d.handoff,null,2))"
 ```
 
 **Do NOT actually run `execute resume` yet** -- just read the HANDOFF.md directly to inspect it:
@@ -100,7 +100,7 @@ Present the paused sets to the user:
 If the user chooses **Resume**:
 - Run the resume command:
   ```bash
-  node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute resume {setName}
+  node "${RAPID_TOOLS}" execute resume {setName}
   ```
 - Parse the JSON output to get the handoff data
 - When spawning the executor subagent in Step 7, prepend the handoff content to the prompt (see Step 7 for the resume prompt template)
@@ -123,7 +123,7 @@ For each wave (in order), perform Steps 3-7. If a wave's sets are already in 'Do
 Before starting a wave, check the planning gate:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" plan check-gate {waveNumber}
+node "${RAPID_TOOLS}" plan check-gate {waveNumber}
 ```
 
 If the gate is not open, check the JSON output for details. The output includes `missingArtifacts` for disk-level verification:
@@ -149,7 +149,7 @@ If the gate is not open, check the JSON output for details. The output includes 
 For each set in the current wave, check if a worktree already exists. If not, create one:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" worktree create {setName}
+node "${RAPID_TOOLS}" worktree create {setName}
 ```
 
 If the worktree already exists (created in a previous session), that is fine -- continue.
@@ -159,7 +159,7 @@ If the worktree already exists (created in a previous session), that is fine -- 
 For each set in the wave that has cross-set imports, generate stub files:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute generate-stubs {setName}
+node "${RAPID_TOOLS}" execute generate-stubs {setName}
 ```
 
 This creates `.rapid-stubs/` in the set's worktree with stub modules for each imported set's exports. The executor subagent can `require()` these stubs during development.
@@ -172,12 +172,12 @@ For each set:
 
 1. Prepare the discuss prompt:
    ```bash
-   node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute prepare-context {setName}
+   node "${RAPID_TOOLS}" execute prepare-context {setName}
    ```
 
 2. Update registry phase:
    ```bash
-   node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute update-phase {setName} Discussing
+   node "${RAPID_TOOLS}" execute update-phase {setName} Discussing
    ```
 
 3. Spawn a discuss subagent using the Agent tool. The subagent should:
@@ -215,7 +215,7 @@ For each set in the current wave, spawn a planning subagent:
 
 1. Update registry phase:
    ```bash
-   node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute update-phase {setName} Planning
+   node "${RAPID_TOOLS}" execute update-phase {setName} Planning
    ```
 
 2. Spawn a plan subagent using the Agent tool. The subagent should:
@@ -271,11 +271,11 @@ For the current wave, create a team and spawn teammates:
 2. For each set in the wave, prepare the teammate:
    - Generate scoped CLAUDE.md:
      ```bash
-     node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" worktree generate-claude-md {setName}
+     node "${RAPID_TOOLS}" worktree generate-claude-md {setName}
      ```
    - Update registry phase:
      ```bash
-     node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute update-phase {setName} Executing
+     node "${RAPID_TOOLS}" execute update-phase {setName} Executing
      ```
 
 3. Use the Agent tool to create a team and spawn teammates. For each set in the wave, spawn a teammate with the same executor prompt as subagent mode (read from the set's worktree CLAUDE.md + implementation plan). Each teammate works in its own worktree directory.
@@ -310,7 +310,7 @@ For the current wave, create a team and spawn teammates:
 
 6. For each set, run verification (same as subagent mode):
    ```bash
-   node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute verify {setName} --branch main
+   node "${RAPID_TOOLS}" execute verify {setName} --branch main
    ```
    Update registry phase based on results.
 
@@ -333,12 +333,12 @@ For each set:
 
 1. Generate scoped CLAUDE.md for the worktree:
    ```bash
-   node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" worktree generate-claude-md {setName}
+   node "${RAPID_TOOLS}" worktree generate-claude-md {setName}
    ```
 
 2. Update registry phase:
    ```bash
-   node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute update-phase {setName} Executing
+   node "${RAPID_TOOLS}" execute update-phase {setName} Executing
    ```
 
 3. Spawn an executor subagent using the Agent tool. The subagent should:
@@ -399,22 +399,22 @@ For each set:
    **If return status is COMPLETE:**
    - Parse the structured return and run verification:
      ```bash
-     node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute verify {setName} --branch main
+     node "${RAPID_TOOLS}" execute verify {setName} --branch main
      ```
      (Note: Replace 'main' with the actual base branch name)
    - Update registry phase based on results:
      ```bash
      # On success:
-     node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute update-phase {setName} Done
+     node "${RAPID_TOOLS}" execute update-phase {setName} Done
 
      # On failure:
-     node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute update-phase {setName} Error
+     node "${RAPID_TOOLS}" execute update-phase {setName} Error
      ```
 
    **If return status is CHECKPOINT (context window limit reached):**
    - Pipe the checkpoint data to the pause CLI:
      ```bash
-     echo '{"handoff_done":"...","handoff_remaining":"...","handoff_resume":"...","tasks_completed":N,"tasks_total":M}' | node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute pause {setName}
+     echo '{"handoff_done":"...","handoff_remaining":"...","handoff_resume":"...","tasks_completed":N,"tasks_total":M}' | node "${RAPID_TOOLS}" execute pause {setName}
      ```
    - Inform the user:
      > Set '{setName}' was paused (context limit reached). Resume with `/rapid:execute` or manage with `/rapid:pause`.
@@ -423,12 +423,12 @@ For each set:
    **If return status is BLOCKED:**
    - Update registry phase to Error:
      ```bash
-     node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute update-phase {setName} Error
+     node "${RAPID_TOOLS}" execute update-phase {setName} Error
      ```
 
 5. Clean up stubs (for COMPLETE and BLOCKED, not for CHECKPOINT/paused):
    ```bash
-   node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute cleanup-stubs {setName}
+   node "${RAPID_TOOLS}" execute cleanup-stubs {setName}
    ```
 
 ## Step 8: Wave Reconciliation
@@ -437,7 +437,7 @@ After all sets in a wave complete (or are paused), run mandatory reconciliation:
 
 1. Run reconciliation (passing execution mode for wave summary metadata):
    ```bash
-   node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute reconcile {waveNumber} --mode "{executionMode}"
+   node "${RAPID_TOOLS}" execute reconcile {waveNumber} --mode "{executionMode}"
    ```
 
 2. Parse the JSON output for overall result and details.
@@ -479,7 +479,7 @@ Then move to the next wave (back to Step 2).
 After all waves complete:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" execute wave-status
+node "${RAPID_TOOLS}" execute wave-status
 ```
 
 Present final summary:

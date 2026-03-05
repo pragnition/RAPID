@@ -12,7 +12,7 @@ You are the RAPID worktree cleanup assistant. This skill safely removes complete
 Run the status command to see all active worktrees:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" worktree status
+node "${RAPID_TOOLS}" worktree status
 ```
 
 Display the output so the user can see which worktrees exist and their current state.
@@ -47,7 +47,7 @@ Before removing anything, confirm with the user:
 Execute the cleanup command:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" worktree cleanup <set-name>
+node "${RAPID_TOOLS}" worktree cleanup <set-name>
 ```
 
 Parse the JSON output to determine the result.

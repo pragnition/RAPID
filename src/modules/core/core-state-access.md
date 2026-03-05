@@ -5,13 +5,13 @@ All project state lives in `.planning/` and is accessed through the `rapid-tools
 ## CLI Commands
 
 **State operations:**
-- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" state get [field]` -- Read a specific field from STATE.md
-- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" state get --all` -- Read the entire STATE.md content
-- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" state update <field> <value>` -- Update a field in STATE.md
+- `node "${RAPID_TOOLS}" state get [field]` -- Read a specific field from STATE.md
+- `node "${RAPID_TOOLS}" state get --all` -- Read the entire STATE.md content
+- `node "${RAPID_TOOLS}" state update <field> <value>` -- Update a field in STATE.md
 
 **Lock operations:**
-- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" lock acquire <name>` -- Acquire a named lock
-- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" lock status <name>` -- Check if a named lock is held
+- `node "${RAPID_TOOLS}" lock acquire <name>` -- Acquire a named lock
+- `node "${RAPID_TOOLS}" lock status <name>` -- Check if a named lock is held
 
 ## Rules
 
