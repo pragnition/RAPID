@@ -64,9 +64,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Packaging (Phase 09.1 -- INSERTED)
 
-- [ ] **PKG-01**: All SKILL.md files use portable paths that work when installed from marketplace (no hardcoded development paths)
-- [ ] **PKG-02**: Version numbers are synchronized to 1.0.0 across plugin.json and package.json
-- [ ] **PKG-03**: MIT LICENSE file exists in the plugin directory and help command reflects all 10 implemented skills
+- [x] **PKG-01**: All SKILL.md files use portable paths that work when installed from marketplace (no hardcoded development paths)
+- [x] **PKG-02**: Version numbers are synchronized to 1.0.0 across plugin.json and package.json
+- [x] **PKG-03**: MIT LICENSE file exists in the plugin directory and help command reflects all 10 implemented skills
 - [ ] **PKG-04**: DOCS.md comprehensively documents all 10 skills, 6 agents, architecture, installation, workflow, and configuration
 - [ ] **PKG-05**: Self-hosted marketplace.json enables distribution via `/plugin marketplace add fishjojo1/RAPID`
 - [ ] **PKG-06**: Plugin passes validation and is ready for submission to official Anthropic plugin directory

@@ -5,10 +5,10 @@ milestone_name: milestone
 status: unknown
 last_updated: "2026-03-05T06:29:04.022Z"
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 9
-  total_plans: 22
-  completed_plans: 22
+  total_plans: 25
+  completed_plans: 23
 ---
 
 # Project State
@@ -22,19 +22,19 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 
 ## Current Position
 
-Phase: 9 of 9 (Agent Teams Integration)
-Plan: 2 of 2 in current phase
-Status: Complete
-Last activity: 2026-03-05 - Completed 09-02-PLAN.md (Agent Teams Execute/Status Integration)
+Phase: 09.1 of 10 (Package for Plugin Marketplace)
+Plan: 1 of 3 in current phase
+Status: In Progress
+Last activity: 2026-03-05 - Completed 09.1-01-PLAN.md (Portability Fixes)
 
-Progress: [████████████████████] 100%
+Progress: [██████████████████░░] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: 5 min
-- Total execution time: 1.72 hours
+- Total execution time: 1.77 hours
 
 **By Phase:**
 
@@ -49,10 +49,11 @@ Progress: [████████████████████] 100%
 | 07 | 2/2 | 17 min | 9 min |
 | 08 | 2/2 | 12 min | 6 min |
 | 09 | 2/2 | 7 min | 4 min |
+| 09.1 | 1/3 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-02 (11 min), 08-01 (9 min), 08-02 (3 min), 09-01 (3 min), 09-02 (4 min)
-- Trend: Consistent (09-02 skill wiring + library integration + tests)
+- Last 5 plans: 08-01 (9 min), 08-02 (3 min), 09-01 (3 min), 09-02 (4 min), 09.1-01 (3 min)
+- Trend: Consistent (09.1-01 portability fixes across 15 files)
 
 *Updated after each plan completion*
 
@@ -151,6 +152,8 @@ Recent decisions affecting current work:
 - [09-02]: Mode detection at Step 0 locked for entire execution run -- no re-detection or re-prompt during waves
 - [09-02]: Generic fallback on any team failure re-executes entire wave via subagents with visible warning
 - [09-02]: formatStatusOutput wraps formatStatusTable with optional mode header line for consistent status display
+- [09.1-01]: RAPID_TOOLS env var with $HOME fallback for portable CLI paths across all skill and command files
+- [09.1-01]: require() paths in node -e use process.env.RAPID_TOOLS with path.resolve for lib file resolution
 
 ### Pending Todos
 
@@ -159,6 +162,7 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 09.1 inserted after Phase 09: Package for plugin marketplace (URGENT)
+- Phase 09.1 Plan 01 complete: portability fixes, version sync, LICENSE, help update
 
 ### Blockers/Concerns
 
@@ -174,5 +178,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-05
-Stopped at: Completed 09-02-PLAN.md (Agent Teams Execute/Status Integration) -- All phases complete (22/22 plans)
+Stopped at: Completed 09.1-01-PLAN.md (Portability Fixes) -- Phase 09.1 in progress (23/25 plans)
 Resume file: None
