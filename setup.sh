@@ -82,75 +82,144 @@ export RAPID_TOOLS="$RAPID_TOOLS_PATH"
 
 # Check if already configured in any common shell config
 ALREADY_CONFIGURED=""
-for check_file in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.zshrc" "$HOME/.config/fish/config.fish" "$HOME/.profile" "$HOME/.rapid-env"; do
+for check_file in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.zshrc" "$HOME/.config/fish/config.fish" "$HOME/.profile"; do
     if grep -qF "RAPID_TOOLS" "$check_file" 2>/dev/null; then
         ALREADY_CONFIGURED="$check_file"
         break
     fi
 done
 
-if [[ -n "$ALREADY_CONFIGURED" ]]; then
-    echo "  RAPID_TOOLS already configured in $ALREADY_CONFIGURED, skipping."
-else
-    echo ""
-    echo "  How would you like to persist the RAPID_TOOLS env var?"
-    echo "    1) Append to shell config file (recommended)"
-    echo "    2) Create a dedicated env file (~/.rapid-env)"
-    echo ""
-    printf "  Choose [1/2] (default: 1): "
-    read -r choice
+CHOSEN_CONFIG=""
 
-    # Default to option 1 if empty or invalid
-    if [[ "$choice" != "1" && "$choice" != "2" ]]; then
-        choice="1"
+if [[ -n "$ALREADY_CONFIGURED" ]]; then
+    echo "  RAPID_TOOLS already configured in $ALREADY_CONFIGURED, skipping shell config."
+else
+    # Detect available shell configs and build menu
+    SHELL_NAME="$(basename "${SHELL:-/bin/bash}")"
+    declare -a MENU_LABELS=()
+    declare -a MENU_FILES=()
+    declare -a MENU_TYPES=()
+    DEFAULT_CHOICE=""
+
+    # Check bash
+    if [[ -f "$HOME/.bashrc" ]]; then
+        MENU_LABELS+=("~/.bashrc")
+        MENU_FILES+=("$HOME/.bashrc")
+        MENU_TYPES+=("bash")
+        if [[ "$SHELL_NAME" == "bash" ]]; then DEFAULT_CHOICE="${#MENU_LABELS[@]}"; fi
+    elif [[ -f "$HOME/.bash_profile" ]]; then
+        MENU_LABELS+=("~/.bash_profile")
+        MENU_FILES+=("$HOME/.bash_profile")
+        MENU_TYPES+=("bash")
+        if [[ "$SHELL_NAME" == "bash" ]]; then DEFAULT_CHOICE="${#MENU_LABELS[@]}"; fi
     fi
 
-    if [[ "$choice" == "1" ]]; then
-        # Option 1: Shell config file
-        SHELL_NAME="$(basename "${SHELL:-/bin/bash}")"
-        case "$SHELL_NAME" in
-            fish)
-                CONFIG_FILE="$HOME/.config/fish/config.fish"
-                EXPORT_LINE="set -gx RAPID_TOOLS \"$RAPID_TOOLS_PATH\""
-                mkdir -p "$HOME/.config/fish"
-                ;;
-            zsh)
-                CONFIG_FILE="$HOME/.zshrc"
-                EXPORT_LINE="export RAPID_TOOLS=\"$RAPID_TOOLS_PATH\""
-                ;;
-            bash)
-                if [[ -f "$HOME/.bashrc" ]]; then
-                    CONFIG_FILE="$HOME/.bashrc"
-                else
-                    CONFIG_FILE="$HOME/.bash_profile"
-                fi
-                EXPORT_LINE="export RAPID_TOOLS=\"$RAPID_TOOLS_PATH\""
-                ;;
-            *)
-                CONFIG_FILE="$HOME/.profile"
-                EXPORT_LINE="export RAPID_TOOLS=\"$RAPID_TOOLS_PATH\""
-                ;;
-        esac
+    # Check zsh
+    if [[ -f "$HOME/.zshrc" ]]; then
+        MENU_LABELS+=("~/.zshrc")
+        MENU_FILES+=("$HOME/.zshrc")
+        MENU_TYPES+=("zsh")
+        if [[ "$SHELL_NAME" == "zsh" ]]; then DEFAULT_CHOICE="${#MENU_LABELS[@]}"; fi
+    fi
+
+    # Check fish
+    if [[ -f "$HOME/.config/fish/config.fish" ]]; then
+        MENU_LABELS+=("~/.config/fish/config.fish")
+        MENU_FILES+=("$HOME/.config/fish/config.fish")
+        MENU_TYPES+=("fish")
+        if [[ "$SHELL_NAME" == "fish" ]]; then DEFAULT_CHOICE="${#MENU_LABELS[@]}"; fi
+    fi
+
+    # Check generic profile
+    if [[ -f "$HOME/.profile" ]]; then
+        MENU_LABELS+=("~/.profile")
+        MENU_FILES+=("$HOME/.profile")
+        MENU_TYPES+=("posix")
+        if [[ -z "$DEFAULT_CHOICE" ]]; then DEFAULT_CHOICE="${#MENU_LABELS[@]}"; fi
+    fi
+
+    # Add skip option
+    SKIP_INDEX=$(( ${#MENU_LABELS[@]} + 1 ))
+
+    # If no default found yet, default to first option (or skip if no configs)
+    if [[ -z "$DEFAULT_CHOICE" ]]; then
+        if [[ ${#MENU_LABELS[@]} -gt 0 ]]; then
+            DEFAULT_CHOICE="1"
+        else
+            DEFAULT_CHOICE="$SKIP_INDEX"
+        fi
+    fi
+
+    echo ""
+    echo "  Available shell configs:"
+    for i in "${!MENU_LABELS[@]}"; do
+        NUM=$(( i + 1 ))
+        LABEL="${MENU_LABELS[$i]}"
+        CURRENT_MARKER=""
+        # Mark the current shell's config
+        if [[ "${MENU_TYPES[$i]}" == "$SHELL_NAME" ]] || \
+           { [[ "${MENU_TYPES[$i]}" == "bash" ]] && [[ "$SHELL_NAME" == "bash" ]]; }; then
+            CURRENT_MARKER=" (current)"
+        fi
+        DEFAULT_MARKER=""
+        if [[ "$NUM" == "$DEFAULT_CHOICE" ]]; then
+            DEFAULT_MARKER=" [default]"
+        fi
+        echo "    $NUM) $LABEL$CURRENT_MARKER$DEFAULT_MARKER"
+    done
+    echo "    $SKIP_INDEX) Skip shell config (use .env only)"
+    echo ""
+    printf "  Choose [1-$SKIP_INDEX] (default: $DEFAULT_CHOICE): "
+    read -r choice
+
+    # Default if empty
+    if [[ -z "$choice" ]]; then
+        choice="$DEFAULT_CHOICE"
+    fi
+
+    # Validate choice
+    if [[ "$choice" -ge 1 && "$choice" -le "$SKIP_INDEX" ]] 2>/dev/null; then
+        : # valid
+    else
+        choice="$DEFAULT_CHOICE"
+    fi
+
+    if [[ "$choice" -lt "$SKIP_INDEX" ]]; then
+        IDX=$(( choice - 1 ))
+        CONFIG_FILE="${MENU_FILES[$IDX]}"
+        SHELL_TYPE="${MENU_TYPES[$IDX]}"
+        CHOSEN_CONFIG="$CONFIG_FILE"
+
+        if [[ "$SHELL_TYPE" == "fish" ]]; then
+            EXPORT_LINE="set -gx RAPID_TOOLS \"$RAPID_TOOLS_PATH\""
+        else
+            EXPORT_LINE="export RAPID_TOOLS=\"$RAPID_TOOLS_PATH\""
+        fi
 
         echo "" >> "$CONFIG_FILE"
         echo "# RAPID plugin for Claude Code" >> "$CONFIG_FILE"
         echo "$EXPORT_LINE" >> "$CONFIG_FILE"
         echo "  OK: Added to $CONFIG_FILE"
     else
-        # Option 2: Dedicated env file
-        cat > "$HOME/.rapid-env" << ENVEOF
-# RAPID plugin for Claude Code
-export RAPID_TOOLS="$RAPID_TOOLS_PATH"
-ENVEOF
-        echo "  OK: Written to ~/.rapid-env"
-        echo ""
-        echo "  To activate, add this to your shell config:"
-        echo "    source ~/.rapid-env"
-        echo ""
-        echo "  Or source it manually before using RAPID:"
-        echo "    source ~/.rapid-env"
+        echo "  Skipped shell config."
     fi
 fi
+
+# Always write .env file in plugin root
+echo ""
+echo "  Writing .env file to plugin directory..."
+cat > "$SCRIPT_DIR/.env" << ENVEOF
+# RAPID plugin environment
+RAPID_TOOLS=$RAPID_TOOLS_PATH
+ENVEOF
+echo "  OK: Written to $SCRIPT_DIR/.env"
+
+# Create .env.example
+cat > "$SCRIPT_DIR/.env.example" << ENVEOF
+# RAPID plugin environment
+# Set by setup.sh -- path to rapid-tools.cjs CLI
+RAPID_TOOLS=/path/to/your/rapid/src/bin/rapid-tools.cjs
+ENVEOF
 
 # Step 5: Register Claude Code plugin
 echo "[5/5] Registering Claude Code plugin..."
@@ -172,12 +241,16 @@ echo "=== Setup Complete ==="
 echo "RAPID_TOOLS=$RAPID_TOOLS_PATH"
 echo "Install method: $INSTALL_METHOD"
 echo ""
+echo "Environment persisted to:"
+echo "  - .env file: $SCRIPT_DIR/.env (always available)"
 if [[ -n "$ALREADY_CONFIGURED" ]]; then
-    echo "Environment variable already persisted in $ALREADY_CONFIGURED"
-elif [[ "${choice:-1}" == "1" ]]; then
-    echo "Run 'source ${CONFIG_FILE}' or open a new terminal to activate."
+    echo "  - Shell config: $ALREADY_CONFIGURED (previously configured)"
+elif [[ -n "$CHOSEN_CONFIG" ]]; then
+    echo "  - Shell config: $CHOSEN_CONFIG"
+    echo ""
+    echo "Run 'source $CHOSEN_CONFIG' or open a new terminal to activate."
 else
-    echo "Run 'source ~/.rapid-env' or add it to your shell config to activate."
+    echo "  - Shell config: skipped"
 fi
 echo ""
 echo "Try: /rapid:help in Claude Code to get started."
