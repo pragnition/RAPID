@@ -13,7 +13,7 @@ You are the RAPID context generator. This skill analyzes an existing codebase an
 Run the brownfield detector to check if source code exists:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" context detect
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" context detect
 ```
 
 Parse the JSON output. The response contains `hasSourceCode` (boolean) and either a `message` (when false) or `manifest` (when true).
@@ -33,7 +33,7 @@ The manifest contains:
 Run the context directory setup:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" context generate
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" context generate
 ```
 
 Parse the JSON output. The response contains `contextDir` (path to `.planning/context/`) and `ready` (boolean).

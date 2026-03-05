@@ -615,7 +615,7 @@ describe('runIntegrationTests', { concurrency: 1 }, () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-integ-'));
-    fs.mkdirSync(path.join(tmpDir, 'rapid', 'src', 'lib'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'src', 'lib'), { recursive: true });
   });
 
   afterEach(() => {
@@ -626,7 +626,7 @@ describe('runIntegrationTests', { concurrency: 1 }, () => {
     const merge = require('./merge.cjs');
 
     // Create a simple passing test file
-    fs.writeFileSync(path.join(tmpDir, 'rapid', 'src', 'lib', 'pass.test.cjs'), [
+    fs.writeFileSync(path.join(tmpDir, 'src', 'lib', 'pass.test.cjs'), [
       "'use strict';",
       "const { describe, it } = require('node:test');",
       "const assert = require('node:assert/strict');",
@@ -643,7 +643,7 @@ describe('runIntegrationTests', { concurrency: 1 }, () => {
 
     // Create a failing test file that throws at top level
     // (node:test describe/it within nested node --test can swallow failures)
-    fs.writeFileSync(path.join(tmpDir, 'rapid', 'src', 'lib', 'fail.test.cjs'), [
+    fs.writeFileSync(path.join(tmpDir, 'src', 'lib', 'fail.test.cjs'), [
       "'use strict';",
       "process.exitCode = 1;",
       "throw new Error('deliberate test failure');",

@@ -490,7 +490,7 @@ function mergeSet(projectRoot, setName, baseBranch) {
 /**
  * Run integration tests across all library test files on main.
  *
- * Executes `node --test rapid/src/lib/*.test.cjs` with a 30-second timeout.
+ * Executes `node --test src/lib/*.test.cjs` with a 30-second timeout.
  *
  * @param {string} projectRoot - Project root directory
  * @returns {{ passed: boolean, output: string }}
@@ -503,7 +503,7 @@ function runIntegrationTests(projectRoot) {
     const env = { ...process.env };
     delete env.NODE_TEST_CONTEXT;
 
-    const result = execSync('node --test rapid/src/lib/*.test.cjs', {
+    const result = execSync('node --test src/lib/*.test.cjs', {
       cwd: projectRoot,
       stdio: 'pipe',
       timeout: 30000,

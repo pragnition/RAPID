@@ -25,11 +25,9 @@ describe('handleAssembleAgent integration', () => {
     contextDir = path.join(planningDir, 'context');
     fs.mkdirSync(planningDir, { recursive: true });
 
-    // loadConfig reads from projectRoot/rapid/config.json
-    const rapidConfigDir = path.join(tmpDir, 'rapid');
-    fs.mkdirSync(rapidConfigDir, { recursive: true });
+    // loadConfig reads from projectRoot/config.json
     const configSrc = path.join(RAPID_DIR, 'config.json');
-    fs.copyFileSync(configSrc, path.join(rapidConfigDir, 'config.json'));
+    fs.copyFileSync(configSrc, path.join(tmpDir, 'config.json'));
 
     // The output file will be written to the real agents/ dir
     agentFile = path.join(AGENTS_DIR, 'rapid-planner.md');

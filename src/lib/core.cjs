@@ -48,7 +48,7 @@ function findProjectRoot(startDir) {
 }
 
 /**
- * Load RAPID configuration from rapid/config.json relative to project root.
+ * Load RAPID configuration from config.json relative to project root.
  * Returns sensible defaults if the file does not exist.
  *
  * @param {string} projectRoot - Absolute path to the project root
@@ -60,7 +60,7 @@ function loadConfig(projectRoot) {
     lock_timeout_ms: 300000,
   };
 
-  const configPath = path.join(projectRoot, 'rapid', 'config.json');
+  const configPath = path.join(projectRoot, 'config.json');
   try {
     const raw = fs.readFileSync(configPath, 'utf-8');
     const parsed = JSON.parse(raw);
@@ -74,11 +74,11 @@ function loadConfig(projectRoot) {
 }
 
 /**
- * Resolve the path to the rapid/ directory (where the tool lives).
- * Uses __dirname relative resolution: this file lives at rapid/src/lib/core.cjs,
- * so rapid/ is two levels up.
+ * Resolve the path to the RAPID plugin root directory.
+ * Uses __dirname relative resolution: this file lives at src/lib/core.cjs,
+ * so the plugin root is two levels up.
  *
- * @returns {string} Absolute path to the rapid/ directory
+ * @returns {string} Absolute path to the RAPID plugin root directory
  */
 function resolveRapidDir() {
   return path.resolve(__dirname, '..', '..');

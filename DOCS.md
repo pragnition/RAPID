@@ -20,8 +20,8 @@ Clone the repository and add it as a local plugin:
 
 ```bash
 git clone https://github.com/fishjojo1/RAPID.git
-cd RAPID/rapid && npm install
-claude --plugin-dir ~/RAPID/rapid
+cd RAPID && npm install
+claude --plugin-dir ~/RAPID
 ```
 
 ### Requirements
@@ -207,7 +207,7 @@ What it does:
 ### Directory Structure
 
 ```
-rapid/
+RAPID/                              (repo root)
 ├── .claude-plugin/
 │   └── plugin.json              # Plugin manifest (name, version, metadata)
 ├── commands/                    # Legacy command files (5)
@@ -227,7 +227,7 @@ rapid/
 │   ├── pause/SKILL.md
 │   ├── plan/SKILL.md
 │   └── status/SKILL.md
-├── agents/                      # Subagent definitions (6)
+├── agents/                      # Subagent definitions (6, gitignored)
 │   ├── rapid-cleanup.md
 │   ├── rapid-executor.md
 │   ├── rapid-orchestrator.md

@@ -92,11 +92,9 @@ describe('core.cjs', () => {
       assert.equal(config.lock_timeout_ms, 300000, 'Default lock_timeout_ms should be 300000');
     });
 
-    it('reads config from rapid/config.json when it exists', () => {
-      const configDir = path.join(tmpDir, 'rapid');
-      fs.mkdirSync(configDir, { recursive: true });
+    it('reads config from config.json when it exists', () => {
       fs.writeFileSync(
-        path.join(configDir, 'config.json'),
+        path.join(tmpDir, 'config.json'),
         JSON.stringify({ agents: { test: true }, lock_timeout_ms: 60000 })
       );
       const config = core.loadConfig(tmpDir);

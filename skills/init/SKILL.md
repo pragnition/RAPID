@@ -13,7 +13,7 @@ You are the RAPID project initializer. Follow these steps IN ORDER. Do not skip 
 Run the prerequisite checker to verify the development environment:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" prereqs
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" prereqs
 ```
 
 Parse the JSON output. The response includes `results` (array of tool checks) and `summary` (with `table`, `hasBlockers`, `hasWarnings`).
@@ -34,7 +34,7 @@ Decision logic:
 Run the git repository check:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" prereqs --git-check
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" prereqs --git-check
 ```
 
 Parse the JSON output containing `isRepo` (boolean) and `toplevel` (string or null).
@@ -50,7 +50,7 @@ Decision logic:
 Run the existing project detector:
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" init detect
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" init detect
 ```
 
 Parse the JSON output containing `exists` (boolean) and `files` (string array of existing planning files).
@@ -100,25 +100,25 @@ Run the scaffold command using the answers from Step 4. The CLI creates all `.pl
 **For fresh scaffolding** (default, when `.planning/` does not exist):
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" init scaffold --name "{project name}" --desc "{description}" --team-size {N}
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" init scaffold --name "{project name}" --desc "{description}" --team-size {N}
 ```
 
 **For reinitialize** (user chose Option 1 in Step 3):
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" init scaffold --name "{project name}" --desc "{description}" --team-size {N} --mode reinitialize
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" init scaffold --name "{project name}" --desc "{description}" --team-size {N} --mode reinitialize
 ```
 
 **For upgrade** (user chose Option 2 in Step 3):
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" init scaffold --name "{project name}" --desc "{description}" --team-size {N} --mode upgrade
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" init scaffold --name "{project name}" --desc "{description}" --team-size {N} --mode upgrade
 ```
 
 **For cancel** (user chose Option 3 in Step 3):
 
 ```bash
-node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" init scaffold --mode cancel
+node "${RAPID_TOOLS:-$HOME/RAPID/src/bin/rapid-tools.cjs}" init scaffold --mode cancel
 ```
 
 Parse the JSON result:
