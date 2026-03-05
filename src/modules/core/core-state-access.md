@@ -1,17 +1,17 @@
 # State Access Protocol
 
-All project state lives in `.planning/` and is accessed through the `rapid-tools.cjs` CLI. Never read or write `.planning/` files directly.
+All project state lives in `.planning/` and is accessed through the `rapid-tools.cjs` CLI (via `RAPID_TOOLS` env var). Never read or write `.planning/` files directly.
 
 ## CLI Commands
 
 **State operations:**
-- `node src/bin/rapid-tools.cjs state get [field]` -- Read a specific field from STATE.md
-- `node src/bin/rapid-tools.cjs state get --all` -- Read the entire STATE.md content
-- `node src/bin/rapid-tools.cjs state update <field> <value>` -- Update a field in STATE.md
+- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" state get [field]` -- Read a specific field from STATE.md
+- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" state get --all` -- Read the entire STATE.md content
+- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" state update <field> <value>` -- Update a field in STATE.md
 
 **Lock operations:**
-- `node src/bin/rapid-tools.cjs lock acquire <name>` -- Acquire a named lock
-- `node src/bin/rapid-tools.cjs lock status <name>` -- Check if a named lock is held
+- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" lock acquire <name>` -- Acquire a named lock
+- `node "${RAPID_TOOLS:-~/RAPID/src/bin/rapid-tools.cjs}" lock status <name>` -- Check if a named lock is held
 
 ## Rules
 
