@@ -162,6 +162,9 @@ Recent decisions affecting current work:
 - [09.1-02]: Organized by workflow stages: init -> context -> plan -> execute -> status/pause -> merge -> cleanup
 - [09.1-02]: Included dual execution mode documentation (Agent Teams vs Subagents)
 - [Phase 09.2]: Core modules use Prerequisites section with bash guard block (no executable bash blocks existed)
+- [09.2-01]: Interactive prompt for env var persistence method (shell config vs dedicated env file)
+- [09.2-01]: cd+dirname for macOS-compatible self-location (not readlink -f)
+- [09.2-01]: Check all common shell configs before prompting (idempotent across shells)
 
 ### Pending Todos
 
