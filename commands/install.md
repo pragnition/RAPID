@@ -8,6 +8,8 @@ allowed-tools: Read, Bash
 
 You are the RAPID installer. This skill bootstraps RAPID by setting the RAPID_TOOLS environment variable, installing npm dependencies, validating prerequisites, and registering the Claude Code plugin. It works for both marketplace and git clone installations.
 
+Setup persists RAPID_TOOLS to both a shell config file (user's choice) AND a `.env` file in the plugin root directory for reliable fallback loading.
+
 ## Step 0: Detect Installation Location
 
 Determine where RAPID is installed:
@@ -45,13 +47,17 @@ fi
 
 ## Step 2: Verify Installation
 
-After setup completes, verify RAPID_TOOLS is functional:
+After setup completes, verify RAPID_TOOLS is functional. If the environment variable is not set in this session, load it from the .env file as fallback:
 
 ```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then
+    export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs)
+fi
 node "${RAPID_TOOLS}" prereqs
 ```
 
-If this fails, the RAPID_TOOLS environment variable may not be set in this session. Try sourcing your shell config or running setup.sh again.
+If this still fails, try sourcing your shell config or running setup.sh again.
 
 ## Step 3: Guide User
 
@@ -61,3 +67,5 @@ If verification succeeded:
 - Run `/rapid:help` to see all available commands
 - If this is a new project, run `/rapid:init` to initialize planning infrastructure
 - If you update RAPID (marketplace update or git pull), re-run `/rapid:install` to refresh paths
+- The .env file at the plugin root (`$RAPID_ROOT/.env`) can be edited manually if needed
+- Shell config was also updated if you chose a shell during setup (restart your terminal or source the config to activate)
