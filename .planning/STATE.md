@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-last_updated: "2026-03-04T14:06:49.562Z"
+status: complete
+last_updated: "2026-03-05T06:21:22Z"
 progress:
-  total_phases: 8
-  completed_phases: 8
+  total_phases: 9
+  completed_phases: 9
   total_plans: 22
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-03)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 9 in progress. Agent teams foundation: teams.cjs abstraction layer + TaskCompleted hook + CLI detect-mode. Ready for Plan 02 (execute skill wiring).
+**Current focus:** All 9 phases complete. Agent teams integration wired into execute and status skills with dual-mode dispatch, fallback, and mode-aware output.
 
 ## Current Position
 
 Phase: 9 of 9 (Agent Teams Integration)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-03-05 - Completed 09-01-PLAN.md (Agent Teams Foundation)
+Plan: 2 of 2 in current phase
+Status: Complete
+Last activity: 2026-03-05 - Completed 09-02-PLAN.md (Agent Teams Execute/Status Integration)
 
-Progress: [███████████████████] 96%
+Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 22
 - Average duration: 5 min
-- Total execution time: 1.65 hours
+- Total execution time: 1.72 hours
 
 **By Phase:**
 
@@ -48,11 +48,11 @@ Progress: [███████████████████] 96%
 | 06 | 2/2 | 9 min | 5 min |
 | 07 | 2/2 | 17 min | 9 min |
 | 08 | 2/2 | 12 min | 6 min |
-| 09 | 1/2 | 3 min | 3 min |
+| 09 | 2/2 | 7 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (6 min), 07-02 (11 min), 08-01 (9 min), 08-02 (3 min), 09-01 (3 min)
-- Trend: Consistent (09-01 TDD library + hook + CLI addition)
+- Last 5 plans: 07-02 (11 min), 08-01 (9 min), 08-02 (3 min), 09-01 (3 min), 09-02 (4 min)
+- Trend: Consistent (09-02 skill wiring + library integration + tests)
 
 *Updated after each plan completion*
 
@@ -148,6 +148,9 @@ Recent decisions affecting current work:
 - [09-01]: Runtime env var check only (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1') for agent teams detection
 - [09-01]: JSONL format for completion tracking -- append-friendly, one record per line for hook writes
 - [09-01]: buildTeammateConfig reuses assembleExecutorPrompt directly -- teammates get identical prompts to subagent executors
+- [09-02]: Mode detection at Step 0 locked for entire execution run -- no re-detection or re-prompt during waves
+- [09-02]: Generic fallback on any team failure re-executes entire wave via subagents with visible warning
+- [09-02]: formatStatusOutput wraps formatStatusTable with optional mode header line for consistent status display
 
 ### Pending Todos
 
@@ -167,5 +170,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-05
-Stopped at: Completed 09-01-PLAN.md (Agent Teams Foundation) -- Phase 09 in progress (1/2)
+Stopped at: Completed 09-02-PLAN.md (Agent Teams Execute/Status Integration) -- All phases complete (22/22 plans)
 Resume file: None

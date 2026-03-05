@@ -38,7 +38,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **EXEC-03**: Changes within sets are committed atomically per task (bisectable, blame-friendly history)
 - [x] **EXEC-04**: Developer can run `/rapid:status` to see progress across all sets and all phases
 - [x] **EXEC-05**: Developer can pause work on a set and resume later with full state restoration (handoff files)
-- [ ] **EXEC-06**: RAPID detects EXPERIMENTAL_AGENT_TEAMS env var and offers agent teams execution mode with subagent fallback
+- [x] **EXEC-06**: RAPID detects EXPERIMENTAL_AGENT_TEAMS env var and offers agent teams execution mode with subagent fallback
 - [x] **EXEC-07**: Loose sync gates enforce: all sets must finish planning before any begins execution; execution is independent per set
 - [x] **EXEC-08**: Mandatory reconciliation after each execution wave — compare plan vs actual, create SUMMARY with pass/fail on acceptance criteria, block next wave until reconciled
 
@@ -134,7 +134,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MERG-02 | Phase 8: Merge Pipeline | Complete |
 | MERG-03 | Phase 8: Merge Pipeline | Complete |
 | MERG-04 | Phase 8: Merge Pipeline | Complete |
-| EXEC-06 | Phase 9: Agent Teams Integration | Pending |
+| EXEC-06 | Phase 9: Agent Teams Integration | Complete |
 
 **Coverage:**
 - v1 requirements: 34 total
