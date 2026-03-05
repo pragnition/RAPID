@@ -2,6 +2,14 @@
 
 All project state lives in `.planning/` and is accessed through the `rapid-tools.cjs` CLI (via `RAPID_TOOLS` env var). Never read or write `.planning/` files directly.
 
+## Prerequisites
+
+Before running any command below, verify RAPID_TOOLS is set:
+
+```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+```
+
 ## CLI Commands
 
 **State operations:**

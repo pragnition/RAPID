@@ -12,6 +12,7 @@ You are the RAPID status viewer. This skill shows a unified dashboard of all RAP
 Run two CLI commands to gather dashboard data:
 
 ```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" worktree status
 ```
 

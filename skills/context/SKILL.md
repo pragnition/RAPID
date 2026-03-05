@@ -13,6 +13,7 @@ You are the RAPID context generator. This skill analyzes an existing codebase an
 Run the brownfield detector to check if source code exists:
 
 ```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" context detect
 ```
 

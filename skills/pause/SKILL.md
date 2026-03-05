@@ -14,6 +14,7 @@ The user provides a set name as the argument: `/rapid:pause {setName}`
 If no set name is provided, show available executing sets:
 
 ```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" execute wave-status 2>/dev/null
 ```
 

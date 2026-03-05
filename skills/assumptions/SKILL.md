@@ -17,6 +17,7 @@ Check if a set name was provided by the user in their invocation (e.g., `/rapid:
 Run the assumptions command with no arguments to list available sets:
 
 ```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" assumptions
 ```
 

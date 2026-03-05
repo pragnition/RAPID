@@ -2,6 +2,14 @@
 
 Agents operate under a finite context budget. Load the minimum context needed for your task, then expand as needed.
 
+## Prerequisites
+
+Before running any command below, verify RAPID_TOOLS is set:
+
+```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+```
+
 ## Loading Strategy
 
 1. **Start with your PLAN.md and any referenced SUMMARY.md files.** These contain the task specification and what has already been built. They are your primary context.

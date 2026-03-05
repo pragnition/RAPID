@@ -12,6 +12,7 @@ You are the RAPID worktree cleanup assistant. This skill safely removes complete
 Run the status command to see all active worktrees:
 
 ```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" worktree status
 ```
 

@@ -12,6 +12,7 @@ You are the RAPID merge orchestrator. This skill merges completed set branches i
 Determine merge order from the DAG:
 
 ```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" merge order
 ```
 

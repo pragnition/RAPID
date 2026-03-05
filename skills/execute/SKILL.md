@@ -12,6 +12,7 @@ You are the RAPID execution orchestrator. This skill executes sets in dependency
 Check if agent teams mode is available:
 
 ```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" execute detect-mode
 ```
 

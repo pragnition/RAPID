@@ -12,6 +12,7 @@ You are the RAPID project initializer. Follow these steps IN ORDER. Do not skip 
 Run the prerequisite checker:
 
 ```bash
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" prereqs
 ```
 
