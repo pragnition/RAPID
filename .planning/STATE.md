@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 Phase: 09.1 of 10 (Package for Plugin Marketplace)
 Plan: 2 of 3 in current phase
 Status: In Progress
-Last activity: 2026-03-05 - Completed quick task 3: Fix agent tool calling to use installation path
+Last activity: 2026-03-05 - Completed quick task 3: Fix agent tool calling to use installation-relative paths
 
 Progress: [███████████████████░] 96%
 
