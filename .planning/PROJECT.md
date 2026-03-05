@@ -8,26 +8,39 @@ RAPID is a Claude Code plugin (metaprompting framework) that enables team-based 
 
 Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence that their independent work will merge cleanly.
 
+## Current Milestone: v1.1 UI UX Improvements
+
+**Goal:** Replace freeform interaction patterns with structured prompts, polish install flow, add error recovery paths, and improve visibility during long operations.
+
+**Target features:**
+- Structured AskUserQuestion prompts across all 8+ skills
+- Shell detection and auto-sourcing after install
+- Error recovery paths replacing bare "STOP" handling
+- Progress indicators during subagent operations
+
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- Sets defined during planning with interface contracts and boundaries
+- Each set gets its own git worktree/branch for physical isolation
+- Interface contracts define boundaries between sets upfront
+- Loose sync model — shared planning gate, independent execution phases
+- Git-native shared state with lock files to prevent concurrent modification
+- Merge reviewer agent that does deep code review and blocks on contract/test violations
+- Cleanup agent spawnable when merge reviewer finds issues
+- CLAUDE.md generation with full context (code style, architecture patterns, API conventions, project knowledge)
+- EXPERIMENTAL_AGENT_TEAMS support with subagent fallback
+- Plugin architecture (skills, agents, hooks in .claude/)
+- Discuss/plan/execute phase strategy per set
+- Styling guide auto-generated during init for cross-worktree consistency
 
 ### Active
 
-- [ ] Sets defined during planning with interface contracts and boundaries
-- [ ] Each set gets its own git worktree/branch for physical isolation
-- [ ] Interface contracts define boundaries between sets upfront
-- [ ] Loose sync model — shared planning gate, independent execution phases
-- [ ] Git-native shared state with lock files to prevent concurrent modification
-- [ ] Merge reviewer agent that does deep code review and blocks on contract/test violations
-- [ ] Cleanup agent spawnable when merge reviewer finds issues
-- [ ] CLAUDE.md generation with full context (code style, architecture patterns, API conventions, project knowledge)
-- [ ] EXPERIMENTAL_AGENT_TEAMS support with subagent fallback
-- [ ] Plugin architecture (skills, agents, hooks in .claude/)
-- [ ] Discuss/plan/execute phase strategy per set
-- [ ] Styling guide auto-generated during init for cross-worktree consistency
+- [ ] All skills use AskUserQuestion for decision gates (14 prompt points)
+- [ ] Install skill detects shell, auto-sources config, verifies RAPID_TOOLS
+- [ ] Error recovery paths with structured options replace bare STOP handling
+- [ ] Progress indicators during subagent operations
 
 ### Out of Scope
 
@@ -68,4 +81,4 @@ Multiple developers using Claude Code can work on the same project simultaneousl
 | Team-first design (solo = team of one) | Avoids separate code paths, ensures the parallel model works at any scale | — Pending |
 
 ---
-*Last updated: 2026-03-03 after initialization*
+*Last updated: 2026-03-05 after milestone v1.1 start*

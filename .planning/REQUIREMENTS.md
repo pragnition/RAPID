@@ -3,9 +3,49 @@
 **Defined:** 2026-03-03
 **Core Value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
 
-## v1 Requirements
+## v1.1 Requirements
 
-Requirements for initial release. Each maps to roadmap phases.
+Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
+
+### Structured Prompts
+
+- [ ] **PROMPT-01**: Init skill uses AskUserQuestion for reinitialize/upgrade/cancel gate instead of numbered text options
+- [ ] **PROMPT-02**: Init skill uses AskUserQuestion for team size selection with preset options (1, 2-3, 4-5, 6+)
+- [ ] **PROMPT-03**: Init skill uses AskUserQuestion for fresh vs brownfield project decision
+- [ ] **PROMPT-04**: Plan skill uses AskUserQuestion for re-plan/view/cancel gate
+- [ ] **PROMPT-05**: Execute skill uses AskUserQuestion for agent teams vs subagents choice with clear descriptions
+- [ ] **PROMPT-06**: Execute skill uses AskUserQuestion for paused set resume/restart/skip with consequence descriptions
+- [ ] **PROMPT-07**: Execute skill uses AskUserQuestion for planning gate override with risk explanation
+- [ ] **PROMPT-08**: Execute skill uses AskUserQuestion for wave reconciliation next steps based on result status
+- [ ] **PROMPT-09**: Merge skill uses AskUserQuestion for final merge confirmation before irreversible action
+- [ ] **PROMPT-10**: Merge skill uses AskUserQuestion for merge conflict recovery (resolve/show/revert)
+- [ ] **PROMPT-11**: Cleanup skill uses AskUserQuestion for destructive worktree removal confirmation
+- [ ] **PROMPT-12**: Assumptions skill uses AskUserQuestion for set selection and feedback options
+- [ ] **PROMPT-13**: Context skill uses AskUserQuestion for greenfield detection and generation confirmation
+- [ ] **PROMPT-14**: Status skill offers next action via AskUserQuestion after displaying status
+
+### Install Polish
+
+- [ ] **INST-01**: Install skill detects user's shell from $SHELL env var and shows which config file will be modified
+- [ ] **INST-02**: Install skill auto-sources shell config after writing env vars and verifies RAPID_TOOLS is set
+- [ ] **INST-03**: Install skill shows clear fallback guidance if auto-sourcing fails
+
+### Error Recovery
+
+- [ ] **ERRR-01**: Merge skill offers structured recovery options on merge conflict instead of halting pipeline
+- [ ] **ERRR-02**: Cleanup skill provides specific resolution steps (commit/stash commands) when dirty worktree blocks removal
+- [ ] **ERRR-03**: All skills replace bare "STOP" error handling with AskUserQuestion offering retry/skip/help/cancel options
+- [ ] **ERRR-04**: Merge skill explains verdict meanings (APPROVE/CHANGES/BLOCK) and shows allowed cleanup rounds
+
+### Progress Visibility
+
+- [ ] **PROG-01**: Execute skill shows progress indicators during subagent execution with last activity updates
+- [ ] **PROG-02**: Context skill shows progress during codebase analysis subagent
+- [ ] **PROG-03**: Merge skill shows progress during reviewer and cleanup subagent operations
+
+## v1 Requirements (Validated)
+
+All v1.0 requirements shipped and validated.
 
 ### Initialization
 
@@ -34,59 +74,59 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Execution
 
 - [x] **EXEC-01**: Each set executes in a fresh context window (subagent per set) with only relevant contracts and context loaded
-- [x] **EXEC-02**: Each set goes through its own discuss → plan → execute phase lifecycle independently
+- [x] **EXEC-02**: Each set goes through its own discuss, plan, execute phase lifecycle independently
 - [x] **EXEC-03**: Changes within sets are committed atomically per task (bisectable, blame-friendly history)
 - [x] **EXEC-04**: Developer can run `/rapid:status` to see progress across all sets and all phases
 - [x] **EXEC-05**: Developer can pause work on a set and resume later with full state restoration (handoff files)
 - [x] **EXEC-06**: RAPID detects EXPERIMENTAL_AGENT_TEAMS env var and offers agent teams execution mode with subagent fallback
 - [x] **EXEC-07**: Loose sync gates enforce: all sets must finish planning before any begins execution; execution is independent per set
-- [x] **EXEC-08**: Mandatory reconciliation after each execution wave — compare plan vs actual, create SUMMARY with pass/fail on acceptance criteria, block next wave until reconciled
+- [x] **EXEC-08**: Mandatory reconciliation after each execution wave
 
 ### Merge & Review
 
-- [x] **MERG-01**: Merge reviewer agent performs deep code review (style, correctness, contract compliance) before any set merges to main
-- [x] **MERG-02**: Merge reviewer validates all interface contracts are satisfied — blocks merge if contracts violated or tests fail
-- [x] **MERG-03**: Cleanup agent can be spawned when merge reviewer finds fixable issues (style violations, missing tests, minor contract gaps)
-- [x] **MERG-04**: Sets merge in dependency-graph order — independent sets can merge in parallel, dependent sets merge sequentially
+- [x] **MERG-01**: Merge reviewer agent performs deep code review before any set merges to main
+- [x] **MERG-02**: Merge reviewer validates all interface contracts are satisfied
+- [x] **MERG-03**: Cleanup agent can be spawned when merge reviewer finds fixable issues
+- [x] **MERG-04**: Sets merge in dependency-graph order
 
 ### State Management
 
-- [x] **STAT-01**: All project state lives in `.planning/` directory, committed to git (JSON for machine state, Markdown for human-readable)
-- [x] **STAT-02**: Concurrent state access is prevented via mkdir-based atomic lock files with PID + timestamp
-- [x] **STAT-03**: Stale locks are detected and recovered automatically (crashed process left a lock behind)
+- [x] **STAT-01**: All project state lives in `.planning/` directory, committed to git
+- [x] **STAT-02**: Concurrent state access is prevented via mkdir-based atomic lock files
+- [x] **STAT-03**: Stale locks are detected and recovered automatically
 - [x] **STAT-04**: Developer can run `/rapid:help` to see all available commands and workflow guidance
 
 ### Agent Architecture
 
-- [x] **AGNT-01**: Agents are built from composable prompt modules (core behavior + role-specific + context modules) rather than monolithic prompts
-- [x] **AGNT-02**: All agents use structured return protocol (COMPLETE/CHECKPOINT/BLOCKED tables) for machine-parseable results
-- [x] **AGNT-03**: Agent completion is verified by checking filesystem artifacts (files exist, tests pass, commits land) — never trust agent self-reports alone
+- [x] **AGNT-01**: Agents are built from composable prompt modules
+- [x] **AGNT-02**: All agents use structured return protocol (COMPLETE/CHECKPOINT/BLOCKED)
+- [x] **AGNT-03**: Agent completion is verified by checking filesystem artifacts
 
-### Packaging (Phase 09.1 -- INSERTED)
+### Packaging (v1.0)
 
-- [x] **PKG-01**: All SKILL.md files use portable paths that work when installed from marketplace (no hardcoded development paths)
-- [x] **PKG-02**: Version numbers are synchronized to 1.0.0 across plugin.json and package.json
-- [x] **PKG-03**: MIT LICENSE file exists in the plugin directory and help command reflects all 10 implemented skills
-- [x] **PKG-04**: DOCS.md comprehensively documents all 10 skills, 6 agents, architecture, installation, workflow, and configuration
-- [ ] **PKG-05**: Self-hosted marketplace.json enables distribution via `/plugin marketplace add fishjojo1/RAPID`
-- [ ] **PKG-06**: Plugin passes validation and is ready for submission to official Anthropic plugin directory
+- [x] **PKG-01**: All SKILL.md files use portable paths
+- [x] **PKG-02**: Version numbers synchronized across plugin.json and package.json
+- [x] **PKG-03**: MIT LICENSE file exists
+- [x] **PKG-04**: DOCS.md comprehensively documents all skills, agents, and architecture
+- [ ] **PKG-05**: Self-hosted marketplace.json enables distribution
+- [ ] **PKG-06**: Plugin passes validation for official directory submission
 
-### Setup & Installation (Phase 09.2 -- INSERTED)
+### Setup & Installation (v1.0)
 
-- [x] **SETUP-01**: setup.sh at repo root bootstraps RAPID_TOOLS env var for any installation method (marketplace or git clone), with idempotent prereq validation, npm install, and plugin registration
-- [x] **SETUP-02**: /rapid:install skill provides guided in-Claude-Code setup that auto-detects installation method and runs setup.sh
-- [x] **SETUP-03**: All path fallbacks removed -- SKILL.md files and core modules use bare ${RAPID_TOOLS} with no hardcoded fallback, missing env var produces clear error
+- [x] **SETUP-01**: setup.sh bootstraps RAPID_TOOLS env var for any installation method
+- [x] **SETUP-02**: /rapid:install skill provides guided in-Claude-Code setup
+- [x] **SETUP-03**: All path fallbacks removed -- bare ${RAPID_TOOLS} everywhere
 
 ## v2 Requirements
 
-Deferred to future release. Tracked but not in current roadmap.
+Deferred to future release.
 
 ### Advanced Team Features
 
-- **TEAM-01**: Real-time team status broadcasting (who is working on what set, current phase)
+- **TEAM-01**: Real-time team status broadcasting
 - **TEAM-02**: Cross-agent-tool support (Codex CLI, Gemini CLI alongside Claude Code)
-- **TEAM-03**: Role-based task assignment (lead assigns sets to specific developers)
-- **TEAM-04**: Conflict detection across concurrent sets (beyond contract validation)
+- **TEAM-03**: Role-based task assignment
+- **TEAM-04**: Conflict detection across concurrent sets
 
 ### Polish
 
@@ -97,18 +137,26 @@ Deferred to future release. Tracked but not in current roadmap.
 - **PLSH-05**: Codebase mapping integration for brownfield projects
 - **PLSH-06**: Verification/UAT phase beyond merge review
 
+### Pause UX (deferred from v1.1)
+
+- **PAUSE-01**: Pause skill provides structured template for manual pause data collection
+- **PAUSE-02**: Pause skill warns proactively before pausing when pause count >= 2
+
+### Plan Iteration (deferred from v1.1)
+
+- **PLANUX-01**: Plan skill adds iteration limit (3 rounds) to modification loop with re-plan suggestion
+
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
 | Standalone CLI | RAPID is a Claude Code plugin, not its own binary |
 | Central server/service | All state is git-native, zero infrastructure required |
-| Ad-hoc set creation during execution | Sets defined at planning time only — keeps isolation guarantees tight |
-| Fully synchronized phase gates | Loose sync is the model — shared planning gate, independent execution |
-| CARL or external rule engine coupling | Rule enforcement is self-contained within RAPID |
-| Real-time inter-set messaging | Sets communicate through contracts, not messages |
-| Auto-merge conflict resolution | Merge reviewer flags issues, humans/cleanup agents resolve them |
-| Cross-platform GUI | CLI-first, terminal-first experience |
+| Ad-hoc set creation during execution | Sets defined at planning time only |
+| Fully synchronized phase gates | Loose sync is the model |
+| Automated conflict resolution | Too risky; structured recovery is sufficient for v1.1 |
+| Real-time subagent streaming | Claude Code limitation; progress indicators are best we can do |
+| Custom prompt themes/styling | Over-engineering; standard AskUserQuestion UI is sufficient |
 
 ## Traceability
 
@@ -116,57 +164,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AGNT-01 | Phase 1: Agent Framework and State Management | Complete |
-| AGNT-02 | Phase 1: Agent Framework and State Management | Complete |
-| AGNT-03 | Phase 1: Agent Framework and State Management | Complete |
-| STAT-01 | Phase 1: Agent Framework and State Management | Complete |
-| STAT-02 | Phase 1: Agent Framework and State Management | Complete |
-| STAT-03 | Phase 1: Agent Framework and State Management | Complete |
-| INIT-01 | Phase 2: Plugin Shell and Initialization | Complete |
-| INIT-05 | Phase 2: Plugin Shell and Initialization | Complete |
-| STAT-04 | Phase 2: Plugin Shell and Initialization | Complete |
-| INIT-02 | Phase 3: Context Generation | Complete |
-| INIT-03 | Phase 3: Context Generation | Complete |
-| INIT-04 | Phase 3: Context Generation | Complete |
-| PLAN-01 | Phase 4: Planning Engine and Contracts | Complete |
-| PLAN-02 | Phase 4: Planning Engine and Contracts | Complete |
-| PLAN-03 | Phase 4: Planning Engine and Contracts | Complete |
-| PLAN-04 | Phase 4: Planning Engine and Contracts | Complete |
-| PLAN-05 | Phase 4: Planning Engine and Contracts | Complete |
-| PLAN-06 | Phase 4: Planning Engine and Contracts | Complete |
-| WORK-01 | Phase 5: Worktree Orchestration | Complete |
-| WORK-02 | Phase 5: Worktree Orchestration | Complete |
-| WORK-03 | Phase 5: Worktree Orchestration | Complete |
-| WORK-04 | Phase 5: Worktree Orchestration | Complete |
-| EXEC-01 | Phase 6: Execution Core | Complete |
-| EXEC-02 | Phase 6: Execution Core | Complete |
-| EXEC-03 | Phase 6: Execution Core | Complete |
-| EXEC-04 | Phase 7: Execution Lifecycle | Complete (07-01) |
-| EXEC-05 | Phase 7: Execution Lifecycle | Complete |
-| EXEC-07 | Phase 7: Execution Lifecycle | Complete (07-01) |
-| EXEC-08 | Phase 7: Execution Lifecycle | Complete |
-| MERG-01 | Phase 8: Merge Pipeline | Complete |
-| MERG-02 | Phase 8: Merge Pipeline | Complete |
-| MERG-03 | Phase 8: Merge Pipeline | Complete |
-| MERG-04 | Phase 8: Merge Pipeline | Complete |
-| EXEC-06 | Phase 9: Agent Teams Integration | Complete |
-| PKG-01 | Phase 9.1: Package for Plugin Marketplace | Planned |
-| PKG-02 | Phase 9.1: Package for Plugin Marketplace | Planned |
-| PKG-03 | Phase 9.1: Package for Plugin Marketplace | Planned |
-| PKG-04 | Phase 9.1: Package for Plugin Marketplace | Planned |
-| PKG-05 | Phase 9.1: Package for Plugin Marketplace | Planned |
-| PKG-06 | Phase 9.1: Package for Plugin Marketplace | Planned |
-| SETUP-01 | Phase 9.2: Setup & Installation | Planned |
-| SETUP-02 | Phase 9.2: Setup & Installation | Planned |
-| SETUP-03 | Phase 9.2: Setup & Installation | Planned |
+| PROMPT-01 | TBD | Pending |
+| PROMPT-02 | TBD | Pending |
+| PROMPT-03 | TBD | Pending |
+| PROMPT-04 | TBD | Pending |
+| PROMPT-05 | TBD | Pending |
+| PROMPT-06 | TBD | Pending |
+| PROMPT-07 | TBD | Pending |
+| PROMPT-08 | TBD | Pending |
+| PROMPT-09 | TBD | Pending |
+| PROMPT-10 | TBD | Pending |
+| PROMPT-11 | TBD | Pending |
+| PROMPT-12 | TBD | Pending |
+| PROMPT-13 | TBD | Pending |
+| PROMPT-14 | TBD | Pending |
+| INST-01 | TBD | Pending |
+| INST-02 | TBD | Pending |
+| INST-03 | TBD | Pending |
+| ERRR-01 | TBD | Pending |
+| ERRR-02 | TBD | Pending |
+| ERRR-03 | TBD | Pending |
+| ERRR-04 | TBD | Pending |
+| PROG-01 | TBD | Pending |
+| PROG-02 | TBD | Pending |
+| PROG-03 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 34 total (all complete)
-- v1 packaging requirements: 6 total (Phase 9.1 INSERTED)
-- v1 setup requirements: 3 total (Phase 9.2 INSERTED)
-- Mapped to phases: 43
-- Unmapped: 0
+- v1.1 requirements: 24 total
+- Mapped to phases: 0
+- Unmapped: 24
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-05 after Phase 09.2 planning*
+*Last updated: 2026-03-05 after v1.1 milestone requirements defined*
