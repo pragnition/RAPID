@@ -1,4 +1,4 @@
-# RAPID — Agentic Parallelizable and Isolatable Development
+# RAPID — Rapid Agentic Parallelizable and Isolatable Development
 
 ## What This Is
 

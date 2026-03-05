@@ -473,5 +473,5 @@ Phase 2 (Git Worktree Management) -- path scoping must be enforced at the worktr
 - [Pact's Dependency Drag (Specmatic)](https://specmatic.io/updates/pacts-dependency-drag-why-consumer-driven-contracts-dont-support-parallel-development/) -- contract testing limitations for parallel development
 
 ---
-*Pitfalls research for: RAPID -- Agentic Parallelizable and Isolatable Development*
+*Pitfalls research for: RAPID -- Rapid Agentic Parallelizable and Isolatable Development*
 *Researched: 2026-03-03*

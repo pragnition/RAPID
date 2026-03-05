@@ -1,6 +1,6 @@
 # RAPID - Plugin Documentation
 
-RAPID (Agentic Parallelizable and Isolatable Development) enables team-based parallel development for Claude Code. It decomposes project work into independent sets that execute simultaneously in isolated git worktrees, connected by machine-verifiable interface contracts and merged through an automated review pipeline. Multiple developers work on the same project without blocking each other, with confidence their independent work merges cleanly.
+RAPID (Rapid Agentic Parallelizable and Isolatable Development) enables team-based parallel development for Claude Code. It decomposes project work into independent sets that execute simultaneously in isolated git worktrees, connected by machine-verifiable interface contracts and merged through an automated review pipeline. Multiple developers work on the same project without blocking each other, with confidence their independent work merges cleanly.
 
 **Version:** 1.0.0
 
@@ -82,7 +82,7 @@ What it does:
 What it does:
 
 - Displays an ASCII workflow diagram showing the full development lifecycle
-- Lists all 10 commands grouped by workflow stage
+- Lists all 11 commands grouped by workflow stage
 - Provides a static reference card (no project-specific analysis)
 
 ```
@@ -226,19 +226,21 @@ What it does:
 RAPID/                              (repo root)
 ├── .claude-plugin/
 │   └── plugin.json              # Plugin manifest (name, version, metadata)
-├── commands/                    # Legacy command files (5)
+├── commands/                    # Legacy command files (6)
 │   ├── assumptions.md
 │   ├── context.md
 │   ├── help.md
 │   ├── init.md
+│   ├── install.md
 │   └── plan.md
-├── skills/                      # Modern SKILL.md skills (10)
+├── skills/                      # Modern SKILL.md skills (11)
 │   ├── assumptions/SKILL.md
 │   ├── cleanup/SKILL.md
 │   ├── context/SKILL.md
 │   ├── execute/SKILL.md
 │   ├── help/SKILL.md
 │   ├── init/SKILL.md
+│   ├── install/SKILL.md
 │   ├── merge/SKILL.md
 │   ├── pause/SKILL.md
 │   ├── plan/SKILL.md
@@ -381,4 +383,4 @@ MIT License. See [LICENSE](LICENSE) file.
 
 ---
 
-RAPID v1.0.0 -- Agentic Parallelizable and Isolatable Development for Claude Code
+RAPID v1.0.0 -- Rapid Agentic Parallelizable and Isolatable Development for Claude Code

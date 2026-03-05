@@ -1,6 +1,6 @@
 # Project Research Summary
 
-**Project:** RAPID -- Agentic Parallelizable and Isolatable Development
+**Project:** RAPID -- Rapid Agentic Parallelizable and Isolatable Development
 **Domain:** Claude Code plugin / metaprompting framework for team-based parallel development
 **Researched:** 2026-03-03
 **Confidence:** HIGH
