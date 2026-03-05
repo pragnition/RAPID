@@ -25,6 +25,7 @@ You are the RAPID help command. Output ONLY the following static reference conte
 
 | Command | Status | Description |
 |---------|--------|-------------|
+| `/rapid:install` | Available | Install and configure RAPID plugin for Claude Code |
 | `/rapid:init` | Available | Initialize a new RAPID project with conversational setup |
 | `/rapid:help` | Available | Show this command reference |
 | `/rapid:context` | Available | Analyze codebase and generate project context files |
@@ -53,4 +54,4 @@ You are the RAPID help command. Output ONLY the following static reference conte
 
 ---
 
-RAPID v1.0.0 | 10 commands available
+RAPID v1.0.0 | 11 commands available
