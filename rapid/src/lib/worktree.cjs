@@ -563,6 +563,25 @@ function generateScopedClaudeMd(cwd, setName) {
   return sections.join('\n');
 }
 
+/**
+ * Format status output with optional execution mode indicator.
+ * Per user decision: /rapid:status shows "Execution mode: Agent Teams" or "Execution mode: Subagents"
+ *
+ * @param {Array<Object>} worktrees - Array of worktree registry entries
+ * @param {Object|null} [dagJson=null] - Optional DAG for wave lookup
+ * @param {string|null} [executionMode=null] - Execution mode label or null to omit
+ * @returns {string} Formatted output with optional mode header
+ */
+function formatStatusOutput(worktrees, dagJson, executionMode) {
+  const lines = [];
+  if (executionMode) {
+    lines.push(`Execution mode: ${executionMode}`);
+    lines.push('');
+  }
+  lines.push(formatStatusTable(worktrees, dagJson));
+  return lines.join('\n');
+}
+
 module.exports = {
   gitExec,
   detectMainBranch,
@@ -574,6 +593,7 @@ module.exports = {
   reconcileRegistry,
   ensureWorktreeDir,
   formatStatusTable,
+  formatStatusOutput,
   formatWaveSummary,
   renderProgressBar,
   generateScopedClaudeMd,

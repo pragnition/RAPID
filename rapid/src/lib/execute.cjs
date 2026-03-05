@@ -573,9 +573,10 @@ function reconcileWave(cwd, waveNum, dagJson, registry) {
  * @param {number} waveNum - Wave number
  * @param {Object} reconcileResult - Result from reconcileWave()
  * @param {string} timestamp - ISO timestamp of reconciliation
+ * @param {string} [executionMode] - Execution mode label (e.g., 'Agent Teams' or 'Subagents'). Defaults to 'Subagents'.
  * @returns {string} Formatted Markdown string
  */
-function generateWaveSummary(waveNum, reconcileResult, timestamp) {
+function generateWaveSummary(waveNum, reconcileResult, timestamp, executionMode) {
   const { overall, hardBlocks, softBlocks, setResults } = reconcileResult;
 
   const lines = [
@@ -583,6 +584,7 @@ function generateWaveSummary(waveNum, reconcileResult, timestamp) {
     '',
     `**Reconciled:** ${timestamp}`,
     `**Result:** ${overall}`,
+    `**Execution Mode:** ${executionMode || 'Subagents'}`,
     '',
     '## Sets',
     '',

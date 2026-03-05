@@ -1050,9 +1050,12 @@ async function handleExecute(cwd, subcommand, args) {
       const dag = require('../lib/dag.cjs');
       const waveNum = parseInt(args[0], 10);
       if (isNaN(waveNum)) {
-        error('Usage: rapid-tools execute reconcile <wave-number>');
+        error('Usage: rapid-tools execute reconcile <wave-number> [--mode <mode>]');
         process.exit(1);
       }
+      // Check for --mode flag
+      const modeIdx = args.indexOf('--mode');
+      const executionMode = modeIdx >= 0 ? args[modeIdx + 1] : undefined;
       // Load DAG.json and registry
       let dagJson;
       try {
@@ -1065,8 +1068,8 @@ async function handleExecute(cwd, subcommand, args) {
       const registry = wt.loadRegistry(cwd);
       // Run reconciliation
       const reconcileResult = execute.reconcileWave(cwd, waveNum, dagJson, registry);
-      // Generate summary
-      const summaryContent = execute.generateWaveSummary(waveNum, reconcileResult, new Date().toISOString());
+      // Generate summary (pass executionMode for wave summary metadata)
+      const summaryContent = execute.generateWaveSummary(waveNum, reconcileResult, new Date().toISOString(), executionMode);
       // Write summary
       const wavesDir = path.join(cwd, '.planning', 'waves');
       fs.mkdirSync(wavesDir, { recursive: true });

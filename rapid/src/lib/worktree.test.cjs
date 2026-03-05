@@ -666,6 +666,51 @@ describe('Enhanced formatWaveSummary', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// formatStatusOutput tests
+// ────────────────────────────────────────────────────────────────
+describe('formatStatusOutput', () => {
+  it('shows mode indicator when executionMode provided', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active' },
+    ];
+    const result = worktree.formatStatusOutput(entries, null, 'Agent Teams');
+    assert.ok(result.includes('Execution mode: Agent Teams'), 'should show Agent Teams mode indicator');
+  });
+
+  it('omits mode indicator when executionMode is null', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active' },
+    ];
+    const result = worktree.formatStatusOutput(entries, null, null);
+    assert.ok(!result.includes('Execution mode:'), 'should not show mode indicator when null');
+  });
+
+  it('shows status table after mode indicator', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Done', status: 'active', tasksTotal: 5 },
+    ];
+    const dagJson = { waves: { '1': { sets: ['auth'] } } };
+    const result = worktree.formatStatusOutput(entries, dagJson, 'Subagents');
+    const lines = result.split('\n');
+    // First line should be mode indicator
+    assert.equal(lines[0], 'Execution mode: Subagents', 'first line should be mode indicator');
+    // Second line should be blank
+    assert.equal(lines[1], '', 'second line should be blank separator');
+    // Third line should be the table header
+    assert.ok(lines[2].includes('SET'), 'third line should be table header with SET column');
+  });
+
+  it('returns just the table when executionMode is omitted', () => {
+    const entries = [
+      { setName: 'auth', phase: 'Executing', status: 'active' },
+    ];
+    const result = worktree.formatStatusOutput(entries, null);
+    // Should start directly with the table header
+    assert.ok(result.startsWith('SET'), 'should start with table header when no mode');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // generateScopedClaudeMd tests
 // ────────────────────────────────────────────────────────────────
 describe('generateScopedClaudeMd', () => {

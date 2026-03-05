@@ -769,4 +769,43 @@ describe('generateWaveSummary', () => {
     // After "## Hard Blocks" and "## Soft Blocks", should have "None"
     assert.ok(summary.includes('None'), 'should show None for empty blocks');
   });
+
+  it('includes execution mode when provided', () => {
+    const reconcileResult = {
+      overall: 'PASS',
+      hardBlocks: [],
+      softBlocks: [],
+      setResults: {},
+    };
+
+    const summary = executeModule.generateWaveSummary(1, reconcileResult, '2026-03-04T12:00:00Z', 'Agent Teams');
+    assert.ok(summary.includes('**Execution Mode:** Agent Teams'), 'should show Agent Teams mode');
+  });
+
+  it('defaults to Subagents when mode not provided', () => {
+    const reconcileResult = {
+      overall: 'PASS',
+      hardBlocks: [],
+      softBlocks: [],
+      setResults: {},
+    };
+
+    const summary = executeModule.generateWaveSummary(1, reconcileResult, '2026-03-04T12:00:00Z');
+    assert.ok(summary.includes('**Execution Mode:** Subagents'), 'should default to Subagents');
+  });
+
+  it('shows Agent Teams when mode is Agent Teams', () => {
+    const reconcileResult = {
+      overall: 'PASS_WITH_WARNINGS',
+      hardBlocks: [],
+      softBlocks: [{ set: 'test', type: 'missing_artifact', detail: 'file.cjs' }],
+      setResults: {
+        'test': { contractCompliance: 'PASS', artifactsPlanned: 1, artifactsDelivered: 0, missingArtifacts: ['file.cjs'], commitCount: 1 },
+      },
+    };
+
+    const summary = executeModule.generateWaveSummary(2, reconcileResult, '2026-03-04T14:00:00Z', 'Agent Teams');
+    assert.ok(summary.includes('**Execution Mode:** Agent Teams'), 'should show Agent Teams');
+    assert.ok(summary.includes('**Result:** PASS_WITH_WARNINGS'), 'should show correct result');
+  });
 });
