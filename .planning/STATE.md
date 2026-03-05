@@ -190,10 +190,11 @@ None yet.
 | 2 | Flatten rapid/ plugin to repo root for Claude Code discoverability | 2026-03-05 | 39350ed | [2-flatten-rapid-plugin-to-repo-root-for-cl](./quick/2-flatten-rapid-plugin-to-repo-root-for-cl/) |
 | 3 | Fix agent tool calling to use installation path (RAPID_TOOLS env var) | 2026-03-05 | 1a497a9 | [3-fix-agent-tool-calling-to-use-installati](./quick/3-fix-agent-tool-calling-to-use-installati/) |
 | 4 | Make /rapid:install a valid command and fix RAPID acronym | 2026-03-05 | 46ac072 | [4-make-rapid-install-a-valid-command-and-f](./quick/4-make-rapid-install-a-valid-command-and-f/) |
+| 5 | Fix install command shell detection and .env persistence | 2026-03-05 | f8e7b58 | [5-fix-install-command-shell-detection-and-](./quick/5-fix-install-command-shell-detection-and-/) |
 | 6 | Create README.md as GitHub landing page | 2026-03-05 | e32ef74 | [6-create-a-readme-and-update-references-to](./quick/6-create-a-readme-and-update-references-to/) |
 
 ## Session Continuity
 
-Last session: 2026-03-05T15:38:30Z
-Stopped at: Completed quick task 6
+Last session: 2026-03-05T15:39:00Z
+Stopped at: Completed quick task 5
 Resume file: None
