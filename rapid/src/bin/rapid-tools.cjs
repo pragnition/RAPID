@@ -52,6 +52,7 @@ Commands:
   execute pause <set>             Pause execution and write HANDOFF.md (reads CHECKPOINT JSON from stdin)
   execute resume <set>            Resume execution from HANDOFF.md
   execute reconcile <wave>        Reconcile a wave and write WAVE-{N}-SUMMARY.md
+  execute detect-mode             Detect if agent teams mode is available
   merge review <set>              Run programmatic gate + write REVIEW.md
   merge execute <set>             Merge set branch into main (--no-ff)
   merge status                    Show merge pipeline status (per-set verdicts)
@@ -1099,8 +1100,15 @@ async function handleExecute(cwd, subcommand, args) {
       break;
     }
 
+    case 'detect-mode': {
+      const teams = require('../lib/teams.cjs');
+      const result = teams.detectAgentTeams();
+      output(JSON.stringify({ agentTeamsAvailable: result.available }));
+      break;
+    }
+
     default:
-      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile`);
+      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, detect-mode`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
