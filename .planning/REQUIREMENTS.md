@@ -21,7 +21,7 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 - [ ] **PROMPT-10**: Merge skill uses AskUserQuestion for merge conflict recovery (resolve/show/revert)
 - [ ] **PROMPT-11**: Cleanup skill uses AskUserQuestion for destructive worktree removal confirmation
 - [ ] **PROMPT-12**: Assumptions skill uses AskUserQuestion for set selection and feedback options
-- [ ] **PROMPT-13**: Context skill uses AskUserQuestion for greenfield detection and generation confirmation
+- [x] **PROMPT-13**: Context skill uses AskUserQuestion for greenfield detection and generation confirmation
 - [ ] **PROMPT-14**: Status skill offers next action via AskUserQuestion after displaying status
 
 ### Install Polish
@@ -176,7 +176,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROMPT-10 | Phase 13 | Pending |
 | PROMPT-11 | Phase 13 | Pending |
 | PROMPT-12 | Phase 11 | Pending |
-| PROMPT-13 | Phase 10 | Pending |
+| PROMPT-13 | Phase 10 | Complete |
 | PROMPT-14 | Phase 11 | Pending |
 | INST-01 | Phase 14 | Pending |
 | INST-02 | Phase 14 | Pending |
