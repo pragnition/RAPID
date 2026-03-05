@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### v1.1 UI UX Improvements (Phases 10-15)
 
-- [ ] **Phase 10: Init and Context Skill Prompts** - Structured AskUserQuestion prompts for init and context skills
+- [x] **Phase 10: Init and Context Skill Prompts** - Structured AskUserQuestion prompts for init and context skills (completed 2026-03-05)
 - [ ] **Phase 11: Planning and Status Skill Prompts** - Structured AskUserQuestion prompts for plan, assumptions, and status skills
 - [ ] **Phase 12: Execute Skill Prompts and Progress** - Structured AskUserQuestion prompts and progress indicators for execute skill
 - [ ] **Phase 13: Merge and Cleanup Skill Prompts** - Structured prompts, error recovery paths, and verdict explanations for merge and cleanup skills
@@ -325,7 +325,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Agent Teams Integration | v1.0 | 1/2 | In Progress | - |
 | 09.1 Package for Plugin Marketplace | v1.0 | 2/3 | In Progress | - |
 | 09.2 Setup Script and RAPID_TOOLS | v1.0 | 2/2 | Complete | - |
-| 10. Init and Context Skill Prompts | 1/2 | In Progress|  | - |
+| 10. Init and Context Skill Prompts | 2/2 | Complete   | 2026-03-05 | - |
 | 11. Planning and Status Skill Prompts | v1.1 | 0/1 | Not started | - |
 | 12. Execute Skill Prompts and Progress | v1.1 | 0/2 | Not started | - |
 | 13. Merge and Cleanup Skill Prompts | v1.1 | 0/2 | Not started | - |

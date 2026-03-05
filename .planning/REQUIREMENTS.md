@@ -9,9 +9,9 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 
 ### Structured Prompts
 
-- [ ] **PROMPT-01**: Init skill uses AskUserQuestion for reinitialize/upgrade/cancel gate instead of numbered text options
-- [ ] **PROMPT-02**: Init skill uses AskUserQuestion for team size selection with preset options (1, 2-3, 4-5, 6+)
-- [ ] **PROMPT-03**: Init skill uses AskUserQuestion for fresh vs brownfield project decision
+- [x] **PROMPT-01**: Init skill uses AskUserQuestion for reinitialize/upgrade/cancel gate instead of numbered text options
+- [x] **PROMPT-02**: Init skill uses AskUserQuestion for team size selection with preset options (1, 2-3, 4-5, 6+)
+- [x] **PROMPT-03**: Init skill uses AskUserQuestion for fresh vs brownfield project decision
 - [ ] **PROMPT-04**: Plan skill uses AskUserQuestion for re-plan/view/cancel gate
 - [ ] **PROMPT-05**: Execute skill uses AskUserQuestion for agent teams vs subagents choice with clear descriptions
 - [ ] **PROMPT-06**: Execute skill uses AskUserQuestion for paused set resume/restart/skip with consequence descriptions
@@ -164,9 +164,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROMPT-01 | Phase 10 | Pending |
-| PROMPT-02 | Phase 10 | Pending |
-| PROMPT-03 | Phase 10 | Pending |
+| PROMPT-01 | Phase 10 | Complete |
+| PROMPT-02 | Phase 10 | Complete |
+| PROMPT-03 | Phase 10 | Complete |
 | PROMPT-04 | Phase 11 | Pending |
 | PROMPT-05 | Phase 12 | Pending |
 | PROMPT-06 | Phase 12 | Pending |
