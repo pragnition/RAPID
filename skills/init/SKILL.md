@@ -1,7 +1,7 @@
 ---
 description: Initialize a new RAPID project with conversational setup and prerequisite validation
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Glob
+allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 ---
 
 # /rapid:init -- Project Initialization
@@ -59,42 +59,86 @@ node "${RAPID_TOOLS}" init detect
 Parse the JSON output containing `exists` (boolean) and `files` (string array of existing planning files).
 
 Decision logic:
-- If `exists` is true: This project has already been initialized. Show the user the list of existing files from the `files` array, then present exactly 3 options:
+- If `exists` is true: This project has already been initialized. Show the user the list of existing files from the `files` array, then use AskUserQuestion to present the options:
 
-  **Option 1: Reinitialize**
-  - Back up `.planning/` to `.planning.backup.{timestamp}/` and create fresh
-  - All previous planning data is preserved in the backup
+  Use AskUserQuestion with:
+  - question: "Existing project detected"
+  - Options:
+    - "Reinitialize" -- "Back up .planning/ to .planning.backup.{timestamp}/ and create fresh. All previous planning data is preserved in the backup."
+    - "Upgrade" -- "Add any missing files to existing .planning/ without overwriting existing content. Your current state is preserved."
+    - "Cancel" -- "Stop initialization. No changes will be made."
 
-  **Option 2: Upgrade**
-  - Add any missing files to existing `.planning/`, keep existing content
-  - Do NOT overwrite or modify any existing files
+  Store the user's selection. Map it to the `--mode` argument for the scaffold command:
+  - "Reinitialize" -> `--mode reinitialize`
+  - "Upgrade" -> `--mode upgrade`
+  - "Cancel" -> `--mode cancel`
 
-  **Option 3: Cancel**
-  - Stop initialization entirely
-  - No changes made
+  **NEVER proceed without the user's explicit choice.**
 
-  **NEVER proceed without the user's explicit choice.** Wait for them to select 1, 2, or 3.
+- If `exists` is false: Continue to Step 3.5 without comment.
 
-- If `exists` is false: Continue to Step 4 without comment.
+## Step 3.5: Brownfield Detection
+
+Detect whether the project directory contains existing source code:
+
+```bash
+node "${RAPID_TOOLS}" context detect
+```
+
+Parse the JSON output for the `hasSourceCode` field.
+
+Decision logic:
+- If `hasSourceCode` is true: Use AskUserQuestion to present the options:
+
+  Use AskUserQuestion with:
+  - question: "Codebase detected"
+  - Options:
+    - "Brownfield (analyze existing code)" -- "After init completes, RAPID will automatically analyze your codebase and generate context files (CLAUDE.md, style guide, conventions). No separate command needed."
+    - "Greenfield (start fresh)" -- "Skip codebase analysis. You can run /rapid:context later after adding code."
+
+  Store the user's selection. If the user selects "Brownfield", remember this choice -- after Step 5 scaffold completes, context generation will be auto-triggered seamlessly.
+
+- If `hasSourceCode` is false: Display a brief text note: "No source code detected. You can run `/rapid:context` later after adding code to generate project context." Do NOT show an AskUserQuestion prompt.
 
 ## Step 4: Conversational Setup
 
 Gather project information by asking ONE question at a time. Wait for the user's answer before asking the next question. Do not batch questions.
 
 **Question A: Project Name**
-Ask: "What is the project name?"
-- Suggest the current directory name as a reasonable default
-- Accept whatever the user provides
+
+First, detect the current directory name:
+
+```bash
+basename "$(pwd)"
+```
+
+Then use AskUserQuestion with:
+- question: "Project name"
+- Options:
+  - "{detected directory name}" -- "Use the current directory name"
+  - "Other" -- "Enter a custom project name"
+
+If the user selects "Other", ask them freeform: "What would you like to name the project?" and accept whatever they provide.
 
 **Question B: Project Description**
 Ask: "Give a one-sentence description of the project."
 - This will be used in PROJECT.md to describe the project's core purpose
 
 **Question C: Team Size**
-Ask: "How many developers will work in parallel?"
-- This helps RAPID configure worktree and concurrency recommendations
-- Default suggestion: 2-3 for small teams
-- Accept any positive integer
+
+Use AskUserQuestion with:
+- question: "Team size"
+- Options:
+  - "Solo (1 developer)" -- "Single developer workflow. Simpler worktree management."
+  - "Small team (2-3 developers)" -- "Recommended for most projects. Balanced parallelism."
+  - "Medium team (4-5 developers)" -- "Higher parallelism. More worktrees and sets."
+  - "Large team (6+ developers)" -- "Maximum parallelism. Complex merge coordination."
+
+Map the selection to an integer for the `--team-size` argument:
+- "Solo (1 developer)" -> 1
+- "Small team (2-3 developers)" -> 3
+- "Medium team (4-5 developers)" -> 5
+- "Large team (6+ developers)" -> 6
 
 ## Step 5: Scaffold .planning/ Directory
 
@@ -106,19 +150,19 @@ Run the scaffold command using the answers from Step 4. The CLI creates all `.pl
 node "${RAPID_TOOLS}" init scaffold --name "{project name}" --desc "{description}" --team-size {N}
 ```
 
-**For reinitialize** (user chose Option 1 in Step 3):
+**For reinitialize** (user chose Reinitialize in Step 3):
 
 ```bash
 node "${RAPID_TOOLS}" init scaffold --name "{project name}" --desc "{description}" --team-size {N} --mode reinitialize
 ```
 
-**For upgrade** (user chose Option 2 in Step 3):
+**For upgrade** (user chose Upgrade in Step 3):
 
 ```bash
 node "${RAPID_TOOLS}" init scaffold --name "{project name}" --desc "{description}" --team-size {N} --mode upgrade
 ```
 
-**For cancel** (user chose Option 3 in Step 3):
+**For cancel** (user chose Cancel in Step 3):
 
 ```bash
 node "${RAPID_TOOLS}" init scaffold --mode cancel
@@ -134,6 +178,8 @@ Replace `{project name}`, `{description}`, and `{N}` with the actual values from
 
 **IMPORTANT:** Do NOT create `.planning/phases/` directory. Phase directories are created on-demand when planning begins, not during initialization.
 
+**Brownfield auto-trigger:** If the user chose "Brownfield (analyze existing code)" in Step 3.5, proceed to run `/rapid:context` automatically after scaffold completes. The user already consented to codebase analysis -- do not ask for confirmation again. This means the context skill should skip its Step 4 confirmation when auto-triggered from init. The transition should feel seamless: init scaffolding completes, then context generation starts as part of the same flow.
+
 ## Step 6: Confirmation and Next Steps
 
 Using the JSON output from the Step 5 scaffold command, display a completion summary:
@@ -144,6 +190,7 @@ Using the JSON output from the Step 5 scaffold command, display a completion sum
 4. If cancel mode: Confirm no changes were made and stop here
 5. Confirm the project name and description
 6. Show team size configuration
-7. Suggest the user's next step: "Run `/rapid:help` to see all available commands and the RAPID workflow."
+7. If brownfield auto-trigger occurred: Include the context generation summary as part of init completion. Show what context files were generated alongside the scaffold results.
+8. Suggest the user's next step: "Run `/rapid:help` to see all available commands and the RAPID workflow."
 
-Do NOT run any additional analysis. The init command's job is done after scaffolding.
+Do NOT run any additional analysis unless brownfield was selected (in which case context generation is already handled above).
