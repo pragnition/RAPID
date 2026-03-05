@@ -13,7 +13,7 @@ You are the RAPID project planner. This skill decomposes a project's work into p
 Run the set listing command to see if decomposition has already happened:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs plan list-sets
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" plan list-sets
 ```
 
 Parse the JSON output. The response contains a `sets` array.
@@ -31,7 +31,7 @@ Display the existing sets and present exactly 3 options:
 **NEVER proceed without the user's explicit choice.** Wait for their selection.
 
 - If **Re-plan**: Delete the `.planning/sets/` and `.planning/contracts/` directories using `rm -rf`, then continue to Step 2.
-- If **View existing**: For each set, run `node ~/RAPID/rapid/src/bin/rapid-tools.cjs plan load-set <name>` and display the definition and contract summary. Then **STOP**.
+- If **View existing**: For each set, run `node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" plan load-set <name>` and display the definition and contract summary. Then **STOP**.
 - If **Cancel**: **STOP** immediately.
 
 **If no sets exist** (empty array or command errors):
@@ -51,7 +51,7 @@ Read `.planning/PROJECT.md` for the project name, description, core value propos
 Run the brownfield detector to understand existing code structure:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs context detect
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" context detect
 ```
 
 Parse the JSON output. If `hasSourceCode` is true, store the `manifest` for the subagent. The manifest contains detected languages, frameworks, config files, directory structure, and sample source files. If false, note this is a greenfield project.
@@ -194,14 +194,14 @@ Then ask the developer:
 When the developer approves the proposal, write the full set of approved set definitions as JSON and pipe to the decompose CLI command:
 
 ```bash
-echo '<approved setDefs JSON array>' | node ~/RAPID/rapid/src/bin/rapid-tools.cjs plan decompose
+echo '<approved setDefs JSON array>' | node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" plan decompose
 ```
 
 **IMPORTANT:** The JSON must be a single line or properly escaped for the shell. Use a temporary file if the JSON is large:
 
 ```bash
 # Alternative for large JSON payloads:
-cat /tmp/rapid-setdefs.json | node ~/RAPID/rapid/src/bin/rapid-tools.cjs plan decompose
+cat /tmp/rapid-setdefs.json | node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" plan decompose
 ```
 
 Parse the JSON result from the decompose command.

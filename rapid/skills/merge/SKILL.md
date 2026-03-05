@@ -12,17 +12,17 @@ You are the RAPID merge orchestrator. This skill merges completed set branches i
 Determine merge order from the DAG:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge order
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge order
 ```
 
 Check current merge and execution status:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge status
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge status
 ```
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute wave-status
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" execute wave-status
 ```
 
 Parse the merge order (wave-grouped arrays) and status. Identify which sets are ready to merge (phase=Done, mergeStatus=pending).
@@ -54,12 +54,12 @@ For each set in the current wave:
 
 1. Update merge status:
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge update-status {setName} reviewing
+   node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge update-status {setName} reviewing
    ```
 
 2. Run programmatic validation:
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge review {setName}
+   node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge review {setName}
    ```
 
 3. Parse the JSON result. If `passed` is false:
@@ -81,7 +81,7 @@ Spawn the reviewer agent as a subagent using the Agent tool:
 
 1. Prepare the reviewer prompt. Read the set's context:
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute prepare-context {setName}
+   node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" execute prepare-context {setName}
    ```
 
 2. Read the existing REVIEW.md (from Step 3):
@@ -149,12 +149,12 @@ For round = 1 to 2:
 
 2. Update merge status:
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge update-status {setName} cleanup
+   node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge update-status {setName} cleanup
    ```
 
 3. Spawn cleanup subagent using the Agent tool. Get worktree path from registry:
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs worktree list 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));const w=d.worktrees||{};const e=(Array.isArray(w)?w:Object.values(w)).find(x=>x.setName==='{setName}');console.log(e?.path||'NOT_FOUND')"
+   node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" worktree list 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));const w=d.worktrees||{};const e=(Array.isArray(w)?w:Object.values(w)).find(x=>x.setName==='{setName}');console.log(e?.path||'NOT_FOUND')"
    ```
 
    Build the cleanup prompt:
@@ -176,7 +176,7 @@ For round = 1 to 2:
 
 4. After cleanup returns, re-run programmatic gate:
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge review {setName}
+   node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge review {setName}
    ```
 
 5. If programmatic gate still passes, re-spawn reviewer (same prompt as Step 4) to re-evaluate.
@@ -202,7 +202,7 @@ After a set is approved (or was approved from the start):
 
 1. Execute the merge:
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge execute {setName}
+   node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge execute {setName}
    ```
 
 2. Parse the JSON result:
@@ -229,7 +229,7 @@ After ALL sets in the current wave have been merged (or skipped):
 
 1. Run integration tests on main:
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge integration-test
+   node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge integration-test
    ```
 
 2. Parse result:
@@ -253,7 +253,7 @@ After ALL sets in the current wave have been merged (or skipped):
 After all waves complete:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs merge status
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" merge status
 ```
 
 Present final summary:

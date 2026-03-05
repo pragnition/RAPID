@@ -12,11 +12,11 @@ You are the RAPID status viewer. This skill shows a unified dashboard of all RAP
 Run two CLI commands to gather dashboard data:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs worktree status
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" worktree status
 ```
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute wave-status
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" execute wave-status
 ```
 
 The first command outputs the formatted dashboard. The second provides per-wave execution progress (JSON on stdout, human-readable on stderr).
@@ -26,7 +26,7 @@ The first command outputs the formatted dashboard. The second provides per-wave 
 Check if an execution mode is currently active:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute detect-mode
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" execute detect-mode
 ```
 
 Parse the JSON output. If `agentTeamsAvailable` is true, note it for display. The actual mode depends on whether `/rapid:execute` is actively running and which mode was selected. For status display purposes:
@@ -68,7 +68,7 @@ Check the planning gate for the next pending wave:
 2. Run the gate check for that wave:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs plan check-gate <nextWave>
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" plan check-gate <nextWave>
 ```
 
 3. Report gate status:
@@ -94,7 +94,7 @@ Based on current state, suggest the next action:
 If the user needs machine-readable output, mention the `--json` flag:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs worktree status --json
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" worktree status --json
 ```
 
 Returns a JSON object with `worktrees` (array of worktree entries) and `waves` (wave data from DAG if available).

@@ -14,7 +14,7 @@ The user provides a set name as the argument: `/rapid:pause {setName}`
 If no set name is provided, show available executing sets:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute wave-status 2>/dev/null
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" execute wave-status 2>/dev/null
 ```
 
 Parse the JSON output and list any sets with phase "Executing". If none are executing, inform the user:
@@ -26,7 +26,7 @@ Parse the JSON output and list any sets with phase "Executing". If none are exec
 Verify the set is in the Executing phase:
 
 ```bash
-node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute wave-status
+node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" execute wave-status
 ```
 
 Parse the JSON output to find the set's phase. If the set is not in phase "Executing", inform the user:
@@ -76,7 +76,7 @@ Build a JSON checkpoint object from the user's input:
 Then pipe it to the pause CLI:
 
 ```bash
-echo '{"handoff_done":"...","handoff_remaining":"...","handoff_resume":"...","tasks_completed":N,"tasks_total":M}' | node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute pause {setName}
+echo '{"handoff_done":"...","handoff_remaining":"...","handoff_resume":"...","tasks_completed":N,"tasks_total":M}' | node "${RAPID_TOOLS:-$HOME/RAPID/rapid/src/bin/rapid-tools.cjs}" execute pause {setName}
 ```
 
 ## Step 4: Confirm Pause Success
