@@ -229,11 +229,11 @@ Plans:
   2. When init asks for team size, the developer sees preset options (1, 2-3, 4-5, 6+) via AskUserQuestion instead of typing a number freeform
   3. When init asks whether this is a fresh or brownfield project, the developer picks from a structured prompt with clear descriptions of each path
   4. When context skill detects a greenfield project, the developer sees a structured confirmation prompt before generation proceeds
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: init prompts || context prompts)
 
 Plans:
-- [ ] 10-01: TBD
-- [ ] 10-02: TBD
+- [ ] 10-01: Rewrite init SKILL.md with AskUserQuestion for all decision gates (PROMPT-01, PROMPT-02, PROMPT-03) [Wave 1]
+- [ ] 10-02: Rewrite context SKILL.md with AskUserQuestion for greenfield detection (PROMPT-13) [Wave 1]
 
 ### Phase 11: Planning and Status Skill Prompts
 **Goal**: Plan, assumptions, and status skills use structured AskUserQuestion prompts for navigation and next-action decisions
