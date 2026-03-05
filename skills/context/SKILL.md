@@ -1,7 +1,7 @@
 ---
 description: Analyze codebase and generate project context files (CLAUDE.md, style guide, conventions)
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
 ---
 
 # /rapid:context -- Codebase Analysis and Context Generation
@@ -22,7 +22,13 @@ node "${RAPID_TOOLS}" context detect
 Parse the JSON output. The response contains `hasSourceCode` (boolean) and either a `message` (when false) or `manifest` (when true).
 
 Decision logic:
-- If `hasSourceCode` is false: Display this message to the user: "No source code detected in this directory. Context generation requires an existing codebase to analyze. Run `/rapid:context` again after adding source code." Then **STOP** -- do not continue to further steps.
+- If `hasSourceCode` is false: Use AskUserQuestion with:
+  - question: "No source code detected"
+  - Options:
+    - "Continue anyway" -- "Proceed with context generation using whatever files exist. Results may be minimal."
+    - "Cancel" -- "Stop context generation. Run /rapid:context again after adding source code."
+  - If the user picks "Continue anyway": proceed to Step 2 as normal (the manifest will be limited but generation continues).
+  - If the user picks "Cancel": STOP -- do not continue to further steps.
 - If `hasSourceCode` is true: Store the `manifest` data for use in Step 3. Continue to Step 2.
 
 The manifest contains:
@@ -69,6 +75,8 @@ The subagent should:
 
 ## Step 4: User Review and Confirmation
 
+**Auto-trigger note:** If this context generation was auto-triggered from `/rapid:init` brownfield flow, skip the confirmation prompt below and proceed directly to Step 5. The user already consented to codebase analysis when they chose Brownfield during init.
+
 Present the subagent's analysis summary to the user in a clear, organized format:
 
 ```markdown
@@ -94,14 +102,13 @@ Present the subagent's analysis summary to the user in a clear, organized format
 {Show 2-3 bullet points per planned file from the analysis}
 ```
 
-Then ask the user:
-
-> Ready to generate these context files? (yes/no)
-
-Decision logic:
-- If the user confirms (yes, y, sure, go ahead, etc.): Proceed to Step 5.
-- If the user declines or requests changes: Discuss what they want different. If they want to adjust which files are generated or what content to focus on, note the adjustments and ask for confirmation again. If they want to cancel entirely, **STOP**.
-- If the user asks to skip certain files: Note which files to skip and proceed to Step 5 with the reduced set.
+Then use AskUserQuestion with:
+- question: "Context files ready to generate"
+- Options:
+  - "Generate" -- "Write all context files listed above to .planning/context/ and CLAUDE.md to project root."
+  - "Cancel" -- "Stop without generating files. No changes will be made."
+- If the user picks "Generate": proceed to Step 5.
+- If the user picks "Cancel": STOP.
 
 ## Step 5: Write Context Files via Subagent
 
