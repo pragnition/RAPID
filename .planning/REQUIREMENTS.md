@@ -75,7 +75,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **SETUP-01**: setup.sh at repo root bootstraps RAPID_TOOLS env var for any installation method (marketplace or git clone), with idempotent prereq validation, npm install, and plugin registration
 - [ ] **SETUP-02**: /rapid:install skill provides guided in-Claude-Code setup that auto-detects installation method and runs setup.sh
-- [ ] **SETUP-03**: All path fallbacks removed -- SKILL.md files and core modules use bare ${RAPID_TOOLS} with no hardcoded fallback, missing env var produces clear error
+- [x] **SETUP-03**: All path fallbacks removed -- SKILL.md files and core modules use bare ${RAPID_TOOLS} with no hardcoded fallback, missing env var produces clear error
 
 ## v2 Requirements
 

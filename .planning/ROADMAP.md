@@ -188,7 +188,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
   1. setup.sh at repo root bootstraps RAPID_TOOLS env var, validates prereqs, installs deps, and registers plugin -- idempotently
   2. /rapid:install skill provides guided setup from within Claude Code for both marketplace and git clone installations
   3. All SKILL.md files and core modules use bare ${RAPID_TOOLS} with no fallback paths -- missing env var produces clear error
-**Plans:** 2 plans (Wave 1: setup script + install skill || fallback removal + docs update)
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 09.2-01-PLAN.md -- Create setup.sh bootstrap script and /rapid:install skill (SETUP-01, SETUP-02)
