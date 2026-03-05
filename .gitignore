@@ -3,3 +3,9 @@
 
 # Worktree registry lock files
 .planning/worktrees/*.lock
+
+# Dependencies
+node_modules/
+
+# Generated agent assemblies
+agents/
