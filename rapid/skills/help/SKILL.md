@@ -36,29 +36,30 @@ Output this content now:
 |---------|--------|-------------|
 | `/rapid:init` | Available | Initialize a new RAPID project with conversational setup |
 | `/rapid:help` | Available | Show this command reference |
+| `/rapid:context` | Available | Analyze codebase and generate project context files |
 
 ### Planning
 
 | Command | Status | Description |
 |---------|--------|-------------|
-| `/rapid:plan` | Coming Soon | Generate phase plans from requirements |
-| `/rapid:assumptions` | Coming Soon | Review and validate planning assumptions |
+| `/rapid:plan` | Available | Decompose project into parallelizable sets with contracts |
+| `/rapid:assumptions` | Available | Review Claude's mental model for a set before execution |
 
 ### Execution
 
 | Command | Status | Description |
 |---------|--------|-------------|
-| `/rapid:execute` | Coming Soon | Run phase execution with parallel agents |
-| `/rapid:status` | Coming Soon | Check project status and agent progress |
-| `/rapid:pause` | Coming Soon | Pause active execution |
-| `/rapid:resume` | Coming Soon | Resume paused execution |
+| `/rapid:execute` | Available | Run set execution with parallel agents (supports resume) |
+| `/rapid:status` | Available | Check project status, worktree state, and wave progress |
+| `/rapid:pause` | Available | Pause execution of a set and save state for resumption |
 
 ### Review
 
 | Command | Status | Description |
 |---------|--------|-------------|
-| `/rapid:merge` | Coming Soon | Review and merge agent work products |
+| `/rapid:merge` | Available | Review, validate contracts, and merge set branches |
+| `/rapid:cleanup` | Available | Clean up completed worktrees safely |
 
 ---
 
-RAPID v0.2.0 | 2 commands available, 7 coming soon
+RAPID v1.0.0 | 10 commands available

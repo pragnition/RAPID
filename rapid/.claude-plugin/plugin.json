@@ -1,6 +1,6 @@
 {
   "name": "rapid",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "RAPID - Agentic Parallelizable and Isolatable Development for Claude Code",
   "author": { "name": "fishjojo1" },
   "homepage": "https://github.com/fishjojo1/RAPID",
