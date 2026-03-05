@@ -7,6 +7,31 @@ allowed-tools: Read, Write, Bash, Agent
 
 You are the RAPID execution orchestrator. This skill executes sets in dependency-ordered waves. Each set goes through a full discuss -> plan -> execute lifecycle via subagent invocations. You spawn one subagent per set per lifecycle phase using the Agent tool. Follow these steps IN ORDER. Do not skip steps.
 
+## Step 0: Detect Execution Mode
+
+Check if agent teams mode is available:
+
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute detect-mode
+```
+
+Parse the JSON output to get `agentTeamsAvailable`.
+
+**If `agentTeamsAvailable` is true:**
+Prompt the user (per user decision -- clean prompt, no explanation of detection source):
+
+> Agent teams available. Use teams or subagents?
+> 1. **Agent Teams** -- Enhanced parallel execution via Claude Code agent teams
+> 2. **Subagents** -- Standard execution via subagent spawning
+
+If the user chooses Agent Teams, set `executionMode = 'Agent Teams'`.
+If the user chooses Subagents, set `executionMode = 'Subagents'`.
+
+**If `agentTeamsAvailable` is false:**
+Silently set `executionMode = 'Subagents'`. Do NOT prompt or inform the user about agent teams.
+
+**Mode is locked for the entire execution run.** Do not re-detect or re-prompt during wave processing.
+
 ## Step 1: Load Execution Plan
 
 Read the DAG to determine wave order:
@@ -230,7 +255,77 @@ After all sets are planned, present a summary and ask for approval:
 If modify: collect changes and re-plan the affected set.
 If cancel: STOP execution.
 
-## Step 7: Execute Phase (Per-Wave Parallel)
+## Step 7: Execute Phase (Per-Wave)
+
+Execution dispatch depends on the mode selected in Step 0.
+
+### Step 7a: Teams Mode Dispatch
+
+If `executionMode` is 'Agent Teams':
+
+For the current wave, create a team and spawn teammates:
+
+1. Note the team name for this wave:
+   The team follows the convention `rapid-wave-{waveNum}`.
+
+2. For each set in the wave, prepare the teammate:
+   - Generate scoped CLAUDE.md:
+     ```bash
+     node ~/RAPID/rapid/src/bin/rapid-tools.cjs worktree generate-claude-md {setName}
+     ```
+   - Update registry phase:
+     ```bash
+     node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute update-phase {setName} Executing
+     ```
+
+3. Use the Agent tool to create a team and spawn teammates. For each set in the wave, spawn a teammate with the same executor prompt as subagent mode (read from the set's worktree CLAUDE.md + implementation plan). Each teammate works in its own worktree directory.
+
+   **Teammate prompt template** (identical to subagent executor prompt):
+   > You are implementing the '{setName}' set in the worktree at {worktreePath}.
+   >
+   > {Content of scoped CLAUDE.md}
+   >
+   > ## Implementation Plan
+   > {plan from Step 6}
+   >
+   > ## Execution Instructions
+   > - Work ONLY in the worktree directory: {worktreePath}
+   > - Commit after each task: `git add <specific files> && git commit -m "type({setName}): description"`
+   > - NEVER use `git add .` or `git add -A`
+   > - If you need imports from other sets, use stub files in .rapid-stubs/
+   > - Run verification after each task
+   > - When complete, emit a RAPID:RETURN with status COMPLETE
+
+4. Track teammate completion. Check the tracking file for completions:
+   ```bash
+   cat .planning/teams/rapid-wave-{waveNum}-completions.jsonl 2>/dev/null | wc -l
+   ```
+
+   Wait until all teammates have completed (completions count equals number of sets in wave).
+
+5. Clean up team tracking:
+   ```bash
+   rm -f .planning/teams/rapid-wave-{waveNum}-completions.jsonl
+   ```
+
+6. For each set, run verification (same as subagent mode):
+   ```bash
+   node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute verify {setName} --branch main
+   ```
+   Update registry phase based on results.
+
+7. Clean up stubs for completed sets.
+
+**If any team operation fails (team spawn fails, teammate crashes, any error):**
+
+Print a visible warning:
+> **Warning:** Agent teams failed for wave {waveNum}. Falling back to subagent execution.
+
+Then execute the ENTIRE wave using subagent mode (Step 7b below). This is a generic fallback -- do not inspect or special-case the error type.
+
+### Step 7b: Subagent Mode Dispatch
+
+If `executionMode` is 'Subagents', OR if teams mode failed and we are falling back:
 
 For each set in the current wave, spawn an executor subagent. All sets in a wave can be spawned simultaneously (but be aware of rate limits -- if you encounter errors, reduce parallelism).
 
@@ -340,9 +435,9 @@ For each set:
 
 After all sets in a wave complete (or are paused), run mandatory reconciliation:
 
-1. Run reconciliation:
+1. Run reconciliation (passing execution mode for wave summary metadata):
    ```bash
-   node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute reconcile {waveNumber}
+   node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute reconcile {waveNumber} --mode "{executionMode}"
    ```
 
 2. Parse the JSON output for overall result and details.
@@ -399,6 +494,8 @@ Present final summary:
 > - Verification: {pass/fail counts}
 > - Paused sets: {count, if any}
 >
+> **Execution mode used:** {executionMode}
+>
 > **Next steps:**
 > - Run `/rapid:status` to review worktree state
 > - Each set's changes are on their respective `rapid/{set-name}` branches
@@ -415,3 +512,6 @@ Present final summary:
 - **Pause handling:** CHECKPOINT returns trigger automatic pause via the pause CLI. The handoff file preserves state for the next session. Paused sets do not block the rest of the wave.
 - **Wave reconciliation:** Mandatory after every wave. Contract test failures are hard blocks (must fix). Missing artifacts are soft blocks (can be overridden). Developer must acknowledge results before the next wave proceeds.
 - **Gate overrides:** If the planning gate is blocked but the user wants to proceed, log the override for audit trail and show explicit confirmation before continuing.
+- **Dual-mode execution:** Mode is detected once at Step 0 and locked for the entire run. Teams mode creates one team per wave with one teammate per set. Both modes use identical verification, reconciliation, and status output.
+- **Teams fallback:** If any team operation fails mid-execution, the entire wave is re-executed using subagent mode. The fallback is generic and does not inspect error types. A visible warning is printed when fallback occurs.
+- **No inter-teammate messaging:** Teammates work in isolation. Contracts replace the need for communication (per user decision).

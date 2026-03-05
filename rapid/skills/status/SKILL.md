@@ -21,11 +21,27 @@ node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute wave-status
 
 The first command outputs the formatted dashboard. The second provides per-wave execution progress (JSON on stdout, human-readable on stderr).
 
+## Step 1.5: Detect Execution Mode
+
+Check if an execution mode is currently active:
+
+```bash
+node ~/RAPID/rapid/src/bin/rapid-tools.cjs execute detect-mode
+```
+
+Parse the JSON output. If `agentTeamsAvailable` is true, note it for display. The actual mode depends on whether `/rapid:execute` is actively running and which mode was selected. For status display purposes:
+- If agent teams is available: show "Execution mode: Agent Teams (available)"
+- If not: show "Execution mode: Subagents"
+
 ## Step 2: Display Unified Dashboard
 
-Present the output as a combined dashboard with two sections:
+Present the output as a combined dashboard with three sections:
 
-**Wave Summary** (header lines at top):
+**Mode Indicator** (at top of dashboard):
+- `Execution mode: Agent Teams` (if teams detected available)
+- `Execution mode: Subagents` (default)
+
+**Wave Summary** (header lines after mode indicator):
 - Shows per-wave completion: `Wave N: X/Y complete | Z executing | W planning | ...`
 - Only non-zero counts are displayed
 - Fully complete waves show: `Wave N: X/X complete`
