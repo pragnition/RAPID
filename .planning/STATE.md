@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 Phase: 09.1 of 10 (Package for Plugin Marketplace)
 Plan: 2 of 3 in current phase
 Status: In Progress
-Last activity: 2026-03-05 - Completed quick task 2: Flatten RAPID plugin to repo root
+Last activity: 2026-03-05 - Completed quick task 3: Fix agent tool calling to use installation path
 
 Progress: [███████████████████░] 96%
 
@@ -179,9 +179,10 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 1 | commit and push this to fishjojo1/RAPID | 2026-03-03 | 68dc648 | [1-commit-and-push-this-to-fishjojo1-rapid](./quick/1-commit-and-push-this-to-fishjojo1-rapid/) |
 | 2 | Flatten rapid/ plugin to repo root for Claude Code discoverability | 2026-03-05 | 39350ed | [2-flatten-rapid-plugin-to-repo-root-for-cl](./quick/2-flatten-rapid-plugin-to-repo-root-for-cl/) |
+| 3 | Fix agent tool calling to use installation path (RAPID_TOOLS env var) | 2026-03-05 | 1a497a9 | [3-fix-agent-tool-calling-to-use-installati](./quick/3-fix-agent-tool-calling-to-use-installati/) |
 
 ## Session Continuity
 
 Last session: 2026-03-05
-Stopped at: Completed quick task 2 (Flatten rapid/ to repo root) -- Plugin now discoverable at .claude-plugin/plugin.json
+Stopped at: Completed quick task 3 (Fix agent tool calling) -- Core modules use RAPID_TOOLS env var for portable paths
 Resume file: None
