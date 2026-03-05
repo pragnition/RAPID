@@ -178,9 +178,10 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | commit and push this to fishjojo1/RAPID | 2026-03-03 | 68dc648 | [1-commit-and-push-this-to-fishjojo1-rapid](./quick/1-commit-and-push-this-to-fishjojo1-rapid/) |
+| 2 | Flatten rapid/ plugin to repo root for Claude Code discoverability | 2026-03-05 | 39350ed | [2-flatten-rapid-plugin-to-repo-root-for-cl](./quick/2-flatten-rapid-plugin-to-repo-root-for-cl/) |
 
 ## Session Continuity
 
 Last session: 2026-03-05
-Stopped at: Completed 09.1-02-PLAN.md (DOCS.md Rewrite) -- Phase 09.1 in progress (24/25 plans)
+Stopped at: Completed quick task 2 (Flatten rapid/ to repo root) -- Plugin now discoverable at .claude-plugin/plugin.json
 Resume file: None
