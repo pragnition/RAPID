@@ -6,28 +6,29 @@ RAPID (Agentic Parallelizable and Isolatable Development) enables team-based par
 
 ## Installation
 
-### Marketplace
+### Method 1: Plugin Marketplace (Primary)
 
 ```
-/plugin install rapid
+claude plugin add fishjojo1/RAPID
 ```
 
-Or browse the Claude Code plugin marketplace and install from there.
+Then run `/rapid:install` from within Claude Code to complete setup. This configures the `RAPID_TOOLS` environment variable needed by all RAPID commands.
 
-### Manual
-
-Clone the repository and add it as a local plugin:
+### Method 2: Git Clone
 
 ```bash
 git clone https://github.com/fishjojo1/RAPID.git
-cd RAPID && npm install
-claude --plugin-dir ~/RAPID
+cd RAPID
+./setup.sh
 ```
+
+The `setup.sh` script installs dependencies and configures the `RAPID_TOOLS` environment variable automatically.
 
 ### Requirements
 
 - **Node.js 18+** (runtime for tool libraries)
 - **git 2.30+** (required for worktree support)
+- **RAPID_TOOLS env var** must be set (both installation methods handle this automatically)
 - npm dependencies are bundled in `node_modules/`
 
 ## Quick Start
@@ -43,6 +44,21 @@ A typical RAPID workflow follows these stages:
 7. **`/rapid:cleanup`** -- Remove worktree directories after successful merges
 
 ## Available Commands
+
+### /rapid:install
+
+**Install and configure RAPID plugin, set RAPID_TOOLS env var.**
+
+What it does:
+
+- Detects the RAPID installation directory
+- Sets the `RAPID_TOOLS` environment variable to point to `src/bin/rapid-tools.cjs`
+- Validates that the CLI is accessible
+- Required after marketplace installation; `setup.sh` handles this for git clone installs
+
+```
+/rapid:install
+```
 
 ### /rapid:init
 
