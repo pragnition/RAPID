@@ -164,36 +164,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROMPT-01 | TBD | Pending |
-| PROMPT-02 | TBD | Pending |
-| PROMPT-03 | TBD | Pending |
-| PROMPT-04 | TBD | Pending |
-| PROMPT-05 | TBD | Pending |
-| PROMPT-06 | TBD | Pending |
-| PROMPT-07 | TBD | Pending |
-| PROMPT-08 | TBD | Pending |
-| PROMPT-09 | TBD | Pending |
-| PROMPT-10 | TBD | Pending |
-| PROMPT-11 | TBD | Pending |
-| PROMPT-12 | TBD | Pending |
-| PROMPT-13 | TBD | Pending |
-| PROMPT-14 | TBD | Pending |
-| INST-01 | TBD | Pending |
-| INST-02 | TBD | Pending |
-| INST-03 | TBD | Pending |
-| ERRR-01 | TBD | Pending |
-| ERRR-02 | TBD | Pending |
-| ERRR-03 | TBD | Pending |
-| ERRR-04 | TBD | Pending |
-| PROG-01 | TBD | Pending |
-| PROG-02 | TBD | Pending |
-| PROG-03 | TBD | Pending |
+| PROMPT-01 | Phase 10 | Pending |
+| PROMPT-02 | Phase 10 | Pending |
+| PROMPT-03 | Phase 10 | Pending |
+| PROMPT-04 | Phase 11 | Pending |
+| PROMPT-05 | Phase 12 | Pending |
+| PROMPT-06 | Phase 12 | Pending |
+| PROMPT-07 | Phase 12 | Pending |
+| PROMPT-08 | Phase 12 | Pending |
+| PROMPT-09 | Phase 13 | Pending |
+| PROMPT-10 | Phase 13 | Pending |
+| PROMPT-11 | Phase 13 | Pending |
+| PROMPT-12 | Phase 11 | Pending |
+| PROMPT-13 | Phase 10 | Pending |
+| PROMPT-14 | Phase 11 | Pending |
+| INST-01 | Phase 14 | Pending |
+| INST-02 | Phase 14 | Pending |
+| INST-03 | Phase 14 | Pending |
+| ERRR-01 | Phase 13 | Pending |
+| ERRR-02 | Phase 13 | Pending |
+| ERRR-03 | Phase 15 | Pending |
+| ERRR-04 | Phase 13 | Pending |
+| PROG-01 | Phase 12 | Pending |
+| PROG-02 | Phase 15 | Pending |
+| PROG-03 | Phase 15 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24
+- Mapped to phases: 24
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-05 after v1.1 milestone requirements defined*
+*Last updated: 2026-03-06 after v1.1 roadmap creation (phases 10-15)*

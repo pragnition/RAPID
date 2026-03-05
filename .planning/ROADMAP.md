@@ -4,6 +4,11 @@
 
 RAPID delivers team-based parallel development for Claude Code through nine phases that build from the ground up: agent framework and state management first, then the plugin shell users interact with, context generation for rich project understanding, the planning engine that decomposes work into contract-bound sets, worktree orchestration for physical isolation, per-set execution with independent lifecycles, execution lifecycle management with sync gates, the merge pipeline that validates everything integrates, and finally agent teams as an optimization layer on a proven subagent foundation.
 
+## Milestones
+
+- 🚧 **v1.0 Core** - Phases 1-9.2 (in progress)
+- 📋 **v1.1 UI UX Improvements** - Phases 10-15 (planned)
+
 ## Phases
 
 **Phase Numbering:**
@@ -11,6 +16,9 @@ RAPID delivers team-based parallel development for Claude Code through nine phas
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 Decimal phases appear between their surrounding integers in numeric order.
+
+<details>
+<summary>v1.0 Core (Phases 1-9.2)</summary>
 
 - [x] **Phase 1: Agent Framework and State Management** - Composable agent architecture, structured returns, state storage, and atomic locking
 - [x] **Phase 2: Plugin Shell and Initialization** - `/rapid:init` scaffolding, prerequisite validation, and `/rapid:help` command
@@ -22,7 +30,21 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 8: Merge Pipeline** - Deep code review, contract validation, cleanup agent, and dependency-ordered merging
 - [ ] **Phase 9: Agent Teams Integration** - EXPERIMENTAL_AGENT_TEAMS detection with dual-mode execution and subagent fallback
 
+</details>
+
+### v1.1 UI UX Improvements (Phases 10-15)
+
+- [ ] **Phase 10: Init and Context Skill Prompts** - Structured AskUserQuestion prompts for init and context skills
+- [ ] **Phase 11: Planning and Status Skill Prompts** - Structured AskUserQuestion prompts for plan, assumptions, and status skills
+- [ ] **Phase 12: Execute Skill Prompts and Progress** - Structured AskUserQuestion prompts and progress indicators for execute skill
+- [ ] **Phase 13: Merge and Cleanup Skill Prompts** - Structured prompts, error recovery paths, and verdict explanations for merge and cleanup skills
+- [ ] **Phase 14: Install Skill Polish** - Shell detection, auto-sourcing, and fallback guidance for install skill
+- [ ] **Phase 15: Global Error Recovery and Progress** - Replace bare STOP handling across all skills and add progress indicators to context and merge skills
+
 ## Phase Details
+
+<details>
+<summary>v1.0 Core Phase Details (Phases 1-9.2)</summary>
 
 ### Phase 1: Agent Framework and State Management
 **Goal**: Agents have a composable, verifiable architecture and all project state is reliably stored with concurrent-access safety
@@ -162,23 +184,6 @@ Plans:
 - [x] 09-01: Agent teams foundation - teams.cjs, TaskCompleted hook, CLI detect-mode (EXEC-06) [Wave 1]
 - [ ] 09-02: Execute skill wiring - dual-mode dispatch, status integration, fallback [Wave 2, depends: 09-01]
 
-## Progress
-
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Agent Framework and State Management | 3/3 | Complete | 2026-03-03 |
-| 2. Plugin Shell and Initialization | 3/3 | Complete | 2026-03-04 |
-| 3. Context Generation | 3/3 | Complete | 2026-03-04 |
-| 4. Planning Engine and Contracts | 0/3 | Not started | - |
-| 5. Worktree Orchestration | 1/2 | In Progress|  |
-| 6. Execution Core | 0/2 | Not started | - |
-| 7. Execution Lifecycle | 1/2 | In Progress | - |
-| 8. Merge Pipeline | 2/2 | Complete | 2026-03-04 |
-| 9. Agent Teams Integration | 1/2 | In Progress | - |
-
 ### Phase 09.2: Create setup script and fix RAPID_TOOLS paths for plugin installation (INSERTED)
 
 **Goal:** RAPID has a portable setup system (setup.sh + /rapid:install) that bootstraps RAPID_TOOLS env var for any installation method, with all hardcoded fallback paths removed
@@ -212,3 +217,117 @@ Plans:
 - [x] 09.1-01: Fix portability -- portable paths, version sync, LICENSE, help update (PKG-01, PKG-02, PKG-03) [Wave 1]
 - [ ] 09.1-02: Comprehensive DOCS.md rewrite (PKG-04) [Wave 2, depends: 09.1-01]
 - [ ] 09.1-03: Marketplace packaging and submission (PKG-05, PKG-06) [Wave 2, depends: 09.1-01]
+
+</details>
+
+### Phase 10: Init and Context Skill Prompts
+**Goal**: Init and context skills use structured AskUserQuestion prompts for all decision gates instead of freeform text
+**Depends on**: Nothing (v1.1 milestone, independent of v1.0 phase completion)
+**Requirements**: PROMPT-01, PROMPT-02, PROMPT-03, PROMPT-13
+**Success Criteria** (what must be TRUE):
+  1. When init detects an existing .planning/ directory, the developer sees a structured prompt with Reinitialize/Upgrade/Cancel options and descriptions of what each does
+  2. When init asks for team size, the developer sees preset options (1, 2-3, 4-5, 6+) via AskUserQuestion instead of typing a number freeform
+  3. When init asks whether this is a fresh or brownfield project, the developer picks from a structured prompt with clear descriptions of each path
+  4. When context skill detects a greenfield project, the developer sees a structured confirmation prompt before generation proceeds
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: TBD
+- [ ] 10-02: TBD
+
+### Phase 11: Planning and Status Skill Prompts
+**Goal**: Plan, assumptions, and status skills use structured AskUserQuestion prompts for navigation and next-action decisions
+**Depends on**: Phase 10
+**Requirements**: PROMPT-04, PROMPT-12, PROMPT-14
+**Success Criteria** (what must be TRUE):
+  1. When plan skill encounters existing sets, the developer sees a structured Re-plan/View current/Cancel prompt with consequence descriptions
+  2. When assumptions skill runs, the developer can select a set and provide feedback through structured prompts instead of freeform text
+  3. After status skill displays the dashboard, the developer sees a next-action prompt offering relevant commands based on current project state
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01: TBD
+
+### Phase 12: Execute Skill Prompts and Progress
+**Goal**: Execute skill uses structured prompts for all decision points and shows progress during subagent operations
+**Depends on**: Phase 11
+**Requirements**: PROMPT-05, PROMPT-06, PROMPT-07, PROMPT-08, PROG-01
+**Success Criteria** (what must be TRUE):
+  1. When choosing execution mode, the developer sees Agent Teams vs Subagents as structured options with clear descriptions of tradeoffs
+  2. When a paused set is encountered, the developer sees Resume/Restart/Skip options with consequence descriptions for each
+  3. When the planning gate has not been met, the developer sees a structured override prompt with explicit risk explanation before proceeding
+  4. After wave reconciliation, the developer sees structured next-step options based on the reconciliation result (all pass vs failures found)
+  5. During subagent execution, the developer sees periodic progress text showing which set is active and last activity timestamp
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: TBD
+- [ ] 12-02: TBD
+
+### Phase 13: Merge and Cleanup Skill Prompts
+**Goal**: Merge and cleanup skills use structured prompts for confirmations, recovery from errors, and explanation of reviewer verdicts
+**Depends on**: Phase 12
+**Requirements**: PROMPT-09, PROMPT-10, PROMPT-11, ERRR-01, ERRR-02, ERRR-04
+**Success Criteria** (what must be TRUE):
+  1. Before merging to main, the developer sees a structured confirmation prompt making the irreversible nature of the action explicit
+  2. When a merge conflict occurs, the developer sees structured Resolve/Show diff/Revert options instead of the merge halting with no guidance
+  3. Before destructive worktree removal, the developer sees a structured confirmation prompt listing what will be deleted
+  4. When a dirty worktree blocks removal, the developer sees specific resolution steps (commit/stash commands) as structured options
+  5. After merge review, the developer sees clear explanations of APPROVE/CHANGES_REQUESTED/BLOCK verdicts and how many cleanup rounds remain
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01: TBD
+- [ ] 13-02: TBD
+
+### Phase 14: Install Skill Polish
+**Goal**: Install skill detects the user's shell, auto-sources config, and provides clear fallback guidance when automation fails
+**Depends on**: Nothing (independent of other v1.1 phases)
+**Requirements**: INST-01, INST-02, INST-03
+**Success Criteria** (what must be TRUE):
+  1. Install skill reads $SHELL and tells the developer which config file (e.g., ~/.bashrc, ~/.zshrc, ~/.config/fish/config.fish) will be modified before writing
+  2. After writing env vars to the shell config, the install skill auto-sources the config and verifies RAPID_TOOLS is set in the current session
+  3. If auto-sourcing fails, the developer sees clear manual instructions showing the exact source command to run for their detected shell
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: TBD
+
+### Phase 15: Global Error Recovery and Progress
+**Goal**: All skills replace bare STOP error handling with structured recovery options, and context/merge skills show progress during long operations
+**Depends on**: Phases 10-13 (builds on per-skill prompt work)
+**Requirements**: ERRR-03, PROG-02, PROG-03
+**Success Criteria** (what must be TRUE):
+  1. No skill contains bare "STOP" or "halt" error handling -- every error path offers structured AskUserQuestion with retry/skip/help/cancel options
+  2. During context skill codebase analysis, the developer sees progress text indicating analysis stage and files processed
+  3. During merge skill reviewer and cleanup subagent operations, the developer sees progress text indicating review stage and current set
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01: TBD
+- [ ] 15-02: TBD
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 09.1 → 09.2 → 10 → 11 → 12 → 13 → 14 → 15
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Agent Framework and State Management | v1.0 | 3/3 | Complete | 2026-03-03 |
+| 2. Plugin Shell and Initialization | v1.0 | 3/3 | Complete | 2026-03-04 |
+| 3. Context Generation | v1.0 | 3/3 | Complete | 2026-03-04 |
+| 4. Planning Engine and Contracts | v1.0 | 0/3 | Not started | - |
+| 5. Worktree Orchestration | v1.0 | 1/2 | In Progress | - |
+| 6. Execution Core | v1.0 | 0/2 | Not started | - |
+| 7. Execution Lifecycle | v1.0 | 1/2 | In Progress | - |
+| 8. Merge Pipeline | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 9. Agent Teams Integration | v1.0 | 1/2 | In Progress | - |
+| 09.1 Package for Plugin Marketplace | v1.0 | 2/3 | In Progress | - |
+| 09.2 Setup Script and RAPID_TOOLS | v1.0 | 2/2 | Complete | - |
+| 10. Init and Context Skill Prompts | v1.1 | 0/2 | Not started | - |
+| 11. Planning and Status Skill Prompts | v1.1 | 0/1 | Not started | - |
+| 12. Execute Skill Prompts and Progress | v1.1 | 0/2 | Not started | - |
+| 13. Merge and Cleanup Skill Prompts | v1.1 | 0/2 | Not started | - |
+| 14. Install Skill Polish | v1.1 | 0/1 | Not started | - |
+| 15. Global Error Recovery and Progress | v1.1 | 0/2 | Not started | - |
