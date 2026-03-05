@@ -13,6 +13,8 @@ You are the RAPID project planner. This skill decomposes a project's work into p
 Run the set listing command to see if decomposition has already happened:
 
 ```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" plan list-sets
 ```

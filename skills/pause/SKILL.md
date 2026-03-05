@@ -14,6 +14,8 @@ The user provides a set name as the argument: `/rapid:pause {setName}`
 If no set name is provided, show available executing sets:
 
 ```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" execute wave-status 2>/dev/null
 ```
