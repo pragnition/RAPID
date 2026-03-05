@@ -189,9 +189,10 @@ None yet.
 | 1 | commit and push this to fishjojo1/RAPID | 2026-03-03 | 68dc648 | [1-commit-and-push-this-to-fishjojo1-rapid](./quick/1-commit-and-push-this-to-fishjojo1-rapid/) |
 | 2 | Flatten rapid/ plugin to repo root for Claude Code discoverability | 2026-03-05 | 39350ed | [2-flatten-rapid-plugin-to-repo-root-for-cl](./quick/2-flatten-rapid-plugin-to-repo-root-for-cl/) |
 | 3 | Fix agent tool calling to use installation path (RAPID_TOOLS env var) | 2026-03-05 | 1a497a9 | [3-fix-agent-tool-calling-to-use-installati](./quick/3-fix-agent-tool-calling-to-use-installati/) |
+| 4 | Make /rapid:install a valid command and fix RAPID acronym | 2026-03-05 | 46ac072 | [4-make-rapid-install-a-valid-command-and-f](./quick/4-make-rapid-install-a-valid-command-and-f/) |
 
 ## Session Continuity
 
-Last session: 2026-03-05T14:42:25.396Z
-Stopped at: Completed 09.2-02-PLAN.md
+Last session: 2026-03-05T15:26:02Z
+Stopped at: Completed quick task 4
 Resume file: None
