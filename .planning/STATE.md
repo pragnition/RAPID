@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 Phase: 09.2 of 10 (Create Setup Script and Fix RAPID_TOOLS Paths)
 Plan: 2 of 2 in current phase
 Status: Complete
-Last activity: 2026-03-05 - Completed quick task 6: Create README and fix RAPID acronym references
+Last activity: 2026-03-05 - Completed quick task 7: Update init and other commands to load env vars from .env file as fallback
 
 Progress: [██████████] 96%
 
