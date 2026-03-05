@@ -179,6 +179,21 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Merge Pipeline | 2/2 | Complete | 2026-03-04 |
 | 9. Agent Teams Integration | 1/2 | In Progress | - |
 
+### Phase 09.2: Create setup script and fix RAPID_TOOLS paths for plugin installation (INSERTED)
+
+**Goal:** RAPID has a portable setup system (setup.sh + /rapid:install) that bootstraps RAPID_TOOLS env var for any installation method, with all hardcoded fallback paths removed
+**Requirements**: SETUP-01, SETUP-02, SETUP-03
+**Depends on:** Phase 9
+**Success Criteria** (what must be TRUE):
+  1. setup.sh at repo root bootstraps RAPID_TOOLS env var, validates prereqs, installs deps, and registers plugin -- idempotently
+  2. /rapid:install skill provides guided setup from within Claude Code for both marketplace and git clone installations
+  3. All SKILL.md files and core modules use bare ${RAPID_TOOLS} with no fallback paths -- missing env var produces clear error
+**Plans:** 2 plans (Wave 1: setup script + install skill || fallback removal + docs update)
+
+Plans:
+- [ ] 09.2-01-PLAN.md -- Create setup.sh bootstrap script and /rapid:install skill (SETUP-01, SETUP-02)
+- [ ] 09.2-02-PLAN.md -- Remove all fallback paths from source files, update DOCS.md and help (SETUP-03)
+
 ### Phase 09.1: Package for Plugin Marketplace (INSERTED)
 
 **Goal:** RAPID is packaged, documented, and distributed via both self-hosted marketplace and official Anthropic plugin directory

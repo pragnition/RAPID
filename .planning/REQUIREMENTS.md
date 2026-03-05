@@ -71,6 +71,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PKG-05**: Self-hosted marketplace.json enables distribution via `/plugin marketplace add fishjojo1/RAPID`
 - [ ] **PKG-06**: Plugin passes validation and is ready for submission to official Anthropic plugin directory
 
+### Setup & Installation (Phase 09.2 -- INSERTED)
+
+- [ ] **SETUP-01**: setup.sh at repo root bootstraps RAPID_TOOLS env var for any installation method (marketplace or git clone), with idempotent prereq validation, npm install, and plugin registration
+- [ ] **SETUP-02**: /rapid:install skill provides guided in-Claude-Code setup that auto-detects installation method and runs setup.sh
+- [ ] **SETUP-03**: All path fallbacks removed -- SKILL.md files and core modules use bare ${RAPID_TOOLS} with no hardcoded fallback, missing env var produces clear error
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -150,13 +156,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PKG-04 | Phase 9.1: Package for Plugin Marketplace | Planned |
 | PKG-05 | Phase 9.1: Package for Plugin Marketplace | Planned |
 | PKG-06 | Phase 9.1: Package for Plugin Marketplace | Planned |
+| SETUP-01 | Phase 9.2: Setup & Installation | Planned |
+| SETUP-02 | Phase 9.2: Setup & Installation | Planned |
+| SETUP-03 | Phase 9.2: Setup & Installation | Planned |
 
 **Coverage:**
 - v1 requirements: 34 total (all complete)
 - v1 packaging requirements: 6 total (Phase 9.1 INSERTED)
-- Mapped to phases: 40
+- v1 setup requirements: 3 total (Phase 9.2 INSERTED)
+- Mapped to phases: 43
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-03 after roadmap creation*
+*Last updated: 2026-03-05 after Phase 09.2 planning*
