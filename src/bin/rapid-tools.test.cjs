@@ -1306,6 +1306,76 @@ describe('handleState CLI integration', () => {
     }
   });
 
+  // -- state add-milestone --
+  it('state add-milestone creates a new milestone with --id and --name', async () => {
+    // Create a fresh project for this test to avoid interference
+    const addDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-add-ms-'));
+    fs.mkdirSync(path.join(addDir, '.planning', '.locks'), { recursive: true });
+    const sm = require('../lib/state-machine.cjs');
+    const state = sm.createInitialState('test-project', 'v1.0');
+    await sm.writeState(addDir, state);
+
+    try {
+      const stdout = execSync(`node "${CLI_PATH}" state add-milestone --id v2.0 --name "Version 2.0"`, {
+        cwd: addDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+      });
+      const result = JSON.parse(stdout.trim());
+      assert.equal(result.milestoneId, 'v2.0');
+      assert.equal(result.milestoneName, 'Version 2.0');
+      assert.equal(result.setsCarried, 0);
+
+      // Verify state was actually updated
+      const readResult = await sm.readState(addDir);
+      assert.equal(readResult.state.currentMilestone, 'v2.0');
+      assert.equal(readResult.state.milestones.length, 2);
+    } finally {
+      fs.rmSync(addDir, { recursive: true, force: true });
+    }
+  });
+
+  it('state add-milestone accepts carry-forward sets via stdin', async () => {
+    const addDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-add-ms-stdin-'));
+    fs.mkdirSync(path.join(addDir, '.planning', '.locks'), { recursive: true });
+    const sm = require('../lib/state-machine.cjs');
+    const state = sm.createInitialState('test-project', 'v1.0');
+    state.milestones[0].sets.push({
+      id: 'carry-set',
+      status: 'pending',
+      waves: [{ id: 'w1', status: 'pending', jobs: [{ id: 'j1', status: 'pending', artifacts: [] }] }],
+    });
+    await sm.writeState(addDir, state);
+
+    const setsJson = JSON.stringify([state.milestones[0].sets[0]]);
+
+    try {
+      const stdout = execSync(`echo '${setsJson}' | node "${CLI_PATH}" state add-milestone --id v2.0 --name "V2"`, {
+        cwd: addDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+      });
+      const result = JSON.parse(stdout.trim());
+      assert.equal(result.setsCarried, 1);
+    } finally {
+      fs.rmSync(addDir, { recursive: true, force: true });
+    }
+  });
+
+  it('state add-milestone without --id exits 1', () => {
+    try {
+      execSync(`node "${CLI_PATH}" state add-milestone`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
   // -- state detect-corruption --
   it('state detect-corruption returns JSON result', () => {
     const stdout = execSync(`node "${CLI_PATH}" state detect-corruption`, {
@@ -1344,6 +1414,7 @@ describe('handleState CLI integration', () => {
     assert.ok(stdout.includes('state get --all'), 'should document state get --all');
     assert.ok(stdout.includes('state get milestone'), 'should document state get milestone');
     assert.ok(stdout.includes('state transition'), 'should document state transition');
+    assert.ok(stdout.includes('state add-milestone'), 'should document state add-milestone');
     assert.ok(stdout.includes('state detect-corruption'), 'should document state detect-corruption');
     assert.ok(stdout.includes('state recover'), 'should document state recover');
   });

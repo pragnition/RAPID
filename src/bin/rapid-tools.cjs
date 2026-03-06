@@ -18,6 +18,7 @@ Commands:
   state transition set <milestoneId> <setId> <status>   Transition set status
   state transition wave <milestoneId> <setId> <waveId> <status>  Transition wave
   state transition job <milestoneId> <setId> <waveId> <jobId> <status>  Transition job
+  state add-milestone --id <id> [--name <name>]        Add new milestone (stdin: JSON sets)
   state detect-corruption                             Check STATE.json integrity
   state recover                                       Recover STATE.json from git
   assemble-agent <role>  Assemble an agent from modules (planner|executor|reviewer|verifier|orchestrator)
@@ -314,6 +315,46 @@ async function handleState(cwd, subcommand, args) {
         break;
       }
 
+      case 'add-milestone': {
+        // Parse --id and --name from args
+        let id = null;
+        let name = null;
+        for (let i = 0; i < args.length; i++) {
+          if (args[i] === '--id' && args[i + 1]) { id = args[i + 1]; i++; }
+          if (args[i] === '--name' && args[i + 1]) { name = args[i + 1]; i++; }
+        }
+        if (!id) {
+          error('Usage: state add-milestone --id <milestoneId> [--name <milestoneName>]');
+          process.exit(1);
+        }
+
+        // Read stdin for carryForwardSets JSON (optional)
+        let carryForwardSets = [];
+        if (!process.stdin.isTTY) {
+          const chunks = [];
+          for await (const chunk of process.stdin) {
+            chunks.push(chunk);
+          }
+          const stdinData = Buffer.concat(chunks).toString('utf-8').trim();
+          if (stdinData) {
+            try {
+              carryForwardSets = JSON.parse(stdinData);
+              if (!Array.isArray(carryForwardSets)) {
+                error('stdin must be a JSON array of sets');
+                process.exit(1);
+              }
+            } catch (e) {
+              error('Invalid JSON on stdin: ' + e.message);
+              process.exit(1);
+            }
+          }
+        }
+
+        const result = await sm.addMilestone(cwd, id, name, carryForwardSets);
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+        break;
+      }
+
       case 'detect-corruption': {
         const result = sm.detectCorruption(cwd);
         process.stdout.write(JSON.stringify(result, null, 2) + '\n');
@@ -542,7 +583,59 @@ function handleInit(args) {
     return;
   }
 
-  error(`Unknown init subcommand: ${subcommand}. Use 'detect' or 'scaffold'.`);
+  if (subcommand === 'research-dir') {
+    const fs = require('fs');
+    const path = require('path');
+    const researchDir = path.join(process.cwd(), '.planning', 'research');
+    if (!fs.existsSync(researchDir)) {
+      fs.mkdirSync(researchDir, { recursive: true });
+    }
+    process.stdout.write(JSON.stringify({ researchDir, ready: true }) + '\n');
+    return;
+  }
+
+  if (subcommand === 'write-config') {
+    const fs = require('fs');
+    const path = require('path');
+    const { generateConfigJson } = require('../lib/init.cjs');
+    let model = null;
+    let teamSize = null;
+    let name = null;
+
+    for (let i = 1; i < args.length; i++) {
+      switch (args[i]) {
+        case '--model':
+          model = args[++i];
+          break;
+        case '--team-size':
+          teamSize = parseInt(args[++i], 10);
+          break;
+        case '--name':
+          name = args[++i];
+          break;
+      }
+    }
+
+    const opts = {};
+    if (model) opts.model = model;
+    if (teamSize) opts.teamSize = teamSize;
+    if (name) opts.name = name;
+
+    const configContent = generateConfigJson(opts);
+    const configPath = path.join(process.cwd(), '.planning', 'config.json');
+
+    // Ensure .planning/ exists
+    const planningDir = path.join(process.cwd(), '.planning');
+    if (!fs.existsSync(planningDir)) {
+      fs.mkdirSync(planningDir, { recursive: true });
+    }
+
+    fs.writeFileSync(configPath, configContent);
+    process.stdout.write(JSON.stringify({ written: true, configPath }) + '\n');
+    return;
+  }
+
+  error(`Unknown init subcommand: ${subcommand}. Use 'detect', 'scaffold', 'research-dir', or 'write-config'.`);
   process.exit(1);
 }
 
