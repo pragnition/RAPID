@@ -1,7 +1,7 @@
 ---
 description: Decompose project work into parallelizable sets with interface contracts, dependency graphs, and file ownership
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
 ---
 
 # /rapid:plan -- Project Decomposition into Parallelizable Sets
@@ -22,20 +22,26 @@ node "${RAPID_TOOLS}" plan list-sets
 Parse the JSON output. The response contains a `sets` array.
 
 **If sets already exist** (array is non-empty):
-Display the existing sets and present exactly 3 options:
 
-> **Existing sets detected:**
-> {list each set name and its wave assignment}
->
-> 1. **Re-plan** -- Delete existing `.planning/sets/` and `.planning/contracts/` directories and start fresh
-> 2. **View existing** -- Show current set details and exit
-> 3. **Cancel** -- Exit without changes
+Use AskUserQuestion to present the decision:
 
-**NEVER proceed without the user's explicit choice.** Wait for their selection.
+- question: "Existing sets"
+- Options:
+  - "Re-plan" -- "Delete .planning/sets/ and .planning/contracts/ directories and start fresh decomposition from requirements"
+  - "View current" -- "Display each set's definition and contract summary for review before deciding"
+  - "Cancel" -- "Exit without changes. Your current sets remain intact."
+
+**NEVER proceed without the user's explicit choice.**
 
 - If **Re-plan**: Delete the `.planning/sets/` and `.planning/contracts/` directories using `rm -rf`, then continue to Step 2.
-- If **View existing**: For each set, run `node "${RAPID_TOOLS}" plan load-set <name>` and display the definition and contract summary. Then **STOP**.
-- If **Cancel**: **STOP** immediately.
+- If **View current**: For each set, run `node "${RAPID_TOOLS}" plan load-set <name>` and display the definition and contract summary. Then show a SECOND AskUserQuestion with:
+  - question: "Continue"
+  - Options:
+    - "Re-plan" -- "Delete .planning/sets/ and .planning/contracts/ directories and start fresh decomposition from requirements"
+    - "Cancel" -- "Exit without changes. Your current sets remain intact."
+  - If **Re-plan**: Delete the directories using `rm -rf`, then continue to Step 2.
+  - If **Cancel**: Display "Planning cancelled. Run `/rapid:plan` to resume." and end the skill.
+- If **Cancel**: Display "Planning cancelled." and end the skill.
 
 **If no sets exist** (empty array or command errors):
 Continue to Step 2.
@@ -179,18 +185,21 @@ Parse the subagent's proposed sets and present them to the developer in a readab
 - Any unassigned files: {list or "None"}
 - Any conflicts: {list or "None"}
 
-Then ask the developer:
+Then use AskUserQuestion to present the decision. Before calling AskUserQuestion, build an inline summary string from the proposal data in the format: "Create {N} sets across {M} waves: {set1} || {set2} > {set3}" where `||` means parallel and `>` means sequential wave dependency.
 
-> Review the proposed decomposition above. You can:
-> 1. **Approve** -- Create all sets, DAG, contracts, and ownership maps
-> 2. **Modify** -- Request changes to specific sets (I will re-propose)
-> 3. **Cancel** -- Abort planning
+Use AskUserQuestion with:
+
+- question: "Plan proposal"
+- Options:
+  - "Approve" -- "Create all sets, DAG, contracts, and ownership maps. {inline summary string}"
+  - "Modify" -- "Describe changes you want to specific sets. The planner will re-propose."
+  - "Cancel" -- "Abort planning. Your existing sets are unchanged."
 
 **NEVER proceed to persistence without the developer's explicit approval.**
 
 - If **Approve**: Continue to Step 5.
-- If **Modify**: Collect the developer's feedback, pass it back to the subagent with the original proposal for revision, and loop back to the beginning of Step 4 with the revised proposal.
-- If **Cancel**: **STOP** immediately.
+- If **Modify**: Ask the developer in plain text: "What changes would you like to make to the proposal?" Collect their feedback, pass it back to the subagent with the original proposal for revision, and loop back to the beginning of Step 4 with the revised proposal.
+- If **Cancel**: Display "Planning cancelled. Your existing sets are unchanged." and end the skill.
 
 ## Step 5: Persist Decomposition
 
