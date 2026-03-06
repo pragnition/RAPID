@@ -70,6 +70,10 @@ function ensureWorktreeDir(projectRoot) {
  * @throws {Error} If branch or path already exists
  */
 function createWorktree(projectRoot, setName) {
+  if (!setName || typeof setName !== 'string' || setName.trim() === '' || /\s/.test(setName)) {
+    throw new Error(`Invalid set name: "${setName}". Set name must be a non-empty string with no whitespace.`);
+  }
+
   const branch = `rapid/${setName}`;
   const worktreePath = path.resolve(projectRoot, WORKTREE_DIR, setName);
 
