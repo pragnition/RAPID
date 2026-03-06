@@ -16,6 +16,9 @@ const ROLE_TOOLS = {
   reviewer: 'Read, Grep, Glob, Bash',
   verifier: 'Read, Bash, Grep, Glob',
   orchestrator: 'Read, Write, Bash, Grep, Glob, Agent',
+  'wave-researcher': 'Read, Grep, Glob, Bash, WebFetch',
+  'wave-planner': 'Read, Write, Grep, Glob',
+  'job-planner': 'Read, Write, Grep, Glob',
 };
 
 /**
@@ -27,6 +30,9 @@ const ROLE_DESCRIPTIONS = {
   reviewer: 'RAPID reviewer agent -- performs deep code review before merge',
   verifier: 'RAPID verifier agent -- verifies task completion via filesystem checks',
   orchestrator: 'RAPID orchestrator agent -- coordinates planning, execution, verification, and merge',
+  'wave-researcher': 'RAPID wave research agent -- investigates implementation specifics for a wave',
+  'wave-planner': 'RAPID wave planner agent -- produces high-level per-job plans for a wave',
+  'job-planner': 'RAPID job planner agent -- creates detailed implementation plan for a single job',
 };
 
 /**
