@@ -823,3 +823,122 @@ describe('generateScopedClaudeMd', () => {
     assert.ok(!md.includes('## Style Guide'), 'should not contain Style Guide section when file missing');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// setInit tests
+// ────────────────────────────────────────────────────────────────
+describe('setInit', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempRepo();
+    // Create minimal .planning structure for setInit
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'test-set'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'worktrees'), { recursive: true });
+    // Write DEFINITION.md
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'test-set', 'DEFINITION.md'),
+      '# Set: test-set\n\n## Scope\nTest set scope\n',
+      'utf-8'
+    );
+    // Write CONTRACT.json
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'test-set', 'CONTRACT.json'),
+      JSON.stringify({
+        exports: { functions: [{ name: 'testFn', file: 'src/test.cjs', params: [], returns: 'void' }], types: [] },
+      }, null, 2),
+      'utf-8'
+    );
+    // Write OWNERSHIP.json
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'OWNERSHIP.json'),
+      JSON.stringify({
+        version: 1,
+        generated: '2026-03-07',
+        ownership: { 'src/test.cjs': 'test-set' },
+      }, null, 2),
+      'utf-8'
+    );
+  });
+
+  afterEach(() => {
+    cleanupRepo(tmpDir);
+  });
+
+  it('creates worktree at .rapid-worktrees/{setName} with branch rapid/{setName}', async () => {
+    const result = await worktree.setInit(tmpDir, 'test-set');
+    assert.equal(result.branch, 'rapid/test-set');
+    assert.equal(result.worktreePath, path.resolve(tmpDir, '.rapid-worktrees', 'test-set'));
+    assert.ok(fs.existsSync(result.worktreePath), 'worktree directory should exist');
+  });
+
+  it('writes scoped CLAUDE.md to the worktree directory', async () => {
+    const result = await worktree.setInit(tmpDir, 'test-set');
+    const claudeMdPath = path.join(result.worktreePath, 'CLAUDE.md');
+    assert.ok(fs.existsSync(claudeMdPath), 'CLAUDE.md should exist in worktree');
+    const content = fs.readFileSync(claudeMdPath, 'utf-8');
+    assert.ok(content.includes('# Set: test-set'), 'CLAUDE.md should contain set header');
+    assert.ok(content.includes('Interface Contract'), 'CLAUDE.md should contain contract section');
+  });
+
+  it('registers the worktree in REGISTRY.json with phase Created and status active', async () => {
+    await worktree.setInit(tmpDir, 'test-set');
+    const registry = worktree.loadRegistry(tmpDir);
+    assert.ok(registry.worktrees['test-set'], 'registry should contain test-set entry');
+    assert.equal(registry.worktrees['test-set'].phase, 'Created');
+    assert.equal(registry.worktrees['test-set'].status, 'active');
+    assert.equal(registry.worktrees['test-set'].branch, 'rapid/test-set');
+  });
+
+  it('does NOT transition set status in STATE.json (remains pending)', async () => {
+    // Create a STATE.json with test-set in pending status
+    const stateJson = {
+      version: 1,
+      projectName: 'test',
+      currentMilestone: 'v1.0',
+      milestones: [{
+        id: 'v1.0',
+        name: 'v1.0',
+        sets: [{
+          id: 'test-set',
+          status: 'pending',
+          waves: [],
+        }],
+      }],
+      lastUpdatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.json'),
+      JSON.stringify(stateJson, null, 2),
+      'utf-8'
+    );
+
+    await worktree.setInit(tmpDir, 'test-set');
+
+    // Verify STATE.json was NOT modified -- set should still be 'pending'
+    const stateAfter = JSON.parse(fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.json'), 'utf-8'
+    ));
+    const set = stateAfter.milestones[0].sets[0];
+    assert.equal(set.status, 'pending', 'set status should remain pending after setInit');
+  });
+
+  it('returns structured result { created, branch, worktreePath, setName, claudeMdGenerated }', async () => {
+    const result = await worktree.setInit(tmpDir, 'test-set');
+    assert.equal(result.created, true);
+    assert.equal(result.branch, 'rapid/test-set');
+    assert.equal(result.setName, 'test-set');
+    assert.equal(result.claudeMdGenerated, true);
+    assert.ok(result.worktreePath, 'should have worktreePath');
+  });
+
+  it('throws with descriptive error when branch already exists', async () => {
+    await worktree.setInit(tmpDir, 'test-set');
+    await assert.rejects(
+      () => worktree.setInit(tmpDir, 'test-set'),
+      /already exists/,
+      'should throw when branch already exists'
+    );
+  });
+});
