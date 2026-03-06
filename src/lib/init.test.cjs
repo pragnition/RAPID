@@ -217,12 +217,13 @@ describe('detectExisting', () => {
 
 describe('scaffoldProject', () => {
   describe('fresh mode (default)', () => {
-    it('creates .planning/ with all 5 files', () => {
+    it('creates .planning/ with all 6 files', () => {
       const result = scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 });
       assert.ok(result.created);
-      assert.equal(result.created.length, 5);
+      assert.equal(result.created.length, 6);
       assert.ok(result.created.includes('PROJECT.md'));
       assert.ok(result.created.includes('STATE.md'));
+      assert.ok(result.created.includes('STATE.json'));
       assert.ok(result.created.includes('ROADMAP.md'));
       assert.ok(result.created.includes('REQUIREMENTS.md'));
       assert.ok(result.created.includes('config.json'));
@@ -281,7 +282,7 @@ describe('scaffoldProject', () => {
       const newProject = fs.readFileSync(path.join(planningDir, 'PROJECT.md'), 'utf-8');
       assert.ok(newProject.includes('NewProject'));
 
-      assert.ok(result.created.length === 5);
+      assert.ok(result.created.length === 6);
     });
   });
 
@@ -297,7 +298,7 @@ describe('scaffoldProject', () => {
       // PROJECT.md should be skipped (preserved)
       assert.ok(result.skipped.includes('PROJECT.md'));
       // Other 4 files should be created
-      assert.equal(result.created.length, 4);
+      assert.equal(result.created.length, 5);
       assert.ok(result.created.includes('STATE.md'));
       assert.ok(result.created.includes('ROADMAP.md'));
       assert.ok(result.created.includes('REQUIREMENTS.md'));
@@ -310,8 +311,71 @@ describe('scaffoldProject', () => {
 
     it('creates .planning/ if it does not exist', () => {
       const result = scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 }, 'upgrade');
-      assert.equal(result.created.length, 5);
+      assert.equal(result.created.length, 6);
       assert.deepStrictEqual(result.skipped, []);
+    });
+  });
+
+  describe('STATE.json generation', () => {
+    it('creates STATE.json in .planning/ during fresh scaffold', () => {
+      scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 });
+      const stateJsonPath = path.join(tmpDir, '.planning', 'STATE.json');
+      assert.ok(fs.existsSync(stateJsonPath), 'STATE.json should exist after fresh scaffold');
+    });
+
+    it('STATE.json is valid JSON', () => {
+      scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 });
+      const raw = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.json'), 'utf-8');
+      const parsed = JSON.parse(raw);
+      assert.ok(typeof parsed === 'object');
+      assert.equal(parsed.version, 1);
+      assert.equal(parsed.projectName, 'TestProj');
+    });
+
+    it('STATE.json passes Zod validation via readState', async () => {
+      const { readState } = require('./state-machine.cjs');
+      scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 });
+      const result = await readState(tmpDir);
+      assert.ok(result !== null, 'readState should not return null');
+      assert.equal(result.valid, true, 'STATE.json should be valid');
+      assert.equal(result.state.projectName, 'TestProj');
+      assert.equal(result.state.currentMilestone, 'v1.0');
+      assert.equal(result.state.milestones.length, 1);
+    });
+
+    it('STATE.md is still created alongside STATE.json (dual source)', () => {
+      scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 });
+      assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'STATE.md')), 'STATE.md should still exist');
+      assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'STATE.json')), 'STATE.json should also exist');
+    });
+
+    it('includes STATE.json in created files list', () => {
+      const result = scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 });
+      assert.ok(result.created.includes('STATE.json'), 'created list should include STATE.json');
+    });
+
+    it('reinitialize mode also creates STATE.json', () => {
+      // Set up existing .planning/
+      const planningDir = path.join(tmpDir, '.planning');
+      fs.mkdirSync(planningDir);
+      fs.writeFileSync(path.join(planningDir, 'PROJECT.md'), '# OldProject');
+
+      const result = scaffoldProject(tmpDir, { name: 'NewProject', description: 'fresh', teamSize: 1 }, 'reinitialize');
+      assert.ok(result.created.includes('STATE.json'));
+      assert.ok(fs.existsSync(path.join(planningDir, 'STATE.json')));
+
+      const parsed = JSON.parse(fs.readFileSync(path.join(planningDir, 'STATE.json'), 'utf-8'));
+      assert.equal(parsed.projectName, 'NewProject');
+    });
+
+    it('upgrade mode creates STATE.json if missing', () => {
+      const planningDir = path.join(tmpDir, '.planning');
+      fs.mkdirSync(planningDir);
+      fs.writeFileSync(path.join(planningDir, 'PROJECT.md'), '# Existing');
+
+      const result = scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 }, 'upgrade');
+      assert.ok(result.created.includes('STATE.json'));
+      assert.ok(fs.existsSync(path.join(planningDir, 'STATE.json')));
     });
   });
 
