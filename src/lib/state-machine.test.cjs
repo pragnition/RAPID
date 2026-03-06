@@ -22,6 +22,7 @@ const {
   detectCorruption,
   recoverFromGit,
   commitState,
+  addMilestone,
 } = require('./state-machine.cjs');
 
 const { ProjectState } = require('./state-schemas.cjs');
@@ -586,5 +587,166 @@ describe('commitState', () => {
 
     const result = commitState(tmpDir, 'nothing changed');
     assert.equal(result.committed, false);
+  });
+});
+
+// ---- addMilestone ----
+
+describe('addMilestone', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTempProject(); });
+  afterEach(() => { cleanTempProject(tmpDir); });
+
+  it('adds a new milestone to STATE.json', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    writeTestState(tmpDir, state);
+
+    const result = await addMilestone(tmpDir, 'v2.0', 'Version 2.0');
+
+    assert.equal(result.milestoneId, 'v2.0');
+    assert.equal(result.milestoneName, 'Version 2.0');
+    assert.equal(result.setsCarried, 0);
+
+    const updated = readTestState(tmpDir);
+    assert.equal(updated.milestones.length, 2);
+    assert.equal(updated.milestones[1].id, 'v2.0');
+    assert.equal(updated.milestones[1].name, 'Version 2.0');
+  });
+
+  it('updates currentMilestone to new milestone ID', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    writeTestState(tmpDir, state);
+
+    await addMilestone(tmpDir, 'v2.0', 'Version 2.0');
+
+    const updated = readTestState(tmpDir);
+    assert.equal(updated.currentMilestone, 'v2.0');
+  });
+
+  it('preserves all existing milestones (no data loss)', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    state.milestones[0].sets = [{
+      id: 'set-1',
+      status: 'complete',
+      waves: [{
+        id: 'wave-1',
+        status: 'complete',
+        jobs: [{ id: 'job-1', status: 'complete', artifacts: [] }],
+      }],
+    }];
+    writeTestState(tmpDir, state);
+
+    await addMilestone(tmpDir, 'v2.0', 'Version 2.0');
+
+    const updated = readTestState(tmpDir);
+    assert.equal(updated.milestones.length, 2);
+    // Original milestone data preserved
+    assert.equal(updated.milestones[0].id, 'v1.0');
+    assert.equal(updated.milestones[0].sets.length, 1);
+    assert.equal(updated.milestones[0].sets[0].id, 'set-1');
+  });
+
+  it('carries forward specified sets into new milestone', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    state.milestones[0].sets = [{
+      id: 'set-carry',
+      status: 'pending',
+      waves: [{
+        id: 'wave-1',
+        status: 'pending',
+        jobs: [{ id: 'job-1', status: 'pending', artifacts: [] }],
+      }],
+    }];
+    writeTestState(tmpDir, state);
+
+    const carryForward = [state.milestones[0].sets[0]];
+    const result = await addMilestone(tmpDir, 'v2.0', 'Version 2.0', carryForward);
+
+    assert.equal(result.setsCarried, 1);
+
+    const updated = readTestState(tmpDir);
+    const newMilestone = updated.milestones[1];
+    assert.equal(newMilestone.sets.length, 1);
+    assert.equal(newMilestone.sets[0].id, 'set-carry');
+  });
+
+  it('creates milestone with empty sets when carryForwardSets is empty', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    writeTestState(tmpDir, state);
+
+    await addMilestone(tmpDir, 'v2.0', 'Version 2.0', []);
+
+    const updated = readTestState(tmpDir);
+    const newMilestone = updated.milestones[1];
+    assert.deepEqual(newMilestone.sets, []);
+  });
+
+  it('throws if milestone ID already exists', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    writeTestState(tmpDir, state);
+
+    await assert.rejects(
+      () => addMilestone(tmpDir, 'v1.0', 'Duplicate'),
+      /Milestone "v1.0" already exists/
+    );
+  });
+
+  it('throws if state cannot be read', async () => {
+    // No STATE.json exists
+    await assert.rejects(
+      () => addMilestone(tmpDir, 'v2.0', 'Version 2.0'),
+      /Cannot read state/
+    );
+  });
+
+  it('uses writeState for atomic validated write', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    writeTestState(tmpDir, state);
+
+    await addMilestone(tmpDir, 'v2.0', 'Version 2.0');
+
+    // Verify no .tmp file left (atomic write indicator)
+    const tmpFile = path.join(tmpDir, '.planning', 'STATE.json.tmp');
+    assert.equal(fs.existsSync(tmpFile), false);
+
+    // Verify state is valid (writeState validates via Zod)
+    const result = await readState(tmpDir);
+    assert.equal(result.valid, true);
+  });
+
+  it('deep copies carried sets (no shared references)', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    const originalSet = {
+      id: 'set-copy',
+      status: 'pending',
+      waves: [{
+        id: 'wave-1',
+        status: 'pending',
+        jobs: [{ id: 'job-1', status: 'pending', artifacts: [] }],
+      }],
+    };
+    state.milestones[0].sets = [originalSet];
+    writeTestState(tmpDir, state);
+
+    await addMilestone(tmpDir, 'v2.0', 'Version 2.0', [originalSet]);
+
+    // Modify the original set reference
+    originalSet.id = 'MUTATED';
+
+    // The carried set in the new milestone should not be affected
+    const updated = readTestState(tmpDir);
+    assert.equal(updated.milestones[1].sets[0].id, 'set-copy');
+  });
+
+  it('uses milestoneId as name when name is not provided', async () => {
+    const state = createInitialState('test-project', 'v1.0');
+    writeTestState(tmpDir, state);
+
+    const result = await addMilestone(tmpDir, 'v3.0');
+
+    assert.equal(result.milestoneName, 'v3.0');
+
+    const updated = readTestState(tmpDir);
+    assert.equal(updated.milestones[1].name, 'v3.0');
   });
 });
