@@ -1348,3 +1348,96 @@ describe('handleState CLI integration', () => {
     assert.ok(stdout.includes('state recover'), 'should document state recover');
   });
 });
+
+// ── Init subcommand tests ──
+
+describe('handleInit research-dir subcommand', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-init-cli-'));
+  });
+
+  afterEach(() => {
+    if (tmpDir && fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('creates .planning/research/ directory and outputs JSON', () => {
+    const stdout = execSync(`node "${CLI_PATH}" init research-dir`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.ok(result.researchDir, 'should have researchDir field');
+    assert.equal(result.ready, true, 'should be ready');
+    assert.ok(fs.existsSync(result.researchDir), 'research dir should exist on disk');
+    assert.ok(fs.statSync(result.researchDir).isDirectory(), 'should be a directory');
+  });
+
+  it('is idempotent - running twice succeeds', () => {
+    execSync(`node "${CLI_PATH}" init research-dir`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const stdout = execSync(`node "${CLI_PATH}" init research-dir`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.ready, true);
+    assert.ok(fs.existsSync(result.researchDir));
+  });
+});
+
+describe('handleInit write-config subcommand', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-init-cli-'));
+    // write-config writes to .planning/config.json, so .planning must exist
+    fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
+  });
+
+  afterEach(() => {
+    if (tmpDir && fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('writes config.json with specified model and team-size', () => {
+    const stdout = execSync(
+      `node "${CLI_PATH}" init write-config --model opus --team-size 3 --name MyProject`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+    const result = JSON.parse(stdout.trim());
+    assert.ok(result.written, 'should confirm written');
+
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    assert.ok(fs.existsSync(configPath), 'config.json should exist');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    assert.equal(config.model, 'opus');
+    assert.equal(config.project.name, 'MyProject');
+    // floor(3 * 1.5) = 4
+    assert.equal(config.planning.max_parallel_sets, 4);
+  });
+
+  it('uses defaults when no flags provided', () => {
+    const stdout = execSync(
+      `node "${CLI_PATH}" init write-config`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+    const result = JSON.parse(stdout.trim());
+    assert.ok(result.written);
+
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    assert.equal(config.model, 'sonnet');
+    // floor(1 * 1.5) = 1
+    assert.equal(config.planning.max_parallel_sets, 1);
+  });
+});
