@@ -185,7 +185,15 @@ For each set:
    node "${RAPID_TOOLS}" execute update-phase {setName} Discussing
    ```
 
-3. Spawn a discuss subagent using the Agent tool. The subagent should:
+3. **Print progress before spawning:**
+   ```
+   Wave {N} -- Discuss ({completed}/{total} sets done)
+     {setName}: Discussing
+   [HH:MM]
+   ```
+   Derive the timestamp from `date +%H:%M`.
+
+4. Spawn a discuss subagent using the Agent tool. The subagent should:
    - Receive the contract and definition for this set
    - Ask the developer clarifying questions about implementation approach
    - For simple/clear sets: state that no questions are needed and summarize the planned approach
@@ -203,7 +211,14 @@ For each set:
    >
    > Review the above and ask the developer any clarifying questions about implementation approach, edge cases, or integration points. If everything is clear, state your understanding and the approach you would take.
 
-4. Collect the user's answers and the subagent's summary. Store these as the "discuss decisions" for this set.
+5. After the discuss subagent returns, **print updated progress:**
+   ```
+   Wave {N} -- Discuss ({completed}/{total} sets done)
+     {setName}: Discussed
+   [HH:MM]
+   ```
+
+6. Collect the user's answers and the subagent's summary. Store these as the "discuss decisions" for this set.
 
 After all sets in the wave have been discussed, present a summary:
 > **Discussion complete for Wave {N}:**
@@ -229,7 +244,15 @@ For each set in the current wave, spawn a planning subagent:
    node "${RAPID_TOOLS}" execute update-phase {setName} Planning
    ```
 
-2. Spawn a plan subagent using the Agent tool. The subagent should:
+2. **Print progress before spawning:**
+   ```
+   Wave {N} -- Plan ({completed}/{total} sets done)
+     {setName}: Planning
+   [HH:MM]
+   ```
+   Derive the timestamp from `date +%H:%M`.
+
+3. Spawn a plan subagent using the Agent tool. The subagent should:
    - Receive the contract, definition, and discuss decisions
    - Create a step-by-step implementation plan
    - Output the plan in a structured format
@@ -254,7 +277,14 @@ For each set in the current wave, spawn a planning subagent:
    >
    > Each commit must leave the codebase in a working state.
 
-3. Present the plan to the user for review. The user can approve, request changes, or skip.
+4. After the plan subagent returns, **print updated progress:**
+   ```
+   Wave {N} -- Plan ({completed}/{total} sets done)
+     {setName}: Planned
+   [HH:MM]
+   ```
+
+5. Present the plan to the user for review. The user can approve, request changes, or skip.
 
 After all sets are planned, present a summary and use AskUserQuestion for approval:
 - **question:** "Wave {N} plans"
@@ -289,7 +319,16 @@ For the current wave, create a team and spawn teammates:
      node "${RAPID_TOOLS}" execute update-phase {setName} Executing
      ```
 
-3. Use the Agent tool to create a team and spawn teammates. For each set in the wave, spawn a teammate with the same executor prompt as subagent mode (read from the set's worktree CLAUDE.md + implementation plan). Each teammate works in its own worktree directory.
+3. **Print progress before batch spawn:**
+   ```
+   Wave {N} -- Execute (0/{total} sets done)
+     {setName1}: Executing
+     {setName2}: Executing
+   [HH:MM]
+   ```
+   Derive the timestamp from `date +%H:%M`.
+
+4. Use the Agent tool to create a team and spawn teammates. For each set in the wave, spawn a teammate with the same executor prompt as subagent mode (read from the set's worktree CLAUDE.md + implementation plan). Each teammate works in its own worktree directory.
 
    **Teammate prompt template** (identical to subagent executor prompt):
    > You are implementing the '{setName}' set in the worktree at {worktreePath}.
@@ -307,25 +346,30 @@ For the current wave, create a team and spawn teammates:
    > - Run verification after each task
    > - When complete, emit a RAPID:RETURN with status COMPLETE
 
-4. Track teammate completion. Check the tracking file for completions:
+5. Track teammate completion. Check the tracking file for completions:
    ```bash
    cat .planning/teams/rapid-wave-{waveNum}-completions.jsonl 2>/dev/null | wc -l
    ```
 
-   Wait until all teammates have completed (completions count equals number of sets in wave).
+   Wait until all teammates have completed (completions count equals number of sets in wave). As each teammate completes, **print updated progress:**
+   ```
+   Wave {N} -- Execute ({completed}/{total} sets done)
+     {setName}: Done
+   [HH:MM]
+   ```
 
-5. Clean up team tracking:
+6. Clean up team tracking:
    ```bash
    rm -f .planning/teams/rapid-wave-{waveNum}-completions.jsonl
    ```
 
-6. For each set, run verification (same as subagent mode):
+7. For each set, run verification (same as subagent mode):
    ```bash
    node "${RAPID_TOOLS}" execute verify {setName} --branch main
    ```
    Update registry phase based on results.
 
-7. Clean up stubs for completed sets.
+8. Clean up stubs for completed sets.
 
 **If any team operation fails (team spawn fails, teammate crashes, any error):**
 
@@ -352,7 +396,15 @@ For each set:
    node "${RAPID_TOOLS}" execute update-phase {setName} Executing
    ```
 
-3. Spawn an executor subagent using the Agent tool. The subagent should:
+3. **Print progress before spawning:**
+   ```
+   Wave {N} -- Execute ({completed}/{total} sets done)
+     {setName}: Executing ({tasks_completed}/{tasks_total} tasks)
+   [HH:MM]
+   ```
+   Derive task counts from the implementation plan or registry/handoff data. Derive the timestamp from `date +%H:%M`.
+
+4. Spawn an executor subagent using the Agent tool. The subagent should:
    - Work in the set's worktree directory ({worktreePath} from registry)
    - Receive the scoped CLAUDE.md (contract, ownership, deny list, style guide)
    - Receive the implementation plan from Step 6
@@ -405,7 +457,14 @@ For each set:
    >
    > Start from the first incomplete task. Do NOT redo completed work.
 
-4. After the subagent returns, check the return status:
+5. After the subagent returns, **print updated progress:**
+   ```
+   Wave {N} -- Execute ({completed}/{total} sets done)
+     {setName}: {Done/Paused/Error}
+   [HH:MM]
+   ```
+
+6. Check the return status:
 
    **If return status is COMPLETE:**
    - Parse the structured return and run verification:
@@ -437,7 +496,7 @@ For each set:
      node "${RAPID_TOOLS}" execute update-phase {setName} Error
      ```
 
-5. Clean up stubs (for COMPLETE and BLOCKED, not for CHECKPOINT/paused):
+7. Clean up stubs (for COMPLETE and BLOCKED, not for CHECKPOINT/paused):
    ```bash
    node "${RAPID_TOOLS}" execute cleanup-stubs {setName}
    ```
