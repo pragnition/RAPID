@@ -40,9 +40,9 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 
 - [ ] **WAVE-01**: /discuss captures user implementation vision per wave via AskUserQuestion
 - [ ] **WAVE-02**: /discuss is comprehensive — probes uncovered facets, asks about edge cases, only acts autonomously if user opts in
-- [ ] **WAVE-03**: /plan spawns research agents to investigate how to implement wave jobs
-- [ ] **WAVE-04**: Wave Planner produces high-level per-job plans with structured output
-- [ ] **WAVE-05**: Job Planner creates detailed per-job implementation plans with user discussion
+- [x] **WAVE-03**: /plan spawns research agents to investigate how to implement wave jobs
+- [x] **WAVE-04**: Wave Planner produces high-level per-job plans with structured output
+- [x] **WAVE-05**: Job Planner creates detailed per-job implementation plans with user discussion
 - [ ] **WAVE-06**: Job Planner validates plans against interface contracts
 
 ### Execution
@@ -254,9 +254,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SETL-07 | Phase 19 | Complete |
 | WAVE-01 | Phase 20 | Pending |
 | WAVE-02 | Phase 20 | Pending |
-| WAVE-03 | Phase 20 | Pending |
-| WAVE-04 | Phase 20 | Pending |
-| WAVE-05 | Phase 20 | Pending |
+| WAVE-03 | Phase 20 | Complete |
+| WAVE-04 | Phase 20 | Complete |
+| WAVE-05 | Phase 20 | Complete |
 | WAVE-06 | Phase 20 | Pending |
 | EXEC-01 | Phase 21 | Pending |
 | EXEC-02 | Phase 21 | Pending |

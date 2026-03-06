@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: completed
-stopped_at: Phase 20 context gathered
-last_updated: "2026-03-06T17:36:23.682Z"
-last_activity: 2026-03-07 — Completed 19-03 (Pause/resume/cleanup lifecycle commands)
+status: executing
+stopped_at: Completed 20-02-PLAN.md
+last_updated: "2026-03-06T18:03:04.717Z"
+last_activity: 2026-03-07 — Completed 20-02 (Wave planning agent role modules)
 progress:
   total_phases: 26
   completed_phases: 20
-  total_plans: 49
-  completed_plans: 48
-  percent: 98
+  total_plans: 52
+  completed_plans: 49
+  percent: 94
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 19 - Set Lifecycle (v2.0 Mark II)
+**Current focus:** Phase 20 - Wave Planning (v2.0 Mark II)
 
 ## Current Position
 
-Phase: 19 of 24 (Set Lifecycle)
-Plan: 3 of 3 in current phase
-Status: Phase Complete
-Last activity: 2026-03-07 — Completed 19-03 (Pause/resume/cleanup lifecycle commands)
+Phase: 20 of 24 (Wave Planning)
+Plan: 2 of 3 in current phase
+Status: In Progress
+Last activity: 2026-03-07 — Completed 20-02 (Wave planning agent role modules)
 
-Progress: [██████████] 98% (47/49 plans complete)
+Progress: [█████████░] 94% (49/52 plans complete)
 
 ## Accumulated Context
 
@@ -67,6 +67,9 @@ Recent decisions affecting current work:
 - [Phase 19]: deleteBranch returns structured results (not throws) consistent with removeWorktree pattern
 - [Phase 19]: Context skill verified compatible with Mark II -- no changes needed
 - [Phase 19-set-lifecycle]: setInit does NOT transition set status -- stays pending until /discuss
+- [Phase 20]: Wave researcher gets WebFetch for Context7 MCP; planners get Write only -- no Agent tool for any wave planning role
+- [Phase 20]: File ownership assignment is Wave Planner's responsibility via dedicated table in WAVE-PLAN.md
+- [Phase 20]: Three-stage pipeline: WAVE-CONTEXT -> WAVE-RESEARCH -> WAVE-PLAN -> JOB-PLAN, each produced by separate agent
 
 ### Pending Todos
 
@@ -98,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T17:36:23.680Z
-Stopped at: Phase 20 context gathered
-Resume file: .planning/phases/20-wave-planning/20-CONTEXT.md
+Last session: 2026-03-06T18:03:04.712Z
+Stopped at: Completed 20-02-PLAN.md
+Resume file: None
