@@ -355,10 +355,11 @@ Plans:
   1. A dependency map documents the coupling between all v1.0 lib modules (worktree.cjs, merge.cjs, execute.cjs, plan.cjs, etc.) and the old STATE.md/flat data structures
   2. Adapter interfaces exist so that kept modules (worktree.cjs, merge.cjs) can read/write via the new hierarchical STATE.json without internal rewrites
   3. Integration tests verify that adapted modules produce correct state transitions through the adapter layer
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: dep map + state deletion + CLI rewrite, Wave 2: init update + integration tests)
 
 Plans:
-- [ ] 17-01: TBD
+- [ ] 17-01: Dependency map, delete state.cjs, rewrite rapid-tools.cjs handleState, update agent modules (STATE-04) [Wave 1]
+- [ ] 17-02: Add STATE.json to init scaffolding, phase-wide integration tests (STATE-04) [Wave 2, depends: 17-01]
 
 ### Phase 18: Init and Project Setup
 **Goal**: Developers can initialize new projects or milestones with intelligent detection, parallel research, and automatic roadmap creation
@@ -499,7 +500,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 14. Install Skill Polish | v1.1 | 1/1 | Complete | 2026-03-06 |
 | 15. Global Error Recovery and Progress | v1.1 | 2/2 | Complete | 2026-03-06 |
 | 16. State Machine Foundation | 3/3 | Complete    | 2026-03-06 | - |
-| 17. Dependency Audit and Adapter Layer | v2.0 | 0/1 | Not started | - |
+| 17. Dependency Audit and Adapter Layer | v2.0 | 0/2 | Not started | - |
 | 18. Init and Project Setup | v2.0 | 0/3 | Not started | - |
 | 19. Set Lifecycle | v2.0 | 0/2 | Not started | - |
 | 20. Wave Planning | v2.0 | 0/2 | Not started | - |
