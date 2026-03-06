@@ -12,7 +12,7 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 - [x] **STATE-01**: State machine persists hierarchical JSON state (project > milestone > set > wave > job) with lock-protected writes
 - [x] **STATE-02**: State transitions validated — cannot skip states (e.g. pending > executing > complete)
 - [x] **STATE-03**: Sets/Waves/Jobs data model with DAG computation extending dag.cjs
-- [ ] **STATE-04**: Dependency audit maps coupling in v1.0 lib modules and creates adapter layer
+- [x] **STATE-04**: Dependency audit maps coupling in v1.0 lib modules and creates adapter layer
 - [x] **STATE-05**: All inter-agent outputs use structured format (JSON/structured markdown) for reliable parsing
 
 ### Init & Project Setup
@@ -235,7 +235,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-01 | Phase 16 | Complete |
 | STATE-02 | Phase 16 | Complete |
 | STATE-03 | Phase 16 | Complete |
-| STATE-04 | Phase 17 | Pending |
+| STATE-04 | Phase 17 | Complete |
 | STATE-05 | Phase 16 | Complete |
 | INIT-01 | Phase 18 | Pending |
 | INIT-02 | Phase 18 | Pending |

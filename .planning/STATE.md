@@ -9,9 +9,9 @@ last_activity: 2026-03-06 — Completed 16-03 (DAG v2.0 + handoff validation)
 progress:
   total_phases: 26
   completed_phases: 17
-  total_plans: 40
-  completed_plans: 39
-  percent: 98
+  total_plans: 42
+  completed_plans: 40
+  percent: 95
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 16 - State Machine Foundation (v2.0 Mark II)
+**Current focus:** Phase 17 - Dependency Audit and Adapter Layer (v2.0 Mark II)
 
 ## Current Position
 
-Phase: 16 of 24 (State Machine Foundation)
-Plan: 3 of 3 in current phase
+Phase: 17 of 24 (Dependency Audit and Adapter Layer)
+Plan: 1 of 2 in current phase
 Status: Executing
-Last activity: 2026-03-06 — Completed 16-03 (DAG v2.0 + handoff validation)
+Last activity: 2026-03-06 — Completed 17-01 (Dependency audit, state.cjs deletion, CLI rewrite)
 
-Progress: [██████████] 98% (39/40 plans complete)
+Progress: [██████████] 98% (40/42 plans complete)
 
 ## Accumulated Context
 
@@ -52,6 +52,9 @@ Recent decisions affecting current work:
 - [Phase 16]: Zod discriminatedUnion on status field for type-safe inter-agent handoff validation
 - [Phase 16]: Validate state before acquiring lock for fail-fast in writeState
 - [Phase 16]: Transition functions acquire own lock and write directly to avoid double-lock
+- [Phase 17]: Clean break from state.cjs -- deleted without migration, state-machine.cjs is sole provider
+- [Phase 17]: CLI state commands use hierarchy-aware addressing (milestoneId/setId/waveId/jobId)
+- [Phase 17]: state transition replaces state update -- validated transitions with automatic parent derivation
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T08:37:27.014Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-dependency-audit-and-adapter-layer/17-CONTEXT.md
+Last session: 2026-03-06T08:54:02Z
+Stopped at: Completed 17-01-PLAN.md
+Resume file: .planning/phases/17-dependency-audit-and-adapter-layer/17-02-PLAN.md
