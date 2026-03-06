@@ -1,3 +1,4 @@
+
 # Requirements: RAPID
 
 **Defined:** 2026-03-03
@@ -26,9 +27,9 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 
 ### Install Polish
 
-- [ ] **INST-01**: Install skill detects user's shell from $SHELL env var and shows which config file will be modified
-- [ ] **INST-02**: Install skill auto-sources shell config after writing env vars and verifies RAPID_TOOLS is set
-- [ ] **INST-03**: Install skill shows clear fallback guidance if auto-sourcing fails
+- [x] **INST-01**: Install skill detects user's shell from $SHELL env var and shows which config file will be modified
+- [x] **INST-02**: Install skill auto-sources shell config after writing env vars and verifies RAPID_TOOLS is set
+- [x] **INST-03**: Install skill shows clear fallback guidance if auto-sourcing fails
 
 ### Error Recovery
 
@@ -178,9 +179,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROMPT-12 | Phase 11 | Complete |
 | PROMPT-13 | Phase 10 | Complete |
 | PROMPT-14 | Phase 11 | Complete |
-| INST-01 | Phase 14 | Pending |
-| INST-02 | Phase 14 | Pending |
-| INST-03 | Phase 14 | Pending |
+| INST-01 | Phase 14 | Complete |
+| INST-02 | Phase 14 | Complete |
+| INST-03 | Phase 14 | Complete |
 | ERRR-01 | Phase 13 | Complete |
 | ERRR-02 | Phase 13 | Complete |
 | ERRR-03 | Phase 15 | Pending |
