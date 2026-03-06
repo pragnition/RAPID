@@ -32,9 +32,9 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 - [x] **SETL-02**: /set-init generates scoped CLAUDE.md per worktree with relevant contracts and context
 - [x] **SETL-03**: Set planner runs during /set-init producing high-level set overview
 - [ ] **SETL-04**: /status displays cross-set dashboard with set > wave > job hierarchy
-- [ ] **SETL-05**: /pause saves per-set state with handoff file for later resumption
-- [ ] **SETL-06**: /cleanup removes completed set worktrees with safety checks
-- [ ] **SETL-07**: /context generates CLAUDE.md and project context files
+- [x] **SETL-05**: /pause saves per-set state with handoff file for later resumption
+- [x] **SETL-06**: /cleanup removes completed set worktrees with safety checks
+- [x] **SETL-07**: /context generates CLAUDE.md and project context files
 
 ### Wave Lifecycle
 
@@ -75,7 +75,7 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 
 ### UX & Cross-Cutting
 
-- [ ] **UX-01**: AskUserQuestion used at every decision gate, queries batched to save tokens/time
+- [x] **UX-01**: AskUserQuestion used at every decision gate, queries batched to save tokens/time
 - [ ] **UX-02**: Progress indicators with emojis/color during subagent operations
 - [x] **UX-03**: State updated at every step so user can /clear context between phases
 - [x] **UX-04**: /help shows all Mark II commands with workflow guidance
@@ -249,9 +249,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SETL-02 | Phase 19 | Complete |
 | SETL-03 | Phase 19 | Complete |
 | SETL-04 | Phase 19 | Pending |
-| SETL-05 | Phase 19 | Pending |
-| SETL-06 | Phase 19 | Pending |
-| SETL-07 | Phase 19 | Pending |
+| SETL-05 | Phase 19 | Complete |
+| SETL-06 | Phase 19 | Complete |
+| SETL-07 | Phase 19 | Complete |
 | WAVE-01 | Phase 20 | Pending |
 | WAVE-02 | Phase 20 | Pending |
 | WAVE-03 | Phase 20 | Pending |
@@ -277,7 +277,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MERG-04 | Phase 23 | Pending |
 | MERG-05 | Phase 23 | Pending |
 | MERG-06 | Phase 23 | Pending |
-| UX-01 | Phase 19 | Pending |
+| UX-01 | Phase 19 | Complete |
 | UX-02 | Phase 21 | Pending |
 | UX-03 | Phase 16 | Complete |
 | UX-04 | Phase 18 | Complete |

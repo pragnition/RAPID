@@ -52,7 +52,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 16: State Machine Foundation** - Hierarchical JSON state, validated transitions, crash recovery, and structured inter-agent output format (completed 2026-03-06)
 - [x] **Phase 17: Dependency Audit and Adapter Layer** - Map v1.0 module coupling and create adapters for new data structures (completed 2026-03-06)
 - [x] **Phase 18: Init and Project Setup** - Overhauled /init with greenfield/brownfield detection, research agents, roadmapper, and /new-milestone (completed 2026-03-06)
-- [ ] **Phase 19: Set Lifecycle** - /set-init worktree creation, scoped CLAUDE.md, set planning, status dashboard, pause/resume, cleanup
+- [x] **Phase 19: Set Lifecycle** - /set-init worktree creation, scoped CLAUDE.md, set planning, status dashboard, pause/resume, cleanup (completed 2026-03-06)
 - [ ] **Phase 20: Wave Planning** - /discuss for implementation vision capture, wave planner, job planner with contract validation
 - [ ] **Phase 21: Execution Engine** - Parallel job execution within waves, atomic commits, per-job progress tracking, orchestrator dispatch
 - [ ] **Phase 22: Review Module** - Unit test agent, bug hunting pipeline (hunter/devils-advocate/judge), UAT with Playwright automation
@@ -396,7 +396,7 @@ Plans:
 
 Plans:
 - [ ] 19-01: Set-init command -- worktree creation, scoped CLAUDE.md, set planner role (SETL-01, SETL-02, SETL-03) [Wave 1]
-- [ ] 19-02: Status dashboard rewrite -- STATE.json hierarchy, ASCII table, next actions (SETL-04, UX-01) [Wave 1]
+- [x] 19-02: Status dashboard rewrite -- STATE.json hierarchy, ASCII table, next actions (SETL-04, UX-01) [Wave 1]
 - [ ] 19-03: Pause/resume/cleanup lifecycle -- handoff, resumption, branch deletion, context verify (SETL-05, SETL-06, SETL-07, UX-01) [Wave 1]
 
 ### Phase 20: Wave Planning
@@ -504,7 +504,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 16. State Machine Foundation | v2.0 | 3/3 | Complete | 2026-03-06 |
 | 17. Dependency Audit and Adapter Layer | v2.0 | 2/2 | Complete | 2026-03-06 |
 | 18. Init and Project Setup | 4/4 | Complete   | 2026-03-06 | - |
-| 19. Set Lifecycle | 1/3 | In Progress|  | - |
+| 19. Set Lifecycle | 3/3 | Complete   | 2026-03-06 | - |
 | 20. Wave Planning | v2.0 | 0/2 | Not started | - |
 | 21. Execution Engine | v2.0 | 0/2 | Not started | - |
 | 22. Review Module | v2.0 | 0/3 | Not started | - |
