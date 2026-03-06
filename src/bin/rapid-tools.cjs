@@ -977,6 +977,41 @@ async function handleWorktree(cwd, subcommand, args) {
       break;
     }
 
+    case 'status-v2': {
+      // Mark II hierarchy dashboard from STATE.json
+      const stateMachine = require('../lib/state-machine.cjs');
+      const stateResult = await stateMachine.readState(cwd);
+
+      if (!stateResult || !stateResult.valid) {
+        error('STATE.json not found or invalid. Run /rapid:init to set up Mark II state.');
+        process.exit(1);
+      }
+
+      const state = stateResult.state;
+      const milestoneId = state.currentMilestone;
+      const milestone = stateMachine.findMilestone(state, milestoneId);
+      const registry = wt.loadRegistry(cwd);
+
+      const stateData = {
+        milestone: milestoneId,
+        sets: milestone.sets,
+      };
+
+      const table = wt.formatMarkIIStatus(stateData, registry);
+      const actions = wt.deriveNextActions(stateData, registry);
+
+      // Human-readable table to stderr (same pattern as wave-status)
+      process.stderr.write(table + '\n');
+
+      // JSON to stdout
+      process.stdout.write(JSON.stringify({
+        table,
+        actions,
+        milestone: milestoneId,
+      }) + '\n');
+      break;
+    }
+
     case 'generate-claude-md': {
       const setName = args[0];
       if (!setName) {
@@ -1018,7 +1053,7 @@ async function handleWorktree(cwd, subcommand, args) {
     }
 
     default:
-      error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, generate-claude-md, delete-branch`);
+      error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, status-v2, generate-claude-md, delete-branch`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
