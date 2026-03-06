@@ -167,16 +167,21 @@ function generateRequirementsMd(projectName) {
 /**
  * Generate default config.json content.
  *
+ * @param {Object} [opts={}] - Configuration options
+ * @param {string} [opts.name] - Project name
+ * @param {string} [opts.model='sonnet'] - Model selection ('opus' or 'sonnet')
+ * @param {number} [opts.teamSize=1] - Team size for parallel capacity
  * @returns {string} JSON string for config.json
  */
-function generateConfigJson() {
+function generateConfigJson(opts = {}) {
   const config = {
     project: {
-      name: '',
+      name: opts.name || '',
       version: '0.1.0',
     },
+    model: opts.model || 'sonnet',
     planning: {
-      max_parallel_sets: 3,
+      max_parallel_sets: Math.max(1, Math.floor((opts.teamSize || 1) * 1.5)),
     },
   };
   return JSON.stringify(config, null, 2);
@@ -227,8 +232,14 @@ function scaffoldProject(cwd, opts, mode = 'fresh') {
     'STATE.md': () => generateStateMd(),
     'ROADMAP.md': () => generateRoadmapMd(opts.name),
     'REQUIREMENTS.md': () => generateRequirementsMd(opts.name),
-    'config.json': () => generateConfigJson(),
+    'config.json': () => generateConfigJson(opts),
     'STATE.json': () => JSON.stringify(createInitialState(opts.name, 'v1.0'), null, 2),
+  };
+
+  // Helper: ensure research directory exists inside planningDir
+  const ensureResearchDir = () => {
+    const researchDir = path.join(planningDir, 'research');
+    fs.mkdirSync(researchDir, { recursive: true });
   };
 
   if (mode === 'reinitialize') {
@@ -244,6 +255,7 @@ function scaffoldProject(cwd, opts, mode = 'fresh') {
 
     // Create fresh
     fs.mkdirSync(planningDir, { recursive: true });
+    ensureResearchDir();
     const created = [];
     for (const [filename, generator] of Object.entries(fileGenerators)) {
       fs.writeFileSync(path.join(planningDir, filename), generator());
@@ -262,6 +274,7 @@ function scaffoldProject(cwd, opts, mode = 'fresh') {
     if (!fs.existsSync(planningDir)) {
       fs.mkdirSync(planningDir, { recursive: true });
     }
+    ensureResearchDir();
 
     const created = [];
     const skipped = [];
@@ -280,6 +293,7 @@ function scaffoldProject(cwd, opts, mode = 'fresh') {
 
   // Default: fresh mode
   fs.mkdirSync(planningDir, { recursive: true });
+  ensureResearchDir();
   const created = [];
   for (const [filename, generator] of Object.entries(fileGenerators)) {
     fs.writeFileSync(path.join(planningDir, filename), generator());
