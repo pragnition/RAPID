@@ -274,11 +274,11 @@ Plans:
   3. Before destructive worktree removal, the developer sees a structured confirmation prompt listing what will be deleted
   4. When a dirty worktree blocks removal, the developer sees specific resolution steps (commit/stash commands) as structured options
   5. After merge review, the developer sees clear explanations of APPROVE/CHANGES_REQUESTED/BLOCK verdicts and how many cleanup rounds remain
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: merge prompts || cleanup prompts)
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01: Rewrite merge SKILL.md with AskUserQuestion at all decision gates, verdict explanations, and error recovery (PROMPT-09, PROMPT-10, ERRR-01, ERRR-04) [Wave 1]
+- [ ] 13-02: Rewrite cleanup SKILL.md with AskUserQuestion for worktree selection, confirmation, and dirty worktree recovery (PROMPT-11, ERRR-02) [Wave 1]
 
 ### Phase 14: Install Skill Polish
 **Goal**: Install skill detects the user's shell, auto-sources config, and provides clear fallback guidance when automation fails
