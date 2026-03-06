@@ -17,8 +17,8 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 - [x] **PROMPT-06**: Execute skill uses AskUserQuestion for paused set resume/restart/skip with consequence descriptions
 - [x] **PROMPT-07**: Execute skill uses AskUserQuestion for planning gate override with risk explanation
 - [x] **PROMPT-08**: Execute skill uses AskUserQuestion for wave reconciliation next steps based on result status
-- [ ] **PROMPT-09**: Merge skill uses AskUserQuestion for final merge confirmation before irreversible action
-- [ ] **PROMPT-10**: Merge skill uses AskUserQuestion for merge conflict recovery (resolve/show/revert)
+- [x] **PROMPT-09**: Merge skill uses AskUserQuestion for final merge confirmation before irreversible action
+- [x] **PROMPT-10**: Merge skill uses AskUserQuestion for merge conflict recovery (resolve/show/revert)
 - [x] **PROMPT-11**: Cleanup skill uses AskUserQuestion for destructive worktree removal confirmation
 - [x] **PROMPT-12**: Assumptions skill uses AskUserQuestion for set selection and feedback options
 - [x] **PROMPT-13**: Context skill uses AskUserQuestion for greenfield detection and generation confirmation
@@ -32,10 +32,10 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 
 ### Error Recovery
 
-- [ ] **ERRR-01**: Merge skill offers structured recovery options on merge conflict instead of halting pipeline
+- [x] **ERRR-01**: Merge skill offers structured recovery options on merge conflict instead of halting pipeline
 - [x] **ERRR-02**: Cleanup skill provides specific resolution steps (commit/stash commands) when dirty worktree blocks removal
 - [ ] **ERRR-03**: All skills replace bare "STOP" error handling with AskUserQuestion offering retry/skip/help/cancel options
-- [ ] **ERRR-04**: Merge skill explains verdict meanings (APPROVE/CHANGES/BLOCK) and shows allowed cleanup rounds
+- [x] **ERRR-04**: Merge skill explains verdict meanings (APPROVE/CHANGES/BLOCK) and shows allowed cleanup rounds
 
 ### Progress Visibility
 
@@ -172,8 +172,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROMPT-06 | Phase 12 | Complete |
 | PROMPT-07 | Phase 12 | Complete |
 | PROMPT-08 | Phase 12 | Complete |
-| PROMPT-09 | Phase 13 | Pending |
-| PROMPT-10 | Phase 13 | Pending |
+| PROMPT-09 | Phase 13 | Complete |
+| PROMPT-10 | Phase 13 | Complete |
 | PROMPT-11 | Phase 13 | Complete |
 | PROMPT-12 | Phase 11 | Complete |
 | PROMPT-13 | Phase 10 | Complete |
@@ -181,10 +181,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-01 | Phase 14 | Pending |
 | INST-02 | Phase 14 | Pending |
 | INST-03 | Phase 14 | Pending |
-| ERRR-01 | Phase 13 | Pending |
+| ERRR-01 | Phase 13 | Complete |
 | ERRR-02 | Phase 13 | Complete |
 | ERRR-03 | Phase 15 | Pending |
-| ERRR-04 | Phase 13 | Pending |
+| ERRR-04 | Phase 13 | Complete |
 | PROG-01 | Phase 12 | Complete |
 | PROG-02 | Phase 15 | Pending |
 | PROG-03 | Phase 15 | Pending |
