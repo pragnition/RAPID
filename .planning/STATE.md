@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: completed
-stopped_at: Completed 19-03-PLAN.md (Phase 19 complete)
-last_updated: "2026-03-06T16:18:16.160Z"
+stopped_at: Phase 20 context gathered
+last_updated: "2026-03-06T17:36:23.682Z"
 last_activity: 2026-03-07 — Completed 19-03 (Pause/resume/cleanup lifecycle commands)
 progress:
   total_phases: 26
@@ -98,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T00:13:00.000Z
-Stopped at: Completed 19-03-PLAN.md (Phase 19 complete)
-Resume file: .planning/phases/19-set-lifecycle/19-03-SUMMARY.md
+Last session: 2026-03-06T17:36:23.680Z
+Stopped at: Phase 20 context gathered
+Resume file: .planning/phases/20-wave-planning/20-CONTEXT.md
