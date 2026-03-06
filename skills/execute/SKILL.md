@@ -1,6 +1,6 @@
 ---
 description: Execute sets in wave order -- drives discuss/plan/execute lifecycle per set via subagent spawning, with pause/resume and wave reconciliation
-allowed-tools: Read, Write, Bash, Agent
+allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
 ---
 
 # /rapid:execute -- Set Execution Orchestrator
@@ -21,14 +21,14 @@ node "${RAPID_TOOLS}" execute detect-mode
 Parse the JSON output to get `agentTeamsAvailable`.
 
 **If `agentTeamsAvailable` is true:**
-Prompt the user (per user decision -- clean prompt, no explanation of detection source):
+Use AskUserQuestion to prompt the developer:
+- **question:** "Exec mode"
+- **options:**
+  - "Agent Teams" -- description: "Faster parallel execution via Claude Code agent teams. Locked for entire run."
+  - "Subagents" -- description: "Proven stable execution via subagent spawning. Locked for entire run."
 
-> Agent teams available. Use teams or subagents?
-> 1. **Agent Teams** -- Enhanced parallel execution via Claude Code agent teams
-> 2. **Subagents** -- Standard execution via subagent spawning
-
-If the user chooses Agent Teams, set `executionMode = 'Agent Teams'`.
-If the user chooses Subagents, set `executionMode = 'Subagents'`.
+If the developer selects "Agent Teams", set `executionMode = 'Agent Teams'`.
+If the developer selects "Subagents", set `executionMode = 'Subagents'`.
 
 **If `agentTeamsAvailable` is false:**
 Silently set `executionMode = 'Subagents'`. Do NOT prompt or inform the user about agent teams.
@@ -66,7 +66,13 @@ Show the user the execution plan:
 >
 > **Current progress:** {wave-status summary}
 
-Ask the user: "Ready to begin execution? (yes/no)" If they want to start from a specific wave or skip already-completed sets, accommodate that.
+Use AskUserQuestion to confirm:
+- **question:** "Execution plan"
+- **options:**
+  - "Begin" -- description: "Start executing Wave 1"
+  - "Cancel" -- description: "Exit without executing"
+
+If the developer selects "Cancel", print "Execution cancelled." and exit. If they want to start from a specific wave or skip already-completed sets, accommodate that.
 
 ## Step 1.5: Check for Paused Sets
 
@@ -90,17 +96,14 @@ cat .planning/sets/{setName}/HANDOFF.md
 
 Parse the frontmatter to get `tasks_completed`, `tasks_total`, and `pause_cycle`.
 
-Present the paused sets to the user:
+For **each** paused set, use a separate AskUserQuestion prompt:
+- **question:** "{setName} -- Paused at task {tasks_completed}/{tasks_total}"
+- **options:**
+  - "Resume" -- description: "Continues from task {tasks_completed}/{tasks_total} -- completed work preserved"
+  - "Restart" -- description: "Discards handoff, re-executes all tasks from scratch"
+  - "Skip" -- description: "Left paused for later /rapid:execute run"
 
-> **Paused sets detected:**
-> - {setName}: paused at task {tasks_completed}/{tasks_total}, cycle {pause_cycle}
->
-> Options:
-> 1. **Resume** -- Continue from where execution left off
-> 2. **Restart** -- Discard handoff and re-execute from scratch
-> 3. **Skip** -- Proceed with other sets, leave paused set for later
-
-If the user chooses **Resume**:
+If the developer selects **Resume**:
 - Run the resume command:
   ```bash
   node "${RAPID_TOOLS}" execute resume {setName}
@@ -108,14 +111,14 @@ If the user chooses **Resume**:
 - Parse the JSON output to get the handoff data
 - When spawning the executor subagent in Step 7, prepend the handoff content to the prompt (see Step 7 for the resume prompt template)
 
-If the user chooses **Restart**:
+If the developer selects **Restart**:
 - Delete the HANDOFF.md:
   ```bash
   rm .planning/sets/{setName}/HANDOFF.md
   ```
 - Proceed with normal execution for that set
 
-If the user chooses **Skip**:
+If the developer selects **Skip**:
 - Leave the set paused
 - Continue with other sets in the wave
 
@@ -131,21 +134,20 @@ node "${RAPID_TOOLS}" plan check-gate {waveNumber}
 
 If the gate is not open, check the JSON output for details. The output includes `missingArtifacts` for disk-level verification:
 
-- If the gate is blocked and the user wants to override:
+- If the gate is blocked, log the override for audit trail:
   ```bash
   # Log the override for audit trail
   node -e "const p=require(process.env.RAPID_TOOLS ? require('path').resolve(process.env.RAPID_TOOLS, '..', '..', 'lib', 'plan.cjs') : (process.env.HOME + '/RAPID/src/lib/plan.cjs'));p.logGateOverride(process.cwd(), {waveNumber}, {missingSetsList})"
   ```
-  Show the override confirmation prompt:
-  > Gate blocked: {sets without plans}. Ready: {planned sets}.
-  > Override? This will proceed despite incomplete planning.
-  > Sets that would execute without plans: {list}
-  > [yes/no]:
 
-- If the user confirms override, proceed. If not, STOP and inform:
-  > Planning gate for Wave {N} is not open. All sets in this wave must complete their planning phase first.
-  > Missing: {list of sets that haven't completed planning}
-  > Run `/rapid:plan` to complete set planning before execution.
+  Use AskUserQuestion to prompt the developer:
+  - **question:** "Planning gate -- unplanned sets: {set list}"
+  - **options:**
+    - "Override" -- description: "Proceeds without complete plans -- sets may fail or produce incomplete work. Unplanned: {set list}"
+    - "Run planning first" -- description: "Returns to planning before execution. Run /rapid:plan to complete set planning."
+
+  If the developer selects "Override", proceed with execution.
+  If the developer selects "Run planning first", print "Execution cancelled. Run /rapid:plan to complete set planning before executing." and exit.
 
 ## Step 3: Create Worktrees (if needed)
 
@@ -207,8 +209,14 @@ After all sets in the wave have been discussed, present a summary:
 > **Discussion complete for Wave {N}:**
 > - {setName}: {brief summary of decisions/approach}
 > - ...
->
-> Ready to proceed to planning? (yes/no)
+
+Use AskUserQuestion to confirm:
+- **question:** "Discussion complete"
+- **options:**
+  - "Continue to planning" -- description: "Proceed to plan phase for Wave {N} sets"
+  - "Cancel" -- description: "Exit execution"
+
+If the developer selects "Cancel", print "Execution cancelled." and exit.
 
 **Lightweight discuss option:** For sets with clear, unambiguous definitions (few tasks, no cross-set dependencies), you may skip the subagent and directly ask the user: "Set '{setName}' has a clear definition. Any questions before we plan it?" This saves a subagent invocation for simple sets.
 
@@ -248,15 +256,15 @@ For each set in the current wave, spawn a planning subagent:
 
 3. Present the plan to the user for review. The user can approve, request changes, or skip.
 
-After all sets are planned, present a summary and ask for approval:
-> **Plans ready for Wave {N}:**
-> - {setName}: {N tasks planned}
-> - ...
->
-> Approve all plans and begin execution? (yes/modify/cancel)
+After all sets are planned, present a summary and use AskUserQuestion for approval:
+- **question:** "Wave {N} plans"
+- **options:**
+  - "Approve" -- description: "Begin execution for all {count} sets in Wave {N}"
+  - "Modify" -- description: "Request changes to one or more set plans"
+  - "Cancel" -- description: "Exit execution"
 
-If modify: collect changes and re-plan the affected set.
-If cancel: STOP execution.
+If the developer selects "Modify", collect changes and re-plan the affected set.
+If the developer selects "Cancel", print "Execution cancelled." and exit.
 
 ## Step 7: Execute Phase (Per-Wave)
 
@@ -421,7 +429,7 @@ For each set:
      ```
    - Inform the user:
      > Set '{setName}' was paused (context limit reached). Resume with `/rapid:execute` or manage with `/rapid:pause`.
-   - Mark the set as paused and move on to the next set in the wave (do NOT stop the whole wave)
+   - Mark the set as paused and move on to the next set in the wave (do NOT block the whole wave)
 
    **If return status is BLOCKED:**
    - Update registry phase to Error:
@@ -456,24 +464,33 @@ After all sets in a wave complete (or are paused), run mandatory reconciliation:
    > **Hard Blocks:** {list or "None"}
    > **Soft Blocks:** {list or "None"}
 
-4. Handle based on result:
+4. Use AskUserQuestion with dynamic options based on the reconciliation result:
+
+   **If PASS (all contracts satisfied):**
+   - **question:** "Reconciliation"
+   - **options:**
+     - "Continue to Wave {N+1}" -- description: "All contracts satisfied -- proceed to next wave"
+     - "Pause here" -- description: "Pause execution after successful wave"
+
+   If the developer selects "Pause here", print "Execution paused after Wave {N}. Resume with /rapid:execute." and exit.
 
    **If hard blocks exist:**
-   > Hard blocks must be resolved before Wave {N+1} can proceed.
-   > Options:
-   > 1. **Fix** -- Re-execute the failed sets
-   > 2. **Cancel** -- Stop execution
+   - **question:** "Reconciliation"
+   - **options:**
+     - "Fix failed sets" -- description: "Re-execute sets that did not pass verification"
+     - "Cancel execution" -- description: "Exit -- failed sets remain in error state"
 
-   **If only soft blocks:**
-   > Soft blocks detected. Options:
-   > 1. **Proceed** -- Accept soft blocks and continue to Wave {N+1}
-   > 2. **Fix** -- Re-execute to address soft blocks
+   If the developer selects "Fix failed sets", re-execute the failed sets (back to Step 7 for those sets).
+   If the developer selects "Cancel execution", print "Execution cancelled. Failed sets remain in error state." and exit.
 
-   **If PASS:**
-   > All contract obligations satisfied. Proceeding to Wave {N+1}.
+   **If soft blocks (no hard blocks):**
+   - **question:** "Reconciliation"
+   - **options:**
+     - "Proceed anyway" -- description: "Accept soft blocks and continue to Wave {N+1}"
+     - "Fix first" -- description: "Re-execute to address soft blocks before proceeding"
+     - "Cancel" -- description: "Exit execution"
 
-5. Wait for developer acknowledgment before proceeding to next wave. Even for PASS, confirm:
-   > Wave {N} reconciliation complete. Continue to Wave {N+1}? (yes/no)
+   If the developer selects "Cancel", print "Execution cancelled." and exit.
 
 Then move to the next wave (back to Step 2).
 
@@ -498,12 +515,13 @@ Present final summary:
 > - Paused sets: {count, if any}
 >
 > **Execution mode used:** {executionMode}
->
-> **Next steps:**
-> - Run `/rapid:status` to review worktree state
-> - Each set's changes are on their respective `rapid/{set-name}` branches
-> - If any sets are paused, run `/rapid:execute` again to resume them
-> - Run the merge pipeline when ready (Phase 8)
+
+Use AskUserQuestion for next steps:
+- **question:** "Execution complete"
+- **options:**
+  - "View status" -- description: "Run /rapid:status to review worktree state"
+  - "Start merge" -- description: "Begin merge pipeline for completed sets"
+  - "Done" -- description: "Exit -- sets remain on rapid/{set-name} branches"
 
 ## Important Notes
 
