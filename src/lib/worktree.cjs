@@ -311,7 +311,7 @@ async function reconcileRegistry(cwd) {
  *
  * @param {string} cwd - Project root directory
  * @param {string} setName - Name of the set to initialize
- * @returns {Promise<{ created: boolean, branch: string, worktreePath: string, setName: string, claudeMdGenerated: boolean }>}
+ * @returns {Promise<{ created: boolean, branch: string, worktreePath: string, setName: string, claudeMdGenerated: boolean, claudeMdError: string|null }>}
  * @throws {Error} If branch/worktree already exists, or set definition is missing
  */
 async function setInit(cwd, setName) {
@@ -353,6 +353,7 @@ async function setInit(cwd, setName) {
     worktreePath,
     setName,
     claudeMdGenerated,
+    claudeMdError,
   };
 }
 
