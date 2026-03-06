@@ -259,11 +259,10 @@ Plans:
   3. When the planning gate has not been met, the developer sees a structured override prompt with explicit risk explanation before proceeding
   4. After wave reconciliation, the developer sees structured next-step options based on the reconciliation result (all pass vs failures found)
   5. During subagent execution, the developer sees periodic progress text showing which set is active and last activity timestamp
-**Plans**: TBD
+**Plans**: 1 plan (Wave 1: all prompts + progress in single plan)
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01: Rewrite execute SKILL.md with AskUserQuestion at all decision gates and progress indicators (PROMPT-05, PROMPT-06, PROMPT-07, PROMPT-08, PROG-01) [Wave 1]
 
 ### Phase 13: Merge and Cleanup Skill Prompts
 **Goal**: Merge and cleanup skills use structured prompts for confirmations, recovery from errors, and explanation of reviewer verdicts
@@ -328,7 +327,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 09.2 Setup Script and RAPID_TOOLS | v1.0 | 2/2 | Complete | - |
 | 10. Init and Context Skill Prompts | 2/2 | Complete    | 2026-03-05 | - |
 | 11. Planning and Status Skill Prompts | 2/2 | Complete    | 2026-03-06 | - |
-| 12. Execute Skill Prompts and Progress | v1.1 | 0/2 | Not started | - |
+| 12. Execute Skill Prompts and Progress | v1.1 | 0/1 | Not started | - |
 | 13. Merge and Cleanup Skill Prompts | v1.1 | 0/2 | Not started | - |
 | 14. Install Skill Polish | v1.1 | 0/1 | Not started | - |
 | 15. Global Error Recovery and Progress | v1.1 | 0/2 | Not started | - |
