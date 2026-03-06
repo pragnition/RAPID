@@ -302,11 +302,10 @@ describe('State Machine - deriveWaveStatus failed mismatch', () => {
   afterEach(() => { cleanTempProject(tmpDir); });
 
   // BEHAVIOR: When all jobs fail and none are executing, deriveWaveStatus returns
-  // 'failed', but wave status must NOT be set to 'failed' because it is not a valid
-  // WaveStatus enum value. The wave should retain its previous valid status.
-  // GUARDS AGAINST: State corruption -- if wave.status were set to 'failed', the
-  // Zod schema would reject the state on read/write, making the entire state file unusable.
-  it('all-jobs-failed wave retains its previous status (not set to invalid "failed")', async () => {
+  // 'failed', and wave status is set to 'failed' (a valid WaveStatus enum value).
+  // GUARDS AGAINST: Wave status not reflecting actual job failures, hiding errors
+  // from developers checking project state.
+  it('all-jobs-failed wave is set to failed status', async () => {
     // Arrange: create state with jobs, transition both to executing first
     const state = makeStateWithJob();
     writeTestState(tmpDir, state);
@@ -318,16 +317,14 @@ describe('State Machine - deriveWaveStatus failed mismatch', () => {
     await transitionJob(tmpDir, 'v1.0', 'set-1', 'wave-1', 'job-1', 'failed');
     await transitionJob(tmpDir, 'v1.0', 'set-1', 'wave-1', 'job-2', 'failed');
 
-    // Assert: wave status should NOT be 'failed' (invalid), it should retain 'executing'
+    // Assert: wave status should be 'failed' since all jobs failed
     const updated = readTestState(tmpDir);
     const wave = updated.milestones[0].sets[0].waves[0];
-    assert.notEqual(wave.status, 'failed', 'Wave status must never be "failed" (invalid WaveStatus)');
-    // It should be 'executing' -- the last valid derived status before 'failed' was returned
-    assert.equal(wave.status, 'executing', 'Wave should retain its last valid status');
+    assert.equal(wave.status, 'failed', 'Wave should derive to failed when all jobs fail');
 
     // Extra: verify the on-disk state passes Zod validation
     const result = ProjectState.safeParse(updated);
-    assert.equal(result.success, true, 'State on disk must remain Zod-valid even after all jobs fail');
+    assert.equal(result.success, true, 'State on disk must remain Zod-valid with failed wave status');
   });
 
   // BEHAVIOR: When a failed job is retried (failed -> executing), the wave status
@@ -348,8 +345,8 @@ describe('State Machine - deriveWaveStatus failed mismatch', () => {
     // Verify intermediate state: job-1=failed, job-2=complete -> derive returns 'failed'
     let updated = readTestState(tmpDir);
     let wave = updated.milestones[0].sets[0].waves[0];
-    // Wave should NOT have been set to 'failed'
-    assert.notEqual(wave.status, 'failed');
+    // Wave should be 'failed' since one job failed and none executing
+    assert.equal(wave.status, 'failed', 'Wave should be failed when job-1=failed, job-2=complete');
 
     // Act: retry job-1 (failed -> executing)
     await transitionJob(tmpDir, 'v1.0', 'set-1', 'wave-1', 'job-1', 'executing');
@@ -361,10 +358,9 @@ describe('State Machine - deriveWaveStatus failed mismatch', () => {
   });
 
   // BEHAVIOR: Verify at the unit level that deriveWaveStatus returns 'failed' for
-  // all-failed-no-executing jobs, confirming the guard clause in transitionJob is needed.
-  // GUARDS AGAINST: Regression where someone removes the guard clause thinking
-  // deriveWaveStatus never returns 'failed'.
-  it('deriveWaveStatus returns "failed" for all-failed-no-executing (confirming guard is needed)', () => {
+  // all-failed-no-executing jobs, which is now correctly propagated to wave status.
+  // GUARDS AGAINST: Regression where deriveWaveStatus stops returning 'failed'.
+  it('deriveWaveStatus returns "failed" for all-failed-no-executing', () => {
     // Arrange
     const jobs = [
       { id: 'j1', status: 'failed', artifacts: [] },

@@ -16,6 +16,7 @@ const WAVE_TRANSITIONS = {
   executing: ['reconciling'],
   reconciling: ['complete'],
   complete: [],
+  failed: ['executing'],
 };
 
 const JOB_TRANSITIONS = {

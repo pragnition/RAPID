@@ -6,7 +6,7 @@ const { z } = require('zod');
 
 const JobStatus = z.enum(['pending', 'executing', 'complete', 'failed']);
 
-const WaveStatus = z.enum(['pending', 'discussing', 'planning', 'executing', 'reconciling', 'complete']);
+const WaveStatus = z.enum(['pending', 'discussing', 'planning', 'executing', 'reconciling', 'complete', 'failed']);
 
 const SetStatus = z.enum(['pending', 'planning', 'executing', 'reviewing', 'merging', 'complete']);
 
