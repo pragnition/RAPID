@@ -409,11 +409,12 @@ Plans:
   3. /plan spawns research agents to investigate how to implement wave jobs, then the Wave Planner produces high-level per-job plans
   4. The Job Planner creates detailed per-job implementation plans with user discussion for each job
   5. Job plans are validated against interface contracts -- violations are flagged before execution begins
-**Plans**: TBD
+**Plans**: 3 plans (Wave 1: library+CLI+discuss || agent roles, Wave 2: wave-plan orchestration skill)
 
 Plans:
-- [ ] 20-01: TBD
-- [ ] 20-02: TBD
+- [ ] 20-01: Wave planning library, CLI subcommands, and /rapid:discuss skill (WAVE-01, WAVE-02) [Wave 1]
+- [ ] 20-02: Agent role modules (wave-researcher, wave-planner, job-planner) and assembler registration (WAVE-03, WAVE-04, WAVE-05) [Wave 1]
+- [ ] 20-03: /rapid:wave-plan orchestration skill with research-plan-validate pipeline (WAVE-03, WAVE-04, WAVE-05, WAVE-06) [Wave 2, depends: 20-01, 20-02]
 
 ### Phase 21: Execution Engine
 **Goal**: Jobs execute in parallel within waves with atomic commits, progress tracking that survives context resets, and orchestrated command dispatch
@@ -505,7 +506,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 17. Dependency Audit and Adapter Layer | v2.0 | 2/2 | Complete | 2026-03-06 |
 | 18. Init and Project Setup | 4/4 | Complete   | 2026-03-06 | - |
 | 19. Set Lifecycle | 3/3 | Complete    | 2026-03-06 | - |
-| 20. Wave Planning | v2.0 | 0/2 | Not started | - |
+| 20. Wave Planning | v2.0 | 0/3 | Not started | - |
 | 21. Execution Engine | v2.0 | 0/2 | Not started | - |
 | 22. Review Module | v2.0 | 0/3 | Not started | - |
 | 23. Merge Pipeline | v2.0 | 0/3 | Not started | - |
