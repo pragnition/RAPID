@@ -1,132 +1,153 @@
 ---
-description: Clean up completed worktrees with safety checks -- removes worktree directory while preserving branches
+description: Clean up completed set worktrees with safety checks and optional branch deletion
 allowed-tools: Bash, Read, AskUserQuestion
 ---
 
-# /rapid:cleanup -- Worktree Cleanup
+# /rapid:cleanup -- Worktree Cleanup with Branch Deletion
 
-You are the RAPID worktree cleanup assistant. This skill safely removes completed worktrees after their work is done. It blocks removal if uncommitted changes exist and preserves branches by default. Follow these steps IN ORDER.
+You are the RAPID worktree cleanup assistant. This skill safely removes completed worktrees after their work is done. It blocks removal if uncommitted changes exist, shows fix commands, and offers optional branch deletion after cleanup. Follow these steps IN ORDER. Do not skip steps.
 
-## Step 1: Show Current Worktrees
-
-Run the status command to see all active worktrees:
+## Step 1: Load Environment
 
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+echo "Environment loaded. RAPID_TOOLS=${RAPID_TOOLS}"
+```
+
+## Step 2: Show Current Worktrees
+
+Run the status command to see all active worktrees:
+
+```bash
 node "${RAPID_TOOLS}" worktree status
 ```
 
 Display the output so the user can see which worktrees exist and their current state.
 
 **If no worktrees exist** (the output shows "No active worktrees"):
-Inform the user: "No active worktrees found. Nothing to clean up." and exit. Do not continue to further steps.
+Print: "No active worktrees. Nothing to clean up." and end.
 
-## Step 2: Select Worktree to Clean Up
+## Step 3: Select Worktree to Clean Up
 
-**If 4 or fewer worktrees:**
+**If the user provided a set name as argument** (`/rapid:cleanup {setName}`): Use it directly and skip to Step 4.
 
-Use AskUserQuestion to let the developer select which worktree to remove:
+**If 4 or fewer worktrees:** Use AskUserQuestion to let the developer select:
 - **question:** "Select worktree to clean up"
 - **options:** One option per worktree, where:
   - **name:** The set name (e.g., `auth-core`)
-  - **description:** Status summary (e.g., "Phase: Done, Merge: merged" or "Phase: Executing, Merge: pending")
+  - **description:** Status summary (e.g., "Phase: Done, Branch: rapid/auth-core" or "Phase: Executing, Branch: rapid/ui-shell")
 
-**If more than 4 worktrees:**
+**If more than 4 worktrees:** Display a numbered text list of all worktrees with their status, then ask the developer to type the set name via freeform input.
 
-Display a numbered text list of all worktrees with their status, then ask the developer to type the set name they want to clean up via freeform input.
+**If the selected set name does not match an existing worktree:** Inform the user which set names are available and re-prompt.
 
-**If the selected set name does not match an existing worktree:**
-Inform the user which set names are available and re-prompt using the same approach.
-
-## Step 3: Confirm Removal
-
-Use AskUserQuestion to confirm the removal:
-- **question:** "Remove worktree"
-- **options:**
-  - "Remove worktree" -- description: "Deletes .rapid-worktrees/{name} directory. Branch rapid/{name} preserved."
-  - "Cancel" -- description: "Keep worktree as-is, exit cleanup"
-
-**If "Remove worktree":** Continue to Step 4.
-**If "Cancel":** Inform the user: "Cleanup cancelled." and exit.
-
-## Step 4: Run Cleanup
+## Step 4: Safety Check and Cleanup
 
 Execute the cleanup command:
 
 ```bash
-node "${RAPID_TOOLS}" worktree cleanup <set-name>
+node "${RAPID_TOOLS}" worktree cleanup {setName}
 ```
 
 Parse the JSON output to determine the result.
 
-## Step 5: Handle Result
+**If successful** (`removed: true`): Skip to Step 5.
 
-**If successful** (JSON contains `removed: true`):
+**If blocked** (`removed: false, reason: "dirty"`):
 
-> Worktree for '{name}' removed. Branch `rapid/{name}` preserved.
->
-> To delete the branch when you no longer need it:
-> ```bash
-> git branch -d rapid/{name}
-> ```
-
-**If blocked** (JSON contains `removed: false, reason: "dirty"`):
-
-Use AskUserQuestion to offer recovery options:
-- **question:** "Dirty worktree blocks removal"
+The worktree has uncommitted changes. Use AskUserQuestion:
+- **question:** "Worktree has uncommitted changes. What would you like to do?"
 - **options:**
-  - "Commit changes" -- description: "Run git -C .rapid-worktrees/{name} add -A && git -C .rapid-worktrees/{name} commit -m 'WIP: save before cleanup'"
-  - "Stash changes" -- description: "Run git -C .rapid-worktrees/{name} stash push -m 'rapid-cleanup-stash'"
-  - "Force remove" -- description: "Permanently discards uncommitted changes"
-  - "Cancel" -- description: "Keep worktree as-is, exit cleanup"
+  - "Commit changes first" -- "Run git add -A && git commit in the worktree to save work"
+  - "Stash changes" -- "Run git stash push to temporarily save changes"
+  - "Force remove" -- "Permanently discard all uncommitted changes (cannot be undone)"
+  - "Cancel" -- "Keep worktree as-is, exit cleanup"
 
-Handle each selection:
-
-**If "Commit changes":**
-Run the commit commands shown in the description:
+**If "Commit changes first":**
 ```bash
-git -C .rapid-worktrees/{name} add -A && git -C .rapid-worktrees/{name} commit -m 'WIP: save before cleanup'
+git -C .rapid-worktrees/{setName} add -A && git -C .rapid-worktrees/{setName} commit -m 'WIP: save before cleanup'
 ```
-Then retry cleanup from Step 4.
+Then retry cleanup from the beginning of Step 4.
 
 **If "Stash changes":**
-Run the stash command shown in the description:
 ```bash
-git -C .rapid-worktrees/{name} stash push -m 'rapid-cleanup-stash'
+git -C .rapid-worktrees/{setName} stash push -m 'rapid-cleanup-stash'
 ```
-Then retry cleanup from Step 4.
+Then retry cleanup from the beginning of Step 4.
 
 **If "Force remove":**
-Trigger a double confirmation gate. Use AskUserQuestion:
-- **question:** "Confirm force removal"
+Use AskUserQuestion for double confirmation:
+- **question:** "Confirm force removal -- this permanently discards all uncommitted changes in {setName}"
 - **options:**
-  - "Confirm force remove" -- description: "This permanently discards all uncommitted changes in {name}. Cannot be undone."
-  - "Cancel" -- description: "Go back, keep worktree as-is"
+  - "Confirm force remove" -- "This cannot be undone. All uncommitted work will be lost."
+  - "Cancel" -- "Go back, keep worktree as-is"
 
-If "Confirm force remove": Execute force removal:
+If confirmed:
 ```bash
-git worktree remove --force .rapid-worktrees/{name}
+git worktree remove --force .rapid-worktrees/{setName}
 ```
-Then update the registry by running:
+Then deregister from the registry:
 ```bash
-node "${RAPID_TOOLS}" worktree cleanup {name} --force
+node "${RAPID_TOOLS}" worktree reconcile
 ```
-Inform the user the worktree was force-removed and branch `rapid/{name}` is preserved.
 
-If "Cancel": Return to the dirty worktree recovery prompt (re-show the 4-option AskUserQuestion from above).
+**If "Cancel":** Print "Cleanup cancelled. Worktree kept as-is." and end.
 
-**If "Cancel":**
-Inform the user: "Cleanup cancelled. Worktree kept as-is." and exit.
+**If other error** (`removed: false` with different reason): Display the error message and suggest manual investigation.
 
-**If other error** (JSON contains `removed: false` with other reason):
+## Step 5: Branch Deletion
 
-Display the error message from the JSON output and suggest the user investigate manually.
+After successful worktree removal, offer branch deletion via AskUserQuestion:
+- **question:** "Also delete branch rapid/{setName}?"
+- **options:**
+  - "Yes, delete branch" -- "Run git branch -d to safely delete the merged branch"
+  - "No, keep branch" -- "Preserve the branch for reference"
+
+**If "Yes, delete branch":**
+```bash
+node "${RAPID_TOOLS}" worktree delete-branch "rapid/{setName}"
+```
+
+Parse the result:
+- If `deleted: true`: Print "Branch rapid/{setName} deleted."
+- If `deleted: false, reason: "unmerged"`: The branch has unmerged changes. Use AskUserQuestion:
+  - **question:** "Branch rapid/{setName} is not fully merged. Force delete?"
+  - **options:**
+    - "Force delete" -- "Run git branch -D to force-delete the unmerged branch"
+    - "Keep branch" -- "Preserve the branch -- you can delete it manually later"
+  - If "Force delete":
+    ```bash
+    node "${RAPID_TOOLS}" worktree delete-branch "rapid/{setName}" --force
+    ```
+    Print result.
+  - If "Keep branch": Print "Branch preserved."
+
+**If "No, keep branch":** Print "Branch rapid/{setName} preserved."
+
+## Step 6: Confirm and Next Steps
+
+Print cleanup summary:
+
+> **Worktree for set '{setName}' cleaned up.**
+> - Worktree directory: removed
+> - Branch rapid/{setName}: {deleted / preserved}
+
+Use AskUserQuestion with:
+- **question:** "What would you like to do next?"
+- **options:**
+  - "Run /status" -- "View the project dashboard"
+  - "Clean up another set" -- "Return to worktree selection"
+  - "Done" -- "Exit cleanup"
+
+**If "Clean up another set":** Go back to Step 2.
+**If "Run /status":** Tell the user to run `/status`.
+**If "Done":** End.
 
 ## Important Notes
 
-- **Branch retention:** Per project convention, this skill only removes the worktree checkout directory. The git branch (`rapid/{name}`) is preserved for reference. Branch deletion is a separate operation handled by the user.
-- **Safety checks:** The cleanup command is backed by `git worktree remove`, which refuses to remove worktrees with uncommitted or untracked changes. This is a safety feature, not a bug.
+- **Safety checks:** The cleanup command uses `git worktree remove`, which refuses to remove worktrees with uncommitted or untracked changes. This is a safety feature, not a bug.
 - **Registry update:** On successful removal, the worktree entry is automatically removed from REGISTRY.json. No manual registry cleanup is needed.
 - **Force removal:** Dirty worktrees can be force-removed via the structured recovery prompt. Force removal requires double confirmation to prevent accidental data loss.
+- **Branch deletion is optional:** The user always has the choice to keep or delete the branch. Unmerged branches get an additional confirmation gate before force deletion.
