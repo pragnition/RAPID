@@ -1455,6 +1455,29 @@ async function handleExecute(cwd, subcommand, args) {
       // Get definition and contract paths for the orchestrator
       const definitionPath = path.join('.planning', 'sets', setName, 'DEFINITION.md');
       const contractPath = path.join('.planning', 'sets', setName, 'CONTRACT.json');
+      const pauseCycles = entry.pauseCycles || 0;
+      // Read STATE.json for set context (wave/job progress)
+      let stateContext = null;
+      try {
+        const sm = require('../lib/state-machine.cjs');
+        const stateResult = await sm.readState(cwd);
+        if (stateResult && stateResult.valid) {
+          for (const milestone of stateResult.state.milestones) {
+            const setData = (milestone.sets || []).find(s => s.id === setName);
+            if (setData) {
+              stateContext = {
+                milestoneId: milestone.id,
+                setId: setData.id,
+                status: setData.status,
+                waves: setData.waves || [],
+              };
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        // Graceful -- STATE.json may not exist or be invalid
+      }
       // Update registry: phase = Executing, updatedAt
       await wt.registryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
@@ -1467,8 +1490,10 @@ async function handleExecute(cwd, subcommand, args) {
         resumed: true,
         setName,
         handoff,
+        stateContext,
         definitionPath,
         contractPath,
+        pauseCycles,
       }) + '\n');
       break;
     }
