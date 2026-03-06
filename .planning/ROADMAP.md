@@ -243,10 +243,11 @@ Plans:
   1. When plan skill encounters existing sets, the developer sees a structured Re-plan/View current/Cancel prompt with consequence descriptions
   2. When assumptions skill runs, the developer can select a set and provide feedback through structured prompts instead of freeform text
   3. After status skill displays the dashboard, the developer sees a next-action prompt offering relevant commands based on current project state
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: plan+assumptions prompts || status prompts)
 
 Plans:
-- [ ] 11-01: TBD
+- [ ] 11-01: Rewrite plan and assumptions SKILL.md with AskUserQuestion for all decision gates (PROMPT-04, PROMPT-12) [Wave 1]
+- [ ] 11-02: Rewrite status SKILL.md with dynamic AskUserQuestion next-action routing (PROMPT-14) [Wave 1]
 
 ### Phase 12: Execute Skill Prompts and Progress
 **Goal**: Execute skill uses structured prompts for all decision points and shows progress during subagent operations
@@ -326,7 +327,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 09.1 Package for Plugin Marketplace | v1.0 | 2/3 | In Progress | - |
 | 09.2 Setup Script and RAPID_TOOLS | v1.0 | 2/2 | Complete | - |
 | 10. Init and Context Skill Prompts | 2/2 | Complete    | 2026-03-05 | - |
-| 11. Planning and Status Skill Prompts | v1.1 | 0/1 | Not started | - |
+| 11. Planning and Status Skill Prompts | v1.1 | 0/2 | Not started | - |
 | 12. Execute Skill Prompts and Progress | v1.1 | 0/2 | Not started | - |
 | 13. Merge and Cleanup Skill Prompts | v1.1 | 0/2 | Not started | - |
 | 14. Install Skill Polish | v1.1 | 0/1 | Not started | - |
