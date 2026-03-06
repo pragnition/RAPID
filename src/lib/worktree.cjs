@@ -320,6 +320,7 @@ async function setInit(cwd, setName) {
 
   // 2. Generate scoped CLAUDE.md and write to worktree
   let claudeMdGenerated = false;
+  let claudeMdError = null;
   try {
     const claudeMd = generateScopedClaudeMd(cwd, setName);
     fs.writeFileSync(path.join(worktreePath, 'CLAUDE.md'), claudeMd, 'utf-8');
@@ -327,7 +328,8 @@ async function setInit(cwd, setName) {
   } catch (err) {
     // Graceful -- worktree was created but CLAUDE.md generation failed
     // (e.g., missing CONTRACT.json or DEFINITION.md)
-    // Still proceed with registration
+    // Still proceed with registration; surface error for debugging
+    claudeMdError = err.message;
   }
 
   // 3. Register in REGISTRY.json
