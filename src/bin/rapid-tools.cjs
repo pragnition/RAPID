@@ -52,6 +52,8 @@ Commands:
   worktree status             Show all worktrees with status table
   worktree status --json      Machine-readable worktree status
   worktree generate-claude-md <set>  Generate scoped CLAUDE.md for a worktree
+  worktree delete-branch <branch> [--force]  Delete a git branch (safe or forced)
+  resume <set-name>              Resume a paused set (extends execute resume with STATE.json)
   execute prepare-context <set>  Prepare execution context for a set
   execute verify <set> --branch <branch>  Verify set execution results
   execute generate-stubs <set>   Generate contract stubs for a set's imports
