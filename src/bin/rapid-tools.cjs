@@ -72,6 +72,9 @@ Commands:
   merge update-status <set> <status>  Update merge status in registry (reviewing/cleanup/merged/failed)
   set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
   set-init list-available        List pending sets without worktrees
+  wave-plan resolve-wave <waveId>              Find wave in state, output milestone/set/wave JSON
+  wave-plan create-wave-dir <setId> <waveId>   Create .planning/waves/{setId}/{waveId}/ directory
+  wave-plan validate-contracts <setId> <waveId> Validate job plans against CONTRACT.json
 
 Options:
   --help, -h             Show this help message
@@ -155,6 +158,10 @@ async function main() {
 
     case 'set-init':
       await handleSetInit(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'wave-plan':
+      await handleWavePlan(cwd, subcommand, args.slice(2));
       break;
 
     case 'resume':
@@ -1117,6 +1124,145 @@ async function handleSetInit(cwd, subcommand, args) {
 
     default:
       error(`Unknown set-init subcommand: ${subcommand}. Use: create, list-available`);
+      process.stdout.write(USAGE);
+      process.exit(1);
+  }
+}
+
+async function handleWavePlan(cwd, subcommand, args) {
+  const fs = require('fs');
+  const path = require('path');
+  const sm = require('../lib/state-machine.cjs');
+  const wp = require('../lib/wave-planning.cjs');
+
+  switch (subcommand) {
+    case 'resolve-wave': {
+      const waveId = args[0];
+      if (!waveId) {
+        error('Usage: rapid-tools wave-plan resolve-wave <waveId>');
+        process.exit(1);
+      }
+      try {
+        const stateResult = await sm.readState(cwd);
+        if (!stateResult || !stateResult.valid) {
+          process.stdout.write(JSON.stringify({ error: 'STATE.json not found or invalid' }) + '\n');
+          process.exit(1);
+        }
+        const result = wp.resolveWave(stateResult.state, waveId);
+        if (Array.isArray(result)) {
+          // Ambiguous -- multiple matches
+          process.stdout.write(JSON.stringify({
+            ambiguous: true,
+            matches: result.map(m => ({
+              milestoneId: m.milestoneId,
+              setId: m.setId,
+              waveId: m.waveId,
+              waveStatus: m.wave.status,
+            })),
+          }) + '\n');
+        } else {
+          process.stdout.write(JSON.stringify({
+            milestoneId: result.milestoneId,
+            setId: result.setId,
+            waveId: result.waveId,
+            waveStatus: result.wave.status,
+            setStatus: result.set.status,
+            jobs: (result.wave.jobs || []).map(j => ({ id: j.id, status: j.status })),
+          }) + '\n');
+        }
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'create-wave-dir': {
+      const setId = args[0];
+      const waveId = args[1];
+      if (!setId || !waveId) {
+        error('Usage: rapid-tools wave-plan create-wave-dir <setId> <waveId>');
+        process.exit(1);
+      }
+      try {
+        const wavePath = wp.createWaveDir(cwd, setId, waveId);
+        process.stdout.write(JSON.stringify({ created: true, path: wavePath }) + '\n');
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ created: false, error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'validate-contracts': {
+      const setId = args[0];
+      const waveId = args[1];
+      if (!setId || !waveId) {
+        error('Usage: rapid-tools wave-plan validate-contracts <setId> <waveId>');
+        process.exit(1);
+      }
+      try {
+        // Read this set's CONTRACT.json
+        const contractPath = path.join(cwd, '.planning', 'sets', setId, 'CONTRACT.json');
+        if (!fs.existsSync(contractPath)) {
+          process.stdout.write(JSON.stringify({ error: `CONTRACT.json not found for set '${setId}' at ${contractPath}` }) + '\n');
+          process.exit(1);
+        }
+        const contractJson = JSON.parse(fs.readFileSync(contractPath, 'utf-8'));
+
+        // Read JOB-PLAN.md files from .planning/waves/{setId}/{waveId}/
+        const wavePlanDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+        const jobPlans = [];
+        if (fs.existsSync(wavePlanDir)) {
+          const files = fs.readdirSync(wavePlanDir).filter(f => f.endsWith('-PLAN.md'));
+          for (const file of files) {
+            const content = fs.readFileSync(path.join(wavePlanDir, file), 'utf-8');
+            // Extract filesToModify from the "Files to Create/Modify" table
+            const filesToModify = [];
+            const tableRegex = /\|\s*([^\|]+?)\s*\|\s*(Create|Modify)\s*\|/gi;
+            let match;
+            while ((match = tableRegex.exec(content)) !== null) {
+              const filePath = match[1].trim();
+              if (filePath && filePath !== 'File' && !filePath.startsWith('---')) {
+                filesToModify.push(filePath);
+              }
+            }
+            const jobId = file.replace('-PLAN.md', '');
+            jobPlans.push({ jobId, filesToModify });
+          }
+        }
+
+        // Read other set contracts from .planning/sets/*/CONTRACT.json
+        const setsDir = path.join(cwd, '.planning', 'sets');
+        const allSetContracts = {};
+        if (fs.existsSync(setsDir)) {
+          const setDirs = fs.readdirSync(setsDir).filter(d => {
+            return d !== setId && fs.statSync(path.join(setsDir, d)).isDirectory();
+          });
+          for (const otherSet of setDirs) {
+            const otherContractPath = path.join(setsDir, otherSet, 'CONTRACT.json');
+            if (fs.existsSync(otherContractPath)) {
+              allSetContracts[otherSet] = JSON.parse(fs.readFileSync(otherContractPath, 'utf-8'));
+            }
+          }
+        }
+
+        const result = wp.validateJobPlans(contractJson, jobPlans, allSetContracts);
+        process.stdout.write(JSON.stringify({
+          setId,
+          waveId,
+          jobPlansFound: jobPlans.length,
+          ...result,
+        }) + '\n');
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    default:
+      error(`Unknown wave-plan subcommand: ${subcommand}. Use: resolve-wave, create-wave-dir, validate-contracts`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
