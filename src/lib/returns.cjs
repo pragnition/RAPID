@@ -9,6 +9,8 @@
  * rendered from the JSON (never independently generated).
  */
 
+const { z } = require('zod');
+
 const RETURN_MARKER = '<!-- RAPID:RETURN';
 const RETURN_END = '-->';
 
@@ -208,4 +210,80 @@ function formatTable(rows) {
   return lines.join('\n');
 }
 
-module.exports = { parseReturn, generateReturn, validateReturn };
+// ────────────────────────────────────────────────────────────────
+// Zod schemas for structured inter-agent handoff validation
+// ────────────────────────────────────────────────────────────────
+
+const CompleteReturn = z.object({
+  status: z.literal('COMPLETE'),
+  artifacts: z.array(z.string()),
+  tasks_completed: z.number(),
+  tasks_total: z.number(),
+  commits: z.array(z.string()).optional(),
+  duration_minutes: z.number().optional(),
+  next_action: z.string().optional(),
+  warnings: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+});
+
+const CheckpointReturn = z.object({
+  status: z.literal('CHECKPOINT'),
+  handoff_done: z.string(),
+  handoff_remaining: z.string(),
+  handoff_resume: z.string(),
+  artifacts: z.array(z.string()).optional(),
+  tasks_completed: z.number().optional(),
+  tasks_total: z.number().optional(),
+  duration_minutes: z.number().optional(),
+  decisions: z.array(z.string()).optional(),
+  blockers: z.array(z.string()).optional(),
+});
+
+const BlockedReturn = z.object({
+  status: z.literal('BLOCKED'),
+  blocker_category: z.enum(['DEPENDENCY', 'PERMISSION', 'CLARIFICATION', 'ERROR']),
+  blocker: z.string(),
+  resolution: z.string(),
+  artifacts: z.array(z.string()).optional(),
+  tasks_completed: z.number().optional(),
+  tasks_total: z.number().optional(),
+});
+
+const AnyReturn = z.discriminatedUnion('status', [CompleteReturn, CheckpointReturn, BlockedReturn]);
+
+const ReturnSchemas = {
+  Complete: CompleteReturn,
+  Checkpoint: CheckpointReturn,
+  Blocked: BlockedReturn,
+  Any: AnyReturn,
+};
+
+/**
+ * Validate agent output using Zod schemas at handoff points.
+ *
+ * Parses the RAPID:RETURN marker, then validates the JSON payload
+ * against the appropriate Zod schema based on the status field.
+ *
+ * @param {string} agentOutput - The full agent output text
+ * @returns {{ valid: true, data: object } | { valid: false, error: string }}
+ */
+function validateHandoff(agentOutput) {
+  const parseResult = parseReturn(agentOutput);
+
+  if (!parseResult.parsed) {
+    return { valid: false, error: parseResult.error };
+  }
+
+  const zodResult = AnyReturn.safeParse(parseResult.data);
+
+  if (!zodResult.success) {
+    const errorMsg = zodResult.error.issues
+      .map((i) => `${i.path.join('.')}: ${i.message}`)
+      .join('; ');
+    return { valid: false, error: errorMsg };
+  }
+
+  return { valid: true, data: zodResult.data };
+}
+
+module.exports = { parseReturn, generateReturn, validateReturn, validateHandoff, ReturnSchemas };
