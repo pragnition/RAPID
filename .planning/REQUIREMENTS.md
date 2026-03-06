@@ -35,13 +35,13 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 
 - [x] **ERRR-01**: Merge skill offers structured recovery options on merge conflict instead of halting pipeline
 - [x] **ERRR-02**: Cleanup skill provides specific resolution steps (commit/stash commands) when dirty worktree blocks removal
-- [ ] **ERRR-03**: All skills replace bare "STOP" error handling with AskUserQuestion offering retry/skip/help/cancel options
+- [x] **ERRR-03**: All skills replace bare "STOP" error handling with AskUserQuestion offering retry/skip/help/cancel options
 - [x] **ERRR-04**: Merge skill explains verdict meanings (APPROVE/CHANGES/BLOCK) and shows allowed cleanup rounds
 
 ### Progress Visibility
 
 - [x] **PROG-01**: Execute skill shows progress indicators during subagent execution with last activity updates
-- [ ] **PROG-02**: Context skill shows progress during codebase analysis subagent
+- [x] **PROG-02**: Context skill shows progress during codebase analysis subagent
 - [x] **PROG-03**: Merge skill shows progress during reviewer and cleanup subagent operations
 
 ## v1 Requirements (Validated)
@@ -184,10 +184,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-03 | Phase 14 | Complete |
 | ERRR-01 | Phase 13 | Complete |
 | ERRR-02 | Phase 13 | Complete |
-| ERRR-03 | Phase 15 | Pending |
+| ERRR-03 | Phase 15 | Complete |
 | ERRR-04 | Phase 13 | Complete |
 | PROG-01 | Phase 12 | Complete |
-| PROG-02 | Phase 15 | Pending |
+| PROG-02 | Phase 15 | Complete |
 | PROG-03 | Phase 15 | Complete |
 
 **Coverage:**

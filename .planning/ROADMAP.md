@@ -39,7 +39,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Execute Skill Prompts and Progress** - Structured AskUserQuestion prompts and progress indicators for execute skill (completed 2026-03-06)
 - [x] **Phase 13: Merge and Cleanup Skill Prompts** - Structured prompts, error recovery paths, and verdict explanations for merge and cleanup skills (completed 2026-03-06)
 - [x] **Phase 14: Install Skill Polish** - Shell detection, auto-sourcing, and fallback guidance for install skill (completed 2026-03-06)
-- [ ] **Phase 15: Global Error Recovery and Progress** - Replace bare STOP handling across all skills and add progress indicators to context and merge skills
+- [x] **Phase 15: Global Error Recovery and Progress** - Replace bare STOP handling across all skills and add progress indicators to context and merge skills (completed 2026-03-06)
 
 ## Phase Details
 
@@ -330,4 +330,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 12. Execute Skill Prompts and Progress | 1/1 | Complete    | 2026-03-06 | - |
 | 13. Merge and Cleanup Skill Prompts | 2/2 | Complete    | 2026-03-06 | - |
 | 14. Install Skill Polish | 1/1 | Complete    | 2026-03-06 | - |
-| 15. Global Error Recovery and Progress | 1/2 | In Progress|  | - |
+| 15. Global Error Recovery and Progress | 2/2 | Complete   | 2026-03-06 | - |
