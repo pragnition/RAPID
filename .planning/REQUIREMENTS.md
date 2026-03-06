@@ -43,7 +43,7 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 - [x] **WAVE-03**: /plan spawns research agents to investigate how to implement wave jobs
 - [x] **WAVE-04**: Wave Planner produces high-level per-job plans with structured output
 - [x] **WAVE-05**: Job Planner creates detailed per-job implementation plans with user discussion
-- [ ] **WAVE-06**: Job Planner validates plans against interface contracts
+- [x] **WAVE-06**: Job Planner validates plans against interface contracts
 
 ### Execution
 
@@ -257,7 +257,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WAVE-03 | Phase 20 | Complete |
 | WAVE-04 | Phase 20 | Complete |
 | WAVE-05 | Phase 20 | Complete |
-| WAVE-06 | Phase 20 | Pending |
+| WAVE-06 | Phase 20 | Complete |
 | EXEC-01 | Phase 21 | Pending |
 | EXEC-02 | Phase 21 | Pending |
 | EXEC-03 | Phase 21 | Pending |
