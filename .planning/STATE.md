@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-03-06T10:23:47.251Z"
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-03-06T10:24:56.166Z"
 last_activity: 2026-03-06 — Completed 18-01 (Init library and CLI extensions)
 progress:
   total_phases: 26
   completed_phases: 18
   total_plans: 46
-  completed_plans: 42
+  completed_plans: 43
   percent: 91
 ---
 
@@ -58,6 +58,8 @@ Recent decisions affecting current work:
 - [Phase 17]: STATE.json generated alongside STATE.md during scaffolding (dual source preserved)
 - [Phase 17]: createInitialState(opts.name, 'v1.0') used for consistent state initialization
 - [Phase 18]: Model field at top-level in config.json, max_parallel_sets = floor(teamSize * 1.5)
+- [Phase 18]: Research agents write independently to .planning/research/ -- no cross-agent dependencies
+- [Phase 18]: Roadmapper returns structured JSON; orchestrator handles atomic file writes via CLI
 
 ### Pending Todos
 
@@ -89,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T10:23:47.249Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-03-06T10:24:56.164Z
+Stopped at: Completed 18-02-PLAN.md
 Resume file: None

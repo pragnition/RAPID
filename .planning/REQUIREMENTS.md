@@ -19,8 +19,8 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 
 - [x] **INIT-01**: /init detects greenfield vs brownfield projects
 - [x] **INIT-02**: /init asks user for model selection (opus/sonnet) and team size for set scaling
-- [ ] **INIT-03**: Codebase synthesizer agent analyzes brownfield codebases (files, functions, API endpoints, code style, tech stack)
-- [ ] **INIT-04**: Parallel research agents investigate stack, features, architecture, pitfalls during init
+- [x] **INIT-03**: Codebase synthesizer agent analyzes brownfield codebases (files, functions, API endpoints, code style, tech stack)
+- [x] **INIT-04**: Parallel research agents investigate stack, features, architecture, pitfalls during init
 - [x] **INIT-05**: Research synthesizer combines parallel research outputs into SUMMARY.md
 - [x] **INIT-06**: Roadmapper agent creates roadmap with sets/waves/jobs structure
 - [ ] **INIT-07**: /install preserves current env var methodology with shell detection
@@ -78,7 +78,7 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 - [ ] **UX-01**: AskUserQuestion used at every decision gate, queries batched to save tokens/time
 - [ ] **UX-02**: Progress indicators with emojis/color during subagent operations
 - [x] **UX-03**: State updated at every step so user can /clear context between phases
-- [ ] **UX-04**: /help shows all Mark II commands with workflow guidance
+- [x] **UX-04**: /help shows all Mark II commands with workflow guidance
 
 ### Documentation
 
@@ -239,8 +239,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-05 | Phase 16 | Complete |
 | INIT-01 | Phase 18 | Complete |
 | INIT-02 | Phase 18 | Complete |
-| INIT-03 | Phase 18 | Pending |
-| INIT-04 | Phase 18 | Pending |
+| INIT-03 | Phase 18 | Complete |
+| INIT-04 | Phase 18 | Complete |
 | INIT-05 | Phase 18 | Complete |
 | INIT-06 | Phase 18 | Complete |
 | INIT-07 | Phase 18 | Pending |
@@ -280,7 +280,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-01 | Phase 19 | Pending |
 | UX-02 | Phase 21 | Pending |
 | UX-03 | Phase 16 | Complete |
-| UX-04 | Phase 18 | Pending |
+| UX-04 | Phase 18 | Complete |
 | DOCS-01 | Phase 24 | Pending |
 | DOCS-02 | Phase 24 | Pending |
 
