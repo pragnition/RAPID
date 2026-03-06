@@ -26,9 +26,9 @@ Decision logic:
   - question: "No source code detected"
   - Options:
     - "Continue anyway" -- "Proceed with context generation using whatever files exist. Results may be minimal."
-    - "Cancel" -- "Stop context generation. Run /rapid:context again after adding source code."
+    - "Cancel" -- "Exit context generation. Run /rapid:context again after adding source code."
   - If the user picks "Continue anyway": proceed to Step 2 as normal (the manifest will be limited but generation continues).
-  - If the user picks "Cancel": STOP -- do not continue to further steps.
+  - If the user picks "Cancel": Print "Cancelled. No changes made." and end the skill.
 - If `hasSourceCode` is true: Store the `manifest` data for use in Step 3. Continue to Step 2.
 
 The manifest contains:
@@ -47,7 +47,7 @@ node "${RAPID_TOOLS}" context generate
 
 Parse the JSON output. The response contains `contextDir` (path to `.planning/context/`) and `ready` (boolean).
 
-If the command fails (e.g., no `.planning/` exists), tell the user: "No RAPID project found. Run `/rapid:init` first to initialize the project, then run `/rapid:context` to generate context files." Then **STOP**.
+If the command fails (e.g., no `.planning/` exists), tell the user: "No RAPID project found. Run `/rapid:init` first to initialize the project, then run `/rapid:context` to generate context files." End the skill.
 
 Store the `contextDir` path for use in Step 5.
 
@@ -106,9 +106,9 @@ Then use AskUserQuestion with:
 - question: "Context files ready to generate"
 - Options:
   - "Generate" -- "Write all context files listed above to .planning/context/ and CLAUDE.md to project root."
-  - "Cancel" -- "Stop without generating files. No changes will be made."
+  - "Cancel" -- "Exit without generating files. No changes will be made."
 - If the user picks "Generate": proceed to Step 5.
-- If the user picks "Cancel": STOP.
+- If the user picks "Cancel": Print "Cancelled. No changes made." and end the skill.
 
 ## Step 5: Write Context Files via Subagent
 

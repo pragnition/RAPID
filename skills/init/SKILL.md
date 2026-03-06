@@ -28,7 +28,15 @@ Display the results as a formatted markdown table showing the status of each too
 | (from results) | ... | ... | ... | ... |
 
 Decision logic:
-- If `summary.hasBlockers` is true: **STOP.** Tell the user which required tools are missing or outdated. Provide installation/upgrade instructions for each blocker. Do NOT continue until blockers are resolved.
+- If `summary.hasBlockers` is true: Display the blocker table as above, then use AskUserQuestion with:
+  - question: "Prerequisites missing"
+  - Options:
+    - "Retry check" -- "Re-run prerequisite validation after installing missing tools"
+    - "View install guide" -- "Show install commands for each missing tool (e.g., git: brew install git / apt install git / winget install Git.Git)"
+    - "Cancel init" -- "Exit initialization. No changes made."
+  - If the user picks "Retry check": Loop back to the prerequisite command at the top of Step 1 and re-run validation.
+  - If the user picks "View install guide": Display install commands for each blocker, then re-prompt with the same AskUserQuestion (the user may retry after installing).
+  - If the user picks "Cancel init": Print "Cancelled. No changes made." and end the skill.
 - If `summary.hasWarnings` is true: Display the warnings but continue. Tell the user which optional tools are missing and why they are helpful.
 - If all pass: Briefly confirm all prerequisites are met and continue to Step 2.
 
@@ -45,7 +53,7 @@ Parse the JSON output containing `isRepo` (boolean) and `toplevel` (string or nu
 Decision logic:
 - If `isRepo` is false: Ask the user: "This directory is not a git repository. Would you like me to run `git init` to initialize one?" Wait for their response.
   - If they agree: Run `git init` and confirm.
-  - If they decline: **STOP.** RAPID requires a git repository for worktree-based parallel development.
+  - If they decline: Print "RAPID requires a git repository for worktree-based parallel development. Run `git init` when ready, then `/rapid:init` again." and end the skill.
 - If `isRepo` is true: Continue silently to Step 3. Do not mention this check.
 
 ## Step 3: Existing Project Detection
@@ -66,7 +74,7 @@ Decision logic:
   - Options:
     - "Reinitialize" -- "Back up .planning/ to .planning.backup.{timestamp}/ and create fresh. All previous planning data is preserved in the backup."
     - "Upgrade" -- "Add any missing files to existing .planning/ without overwriting existing content. Your current state is preserved."
-    - "Cancel" -- "Stop initialization. No changes will be made."
+    - "Cancel" -- "Exit initialization. No changes will be made."
 
   Store the user's selection. Map it to the `--mode` argument for the scaffold command:
   - "Reinitialize" -> `--mode reinitialize`
@@ -187,7 +195,7 @@ Using the JSON output from the Step 5 scaffold command, display a completion sum
 1. List the files from the `created` array (with relative paths)
 2. If reinitialize mode: Note the backup location from `backed_up_to`
 3. If upgrade mode: List `created` (new files added) and `skipped` (existing files preserved) separately
-4. If cancel mode: Confirm no changes were made and stop here
+4. If cancel mode: Confirm no changes were made and end here
 5. Confirm the project name and description
 6. Show team size configuration
 7. If brownfield auto-trigger occurred: Include the context generation summary as part of init completion. Show what context files were generated alongside the scaffold results.
