@@ -270,10 +270,194 @@ function getExecutionOrder(dag) {
   return waveNumbers.map((waveNum) => dag.waves[waveNum].sets);
 }
 
+/**
+ * Valid node types for v2.0 DAGs.
+ */
+const VALID_NODE_TYPES = ['set', 'wave', 'job'];
+
+/**
+ * Create a v2.0 DAG with type-aware nodes (set/wave/job).
+ *
+ * Validates node types, rejects cross-type edges, reuses existing
+ * toposort/assignWaves for cycle detection and wave computation.
+ *
+ * @param {Array<{id: string, type: string}>} nodes - Typed graph nodes
+ * @param {Array<{from: string, to: string}>} edges - Directed edges (same-type only)
+ * @returns {Object} v2.0 DAG object with version, nodes, edges, waves, metadata
+ * @throws {Error} If nodes missing type or have invalid type
+ * @throws {Error} If cross-type edges found
+ * @throws {Error} If duplicate node IDs, unknown edge refs, or cycles detected
+ */
+function createDAGv2(nodes, edges) {
+  // Check for duplicate node IDs
+  const seen = new Set();
+  for (const node of nodes) {
+    if (seen.has(node.id)) {
+      throw new Error(`Duplicate node ID: ${node.id}`);
+    }
+    seen.add(node.id);
+  }
+
+  // Validate all nodes have valid type
+  for (const node of nodes) {
+    if (!node.type || !VALID_NODE_TYPES.includes(node.type)) {
+      throw new Error(
+        `Node "${node.id}" has invalid or missing type: "${node.type || undefined}". Must be one of: ${VALID_NODE_TYPES.join(', ')}`
+      );
+    }
+  }
+
+  // Build node lookup for cross-type edge validation
+  const nodeMap = {};
+  for (const node of nodes) {
+    nodeMap[node.id] = node;
+  }
+
+  // Validate edges only connect same-type nodes
+  for (const edge of edges) {
+    const fromNode = nodeMap[edge.from];
+    const toNode = nodeMap[edge.to];
+    if (fromNode && toNode && fromNode.type !== toNode.type) {
+      throw new Error(
+        `Cross-type edge not allowed: ${edge.from} (${fromNode.type}) -> ${edge.to} (${toNode.type})`
+      );
+    }
+  }
+
+  // Reuse existing toposort for cycle detection and validation
+  toposort(nodes, edges);
+
+  // Reuse existing assignWaves for wave computation
+  const waveMap = assignWaves(nodes, edges);
+
+  // Build nodes with wave and status
+  const dagNodes = nodes.map((node) => ({
+    ...node,
+    wave: waveMap[node.id],
+    status: 'pending',
+  }));
+
+  // Group nodes by wave
+  const waveGroups = {};
+  for (const [nodeId, wave] of Object.entries(waveMap)) {
+    if (!waveGroups[wave]) waveGroups[wave] = [];
+    waveGroups[wave].push(nodeId);
+  }
+
+  // Build waves object (without v1 set-specific checkpoint format)
+  const waves = {};
+  for (const [waveNum, nodeIds] of Object.entries(waveGroups)) {
+    waves[waveNum] = {
+      nodes: nodeIds,
+    };
+  }
+
+  // Calculate metadata
+  const totalWaves = Object.keys(waveGroups).length;
+  const maxParallelism = Math.max(
+    ...Object.values(waveGroups).map((g) => g.length)
+  );
+
+  // Count node types
+  const nodeTypes = { set: 0, wave: 0, job: 0 };
+  for (const node of nodes) {
+    nodeTypes[node.type]++;
+  }
+
+  return {
+    version: 2,
+    nodes: dagNodes,
+    edges,
+    waves,
+    metadata: {
+      created: new Date().toISOString().split('T')[0],
+      totalNodes: nodes.length,
+      totalWaves,
+      maxParallelism,
+      nodeTypes,
+    },
+  };
+}
+
+/**
+ * Validate a v2.0 DAG object for required structure and fields.
+ *
+ * @param {Object} dag - v2.0 DAG object to validate
+ * @returns {{ valid: true } | { valid: false, errors: string[] }}
+ */
+function validateDAGv2(dag) {
+  const errors = [];
+
+  // Check top-level required fields
+  if (!dag || typeof dag !== 'object') {
+    return { valid: false, errors: ['DAG must be an object'] };
+  }
+
+  if (dag.version !== 2) {
+    errors.push('DAG version must be 2');
+  }
+
+  if (!Array.isArray(dag.nodes)) {
+    errors.push('Missing required field: nodes (must be an array)');
+  }
+  if (!Array.isArray(dag.edges)) {
+    errors.push('Missing required field: edges (must be an array)');
+  }
+  if (!dag.waves || typeof dag.waves !== 'object' || Array.isArray(dag.waves)) {
+    errors.push('Missing required field: waves (must be an object)');
+  }
+  if (!dag.metadata || typeof dag.metadata !== 'object' || Array.isArray(dag.metadata)) {
+    errors.push('Missing required field: metadata (must be an object)');
+  }
+
+  // If top-level fields missing, return early
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  // Validate each node (v2 requires id, wave, status, type)
+  for (let i = 0; i < dag.nodes.length; i++) {
+    const node = dag.nodes[i];
+    if (!node.id) errors.push(`Node at index ${i} missing required field: id`);
+    if (node.wave === undefined || node.wave === null) {
+      errors.push(`Node at index ${i} missing required field: wave`);
+    }
+    if (!node.status) errors.push(`Node at index ${i} missing required field: status`);
+    if (!node.type) {
+      errors.push(`Node at index ${i} missing required field: type`);
+    } else if (!VALID_NODE_TYPES.includes(node.type)) {
+      errors.push(`Node at index ${i} has invalid type: "${node.type}". Must be one of: ${VALID_NODE_TYPES.join(', ')}`);
+    }
+  }
+
+  // Validate each edge
+  for (let i = 0; i < dag.edges.length; i++) {
+    const edge = dag.edges[i];
+    if (!edge.from) errors.push(`Edge at index ${i} missing required field: from`);
+    if (!edge.to) errors.push(`Edge at index ${i} missing required field: to`);
+  }
+
+  // Validate metadata
+  if (dag.metadata.totalNodes === undefined || dag.metadata.totalNodes === null) {
+    errors.push('Metadata missing required field: totalNodes');
+  }
+  if (dag.metadata.totalWaves === undefined || dag.metadata.totalWaves === null) {
+    errors.push('Metadata missing required field: totalWaves');
+  }
+
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  return { valid: true };
+}
+
 module.exports = {
   toposort,
   assignWaves,
   createDAG,
   validateDAG,
   getExecutionOrder,
+  createDAGv2,
+  validateDAGv2,
 };
