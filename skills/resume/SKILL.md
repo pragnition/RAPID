@@ -37,16 +37,16 @@ Parse the JSON output and filter for entries with `phase: "Paused"`.
 **If no paused sets:**
 Print: "No paused sets found. Use /pause to pause an executing set first." and end.
 
-## Step 3: Load Resume Data
+## Step 3: Load Resume Data (Info Only)
 
-Call the resume CLI to load handoff data and STATE.json context:
+Call the resume CLI with `--info-only` to load handoff data and STATE.json context **without** transitioning the set's phase:
 
 ```bash
-node "${RAPID_TOOLS}" resume {setName}
+node "${RAPID_TOOLS}" resume --info-only {setName}
 ```
 
 Parse the JSON output which contains:
-- `resumed`: boolean
+- `resumed`: boolean (will be `false` since `--info-only` does not transition state)
 - `setName`: the set name
 - `handoff`: parsed HANDOFF.md data (frontmatter + sections)
 - `stateContext`: wave/job progress from STATE.json (may be null)
@@ -94,9 +94,19 @@ Then ask again with AskUserQuestion:
 
 **If "Cancel":** Print "Resume cancelled. Set remains paused." and end.
 
-## Step 6: Resume Confirmed
+## Step 6: Transition State
 
-The resume CLI (Step 3) has already transitioned the set from Paused to Executing in REGISTRY.json.
+Now that the user has confirmed, call the resume CLI **without** `--info-only` to transition the set from Paused to Executing:
+
+```bash
+node "${RAPID_TOOLS}" resume {setName}
+```
+
+**If the command fails:** Display the error and end.
+
+## Step 7: Resume Confirmed
+
+The resume CLI (Step 6) has transitioned the set from Paused to Executing in REGISTRY.json.
 
 Display the resume confirmation:
 
@@ -112,7 +122,7 @@ Display the resume confirmation:
 
 ## Important Notes
 
-- **Resume transitions set to Executing:** The `resume` CLI command updates REGISTRY.json phase from Paused to Executing.
+- **Resume transitions set to Executing:** The `resume` CLI command (without `--info-only`) updates REGISTRY.json phase from Paused to Executing. The `--info-only` flag loads handoff data without transitioning state, used in Step 3 before user confirmation.
 - **HANDOFF.md is preserved:** The handoff file remains after resume for reference. It is cleaned up when the set reaches Done.
 - **STATE.json context:** If STATE.json exists and contains the set, the resume response includes wave/job progress to help the executor pick up where it left off.
 - **Multiple pause cycles:** If the set has been paused 3+ times, the pause skill will have warned about replanning. The resume skill does not block on this -- it is advisory.

@@ -1128,9 +1128,11 @@ async function handleResume(cwd, args) {
   const execute = require('../lib/execute.cjs');
   const wt = require('../lib/worktree.cjs');
 
-  const setName = args[0];
+  const infoOnly = args.includes('--info-only');
+  const positionalArgs = args.filter(a => !a.startsWith('--'));
+  const setName = positionalArgs[0];
   if (!setName) {
-    error('Usage: rapid-tools resume <set-name>');
+    error('Usage: rapid-tools resume <set-name> [--info-only]');
     process.exit(1);
   }
 
@@ -1189,17 +1191,19 @@ async function handleResume(cwd, args) {
   const definitionPath = path.join('.planning', 'sets', setName, 'DEFINITION.md');
   const contractPath = path.join('.planning', 'sets', setName, 'CONTRACT.json');
 
-  // Update registry: phase = Executing
-  await wt.registryUpdate(cwd, (reg) => {
-    if (reg.worktrees[setName]) {
-      reg.worktrees[setName].phase = 'Executing';
-      reg.worktrees[setName].updatedAt = new Date().toISOString();
-    }
-    return reg;
-  });
+  // Update registry: phase = Executing (skip when --info-only)
+  if (!infoOnly) {
+    await wt.registryUpdate(cwd, (reg) => {
+      if (reg.worktrees[setName]) {
+        reg.worktrees[setName].phase = 'Executing';
+        reg.worktrees[setName].updatedAt = new Date().toISOString();
+      }
+      return reg;
+    });
+  }
 
   process.stdout.write(JSON.stringify({
-    resumed: true,
+    resumed: infoOnly ? false : true,
     setName,
     handoff,
     stateContext,
