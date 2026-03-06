@@ -17,12 +17,12 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 
 ### Init & Project Setup
 
-- [ ] **INIT-01**: /init detects greenfield vs brownfield projects
-- [ ] **INIT-02**: /init asks user for model selection (opus/sonnet) and team size for set scaling
+- [x] **INIT-01**: /init detects greenfield vs brownfield projects
+- [x] **INIT-02**: /init asks user for model selection (opus/sonnet) and team size for set scaling
 - [ ] **INIT-03**: Codebase synthesizer agent analyzes brownfield codebases (files, functions, API endpoints, code style, tech stack)
 - [ ] **INIT-04**: Parallel research agents investigate stack, features, architecture, pitfalls during init
-- [ ] **INIT-05**: Research synthesizer combines parallel research outputs into SUMMARY.md
-- [ ] **INIT-06**: Roadmapper agent creates roadmap with sets/waves/jobs structure
+- [x] **INIT-05**: Research synthesizer combines parallel research outputs into SUMMARY.md
+- [x] **INIT-06**: Roadmapper agent creates roadmap with sets/waves/jobs structure
 - [ ] **INIT-07**: /install preserves current env var methodology with shell detection
 - [ ] **INIT-08**: /new-milestone command starts new milestone/version cycle
 
@@ -237,12 +237,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-03 | Phase 16 | Complete |
 | STATE-04 | Phase 17 | Complete |
 | STATE-05 | Phase 16 | Complete |
-| INIT-01 | Phase 18 | Pending |
-| INIT-02 | Phase 18 | Pending |
+| INIT-01 | Phase 18 | Complete |
+| INIT-02 | Phase 18 | Complete |
 | INIT-03 | Phase 18 | Pending |
 | INIT-04 | Phase 18 | Pending |
-| INIT-05 | Phase 18 | Pending |
-| INIT-06 | Phase 18 | Pending |
+| INIT-05 | Phase 18 | Complete |
+| INIT-06 | Phase 18 | Complete |
 | INIT-07 | Phase 18 | Pending |
 | INIT-08 | Phase 18 | Pending |
 | SETL-01 | Phase 19 | Pending |

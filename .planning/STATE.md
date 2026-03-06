@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: completed
-stopped_at: Phase 18 context gathered
-last_updated: "2026-03-06T09:19:50.237Z"
-last_activity: 2026-03-06 — Completed 17-02 (Init STATE.json generation and integration tests)
+status: executing
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-03-06T10:23:47.251Z"
+last_activity: 2026-03-06 — Completed 18-01 (Init library and CLI extensions)
 progress:
   total_phases: 26
   completed_phases: 18
-  total_plans: 42
-  completed_plans: 41
-  percent: 98
+  total_plans: 46
+  completed_plans: 42
+  percent: 91
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 17 - Dependency Audit and Adapter Layer (v2.0 Mark II)
+**Current focus:** Phase 18 - Init and Project Setup (v2.0 Mark II)
 
 ## Current Position
 
-Phase: 17 of 24 (Dependency Audit and Adapter Layer)
-Plan: 2 of 2 in current phase
-Status: Phase Complete
-Last activity: 2026-03-06 — Completed 17-02 (Init STATE.json generation and integration tests)
+Phase: 18 of 24 (Init and Project Setup)
+Plan: 1 of 4 in current phase
+Status: In Progress
+Last activity: 2026-03-06 — Completed 18-01 (Init library and CLI extensions)
 
-Progress: [██████████] 98% (41/42 plans complete)
+Progress: [█████████░] 91% (42/46 plans complete)
 
 ## Accumulated Context
 
@@ -57,6 +57,7 @@ Recent decisions affecting current work:
 - [Phase 17]: state transition replaces state update -- validated transitions with automatic parent derivation
 - [Phase 17]: STATE.json generated alongside STATE.md during scaffolding (dual source preserved)
 - [Phase 17]: createInitialState(opts.name, 'v1.0') used for consistent state initialization
+- [Phase 18]: Model field at top-level in config.json, max_parallel_sets = floor(teamSize * 1.5)
 
 ### Pending Todos
 
@@ -88,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T09:19:50.235Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-init-and-project-setup/18-CONTEXT.md
+Last session: 2026-03-06T10:23:47.249Z
+Stopped at: Completed 18-01-PLAN.md
+Resume file: None
