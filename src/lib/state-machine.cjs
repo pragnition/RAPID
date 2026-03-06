@@ -218,16 +218,14 @@ async function transitionJob(cwd, milestoneId, setId, waveId, jobId, newStatus) 
     // Derive wave status from jobs
     const wave = findWave(state, milestoneId, setId, waveId);
     const derivedWaveStatus = deriveWaveStatus(wave.jobs);
-    // Only update wave status if it's a valid derived status for the wave schema
-    // Map derived statuses to wave-valid statuses
-    if (derivedWaveStatus === 'executing') {
-      wave.status = 'executing';
-    } else if (derivedWaveStatus === 'complete') {
-      wave.status = 'complete';
-    } else if (derivedWaveStatus === 'pending') {
-      wave.status = 'pending';
-    } else if (derivedWaveStatus === 'failed') {
-      wave.status = 'failed';
+    // Only update wave status if the transition is valid
+    if (derivedWaveStatus !== wave.status) {
+      try {
+        validateTransition('wave', wave.status, derivedWaveStatus);
+        wave.status = derivedWaveStatus;
+      } catch (_) {
+        // Invalid transition -- leave wave status unchanged
+      }
     }
 
     // Write state directly (skip lock since we already hold it)
@@ -262,7 +260,16 @@ async function transitionWave(cwd, milestoneId, setId, waveId, newStatus) {
 
     // Derive set status from waves
     const set = findSet(state, milestoneId, setId);
-    set.status = deriveSetStatus(set.waves);
+    const derivedSetStatus = deriveSetStatus(set.waves);
+    // Only update set status if the transition is valid
+    if (derivedSetStatus !== set.status) {
+      try {
+        validateTransition('set', set.status, derivedSetStatus);
+        set.status = derivedSetStatus;
+      } catch (_) {
+        // Invalid transition -- leave set status unchanged
+      }
+    }
 
     // Write state directly (skip lock since we already hold it)
     const validated = ProjectState.parse(state);
@@ -343,7 +350,11 @@ function detectCorruption(cwd) {
  * @param {string} cwd - Project root directory
  */
 function recoverFromGit(cwd) {
-  execFileSync('git', ['checkout', 'HEAD', '--', '.planning/STATE.json'], { cwd, stdio: 'pipe' });
+  try {
+    execFileSync('git', ['checkout', 'HEAD', '--', '.planning/STATE.json'], { cwd, stdio: 'pipe' });
+  } catch (err) {
+    throw new Error(`Failed to recover STATE.json from git: ${err.message}`);
+  }
 }
 
 /**
