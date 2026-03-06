@@ -1,7 +1,7 @@
 ---
 description: Surface Claude's mental model and assumptions about a set before execution begins
 disable-model-invocation: true
-allowed-tools: Read, Bash
+allowed-tools: Read, Bash, AskUserQuestion
 ---
 
 # /rapid:assumptions -- Surface Set Assumptions for Developer Review
@@ -25,14 +25,21 @@ node "${RAPID_TOOLS}" assumptions
 
 Parse the JSON output. The response contains `availableSets` (array of set names) and `usage` (string).
 
-- If the `availableSets` array is empty or the command errors with "No sets found": Display this message and **STOP**:
+- If the `availableSets` array is empty or the command errors with "No sets found": Display this message and end the skill:
   > No sets have been defined yet. Run `/rapid:plan` first to decompose the project into sets.
 
-- If sets exist: Display the available sets as a numbered list and ask the user which set they want to review:
+- If sets exist and there are **4 or fewer**: Use AskUserQuestion with:
+  - question: "Select set"
+  - Options: Each set name as an option label (no consequence description needed since options are just names)
+  - Add an "Other" option with description "Type a set name manually"
+
+  Map the user's selection to a set name. If they select "Other", ask them in plain text: "Which set would you like to review?" and accept their input.
+
+- If sets exist and there are **more than 4**: Display the available sets as a numbered list and ask the user which set they want to review:
   > **Available sets:**
   > 1. {set-name-1}
   > 2. {set-name-2}
-  > 3. {set-name-3}
+  > ...
   >
   > Which set would you like to review assumptions for? (Enter the name or number)
 
@@ -58,7 +65,7 @@ Display the error message, then list available sets by running:
 node "${RAPID_TOOLS}" assumptions
 ```
 
-Show the available sets and ask the user to try again with a valid set name. **STOP** after showing the error.
+Show the available sets and tell the user: "Set not found. Available sets are listed above. Run `/rapid:assumptions <set-name>` with a valid set name." End the skill.
 
 **If successful:** Continue to Step 3 with the assumptions text.
 
@@ -87,29 +94,40 @@ Present the assumptions exactly as surfaced by the CLI. Do not add interpretatio
 
 ## Step 4: Developer Feedback
 
-After presenting assumptions, ask the developer:
+After presenting assumptions, use AskUserQuestion to collect feedback:
 
-> Do these assumptions look correct? If anything is wrong or missing, I can:
-> 1. **Correct assumptions** -- I will note what needs to change. You will need to re-run `/rapid:plan` to modify the set definitions, since this skill is read-only.
-> 2. **Note for execution** -- Add notes that the executor should be aware of during implementation. You can add these directly to the set's DEFINITION.md.
-> 3. **Looks good** -- Proceed with confidence.
+Use AskUserQuestion with:
+- question: "Assumptions"
+- Options:
+  - "Correct assumptions" -- "Describe what needs to change -- you will need to re-run /rapid:plan to modify set definitions"
+  - "Note for execution" -- "Add notes to the set's DEFINITION.md for the executor to see during implementation"
+  - "Looks good" -- "Assumptions are correct, proceed with confidence"
 
 Wait for the developer's response.
 
-**If the developer wants corrections (Option 1):**
-Ask what specifically is wrong. Document the corrections they want. Then tell them:
+**If the developer selects "Correct assumptions":**
+Ask in plain text: "What specifically needs to change about these assumptions?" Collect their response. Then tell them:
 
 > To apply these corrections, run `/rapid:plan` again and select **Re-plan**. The planner subagent will propose updated sets. The `/rapid:assumptions` skill is read-only by design -- it surfaces the model but does not modify set definitions or contracts.
 
-**If the developer wants to add notes (Option 2):**
+End the skill.
+
+**If the developer selects "Note for execution":**
 Suggest they add notes directly to the set's DEFINITION.md file:
 
 > You can add executor notes to `.planning/sets/{set-name}/DEFINITION.md` under a new `## Executor Notes` section. The executor agent will read this file as context during implementation.
 
-**If the developer is satisfied (Option 3):**
-Confirm and suggest reviewing other sets if applicable:
+End the skill.
 
-> Assumptions for **{set-name}** confirmed. Run `/rapid:assumptions <other-set>` to review another set, or proceed with execution when all sets have been reviewed.
+**If the developer selects "Looks good":**
+Show a SECOND AskUserQuestion with:
+- question: "Continue"
+- Options:
+  - "Review another set" -- "Go back to set selection"
+  - "Done" -- "Finish reviewing assumptions"
+
+- If **Review another set**: Loop back to Step 1 set selection (re-run the assumptions listing and present the set selection prompt again).
+- If **Done**: Display "Assumptions review complete." and end the skill.
 
 ## Important Notes
 
