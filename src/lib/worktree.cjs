@@ -401,6 +401,8 @@ function renderProgressBar(label, completed, total, width = 7) {
 function relativeTime(isoString) {
   if (!isoString) return '-';
   const diff = Date.now() - Date.parse(isoString);
+  if (isNaN(diff)) return '-';
+  if (diff < 0) return 'just now';
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return 'just now';
   const minutes = Math.floor(seconds / 60);
