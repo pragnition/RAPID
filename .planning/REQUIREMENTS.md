@@ -31,7 +31,7 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 - [x] **SETL-01**: /set-init creates git worktree and branch for a specified set
 - [x] **SETL-02**: /set-init generates scoped CLAUDE.md per worktree with relevant contracts and context
 - [x] **SETL-03**: Set planner runs during /set-init producing high-level set overview
-- [ ] **SETL-04**: /status displays cross-set dashboard with set > wave > job hierarchy
+- [x] **SETL-04**: /status displays cross-set dashboard with set > wave > job hierarchy
 - [x] **SETL-05**: /pause saves per-set state with handoff file for later resumption
 - [x] **SETL-06**: /cleanup removes completed set worktrees with safety checks
 - [x] **SETL-07**: /context generates CLAUDE.md and project context files
@@ -248,7 +248,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SETL-01 | Phase 19 | Complete |
 | SETL-02 | Phase 19 | Complete |
 | SETL-03 | Phase 19 | Complete |
-| SETL-04 | Phase 19 | Pending |
+| SETL-04 | Phase 19 | Complete |
 | SETL-05 | Phase 19 | Complete |
 | SETL-06 | Phase 19 | Complete |
 | SETL-07 | Phase 19 | Complete |
