@@ -1,6 +1,6 @@
 ---
 description: Show all active worktrees, their set assignments, lifecycle phase, and wave progress
-allowed-tools: Bash, Read
+allowed-tools: Bash, Read, AskUserQuestion
 ---
 
 # /rapid:status -- Unified Lifecycle Dashboard
@@ -81,16 +81,49 @@ node "${RAPID_TOOLS}" plan check-gate <nextWave>
 
 The check-gate command now verifies actual artifacts on disk (DEFINITION.md and CONTRACT.json), not just registry status.
 
-## Step 4: Summary Guidance
+## Step 4: Next Action
 
-Based on current state, suggest the next action:
+Based on the data gathered in Steps 1-3, determine the current project state and present an AskUserQuestion with state-appropriate options. Always include "Done viewing" as the last option.
 
-- **No sets exist**: "No sets found. Run `/rapid:plan` to decompose your project into parallel work sets."
-- **Sets exist but no worktrees**: "Sets are defined but not yet executing. Run `/rapid:execute` to begin."
-- **All sets Done**: "All sets complete. Ready for merge. Run `/rapid:merge` to begin integration."
-- **Sets are Paused**: List paused sets and suggest: "Resume paused sets with `/rapid:execute resume <set>`."
-- **Gate is blocked**: "Wave N gate blocked. Run `/rapid:plan` to complete planning for: {missing sets}."
-- **Sets are Executing**: "Execution in progress. {N} sets active across {W} waves."
+**State 1: No sets exist** (no sets returned from Step 1)
+
+Use AskUserQuestion with:
+- Header: "Next step"
+- Option: "Plan sets" -- "Run /rapid:plan to decompose your project into parallel work sets"
+- Option: "Done viewing" -- "Exit status"
+
+**State 2: Sets defined but not executing** (sets exist, no worktrees active, gate open)
+
+Use AskUserQuestion with:
+- Header: "Next step"
+- Option: "Start execution" -- "Run /rapid:execute to begin working on sets"
+- Option: "Review assumptions" -- "Run /rapid:assumptions to review Claude's mental model before executing"
+- Option: "Done viewing" -- "Exit status"
+
+**State 3: Sets are executing** (active worktrees exist)
+
+Use AskUserQuestion with:
+- Header: "Execution in progress"
+- Option: "View set details" -- "Show detailed status for a specific set"
+- Option: "Done viewing" -- "Exit status"
+
+**State 4: Gate blocked** (a wave gate is blocked per Step 3 output)
+
+Use AskUserQuestion with:
+- Header: "Gate blocked"
+- Option: "Complete planning" -- "Run /rapid:plan to finish planning for blocked sets: {list the missing set names from gate check}"
+- Option: "Done viewing" -- "Exit status"
+
+**State 5: All sets done** (all sets at Done phase)
+
+Use AskUserQuestion with:
+- Header: "Ready to merge"
+- Option: "Start merge" -- "Run /rapid:merge to begin integrating completed sets"
+- Option: "Done viewing" -- "Exit status"
+
+**After selection:**
+- If the developer selects an action option (not "Done viewing"), display the suggested command as guidance text: "Run: `/rapid:{command}`" -- do NOT attempt to run the command. The status skill is read-only.
+- If the developer selects "Done viewing", display "Status check complete." and end the skill.
 
 ## Step 5: JSON Output (Optional)
 
