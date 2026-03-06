@@ -55,6 +55,9 @@ Store the `contextDir` path for use in Step 5.
 
 Spawn the context-generator subagent using the Agent tool to perform deep codebase analysis. The subagent analyzes source code patterns without writing any files.
 
+Print progress banner before spawning the analysis subagent:
+> Scanning project...
+
 Use the Agent tool with these instructions:
 
 **Subagent prompt must include:**
@@ -72,6 +75,9 @@ The subagent should:
 - Return structured findings following the analysis output format in the role module
 
 **Wait for the subagent to complete and capture its response.**
+
+Print progress banner after analysis returns:
+> Analyzing patterns...
 
 ## Step 4: User Review and Confirmation
 
@@ -111,6 +117,9 @@ Then use AskUserQuestion with:
 - If the user picks "Cancel": Print "Cancelled. No changes made." and end the skill.
 
 ## Step 5: Write Context Files via Subagent
+
+Print progress banner before spawning the write subagent:
+> Generating files...
 
 Spawn the context-generator subagent again using the Agent tool, this time in **write mode**.
 
