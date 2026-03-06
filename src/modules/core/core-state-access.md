@@ -1,6 +1,6 @@
 # State Access Protocol
 
-All project state lives in `.planning/` and is accessed through the `rapid-tools.cjs` CLI (via `RAPID_TOOLS` env var). Never read or write `.planning/` files directly.
+All project state lives in `.planning/STATE.json` and is accessed through the `rapid-tools.cjs` CLI (via `RAPID_TOOLS` env var). Never read or write `.planning/` files directly.
 
 ## Prerequisites
 
@@ -13,10 +13,21 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 
 ## CLI Commands
 
-**State operations:**
-- `node "${RAPID_TOOLS}" state get [field]` -- Read a specific field from STATE.md
-- `node "${RAPID_TOOLS}" state get --all` -- Read the entire STATE.md content
-- `node "${RAPID_TOOLS}" state update <field> <value>` -- Update a field in STATE.md
+**State read operations:**
+- `node "${RAPID_TOOLS}" state get --all` -- Read the full STATE.json as formatted JSON
+- `node "${RAPID_TOOLS}" state get milestone <id>` -- Read a specific milestone
+- `node "${RAPID_TOOLS}" state get set <milestoneId> <setId>` -- Read a specific set
+- `node "${RAPID_TOOLS}" state get wave <milestoneId> <setId> <waveId>` -- Read a specific wave
+- `node "${RAPID_TOOLS}" state get job <milestoneId> <setId> <waveId> <jobId>` -- Read a specific job
+
+**State transition operations:**
+- `node "${RAPID_TOOLS}" state transition set <milestoneId> <setId> <status>` -- Transition set status
+- `node "${RAPID_TOOLS}" state transition wave <milestoneId> <setId> <waveId> <status>` -- Transition wave status
+- `node "${RAPID_TOOLS}" state transition job <milestoneId> <setId> <waveId> <jobId> <status>` -- Transition job status
+
+**State integrity operations:**
+- `node "${RAPID_TOOLS}" state detect-corruption` -- Check STATE.json integrity
+- `node "${RAPID_TOOLS}" state recover` -- Recover STATE.json from last git commit
 
 **Lock operations:**
 - `node "${RAPID_TOOLS}" lock acquire <name>` -- Acquire a named lock
@@ -24,7 +35,8 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 
 ## Rules
 
-- **Reads are safe without locking.** The CLI reads state synchronously and does not require lock acquisition.
-- **Writes MUST go through the CLI.** The state update command acquires locks automatically, performs the write, and releases the lock in a single atomic operation.
+- **Reads use `readState()` internally.** The CLI reads STATE.json, validates it against the Zod schema, and returns the validated JSON. If STATE.json is missing or invalid, the CLI exits with an error.
+- **Writes use `transition*()` functions.** The transition commands acquire a lock, validate the state transition is allowed, update the status, derive parent statuses automatically, and write atomically. Invalid transitions are rejected.
 - **Never write directly to `.planning/` files.** Always use the CLI tool. Direct writes bypass locking and can corrupt state when multiple agents are active.
 - **Lock contention is normal.** If a write blocks on a lock, the CLI retries automatically with exponential backoff. Do not retry manually.
+- **Hierarchy-aware reads.** Use `state get milestone/set/wave/job` to read specific entities rather than parsing the full state. This keeps context budgets low.

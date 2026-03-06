@@ -10,8 +10,16 @@ Commands:
   lock acquire <name>    Acquire a named lock
   lock status <name>     Check if a named lock is held
   lock release <name>    Release a named lock (not typically used directly)
-  state get [field]      Read a field from STATE.md (or full content with --all)
-  state update <field> <value>  Update a field in STATE.md
+  state get --all                                     Read full STATE.json
+  state get milestone <id>                            Read milestone
+  state get set <milestoneId> <setId>                 Read set
+  state get wave <milestoneId> <setId> <waveId>       Read wave
+  state get job <milestoneId> <setId> <waveId> <jobId>  Read job
+  state transition set <milestoneId> <setId> <status>   Transition set status
+  state transition wave <milestoneId> <setId> <waveId> <status>  Transition wave
+  state transition job <milestoneId> <setId> <waveId> <jobId> <status>  Transition job
+  state detect-corruption                             Check STATE.json integrity
+  state recover                                       Recover STATE.json from git
   assemble-agent <role>  Assemble an agent from modules (planner|executor|reviewer|verifier|orchestrator)
   assemble-agent --list  List available modules
   assemble-agent --validate  Validate agent assembly config
@@ -188,46 +196,144 @@ async function handleLock(cwd, subcommand, args) {
 }
 
 async function handleState(cwd, subcommand, args) {
-  // State subcommands will be wired in Task 2
-  let stateModule;
+  const sm = require('../lib/state-machine.cjs');
+
   try {
-    stateModule = require('../lib/state.cjs');
-  } catch (err) {
-    error('State module not yet available. It will be added in a subsequent task.');
-    process.exit(1);
-  }
+    switch (subcommand) {
+      case 'get': {
+        const target = args[0];
+        if (!target) {
+          error('Usage: rapid-tools state get --all | milestone <id> | set <m> <s> | wave <m> <s> <w> | job <m> <s> <w> <j>');
+          process.exit(1);
+        }
 
-  switch (subcommand) {
-    case 'get': {
-      const field = args[0];
-      const useAll = args.includes('--all');
-      if (!field || useAll) {
-        const content = stateModule.stateGet(cwd);
-        process.stdout.write(content + '\n');
-      } else {
-        const value = stateModule.stateGet(cwd, field);
-        const result = JSON.stringify({ field, value });
-        process.stdout.write(result + '\n');
+        if (target === '--all') {
+          const result = await sm.readState(cwd);
+          if (result === null) {
+            error('STATE.json not found. Run init to create project state.');
+            process.exit(1);
+          }
+          if (!result.valid) {
+            error('STATE.json is invalid: ' + JSON.stringify(result.errors));
+            process.exit(1);
+          }
+          process.stdout.write(JSON.stringify(result.state, null, 2) + '\n');
+          break;
+        }
+
+        // Hierarchy lookups: need to read state first
+        const readResult = await sm.readState(cwd);
+        if (readResult === null) {
+          error('STATE.json not found.');
+          process.exit(1);
+        }
+        if (!readResult.valid) {
+          error('STATE.json is invalid: ' + JSON.stringify(readResult.errors));
+          process.exit(1);
+        }
+        const state = readResult.state;
+
+        switch (target) {
+          case 'milestone': {
+            const milestoneId = args[1];
+            if (!milestoneId) { error('Usage: state get milestone <id>'); process.exit(1); }
+            const milestone = sm.findMilestone(state, milestoneId);
+            process.stdout.write(JSON.stringify(milestone, null, 2) + '\n');
+            break;
+          }
+          case 'set': {
+            const [, mId, sId] = args;
+            if (!mId || !sId) { error('Usage: state get set <milestoneId> <setId>'); process.exit(1); }
+            const set = sm.findSet(state, mId, sId);
+            process.stdout.write(JSON.stringify(set, null, 2) + '\n');
+            break;
+          }
+          case 'wave': {
+            const [, mId, sId, wId] = args;
+            if (!mId || !sId || !wId) { error('Usage: state get wave <milestoneId> <setId> <waveId>'); process.exit(1); }
+            const wave = sm.findWave(state, mId, sId, wId);
+            process.stdout.write(JSON.stringify(wave, null, 2) + '\n');
+            break;
+          }
+          case 'job': {
+            const [, mId, sId, wId, jId] = args;
+            if (!mId || !sId || !wId || !jId) { error('Usage: state get job <milestoneId> <setId> <waveId> <jobId>'); process.exit(1); }
+            const job = sm.findJob(state, mId, sId, wId, jId);
+            process.stdout.write(JSON.stringify(job, null, 2) + '\n');
+            break;
+          }
+          default:
+            error(`Unknown state get target: ${target}. Use --all, milestone, set, wave, or job.`);
+            process.exit(1);
+        }
+        break;
       }
-      break;
-    }
 
-    case 'update': {
-      const field = args[0];
-      const value = args.slice(1).join(' ');
-      if (!field || !value) {
-        error('Usage: rapid-tools state update <field> <value>');
+      case 'transition': {
+        const entity = args[0];
+        if (!entity) {
+          error('Usage: rapid-tools state transition set|wave|job <...ids> <newStatus>');
+          process.exit(1);
+        }
+
+        switch (entity) {
+          case 'set': {
+            const [, mId, sId, newStatus] = args;
+            if (!mId || !sId || !newStatus) {
+              error('Usage: state transition set <milestoneId> <setId> <newStatus>');
+              process.exit(1);
+            }
+            await sm.transitionSet(cwd, mId, sId, newStatus);
+            process.stdout.write(JSON.stringify({ transitioned: true, entity: 'set', id: sId, status: newStatus }) + '\n');
+            break;
+          }
+          case 'wave': {
+            const [, mId, sId, wId, newStatus] = args;
+            if (!mId || !sId || !wId || !newStatus) {
+              error('Usage: state transition wave <milestoneId> <setId> <waveId> <newStatus>');
+              process.exit(1);
+            }
+            await sm.transitionWave(cwd, mId, sId, wId, newStatus);
+            process.stdout.write(JSON.stringify({ transitioned: true, entity: 'wave', id: wId, status: newStatus }) + '\n');
+            break;
+          }
+          case 'job': {
+            const [, mId, sId, wId, jId, newStatus] = args;
+            if (!mId || !sId || !wId || !jId || !newStatus) {
+              error('Usage: state transition job <milestoneId> <setId> <waveId> <jobId> <newStatus>');
+              process.exit(1);
+            }
+            await sm.transitionJob(cwd, mId, sId, wId, jId, newStatus);
+            process.stdout.write(JSON.stringify({ transitioned: true, entity: 'job', id: jId, status: newStatus }) + '\n');
+            break;
+          }
+          default:
+            error(`Unknown transition entity: ${entity}. Use set, wave, or job.`);
+            process.exit(1);
+        }
+        break;
+      }
+
+      case 'detect-corruption': {
+        const result = sm.detectCorruption(cwd);
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+        break;
+      }
+
+      case 'recover': {
+        sm.recoverFromGit(cwd);
+        process.stdout.write(JSON.stringify({ recovered: true }) + '\n');
+        break;
+      }
+
+      default:
+        error(`Unknown state subcommand: ${subcommand}`);
+        process.stdout.write(USAGE);
         process.exit(1);
-      }
-      const result = await stateModule.stateUpdate(cwd, field, value);
-      process.stdout.write(JSON.stringify(result) + '\n');
-      break;
     }
-
-    default:
-      error(`Unknown state subcommand: ${subcommand}`);
-      process.stdout.write(USAGE);
-      process.exit(1);
+  } catch (err) {
+    process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
+    process.exit(1);
   }
 }
 
