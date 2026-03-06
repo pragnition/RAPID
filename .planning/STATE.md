@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-03-06T07:36:50.675Z"
-last_activity: 2026-03-06 — Completed 16-01 (state schemas and transitions)
+stopped_at: Completed 16-03-PLAN.md
+last_updated: "2026-03-06T07:38:11.036Z"
+last_activity: 2026-03-06 — Completed 16-03 (DAG v2.0 + handoff validation)
 progress:
   total_phases: 26
   completed_phases: 16
   total_plans: 40
-  completed_plans: 37
-  percent: 93
+  completed_plans: 38
+  percent: 95
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 16 of 24 (State Machine Foundation)
-Plan: 1 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: Executing
-Last activity: 2026-03-06 — Completed 16-01 (state schemas and transitions)
+Last activity: 2026-03-06 — Completed 16-03 (DAG v2.0 + handoff validation)
 
-Progress: [█████████░] 93% (37/40 plans complete)
+Progress: [██████████] 95% (38/40 plans complete)
 
 ## Accumulated Context
 
@@ -48,6 +48,8 @@ Recent decisions affecting current work:
 - [v2.0]: Defer /quick and /insert-job to v2.1
 - [Phase 16]: Zod 3.24.4 locked for CommonJS compatibility (3.25+ breaks require)
 - [Phase 16]: Status enums exported separately for reuse in transition validation
+- [Phase 16]: Extended dag.cjs/returns.cjs additively with v2.0 functions, no existing code modified
+- [Phase 16]: Zod discriminatedUnion on status field for type-safe inter-agent handoff validation
 
 ### Pending Todos
 
@@ -79,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T07:36:50.673Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-03-06T07:38:11.035Z
+Stopped at: Completed 16-03-PLAN.md
 Resume file: None
