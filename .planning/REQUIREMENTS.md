@@ -232,63 +232,63 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STATE-01 | TBD | Pending |
-| STATE-02 | TBD | Pending |
-| STATE-03 | TBD | Pending |
-| STATE-04 | TBD | Pending |
-| STATE-05 | TBD | Pending |
-| INIT-01 | TBD | Pending |
-| INIT-02 | TBD | Pending |
-| INIT-03 | TBD | Pending |
-| INIT-04 | TBD | Pending |
-| INIT-05 | TBD | Pending |
-| INIT-06 | TBD | Pending |
-| INIT-07 | TBD | Pending |
-| INIT-08 | TBD | Pending |
-| SETL-01 | TBD | Pending |
-| SETL-02 | TBD | Pending |
-| SETL-03 | TBD | Pending |
-| SETL-04 | TBD | Pending |
-| SETL-05 | TBD | Pending |
-| SETL-06 | TBD | Pending |
-| SETL-07 | TBD | Pending |
-| WAVE-01 | TBD | Pending |
-| WAVE-02 | TBD | Pending |
-| WAVE-03 | TBD | Pending |
-| WAVE-04 | TBD | Pending |
-| WAVE-05 | TBD | Pending |
-| WAVE-06 | TBD | Pending |
-| EXEC-01 | TBD | Pending |
-| EXEC-02 | TBD | Pending |
-| EXEC-03 | TBD | Pending |
-| EXEC-04 | TBD | Pending |
-| REVW-01 | TBD | Pending |
-| REVW-02 | TBD | Pending |
-| REVW-03 | TBD | Pending |
-| REVW-04 | TBD | Pending |
-| REVW-05 | TBD | Pending |
-| REVW-06 | TBD | Pending |
-| REVW-07 | TBD | Pending |
-| REVW-08 | TBD | Pending |
-| REVW-09 | TBD | Pending |
-| MERG-01 | TBD | Pending |
-| MERG-02 | TBD | Pending |
-| MERG-03 | TBD | Pending |
-| MERG-04 | TBD | Pending |
-| MERG-05 | TBD | Pending |
-| MERG-06 | TBD | Pending |
-| UX-01 | TBD | Pending |
-| UX-02 | TBD | Pending |
-| UX-03 | TBD | Pending |
-| UX-04 | TBD | Pending |
-| DOCS-01 | TBD | Pending |
-| DOCS-02 | TBD | Pending |
+| STATE-01 | Phase 16 | Pending |
+| STATE-02 | Phase 16 | Pending |
+| STATE-03 | Phase 16 | Pending |
+| STATE-04 | Phase 17 | Pending |
+| STATE-05 | Phase 16 | Pending |
+| INIT-01 | Phase 18 | Pending |
+| INIT-02 | Phase 18 | Pending |
+| INIT-03 | Phase 18 | Pending |
+| INIT-04 | Phase 18 | Pending |
+| INIT-05 | Phase 18 | Pending |
+| INIT-06 | Phase 18 | Pending |
+| INIT-07 | Phase 18 | Pending |
+| INIT-08 | Phase 18 | Pending |
+| SETL-01 | Phase 19 | Pending |
+| SETL-02 | Phase 19 | Pending |
+| SETL-03 | Phase 19 | Pending |
+| SETL-04 | Phase 19 | Pending |
+| SETL-05 | Phase 19 | Pending |
+| SETL-06 | Phase 19 | Pending |
+| SETL-07 | Phase 19 | Pending |
+| WAVE-01 | Phase 20 | Pending |
+| WAVE-02 | Phase 20 | Pending |
+| WAVE-03 | Phase 20 | Pending |
+| WAVE-04 | Phase 20 | Pending |
+| WAVE-05 | Phase 20 | Pending |
+| WAVE-06 | Phase 20 | Pending |
+| EXEC-01 | Phase 21 | Pending |
+| EXEC-02 | Phase 21 | Pending |
+| EXEC-03 | Phase 21 | Pending |
+| EXEC-04 | Phase 21 | Pending |
+| REVW-01 | Phase 22 | Pending |
+| REVW-02 | Phase 22 | Pending |
+| REVW-03 | Phase 22 | Pending |
+| REVW-04 | Phase 22 | Pending |
+| REVW-05 | Phase 22 | Pending |
+| REVW-06 | Phase 22 | Pending |
+| REVW-07 | Phase 22 | Pending |
+| REVW-08 | Phase 22 | Pending |
+| REVW-09 | Phase 22 | Pending |
+| MERG-01 | Phase 23 | Pending |
+| MERG-02 | Phase 23 | Pending |
+| MERG-03 | Phase 23 | Pending |
+| MERG-04 | Phase 23 | Pending |
+| MERG-05 | Phase 23 | Pending |
+| MERG-06 | Phase 23 | Pending |
+| UX-01 | Phase 19 | Pending |
+| UX-02 | Phase 21 | Pending |
+| UX-03 | Phase 16 | Pending |
+| UX-04 | Phase 18 | Pending |
+| DOCS-01 | Phase 24 | Pending |
+| DOCS-02 | Phase 24 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 50 total
-- Mapped to phases: 0
-- Unmapped: 50
+- Mapped to phases: 50
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-06 after v2.0 Mark II requirements definition*
+*Last updated: 2026-03-06 after v2.0 roadmap creation (all 50 requirements mapped to phases 16-24)*

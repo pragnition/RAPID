@@ -2,12 +2,13 @@
 
 ## Overview
 
-RAPID delivers team-based parallel development for Claude Code through nine phases that build from the ground up: agent framework and state management first, then the plugin shell users interact with, context generation for rich project understanding, the planning engine that decomposes work into contract-bound sets, worktree orchestration for physical isolation, per-set execution with independent lifecycles, execution lifecycle management with sync gates, the merge pipeline that validates everything integrates, and finally agent teams as an optimization layer on a proven subagent foundation.
+RAPID delivers team-based parallel development for Claude Code. v1.0 established the plugin infrastructure, v1.1 polished the UX, and v2.0 Mark II overhauls the entire workflow around a new Sets/Waves/Jobs hierarchy with a state machine foundation, comprehensive review pipeline, and adapted merge system. The v2.0 phases build from the state machine outward through planning, execution, review, and merge -- with documentation closing out the milestone.
 
 ## Milestones
 
-- 🚧 **v1.0 Core** - Phases 1-9.2 (in progress)
-- 📋 **v1.1 UI UX Improvements** - Phases 10-15 (planned)
+- ✅ **v1.0 Core** - Phases 1-9.2 (shipped)
+- ✅ **v1.1 UI UX Improvements** - Phases 10-15 (shipped)
+- 🚧 **v2.0 Mark II** - Phases 16-24 (in progress)
 
 ## Phases
 
@@ -29,17 +30,34 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Execution Lifecycle** - Cross-set status dashboard, session pause/resume, sync gate enforcement, and wave reconciliation
 - [ ] **Phase 8: Merge Pipeline** - Deep code review, contract validation, cleanup agent, and dependency-ordered merging
 - [ ] **Phase 9: Agent Teams Integration** - EXPERIMENTAL_AGENT_TEAMS detection with dual-mode execution and subagent fallback
+- [ ] **Phase 09.1: Package for Plugin Marketplace** - Portable paths, version sync, LICENSE, DOCS.md, marketplace.json
+- [x] **Phase 09.2: Setup Script and RAPID_TOOLS** - setup.sh bootstrap and /rapid:install skill
 
 </details>
 
-### v1.1 UI UX Improvements (Phases 10-15)
+<details>
+<summary>v1.1 UI UX Improvements (Phases 10-15)</summary>
 
-- [x] **Phase 10: Init and Context Skill Prompts** - Structured AskUserQuestion prompts for init and context skills (completed 2026-03-05)
-- [x] **Phase 11: Planning and Status Skill Prompts** - Structured AskUserQuestion prompts for plan, assumptions, and status skills (completed 2026-03-06)
-- [x] **Phase 12: Execute Skill Prompts and Progress** - Structured AskUserQuestion prompts and progress indicators for execute skill (completed 2026-03-06)
-- [x] **Phase 13: Merge and Cleanup Skill Prompts** - Structured prompts, error recovery paths, and verdict explanations for merge and cleanup skills (completed 2026-03-06)
-- [x] **Phase 14: Install Skill Polish** - Shell detection, auto-sourcing, and fallback guidance for install skill (completed 2026-03-06)
-- [x] **Phase 15: Global Error Recovery and Progress** - Replace bare STOP handling across all skills and add progress indicators to context and merge skills (completed 2026-03-06)
+- [x] **Phase 10: Init and Context Skill Prompts** - Structured AskUserQuestion prompts for init and context skills
+- [x] **Phase 11: Planning and Status Skill Prompts** - Structured AskUserQuestion prompts for plan, assumptions, and status skills
+- [x] **Phase 12: Execute Skill Prompts and Progress** - Structured AskUserQuestion prompts and progress indicators for execute skill
+- [x] **Phase 13: Merge and Cleanup Skill Prompts** - Structured prompts, error recovery paths, and verdict explanations for merge and cleanup skills
+- [x] **Phase 14: Install Skill Polish** - Shell detection, auto-sourcing, and fallback guidance for install skill
+- [x] **Phase 15: Global Error Recovery and Progress** - Replace bare STOP handling across all skills and add progress indicators
+
+</details>
+
+### v2.0 Mark II (Phases 16-24)
+
+- [ ] **Phase 16: State Machine Foundation** - Hierarchical JSON state, validated transitions, crash recovery, and structured inter-agent output format
+- [ ] **Phase 17: Dependency Audit and Adapter Layer** - Map v1.0 module coupling and create adapters for new data structures
+- [ ] **Phase 18: Init and Project Setup** - Overhauled /init with greenfield/brownfield detection, research agents, roadmapper, and /new-milestone
+- [ ] **Phase 19: Set Lifecycle** - /set-init worktree creation, scoped CLAUDE.md, set planning, status dashboard, pause/resume, cleanup
+- [ ] **Phase 20: Wave Planning** - /discuss for implementation vision capture, wave planner, job planner with contract validation
+- [ ] **Phase 21: Execution Engine** - Parallel job execution within waves, atomic commits, per-job progress tracking, orchestrator dispatch
+- [ ] **Phase 22: Review Module** - Unit test agent, bug hunting pipeline (hunter/devils-advocate/judge), UAT with Playwright automation
+- [ ] **Phase 23: Merge Pipeline** - 5-level conflict detection, 4-tier resolution cascade, DAG-ordered merging, bisection recovery, rollback
+- [ ] **Phase 24: Documentation** - Comprehensive DOCS.md and README.md for Mark II
 
 ## Phase Details
 
@@ -220,6 +238,9 @@ Plans:
 
 </details>
 
+<details>
+<summary>v1.1 UI UX Improvements Phase Details (Phases 10-15)</summary>
+
 ### Phase 10: Init and Context Skill Prompts
 **Goal**: Init and context skills use structured AskUserQuestion prompts for all decision gates instead of freeform text
 **Depends on**: Nothing (v1.1 milestone, independent of v1.0 phase completion)
@@ -307,10 +328,155 @@ Plans:
 - [ ] 15-01: Replace STOP handling in init and context SKILL.md with 3-tier recovery, add context analysis progress banners (ERRR-03, PROG-02) [Wave 1]
 - [ ] 15-02: Add reviewer and cleanup subagent progress banners to merge SKILL.md (PROG-03) [Wave 1]
 
+</details>
+
+### Phase 16: State Machine Foundation
+**Goal**: All project state is tracked in a hierarchical JSON structure with validated transitions that survive context resets
+**Depends on**: Phase 15 (v1.1 complete)
+**Requirements**: STATE-01, STATE-02, STATE-03, STATE-05, UX-03
+**Success Criteria** (what must be TRUE):
+  1. Project state persists as hierarchical JSON (project > milestone > set > wave > job) with lock-protected atomic writes
+  2. State transitions are validated -- attempting to skip states (e.g., pending to complete without executing) produces a clear error
+  3. Sets, Waves, and Jobs have a data model with DAG computation for dependency ordering, extending the existing dag.cjs
+  4. All inter-agent outputs use structured format (JSON or structured markdown) with schema validation at every handoff point
+  5. State is updated at every workflow step so a developer can /clear context and resume from the correct position
+**Plans**: TBD
+
+Plans:
+- [ ] 16-01: TBD
+- [ ] 16-02: TBD
+
+### Phase 17: Dependency Audit and Adapter Layer
+**Goal**: v1.0 lib modules are decoupled from old data structures and adapted to work with the new hierarchical state
+**Depends on**: Phase 16
+**Requirements**: STATE-04
+**Success Criteria** (what must be TRUE):
+  1. A dependency map documents the coupling between all v1.0 lib modules (worktree.cjs, merge.cjs, execute.cjs, plan.cjs, etc.) and the old STATE.md/flat data structures
+  2. Adapter interfaces exist so that kept modules (worktree.cjs, merge.cjs) can read/write via the new hierarchical STATE.json without internal rewrites
+  3. Integration tests verify that adapted modules produce correct state transitions through the adapter layer
+**Plans**: TBD
+
+Plans:
+- [ ] 17-01: TBD
+
+### Phase 18: Init and Project Setup
+**Goal**: Developers can initialize new projects or milestones with intelligent detection, parallel research, and automatic roadmap creation
+**Depends on**: Phase 17
+**Requirements**: INIT-01, INIT-02, INIT-03, INIT-04, INIT-05, INIT-06, INIT-07, INIT-08, UX-04
+**Success Criteria** (what must be TRUE):
+  1. /init detects whether the project is greenfield or brownfield and adapts its workflow accordingly
+  2. /init asks the developer for model selection (opus/sonnet) and team size, then uses these to scale set planning
+  3. For brownfield projects, a codebase synthesizer agent analyzes files, functions, API endpoints, code style, and tech stack before planning begins
+  4. Parallel research agents investigate stack, features, architecture, and pitfalls, producing a synthesized SUMMARY.md
+  5. A roadmapper agent creates a roadmap with the new sets/waves/jobs structure based on research and user input
+  6. /install preserves current env var methodology with shell detection, and /new-milestone starts a new milestone cycle
+  7. /help shows all Mark II commands with workflow guidance for the new hierarchy
+**Plans**: TBD
+
+Plans:
+- [ ] 18-01: TBD
+- [ ] 18-02: TBD
+- [ ] 18-03: TBD
+
+### Phase 19: Set Lifecycle
+**Goal**: Developers can create, monitor, pause, resume, and clean up isolated set worktrees with full state tracking
+**Depends on**: Phase 18
+**Requirements**: SETL-01, SETL-02, SETL-03, SETL-04, SETL-05, SETL-06, SETL-07, UX-01
+**Success Criteria** (what must be TRUE):
+  1. /set-init creates a git worktree and branch for a specified set, ready for independent development
+  2. /set-init generates a scoped CLAUDE.md per worktree containing only relevant contracts, context, and style guide
+  3. A set planner runs during /set-init, producing a high-level set overview that guides wave planning
+  4. /status displays a cross-set dashboard showing the set > wave > job hierarchy with current state for each
+  5. /pause saves per-set state with a handoff file for later resumption, and /cleanup removes completed worktrees with safety checks
+  6. AskUserQuestion is used at every decision gate during set lifecycle commands, with queries batched to save tokens
+**Plans**: TBD
+
+Plans:
+- [ ] 19-01: TBD
+- [ ] 19-02: TBD
+
+### Phase 20: Wave Planning
+**Goal**: Each wave has a detailed implementation plan derived from user discussion, with per-job plans validated against interface contracts
+**Depends on**: Phase 19
+**Requirements**: WAVE-01, WAVE-02, WAVE-03, WAVE-04, WAVE-05, WAVE-06
+**Success Criteria** (what must be TRUE):
+  1. /discuss captures the developer's implementation vision for a wave via AskUserQuestion, probing uncovered facets and edge cases
+  2. /discuss is comprehensive -- it does not act autonomously unless the developer explicitly opts in
+  3. /plan spawns research agents to investigate how to implement wave jobs, then the Wave Planner produces high-level per-job plans
+  4. The Job Planner creates detailed per-job implementation plans with user discussion for each job
+  5. Job plans are validated against interface contracts -- violations are flagged before execution begins
+**Plans**: TBD
+
+Plans:
+- [ ] 20-01: TBD
+- [ ] 20-02: TBD
+
+### Phase 21: Execution Engine
+**Goal**: Jobs execute in parallel within waves with atomic commits, progress tracking that survives context resets, and orchestrated command dispatch
+**Depends on**: Phase 20
+**Requirements**: EXEC-01, EXEC-02, EXEC-03, EXEC-04, UX-02
+**Success Criteria** (what must be TRUE):
+  1. /execute runs parallel job execution within a wave via subagents or agent teams
+  2. Each job produces atomic commits creating bisectable git history
+  3. Per-job progress is tracked with state updates that survive context resets -- developer can /clear and see accurate progress
+  4. The orchestrator dispatches commands based on current state and spawns appropriate subagents for the current workflow step
+  5. Progress indicators with visual formatting show active jobs and completion status during subagent operations
+**Plans**: TBD
+
+Plans:
+- [ ] 21-01: TBD
+- [ ] 21-02: TBD
+
+### Phase 22: Review Module
+**Goal**: Completed waves undergo automated testing and adversarial bug hunting before merge eligibility
+**Depends on**: Phase 16 (state machine), Phase 21 (needs built code to review)
+**Requirements**: REVW-01, REVW-02, REVW-03, REVW-04, REVW-05, REVW-06, REVW-07, REVW-08, REVW-09
+**Success Criteria** (what must be TRUE):
+  1. /review orchestrates the unit test > bug hunt > UAT pipeline, runnable per-wave or per-set
+  2. The unit test agent generates a test plan for developer approval before writing tests, then writes, runs, and reports with full observability (commands, stdout, pass/fail)
+  3. The bug hunter performs broad static analysis with risk/confidence scoring, the devils advocate attempts to disprove findings with code evidence, and the judge produces final ACCEPTED/DISMISSED/DEFERRED rulings with HITL for contested findings
+  4. A bugfix subagent fixes accepted bugs, and the pipeline iterates until the codebase is clean
+  5. The UAT agent generates multi-step test plans with automated/human step tagging, executes automated steps via Playwright, and prompts the developer for human steps
+**Plans**: TBD
+
+Plans:
+- [ ] 22-01: TBD
+- [ ] 22-02: TBD
+- [ ] 22-03: TBD
+
+### Phase 23: Merge Pipeline
+**Goal**: Completed sets merge back to main with deep multi-level conflict detection, intelligent resolution, and recovery from failures
+**Depends on**: Phase 16 (state machine), Phase 22 (review gate)
+**Requirements**: MERG-01, MERG-02, MERG-03, MERG-04, MERG-05, MERG-06
+**Success Criteria** (what must be TRUE):
+  1. /merge performs 5-level conflict detection (textual, structural, dependency, API, semantic) before merging a set to main
+  2. Conflicts are resolved through a 4-tier cascade: deterministic fixes first, then heuristic, then AI-assisted, with human escalation for unresolvable conflicts
+  3. Per-set merge state is tracked in the hierarchical state machine and sets merge in dependency-graph order via DAG
+  4. When a merge introduces failures, bisection recovery isolates the breaking set interaction via binary search
+  5. Rollback with cascade revert can undo a problematic merge and re-merge remaining sets cleanly
+**Plans**: TBD
+
+Plans:
+- [ ] 23-01: TBD
+- [ ] 23-02: TBD
+- [ ] 23-03: TBD
+
+### Phase 24: Documentation
+**Goal**: Mark II is comprehensively documented for both new users and developers extending RAPID
+**Depends on**: Phases 16-23 (documents the completed system)
+**Requirements**: DOCS-01, DOCS-02
+**Success Criteria** (what must be TRUE):
+  1. DOCS.md comprehensively documents all Mark II commands, agents, architecture, state machine, and the full workflow lifecycle
+  2. README.md is updated with the Mark II hierarchy (Sets/Waves/Jobs), workflow overview, and a getting started guide that walks through init to merge
+**Plans**: TBD
+
+Plans:
+- [ ] 24-01: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 09.1 → 09.2 → 10 → 11 → 12 → 13 → 14 → 15
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 09.1 → 09.2 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -325,9 +491,18 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Agent Teams Integration | v1.0 | 1/2 | In Progress | - |
 | 09.1 Package for Plugin Marketplace | v1.0 | 2/3 | In Progress | - |
 | 09.2 Setup Script and RAPID_TOOLS | v1.0 | 2/2 | Complete | - |
-| 10. Init and Context Skill Prompts | 2/2 | Complete    | 2026-03-05 | - |
-| 11. Planning and Status Skill Prompts | 2/2 | Complete    | 2026-03-06 | - |
-| 12. Execute Skill Prompts and Progress | 1/1 | Complete    | 2026-03-06 | - |
-| 13. Merge and Cleanup Skill Prompts | 2/2 | Complete    | 2026-03-06 | - |
-| 14. Install Skill Polish | 1/1 | Complete    | 2026-03-06 | - |
-| 15. Global Error Recovery and Progress | 2/2 | Complete    | 2026-03-06 | - |
+| 10. Init and Context Skill Prompts | v1.1 | 2/2 | Complete | 2026-03-05 |
+| 11. Planning and Status Skill Prompts | v1.1 | 2/2 | Complete | 2026-03-06 |
+| 12. Execute Skill Prompts and Progress | v1.1 | 1/1 | Complete | 2026-03-06 |
+| 13. Merge and Cleanup Skill Prompts | v1.1 | 2/2 | Complete | 2026-03-06 |
+| 14. Install Skill Polish | v1.1 | 1/1 | Complete | 2026-03-06 |
+| 15. Global Error Recovery and Progress | v1.1 | 2/2 | Complete | 2026-03-06 |
+| 16. State Machine Foundation | v2.0 | 0/2 | Not started | - |
+| 17. Dependency Audit and Adapter Layer | v2.0 | 0/1 | Not started | - |
+| 18. Init and Project Setup | v2.0 | 0/3 | Not started | - |
+| 19. Set Lifecycle | v2.0 | 0/2 | Not started | - |
+| 20. Wave Planning | v2.0 | 0/2 | Not started | - |
+| 21. Execution Engine | v2.0 | 0/2 | Not started | - |
+| 22. Review Module | v2.0 | 0/3 | Not started | - |
+| 23. Merge Pipeline | v2.0 | 0/3 | Not started | - |
+| 24. Documentation | v2.0 | 0/1 | Not started | - |

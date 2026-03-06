@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: defining_requirements
+status: ready_to_plan
 stopped_at: null
 last_updated: "2026-03-06"
-last_activity: 2026-03-06 -- Milestone v2.0 started
+last_activity: 2026-03-06 -- v2.0 roadmap created (phases 16-24)
 progress:
-  total_phases: 0
+  total_phases: 9
   completed_phases: 0
-  total_plans: 0
+  total_plans: 19
   completed_plans: 0
   percent: 0
 ---
@@ -21,14 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Defining requirements for v2.0 Mark II
+**Current focus:** Phase 16 - State Machine Foundation (v2.0 Mark II)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-06 — Milestone v2.0 started
+Phase: 16 of 24 (State Machine Foundation)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-03-06 — v2.0 roadmap created (phases 16-24, 50 requirements mapped)
+
+Progress: [████████████████░░░░░░░░░░░░░░] 53% (v1.0+v1.1 complete, v2.0 starting)
 
 ## Accumulated Context
 
@@ -37,10 +39,12 @@ Last activity: 2026-03-06 — Milestone v2.0 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v2.0]: Selective reuse — keep agent framework, plugin shell, context gen, worktrees; rewrite planning, execution, review, merge
+- [v2.0]: Selective reuse -- keep agent framework, plugin shell, context gen, worktrees; rewrite planning, execution, review, merge
 - [v2.0]: Adapt gsd_merge_agent for merger (5-level conflict detection, tiered resolution)
 - [v2.0]: Review module uses hunter/devils-advocate/judge adversarial pipeline
-- [v2.0]: Jobs ≈ v1.0 plans in granularity
+- [v2.0]: STATE.json replaces STATE.md as source of truth (clean break, no hybrid)
+- [v2.0]: Hand-rolled state machine (~50 lines), not XState
+- [v2.0]: Jobs = v1.0 plans in granularity
 - [v2.0]: Defer /quick and /insert-job to v2.1
 
 ### Pending Todos
@@ -51,11 +55,13 @@ None yet.
 
 - v1.0 Core: Phases 1-9.2 (all complete)
 - v1.1 UI UX Improvements: Phases 10-15 (all complete)
-- v2.0 Mark II: Starting
+- v2.0 Mark II: Phases 16-24 (9 phases, 50 requirements, ready to plan)
 
 ### Blockers/Concerns
 
-None yet.
+- [Phase 16]: STATE.md to STATE.json migration path for existing v1.0 projects needs design
+- [Phase 17]: Hidden coupling in v1.0 modules may cause unexpected breakage -- dependency audit is insurance
+- [Phase 22]: Token cost for 3-agent adversarial review ($15-45/cycle) -- needs scoping controls
 
 ### Quick Tasks Completed
 
@@ -72,5 +78,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: Milestone v2.0 started
+Stopped at: v2.0 roadmap created with 9 phases (16-24) covering 50 requirements
 Resume file: None
