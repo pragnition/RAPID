@@ -340,11 +340,12 @@ Plans:
   3. Sets, Waves, and Jobs have a data model with DAG computation for dependency ordering, extending the existing dag.cjs
   4. All inter-agent outputs use structured format (JSON or structured markdown) with schema validation at every handoff point
   5. State is updated at every workflow step so a developer can /clear context and resume from the correct position
-**Plans**: TBD
+**Plans**: 3 plans (Wave 1: schemas+transitions || DAG+returns, Wave 2: state machine core)
 
 Plans:
-- [ ] 16-01: TBD
-- [ ] 16-02: TBD
+- [ ] 16-01: Zod schemas and transition maps (STATE-01, STATE-02) [Wave 1]
+- [ ] 16-02: State machine core module (STATE-01, STATE-02, UX-03) [Wave 2, depends: 16-01]
+- [ ] 16-03: DAG extension and structured output validation (STATE-03, STATE-05) [Wave 1]
 
 ### Phase 17: Dependency Audit and Adapter Layer
 **Goal**: v1.0 lib modules are decoupled from old data structures and adapted to work with the new hierarchical state
@@ -497,7 +498,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 13. Merge and Cleanup Skill Prompts | v1.1 | 2/2 | Complete | 2026-03-06 |
 | 14. Install Skill Polish | v1.1 | 1/1 | Complete | 2026-03-06 |
 | 15. Global Error Recovery and Progress | v1.1 | 2/2 | Complete | 2026-03-06 |
-| 16. State Machine Foundation | v2.0 | 0/2 | Not started | - |
+| 16. State Machine Foundation | v2.0 | 0/3 | Not started | - |
 | 17. Dependency Audit and Adapter Layer | v2.0 | 0/1 | Not started | - |
 | 18. Init and Project Setup | v2.0 | 0/3 | Not started | - |
 | 19. Set Lifecycle | v2.0 | 0/2 | Not started | - |
