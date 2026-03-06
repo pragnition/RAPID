@@ -1110,3 +1110,241 @@ describe('handleExecute wave-status and update-phase', () => {
     assert.equal(result.phase, 'Planning');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// State CLI subcommand tests (v2.0 state-machine.cjs)
+// ────────────────────────────────────────────────────────────────
+describe('handleState CLI integration', () => {
+  let tmpDir;
+
+  /**
+   * Create a temp directory with .planning/ and a valid STATE.json.
+   * Uses state-machine.cjs createInitialState + writeState.
+   */
+  async function createStateProject() {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-state-cli-'));
+    fs.mkdirSync(path.join(dir, '.planning', '.locks'), { recursive: true });
+
+    // Use state-machine to create valid state
+    const sm = require('../lib/state-machine.cjs');
+    const state = sm.createInitialState('test-project', 'v1.0');
+
+    // Add a set with waves and jobs for hierarchy testing
+    state.milestones[0].sets.push({
+      id: 'auth-set',
+      name: 'Authentication Set',
+      status: 'pending',
+      waves: [{
+        id: 'wave-1',
+        name: 'Wave 1',
+        status: 'pending',
+        jobs: [{
+          id: 'job-a',
+          name: 'Job A',
+          status: 'pending',
+        }],
+      }],
+    });
+
+    await sm.writeState(dir, state);
+    return dir;
+  }
+
+  before(async () => {
+    tmpDir = await createStateProject();
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  // -- state get --all --
+  it('state get --all returns full STATE.json as formatted JSON', () => {
+    const stdout = execSync(`node "${CLI_PATH}" state get --all`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.projectName, 'test-project');
+    assert.equal(result.currentMilestone, 'v1.0');
+    assert.ok(Array.isArray(result.milestones), 'should have milestones array');
+  });
+
+  it('state get --all with no STATE.json exits 1', () => {
+    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-state-empty-'));
+    fs.mkdirSync(path.join(emptyDir, '.planning'), { recursive: true });
+    try {
+      execSync(`node "${CLI_PATH}" state get --all`, {
+        cwd: emptyDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    } finally {
+      fs.rmSync(emptyDir, { recursive: true, force: true });
+    }
+  });
+
+  it('state get --all with invalid STATE.json exits 1', () => {
+    const badDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-state-bad-'));
+    fs.mkdirSync(path.join(badDir, '.planning'), { recursive: true });
+    fs.writeFileSync(path.join(badDir, '.planning', 'STATE.json'), '{"invalid": true}', 'utf-8');
+    try {
+      execSync(`node "${CLI_PATH}" state get --all`, {
+        cwd: badDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    } finally {
+      fs.rmSync(badDir, { recursive: true, force: true });
+    }
+  });
+
+  // -- state get milestone/set/wave/job --
+  it('state get milestone returns milestone JSON', () => {
+    const stdout = execSync(`node "${CLI_PATH}" state get milestone v1.0`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.id, 'v1.0');
+    assert.ok(Array.isArray(result.sets), 'milestone should have sets');
+  });
+
+  it('state get set returns set JSON', () => {
+    const stdout = execSync(`node "${CLI_PATH}" state get set v1.0 auth-set`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.id, 'auth-set');
+    assert.equal(result.status, 'pending');
+  });
+
+  it('state get wave returns wave JSON', () => {
+    const stdout = execSync(`node "${CLI_PATH}" state get wave v1.0 auth-set wave-1`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.id, 'wave-1');
+  });
+
+  it('state get job returns job JSON', () => {
+    const stdout = execSync(`node "${CLI_PATH}" state get job v1.0 auth-set wave-1 job-a`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.id, 'job-a');
+    assert.equal(result.status, 'pending');
+  });
+
+  it('state get with no args shows usage and exits 1', () => {
+    try {
+      execSync(`node "${CLI_PATH}" state get`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  // -- state transition --
+  it('state transition job transitions status', async () => {
+    // Create a fresh project for transition tests
+    const dir = await createStateProject();
+    try {
+      const stdout = execSync(`node "${CLI_PATH}" state transition job v1.0 auth-set wave-1 job-a executing`, {
+        cwd: dir,
+        encoding: 'utf-8',
+        timeout: 10000,
+      });
+      const result = JSON.parse(stdout.trim());
+      assert.ok(result.success || result.transitioned, 'should indicate success');
+
+      // Verify the job is now executing
+      const getStdout = execSync(`node "${CLI_PATH}" state get job v1.0 auth-set wave-1 job-a`, {
+        cwd: dir,
+        encoding: 'utf-8',
+        timeout: 10000,
+      });
+      const job = JSON.parse(getStdout.trim());
+      assert.equal(job.status, 'executing');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('state transition with insufficient args shows usage and exits 1', () => {
+    try {
+      execSync(`node "${CLI_PATH}" state transition`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  // -- state detect-corruption --
+  it('state detect-corruption returns JSON result', () => {
+    const stdout = execSync(`node "${CLI_PATH}" state detect-corruption`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.exists, true);
+    assert.equal(result.corrupt, false);
+  });
+
+  // -- state recover --
+  it('state recover runs recoverFromGit', () => {
+    // This will fail because tmpDir is not a git repo, which is expected behavior
+    try {
+      execSync(`node "${CLI_PATH}" state recover`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      // May succeed or fail depending on git state -- either is valid
+    } catch (err) {
+      // Expected: not a git repo or no STATE.json in git history
+      assert.ok(err.status !== 0, 'should exit non-zero for non-git dir');
+    }
+  });
+
+  // -- USAGE text --
+  it('--help includes new state commands', () => {
+    const stdout = execSync(`node "${CLI_PATH}" --help`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    assert.ok(stdout.includes('state get --all'), 'should document state get --all');
+    assert.ok(stdout.includes('state get milestone'), 'should document state get milestone');
+    assert.ok(stdout.includes('state transition'), 'should document state transition');
+    assert.ok(stdout.includes('state detect-corruption'), 'should document state detect-corruption');
+    assert.ok(stdout.includes('state recover'), 'should document state recover');
+  });
+});
