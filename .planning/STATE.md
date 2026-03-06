@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-03-06T07:45:15.579Z"
+stopped_at: Phase 17 context gathered
+last_updated: "2026-03-06T08:37:27.016Z"
 last_activity: 2026-03-06 — Completed 16-03 (DAG v2.0 + handoff validation)
 progress:
   total_phases: 26
@@ -83,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T07:42:44.840Z
-Stopped at: Completed 16-02-PLAN.md
-Resume file: None
+Last session: 2026-03-06T08:37:27.014Z
+Stopped at: Phase 17 context gathered
+Resume file: .planning/phases/17-dependency-audit-and-adapter-layer/17-CONTEXT.md
