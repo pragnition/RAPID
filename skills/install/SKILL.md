@@ -1,14 +1,12 @@
 ---
 description: Install and configure RAPID plugin for Claude Code
 disable-model-invocation: true
-allowed-tools: Read, Bash
+allowed-tools: Read, Bash, AskUserQuestion
 ---
 
 # /rapid:install -- Plugin Installation and Setup
 
-You are the RAPID installer. This skill bootstraps RAPID by setting the RAPID_TOOLS environment variable, installing npm dependencies, validating prerequisites, and registering the Claude Code plugin. It works for both marketplace and git clone installations.
-
-Setup persists RAPID_TOOLS to both a shell config file (user's choice) AND a `.env` file in the plugin root directory for reliable fallback loading.
+You are the RAPID installer. This skill bootstraps RAPID by running the non-interactive setup script, then handles shell detection, config file selection via AskUserQuestion, auto-sourcing with verification, and fallback guidance. It works for both marketplace and git clone installations.
 
 ## Step 0: Detect Installation Location
 
@@ -25,29 +23,157 @@ if [[ "${CLAUDE_SKILL_DIR}" == *".claude/plugins"* ]]; then
 else
     echo "Detected: git clone installation"
 fi
+echo "RAPID_ROOT=$RAPID_ROOT"
 ```
 
-## Step 1: Run Setup Script
+## Step 1: Run Non-Interactive Bootstrap
 
-Run the setup.sh bootstrap script from the RAPID root:
+Run setup.sh to handle prereqs, npm install, validation, .env writing, and plugin registration:
 
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-if [[ -f "$RAPID_ROOT/setup.sh" ]]; then
-    bash "$RAPID_ROOT/setup.sh"
-else
-    echo "ERROR: setup.sh not found at $RAPID_ROOT/setup.sh"
-    echo ""
-    echo "Manual installation steps:"
-    echo "  1. Clone the repo: git clone https://github.com/fishjojo1/RAPID"
-    echo "  2. Run setup:      cd RAPID && ./setup.sh"
-    exit 1
-fi
+bash "$RAPID_ROOT/setup.sh"
 ```
 
-## Step 2: Verify Installation
+If setup.sh fails, use AskUserQuestion:
 
-After setup completes, verify RAPID_TOOLS is functional. If the environment variable is not set in this session, load it from the .env file as fallback:
+- Header: "Setup failed"
+- Options:
+  - "Retry setup" -- description: "Re-run setup.sh to attempt installation again"
+  - "Show manual steps" -- description: "Display manual installation commands you can run yourself"
+  - "Cancel installation" -- description: "Exit the installer without completing setup"
+
+If "Retry setup": re-run the bash command above.
+If "Show manual steps": display these commands:
+
+```
+cd $RAPID_ROOT
+npm install --production
+node src/bin/rapid-tools.cjs prereqs
+```
+
+Then proceed to Step 2 to let the user continue with shell config.
+If "Cancel installation": end with "Installation cancelled."
+
+## Step 2: Detect Shell and Select Config File
+
+Read the user's shell and present config options.
+
+First, detect the shell:
+
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+SHELL_NAME=$(basename "${SHELL:-/bin/bash}")
+echo "Detected shell: $SHELL_NAME ($SHELL)"
+```
+
+Display the detected shell to the user: "Detected shell: {SHELL_NAME} ({SHELL})"
+
+Map the shell to its config file:
+- bash -> `~/.bashrc` (prefer) or `~/.bash_profile`
+- zsh -> `~/.zshrc`
+- fish -> `~/.config/fish/config.fish`
+- unknown -> `~/.profile`
+
+Check if RAPID_TOOLS is already configured in any shell config:
+
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+for f in ~/.bashrc ~/.bash_profile ~/.zshrc ~/.config/fish/config.fish ~/.profile; do
+    if grep -qF "RAPID_TOOLS" "$f" 2>/dev/null; then
+        echo "ALREADY_CONFIGURED=$f"
+        break
+    fi
+done
+```
+
+If RAPID_TOOLS is already configured, display: "RAPID_TOOLS already configured in {file}, skipping shell config." Then jump to Step 4 (Verify Installation).
+
+If NOT already configured, use AskUserQuestion:
+
+- Header: "Shell configuration"
+- Text: "Detected shell: {SHELL_NAME} ({SHELL}). Choose where to persist the RAPID_TOOLS environment variable:"
+- Options (show only files that exist on disk, mark the detected shell's config as recommended):
+  - "{detected_shell_config} (recommended)" -- description: "Add RAPID_TOOLS export to your {SHELL_NAME} config for terminal usage"
+  - Other existing config files as additional options -- description: "Add RAPID_TOOLS export to this config file"
+  - "Skip -- use .env only" -- description: "RAPID will work in Claude Code via .env fallback. Shell config is for terminal usage."
+
+If user chose "Skip -- use .env only": display "Skipped shell config. RAPID_TOOLS loaded from .env in Claude Code sessions." and proceed to Step 4.
+
+Otherwise proceed to Step 3 with the chosen config file.
+
+## Step 3: Write Shell Config and Auto-Source
+
+Write the RAPID_TOOLS export to the chosen config file, then auto-source and verify.
+
+Determine the export line based on shell type:
+- fish: `set -gx RAPID_TOOLS "{RAPID_ROOT}/src/bin/rapid-tools.cjs"`
+- All others (bash, zsh, posix): `export RAPID_TOOLS="{RAPID_ROOT}/src/bin/rapid-tools.cjs"`
+
+Append the export line to the chosen config file:
+
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+RAPID_TOOLS_PATH="$RAPID_ROOT/src/bin/rapid-tools.cjs"
+# For fish:
+echo "" >> ~/.config/fish/config.fish
+echo "# RAPID plugin for Claude Code" >> ~/.config/fish/config.fish
+echo "set -gx RAPID_TOOLS \"$RAPID_TOOLS_PATH\"" >> ~/.config/fish/config.fish
+# For bash/zsh/posix:
+# echo "" >> ~/.zshrc
+# echo "# RAPID plugin for Claude Code" >> ~/.zshrc
+# echo "export RAPID_TOOLS=\"$RAPID_TOOLS_PATH\"" >> ~/.zshrc
+```
+
+Use the appropriate block for the chosen shell type. Only run the relevant lines.
+
+Then auto-source and verify in ONE Bash tool call. The source + verify must happen in the same call because each Bash call starts a fresh shell:
+
+For fish:
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+fish -c "source ~/.config/fish/config.fish; echo RAPID_TOOLS=\$RAPID_TOOLS; node \$RAPID_TOOLS prereqs"
+```
+
+For bash:
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+bash -c "source ~/.bashrc && echo RAPID_TOOLS=\$RAPID_TOOLS && node \"\$RAPID_TOOLS\" prereqs"
+```
+
+For zsh:
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+zsh -c "source ~/.zshrc && echo RAPID_TOOLS=\$RAPID_TOOLS && node \"\$RAPID_TOOLS\" prereqs"
+```
+
+If source + verify succeeds: display "Shell config updated and verified. RAPID_TOOLS is active." and proceed to Step 4.
+
+If source + verify FAILS, display fallback guidance:
+
+Show the exact source command for the user's shell in a code block:
+
+For bash: `` `source ~/.bashrc` ``
+For zsh: `` `source ~/.zshrc` ``
+For fish: `` `source ~/.config/fish/config.fish` ``
+
+Then display: "Note: .env fallback is already configured -- RAPID will work in Claude Code regardless. The shell config is for terminal usage."
+
+Then use AskUserQuestion:
+
+- Header: "Auto-source failed"
+- Options:
+  - "Retry" -- description: "Re-run source and verification"
+  - "Continue anyway" -- description: "Proceed to verification -- .env fallback will handle Claude Code sessions"
+  - "Cancel installation" -- description: "Exit the installer"
+
+If "Retry": re-run the source + verify command above.
+If "Continue anyway": proceed to Step 4.
+If "Cancel installation": end with "Installation cancelled."
+
+## Step 4: Verify Installation
+
+Load RAPID_TOOLS from .env if not already set, then verify the full tool chain:
 
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
@@ -57,15 +183,42 @@ fi
 node "${RAPID_TOOLS}" prereqs
 ```
 
-If this still fails, try sourcing your shell config or running setup.sh again.
+If prereqs succeeds: display verification passed and proceed to Step 5.
 
-## Step 3: Guide User
+If prereqs fails, use AskUserQuestion:
 
-If verification succeeded:
+- Header: "Prereqs verification failed"
+- Options:
+  - "Retry prereqs" -- description: "Run prerequisite checks again"
+  - "Show manual fix steps" -- description: "Display manual troubleshooting commands"
+  - "Cancel" -- description: "Exit the installer"
 
-- RAPID is installed and ready to use
-- Run `/rapid:help` to see all available commands
-- If this is a new project, run `/rapid:init` to initialize planning infrastructure
-- If you update RAPID (marketplace update or git pull), re-run `/rapid:install` to refresh paths
-- The .env file at the plugin root (`$RAPID_ROOT/.env`) can be edited manually if needed
-- Shell config was also updated if you chose a shell during setup (restart your terminal or source the config to activate)
+If "Retry prereqs": re-run the verification command.
+If "Show manual fix steps": display:
+
+```
+# Check Node.js version
+node -v  # Must be v18+
+
+# Check RAPID_TOOLS path
+cat $RAPID_ROOT/.env
+
+# Run prereqs manually
+node ~/path/to/rapid/src/bin/rapid-tools.cjs prereqs
+```
+
+If "Cancel": end with "Installation cancelled."
+
+## Step 5: Post-Install Next Actions
+
+Use AskUserQuestion:
+
+- Header: "Installation complete"
+- Options:
+  - "Run /rapid:help" -- description: "See all available RAPID commands and workflow guidance"
+  - "Run /rapid:init" -- description: "Initialize planning infrastructure for a new project"
+  - "Done" -- description: "Exit installer"
+
+If "Run /rapid:help": invoke the /rapid:help skill.
+If "Run /rapid:init": invoke the /rapid:init skill.
+If "Done": display "RAPID is ready. Happy building!"
