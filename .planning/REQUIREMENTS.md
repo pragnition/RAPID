@@ -23,8 +23,8 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 - [x] **INIT-04**: Parallel research agents investigate stack, features, architecture, pitfalls during init
 - [x] **INIT-05**: Research synthesizer combines parallel research outputs into SUMMARY.md
 - [x] **INIT-06**: Roadmapper agent creates roadmap with sets/waves/jobs structure
-- [ ] **INIT-07**: /install preserves current env var methodology with shell detection
-- [ ] **INIT-08**: /new-milestone command starts new milestone/version cycle
+- [x] **INIT-07**: /install preserves current env var methodology with shell detection
+- [x] **INIT-08**: /new-milestone command starts new milestone/version cycle
 
 ### Set Lifecycle
 
@@ -243,8 +243,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INIT-04 | Phase 18 | Complete |
 | INIT-05 | Phase 18 | Complete |
 | INIT-06 | Phase 18 | Complete |
-| INIT-07 | Phase 18 | Pending |
-| INIT-08 | Phase 18 | Pending |
+| INIT-07 | Phase 18 | Complete |
+| INIT-08 | Phase 18 | Complete |
 | SETL-01 | Phase 19 | Pending |
 | SETL-02 | Phase 19 | Pending |
 | SETL-03 | Phase 19 | Pending |
