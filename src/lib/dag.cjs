@@ -312,11 +312,17 @@ function createDAGv2(nodes, edges) {
     nodeMap[node.id] = node;
   }
 
-  // Validate edges only connect same-type nodes
+  // Validate edge references exist and only connect same-type nodes
   for (const edge of edges) {
     const fromNode = nodeMap[edge.from];
     const toNode = nodeMap[edge.to];
-    if (fromNode && toNode && fromNode.type !== toNode.type) {
+    if (!fromNode) {
+      throw new Error(`Edge references unknown node: ${edge.from}`);
+    }
+    if (!toNode) {
+      throw new Error(`Edge references unknown node: ${edge.to}`);
+    }
+    if (fromNode.type !== toNode.type) {
       throw new Error(
         `Cross-type edge not allowed: ${edge.from} (${fromNode.type}) -> ${edge.to} (${toNode.type})`
       );
