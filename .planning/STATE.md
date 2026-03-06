@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 18-04-PLAN.md
-last_updated: "2026-03-06T10:25:41.122Z"
-last_activity: 2026-03-06 — Completed 18-01 (Init library and CLI extensions)
+stopped_at: Completed 18-03-PLAN.md
+last_updated: "2026-03-06T13:39:47.629Z"
+last_activity: 2026-03-06 — Completed 18-03 (Init SKILL.md pipeline with deep discovery)
 progress:
   total_phases: 26
-  completed_phases: 18
+  completed_phases: 19
   total_plans: 46
-  completed_plans: 44
-  percent: 91
+  completed_plans: 45
+  percent: 98
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 18 of 24 (Init and Project Setup)
-Plan: 1 of 4 in current phase
+Plan: 4 of 4 in current phase
 Status: In Progress
-Last activity: 2026-03-06 — Completed 18-01 (Init library and CLI extensions)
+Last activity: 2026-03-06 — Completed 18-03 (Init SKILL.md pipeline with deep discovery)
 
-Progress: [█████████░] 91% (42/46 plans complete)
+Progress: [██████████] 98% (45/46 plans complete)
 
 ## Accumulated Context
 
@@ -62,6 +62,7 @@ Recent decisions affecting current work:
 - [Phase 18]: Roadmapper returns structured JSON; orchestrator handles atomic file writes via CLI
 - [Phase 18]: Deep copy carried sets via JSON.parse/stringify for full isolation between milestones
 - [Phase 18]: INIT-07 satisfied by existing install skill -- no modifications needed
+- [Phase 18]: Deep adaptive discovery replaces shallow one-sentence description in init -- 8-15+ probing questions across 10 areas
 
 ### Pending Todos
 
@@ -93,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T10:25:41.121Z
-Stopped at: Completed 18-04-PLAN.md
+Last session: 2026-03-06T13:39:47.627Z
+Stopped at: Completed 18-03-PLAN.md
 Resume file: None

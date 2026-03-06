@@ -51,7 +51,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 16: State Machine Foundation** - Hierarchical JSON state, validated transitions, crash recovery, and structured inter-agent output format (completed 2026-03-06)
 - [x] **Phase 17: Dependency Audit and Adapter Layer** - Map v1.0 module coupling and create adapters for new data structures (completed 2026-03-06)
-- [ ] **Phase 18: Init and Project Setup** - Overhauled /init with greenfield/brownfield detection, research agents, roadmapper, and /new-milestone
+- [x] **Phase 18: Init and Project Setup** - Overhauled /init with greenfield/brownfield detection, research agents, roadmapper, and /new-milestone (completed 2026-03-06)
 - [ ] **Phase 19: Set Lifecycle** - /set-init worktree creation, scoped CLAUDE.md, set planning, status dashboard, pause/resume, cleanup
 - [ ] **Phase 20: Wave Planning** - /discuss for implementation vision capture, wave planner, job planner with contract validation
 - [ ] **Phase 21: Execution Engine** - Parallel job execution within waves, atomic commits, per-job progress tracking, orchestrator dispatch
@@ -502,7 +502,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 15. Global Error Recovery and Progress | v1.1 | 2/2 | Complete | 2026-03-06 |
 | 16. State Machine Foundation | v2.0 | 3/3 | Complete | 2026-03-06 |
 | 17. Dependency Audit and Adapter Layer | v2.0 | 2/2 | Complete | 2026-03-06 |
-| 18. Init and Project Setup | 3/4 | In Progress|  | - |
+| 18. Init and Project Setup | 4/4 | Complete   | 2026-03-06 | - |
 | 19. Set Lifecycle | v2.0 | 0/2 | Not started | - |
 | 20. Wave Planning | v2.0 | 0/2 | Not started | - |
 | 21. Execution Engine | v2.0 | 0/2 | Not started | - |
