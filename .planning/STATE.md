@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: executing
-stopped_at: Phase 17 context gathered
-last_updated: "2026-03-06T08:37:27.016Z"
-last_activity: 2026-03-06 — Completed 16-03 (DAG v2.0 + handoff validation)
+status: completed
+stopped_at: Completed 17-02-PLAN.md (Phase 17 complete)
+last_updated: "2026-03-06T09:00:12.197Z"
+last_activity: 2026-03-06 — Completed 17-02 (Init STATE.json generation and integration tests)
 progress:
   total_phases: 26
-  completed_phases: 17
+  completed_phases: 18
   total_plans: 42
-  completed_plans: 40
-  percent: 95
+  completed_plans: 41
+  percent: 98
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 17 of 24 (Dependency Audit and Adapter Layer)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-03-06 — Completed 17-01 (Dependency audit, state.cjs deletion, CLI rewrite)
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-03-06 — Completed 17-02 (Init STATE.json generation and integration tests)
 
-Progress: [██████████] 98% (40/42 plans complete)
+Progress: [██████████] 98% (41/42 plans complete)
 
 ## Accumulated Context
 
@@ -55,6 +55,8 @@ Recent decisions affecting current work:
 - [Phase 17]: Clean break from state.cjs -- deleted without migration, state-machine.cjs is sole provider
 - [Phase 17]: CLI state commands use hierarchy-aware addressing (milestoneId/setId/waveId/jobId)
 - [Phase 17]: state transition replaces state update -- validated transitions with automatic parent derivation
+- [Phase 17]: STATE.json generated alongside STATE.md during scaffolding (dual source preserved)
+- [Phase 17]: createInitialState(opts.name, 'v1.0') used for consistent state initialization
 
 ### Pending Todos
 
@@ -86,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T08:54:02Z
-Stopped at: Completed 17-01-PLAN.md
-Resume file: .planning/phases/17-dependency-audit-and-adapter-layer/17-02-PLAN.md
+Last session: 2026-03-06T09:00:11.258Z
+Stopped at: Completed 17-02-PLAN.md (Phase 17 complete)
+Resume file: None
