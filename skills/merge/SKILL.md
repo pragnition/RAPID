@@ -98,7 +98,10 @@ Spawn the reviewer agent as a subagent using the Agent tool:
    cat .planning/sets/{setName}/REVIEW.md
    ```
 
-3. Spawn reviewer subagent with the Agent tool. Build the prompt:
+3. Print progress banner before spawning reviewer:
+   > Reviewing set: {setName}...
+
+4. Spawn reviewer subagent with the Agent tool. Build the prompt:
 
    > You are reviewing set '{setName}' for merge readiness.
    >
@@ -132,10 +135,13 @@ Spawn the reviewer agent as a subagent using the Agent tool:
    >
    > Then emit a RAPID:RETURN with status COMPLETE.
 
-4. After reviewer returns, parse the verdict:
+5. After reviewer returns, print progress banner:
+   > Checking contracts...
+
+6. Parse the verdict:
    - Read `.planning/sets/{setName}/REVIEW.md` and find the `<!-- VERDICT:X -->` marker
 
-5. Handle verdict with a verdict banner:
+7. Handle verdict with a verdict banner:
 
    - **APPROVE:**
      > :white_check_mark: **APPROVED** -- {1-line summary of review findings, e.g., "Clean implementation, all contracts satisfied, no issues found"}
@@ -193,7 +199,10 @@ For round = 1 to 2:
    node "${RAPID_TOOLS}" merge update-status {setName} cleanup
    ```
 
-4. Spawn cleanup subagent using the Agent tool. Get worktree path from registry:
+4. Print progress banner before spawning cleanup:
+   > Cleanup round {round}/2: fixing issues in {setName}...
+
+5. Spawn cleanup subagent using the Agent tool. Get worktree path from registry:
    ```bash
    node "${RAPID_TOOLS}" worktree list 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));const w=d.worktrees||{};const e=(Array.isArray(w)?w:Object.values(w)).find(x=>x.setName==='{setName}');console.log(e?.path||'NOT_FOUND')"
    ```
@@ -215,14 +224,17 @@ For round = 1 to 2:
    >
    > When done, emit a RAPID:RETURN with status COMPLETE.
 
-5. After cleanup returns, re-run programmatic gate:
+6. After cleanup returns, re-run programmatic gate:
    ```bash
    node "${RAPID_TOOLS}" merge review {setName}
    ```
 
-6. If programmatic gate still passes, re-spawn reviewer (same prompt as Step 4) to re-evaluate.
+7. If programmatic gate still passes, print progress banner:
+   > Re-reviewing {setName}...
 
-7. Parse new verdict and display verdict banner:
+   Then re-spawn reviewer (same prompt as Step 4) to re-evaluate.
+
+8. Parse new verdict and display verdict banner:
    - **APPROVE:**
      > :white_check_mark: **APPROVED** -- {1-line summary}
 
