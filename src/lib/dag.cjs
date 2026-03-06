@@ -175,9 +175,8 @@ function createDAG(nodes, edges) {
 
   // Calculate metadata
   const totalWaves = Object.keys(waveGroups).length;
-  const maxParallelism = Math.max(
-    ...Object.values(waveGroups).map((s) => s.length)
-  );
+  const waveValues = Object.values(waveGroups).map((s) => s.length);
+  const maxParallelism = waveValues.length > 0 ? Math.max(...waveValues) : 0;
 
   return {
     nodes: dagNodes,
@@ -354,9 +353,8 @@ function createDAGv2(nodes, edges) {
 
   // Calculate metadata
   const totalWaves = Object.keys(waveGroups).length;
-  const maxParallelism = Math.max(
-    ...Object.values(waveGroups).map((g) => g.length)
-  );
+  const waveValuesV2 = Object.values(waveGroups).map((g) => g.length);
+  const maxParallelism = waveValuesV2.length > 0 ? Math.max(...waveValuesV2) : 0;
 
   // Count node types
   const nodeTypes = { set: 0, wave: 0, job: 0 };
