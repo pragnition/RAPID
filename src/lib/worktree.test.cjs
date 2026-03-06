@@ -666,6 +666,66 @@ describe('Enhanced formatWaveSummary', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// deleteBranch tests
+// ────────────────────────────────────────────────────────────────
+describe('deleteBranch', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempRepo();
+  });
+
+  afterEach(() => {
+    cleanupRepo(tmpDir);
+  });
+
+  it('deletes a merged branch with -d and returns { deleted: true, branch }', () => {
+    // Create a branch (already merged since no divergence from HEAD)
+    execSync('git branch test-branch', { cwd: tmpDir, stdio: 'pipe' });
+    const result = worktree.deleteBranch(tmpDir, 'test-branch');
+    assert.equal(result.deleted, true);
+    assert.equal(result.branch, 'test-branch');
+  });
+
+  it('returns { deleted: false, reason: "unmerged" } when -d fails on unmerged branch', () => {
+    // Create a branch with a commit that is NOT merged into current branch
+    execSync('git checkout -b unmerged-branch', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "unmerged work"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git checkout -', { cwd: tmpDir, stdio: 'pipe' });
+    const result = worktree.deleteBranch(tmpDir, 'unmerged-branch');
+    assert.equal(result.deleted, false);
+    assert.equal(result.reason, 'unmerged');
+    assert.equal(result.branch, 'unmerged-branch');
+  });
+
+  it('force deletes with -D when force=true and returns { deleted: true, forced: true }', () => {
+    // Create an unmerged branch
+    execSync('git checkout -b force-branch', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "force work"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git checkout -', { cwd: tmpDir, stdio: 'pipe' });
+    const result = worktree.deleteBranch(tmpDir, 'force-branch', true);
+    assert.equal(result.deleted, true);
+    assert.equal(result.branch, 'force-branch');
+    assert.equal(result.forced, true);
+  });
+
+  it('throws on invalid branch name (empty string)', () => {
+    assert.throws(() => worktree.deleteBranch(tmpDir, ''), /Invalid branch name/);
+  });
+
+  it('throws on invalid branch name (has spaces)', () => {
+    assert.throws(() => worktree.deleteBranch(tmpDir, 'bad branch'), /Invalid branch name/);
+  });
+
+  it('returns { deleted: false, reason: "not-found" } for non-existent branch', () => {
+    const result = worktree.deleteBranch(tmpDir, 'no-such-branch');
+    assert.equal(result.deleted, false);
+    assert.equal(result.reason, 'not-found');
+    assert.equal(result.branch, 'no-such-branch');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // formatStatusOutput tests
 // ────────────────────────────────────────────────────────────────
 describe('formatStatusOutput', () => {
