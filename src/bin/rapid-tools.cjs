@@ -1553,7 +1553,7 @@ async function handleMerge(cwd, subcommand, args) {
         verdict: result.passed ? 'PENDING_REVIEW' : 'BLOCK',
         contractResults: { valid: result.contractValid },
         ownershipResults: { violations: result.ownershipViolations },
-        testResults: { pass: result.testsPass, output: result.testOutput },
+        testResults: { passed: result.testsPass, output: result.testOutput },
         findings: {
           blocking: result.ownershipViolations.map(v => `Ownership: ${v.file} owned by ${v.owner}`),
           fixable: [],
