@@ -266,7 +266,6 @@ async function reconcileRegistry(cwd) {
 
     // Build a set of git worktree branch names for quick lookup
     const gitBranches = new Set(gitWorktrees.map(w => w.branch).filter(Boolean));
-    const gitPaths = new Set(gitWorktrees.map(w => w.path));
 
     // Mark orphaned registry entries (in registry but not in git)
     for (const [setName, entry] of Object.entries(registry.worktrees)) {
@@ -278,7 +277,7 @@ async function reconcileRegistry(cwd) {
 
     // Discover unregistered RAPID worktrees (in git but not in registry)
     const registeredBranches = new Set(
-      Object.values(registry.worktrees).map(e => e.branch || `rapid/${e.setName}`)
+      Object.entries(registry.worktrees).map(([key, e]) => e.branch || `rapid/${key}`)
     );
 
     for (const wt of gitWorktrees) {
