@@ -392,11 +392,12 @@ Plans:
   4. /status displays a cross-set dashboard showing the set > wave > job hierarchy with current state for each
   5. /pause saves per-set state with a handoff file for later resumption, and /cleanup removes completed worktrees with safety checks
   6. AskUserQuestion is used at every decision gate during set lifecycle commands, with queries batched to save tokens
-**Plans**: TBD
+**Plans**: 3 plans (Wave 1: set-init || status dashboard || pause/resume/cleanup)
 
 Plans:
-- [ ] 19-01: TBD
-- [ ] 19-02: TBD
+- [ ] 19-01: Set-init command -- worktree creation, scoped CLAUDE.md, set planner role (SETL-01, SETL-02, SETL-03) [Wave 1]
+- [ ] 19-02: Status dashboard rewrite -- STATE.json hierarchy, ASCII table, next actions (SETL-04, UX-01) [Wave 1]
+- [ ] 19-03: Pause/resume/cleanup lifecycle -- handoff, resumption, branch deletion, context verify (SETL-05, SETL-06, SETL-07, UX-01) [Wave 1]
 
 ### Phase 20: Wave Planning
 **Goal**: Each wave has a detailed implementation plan derived from user discussion, with per-job plans validated against interface contracts
@@ -503,7 +504,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 16. State Machine Foundation | v2.0 | 3/3 | Complete | 2026-03-06 |
 | 17. Dependency Audit and Adapter Layer | v2.0 | 2/2 | Complete | 2026-03-06 |
 | 18. Init and Project Setup | 4/4 | Complete   | 2026-03-06 | - |
-| 19. Set Lifecycle | v2.0 | 0/2 | Not started | - |
+| 19. Set Lifecycle | v2.0 | 0/3 | Not started | - |
 | 20. Wave Planning | v2.0 | 0/2 | Not started | - |
 | 21. Execution Engine | v2.0 | 0/2 | Not started | - |
 | 22. Review Module | v2.0 | 0/3 | Not started | - |
