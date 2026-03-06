@@ -1002,3 +1002,246 @@ describe('setInit', () => {
     );
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// formatMarkIIStatus tests (Mark II hierarchy dashboard)
+// ────────────────────────────────────────────────────────────────
+describe('formatMarkIIStatus', () => {
+  it('returns ASCII table with columns: SET, STATUS, WAVES, WORKTREE, UPDATED', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth-core', status: 'executing', waves: [
+          { id: 'w1', status: 'executing', jobs: [
+            { id: 'j1', status: 'complete' },
+            { id: 'j2', status: 'executing' },
+            { id: 'j3', status: 'pending' },
+          ] },
+        ] },
+      ],
+    };
+    const registryData = {
+      worktrees: {
+        'auth-core': { path: '/tmp/wt/auth-core', updatedAt: new Date().toISOString() },
+      },
+    };
+    const table = worktree.formatMarkIIStatus(stateData, registryData);
+    const header = table.split('\n')[0];
+    assert.ok(header.includes('SET'), 'header should contain SET');
+    assert.ok(header.includes('STATUS'), 'header should contain STATUS');
+    assert.ok(header.includes('WAVES'), 'header should contain WAVES');
+    assert.ok(header.includes('WORKTREE'), 'header should contain WORKTREE');
+    assert.ok(header.includes('UPDATED'), 'header should contain UPDATED');
+  });
+
+  it('shows compact wave progress like "W1: 3/5 done" for sets with waves', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'executing', waves: [
+          { id: 'w1', status: 'executing', jobs: [
+            { id: 'j1', status: 'complete' },
+            { id: 'j2', status: 'complete' },
+            { id: 'j3', status: 'complete' },
+            { id: 'j4', status: 'pending' },
+            { id: 'j5', status: 'pending' },
+          ] },
+          { id: 'w2', status: 'pending', jobs: [
+            { id: 'j6', status: 'pending' },
+            { id: 'j7', status: 'pending' },
+            { id: 'j8', status: 'pending' },
+          ] },
+        ] },
+      ],
+    };
+    const registryData = { worktrees: {} };
+    const table = worktree.formatMarkIIStatus(stateData, registryData);
+    assert.ok(table.includes('W1: 3/5 done'), `should show "W1: 3/5 done" but got:\n${table}`);
+    assert.ok(table.includes('W2: 0/3 pending'), `should show "W2: 0/3 pending" but got:\n${table}`);
+  });
+
+  it('shows "-" in WAVES column for sets with no waves', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'ui-shell', status: 'pending', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: {} };
+    const table = worktree.formatMarkIIStatus(stateData, registryData);
+    const lines = table.split('\n');
+    const dataRow = lines[2]; // header, separator, data
+    assert.ok(dataRow.includes('-'), 'should show "-" for sets with no waves');
+  });
+
+  it('shows set status from STATE.json in STATUS column', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'executing', waves: [] },
+        { id: 'ui', status: 'planning', waves: [] },
+        { id: 'api', status: 'complete', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: {} };
+    const table = worktree.formatMarkIIStatus(stateData, registryData);
+    assert.ok(table.includes('executing'), 'should show executing status');
+    assert.ok(table.includes('planning'), 'should show planning status');
+    assert.ok(table.includes('complete'), 'should show complete status');
+  });
+
+  it('shows worktree path from REGISTRY.json or "not created"', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'executing', waves: [] },
+        { id: 'ui', status: 'pending', waves: [] },
+      ],
+    };
+    const registryData = {
+      worktrees: {
+        'auth': { path: '/project/.rapid-worktrees/auth', updatedAt: new Date().toISOString() },
+      },
+    };
+    const table = worktree.formatMarkIIStatus(stateData, registryData);
+    assert.ok(table.includes('.rapid-worktrees/auth'), 'should show worktree path');
+    assert.ok(table.includes('not created'), 'should show "not created" for sets without worktree');
+  });
+
+  it('returns "No sets found" when milestone has empty sets array', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [],
+    };
+    const registryData = { worktrees: {} };
+    const result = worktree.formatMarkIIStatus(stateData, registryData);
+    assert.ok(result.includes('No sets found'), 'should return "No sets found" for empty sets');
+  });
+
+  it('sorts sets: executing first, then planning, then pending, then complete', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'set-complete', status: 'complete', waves: [] },
+        { id: 'set-pending', status: 'pending', waves: [] },
+        { id: 'set-executing', status: 'executing', waves: [] },
+        { id: 'set-planning', status: 'planning', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: {} };
+    const table = worktree.formatMarkIIStatus(stateData, registryData);
+    const lines = table.split('\n');
+    const dataLines = lines.slice(2);
+    assert.ok(dataLines[0].includes('set-executing'), 'first data row should be executing');
+    assert.ok(dataLines[1].includes('set-planning'), 'second data row should be planning');
+    assert.ok(dataLines[2].includes('set-pending'), 'third data row should be pending');
+    assert.ok(dataLines[3].includes('set-complete'), 'fourth data row should be complete');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// deriveNextActions tests
+// ────────────────────────────────────────────────────────────────
+describe('deriveNextActions', () => {
+  it('suggests "Initialize set" for pending sets without worktree', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'pending', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: {} };
+    const actions = worktree.deriveNextActions(stateData, registryData);
+    assert.ok(Array.isArray(actions), 'should return an array');
+    const initAction = actions.find(a => a.action.includes('/set-init'));
+    assert.ok(initAction, 'should suggest /set-init for pending set without worktree');
+    assert.ok(initAction.setName === 'auth', 'action should reference the set name');
+  });
+
+  it('suggests "Start planning" for pending sets with worktree', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'pending', waves: [] },
+      ],
+    };
+    const registryData = {
+      worktrees: {
+        'auth': { path: '/tmp/wt/auth' },
+      },
+    };
+    const actions = worktree.deriveNextActions(stateData, registryData);
+    const discussAction = actions.find(a => a.action.includes('/discuss'));
+    assert.ok(discussAction, 'should suggest /discuss for pending set with worktree');
+  });
+
+  it('suggests "Continue executing" for sets in executing state', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'executing', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: { 'auth': { path: '/tmp/wt/auth' } } };
+    const actions = worktree.deriveNextActions(stateData, registryData);
+    const execAction = actions.find(a => a.action.includes('/execute'));
+    assert.ok(execAction, 'should suggest /execute for executing set');
+  });
+
+  it('suggests "Clean up" for complete sets with worktree', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'complete', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: { 'auth': { path: '/tmp/wt/auth' } } };
+    const actions = worktree.deriveNextActions(stateData, registryData);
+    const cleanAction = actions.find(a => a.action.includes('/cleanup'));
+    assert.ok(cleanAction, 'should suggest /cleanup for complete set with worktree');
+  });
+
+  it('suggests "Run review" for reviewing sets', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'reviewing', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: { 'auth': { path: '/tmp/wt/auth' } } };
+    const actions = worktree.deriveNextActions(stateData, registryData);
+    const reviewAction = actions.find(a => a.action.includes('/review'));
+    assert.ok(reviewAction, 'should suggest /review for reviewing set');
+  });
+
+  it('suggests "Merge set" for merging sets', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 'auth', status: 'merging', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: { 'auth': { path: '/tmp/wt/auth' } } };
+    const actions = worktree.deriveNextActions(stateData, registryData);
+    const mergeAction = actions.find(a => a.action.includes('/merge'));
+    assert.ok(mergeAction, 'should suggest /merge for merging set');
+  });
+
+  it('returns max 5 actions', () => {
+    const stateData = {
+      milestone: 'v2.0',
+      sets: [
+        { id: 's1', status: 'pending', waves: [] },
+        { id: 's2', status: 'pending', waves: [] },
+        { id: 's3', status: 'pending', waves: [] },
+        { id: 's4', status: 'pending', waves: [] },
+        { id: 's5', status: 'pending', waves: [] },
+        { id: 's6', status: 'pending', waves: [] },
+        { id: 's7', status: 'pending', waves: [] },
+      ],
+    };
+    const registryData = { worktrees: {} };
+    const actions = worktree.deriveNextActions(stateData, registryData);
+    assert.ok(actions.length <= 5, `should return at most 5 actions but got ${actions.length}`);
+  });
+});
