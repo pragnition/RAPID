@@ -412,8 +412,8 @@ Plans:
 **Plans**: 3 plans (Wave 1: library+CLI+discuss || agent roles, Wave 2: wave-plan orchestration skill)
 
 Plans:
-- [ ] 20-01: Wave planning library, CLI subcommands, and /rapid:discuss skill (WAVE-01, WAVE-02) [Wave 1]
-- [ ] 20-02: Agent role modules (wave-researcher, wave-planner, job-planner) and assembler registration (WAVE-03, WAVE-04, WAVE-05) [Wave 1]
+- [x] 20-01: Wave planning library, CLI subcommands, and /rapid:discuss skill (WAVE-01, WAVE-02) [Wave 1]
+- [x] 20-02: Agent role modules (wave-researcher, wave-planner, job-planner) and assembler registration (WAVE-03, WAVE-04, WAVE-05) [Wave 1]
 - [ ] 20-03: /rapid:wave-plan orchestration skill with research-plan-validate pipeline (WAVE-03, WAVE-04, WAVE-05, WAVE-06) [Wave 2, depends: 20-01, 20-02]
 
 ### Phase 21: Execution Engine

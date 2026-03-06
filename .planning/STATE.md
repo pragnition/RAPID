@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-03-06T18:03:04.717Z"
-last_activity: 2026-03-07 — Completed 20-02 (Wave planning agent role modules)
+stopped_at: Completed 20-01-PLAN.md
+last_updated: "2026-03-07T18:03:04.000Z"
+last_activity: 2026-03-07 — Completed 20-01 (Wave planning library, CLI subcommands, discuss skill)
 progress:
   total_phases: 26
   completed_phases: 20
   total_plans: 52
-  completed_plans: 49
-  percent: 94
+  completed_plans: 50
+  percent: 96
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 20 of 24 (Wave Planning)
-Plan: 2 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: In Progress
-Last activity: 2026-03-07 — Completed 20-02 (Wave planning agent role modules)
+Last activity: 2026-03-07 — Completed 20-01 (Wave planning library, CLI subcommands, discuss skill)
 
-Progress: [█████████░] 94% (49/52 plans complete)
+Progress: [█████████░] 96% (50/52 plans complete)
 
 ## Accumulated Context
 
@@ -70,6 +70,10 @@ Recent decisions affecting current work:
 - [Phase 20]: Wave researcher gets WebFetch for Context7 MCP; planners get Write only -- no Agent tool for any wave planning role
 - [Phase 20]: File ownership assignment is Wave Planner's responsibility via dedicated table in WAVE-PLAN.md
 - [Phase 20]: Three-stage pipeline: WAVE-CONTEXT -> WAVE-RESEARCH -> WAVE-PLAN -> JOB-PLAN, each produced by separate agent
+- [Phase 20]: Wave artifacts stored in .planning/waves/{setId}/{waveId}/ (main repo, namespaced by setId)
+- [Phase 20]: resolveWave returns array for ambiguous matches, enabling AskUserQuestion disambiguation
+- [Phase 20]: Cross-set import validation uses case-insensitive matching per user "minor differences" decision
+- [Phase 20]: Missing export coverage = auto-fix severity; missing cross-set imports = major violation
 
 ### Pending Todos
 
@@ -101,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T18:03:04.712Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-03-07T18:03:04.000Z
+Stopped at: Completed 20-01-PLAN.md
 Resume file: None
