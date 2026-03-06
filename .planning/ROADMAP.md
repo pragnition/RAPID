@@ -49,7 +49,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### v2.0 Mark II (Phases 16-24)
 
-- [ ] **Phase 16: State Machine Foundation** - Hierarchical JSON state, validated transitions, crash recovery, and structured inter-agent output format
+- [x] **Phase 16: State Machine Foundation** - Hierarchical JSON state, validated transitions, crash recovery, and structured inter-agent output format (completed 2026-03-06)
 - [ ] **Phase 17: Dependency Audit and Adapter Layer** - Map v1.0 module coupling and create adapters for new data structures
 - [ ] **Phase 18: Init and Project Setup** - Overhauled /init with greenfield/brownfield detection, research agents, roadmapper, and /new-milestone
 - [ ] **Phase 19: Set Lifecycle** - /set-init worktree creation, scoped CLAUDE.md, set planning, status dashboard, pause/resume, cleanup
@@ -498,7 +498,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 13. Merge and Cleanup Skill Prompts | v1.1 | 2/2 | Complete | 2026-03-06 |
 | 14. Install Skill Polish | v1.1 | 1/1 | Complete | 2026-03-06 |
 | 15. Global Error Recovery and Progress | v1.1 | 2/2 | Complete | 2026-03-06 |
-| 16. State Machine Foundation | 2/3 | In Progress|  | - |
+| 16. State Machine Foundation | 3/3 | Complete   | 2026-03-06 | - |
 | 17. Dependency Audit and Adapter Layer | v2.0 | 0/1 | Not started | - |
 | 18. Init and Project Setup | v2.0 | 0/3 | Not started | - |
 | 19. Set Lifecycle | v2.0 | 0/2 | Not started | - |

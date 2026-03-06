@@ -77,7 +77,7 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 
 - [ ] **UX-01**: AskUserQuestion used at every decision gate, queries batched to save tokens/time
 - [ ] **UX-02**: Progress indicators with emojis/color during subagent operations
-- [ ] **UX-03**: State updated at every step so user can /clear context between phases
+- [x] **UX-03**: State updated at every step so user can /clear context between phases
 - [ ] **UX-04**: /help shows all Mark II commands with workflow guidance
 
 ### Documentation
@@ -279,7 +279,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MERG-06 | Phase 23 | Pending |
 | UX-01 | Phase 19 | Pending |
 | UX-02 | Phase 21 | Pending |
-| UX-03 | Phase 16 | Pending |
+| UX-03 | Phase 16 | Complete |
 | UX-04 | Phase 18 | Pending |
 | DOCS-01 | Phase 24 | Pending |
 | DOCS-02 | Phase 24 | Pending |
