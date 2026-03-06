@@ -12,7 +12,7 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 - [x] **PROMPT-01**: Init skill uses AskUserQuestion for reinitialize/upgrade/cancel gate instead of numbered text options
 - [x] **PROMPT-02**: Init skill uses AskUserQuestion for team size selection with preset options (1, 2-3, 4-5, 6+)
 - [x] **PROMPT-03**: Init skill uses AskUserQuestion for fresh vs brownfield project decision
-- [ ] **PROMPT-04**: Plan skill uses AskUserQuestion for re-plan/view/cancel gate
+- [x] **PROMPT-04**: Plan skill uses AskUserQuestion for re-plan/view/cancel gate
 - [ ] **PROMPT-05**: Execute skill uses AskUserQuestion for agent teams vs subagents choice with clear descriptions
 - [ ] **PROMPT-06**: Execute skill uses AskUserQuestion for paused set resume/restart/skip with consequence descriptions
 - [ ] **PROMPT-07**: Execute skill uses AskUserQuestion for planning gate override with risk explanation
@@ -20,7 +20,7 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 - [ ] **PROMPT-09**: Merge skill uses AskUserQuestion for final merge confirmation before irreversible action
 - [ ] **PROMPT-10**: Merge skill uses AskUserQuestion for merge conflict recovery (resolve/show/revert)
 - [ ] **PROMPT-11**: Cleanup skill uses AskUserQuestion for destructive worktree removal confirmation
-- [ ] **PROMPT-12**: Assumptions skill uses AskUserQuestion for set selection and feedback options
+- [x] **PROMPT-12**: Assumptions skill uses AskUserQuestion for set selection and feedback options
 - [x] **PROMPT-13**: Context skill uses AskUserQuestion for greenfield detection and generation confirmation
 - [x] **PROMPT-14**: Status skill offers next action via AskUserQuestion after displaying status
 
@@ -167,7 +167,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROMPT-01 | Phase 10 | Complete |
 | PROMPT-02 | Phase 10 | Complete |
 | PROMPT-03 | Phase 10 | Complete |
-| PROMPT-04 | Phase 11 | Pending |
+| PROMPT-04 | Phase 11 | Complete |
 | PROMPT-05 | Phase 12 | Pending |
 | PROMPT-06 | Phase 12 | Pending |
 | PROMPT-07 | Phase 12 | Pending |
@@ -175,7 +175,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROMPT-09 | Phase 13 | Pending |
 | PROMPT-10 | Phase 13 | Pending |
 | PROMPT-11 | Phase 13 | Pending |
-| PROMPT-12 | Phase 11 | Pending |
+| PROMPT-12 | Phase 11 | Complete |
 | PROMPT-13 | Phase 10 | Complete |
 | PROMPT-14 | Phase 11 | Complete |
 | INST-01 | Phase 14 | Pending |
