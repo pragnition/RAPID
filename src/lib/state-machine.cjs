@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const { acquireLock } = require('./lock.cjs');
 const { ProjectState } = require('./state-schemas.cjs');
 const { validateTransition } = require('./state-transitions.cjs');
@@ -342,7 +342,7 @@ function detectCorruption(cwd) {
  * @param {string} cwd - Project root directory
  */
 function recoverFromGit(cwd) {
-  execSync('git checkout HEAD -- .planning/STATE.json', { cwd, stdio: 'pipe' });
+  execFileSync('git', ['checkout', 'HEAD', '--', '.planning/STATE.json'], { cwd, stdio: 'pipe' });
 }
 
 /**
@@ -354,8 +354,8 @@ function recoverFromGit(cwd) {
  */
 function commitState(cwd, message) {
   try {
-    execSync('git add .planning/STATE.json', { cwd, stdio: 'pipe' });
-    execSync(`git commit -m "${message}"`, { cwd, stdio: 'pipe' });
+    execFileSync('git', ['add', '.planning/STATE.json'], { cwd, stdio: 'pipe' });
+    execFileSync('git', ['commit', '-m', message], { cwd, stdio: 'pipe' });
     return { committed: true };
   } catch (err) {
     // Exit code 1 from git commit means nothing to commit

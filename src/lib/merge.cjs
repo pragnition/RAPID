@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const contract = require('./contract.cjs');
 const dag = require('./dag.cjs');
 const worktree = require('./worktree.cjs');
@@ -454,8 +454,8 @@ function mergeSet(projectRoot, setName, baseBranch) {
   let mergeStdout = '';
   let mergeStderr = '';
   try {
-    mergeStdout = execSync(
-      `git merge --no-ff ${branch} -m "${mergeMsg}"`,
+    mergeStdout = execFileSync(
+      'git', ['merge', '--no-ff', branch, '-m', mergeMsg],
       { cwd: projectRoot, encoding: 'utf-8', stdio: 'pipe', timeout: 30000 }
     );
     mergeOk = true;
