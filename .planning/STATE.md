@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Core
-status: completed
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-03-06T05:06:57.180Z"
-last_activity: 2026-03-06 -- Completed 15-01-PLAN.md
+milestone: v2.0
+milestone_name: Mark II
+status: defining_requirements
+stopped_at: null
+last_updated: "2026-03-06"
+last_activity: 2026-03-06 -- Milestone v2.0 started
 progress:
-  total_phases: 17
-  completed_phases: 16
-  total_plans: 37
-  completed_plans: 36
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,52 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Milestone v1.1 -- Phase 13: Merge and Cleanup Skill Prompts
+**Current focus:** Defining requirements for v2.0 Mark II
 
 ## Current Position
 
-Phase: 15 of 15 (Global Error Recovery and Progress)
-Plan: 1 of 1
-Status: Complete
-Last activity: 2026-03-06 -- Completed 15-01-PLAN.md
-
-Progress: [██████████] 100%
-
-## Performance Metrics
-
-**Velocity:**
-- Total plans completed: 25
-- Average duration: 5 min
-- Total execution time: 1.83 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01 | 3 | 14 min | 5 min |
-| 02 | 3 | 11 min | 4 min |
-| 03 | 3 | 12 min | 4 min |
-| 04 | 3 | 13 min | 4 min |
-| 05 | 2/2 | 9 min | 5 min |
-| 06 | 2/2 | 9 min | 5 min |
-| 07 | 2/2 | 17 min | 9 min |
-| 08 | 2/2 | 12 min | 6 min |
-| 09 | 2/2 | 7 min | 4 min |
-| 09.1 | 2/3 | 5 min | 3 min |
-| 09.2 | 1/2 | 2 min | 2 min |
-| 10 | 2/2 | 2 min | 1 min |
-
-**Recent Trend:**
-- Last 5 plans: 09.1-02 (2 min), 09.2-01 (2 min), 10-01 (1 min), 10-02 (1 min)
-- Trend: Consistent
-
-*Updated after each plan completion*
-| Phase 12 P01 | 3min | 2 tasks | 1 files |
-| Phase 13 P02 | 1 | 1 tasks | 1 files |
-| Phase 13 P01 | 2 | 1 tasks | 1 files |
-| Phase 14 P01 | 2 | 2 tasks | 2 files |
-| Phase 15 P02 | 1 | 1 tasks | 1 files |
-| Phase 15 P01 | 2 | 2 tasks | 2 files |
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-06 — Milestone v2.0 started
 
 ## Accumulated Context
 
@@ -75,25 +37,11 @@ Progress: [██████████] 100%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Roadmap v1.1]: 6 phases (10-15) derived from 24 requirements grouped by skill boundaries
-- [Roadmap v1.1]: Init+context skills together (Phase 10), execute skill standalone (Phase 12), merge+cleanup together (Phase 13)
-- [Roadmap v1.1]: Install polish independent (Phase 14) -- no dependency on other v1.1 phases
-- [Roadmap v1.1]: Global STOP replacement and remaining progress indicators last (Phase 15) -- depends on per-skill work
-- [Phase 10]: Context skill greenfield detection uses AskUserQuestion with Continue anyway/Cancel instead of text STOP (PROMPT-13)
-- [Phase 10-01]: Team size mapped to integers: Solo=1, Small=3, Medium=5, Large=6
-- [Phase 10-01]: Brownfield auto-trigger skips context confirmation (implicit consent from init choice)
-- [Phase 11-01]: Plan View current leads to second gate (Re-plan/Cancel) not dead end; Assumptions <=4 sets uses AskUserQuestion, >4 uses text list
-- [Phase 11-02]: Status skill Step 4 uses dynamic state-dependent AskUserQuestion with dismiss option
-- [Phase 12]: Reconciliation uses dynamic state-dependent AskUserQuestion with PASS/hard/soft block option sets
-- [Phase 12]: Paused sets get individual per-set AskUserQuestion prompts instead of batch
-- [Phase 12]: Renamed Stop here to Pause here to fully eliminate all stop/halt keywords
-- [Phase 13]: Force removal double confirmation uses nested AskUserQuestion; dirty worktree recovery shows specific git commands in descriptions
-- [Phase 13]: Verdict banners use checkmark/wrench/no-entry emoji for APPROVE/CHANGES/BLOCK
-- [Phase 13]: Double confirmation gate on wave revert (destructive action pattern)
-- [Phase 14]: Moved all user interaction from setup.sh into SKILL.md using AskUserQuestion
-- [Phase 15]: Renumbered Step 4 and Step 5 list items to accommodate new progress banner entries
-- [Phase 15]: Init prereq blockers use Tier 1 AskUserQuestion with Retry/Install guide/Cancel
-- [Phase 15]: Progress banners use simple blockquote format for long-running subagent operations
+- [v2.0]: Selective reuse — keep agent framework, plugin shell, context gen, worktrees; rewrite planning, execution, review, merge
+- [v2.0]: Adapt gsd_merge_agent for merger (5-level conflict detection, tiered resolution)
+- [v2.0]: Review module uses hunter/devils-advocate/judge adversarial pipeline
+- [v2.0]: Jobs ≈ v1.0 plans in granularity
+- [v2.0]: Defer /quick and /insert-job to v2.1
 
 ### Pending Todos
 
@@ -101,13 +49,13 @@ None yet.
 
 ### Roadmap Evolution
 
-- Phase 09.1 inserted after Phase 09: Package for plugin marketplace (URGENT)
-- Phase 09.2 inserted after Phase 09.1: Create setup script and fix RAPID_TOOLS paths
-- Phases 10-15 added for v1.1 UI UX Improvements milestone
+- v1.0 Core: Phases 1-9.2 (all complete)
+- v1.1 UI UX Improvements: Phases 10-15 (all complete)
+- v2.0 Mark II: Starting
 
 ### Blockers/Concerns
 
-None for v1.1 -- all changes are SKILL.md prose edits using existing AskUserQuestion tool.
+None yet.
 
 ### Quick Tasks Completed
 
@@ -123,6 +71,6 @@ None for v1.1 -- all changes are SKILL.md prose edits using existing AskUserQues
 
 ## Session Continuity
 
-Last session: 2026-03-06T05:03:57.846Z
-Stopped at: Completed 15-01-PLAN.md
+Last session: 2026-03-06
+Stopped at: Milestone v2.0 started
 Resume file: None
