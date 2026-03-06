@@ -1,201 +1,345 @@
 # Stack Research
 
-**Domain:** Claude Code plugin / metaprompting framework for team-based parallel development
-**Researched:** 2026-03-03
+**Domain:** Claude Code plugin -- Mark II workflow overhaul (review module, state machine, adversarial agents, merger adaptation)
+**Researched:** 2026-03-06
 **Confidence:** HIGH
 
-## Recommended Stack
+## Current Stack Baseline
 
-### Core Technologies
+The existing RAPID codebase uses:
+- **Language:** CommonJS (`.cjs` files), Node.js v25.8.0
+- **Dependencies:** `ajv@^8.17.1` (schema validation), `ajv-formats@^3.0.1`, `proper-lockfile@^4.1.2` (file locking)
+- **Test framework:** `node:test` (built-in) + `node:assert/strict`
+- **State:** Markdown files in `.planning/` with lock-based concurrent writes via `state.cjs`
+- **Shell tooling:** `src/bin/rapid-tools.cjs` CLI helper
+- **Plugin architecture:** Commands, agents, skills, hooks as `.md` files with YAML frontmatter
+- **Agent coordination:** EXPERIMENTAL_AGENT_TEAMS with subagent fallback
+
+This is a deliberately minimal dependency footprint. The Mark II additions should preserve this philosophy -- add dependencies only when hand-rolling would be error-prone or wasteful.
+
+## Recommended Stack for Mark II
+
+### Core Technologies (NEW for Mark II)
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Claude Code Plugin System | v2.1.62+ | Plugin architecture (commands, agents, skills, hooks) | RAPID is a Claude Code plugin by design. The plugin system provides auto-discovered components (.claude-plugin/plugin.json, commands/, agents/, skills/, hooks/), portable paths via ${CLAUDE_PLUGIN_ROOT}, hook events for lifecycle control, and MCP server integration. This is not a choice -- it is the platform. **Confidence: HIGH** (verified via official docs at code.claude.com/docs/en/plugins-reference) |
-| Bash scripts | N/A (system) | Hook scripts, git worktree management, file locking, state management | Claude Code hooks execute shell commands. All state management, git operations, and locking should be bash scripts with optional Node.js for complex JSON processing. GSD (the reference plugin) uses this exact pattern: bash/Node.js scripts invoked by hooks and commands. No npm dependencies needed for core logic. **Confidence: HIGH** (verified via GSD source code and Claude Code hooks documentation) |
-| Node.js | v18+ (system) | Complex hook scripts, JSON processing, cross-platform utilities | Already available in Claude Code's runtime. Used for hooks that need JSON parsing (stdin/stdout protocol), file watching, and complex logic. GSD uses Node.js for its context monitor and update checker hooks. Keep usage minimal -- prefer bash where possible. **Confidence: HIGH** (verified via GSD hooks source code) |
-| Git (with worktree support) | v2.30+ | Branch isolation, worktree creation/cleanup, merge operations | Git worktrees are the core isolation mechanism. Each "set" gets its own worktree with a dedicated branch. Claude Code v2.1.49+ has native --worktree support, and subagents support `isolation: worktree` in frontmatter. Git is already required by RAPID's design constraints. **Confidence: HIGH** (verified via official Claude Code docs and git-scm.com) |
-| Markdown with YAML Frontmatter | N/A | Command definitions, agent definitions, skill definitions, interface contracts | This is the standard format for all Claude Code plugin components. Commands, agents, and skills are .md files with YAML frontmatter. RAPID's interface contracts and set definitions should also use this format for consistency with the ecosystem. **Confidence: HIGH** (verified via plugin-dev documentation) |
-| EXPERIMENTAL_AGENT_TEAMS | Experimental | Multi-agent coordination with shared task lists and direct messaging | Agent teams let multiple Claude Code instances coordinate via shared task lists, direct messaging, and centralized management. Enable via settings.json env var. RAPID should detect availability and use when present, falling back to subagent-based coordination. **Confidence: MEDIUM** (feature is experimental, API may change) |
+| `playwright` (library package) | ^1.52 | UAT browser automation in library mode | Already installed globally (v1.58.2) and configured at `.playwright/cli.config.json`. Use as a **library** for programmatic browser control in the UAT agent -- NOT as a test runner. The UAT agent needs to navigate, click, screenshot, and report pass/fail per step. Library mode (`require('playwright')`) gives direct `chromium.launch()`, `page.goto()`, `page.click()`, `page.screenshot()` without `@playwright/test` runner overhead. |
+| `node:test` `run()` API (built-in) | N/A (Node.js v22+) | Programmatic unit test execution and structured result capture | Already the project standard. The `run()` function from `node:test` returns a `TestsStream` with events (`test:pass`, `test:fail`, `test:complete`) that the Unit Test agent can consume programmatically to build structured reports. The target project's test runner may differ -- the Unit Test agent should detect and use whatever the TARGET project uses, but RAPID's own test infrastructure stays on `node:test`. Zero new dependencies. |
+| Hand-rolled state machine (no library) | N/A | State tracking for Sets/Waves/Jobs across context resets | XState v5 (v5.28.0, 16.7kB) is overkill. RAPID's state transitions are flat and linear per entity. The existing `state.cjs` pattern (Markdown fields + lock-file writes) already works. Extend it with JSON-based state objects and a transition validation table. See detailed rationale below. |
+| Playwright MCP Server | Latest | Interactive UAT via Claude Code MCP integration | Already configured. The UAT agent uses MCP for interactive browser sessions where the user observes. Falls back to `playwright` library for headless/automated runs. |
 
-### State Management
+### Existing Technologies (RETAINED for Mark II)
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| JSON files | N/A | Structured state (set definitions, lock records, execution status) | Git-native, human-readable, parseable by both bash (jq) and Node.js. GSD uses .planning/config.json and STATE.md for this exact purpose. RAPID should use .rapid/ directory with JSON for machine-readable state and Markdown for human-readable state. **Confidence: HIGH** |
-| Lock files (mkdir strategy) | N/A | Preventing concurrent modification of shared state | The mkdir-based atomic lock is the most reliable cross-platform approach. Create a directory (atomic on all filesystems including NFS) as the lock indicator. This is the same strategy used by proper-lockfile and npm's own lockfile handling. Agent teams already use file locking for task claiming. Implement directly in bash -- no npm dependency needed. **Confidence: HIGH** (verified via proper-lockfile docs and agent teams docs) |
-| jq | v1.6+ | JSON processing in bash scripts | Standard tool for parsing and manipulating JSON from bash. Already available on most systems. Required for processing hook stdin/stdout JSON protocol and managing state files. **Confidence: HIGH** |
+| Technology | Version | Purpose | Mark II Extension |
+|------------|---------|---------|-------------------|
+| `ajv` | ^8.17.1 | Schema validation | Extend with schemas for BugReport, Verdict, Ruling, UAT Plan, Wave/Job state objects |
+| `ajv-formats` | ^3.0.1 | Format validation | Retained for date-time, URI formats in reports |
+| `proper-lockfile` | ^4.1.2 | Concurrent file access | Critical for hunter/devils-advocate/judge pipeline where agents read/write shared report files |
+| `node:test` + `node:assert/strict` | Built-in | RAPID's own unit tests | Continue using for all new `.test.cjs` files |
+| `child_process.execSync` | Built-in | Git operations, shell commands | Merger adaptation uses this for git merge, diff, merge-base operations |
 
-### Plugin Components
+### Development Tools
 
-| Component | Format | Purpose | When to Use |
-|-----------|--------|---------|-------------|
-| Commands (commands/*.md) | Markdown + YAML frontmatter | User-facing slash commands (/rapid:init, /rapid:plan, /rapid:execute, /rapid:merge) | Entry points for user interaction. Each major workflow phase gets a command. |
-| Agents (agents/*.md) | Markdown + YAML frontmatter | Specialized subagents (planner, executor, merger, reviewer) | Delegated work that needs its own context window or isolation. Use `isolation: worktree` for agents that modify code. |
-| Skills (skills/*/SKILL.md) | Markdown + YAML frontmatter | Domain knowledge (contract authoring, set design, merge conflict resolution) | Auto-activated contextual guidance. Use for reusable knowledge that applies across commands. |
-| Hooks (hooks/hooks.json) | JSON config + bash/Node.js scripts | Lifecycle automation (pre-merge validation, contract checking, state sync) | Automated enforcement. PreToolUse for validation, PostToolUse for state updates, TeammateIdle/TaskCompleted for agent team quality gates. |
-| Settings (settings.json) | JSON | Default plugin settings, EXPERIMENTAL_AGENT_TEAMS env var | Applied when plugin is enabled. Only agent settings currently supported. |
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| Playwright MCP Server | UAT agent browser control via Claude Code MCP | Configured at `.playwright/cli.config.json`. Prefer MCP for interactive UAT; fall back to `playwright` library for headless. |
+| `node --test src/lib/*.test.cjs` | Run RAPID's own tests | Existing pattern. Unit Test agent wraps this with `run()` for programmatic access to results. |
 
-### Supporting Tools
-
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| git worktree add/remove/list | Create and manage isolated working directories | When initializing sets and cleaning up after merge |
-| git merge / git merge-base | Merge set branches back together, find common ancestors | During merge/review phase |
-| git diff | Detect changes, validate contract compliance | During review and merge review |
-| git stash | Temporarily save work during context switches | Edge case handling in worktree management |
-| flock (Linux) / lockf (macOS) | Advisory file locking for concurrent script access | Optional backup to mkdir-based locking on single-machine setups |
-
-## Architecture Patterns
-
-### Pattern: Bash-First, Node-When-Needed
-
-RAPID should follow GSD's proven pattern:
-
-```
-commands/*.md          -- Markdown commands invoke bash/Node scripts
-hooks/scripts/*.sh     -- Bash scripts for git operations, locking, validation
-hooks/scripts/*.js     -- Node.js for complex JSON processing, cross-platform edge cases
-lib/                   -- Shared bash functions (lock.sh, git-worktree.sh, state.sh)
-```
-
-**Why:** Claude Code's hook protocol passes JSON via stdin and expects JSON on stdout. Node.js handles this natively. But git operations, file locking, and state file manipulation are simpler and more reliable in bash. GSD uses exactly this split.
-
-### Pattern: mkdir-Based Atomic Locking
+## Installation
 
 ```bash
-#!/bin/bash
-# Lock acquisition
-LOCK_DIR=".rapid/locks/${SET_NAME}"
-if mkdir "$LOCK_DIR" 2>/dev/null; then
-    echo "$$" > "$LOCK_DIR/pid"
-    echo "$(date +%s)" > "$LOCK_DIR/timestamp"
-    # ... do work ...
-    rm -rf "$LOCK_DIR"
-else
-    echo "Lock held by PID $(cat $LOCK_DIR/pid)" >&2
-    exit 1
-fi
+# Only NEW dependency -- Playwright as a project-level dependency
+npm install playwright
+
+# No new dev dependencies needed
+# node:test is built-in, ajv and proper-lockfile already installed
 ```
 
-**Why:** mkdir is atomic on all filesystems. No npm dependencies. Git-trackable lock state. Stale lock detection via PID + timestamp.
+**Total new runtime dependencies: 1** (`playwright`)
 
-### Pattern: Worktree-Per-Set Isolation
+Note: Playwright browsers may need installation via `npx playwright install chromium` if not already available system-wide. The UAT agent should detect and handle this.
 
-```bash
-# Create worktree for a set
-git worktree add ".rapid/worktrees/${SET_NAME}" -b "rapid/${SET_NAME}" HEAD
+## Key Architecture Decisions
 
-# Agent works in isolated worktree
-# ...
+### 1. Playwright: Library Mode, Not Test Runner
 
-# Clean up after merge
-git worktree remove ".rapid/worktrees/${SET_NAME}"
-git branch -d "rapid/${SET_NAME}"
+**Use `playwright` (library), NOT `@playwright/test` (test runner).**
+
+The UAT agent is not running Playwright test suites with `expect()` assertions. It is:
+- Launching a browser (headed so the user sees it)
+- Navigating to the target application
+- Performing user flows (click, type, navigate)
+- Taking screenshots for evidence
+- Reporting pass/fail per UAT step
+- Asking the user for verification on "human" steps via AskUserQuestion
+
+This is browser automation, not test execution.
+
+```javascript
+// UAT agent pattern -- library mode
+const { chromium } = require('playwright');
+
+async function runUATStep(step) {
+  const browser = await chromium.launch({ headless: false }); // User SEES the browser
+  const page = await browser.newPage();
+  await page.goto(step.url);
+
+  for (const action of step.actions) {
+    await page[action.type](action.selector, action.value);
+  }
+
+  const screenshot = await page.screenshot({ path: step.screenshotPath });
+  await browser.close();
+  return { passed: true, screenshot: step.screenshotPath };
+}
 ```
 
-**Why:** Native git, zero external dependencies. Each set has full repo context but isolated working directory. Claude Code's `isolation: worktree` uses the same mechanism.
+**Fallback strategy:**
+1. Playwright MCP available -> use MCP for interactive UAT (user observes browser)
+2. MCP unavailable -> use `playwright` library for headless automation
+3. No browser environment -> degrade to AskUserQuestion-based manual UAT
+
+### 2. Unit Test Execution: Programmatic `node:test` via `run()`
+
+Use `run()` from `node:test` to execute test files and capture structured results for report generation:
+
+```javascript
+const { run } = require('node:test');
+const path = require('path');
+
+function executeTests(testFiles) {
+  return new Promise((resolve) => {
+    const results = { passed: [], failed: [], skipped: [] };
+
+    run({ files: testFiles.map(f => path.resolve(f)) })
+      .on('test:pass', (event) => results.passed.push(event.data))
+      .on('test:fail', (event) => results.failed.push(event.data))
+      .on('test:skip', (event) => results.skipped.push(event.data))
+      .on('end', () => resolve(results));
+  });
+}
+```
+
+**For target projects using different test runners:** The Unit Test agent should detect the project's test runner (Jest, Vitest, Mocha, etc.) from `package.json` scripts or config files and shell out to it. The structured result parsing happens on the agent side, not via a library.
+
+### 3. State Machine: Extend Existing `state.cjs`, No Library
+
+**Do NOT add XState, Robot, or any FSM library.**
+
+RAPID's state transitions are:
+- **Linear per entity** (job: `pending -> planning -> executing -> reviewing -> complete`)
+- **Persisted to disk** (must survive Claude Code context resets)
+- **Read/written by different agents** across different sessions
+- **Simple enough to validate with a transition table**
+
+XState (16.7kB, complex TypeScript types, actor model, hierarchical/parallel states) solves problems RAPID does not have. Even David Khourshid (XState's creator) has written that hand-rolled FSMs are appropriate for simple cases.
+
+**Recommended pattern -- new `state-machine.cjs` module:**
+
+```javascript
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const { acquireLock } = require('./lock.cjs');
+
+const TRANSITIONS = {
+  job: {
+    pending:    ['planning'],
+    planning:   ['executing', 'blocked'],
+    executing:  ['reviewing', 'blocked'],
+    reviewing:  ['complete', 'executing'],  // Loop back for fixes
+    blocked:    ['planning', 'executing'],
+    complete:   []
+  },
+  wave: {
+    pending:    ['planning'],
+    planning:   ['executing'],
+    executing:  ['reviewing'],
+    reviewing:  ['complete', 'executing'],
+    complete:   []
+  },
+  set: {
+    pending:    ['active'],
+    active:     ['merging', 'blocked'],
+    merging:    ['complete', 'active'],
+    blocked:    ['active'],
+    complete:   []
+  }
+};
+
+function canTransition(entityType, currentState, targetState) {
+  const valid = TRANSITIONS[entityType]?.[currentState];
+  if (!valid) return { allowed: false, reason: `Unknown state: ${currentState}` };
+  if (!valid.includes(targetState)) {
+    return {
+      allowed: false,
+      reason: `Cannot transition ${entityType} from "${currentState}" to "${targetState}". Valid targets: ${valid.join(', ')}`
+    };
+  }
+  return { allowed: true };
+}
+
+async function transition(cwd, entityType, entityId, targetState) {
+  const release = await acquireLock(cwd, `state-${entityType}-${entityId}`);
+  try {
+    const statePath = path.join(cwd, '.planning', 'state', `${entityType}s`, `${entityId}.json`);
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    const check = canTransition(entityType, state.status, targetState);
+    if (!check.allowed) return { transitioned: false, reason: check.reason };
+
+    state.previousStatus = state.status;
+    state.status = targetState;
+    state.lastTransition = new Date().toISOString();
+    state.history.push({ from: state.previousStatus, to: targetState, at: state.lastTransition });
+
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
+    return { transitioned: true, from: state.previousStatus, to: targetState };
+  } finally {
+    await release();
+  }
+}
+
+module.exports = { TRANSITIONS, canTransition, transition };
+```
+
+State persisted as JSON alongside Markdown:
+- `.planning/state/jobs/{job-id}.json` -- machine-readable state with transition history
+- `.planning/state/waves/{wave-id}.json` -- wave state
+- `.planning/state/sets/{set-id}.json` -- set state
+- `.planning/STATE.md` -- human-readable summary (existing pattern, auto-generated from JSON)
+- Lock files protect concurrent writes (existing `proper-lockfile` pattern)
+
+### 4. Adversarial Multi-Agent Pipeline: Pure Prompt Engineering + File I/O
+
+The hunter/devils-advocate/judge pipeline requires **zero new dependencies**. These are prompt-driven agents orchestrated through file-based report handoff.
+
+What is needed:
+- **Structured report schemas** (extend existing `ajv` validation for BugReport, Verdict, Ruling)
+- **Sequential agent orchestration** (hunter -> devils-advocate -> judge, supported by existing subagent/teams framework)
+- **Report persistence** (JSON/Markdown in `.planning/reviews/{wave-id}/`)
+- **Scoring aggregation** (pure JavaScript)
+
+```javascript
+// review-pipeline.cjs -- orchestration pattern
+async function runBugHuntPipeline(cwd, waveId, context) {
+  const reviewDir = path.join(cwd, '.planning', 'reviews', waveId);
+
+  // 1. Hunter agent produces findings (spawned as subagent)
+  const hunterReport = await spawnReviewAgent('hunter', { context });
+  writeReport(reviewDir, 'hunter-report.json', hunterReport);
+
+  // 2. Devils advocate reviews findings (reads hunter output)
+  const daReport = await spawnReviewAgent('devils-advocate', {
+    context,
+    hunterFindings: hunterReport
+  });
+  writeReport(reviewDir, 'devils-advocate-report.json', daReport);
+
+  // 3. Judge makes final rulings (reads both)
+  const judgeReport = await spawnReviewAgent('judge', {
+    context,
+    hunterFindings: hunterReport,
+    daVerdicts: daReport
+  });
+  writeReport(reviewDir, 'judge-ruling.json', judgeReport);
+
+  return judgeReport;
+}
+```
+
+The agent prompts are already drafted in `mark2-plans/review-module/`. The infrastructure layer is just schema validation + file I/O + sequential subagent spawning.
+
+### 5. Merger Adaptation: Extend Existing `merge.cjs`
+
+The gsd_merge_agent patterns (5-level conflict detection, tiered resolution) port directly to RAPID using the existing stack:
+- `child_process.execSync` for git commands (`git merge`, `git diff`, `git merge-base`)
+- `fs` for file operations
+- `ajv` for merge plan schema validation
+- `proper-lockfile` for concurrent access during multi-set merges
+- `contract.cjs` and `dag.cjs` already exist for contract validation and dependency ordering
+
+No new dependencies needed.
 
 ## Alternatives Considered
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Bash scripts for locking | proper-lockfile npm package | If you need NFS-safe locking across network filesystems (unlikely for local dev) |
-| Direct git CLI calls | simple-git npm library | If you need programmatic git access from a Node.js application; unnecessary here since hooks call git directly |
-| Direct git CLI calls | git-worktree npm package | Only 0.0.5, very low adoption, minimal API. Not worth the dependency |
-| YAML frontmatter in .md files | JSON/YAML config files for contracts | Never -- YAML frontmatter is the Claude Code ecosystem standard. Using anything else creates friction |
-| mkdir-based locking | flock/lockf system calls | Only if you need blocking (wait-for-lock) behavior; mkdir with retry loop is simpler |
-| Built-in agent teams hooks | Custom process management | Never for team coordination -- agent teams handle this; custom process management only as fallback when agent teams unavailable |
-| Subagent fallback pattern | Agent teams only | Never go teams-only -- agent teams are experimental. Always implement subagent fallback |
+| `playwright` (library) | `@playwright/test` | Only if RAPID needs persistent Playwright test suites run via `npx playwright test`. It does not -- UAT is agent-driven, not suite-driven. |
+| `playwright` (library) | Puppeteer | Never. Playwright supersedes Puppeteer with better cross-browser support, auto-waiting, and the same team. |
+| `node:test` run() API | Vitest / Jest | Only for the TARGET project's tests. The Unit Test agent should detect and use whatever runner the target project uses. RAPID's own tests stay on `node:test`. |
+| Hand-rolled FSM in `state-machine.cjs` | XState v5 (5.28.0) | Only if state requirements grow to include: parallel states, delayed transitions, state visualization, or actor hierarchies. Current requirements are flat linear progressions. |
+| Hand-rolled FSM | Robot (1.2kB FSM lib) | Tempting due to size, but unnecessary. A ~50-line transition table in plain JS is simpler, has zero learning curve, and is trivially testable with `node:test`. |
+| `ajv` (existing) for schemas | Zod | Only if migrating to TypeScript/ESM. Zod's TypeScript-first inference is wasted in a CommonJS codebase. `ajv` is already proven. |
+| Sequential subagent spawning | LangChain/LangGraph | Never. RAPID agents are Claude Code subagents (prompt-driven via `.md` files), not LLM-chain agents. LangChain would be a massive, irrelevant dependency. |
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| npm dependencies for core logic | Adds installation complexity, version drift, supply chain risk. A Claude Code plugin should be self-contained files (md + sh + js) with no npm install step | Bash scripts + built-in Node.js APIs |
-| TypeScript compilation | Adds build step that Claude Code plugin system doesn't support natively. Hooks must be directly executable | Plain JavaScript (Node.js) for complex scripts, bash for everything else |
-| External databases (SQLite, etc.) | Violates "git-native" constraint. Adds dependencies. Not portable across worktrees | JSON files in .rapid/ directory, committed to git |
-| Custom process management for agents | Claude Code already handles agent spawning, context windows, permissions. Reimplementing is fragile | Subagents with `isolation: worktree` and/or EXPERIMENTAL_AGENT_TEAMS |
-| WebSocket/HTTP servers for coordination | Violates "no external services" constraint. Adds complexity. Not needed when agents can read shared files | File-based state with lock files, or agent teams messaging |
-| simple-git / nodegit / isomorphic-git | Unnecessary abstraction. Git CLI is directly available. These add 10-50MB of dependencies | Direct `git` CLI calls from bash scripts |
-| Complex state machines | Over-engineering for a file-based system. State should be transparent and debuggable | Simple JSON state files with explicit status fields (pending/in-progress/complete) |
+| `@playwright/test` | Test runner overhead -- UAT agent drives browser directly, not via test suites with fixtures/assertions | `playwright` library package |
+| XState / Robot / any FSM lib | RAPID's state transitions are flat and linear. A library adds bundle size, API surface, and learning curve for a 50-line problem | Hand-rolled transition table with `ajv` schema validation |
+| Jest / Vitest for RAPID's own tests | Adds dev dependency for something `node:test` already does. Breaks consistency with 16 existing `.test.cjs` files | `node:test` (built-in) |
+| Puppeteer | Superseded by Playwright by the same team. Chromium-only | `playwright` |
+| LangChain / LangGraph | RAPID agents are Claude Code subagents, not LLM-chain agents. Massive irrelevant dependency | Existing subagent/teams framework |
+| Socket.io / WebSocket | Agents communicate via files on disk. Git-native constraint | JSON files in `.planning/` with `proper-lockfile` |
+| Any database (SQLite, etc.) | Violates git-native constraint. State must be git-trackable | JSON + Markdown files |
+| Complex state machine visualizers | Nice-to-have but not needed. State is inspectable via JSON files and STATE.md | `cat .planning/state/jobs/job-01.json` |
 
-## Stack Patterns by Variant
+## Stack Patterns by Context
+
+**If the target project has a web frontend (UAT applicable):**
+- Use Playwright MCP first (interactive, user sees browser)
+- Fall back to `playwright` library for headless automated runs
+- Generate UAT plans with automated/human step tagging per review module spec
+
+**If the target project is backend-only (no UAT):**
+- Skip Playwright entirely for that project
+- Focus on unit test agent and bug hunt pipeline
+- UAT degrades to manual verification with AskUserQuestion prompts
 
 **If EXPERIMENTAL_AGENT_TEAMS is available:**
-- Use agent teams for multi-set parallel execution
-- Team lead orchestrates set assignment and monitors progress
-- TeammateIdle hook enforces contract compliance before allowing idle
-- TaskCompleted hook validates merge readiness
-- Teammates communicate directly for cross-set coordination
+- Hunter, Devils Advocate, and Judge can run as team agents with shared context
+- Pipeline orchestration is simpler (team manages lifecycle)
+- State transitions can be observed by team lead
 
-**If EXPERIMENTAL_AGENT_TEAMS is NOT available (fallback):**
-- Use subagents with `isolation: worktree` for parallel execution
-- Main session acts as orchestrator, spawning subagents per set
-- Subagents report back to main session (no inter-agent messaging)
-- Coordination happens through shared state files in .rapid/
-- Sequential merge with review between each set
-
-**For solo developer (team of one):**
-- Same architecture, single set at a time or parallel subagents
-- Lock files still used (future-proofing for team use)
-- Merge review still runs (quality gate consistency)
+**If EXPERIMENTAL_AGENT_TEAMS is NOT available:**
+- Fall back to sequential subagent spawning
+- Pipeline orchestrator manages report handoff between stages via file I/O
+- Each agent reads previous agent's output from `.planning/reviews/`
 
 ## Version Compatibility
 
-| Component | Compatible With | Notes |
-|-----------|-----------------|-------|
-| Claude Code v2.1.62+ | Plugin system, hooks, agents, skills | Minimum version for full plugin support. settings.json specifies minimumVersion |
-| Claude Code v2.1.49+ | --worktree CLI flag, isolation: worktree | Required for native worktree support in subagents |
-| EXPERIMENTAL_AGENT_TEAMS | Current experimental | API may change. Detect via env var, always implement subagent fallback |
-| Git v2.30+ | git worktree add/remove/list | Stable since 2020. Required for linked worktree features |
-| Node.js v18+ | Built-in to Claude Code runtime | Used for hook JSON processing. No external Node.js install needed |
-| jq v1.6+ | JSON processing from bash | Widely available, stable API. Install check needed in plugin init |
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| `playwright@^1.52` | Node.js v18+ | RAPID runs on v25.8.0, well within range. v1.52+ required for latest Chromium protocol. System already has v1.58.2 globally. |
+| `node:test` `run()` API | Node.js v22+ | `run()` and `TestsStream` events stable in v22+. v25.8.0 fully supported. |
+| `ajv@^8.17.1` | Node.js v14+ | No compatibility concerns. |
+| `proper-lockfile@^4.1.2` | Node.js v12+ | No compatibility concerns. |
+| Playwright MCP | Claude Code v2.1+ | Standard MCP integration. Configured via `.playwright/cli.config.json`. |
 
-## Installation
+## Integration Points with Existing Codebase
 
-This is a Claude Code plugin -- no npm install step. Installation is:
-
-```bash
-# Option 1: From marketplace (when published)
-claude plugin install rapid@claude-code-marketplace
-
-# Option 2: Direct from repo
-claude --plugin-dir /path/to/RAPID
-
-# Option 3: Install from GitHub
-claude plugin install rapid@github/fishjojo1/RAPID
-```
-
-The plugin self-checks for dependencies at session start (via SessionStart hook):
-- Git version >= 2.30
-- jq available in PATH
-- EXPERIMENTAL_AGENT_TEAMS detection
-
-```bash
-# No build step. No npm install. Just files:
-# .claude-plugin/plugin.json  -- manifest
-# commands/*.md                -- slash commands
-# agents/*.md                  -- subagent definitions
-# skills/*/SKILL.md            -- skills
-# hooks/hooks.json             -- hook configuration
-# hooks/scripts/*.sh           -- bash hook scripts
-# hooks/scripts/*.js           -- Node.js hook scripts
-# lib/*.sh                     -- shared bash libraries
-```
+| New Feature | Integrates With | How |
+|-------------|-----------------|-----|
+| UAT agent | `teams.cjs` (subagent spawning) | Spawned as subagent, receives project context, uses Playwright MCP or library, returns structured UAT report |
+| Unit Test agent | `state.cjs`, `execute.cjs` | Reads current wave/job state to know what to test. Uses `node:test` `run()` API. Writes test reports to `.planning/reviews/` |
+| Bug hunt pipeline | `teams.cjs`, `returns.cjs` | Three sequential subagents (hunter -> DA -> judge), each reading previous agent's output from `.planning/reviews/` |
+| State machine | `state.cjs` (extend), `lock.cjs` | New `state-machine.cjs` module wrapping existing state primitives with transition validation and history tracking |
+| Merger adaptation | `merge.cjs`, `contract.cjs`, `dag.cjs` | Extend existing merge module with 5-level conflict detection from gsd_merge_agent patterns. Uses existing git helpers and contract validation |
+| Review schemas | `ajv` (existing) | New JSON schemas for BugReport, Verdict, Ruling, UATStep, TestReport validated with existing `ajv` setup |
 
 ## Sources
 
-- [Claude Code Plugins Reference](https://code.claude.com/docs/en/plugins-reference) -- Official plugin system documentation, component types, manifest schema (HIGH confidence)
-- [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams) -- EXPERIMENTAL_AGENT_TEAMS docs, TeammateIdle/TaskCompleted hooks, architecture (HIGH confidence)
-- [Claude Code Subagents](https://code.claude.com/docs/en/sub-agents) -- Subagent frontmatter fields including `isolation: worktree`, tool restrictions, permission modes (HIGH confidence)
-- [plugin-dev skill: plugin-structure](local: ~/.claude/plugins/cache/claude-plugins-official/plugin-dev/) -- Plugin directory layout, auto-discovery, component patterns (HIGH confidence)
-- [plugin-dev skill: component-patterns](local: ~/.claude/plugins/cache/claude-plugins-official/plugin-dev/) -- Hook organization, cross-component patterns (HIGH confidence)
-- [GSD Plugin Source](local: ~/.claude/get-shit-done/) -- Reference implementation of a complex Claude Code plugin with hooks, commands, agents, and bash/Node.js scripts (HIGH confidence)
-- [proper-lockfile](https://github.com/moxystudio/node-proper-lockfile) -- mkdir-based locking strategy documentation (MEDIUM confidence -- used for pattern reference, not as dependency)
-- [CCPM (Claude Code PM)](https://github.com/automazeio/ccpm) -- Reference project using worktrees for parallel agent execution with GitHub Issues (MEDIUM confidence)
-- [Claude Code Worktree Guide](https://claudefa.st/blog/guide/development/worktree-guide) -- Community documentation on worktree patterns (MEDIUM confidence)
-- [Boris Cherny on Claude Code Worktrees](https://www.threads.com/@boris_cherny/post/DVAAnexgRUj/) -- Official announcement of built-in worktree support v2.1.49 (HIGH confidence)
+- [Node.js v25.8.0 `node:test` documentation](https://nodejs.org/api/test.html) -- verified `run()` API, `TestsStream` events, programmatic test execution (HIGH confidence)
+- [Playwright Library documentation](https://playwright.dev/docs/library) -- verified library mode vs test runner distinction, API surface (HIGH confidence)
+- [Playwright CLI documentation](https://playwright.dev/docs/test-cli) -- verified CLI capabilities (HIGH confidence)
+- [XState npm page](https://www.npmjs.com/package/xstate) -- current version 5.28.0 confirmed, assessed and rejected (HIGH confidence)
+- [Simon Willison: Playwright MCP with Claude Code](https://til.simonwillison.net/claude-code/playwright-mcp-claude-code) -- MCP integration approach (MEDIUM confidence)
+- [Dev.to: You don't need a library for state machines](https://dev.to/davidkpiano/you-don-t-need-a-library-for-state-machines-k7h) -- XState creator argues hand-rolled FSMs are fine for simple cases (HIGH confidence)
+- Existing codebase analysis: `state.cjs`, `lock.cjs`, `teams.cjs`, `merge.cjs`, `core.cjs`, `package.json`, all 16 `.test.cjs` files (HIGH confidence)
+- Review module specs: `mark2-plans/review-module/*.md` -- first-party design docs for hunter/DA/judge/unit-test agents (HIGH confidence)
+- gsd_merge_agent plans: `mark2-plans/gsd_merge_agent/` -- first-party merge pipeline reference (HIGH confidence)
 
 ---
-*Stack research for: Claude Code plugin / team-based parallel development framework*
-*Researched: 2026-03-03*
+*Stack research for: RAPID Mark II -- review module, state machine, adversarial agents, merger adaptation*
+*Researched: 2026-03-06*

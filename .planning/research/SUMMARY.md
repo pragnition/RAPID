@@ -1,199 +1,188 @@
 # Project Research Summary
 
-**Project:** RAPID -- Rapid Agentic Parallelizable and Isolatable Development
-**Domain:** Claude Code plugin / metaprompting framework for team-based parallel development
-**Researched:** 2026-03-03
+**Project:** RAPID Mark II (Rapid Agentic Parallelizable and Isolatable Development)
+**Domain:** Metaprompting plugin -- Claude Code workflow overhaul (Sets/Waves/Jobs hierarchy, review module, adversarial agents, merger adaptation)
+**Researched:** 2026-03-06
 **Confidence:** HIGH
 
 ## Executive Summary
 
-RAPID is a Claude Code plugin that orchestrates parallel development across git worktrees using interface contracts as the coordination mechanism. The research confirms this is a well-supported design: Claude Code's plugin system (commands, agents, skills, hooks), native worktree support (`isolation: worktree`), and experimental agent teams provide all the infrastructure needed. The recommended stack is deliberately zero-dependency -- bash scripts, Node.js (built into Claude Code's runtime), git, and Markdown with YAML frontmatter. No npm install step, no build process, no external services. The reference implementation (GSD plugin) validates this bash-first, node-when-needed approach. Existing frameworks (GSD, PAUL, Agent Orchestrator, Parallel Code) all solve parts of this problem, but none combine planning-time contract definition with worktree isolation and automated merge review -- this is RAPID's core differentiator.
+RAPID Mark II is an overhaul of an existing Claude Code plugin that introduces hierarchical parallel development (Sets > Waves > Jobs), an adversarial multi-agent code review pipeline (Hunter/Devils-Advocate/Judge), automated UAT via Playwright, and an adapted 5-level merge conflict system from the gsd_merge_agent. The existing v1.0 codebase provides solid foundations -- worktree management, DAG computation, contract validation, lock-based state, and agent teams -- that Mark II extends rather than replaces. The recommended approach is to preserve the minimal-dependency CJS philosophy (only 1 new runtime dependency: `playwright`), replace the flat STATE.md with hierarchical JSON state as the single source of truth, and build outward from the state machine foundation through planning, execution, review, and merge phases.
 
-The recommended approach follows a seven-component architecture organized into four build phases: Foundation (state management, orchestrator shell), Planning (planning engine, contract system), Execution (worktree manager, context generator, hook engine), and Integration (merge pipeline, agent teams). The most critical architectural decision is the "planning gate, independent execution, coordinated merge" lifecycle. All parallelism planning happens upfront with explicit interface contracts. After the planning gate, each set executes independently in its own worktree. Coordination resumes only at merge time, where a dedicated reviewer agent validates contract compliance. This "loose sync" model is what makes RAPID viable for teams -- it avoids both the blocking linearity of GSD/PAUL and the coordination chaos of fully ad-hoc agent teams.
+The key risks are: (1) state schema bifurcation if the migration from flat Markdown to hierarchical JSON is not clean and atomic, (2) token cost explosion in the 3-agent adversarial review pipeline (estimated $15-45 per cycle without scoping controls), (3) hidden coupling in "kept" v1.0 modules that have implicit dependencies on the old workflow structure, and (4) agent specification ambiguity causing coordination failures between the 8+ new agent roles. Research shows specification ambiguity and coordination breakdowns account for ~79% of multi-agent system failures. Mitigation requires JSON schemas for all inter-agent messages, diff-scoped review (not full codebase), iteration caps on bug hunting, and a thorough dependency audit of kept modules before implementation begins.
 
-The top risks are: (1) custom agents cannot spawn subagents/teams (confirmed bug #23506), requiring RAPID to use skill/command-based entry points instead of `--agent` mode; (2) inter-agent specification misalignment where agents interpret contracts differently, mitigated by machine-verifiable contracts with typed examples and test fixtures; (3) file-based lock race conditions, mitigated by using `mkdir`-based atomic locking with stale detection; (4) context window overflow from injecting too much project context into worktree CLAUDE.md files, mitigated by per-set scoping and a 15K token budget; and (5) merge conflicts from shared files (package.json, config files) not covered by contracts, mitigated by explicit shared-file ownership planning.
+The architecture follows RAPID's existing layered pattern (commands > skills > lib modules > state files > git layer) without introducing a central orchestrator agent. Instead, each skill reads STATE.json on entry and self-dispatches based on current state -- a re-entrant, state-driven pattern that survives context resets. The review module, planner chain, and merger can be built semi-independently once the state machine foundation exists, enabling parallel development of the overhaul itself.
 
 ## Key Findings
 
 ### Recommended Stack
 
-RAPID requires zero external dependencies beyond what Claude Code already provides. The plugin is a collection of Markdown files (commands, agents, skills), bash scripts (git operations, locking, state management), and Node.js scripts (JSON processing for hook stdin/stdout protocol). State lives in JSON and Markdown files under `.planning/`, committed to git. Locking uses `mkdir`-based atomic operations -- no npm packages needed.
+The stack recommendation is aggressively minimal: 1 new runtime dependency (`playwright` for UAT browser automation) and zero new libraries for state management, agent coordination, or merge logic. The existing stack (Node.js v25.8, `ajv` for schema validation, `proper-lockfile` for concurrent access, `node:test` for testing) handles everything Mark II needs. The state machine is hand-rolled (~50-line transition table with JSON persistence), not a library like XState. The adversarial review pipeline uses pure prompt engineering + file-based report handoff, not LangChain or CrewAI.
 
 **Core technologies:**
-- **Claude Code Plugin System (v2.1.62+):** Platform for commands, agents, skills, hooks -- this is not a choice, it is the platform
-- **Bash scripts:** Hook scripts, git worktree management, file locking, state management -- the primary implementation language
-- **Node.js (v18+, built-in):** Complex hook scripts requiring JSON processing (hook stdin/stdout protocol)
-- **Git with worktrees (v2.30+):** Core isolation mechanism -- each set gets its own worktree and branch
-- **Markdown with YAML frontmatter:** All plugin component definitions, interface contracts, state files
-- **EXPERIMENTAL_AGENT_TEAMS:** Optional enhancement for multi-agent coordination; always implement subagent fallback
-- **jq (v1.6+):** JSON processing from bash scripts; dependency check needed at init time
+- **Playwright (library mode, ^1.52):** UAT browser automation -- use as library for programmatic `chromium.launch()`, not as `@playwright/test` runner. Falls back to MCP for interactive sessions, then to manual AskUserQuestion prompts.
+- **Hand-rolled state machine (`state-machine.cjs`):** Transition validation table for Set/Wave/Job lifecycle states -- XState rejected as overkill for flat linear progressions. ~50 lines of plain JS with `ajv` schema validation.
+- **`node:test` `run()` API:** Programmatic test execution with structured `TestsStream` events for the Unit Test agent. Zero new dependencies. Target projects use their own runners; RAPID detects and delegates.
+- **`ajv` (existing, extended):** New schemas for BugReport, Verdict, Ruling, UAT Plan, Wave/Job state -- leverages existing validation infrastructure.
 
 ### Expected Features
 
-**Must have (table stakes):**
-- Project initialization (`/rapid:init`) -- scaffold `.planning/`, detect existing codebase, generate CLAUDE.md and style guide
-- Set-based planning with interface contracts (`/rapid:plan`) -- decompose work into parallelizable sets with explicit API/data/behavioral contracts
-- Git worktree orchestration -- create, manage, cleanup worktrees per set with branch lifecycle management
-- Per-set execution in fresh context windows (`/rapid:execute`) -- subagent per set with only relevant context
-- Merge reviewer agent -- deep code review validating contract compliance, test coverage, style consistency
-- State management with session resume -- STATE.md tracking set statuses, decisions, blockers; resume from any point
-- Progress tracking (`/rapid:status`) -- show all sets, lifecycle phases, and next actions
-- CLAUDE.md generation -- auto-generated per-worktree context files with contracts, style guide, architecture knowledge
-- Help command (`/rapid:help`) -- command reference and workflow guidance
+**Must have (table stakes -- Mark II is broken without these):**
+- Hierarchical state machine with JSON persistence across context resets
+- Sets/Waves/Jobs hierarchy with DAG-based ordering (reuses v1.0's `dag.cjs`)
+- Orchestrator pattern via state-driven re-entrant skills (not a central agent)
+- `/set-init` with worktree + branch creation + wave planning
+- Wave Planner agent (decomposes sets into parallelizable job waves)
+- Job Planner agent (detailed per-job implementation plans with user discussion)
+- Merger with 5-level conflict detection and 4-tier resolution cascade (adapted from gsd_merge_agent)
 
-**Should have (differentiators -- add after core validation):**
-- Cleanup agent -- spawned on-demand when merge reviewer finds fixable issues
-- Agent Teams detection with subagent fallback -- dual-mode execution
-- Set dependency graph -- DAG of set relationships with ordering constraints
-- Cross-worktree style consistency -- auto-generated style guide from codebase analysis
-- Verification/UAT phase -- structured acceptance testing beyond merge review
+**Should have (differentiators -- competitive advantage):**
+- Hunter/Devils-Advocate/Judge adversarial bug hunting pipeline (47% more unique bug discovery per research)
+- UAT with Playwright automation (automated + human step tagging)
+- Unit test agent with plan approval flow (HITL prevents fluff tests)
+- Bisection recovery for merge failures (O(log n) isolation of breaking set)
+- Discuss phase with structured context gathering per wave
+- Merger rollback with cascade revert
 
-**Defer (v2+):**
-- Cross-agent-tool support (Codex, Gemini CLI)
-- Replan workflow (`/rapid:replan`)
-- Custom merge strategies
-- Issue tracker integration (GitHub Issues, Linear)
-- Plugin/extension system
+**Defer (v2.1+):**
+- `/quick` ad-hoc task command
+- `/insert-job` ad-hoc job insertion mid-execution
+- `/new-milestone` lifecycle management
 
 ### Architecture Approach
 
-The architecture is a seven-layer system with clear component boundaries: Orchestrator Layer (thin commands dispatching to agents), Planning Engine (set decomposition and boundary definition), Contract System (interface definition and enforcement), State Management Layer (git-native `.planning/` directory with lock files), Worktree Manager (git worktree lifecycle), Context Generator (per-worktree CLAUDE.md generation), and Merge Pipeline (validation, review, merge, cleanup). The key patterns are: thin command / fat agent (commands validate preconditions, agents do work in their own context), state as source of truth (all state in `.planning/`, committed to git), progressive context loading (load only what the current operation needs), and hook-based enforcement (deterministic boundary checking via PreToolUse hooks, not just prompting).
+The architecture extends RAPID's existing layered pattern without introducing new architectural concepts. The biggest change is inside each set: replacing the monolithic discuss/plan/execute cycle with a Wave Planner > Job Planner > Executor > Reviewer pipeline. State moves from flat STATE.md (regex-parsed) to hierarchical STATE.json (source of truth) with STATE.md as a read-only human projection. Agent chaining follows the existing pattern: skills orchestrate, agents execute and write structured reports to disk, the next agent reads the previous agent's output. No agent spawns agents (Claude Code platform limitation).
 
 **Major components:**
-1. **Orchestrator Layer** -- user-facing slash commands; validates preconditions, dispatches to specialized agents
-2. **State Management** -- `.planning/` directory with JSON config, Markdown state, per-set definitions; `mkdir`-based locking
-3. **Planning Engine** -- `rapid-planner` agent that decomposes work into sets with file ownership and contracts
-4. **Contract System** -- structured interface definitions (types, endpoints, schemas) with enforcement at merge time
-5. **Worktree Manager** -- creates/tracks/cleans up git worktrees per set; integrates with Claude Code native worktree support
-6. **Context Generator** -- produces per-worktree CLAUDE.md with set-specific contracts, style guide, architecture context
-7. **Merge Pipeline** -- multi-stage pipeline: pre-merge validation, test execution, reviewer agent, decision gate, merge, cleanup
+1. **Hierarchical State Machine** -- JSON-based state tracking for Project > Milestone > Set > Wave > Job with validated transitions, atomic writes, and crash-recovery breadcrumbs. Replaces `state.cjs` internals while preserving backward-compatible API wrappers.
+2. **Wave/Job Planning Engine** -- Two new agents (Wave Planner, Job Planner) plus `plan.cjs` extensions for WAVES.json and per-job PLAN.md files. Extends existing `dag.cjs` with intra-set job DAGs.
+3. **Review Module** -- Five new agents (Hunter, Devils-Advocate, Judge, Unit-Test, UAT) plus `review.cjs` lib module. Three sub-pipelines (UAT > Unit Tests > Bug Hunt) orchestrated by a review skill. Additive -- does not modify existing modules.
+4. **Enhanced Merger** -- 5-level conflict classification (textual, structural, dependency, API, semantic) and 4-tier resolution cascade (deterministic, heuristic, AI-assisted, human escalation) adapted from gsd_merge_agent. Includes bisection recovery and cascade rollback. Enhances `merge.cjs` internals.
+5. **Command Surface** -- New commands (`/set-init`, `/discuss`, `/review`, `/uat`, `/unit-test`, `/bug-hunt`) plus enhanced existing commands (`/execute`, `/merge`, `/status`).
 
 ### Critical Pitfalls
 
-1. **Custom agents cannot spawn subagents/teams (bug #23506)** -- Design RAPID around skills and commands invoked from plain `claude` sessions, not `--agent` mode. The Task tool is missing in custom agent sessions, breaking all orchestration. Validate the spawning pathway in Phase 1 before building anything on top.
-
-2. **Inter-agent specification misalignment** -- The #1 multi-agent failure mode (ICLR 2025, 150+ case study). Make contracts machine-verifiable with TypeScript types, JSON schemas, and concrete examples. Generate contract test stubs that both sides must pass. The merge reviewer must validate contract compliance, not just code quality.
-
-3. **File-based lock race conditions** -- Use `mkdir` for atomic lock acquisition (POSIX atomic). Store PID + timestamp for stale detection. Set 5-minute max lock age. Use fine-grained per-file locks, not a global lock that serializes all operations.
-
-4. **Context window overflow** -- Keep RAPID's total context injection under 15K tokens. Generate per-set CLAUDE.md with only relevant contracts. Limit MCP servers per worktree session. Test with realistic project sizes (5 sets, 20 contracts).
-
-5. **Shared file merge conflicts** -- During planning, explicitly identify shared files (package.json, config, routes) and designate one set as owner of each. Use file-per-set patterns for extensible registries. Dry-merge (`git merge --no-commit`) before attempting resolution.
+1. **State schema bifurcation** -- Attempting to layer hierarchical JSON on top of the existing flat STATE.md regex parsing creates a hybrid that fails at boundaries. **Avoid:** Clean break to STATE.json from day one. No hybrid format. Migration function for existing projects.
+2. **Token explosion in review pipeline** -- 3 serial agents each needing full codebase context costs $15-45/cycle with unbounded iterations. **Avoid:** Scope to diff (changed files only), cap iterations at 2, use Sonnet for hunter/DA (Opus only for judge), pre-filter with static analysis.
+3. **Hidden coupling in "kept" modules** -- Modules labeled "keep" (worktree.cjs, merge.cjs) have implicit dependencies on v1.0 data structures via imports. **Avoid:** Dependency audit before coding, adapter interfaces between kept and rewritten modules, integration tests at boundaries.
+4. **Agent specification ambiguity** -- Free-form prose prompts cause 41.77% of multi-agent failures. **Avoid:** JSON schemas for every inter-agent message, output validation at every handoff, concrete examples in prompts, retry-on-validation-failure.
+5. **State loss across context resets** -- Multi-step operations (discuss > plan > execute > review) span many context resets. Partial writes leave inconsistent state. **Avoid:** Atomic state transitions (single JSON write per transition), last-operation breadcrumbs, filesystem reconciliation on session start.
 
 ## Implications for Roadmap
 
-Based on research, the architecture has clear dependency-driven phase ordering. The suggested structure below groups features by component dependency, not arbitrary chunking.
+Based on research, suggested phase structure:
 
-### Phase 1: Foundation -- Plugin Shell and State Management
+### Phase 1: State Machine Foundation
+**Rationale:** Every other feature depends on hierarchical state. This is the universal dependency. Both ARCHITECTURE.md and PITFALLS.md identify this as the "must be first" component. Pitfall 1 (state bifurcation) and Pitfall 5 (state loss) must be addressed here or they cascade through everything.
+**Delivers:** STATE.json schema, rewritten `state.cjs` with hierarchical accessors, STATE.md auto-generation, transition validation table, atomic write semantics, crash-recovery breadcrumbs, CLI extensions for state queries.
+**Addresses:** State machine (P1 table stake), Sets/Waves/Jobs hierarchy data model (P1)
+**Avoids:** Pitfall 1 (state bifurcation), Pitfall 5 (state loss on context reset)
 
-**Rationale:** Every component reads from and writes to `.planning/`. State management, directory structure, and lock files must be correct before anything else can function. The plugin manifest and command shell must exist to provide the user-facing interface. This phase also validates the critical spawning pathway (bug #23506) before any orchestration logic is built.
-**Delivers:** Working plugin skeleton with `/rapid:init`, `/rapid:status`, `/rapid:help`; `.planning/` directory management; `mkdir`-based atomic locking; dependency checking (git version, jq availability, agent teams detection)
-**Addresses features:** Project initialization, persistent state, progress tracking, help command
-**Avoids pitfalls:** #1 (custom agent spawning -- validate entry point), #3 (lock race conditions -- implement `mkdir` locking), #8 (no nested teams -- design flat orchestration), #10 (hook environment -- build hook test harness), #12 (namespace collision -- deliberate skill naming)
+### Phase 2: Dependency Audit and Adapter Layer
+**Rationale:** Pitfall 6 (hidden coupling) specifically calls for a "Phase 0" pre-work step. Before building new features on kept modules, their implicit dependencies on v1.0 structures must be mapped and adapted. Skipping this causes every subsequent phase to encounter unexpected breakage.
+**Delivers:** Module-by-module dependency map, adapter interfaces for `worktree.cjs`, `merge.cjs`, `execute.cjs`, `plan.cjs` interactions with new data structures, integration tests at module boundaries.
+**Addresses:** Foundation for all subsequent phases
+**Avoids:** Pitfall 6 (hidden coupling in kept modules)
 
-### Phase 2: Planning Engine and Contract System
+### Phase 3: Wave/Job Planning Infrastructure
+**Rationale:** Execution depends on having wave/job plans. This phase creates the data structures and agents that decompose sets into actionable work units.
+**Delivers:** WAVES.json schema, `plan.cjs` extensions (createWavePlan, loadWavePlan, createJobPlan, loadJobPlan), `dag.cjs` extension (createJobDAG), Wave Planner agent, Job Planner agent.
+**Addresses:** Wave Planner (P1), Job Planner (P1)
+**Avoids:** Pitfall 7 (agent specification ambiguity) -- schemas for wave/job plan outputs defined here
 
-**Rationale:** Planning produces the artifacts all other components consume. Sets, contracts, and boundaries must be defined before worktrees can be created or execution can begin. The contract system is RAPID's core innovation and the most novel component -- it needs the most design iteration.
-**Delivers:** `/rapid:plan` command; `rapid-planner` agent; set decomposition with file ownership; interface contract format (typed, with examples and test stubs); set dependency graph; shared-file ownership identification
-**Addresses features:** Set-based planning, interface contract definition, set dependency graph, codebase mapping (basic)
-**Avoids pitfalls:** #4 (inter-agent misalignment -- machine-verifiable contracts with concrete examples), #6 (shared file conflicts -- explicit ownership planning)
+### Phase 4: /set-init and Discuss Commands
+**Rationale:** Depends on state machine (Phase 1) and wave planning (Phase 3). This is the entry point for Mark II workflow -- users cannot start without it.
+**Delivers:** `/rapid:set-init` command and skill, `/rapid:discuss` command and skill, worktree creation + wave planning trigger, port allocation per worktree.
+**Addresses:** /set-init (P1), Discuss phase (differentiator)
+**Avoids:** Pitfall 8 (resource conflicts across worktrees) -- port allocation established here
 
-### Phase 3: Worktree Orchestration and Context Generation
+### Phase 5: Enhanced Execution
+**Rationale:** Depends on wave/job structure (Phase 3) and set-init (Phase 4). Transforms execution from set-level to job-level dispatch within waves.
+**Delivers:** Rewritten execute skill with job-level dispatch, per-job commit tracking, job-level pause/resume, parallel job execution within waves.
+**Addresses:** Executor agent (P1)
 
-**Rationale:** Execution depends on physical isolation via worktrees and proper context injection via CLAUDE.md. These must work together: worktree creation triggers CLAUDE.md generation, and CLAUDE.md content is scoped to the specific set's contracts and boundaries.
-**Delivers:** Worktree Manager (create/track/cleanup worktrees per set); Context Generator (per-worktree CLAUDE.md with contracts, style guide, boundaries); `WorktreeCreate`/`WorktreeRemove` hooks; boundary enforcement via PreToolUse hooks; style guide generation from codebase analysis
-**Addresses features:** Git worktree orchestration, CLAUDE.md generation, cross-worktree style consistency, execution with fresh context windows
-**Avoids pitfalls:** #2 (branch exclusivity -- never design workflows requiring same branch in multiple worktrees), #5 (context overflow -- per-set scoping, 15K token budget), #7 (worktree pollution -- automated cleanup hooks), #11 (CLAUDE.md inconsistency -- immutable during execution, layered base + per-set), #13 (submodule incompatibility -- detect and handle), #14 (wrong worktree edits -- path scoping in PreToolUse hooks)
+### Phase 6: Review Module
+**Rationale:** Independent of the planner/executor chain -- only needs state machine. Can conceptually be built in parallel with Phases 3-5, but sequencing after execution ensures the pipeline can be tested end-to-end. This is the highest-complexity differentiator.
+**Delivers:** `review.cjs`, 6 agent prompts (Hunter, DA, Judge, Unit-Test, UAT, Bugfix), 4 new skills and commands, JSON schemas for inter-agent messages, Playwright UAT integration, review gate for merge.
+**Addresses:** Bug hunting pipeline (P2 differentiator), UAT (P2), Unit tests (P2)
+**Avoids:** Pitfall 3 (token explosion -- scoping and caps), Pitfall 4 (Playwright flakiness), Pitfall 7 (agent ambiguity -- schemas)
 
-### Phase 4: Per-Set Execution Engine
+### Phase 7: Enhanced Merger
+**Rationale:** Depends on review module (Phase 6) for review gate integration. Most complex adaptation from gsd_merge_agent. Building after review ensures merge validation can include review checks.
+**Delivers:** 5-level conflict classification, 4-tier resolution cascade, integration branch pattern, merge state in STATE.json, enhanced merge skill.
+**Addresses:** Merger core (P1 table stake), 5-level conflict detection
+**Avoids:** Pitfall 2 (merge namespace collision -- unified state, RAPID branch naming)
 
-**Rationale:** With state, planning, worktrees, and context in place, the execution engine connects them: spawn subagents in worktrees with proper context, track progress, handle session pause/resume.
-**Delivers:** `/rapid:execute` and `/rapid:execute-all` commands; `rapid-executor` agent with `isolation: worktree`; per-set lifecycle management (discuss/plan/execute phases within each set); atomic git commits per task; session pause/resume via STATE.md checkpoints
-**Addresses features:** Per-set execution, atomic commits, session pause/resume, discuss phase per set
-**Avoids pitfalls:** #9 (premature termination -- explicit "Definition of Done" in CLAUDE.md, verification before marking complete)
-
-### Phase 5: Merge Pipeline and Review
-
-**Rationale:** This is the final stage of the core workflow. Merge review validates that independent work actually integrates. This phase depends on everything above being functional -- you need completed worktrees with executed code to merge and review.
-**Delivers:** `/rapid:merge` command; `rapid-reviewer` agent (deep code review against contracts); `rapid-cleanup` agent (targeted fixes when review finds issues); multi-stage merge pipeline (dry merge, test execution, contract validation, review, merge, cleanup); merge ordering based on set dependency graph
-**Addresses features:** Merge reviewer agent, cleanup agent, interface contract validation at merge time, verification/UAT
-**Avoids pitfalls:** #4 (misalignment caught at merge), #6 (shared file conflicts resolved by reviewer), #9 (premature termination caught by independent verification)
-
-### Phase 6: Agent Teams Integration and Polish
-
-**Rationale:** Agent teams are an optimization layer on a system that already works with subagents. This phase adds dual-mode support (agent teams when available, subagent fallback when not) and polishes the user experience.
-**Delivers:** EXPERIMENTAL_AGENT_TEAMS detection and runtime mode switching; team-based parallel execution with `TeammateIdle`/`TaskCompleted` hooks; quality gates via hook enforcement; improved status dashboard; error message improvements
-**Addresses features:** Agent Teams detection with subagent fallback, team-first design
-**Avoids pitfalls:** #1 (spawning validation -- by this point, the subagent path is proven), #8 (no nested teams -- flat orchestration confirmed)
+### Phase 8: Advanced Recovery and Polish
+**Rationale:** Bisection and rollback extend the core merger. /init overhaul and status enhancements are polish that should not block the core workflow.
+**Delivers:** Bisection recovery, cascade rollback, enhanced /init with roadmap creation, enhanced /status with wave/job display, /review --quick mode.
+**Addresses:** Bisection (P3), Rollback (P3), /init overhaul
 
 ### Phase Ordering Rationale
 
-- **Phase 1 before everything:** State management is the central data bus. Every component depends on it. The spawning pathway validation (bug #23506) must happen here to avoid building on a broken foundation.
-- **Phase 2 before Phase 3:** Worktrees cannot be created for sets that do not exist. Contracts must be defined before CLAUDE.md can include them.
-- **Phase 3 before Phase 4:** Execution requires worktrees and context. Without physical isolation and proper CLAUDE.md injection, agents produce inconsistent, unmerge-able code.
-- **Phase 4 before Phase 5:** The merge pipeline operates on completed worktrees. Without executed code, there is nothing to merge or review.
-- **Phase 6 last:** Agent teams are experimental and optional. The core system must work without them. Adding them last means the subagent fallback is already battle-tested.
-- **Contract system in Phase 2 (early):** Contracts are a cross-cutting concern. Their format affects planning (Phase 2), context generation (Phase 3), execution guidance (Phase 4), and merge validation (Phase 5). Getting the format right early prevents cascading rework.
+- **State machine first** because it is the universal dependency. Architecture, features, and pitfalls research all converge on this.
+- **Dependency audit second** because hidden coupling in kept modules (Pitfall 6) will silently break every subsequent phase if not addressed upfront. This is cheap insurance.
+- **Planning before execution** because executors need plans to execute. DAG/wave/job structures must exist before dispatch logic.
+- **Review after execution** because it needs built code to review, and end-to-end testing requires the full pipeline.
+- **Merger after review** because the review gate must exist before the merger can enforce it. The merger is also the most complex adaptation and benefits from having all other infrastructure stable.
+- **Recovery and polish last** because these extend core features and have the lowest user value relative to complexity.
+- **Phases 3-5 and Phase 6 have limited interdependency** -- in practice, they could be parallelized if two developers are available. Review only needs the state machine, not the full planner chain.
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 2 (Planning Engine + Contracts):** The contract format and automated decomposition are novel. No existing framework does this. Needs prototype validation with a real project to determine if contracts are sufficiently specific for LLM agents to follow. Research the specific contract schema, test fixture generation, and planning agent prompt engineering.
-- **Phase 5 (Merge Pipeline):** The merge reviewer agent reliably catching contract violations is unproven. Needs research into how to structure the review prompt, what constitutes a "contract violation" in code, and how to handle the reviewer's false positive/negative rate.
+- **Phase 6 (Review Module):** Highest complexity, 6 new agents, 3 sub-pipelines, Playwright integration, token cost optimization. Needs research on optimal agent prompt design, inter-agent schema finalization, and Playwright MCP vs library mode tradeoffs per UAT scenario.
+- **Phase 7 (Enhanced Merger):** Complex adaptation from gsd_merge_agent (26 TypeScript files to CJS port). Needs research on exact algorithm translation for conflict classification and resolution cascade.
+- **Phase 2 (Dependency Audit):** Needs thorough code analysis of all 12 lib modules to map cross-cutting dependencies. Not research in the traditional sense but requires systematic investigation.
 
-Phases with standard patterns (skip deep research):
-- **Phase 1 (Foundation):** Plugin structure, state management, and locking are well-documented. GSD provides a reference implementation. Official Claude Code plugin docs cover everything needed.
-- **Phase 3 (Worktree Orchestration):** Git worktrees are well-understood. Claude Code's native worktree support is documented. Multiple community projects validate this pattern.
-- **Phase 4 (Execution):** Subagent spawning with `isolation: worktree` is a documented Claude Code feature. GSD's wave execution model provides a reference for task-level execution.
-- **Phase 6 (Agent Teams):** Official documentation covers the API. The main work is integration, not research.
+Phases with standard patterns (skip research-phase):
+- **Phase 1 (State Machine):** Well-understood problem. JSON state with transition tables is a solved pattern. The ARCHITECTURE.md research provides complete schema and implementation guidance.
+- **Phase 4 (/set-init):** Composes existing worktree.cjs functions with new state machine. Straightforward wiring.
+- **Phase 5 (Enhanced Execution):** Extension of existing execute.cjs with job-level dispatch. Pattern already established in v1.0.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All technologies verified against official Claude Code documentation, GSD reference implementation, and git official docs. Zero novel dependencies. |
-| Features | HIGH | Comprehensive competitor analysis across 6+ frameworks. Feature priorities validated against PROJECT.md requirements. Clear MVP definition. |
-| Architecture | HIGH (structure) / MEDIUM (contracts) | Seven-layer architecture follows proven patterns (thin controller, file-based state, hook enforcement). The contract system's specific format and enforcement for LLM agents is novel and less validated. |
-| Pitfalls | HIGH | Critical pitfalls verified via official docs, confirmed GitHub issues, peer-reviewed ICLR 2025 research, and established CS literature on file locking and concurrent systems. |
+| Stack | HIGH | Based on direct codebase analysis of existing dependencies, version compatibility verified, alternatives systematically evaluated and rejected with clear rationale. Only 1 new dependency. |
+| Features | HIGH | Features derived from first-party design docs (mark2.md, review module specs, gsd_merge_agent docs) plus competitor analysis against Turborepo, Nx, Bazel, CrewAI. Dependency graph validated against codebase. |
+| Architecture | HIGH | Based on thorough analysis of existing codebase (12 lib modules, all skills, all agents). Integration points mapped with specific function names and file paths. Anti-patterns identified from platform constraints (no nested agent spawning). |
+| Pitfalls | HIGH | Grounded in existing code analysis, published multi-agent failure research (UC Berkeley), cost modeling from Claude Code pricing, and direct experience with gsd_merge_agent integration surface. Recovery costs estimated per pitfall. |
 
-**Overall confidence:** HIGH -- the platform (Claude Code plugins), isolation mechanism (git worktrees), and coordination patterns (subagents, hooks) are all well-documented with official sources. The main uncertainty is around the contract system's effectiveness for LLM agent coordination, which is RAPID's novel contribution and requires prototype validation.
+**Overall confidence:** HIGH
+
+All four research files drew from first-party sources (existing RAPID codebase, mark2.md design doc, gsd_merge_agent specs, review module drafts) supplemented by official documentation (Node.js, Playwright, Microsoft/Google agent patterns) and peer-reviewed research. The domain is well-understood because the existing v1.0 codebase provides concrete implementation reference.
 
 ### Gaps to Address
 
-- **Contract schema design:** No existing framework provides a reference for machine-verifiable interface contracts consumed by LLM agents. The contract format must be concrete enough for automated validation but flexible enough for diverse project types. Needs prototype testing with a real multi-set project during Phase 2 planning.
-- **Planning agent decomposition quality:** Automated set decomposition by an LLM is novel. The quality of decomposition (appropriate boundaries, balanced complexity, complete shared-file identification) is hard to predict. Plan for iterative refinement of the planner agent's prompt.
-- **Agent Teams stability:** EXPERIMENTAL_AGENT_TEAMS is experimental with known bugs (#23506). The API may change. All agent teams integration must be behind feature detection with graceful degradation. Do not design any core workflow that requires agent teams.
-- **Merge reviewer accuracy:** The merge reviewer agent's ability to reliably catch contract violations vs. producing false positives is unknown. Start with a conservative reviewer (strict validation) and tune based on real usage.
-- **Disk space at scale:** Each worktree copies the full repo. With 5+ sets on a large project, disk usage could be significant. May need to investigate sparse checkout or shared `node_modules` strategies if this becomes a real problem.
+- **Sonnet vs Opus for review agents:** The recommendation to use Sonnet for hunter/DA and Opus for judge is based on cost analysis, not empirical testing. Validate during Phase 6 implementation that Sonnet produces adequate finding quality for the hunter role.
+- **EXPERIMENTAL_AGENT_TEAMS reliability:** The architecture assumes agent teams with subagent fallback, but teams behavior under heavy load (8+ concurrent agents across worktrees) is not well-documented. Test team stability during Phase 5/6.
+- **Port allocation scheme:** The suggested deterministic port offset (Set 1: 3000, Set 2: 3100, etc.) may conflict with projects that use non-standard port ranges. Needs validation against real project configurations during Phase 4.
+- **STATE.md backward compatibility:** The migration from STATE.md to STATE.json needs a concrete migration path for existing RAPID v1.0 projects. Design the migration function during Phase 1 implementation.
+- **Playwright in worktree environments:** The interaction between Playwright browser lifecycle, Claude Code sandbox restrictions, and git worktree working directories is untested. Validate during Phase 6 with a real web project.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [Claude Code Plugins Reference](https://code.claude.com/docs/en/plugins-reference) -- plugin system, component types, manifest schema
-- [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams) -- agent teams architecture, hooks, limitations
-- [Claude Code Subagents](https://code.claude.com/docs/en/sub-agents) -- subagent frontmatter, `isolation: worktree`, tool restrictions
-- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) -- all hook events, WorktreeCreate/WorktreeRemove, exit codes
-- [Claude Code Skills](https://code.claude.com/docs/en/skills) -- skill definition, auto-invocation, frontmatter format
-- [Claude Code Best Practices](https://code.claude.com/docs/en/best-practices) -- CLAUDE.md guidance, permission model
-- [Git Worktree Documentation](https://git-scm.com/docs/git-worktree) -- branch exclusivity, lifecycle, prune
-- [GSD Plugin Source](local: ~/.claude/get-shit-done/) -- reference implementation of complex Claude Code plugin
-- [Anthropic C Compiler Case Study](https://www.anthropic.com/engineering/building-c-compiler) -- real-world 16-agent parallel development
-- [Why Do Multi-Agent LLM Systems Fail? (ICLR 2025)](https://arxiv.org/html/2503.13657v1) -- 14 failure modes, inter-agent misalignment analysis
+- RAPID v1.0 codebase (`src/lib/*.cjs`, 12 modules, 16 test files) -- existing architecture, module APIs, data structures
+- mark2.md design document (`mark2-plans/mark2.md`) -- project owner's design spec for Mark II
+- gsd_merge_agent documentation (`mark2-plans/gsd_merge_agent/DOCS.md`, 26 TypeScript modules) -- merge pipeline reference
+- Review module specifications (`mark2-plans/review-module/*.md`) -- agent prompt drafts and pipeline design
+- Node.js v25.8.0 `node:test` documentation -- `run()` API, TestsStream events
+- Playwright Library documentation -- library vs test runner mode, API surface
+- Bazel official documentation -- task-based build system patterns
 
 ### Secondary (MEDIUM confidence)
-- [GSD GitHub](https://github.com/gsd-build/get-shit-done) -- feature set, wave execution model
-- [PAUL Framework](https://github.com/ChristopherKahler/paul) -- PAU loop, state management patterns
-- [Composio Agent Orchestrator](https://github.com/ComposioHQ/agent-orchestrator) -- parallel worktree execution, CI handling
-- [Parallel Code](https://github.com/johannesjo/parallel-code) -- GUI, worktree management
-- [ccswarm](https://github.com/nwiizo/ccswarm) -- role-based agents, worktree isolation
-- [CCPM](https://github.com/automazeio/ccpm) -- worktrees for parallel agent execution with GitHub Issues
-- [Contract Driven Development](https://dojoconsortium.org/docs/work-decomposition/contract-driven-development/) -- established development practice
-- [Claude Code Worktree Guide](https://claudefa.st/blog/guide/development/worktree-guide) -- community documentation
+- Microsoft Azure AI Agent Design Patterns -- supervisor/orchestrator patterns
+- Google ADK Multi-Agent Patterns -- agent coordination strategies
+- Multi-Agent Adversarial Testing Framework (ResearchGate) -- 47% bug discovery improvement with Red-Blue dynamics
+- Simon Willison: Playwright MCP with Claude Code -- MCP integration approach
+- Turborepo/Nx community analysis -- monorepo tooling patterns
 
 ### Tertiary (LOW confidence)
-- [proper-lockfile](https://github.com/moxystudio/node-proper-lockfile) -- mkdir-based locking strategy (pattern reference only, not a dependency)
-- [Spec-Driven Development Guide](https://www.augmentcode.com/guides/what-is-spec-driven-development) -- SDD patterns, interface-first design
+- LangGraph State Machines article -- agent task flow patterns (community article, used for comparison only)
+- Claude Code context window analysis (Morph) -- 200K limit, compaction behavior (third-party analysis)
 
 ---
-*Research completed: 2026-03-03*
+*Research completed: 2026-03-06*
 *Ready for roadmap: yes*

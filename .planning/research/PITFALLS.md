@@ -1,363 +1,296 @@
 # Pitfalls Research
 
-**Domain:** Multi-agent development coordination framework (Claude Code plugin)
-**Researched:** 2026-03-03
-**Confidence:** HIGH (official docs verified), MEDIUM (multi-source corroboration), LOW (flagged)
+**Domain:** Metaprompting framework overhaul -- adding Sets/Waves/Jobs hierarchy, review module, and adapted merger to existing RAPID plugin
+**Researched:** 2026-03-06
+**Confidence:** HIGH (based on existing codebase analysis, gsd_merge_agent specs, review module specs, and multi-agent systems research)
+
+Note: This supersedes the 2026-03-03 research. Previous pitfalls about general RAPID architecture (worktree branch exclusivity, lock files, context overflow, etc.) remain valid but are not repeated here. This document focuses specifically on pitfalls when ADDING the v2.0 Mark II features to the existing system.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Custom Agents Cannot Spawn Subagents or Teams
+### Pitfall 1: State Schema Bifurcation During Hierarchy Migration
 
 **What goes wrong:**
-When RAPID runs as a Claude Code plugin with a custom agent (via `claude --agent rapid`), the Task tool (subagent spawner) is not available in the session. The Teammate tool exists and `spawnTeam` succeeds, but no subagents can actually be populated into teams. This is a confirmed bug (GitHub issue #23506, duplicate of #13533) that makes agent teams non-functional from custom agent sessions.
+The current state management uses a flat markdown-based STATE.md with regex parsing (`**Field:** value` pattern via `state.cjs`). Migrating from "phases" to Sets > Waves > Jobs requires hierarchical state -- a Job has a status, its parent Wave has a status derived from its Jobs, its parent Set has a status derived from its Waves. The flat STATE.md format cannot represent this nesting. Developers attempt to "extend" the existing format, creating a hybrid where some state is flat markdown and some is nested JSON, leading to parsing failures and data loss on context resets.
 
 **Why it happens:**
-Claude Code's initialization pathway for custom agents does not inject the Task tool into the available tool set. The Teammate tool and TaskCreate/TaskList/TaskUpdate/TaskGet tools load, but the core Task tool needed to spawn subagents is missing. This appears to be an architectural limitation in how custom agent sessions are bootstrapped.
+The existing `stateGet`/`stateUpdate` functions in `state.cjs` use line-by-line regex matching. This works for flat key-value pairs but cannot represent tree-structured state. The temptation is to keep the existing format "working" while layering new state on top, rather than making a clean break to a structured format.
 
 **How to avoid:**
-- Design RAPID to work primarily through skills invoked from a plain `claude` session, not through `--agent` mode
-- Use the `settings.json` `agent` key in the plugin to activate a default agent, but test extensively whether this path also hits the same limitation
-- Implement a fallback path that uses subagents (via the Task tool in a non-agent session) when EXPERIMENTAL_AGENT_TEAMS is unavailable
-- Keep the orchestrator as a skill (e.g., `/rapid:plan`, `/rapid:execute`) rather than a standalone agent entry point
+Replace STATE.md with a JSON-based state file (STATE.json) from the start. The gsd_merge_agent already uses this pattern (`state.json` with schema validation on every read/write). Define the full state schema upfront:
+```json
+{
+  "project": { "milestone": "v2.0", "status": "active" },
+  "sets": {
+    "auth": {
+      "status": "executing",
+      "branch": "set/auth",
+      "worktree": "/path/to/worktree",
+      "waves": {
+        "w1": {
+          "status": "complete",
+          "jobs": {
+            "j1": { "status": "complete", "commits": ["abc123"] },
+            "j2": { "status": "executing" }
+          }
+        }
+      }
+    }
+  }
+}
+```
+Keep the `stateGet`/`stateUpdate` API surface but reimplement against JSON. Add a migration function that converts existing STATE.md to STATE.json for brownfield RAPID projects.
 
 **Warning signs:**
-- `Error: getTeammateModeFromSnapshot called before capture` in logs
-- Teams are created but have no members
-- Subagent-dependent operations silently fail or produce empty results
+- Writing regex patterns with more than 2 levels of nesting
+- Adding "section" parsing to state.cjs (e.g., "parse the Jobs section under Wave 2 under Set auth")
+- State reads returning `null` for fields that definitely exist
+- Two state files existing side by side (STATE.md and STATE.json)
 
 **Phase to address:**
-Phase 1 (Core Infrastructure) -- this is foundational. If the plugin's entry point is wrong, everything built on top breaks. Validate the spawning pathway before building any orchestration logic.
-
-**Confidence:** HIGH -- verified via official Claude Code docs and confirmed GitHub issue
+Phase 1 (State Machine) -- must be the first thing built. Everything downstream depends on hierarchical state.
 
 ---
 
-### Pitfall 2: Git Worktree Branch Exclusivity Causes Deadlocks
+### Pitfall 2: Merge Agent Namespace and Path Collisions
 
 **What goes wrong:**
-A branch can only be checked out in one worktree at a time. If RAPID's orchestration creates a worktree for set A on branch `feature/set-a`, and then a merge review process or cleanup agent needs to check out that same branch in another worktree, git refuses. This leads to deadlocks where the merge reviewer cannot examine code it needs to review, or cleanup agents cannot access the branch they need to fix.
+The gsd_merge_agent uses `.gsd-merge/` for state, `gsd-merge/integrate-*` for branches, and `phase/NN-*` for branch naming. RAPID uses `.planning/` for state, `.rapid-worktrees/` for worktrees, and `set/name` for branches. Naively porting the merge agent creates two parallel state systems that don't know about each other. Worse, the merge agent's branch naming (`phase/NN-*`) conflicts with RAPID's set-based branching, and the merge agent's `state.json` (in `.gsd-merge/`) conflicts conceptually with RAPID's own state machine.
 
 **Why it happens:**
-Git enforces a hard constraint: each branch can exist in exactly one worktree simultaneously. This is not configurable. Developers accustomed to `git checkout` patterns don't realize that worktrees impose this mutual exclusion.
+The gsd_merge_agent was built as a standalone plugin for GSD, not as a module within RAPID. Its scripts (26 TypeScript files in `scripts/`), schemas, and state management are self-contained -- it has its own `state.ts`, `config.ts`, `plan.ts` which shadow RAPID's existing `state.cjs`, `core.cjs`, `plan.cjs`. The TypeScript/CJS mismatch (gsd uses `.ts`, RAPID uses `.cjs`) adds friction. The gsd_merge_agent has its own hooks directory, its own skill definitions (4 skills: merge, merge-abort, merge-report, merge-status), and its own npm dependencies.
 
 **How to avoid:**
-- Never design workflows that require checking out the same branch in multiple worktrees simultaneously
-- The merge reviewer should work on the main/integration branch and use `git diff` or `git merge --no-commit` to examine incoming changes without needing the source branch's worktree
-- If cleanup is needed on a set's branch, route it to the agent already operating in that worktree, rather than spawning a new agent in a new worktree targeting the same branch
-- Document this constraint prominently in RAPID's planning phase output so users understand why "just checkout that branch in another worktree" is impossible
+Do NOT port the gsd_merge_agent as a standalone subsystem. Extract the algorithmic components and integrate them into RAPID's existing module structure:
+- Conflict detection logic (from `conflict-classify.ts`, `detect-api.ts`, `detect-deps.ts`, `detect-structural.ts`) becomes functions in a new `src/lib/merge/` directory using RAPID's CJS format
+- Resolution cascade logic (from `resolve-deterministic.ts`, `resolve-heuristic.ts`, `resolve-ai.ts`) becomes modules under the same directory
+- State for merge sessions lives as a nested object inside RAPID's main STATE.json (under a `merge` key per set), not a separate `.gsd-merge/state.json`
+- Branch naming uses RAPID's existing `set/name` convention, not `phase/NN-*`
+- The bisection and rollback algorithms (from `bisect.ts`, `rollback.ts`) are ported as utility functions, not as standalone workflows
+- Merge skills become RAPID skills (`/rapid:merge`, `/rapid:merge-status`) not separate `/merge` commands
+
+Maintain a clear mapping document: "gsd_merge_agent component X -> RAPID module Y".
 
 **Warning signs:**
-- `fatal: 'feature/set-a' is already checked out at '/path/to/worktree'`
-- Merge review processes that hang waiting for branch access
-- Cleanup agents failing to start
+- Two `state.json` files in different directories
+- Branch naming patterns that don't match the rest of RAPID
+- Import paths crossing between gsd_merge_agent scripts and RAPID lib
+- Having to "sync" state between two different state stores
+- `.gsd-merge/` directory appearing in RAPID projects
 
 **Phase to address:**
-Phase 2 (Git Worktree Management) -- must be baked into the worktree lifecycle design from the start. Retrofitting is expensive because it affects every workflow that touches branches across worktrees.
-
-**Confidence:** HIGH -- verified via official git-worktree documentation
+Phase 3 (Merger Adaptation) -- but the state integration decision must be locked in Phase 1 (State Machine) since the merge state schema needs to be part of the unified state design.
 
 ---
 
-### Pitfall 3: File-Based Lock Race Conditions Under Concurrent Agent Access
+### Pitfall 3: Bug Hunting Pipeline Token Explosion
 
 **What goes wrong:**
-RAPID's design calls for "git-native shared state with lock files to prevent concurrent modification." File-based locking is notoriously fragile. Two agents running in parallel can both read a lock file as "unlocked," both attempt to acquire it, and both succeed because the check-and-set is not atomic. On NFS or network filesystems (common in team environments), even O_EXCL is unreliable. Stale locks from crashed agents cause permanent deadlocks with no automatic recovery.
+The hunter/devils-advocate/judge pipeline requires 3 serial agent invocations per review cycle, with each agent needing full codebase context. For a non-trivial codebase, the hunter alone consumes 50-100K tokens reading files + 10-30K generating findings. The devils-advocate then needs those findings PLUS re-reads the codebase (another 50-100K). The judge needs both reports PLUS codebase access. A single review cycle can cost $15-45 on Opus, and the spec says "iterate from the top till the judge judges there are no bugs" -- creating an unbounded loop. Three iterations costs $45-135 per review. Research confirms agent teams use approximately 7x more tokens than standard sessions.
 
 **Why it happens:**
-File-based locking requires atomic check-and-set operations. Simple patterns like "check if file exists, then create it" have a TOCTOU (time-of-check-to-time-of-use) race window. Claude Code agents are separate OS processes, so OS-level file locking (flock) would work, but only on local filesystems. Agents that crash or are killed mid-operation leave lock files behind with no cleanup.
+The adversarial pattern is designed for thoroughness, not efficiency. Each agent is a separate subagent with its own 200K context window, so codebase context cannot be shared -- it must be re-read by each agent independently. The scoring system in the draft prompts ("maximize your score", "+3 points for each true positive found") incentivizes agents to be exhaustive rather than focused, generating more findings and more analysis. The draft prompts in `hunter.md` say "Cast a WIDE net" and "it is better to flag a false positive than to miss a real bug" -- this is the correct bias for the hunter but creates volume that cascades through the pipeline.
 
 **How to avoid:**
-- Use `mkdir` for lock acquisition -- `mkdir` is atomic on POSIX systems and fails if the directory already exists, eliminating the TOCTOU race
-- Alternatively, use git's own index.lock pattern: create a lockfile with O_EXCL (exclusive create), which is atomic on local filesystems
-- Implement mandatory stale lock detection: store PID + timestamp in the lock file, and check whether the PID is still alive before honoring the lock
-- Set a maximum lock age (e.g., 5 minutes) after which locks are forcibly broken with a warning
-- Design lock granularity carefully: lock the specific state file being modified, not a global lock that serializes all operations
-- Use git's built-in `git lock-ref` or leverage git commit as an atomic state transition (committing IS an atomic file update)
+1. **Scope bug hunting to the diff, not the full codebase.** Each review should only analyze files changed in the current wave/job, not the entire project. The existing `execute.cjs` already has a `getChangedFiles` function that can provide this scoping.
+2. **Set a hard iteration cap (max 2 cycles).** After 2 rounds, any remaining DEFERRED items become tickets, not re-hunt targets. Make this configurable but default to 2.
+3. **Use Sonnet for the hunter and devils-advocate.** Only the judge needs Opus-level reasoning. Sonnet is 5x cheaper per token. The hunter's job is pattern recognition (Sonnet excels); the DA's job is verification (also pattern-based). Only the judge requires nuanced judgment.
+4. **Pre-filter with static analysis.** Run linter, type-checker, and any project-specific lint rules before spawning agents. Remove findings that tools can catch mechanically. No need to spend tokens on "missing type annotation" when `tsc --noEmit` catches it.
+5. **Pass structured JSON between agents, not markdown reports.** The hunter's output to the DA should be a JSON array of `{ id, file, line, category, risk, confidence, description, reproduction }` objects validated against a schema. This eliminates parsing ambiguity (see Pitfall 7).
+6. **Remove the gamified scoring from prompts.** The "+3 for true positive, -2 for missed" language causes agents to over-report to pad scores. Replace with clear criteria: "Report only findings where you can identify a concrete code path to failure."
 
 **Warning signs:**
-- Two agents report success modifying the same state file simultaneously
-- State files contain interleaved/corrupted content from concurrent writes
-- Agents hang indefinitely waiting for a lock that will never be released
-- Lock files persist after all agents have exited
+- Single review cycle exceeding $20
+- Hunter generating more than 20 findings per wave review (indicates over-reporting)
+- More than 2 review iterations before convergence
+- Devils-advocate CONFIRMING more than 50% of findings (indicates hunter is too conservative, or DA is rubber-stamping)
+- Total review cost exceeding execution cost for the same wave
 
 **Phase to address:**
-Phase 1 (Core Infrastructure) -- locking is the foundation of shared state. If it is unreliable, every higher-level feature built on top (task claiming, state transitions, contract registration) is unreliable.
-
-**Confidence:** HIGH -- well-established computer science; verified via multiple sources on file-based locking vulnerabilities
+Phase 4 (Review Module) -- token budgets and scoping rules must be part of the initial design, not retrofitted.
 
 ---
 
-### Pitfall 4: Inter-Agent Specification Misalignment (The #1 Multi-Agent Failure Mode)
+### Pitfall 4: Playwright UAT Flakiness in Claude Code Plugin Context
 
 **What goes wrong:**
-Research from UC Berkeley/ICLR 2025 analyzing 150+ multi-agent system failures found that inter-agent misalignment is the single most common failure mode. Agents talk past each other, duplicate effort, forget their responsibilities, or work against shared goals. In RAPID's context: Set A's agent produces code that technically satisfies its interface contract but interprets the contract differently than Set B's agent. At merge time, the code is syntactically compatible but semantically wrong.
+Playwright UAT tests in a Claude Code plugin context face unique challenges: (a) the plugin runs inside Claude Code's sandbox, which may restrict browser process spawning, (b) the dev server must be running before tests execute but the plugin cannot assume it is, (c) test timeouts interact badly with Claude Code's own response timeouts (Bash tool default 120s), and (d) browser lifecycle (launch/close) failures leave zombie Chromium processes that consume memory and block future test runs. The spec calls for "automated" vs "human" UAT steps, but the boundary between these is fluid -- a test that works locally may fail in a worktree with different port assignments.
 
 **Why it happens:**
-Each agent operates in its own context window with its own interpretation of instructions. Claude Code agents do not share conversation history. When the planning phase produces interface contracts, each agent reads those contracts independently and can develop divergent interpretations over the course of a long coding session, especially after context compaction.
+Playwright assumes it controls the full execution environment -- it launches browsers, manages processes, handles signals. Claude Code plugins run inside a constrained agent environment where shell commands have timeouts (120s default, 600s max), processes can be killed mid-execution, and the working directory might be a worktree (not the main repo). The existing `playwright-cli` skill in `.claude/skills/` exists but its integration with review workflows and multi-worktree environments is untested territory.
 
 **How to avoid:**
-- Make interface contracts machine-verifiable, not just human-readable. Include TypeScript type definitions, JSON schemas, or test fixtures that can be automatically validated
-- Generate contract test stubs during planning that both sides must pass -- if Set A's tests pass and Set B's tests pass, the integration will work
-- Include concrete examples in every contract: "When Set A calls `getUser(id)`, it expects `{id: string, name: string, email: string}`" rather than "Set A exposes a user endpoint"
-- Keep contracts in a shared location (the main branch's `.rapid/contracts/` directory) that all worktrees can read but only the planning phase can write
-- The merge reviewer must validate contract compliance, not just code quality
+1. Always use `npx playwright test` with `--reporter=json` for machine-parseable results. Never parse human-readable Playwright output.
+2. Add explicit server health checks before running tests: hit the server URL with a retry loop (3 attempts, 2s apart) before launching the test suite. If the server isn't running, start it in the background and wait for health check to pass.
+3. Set Playwright's own timeout (30s default) LOWER than Claude Code's Bash tool timeout to ensure Playwright reports failures before Claude Code kills the process. Use `timeout: 30000` in Playwright config, and `timeout: 120000` in the Bash tool call.
+4. Use `browser.close()` in a `finally` block and add a cleanup step that kills orphan Chromium processes: `pkill -f chromium || true` after every test run.
+5. Pin tests to a single browser (Chromium). Multi-browser testing adds flakiness without proportional value in this context.
+6. For "automated" vs "human" UAT classification: default to "human" for anything involving visual regression, animations, complex drag-and-drop, or interactions that require judgment. Only tag as "automated" when the assertion is purely data-driven (text content, HTTP status, element presence, form submission).
+7. Isolate Playwright config per worktree -- each worktree gets its own `playwright.config.ts` with unique base URLs derived from the set's port allocation.
+8. Use Playwright's `webServer` config option to auto-start the dev server rather than managing it manually.
 
 **Warning signs:**
-- Agents asking clarification questions about contracts that should be unambiguous
-- Contracts that describe behavior in prose without concrete types or examples
-- Integration tests failing at merge time despite individual set tests passing
-- Semantic mismatches (correct types, wrong values/behavior)
+- Tests passing locally but failing in worktrees
+- "Browser closed unexpectedly" or "Target page, context or browser has been closed" errors
+- Zombie Chromium processes accumulating (check with `ps aux | grep chromium`)
+- Timeouts that don't produce actionable error messages (killed by Bash tool, not by Playwright)
+- Port collision errors between worktrees running UAT simultaneously
 
 **Phase to address:**
-Phase 3 (Interface Contract System) -- but the contract format must be designed in Phase 1 so the planning phase knows what to produce. This is a cross-cutting concern.
-
-**Confidence:** HIGH -- ICLR 2025 peer-reviewed research paper with quantitative analysis of 150+ failure cases
+Phase 4 (Review Module) -- but Playwright infrastructure decisions (port allocation, config template) should be settled in the set-init phase since UAT depends on deterministic server configuration.
 
 ---
 
-### Pitfall 5: Context Window Overflow Degrades Agent Quality Silently
+### Pitfall 5: State Loss and Inconsistency Across Context Resets
 
 **What goes wrong:**
-RAPID's generated CLAUDE.md files will contain code style guides, architecture patterns, API conventions, project knowledge, interface contracts, and set-specific instructions. Combined with the plugin's skill prompts, hook configurations, and MCP server tool schemas, the total context load can silently push agents toward or past context limits. When this happens, agents don't fail -- they degrade. They forget earlier instructions, drop contract requirements, produce lower-quality code, and miss edge cases. The degradation is invisible until merge review catches it (or doesn't).
+Claude Code sessions are ephemeral -- when context resets (compaction, new conversation, or crash), all in-memory state is lost. The v2.0 workflow has multi-step operations (discuss > plan > execute > review per wave, iterating across waves, with bug hunt iterations inside review) that span multiple context resets. If state is partially written when a reset occurs, the next session finds an inconsistent state: a Wave marked "executing" with only 2 of 5 Jobs completed, or a review cycle mid-iteration with the hunter's report written but the DA not yet spawned. The new session cannot determine whether to resume, restart, or abort.
 
 **Why it happens:**
-System prompts, CLAUDE.md content, skill definitions, tool schemas from MCP servers, and conversation history all compete for space in the context window. Each MCP server's tools load their schemas into context. With 10+ MCP servers and 80+ tools, context can shrink from 200K tokens to 70K usable tokens. Long coding sessions accumulate tool call results that further compress available space.
+The current `stateUpdate` function is atomic for single fields but there is no transaction concept. A wave execution involves updating multiple related fields: wave status, individual job statuses, commit references, and potentially merge state. These updates happen at different points during execution via separate `stateUpdate` calls. If a context reset occurs between updating the wave status to "executing" and updating individual job statuses, the state is internally inconsistent. The gsd_merge_agent handles this with a `mode` field (active/paused/conflicted/completed/aborted) but RAPID's current state model has no equivalent.
 
 **How to avoid:**
-- Measure the baseline token cost of RAPID's context injection (CLAUDE.md + skills + hooks + contracts) and keep it under 15K tokens
-- Use progressive disclosure in skill files: short instructions for common cases, longer details loaded only when needed
-- Generate per-set CLAUDE.md files that include only the contracts and context relevant to that set, not the entire project's contracts
-- Limit MCP servers per worktree session to only what that set needs
-- Implement a PreCompact hook that preserves critical contract information when context compaction occurs
-- Test with realistic project sizes: a project with 5 sets and 20 contracts will produce much more context than a 2-set demo
+1. **Atomic state transitions.** A `transitionWaveStatus(setId, waveId, fromStatus, toStatus, jobUpdates)` function that writes ALL related state changes in a single JSON file write, guarded by the existing lock mechanism. Never update wave status and job statuses in separate writes.
+2. **Last-operation breadcrumb.** Every state write includes a `lastOperation` field:
+   ```json
+   {
+     "operation": "execute-jobs",
+     "setId": "auth",
+     "waveId": "w1",
+     "completedJobs": ["j1", "j2"],
+     "pendingJobs": ["j3", "j4", "j5"],
+     "timestamp": "2026-03-06T10:30:00Z"
+   }
+   ```
+   This gives the next session enough context to determine what happened and how to resume.
+3. **In-progress markers.** Borrow the gsd_merge_agent's pattern: the session `mode` field distinguishes between "actively processing" (in-progress, unstable state) and "resting" (stable, resumable state). On session start, if mode is "active" but no agent is running, the state is in a crash-recovery scenario.
+4. **Filesystem reconciliation.** On session start, always run a state reconciliation step: compare declared state against filesystem evidence (do the commits exist? do the output files exist? do the worktrees exist?). Trust the filesystem over the state file when they disagree. For example, if a job is marked "executing" but its branch has commits matching the expected output, mark it "complete."
+5. **Subagent results to disk first.** Subagent outputs must be persisted to disk (e.g., `.planning/sets/auth/waves/w1/jobs/j1/result.json`) BEFORE the parent orchestrator records completion in STATE.json. If the parent crashes before recording, the next session should find the output file and recover.
 
 **Warning signs:**
-- Agent output quality degrades over long sessions
-- Agents "forget" contract requirements they followed earlier in the session
-- Context compaction happens frequently (check via hooks)
-- Agents produce code that contradicts CLAUDE.md guidelines
+- State shows "executing" but no recent commits on the branch
+- Jobs marked "complete" but their output files don't exist
+- Multiple context resets during a single wave execution (indicates the operation is too long for a single context window)
+- Users reporting "it says it's done but nothing happened"
+- Wave status and job statuses disagreeing (wave is "executing" but all jobs are "complete")
 
 **Phase to address:**
-Phase 4 (CLAUDE.md Generation) -- but must be considered during Phase 1 design. Token budgets should be allocated early.
-
-**Confidence:** MEDIUM -- based on official Claude Code docs about context limits and general LLM context window research; exact token costs are project-specific
+Phase 1 (State Machine) -- the transaction and recovery model must be baked into the state system from day one, not patched onto a naive read/write layer.
 
 ---
 
-### Pitfall 6: Merge Conflicts from Shared Files Not Covered by Interface Contracts
+### Pitfall 6: Selective Reuse Creating Hidden Coupling
 
 **What goes wrong:**
-Interface contracts define boundaries between sets, but real codebases have shared files that multiple sets must modify: package.json, configuration files, route registrations, database migration indexes, shared type definition files, CSS/style tokens, and environment variable definitions. Even with perfect contract compliance, merging these shared files produces git conflicts that the merge reviewer must resolve. If RAPID doesn't account for this, every merge fails.
+v2.0 keeps proven v1.0 components (agent framework, plugin shell, context generation, worktrees) while rewriting workflow/planning/review/merge. The kept components have implicit assumptions about the old workflow. Specifically:
+- `worktree.cjs` calls `plan.loadSet()` which expects the v1.0 set structure (phases, not waves/jobs)
+- `merge.cjs` imports from `contract.cjs`, `dag.cjs`, `worktree.cjs`, `execute.cjs`, and `plan.cjs` -- 5 dependencies that are all being rewritten
+- `dag.cjs` provides `getExecutionOrder` which assumes phase-based topological ordering, not wave-based parallel groups
+- `contract.cjs` validates against the v1.0 contract schema (single interface boundary, not the multi-layer hierarchy)
+- `execute.cjs` has `getChangedFiles` that the review module will need, but the function assumes phase-based branching
+
+These hidden couplings mean "keeping" a module actually requires modifying it, but the modifications aren't planned because the module was categorized as "kept."
 
 **Why it happens:**
-Contract-based parallel development assumes clean separation. In practice, adding a new feature always touches some shared infrastructure: adding a route to the router, registering a new module, adding a dependency, extending shared types. These "incidental touches" to shared files are invisible during planning because they emerge during implementation.
+Selective reuse creates a false binary: modules are labeled "keep" or "rewrite." In reality, kept modules have tentacles into rewritten modules via imports, shared data structures, and assumptions about the workflow. Looking at `merge.cjs` alone: it requires `contract.cjs`, `dag.cjs`, `worktree.cjs`, `execute.cjs`, and `plan.cjs` at the top of the file. A module cannot be "kept" if all of its dependencies are being rewritten.
 
 **How to avoid:**
-- During planning, explicitly identify "shared files" that multiple sets will touch and designate one set as the owner of each shared file
-- For files that genuinely need concurrent modification (like package.json), use a convention-based approach: each set adds its dependencies to a set-specific manifest (e.g., `.rapid/sets/set-a/dependencies.json`) and a merge-time hook consolidates them
-- For route registrations and module loading, use a file-per-set pattern (e.g., `routes/set-a.ts`) that a loader scans dynamically, rather than a single file all sets modify
-- Make the merge reviewer's first pass a dry merge (`git merge --no-commit`) to identify conflicts before attempting resolution
+1. **Dependency audit before coding.** For each "kept" module, trace every import, every function call, and every data structure assumption. Create an explicit map:
+   ```
+   worktree.cjs
+     imports: lock.cjs (keep), plan.cjs (REWRITE)
+     reads: REGISTRY.json (structure may change)
+     assumes: set structure has phases, not waves
+     verdict: KEPT WITH MODIFICATIONS (update plan.loadSet calls)
+   ```
+2. **Adapter interfaces.** Define clean interfaces between "kept" and "rewritten" modules. If `worktree.cjs` needs set data, it should accept a standardized set descriptor object (`{ name, branch, worktree, status }`), not call `plan.loadSet()` directly. This decouples the worktree module from the planning data structure.
+3. **Reclassify "kept" modules honestly.** The three categories should be:
+   - **Kept as-is:** No changes needed (e.g., `lock.cjs`, `returns.cjs`)
+   - **Kept with modifications:** API surface stays, internals change (e.g., `worktree.cjs`, `state.cjs`)
+   - **Rewrite:** New module, old one deleted (e.g., `merge.cjs`, `plan.cjs`, `dag.cjs`)
+4. **Integration tests at boundaries.** Write tests between kept and rewritten modules BEFORE writing new code. These tests serve as the contract that both sides must satisfy. If the test calls `worktree.createWorktree(setDescriptor)` and expects a specific result, both the old adapter and new implementation must pass.
 
 **Warning signs:**
-- Multiple sets planning to modify the same files
-- Planning phase producing contracts but no shared-file ownership plan
-- Merge reviewer encountering unexpected conflicts on files not mentioned in contracts
-- Sets independently adding the same dependency at different versions
+- "Kept" modules failing with `TypeError: Cannot read property 'X' of undefined` (structure mismatch between old and new)
+- Import cycles between old and new modules
+- Having to modify a "kept" module more than 3 times during implementation
+- Functions being duplicated because the old version can't handle new data structures
+- Tests for kept modules breaking when new modules are introduced
 
 **Phase to address:**
-Phase 3 (Interface Contracts) and Phase 5 (Merge Review) -- the planning phase must identify shared files, and the merge phase must handle conflicts gracefully.
-
-**Confidence:** HIGH -- this is a well-known problem in parallel development workflows; verified across multiple sources on contract-driven development
+Phase 0 (Architecture/Pre-work) -- the dependency audit and adapter design must happen before any implementation starts. If this is skipped, every subsequent phase will encounter unexpected breakage in "kept" modules.
 
 ---
 
-## Moderate Pitfalls
-
-### Pitfall 7: Worktree Directory Pollution and Cleanup Failures
+### Pitfall 7: Agent Prompt Specification Ambiguity Causing Coordination Failures
 
 **What goes wrong:**
-Each git worktree creates a real directory on disk. Each directory needs its own `node_modules/`, build artifacts, and framework caches. With 5 parallel sets, that is 5x the disk usage for dependencies alone. When RAPID's lifecycle ends (or crashes), stale worktree directories and their associated `node_modules/` persist. Over time, disk space balloons. Manually deleting worktree directories (instead of using `git worktree remove`) leaves stale references in `.git/worktrees/` that cause confusing errors.
-
-**How to avoid:**
-- Implement the `WorktreeRemove` hook to guarantee cleanup: remove `node_modules/`, build artifacts, and then call `git worktree remove` (never `rm -rf`)
-- After `git worktree remove`, run `git worktree prune` to clean up stale references
-- Before creating worktrees, run `git worktree prune` to clear any stale references from previous runs
-- Implement a `rapid:cleanup` skill that audits all worktrees and removes orphans
-- Use `WorktreeCreate` hook to automate `npm install` in new worktrees so agents don't waste time figuring this out
-- Consider symlinking or copying `node_modules/` from the main worktree to save time (but be aware of version divergence risks)
-
-**Warning signs:**
-- `git worktree list` shows worktrees that no longer exist on disk
-- Disk usage growing significantly after each RAPID run
-- `git worktree add` failing with "already exists" errors for directories that were manually deleted
-
-**Phase to address:**
-Phase 2 (Git Worktree Management) -- cleanup must be part of the worktree lifecycle, not an afterthought.
-
-**Confidence:** HIGH -- verified via official git-worktree docs and multiple community reports
-
----
-
-### Pitfall 8: No Nested Teams / One Team Per Session
-
-**What goes wrong:**
-Claude Code's agent teams have hard architectural constraints: teammates cannot spawn their own teams, and a lead can only manage one team at a time. RAPID's design envisions a complex orchestration: a planning agent coordinates set definition, then each set might need its own sub-coordination. This hierarchical orchestration is not possible with agent teams. Additionally, `/resume` and `/rewind` do not restore in-process teammates -- if a session disconnects mid-execution, all teammate state is lost.
-
-**How to avoid:**
-- Design RAPID's orchestration as flat, not hierarchical: one orchestrator manages all sets directly, with no sub-orchestrators
-- Use subagents (not teams) for operations that don't need inter-agent communication, like individual set execution
-- For operations that need coordination (like merge review with feedback), use a single team with explicit task dependencies rather than nested teams
-- Implement checkpoint/resume at the RAPID level using git-native state files, rather than relying on Claude Code's session resume. If a session crashes, RAPID should be able to detect in-progress state and resume from the last checkpoint
-- Limit team size to 3-5 teammates (official recommendation); for projects with more sets, batch execution in waves
-
-**Warning signs:**
-- Attempting to spawn teams from within teammate sessions
-- Session resume attempts that fail to reconnect with existing teammates
-- Orchestration designs that assume hierarchy deeper than one level
-
-**Phase to address:**
-Phase 1 (Core Infrastructure) -- the orchestration model must respect these constraints from the start.
-
-**Confidence:** HIGH -- verified via official Claude Code agent teams documentation
-
----
-
-### Pitfall 9: Premature Termination and Missing Verification
-
-**What goes wrong:**
-Multi-agent LLM systems frequently suffer from premature termination: agents declare "done" before objectives are met. In RAPID's context, a set agent might mark its work as complete without running tests, without verifying contract compliance, or without checking that all planned features are implemented. The merge reviewer then inherits incomplete work and either passes it (compounding the problem) or rejects it (wasting all the execution time).
+Research on multi-agent LLM systems shows that specification ambiguity causes 41.77% of failures and coordination breakdowns cause another 36.94% -- together accounting for ~79% of all multi-agent system failures. RAPID v2.0 introduces at minimum 8 new agent roles (orchestrator, wave planner, job planner, executor, UAT agent, unit-test agent, hunter, devils-advocate, judge) plus the merger agent. With prose-based prompt specifications (as currently drafted in `mark2-plans/review-module/`), agents misinterpret their role boundaries, duplicate work, or produce outputs that downstream agents cannot parse.
 
 **Why it happens:**
-LLMs tend to be optimistic about completion. After generating a significant amount of code, the model's tendency is to wrap up. Without explicit verification gates, agents follow this tendency. The TaskCompleted event in Claude Code agent teams can help, but only if quality gates are enforced through hooks.
+The current draft prompts (hunter.md, devils-advocate.md, judge.md) are human-readable prose. They describe what the agent should do but not the exact output schema, not the exact input contract, and not the boundary conditions. The hunter prompt says "produce a structured report" and gives a markdown template, but an LLM will deviate from templates -- adding extra sections, changing field names, omitting fields it deems unimportant. When the devils-advocate receives this free-form output, it must parse it, and parsing failures cascade silently (the DA just misses findings it couldn't extract).
+
+The mark2.md spec explicitly notes "ALL Agent outputs that are meant to be parsed by other agents should be in some sort of structured format" -- but the draft prompts don't enforce this with schemas.
 
 **How to avoid:**
-- Use `TaskCompleted` hooks to run automated verification before allowing task completion: lint, typecheck, test, contract compliance check
-- Exit code 2 from a `TaskCompleted` hook prevents completion and sends feedback to the teammate, forcing continued work
-- Define explicit "Definition of Done" criteria in each set's CLAUDE.md: "A set is complete when: (1) all planned features are implemented, (2) all tests pass, (3) contract test stubs pass, (4) no TypeScript errors"
-- The merge reviewer agent must independently run all verification, never trusting the set agent's self-assessment
-- Use `TeammateIdle` hooks to detect when agents go idle before their tasks are complete
+1. **Define JSON schemas for every inter-agent message.** The hunter's output must validate against a `HunterReport` schema. Use the gsd_merge_agent's pattern: it has a `schemas/` directory where all data shapes are defined and validated on read/write.
+   ```json
+   {
+     "type": "object",
+     "required": ["summary", "findings"],
+     "properties": {
+       "summary": { "type": "object", "required": ["total", "critical", "high", "medium", "low"] },
+       "findings": {
+         "type": "array",
+         "items": {
+           "type": "object",
+           "required": ["id", "file", "line", "category", "risk", "confidence", "description"]
+         }
+       }
+     }
+   }
+   ```
+2. **Output validation in the orchestrator.** After each agent completes, validate its output against the expected schema before passing it to the next agent. If validation fails, retry the agent once with an explicit "your output did not match the required format, here is the schema" instruction. On second failure, abort with error.
+3. **Include concrete examples in prompts.** Instead of "produce a structured report," include a 5-entry example that shows exact field names, value formats, and edge cases (empty arrays, null fields).
+4. **Consider collapsing the DA and judge.** The hunter > DA > judge pipeline has 2 handoffs -- each is a potential failure point. If token costs and coordination overhead are too high, the DA and judge can be collapsed into a single "verification agent" that both challenges and rules on findings. This reduces handoffs from 2 to 1 and saves one full agent invocation.
 
 **Warning signs:**
-- Tasks marked complete with failing tests
-- Merge reviewer finding basic issues (type errors, missing functions) that should have been caught earlier
-- Agents going idle while tasks remain in their assignment
+- Downstream agents producing "I couldn't parse the previous report" or hallucinating structure
+- Agent outputs that look different on every run despite identical inputs
+- The orchestrator needing per-agent parsing logic with special cases
+- Review cycles that never converge because agents keep reinterpreting each other's outputs
+- JSON parse errors when reading inter-agent messages
 
 **Phase to address:**
-Phase 5 (Merge Review) -- but verification hooks should be designed in Phase 1 and implemented incrementally.
-
-**Confidence:** HIGH -- verified via ICLR 2025 research and official Claude Code hooks documentation
+Phase 2 (Agent System) -- schema definitions must precede prompt writing. Write the schemas first, then write prompts that reference them.
 
 ---
 
-### Pitfall 10: Hook Execution Environment Assumptions
+### Pitfall 8: Worktree Port and Resource Conflicts Across Concurrent Sets
 
 **What goes wrong:**
-Claude Code hooks run as shell commands, HTTP endpoints, or LLM prompts. Shell command hooks run in the Claude Code process's working directory, but hook scripts may assume a different working directory, different environment variables, or the presence of tools that aren't installed. When hooks fail, Claude Code may silently continue (for non-blocking hooks) or block all progress (for blocking hooks). Plugin hooks in `hooks/hooks.json` are relative to the plugin directory, not the project directory, which causes path resolution failures.
+RAPID's core value is parallel development across git worktrees. When multiple sets run dev servers simultaneously (each in its own worktree), they compete for ports (3000, 5173, 8080), database connections, file locks, and environment variables. The review module compounds this: UAT tests in Set A's worktree launch a browser against port 3000, but Set B's dev server is also on port 3000 in a different worktree. Tests pass or fail depending on which server responds first.
+
+**Why it happens:**
+Git worktrees share the same `.git` directory but have separate working trees. Most project tooling (package.json scripts, .env files, framework configs) assumes a single working directory. When you `npm run dev` in two worktrees, both try to bind the same port unless explicitly configured otherwise. The existing `worktree.cjs` creates worktrees and manages a registry but does not allocate resources.
 
 **How to avoid:**
-- Always use absolute paths in hook commands, or paths relative to known environment variables
-- Test hooks in isolation before integrating them into the plugin
-- For blocking hooks (PreToolUse), always include a timeout and a fallback -- a hanging hook blocks the entire agent
-- For command hooks, always set `set -e` and handle errors explicitly
-- Use the `jq` dependency carefully -- it must be available in the user's environment. Consider bundling a Node.js script instead of a bash + jq hook for portability
-- Document all external tool dependencies in the plugin's README
+1. During `/set-init`, generate a deterministic port offset per set. Set 1 gets base port 3000, Set 2 gets 3100, Set 3 gets 3200. Write these to a per-worktree `.env.local` that the project's dev server reads.
+2. The review module's Playwright config must derive its `baseURL` from the worktree's port allocation, not use a hardcoded default.
+3. For database resources, use separate database names per set (e.g., `myapp_set_auth`) or use SQLite with a file per worktree.
+4. Add a resource manifest to STATE.json: which ports and resources each set has claimed. The orchestrator checks for conflicts before spawning.
+5. Document that sets sharing external services (production APIs, shared databases) must coordinate access patterns -- this is an inherent limitation of parallel development, not something the tool can fully solve.
 
 **Warning signs:**
-- Hooks producing no output (indicating they failed to start)
-- Hooks timing out and blocking agent progress
-- Different behavior across team members' machines
-- Path-related errors in hook execution
+- "EADDRINUSE" or "Port already in use" errors during execute or review
+- Tests passing in one worktree but failing in another with identical code
+- Database writes from one set appearing in another set's test data
+- Dev server crashes because another worktree's server grabbed the port first
 
 **Phase to address:**
-Phase 1 (Core Infrastructure) -- hook reliability is foundational. Build a test harness for hooks early.
-
-**Confidence:** HIGH -- verified via official Claude Code hooks documentation
-
----
-
-### Pitfall 11: CLAUDE.md Inconsistency Across Worktrees
-
-**What goes wrong:**
-RAPID generates CLAUDE.md with full project context. But each worktree is a separate directory with its own CLAUDE.md file. If the CLAUDE.md is generated once during planning and copied to each worktree, changes to coding conventions or architecture decisions made during one set's execution don't propagate to other sets. Conversely, if CLAUDE.md is shared (symlinked to main), one set's agent modifying CLAUDE.md affects all other running agents' behavior unpredictably.
-
-**How to avoid:**
-- Generate CLAUDE.md during the planning phase and treat it as immutable during execution. No set agent should modify it
-- Use a layered approach: a shared base CLAUDE.md (read-only, in the main worktree or a shared directory) plus per-set CLAUDE.md overlays in each worktree
-- Claude Code reads CLAUDE.md from the working directory AND parent directories. Leverage this hierarchy: put shared context in the parent, set-specific context in the worktree's root
-- If mid-execution updates are genuinely needed, route them through the orchestrator as a sync point
-
-**Warning signs:**
-- Different worktrees producing inconsistent code styles
-- Agents in one worktree confused by CLAUDE.md content that references another set's work
-- CLAUDE.md files diverging across worktrees over time
-
-**Phase to address:**
-Phase 4 (CLAUDE.md Generation) -- the generation strategy must account for the multi-worktree reality.
-
-**Confidence:** MEDIUM -- based on official Claude Code docs about CLAUDE.md resolution and general configuration management principles
-
----
-
-## Minor Pitfalls
-
-### Pitfall 12: Plugin Namespace Collision in Multi-Plugin Environments
-
-**What goes wrong:**
-RAPID's skills are namespaced as `/rapid:plan`, `/rapid:execute`, etc. But users may have other plugins installed that also define planning or execution skills. While Claude Code's namespacing prevents direct name collisions, model-invoked skills (Agent Skills) can create ambiguity: if two plugins both have a skill described as "plan a project," Claude may invoke the wrong one.
-
-**How to avoid:**
-- Use highly specific skill descriptions that reference RAPID by name: "Plan parallel development sets using RAPID framework" not "Plan a project"
-- For user-invoked skills (slash commands), namespacing handles this automatically
-- Test the plugin in environments with common plugins (like plugin-dev, code-review plugins) installed to verify no ambiguity
-
-**Phase to address:**
-Phase 1 (Plugin Structure) -- skill naming and descriptions should be deliberate from the start.
-
-**Confidence:** MEDIUM -- based on official plugin docs; model-invoked ambiguity is theoretical but plausible
-
----
-
-### Pitfall 13: Submodule Incompatibility with Worktrees
-
-**What goes wrong:**
-If a user's project uses git submodules, worktrees have known issues: submodules must be initialized separately per worktree, `git worktree move` fails for worktrees containing submodules, and worktree removal requires `--force` when submodules are present. RAPID's automated worktree management will break for projects using submodules unless specifically handled.
-
-**How to avoid:**
-- Detect submodule usage during RAPID initialization (`git submodule status`)
-- If submodules are detected, add a `WorktreeCreate` hook that runs `git submodule update --init --recursive` in each new worktree
-- Add a `WorktreeRemove` hook that uses `--force` for worktrees with submodules
-- Document this limitation clearly: "Projects with submodules require additional setup time per worktree"
-- Consider warning users about disk space implications (submodules are not shared between worktrees)
-
-**Phase to address:**
-Phase 2 (Git Worktree Management) -- as part of worktree lifecycle hooks.
-
-**Confidence:** HIGH -- verified via official git-worktree docs and multiple community reports
-
----
-
-### Pitfall 14: Agents Editing the Wrong Worktree
-
-**What goes wrong:**
-Multiple worktrees exist simultaneously on the filesystem, often with similar directory structures. An agent with filesystem access (Bash tool, Write tool) could accidentally modify files in a different worktree's directory, especially if the working directory is not properly scoped. This is particularly dangerous because it corrupts another set's isolated work without any git-level protection.
-
-**How to avoid:**
-- Set each agent's working directory explicitly to its assigned worktree
-- Use PreToolUse hooks on Write, Edit, and Bash to verify that file operations target only the correct worktree directory
-- Include the worktree path in the agent's system prompt / CLAUDE.md: "You are working in /path/to/worktree/set-a. NEVER modify files outside this directory"
-- Consider using filesystem sandboxing if available
-
-**Warning signs:**
-- File modifications appearing in the wrong worktree's `git status`
-- Unexplained changes in a set's worktree that don't match the set's planned work
-- Agents referencing file paths from other worktrees in their output
-
-**Phase to address:**
-Phase 2 (Git Worktree Management) -- path scoping must be enforced at the worktree level.
-
-**Confidence:** MEDIUM -- based on common reports of worktree directory confusion and Claude Code's tool access model
+Phase 1 (Set Init / Worktree Setup) -- port allocation must be part of worktree creation, not deferred to when servers are actually started.
 
 ---
 
@@ -365,113 +298,113 @@ Phase 2 (Git Worktree Management) -- path scoping must be enforced at the worktr
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Skip lock file implementation, rely on git commit atomicity | Faster v1 development | Race conditions when multiple agents modify planning state concurrently | Never -- even v1 needs basic locking for correctness |
-| Use prose-only interface contracts (no type definitions) | Simpler planning phase | Merge failures due to semantic mismatches; no automated contract verification | Early prototyping only; must add typed contracts before team use |
-| Single global CLAUDE.md for all worktrees | Simpler generation logic | Context bloat; irrelevant information for each set; token waste | Acceptable for projects with 2 sets; breaks at 4+ |
-| Hardcode git commands instead of abstracting worktree operations | Faster implementation | Fragile when git CLI changes or when users have non-standard git configurations | MVP only; abstract by v0.2 |
-| Skip WorktreeCreate/WorktreeRemove hooks, use manual setup | Less infrastructure code | Users must manually install deps per worktree; cleanup failures; disk bloat | Never -- automation is a core value prop |
-| Use polling instead of hooks for state changes | Simpler to implement | Token waste from repeated reads; delayed reactions; harder to debug | Never -- Claude Code hooks exist for this purpose |
+| Keep STATE.md format and add JSON sections inline | No migration needed for existing projects | Two parsing modes (regex + JSON), bugs at boundaries, impossible to validate holistically | Never -- the migration to JSON must be clean |
+| Copy-paste gsd_merge_agent scripts into RAPID as-is | Fast initial port, merge works immediately | Two state systems, namespace collisions, TS/CJS split, no shared context with RAPID state | Never -- extract algorithms, don't copy infrastructure |
+| Let review agents output free-form markdown instead of JSON | Faster prompt development, more natural agent responses | Parsing failures between agents, format drift across runs, downstream agent confusion | Only for human-facing outputs (progress messages, final user reports) |
+| Skip iteration caps on bug hunt pipeline | Maximum thoroughness, no bugs missed | Token costs scale linearly per iteration with diminishing returns after round 2 | Never -- always cap at 2-3 iterations |
+| Hardcode port numbers in Playwright configs | Works for single-worktree development | Breaks immediately when 2+ sets run concurrently | Early prototyping only, must be parameterized before review module ships |
+| Use Opus for all review agents (hunter, DA, judge) | Best quality findings from every agent | 5x cost vs Sonnet per agent; hunter and DA don't need Opus-level reasoning | Only for the judge agent; hunter and DA should use Sonnet |
+| Rewrite kept modules from scratch instead of adapting | Cleaner code, no legacy baggage | Lose proven patterns; introduce new bugs in areas that were stable; double the work | Only when the kept module's architecture is fundamentally incompatible with v2.0 |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Claude Code Agent Teams | Assuming custom agents can spawn teams | Use skills from plain sessions; test the `settings.json` `agent` key path separately |
-| Git Worktrees | Deleting worktree directories with `rm -rf` instead of `git worktree remove` | Always use `git worktree remove`; add `WorktreeRemove` hooks for cleanup |
-| Claude Code Hooks | Putting hooks inside `.claude-plugin/` directory | Put `hooks/hooks.json` at the plugin root, NOT inside `.claude-plugin/` |
-| CLAUDE.md | Placing all project context in a single CLAUDE.md | Layer base context + per-set overrides; Claude Code reads CLAUDE.md from cwd AND parents |
-| Claude Code Subagents | Including Task in a subagent's allowedTools | Subagents cannot spawn subagents; including Task causes silent failure |
-| npm/node_modules | Expecting `node_modules` to be shared across worktrees | Each worktree needs its own `npm install`; automate via `WorktreeCreate` hook |
-| Git Hooks (pre-commit, etc.) | Expecting per-worktree hook behavior | Git hooks are global across all worktrees by default; use worktree-aware hook scripts |
+| gsd_merge_agent -> RAPID | Porting the plugin wholesale as a subdirectory with its own state | Extract conflict detection + resolution algorithms into `src/lib/merge/`; unify state into RAPID's STATE.json; translate all `phase/NN-*` references to `set/name` |
+| Playwright -> Claude Code | Assuming browser can always launch; not handling Bash tool timeout | Add health check with retry; set Playwright timeout < Bash timeout; kill orphan Chromium in cleanup |
+| Subagent results -> Parent orchestrator | Assuming subagent output is available in parent's memory after context reset | Subagents write results to disk first (`.planning/sets/.../result.json`); parent reads from disk on resume |
+| Review module -> Wave lifecycle | Running review as a standalone disconnected command | Review status must be a field in STATE.json under the wave; review completion blocks wave completion |
+| Bug hunt agents -> Each other | Passing unvalidated free-form text between hunter/DA/judge | Define JSON schemas for inter-agent messages; validate at every handoff; retry on validation failure |
+| v1.0 modules -> v2.0 data structures | Calling `plan.loadSet()` from kept modules expecting old structure | Create adapter functions that translate v2.0 set descriptors to the interface kept modules expect |
+| Lock files -> Concurrent worktrees | Using a single lock path assuming one working directory | Lock files must be scoped per resource; worktree-local locks use worktree-relative paths |
+| Merge state -> RAPID state | Separate `.gsd-merge/state.json` alongside RAPID's STATE.json | Merge state is a nested object under `sets.{name}.merge` in the unified STATE.json |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| `npm install` per worktree | Worktree creation takes 30-120 seconds per set | Cache `node_modules/` or use `WorktreeCreate` hook with `npm ci` | Breaks user patience at 3+ sets; disk space at 5+ sets |
-| Full project context in every agent's CLAUDE.md | Context compaction occurs frequently; agent quality degrades mid-session | Per-set context with only relevant contracts and guidelines | Projects with 5+ contracts or 20+ CLAUDE.md pages of context |
-| Polling for state changes instead of hooks | Token burn with no productive work; slow reaction times | Use `TaskCompleted`, `TeammateIdle`, and `PostToolUse` hooks | Any project; immediately wasteful |
-| Global lock for all state modifications | All agents serialize on one lock; parallelism eliminated | Fine-grained locks per state file or per set | Projects with 3+ concurrent sets |
-| Synchronous merge review of all sets | Entire team waits for sequential review of each set | Review sets in parallel where possible; only serialize when reviewing interdependent sets | Projects with 4+ sets |
+| Full codebase scan per review agent | Review takes 5+ min, costs >$15 per cycle | Scope to changed files via diff; use `getChangedFiles` from execute.cjs | Projects with 50+ files |
+| Unbounded bug hunt iterations | Review never converges, costs spiral | Hard cap at 2-3 iterations; DEFERRED findings become tickets | Any project -- structural issue, not scale |
+| Serial merge of many sets | Merge phase takes O(n) time with validation per step | Identify independent set clusters that can be merged as parallel sub-trees | More than 4 sets |
+| State file contention from concurrent agents | Lock timeouts, stale reads, agents blocked | Minimize lock scope; batch state updates; consider per-set state files that aggregate | More than 3 concurrent agents writing state |
+| Codebase context re-read per subagent | 8+ agents each reading the same 50+ files independently | Generate a codebase digest once, pass as context document to all agents | Projects with 50+ source files |
+| Running all 3 review types on every wave | Massive time/cost overhead for minor waves | Make UAT and bug-hunt optional per wave; always run unit tests; only run full review at set completion | Any project -- full review on every wave is overkill |
 
 ## Security Mistakes
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Lock files containing executable code that gets evaluated | Code injection via crafted lock file content | Lock files contain only metadata (PID, timestamp, set name); never `eval` lock content |
-| CLAUDE.md injection via malicious contract definitions | Prompt injection through interface contracts modifying agent behavior | Contracts are validated at planning time; contract content is structured data, not freeform prompts |
-| Plugin hooks running with `--dangerously-skip-permissions` | All agents bypass permission checks; destructive operations unchecked | Never use `--dangerously-skip-permissions` in production; configure fine-grained permissions instead |
-| Worktree agents with full filesystem access | Agent modifies files outside its worktree, affecting other sets or the host system | Scope agent permissions; use PreToolUse hooks to restrict file paths to the assigned worktree |
-| Secrets in git-native state files | API keys, tokens committed to shared planning state | Never store secrets in `.rapid/` state files; use environment variables; add `.rapid/` patterns to `.gitignore` where appropriate |
+| Bug hunting agents reading .env files | Agent reports contain credentials in code snippets | Add .env, credentials.json, and key files to agent exclusion lists in prompts |
+| Playwright tests hitting production APIs | Test data written to production; rate limits triggered | Always use test/staging URLs; add pre-test URL validation against allowed domains |
+| Merge agent auto-resolving security-sensitive files | AI resolution of auth/crypto code introduces vulnerabilities | Maintain a security-critical file list; always escalate auth, crypto, and secrets files to human review |
+| Storing API keys in STATE.json or planning files | Keys committed to git, visible in worktrees | Never store secrets in planning files; use .env (gitignored) exclusively |
+| Review reports containing sensitive data | Bug hunt reports may include snippets with secrets/tokens | Sanitize report output; redact patterns matching common secret formats |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| No progress visibility during parallel execution | User has no idea what 5 agents are doing; anxiety leads to interruption | Implement a status dashboard skill (`/rapid:status`) that reads git-native state files and summarizes progress |
-| Cryptic error messages when worktree operations fail | User sees raw git errors with no context about which set or what to do | Wrap all git operations; translate errors into actionable messages: "Set A's worktree creation failed because branch 'feature/set-a' already exists. Run `/rapid:cleanup` to resolve." |
-| Silent failures during merge review | Merge review passes but integration is broken | Always show merge review results prominently; require explicit user confirmation before committing merge |
-| Planning phase producing too many sets | User overwhelmed; execution takes too long; coordination overhead exceeds parallelism benefit | Default to 2-4 sets maximum; warn users when planning produces more; explain tradeoffs |
-| No way to abort/resume mid-execution | Session crash or user Ctrl+C loses all progress | Git-native checkpoints; each set's progress is committed to its branch; restart detects existing worktrees and resumes |
+| Silent state transitions during multi-agent operations | User has no idea what 8 agents are doing; anxiety leads to interruption | Emit progress events at each transition: "Hunter analyzing 15/47 files...", "DA reviewing finding 3/12...", "Judge ruling on 8 contested findings..." |
+| Bug hunt producing 30+ findings before user sees anything | Overwhelming wall of text; user loses context and stops reading | Stream findings incrementally; show critical/high first; use AskUserQuestion to let user stop early if they've seen enough |
+| Review requiring user input at unpredictable points | User walks away, comes back to a stalled agent after 20 minutes | Batch all "human" UAT steps together; tell user upfront "I need you for 3 manual checks at steps 5, 9, and 12, then I can continue autonomously" |
+| Context reset losing the user's mental model | User returns to a new session with no idea where things stand | First action on session resume: display a 5-line status summary showing current set/wave/job state, what completed, what failed, and what's next |
+| Merger reporting conflicts in git jargon | User can't make merge decisions without understanding git diff3 | Translate conflicts to natural language: "Both Set A and Set B changed the login function -- Set A added rate limiting, Set B added OAuth. Which should come first?" |
+| Full review running when user just wants a quick check | 20+ minutes and $30+ when user just wanted to see if tests pass | Provide `/rapid:review --quick` (unit tests only) vs `/rapid:review --full` (all three types) |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Interface contracts:** Often missing concrete examples and test fixtures -- verify each contract has at least one typed example of expected input/output
-- [ ] **Worktree cleanup:** Often missing pruning of stale git worktree references -- verify `git worktree list` shows no stale entries
-- [ ] **Lock file cleanup:** Often missing stale lock detection -- verify no lock files older than 5 minutes exist after all agents exit
-- [ ] **CLAUDE.md generation:** Often missing per-set scoping -- verify each worktree's CLAUDE.md contains only relevant contracts
-- [ ] **Merge review:** Often missing contract compliance check -- verify the reviewer validates types and test fixtures, not just code quality
-- [ ] **npm install automation:** Often missing in `WorktreeCreate` hook -- verify agents can immediately run code after worktree creation
-- [ ] **Error recovery:** Often missing resume-after-crash logic -- verify RAPID can detect and recover from interrupted execution
-- [ ] **Git branch cleanup:** Often missing post-merge branch deletion -- verify completed set branches are cleaned up
+- [ ] **State Machine:** Often missing recovery from partial failures -- verify that every state transition has an explicit "what if context resets mid-write?" answer
+- [ ] **Merge Adapter:** Often missing branch naming translation -- verify ALL gsd_merge_agent `phase/NN-*` references are replaced with RAPID's `set/name` convention
+- [ ] **Merge Adapter:** Often missing state unification -- verify no `.gsd-merge/` directory is created; all merge state lives in STATE.json
+- [ ] **Bug Hunt Pipeline:** Often missing iteration caps -- verify that max iterations is configurable and defaults to 2
+- [ ] **Bug Hunt Pipeline:** Often missing inter-agent schema validation -- verify JSON schemas exist for hunter output, DA output, and judge output
+- [ ] **Playwright UAT:** Often missing server startup/shutdown lifecycle -- verify tests don't assume a running dev server and include health checks
+- [ ] **Playwright UAT:** Often missing cleanup -- verify no orphan Chromium processes remain after test completion
+- [ ] **Worktree Setup:** Often missing port isolation -- verify each worktree gets unique port assignments written to local config
+- [ ] **Agent Handoffs:** Often missing output schema validation -- verify every inter-agent message is validated before being passed downstream
+- [ ] **Review Module:** Often missing integration with wave lifecycle -- verify review completion updates wave state and blocks wave completion on review pass
+- [ ] **Selective Reuse:** Often missing adapter tests -- verify kept modules work with new data structures via integration tests
+- [ ] **Selective Reuse:** Often missing dependency audit -- verify a module-by-module import map exists documenting what changes are needed in "kept" modules
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Stale worktrees from crash | LOW | Run `git worktree list`, then `git worktree remove` for each stale entry, then `git worktree prune` |
-| Stale lock files | LOW | Check PID in lock file; if process dead, delete lock file manually; run `/rapid:cleanup` |
-| Context window overflow mid-session | MEDIUM | Reduce CLAUDE.md size; restart the affected set's agent session with slimmer context; work is preserved in git |
-| Merge conflicts in shared files | MEDIUM | Manually resolve conflicts using the merge reviewer's dry-merge output; add shared file to ownership plan for future runs |
-| Contract semantic mismatch at merge | HIGH | Identify which set misinterpreted the contract; revert that set's branch; update the contract with concrete examples; re-execute the set |
-| Agent edited wrong worktree | HIGH | Use `git diff` in each worktree to identify cross-contamination; `git checkout -- .` in the contaminated worktree to restore; re-execute the contaminated set |
-| Custom agent can't spawn teams (bug #23506) | LOW | Switch to skill-based invocation from a plain `claude` session; redesign entry point if needed |
+| State schema bifurcation (hybrid MD+JSON) | HIGH | Write migration script from hybrid to pure JSON; update all agent prompts to reference new format; existing projects need one-time conversion |
+| Merge namespace collision (dual state files) | MEDIUM | Rename branches, move state into unified STATE.json, delete `.gsd-merge/` directory, update all merge-related imports; can be scripted but needs testing |
+| Token explosion in bug hunt | LOW | Add iteration caps and diff-based scoping; no architectural change needed, just prompt and orchestrator config updates |
+| Playwright flakiness | LOW | Add retry logic, health checks, cleanup scripts; mostly configuration and wrapper scripts, not architectural |
+| State loss on context reset | HIGH | Redesign state writes to be transactional; add reconciliation logic; requires touching every state-writing function in the system |
+| Hidden coupling in kept modules | MEDIUM | Write adapter layer, update imports, add integration tests; effort scales linearly with number of kept modules (~12 lib files, but only ~5 have cross-cutting dependencies) |
+| Agent specification ambiguity | MEDIUM | Define JSON schemas, add validation layer, rewrite prompts with examples and schema references; effort proportional to agent count (~8-10 agents) |
+| Resource conflicts across worktrees | LOW | Add port allocation to set-init; update configs to read from environment; mostly mechanical changes to worktree creation flow |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Custom agents can't spawn teams (#1) | Phase 1: Core Infrastructure | Test subagent spawning from plugin's entry point before building orchestration |
-| Branch exclusivity deadlocks (#2) | Phase 2: Worktree Management | Integration test: create 3 worktrees, verify no workflow requires same branch in 2 worktrees |
-| File lock race conditions (#3) | Phase 1: Core Infrastructure | Concurrent stress test: 5 processes attempting simultaneous lock acquisition |
-| Inter-agent misalignment (#4) | Phase 3: Interface Contracts | Generate contracts for sample project; have 2 agents implement independently; verify merge succeeds |
-| Context window overflow (#5) | Phase 4: CLAUDE.md Generation | Measure total token count of generated context for a project with 5 sets and 20 contracts |
-| Shared file merge conflicts (#6) | Phase 3: Interface Contracts | Plan a sample project; identify all shared files; verify ownership plan covers them |
-| Worktree cleanup failures (#7) | Phase 2: Worktree Management | Create and destroy 10 worktrees; verify `git worktree list` is clean and disk usage returns to baseline |
-| No nested teams (#8) | Phase 1: Core Infrastructure | Attempt to spawn a team from a teammate; verify graceful error handling |
-| Premature termination (#9) | Phase 5: Merge Review | Set agents mark tasks complete; verify `TaskCompleted` hook runs tests and blocks on failure |
-| Hook environment assumptions (#10) | Phase 1: Core Infrastructure | Run hook test harness on Linux, macOS, and WSL; verify all hooks pass |
-| CLAUDE.md inconsistency (#11) | Phase 4: CLAUDE.md Generation | After planning, diff CLAUDE.md across 3 worktrees; verify shared content is identical and per-set content differs |
-| Plugin namespace collision (#12) | Phase 1: Plugin Structure | Install RAPID alongside 2 other plugins; invoke each skill; verify correct routing |
-| Submodule incompatibility (#13) | Phase 2: Worktree Management | Test on a project with submodules; verify worktree creation initializes submodules |
-| Wrong worktree edits (#14) | Phase 2: Worktree Management | Run agent in worktree A; verify no file changes appear in worktree B via `git status` |
+| State schema bifurcation | Phase 1 (State Machine) | STATE.json exists and is valid JSON representing full Set > Wave > Job hierarchy; zero regex parsing in state access code |
+| Merge namespace collision | Phase 1 (State Machine) + Phase 3 (Merger) | Single state file; all branch names follow `set/name` convention; no `.gsd-merge/` directory appears during merge |
+| Token explosion in review | Phase 4 (Review Module) | Full review of a 50-file wave completes under $15 on Opus; iteration count never exceeds configured cap; hunter scopes to diff |
+| Playwright UAT flakiness | Phase 4 (Review Module) | Playwright tests pass 3/3 consecutive runs in a worktree; no orphan Chromium processes after completion; timeout ordering is correct |
+| State loss on context reset | Phase 1 (State Machine) | Kill a session mid-wave-execution 3 times; restart each time; state is consistent and resumable every time |
+| Hidden coupling in kept modules | Phase 0 (Architecture/Pre-work) | Dependency map document exists for all 12 lib modules; adapter interfaces defined; integration tests pass with mock v2.0 data structures |
+| Agent specification ambiguity | Phase 2 (Agent System) | JSON schemas exist in `schemas/` for every inter-agent message type; validation runs on every handoff; retry-on-failure works |
+| Resource conflicts across worktrees | Phase 1 (Set Init) | Two worktrees can run dev servers simultaneously without port conflicts; Playwright configs derive ports from worktree config |
 
 ## Sources
 
-- [Git Worktree Official Documentation](https://git-scm.com/docs/git-worktree) -- branch exclusivity, shared .git, worktree lifecycle
-- [Git Worktree: Pros, Cons, and the Gotchas Worth Knowing](https://joshtune.com/posts/git-worktree-pros-cons/) -- directory confusion, disk space, tool incompatibility
-- [Claude Code Agent Teams Documentation](https://code.claude.com/docs/en/agent-teams) -- no nested teams, one team per session, no session resume, task claiming
-- [Claude Code Plugin Documentation](https://code.claude.com/docs/en/plugins) -- plugin structure, skill namespacing, hooks location
-- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) -- all hook events, WorktreeCreate/WorktreeRemove, exit codes, hook locations
-- [Claude Code Subagent Documentation](https://code.claude.com/docs/en/sub-agents) -- context windows, tool restrictions, no nesting
-- [GitHub Issue #23506: Custom agents cannot spawn subagents into teams](https://github.com/anthropics/claude-code/issues/23506) -- confirmed bug, Task tool missing in custom agent sessions
-- [Why Do Multi-Agent LLM Systems Fail? (UC Berkeley, ICLR 2025)](https://arxiv.org/html/2503.13657v1) -- 14 failure modes, inter-agent misalignment as #1 cause, verification failures
-- [Why Your Multi-Agent System is Failing (Towards Data Science)](https://towardsdatascience.com/why-your-multi-agent-system-is-failing-escaping-the-17x-error-trap-of-the-bag-of-agents/) -- coordination overhead, role confusion
-- [File Locking Race Conditions (InformIT)](https://www.informit.com/articles/article.aspx?p=23947&seqNum=6) -- TOCTOU races, NFS issues, stale locks
-- [Git Concurrency in GitHub Desktop (GitHub Blog)](https://github.blog/2015-10-20-git-concurrency-in-github-desktop/) -- concurrent git operations, lock files
-- [Context Window Overflow (AWS Security Blog)](https://aws.amazon.com/blogs/security/context-window-overflow-breaking-the-barrier/) -- CWO in agents, degradation patterns
-- [Pact's Dependency Drag (Specmatic)](https://specmatic.io/updates/pacts-dependency-drag-why-consumer-driven-contracts-dont-support-parallel-development/) -- contract testing limitations for parallel development
+- RAPID codebase analysis: `src/lib/state.cjs`, `src/lib/merge.cjs`, `src/lib/worktree.cjs`, `src/lib/execute.cjs` (existing architecture and coupling)
+- gsd_merge_agent specs: `mark2-plans/gsd_merge_agent/DOCS.md`, `scripts/`, `schemas/` (merge pipeline design, state machine, 26 TypeScript modules)
+- Review module specs: `mark2-plans/review-module/user_plan.md`, `hunter.md`, `devils-advocate.md`, `judge.md`, `unit-test.md`
+- Mark II design document: `mark2-plans/mark2.md` (workflow, hierarchy, agent roles, requirements)
+- [Why Do Multi-Agent LLM Systems Fail? (UC Berkeley, 2025)](https://arxiv.org/abs/2503.13657) -- 14 failure modes; 41.77% from specification ambiguity, 36.94% from coordination failures
+- [Why Multi-Agent LLM Systems Fail and How to Fix Them (Augment Code)](https://www.augmentcode.com/guides/why-multi-agent-llm-systems-fail-and-how-to-fix-them) -- JSON schema specs, structured protocols, independent judge agents, resource ownership
+- [How to Detect and Avoid Playwright Flaky Tests (BrowserStack)](https://www.browserstack.com/guide/playwright-flaky-tests) -- auto-wait, isolation, determinism strategies
+- [15 Best Practices for Playwright Testing (BrowserStack)](https://www.browserstack.com/guide/playwright-best-practices) -- locator strategies, CI configuration, test isolation
+- [Claude Code Cost Management](https://code.claude.com/docs/en/costs) -- Opus $15/$75 per M tokens, Sonnet $3/$15, agent teams use ~7x tokens
+- [Claude Code Context Window (Morph)](https://www.morphllm.com/claude-code-context-window) -- 200K limit, performance degrades at 147K, compaction behavior
 
 ---
-*Pitfalls research for: RAPID -- Rapid Agentic Parallelizable and Isolatable Development*
-*Researched: 2026-03-03*
+*Pitfalls research for: RAPID v2.0 Mark II workflow overhaul*
+*Researched: 2026-03-06*
