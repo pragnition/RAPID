@@ -288,10 +288,10 @@ Plans:
   1. Install skill reads $SHELL and tells the developer which config file (e.g., ~/.bashrc, ~/.zshrc, ~/.config/fish/config.fish) will be modified before writing
   2. After writing env vars to the shell config, the install skill auto-sources the config and verifies RAPID_TOOLS is set in the current session
   3. If auto-sourcing fails, the developer sees clear manual instructions showing the exact source command to run for their detected shell
-**Plans**: TBD
+**Plans**: 1 plan (Wave 1: setup.sh strip + SKILL.md rewrite)
 
 Plans:
-- [ ] 14-01: TBD
+- [ ] 14-01: Strip setup.sh to non-interactive, rewrite install SKILL.md with shell detection, AskUserQuestion, auto-source, and fallback guidance (INST-01, INST-02, INST-03) [Wave 1]
 
 ### Phase 15: Global Error Recovery and Progress
 **Goal**: All skills replace bare STOP error handling with structured recovery options, and context/merge skills show progress during long operations
