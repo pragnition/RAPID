@@ -335,6 +335,44 @@ async function transitionSet(cwd, milestoneId, setId, newStatus) {
   }
 }
 
+// ---- Milestone management ----
+
+/**
+ * Add a new milestone to STATE.json.
+ * Preserves all existing milestones and updates currentMilestone.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} milestoneId - Unique ID for the new milestone
+ * @param {string} [milestoneName] - Display name (defaults to milestoneId)
+ * @param {Array} [carryForwardSets=[]] - Sets to copy into the new milestone
+ * @returns {Promise<{milestoneId: string, milestoneName: string, setsCarried: number}>}
+ * @throws {Error} If state cannot be read or milestone ID already exists
+ */
+async function addMilestone(cwd, milestoneId, milestoneName, carryForwardSets = []) {
+  const result = await readState(cwd);
+  if (!result || !result.valid) {
+    throw new Error('Cannot read state: ' + (result?.error || result?.errors?.[0]?.message || 'unknown'));
+  }
+
+  const state = result.state;
+
+  // Check for duplicate milestone
+  if (state.milestones.some(m => m.id === milestoneId)) {
+    throw new Error(`Milestone "${milestoneId}" already exists`);
+  }
+
+  const newMilestone = {
+    id: milestoneId,
+    name: milestoneName || milestoneId,
+    sets: carryForwardSets.map(s => JSON.parse(JSON.stringify(s))), // deep copy carried sets
+  };
+
+  state.milestones.push(newMilestone);
+  state.currentMilestone = milestoneId;
+  await writeState(cwd, state);
+  return { milestoneId, milestoneName: newMilestone.name, setsCarried: carryForwardSets.length };
+}
+
 // ---- Corruption detection and recovery ----
 
 /**
@@ -415,6 +453,7 @@ module.exports = {
   transitionJob,
   transitionWave,
   transitionSet,
+  addMilestone,
   deriveWaveStatus,
   deriveSetStatus,
   detectCorruption,
