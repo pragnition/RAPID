@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: planning
-stopped_at: Phase 16 context gathered
-last_updated: "2026-03-06T07:16:43.946Z"
-last_activity: 2026-03-06 — v2.0 roadmap created (phases 16-24, 50 requirements mapped)
+status: executing
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-03-06T07:36:50.675Z"
+last_activity: 2026-03-06 — Completed 16-01 (state schemas and transitions)
 progress:
   total_phases: 26
   completed_phases: 16
-  total_plans: 37
-  completed_plans: 36
-  percent: 53
+  total_plans: 40
+  completed_plans: 37
+  percent: 93
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 16 of 24 (State Machine Foundation)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-03-06 — v2.0 roadmap created (phases 16-24, 50 requirements mapped)
+Plan: 1 of 3 in current phase
+Status: Executing
+Last activity: 2026-03-06 — Completed 16-01 (state schemas and transitions)
 
-Progress: [████████████████░░░░░░░░░░░░░░] 53% (v1.0+v1.1 complete, v2.0 starting)
+Progress: [█████████░] 93% (37/40 plans complete)
 
 ## Accumulated Context
 
@@ -46,6 +46,8 @@ Recent decisions affecting current work:
 - [v2.0]: Hand-rolled state machine (~50 lines), not XState
 - [v2.0]: Jobs = v1.0 plans in granularity
 - [v2.0]: Defer /quick and /insert-job to v2.1
+- [Phase 16]: Zod 3.24.4 locked for CommonJS compatibility (3.25+ breaks require)
+- [Phase 16]: Status enums exported separately for reuse in transition validation
 
 ### Pending Todos
 
@@ -77,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T07:16:43.944Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-state-machine-foundation/16-CONTEXT.md
+Last session: 2026-03-06T07:36:50.673Z
+Stopped at: Completed 16-01-PLAN.md
+Resume file: None
