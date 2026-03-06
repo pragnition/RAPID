@@ -106,11 +106,15 @@ Parse the JSON output containing `exists` (boolean) and `files` (string array of
 
 ---
 
-## Step 4: Setup Questions
+## Step 4: Project Discovery and Setup
 
-Gather project information by asking ONE question at a time. Wait for the user's answer before asking the next question.
+This step has two sub-phases: (A) quick logistics, then (B) a deep adaptive discovery conversation. The discovery conversation is the MOST IMPORTANT part of initialization -- it directly determines the quality of research and roadmapping downstream.
 
-**Question A: Project Name**
+### 4A: Logistics Questions
+
+These are quick, objective questions. Ask ONE at a time.
+
+**Project Name:**
 
 Detect the current directory name:
 
@@ -126,13 +130,7 @@ Use AskUserQuestion with:
 
 If the user selects "Other", ask freeform: "What would you like to name the project?" and accept their input.
 
-**Question B: Project Description**
-
-Ask freeform: "Give a one-sentence description of the project. This will be used throughout planning to describe the project's core purpose."
-
-Store the user's response as the project description.
-
-**Question C: Team Size**
+**Team Size:**
 
 Use AskUserQuestion with:
 - question: "Team size"
@@ -148,7 +146,7 @@ Map selection to integer for `--team-size`:
 - "Medium team (4-5 developers)" -> 5
 - "Large team (6+ developers)" -> 6
 
-**Question D: Model Selection**
+**Model Selection:**
 
 Use AskUserQuestion with:
 - question: "Model selection for AI agents"
@@ -158,6 +156,137 @@ Use AskUserQuestion with:
 
 Store the selection as `opus` or `sonnet`.
 
+### 4B: Deep Project Discovery Conversation
+
+**This is a thorough requirements interview, NOT a form fill.** You must conduct an in-depth conversational discovery session to understand EVERYTHING about the project before proceeding to research and roadmapping. The quality of the entire pipeline depends on the depth of understanding gained here.
+
+**Ground rules:**
+- Ask ONE question at a time using AskUserQuestion (freeform mode).
+- LISTEN carefully to each answer. Use the user's response to determine what to ask next.
+- If ANY aspect of the user's answer is vague, ambiguous, or surface-level, press further with clarifying follow-up questions. Do NOT accept shallow answers and move on.
+- Continue asking questions until you have a comprehensive understanding of the project. This may take 8-15+ questions depending on project complexity.
+- Mentally track what you know and what gaps remain. Only proceed when no significant gaps exist.
+
+**Discovery must cover these areas** (adapt the order and phrasing based on the conversation flow):
+
+**1. Core Vision and Purpose**
+- "Tell me about this project. What are you building and why?"
+- Probe deeper: What problem does it solve? Who currently has this problem? What happens if this project does not exist?
+- If the answer is vague (e.g., "a task management app"), ask: "What makes this different from existing solutions? What is the core insight or angle?"
+
+**2. Target Users and Audience**
+- Who are the primary users? Secondary users?
+- What is their technical sophistication level?
+- B2B, B2C, internal tool, developer tool, open source?
+- How many users are expected initially? At scale?
+
+**3. Key Features and Scope**
+- What are the MUST-HAVE features for a first usable version?
+- What features are nice-to-have but can wait?
+- Are there features the user explicitly does NOT want?
+- Walk through the primary user journey: what does a user do from start to finish?
+
+**4. Technical Constraints and Preferences**
+- Any technology stack preferences or requirements? (Languages, frameworks, databases)
+- Any hard constraints? (Must run on specific infrastructure, must integrate with specific systems, must use specific auth provider)
+- Any existing code, APIs, or services this project depends on?
+- Deployment target: cloud provider, self-hosted, desktop, mobile, serverless?
+
+**5. Scale and Performance**
+- Expected data volume (rough order of magnitude)?
+- Expected traffic/concurrent users?
+- Latency requirements? Real-time features needed?
+- Any compliance or data residency requirements?
+
+**6. Integration and External Dependencies**
+- What third-party services or APIs will this integrate with?
+- Any existing systems this must work alongside or replace?
+- Authentication/authorization approach? (SSO, OAuth, API keys, etc.)
+
+**7. Team Context and Experience**
+- What is the team's experience level with the chosen (or likely) tech stack?
+- Any past experience with similar projects? Lessons learned?
+- Any strong opinions on architecture patterns, coding style, or tooling?
+
+**8. Similar Products and Inspiration**
+- Are there existing products that do something similar? What do they do well or poorly?
+- Any specific projects, open-source repos, or designs that inspire the approach?
+
+**9. Non-functional Requirements**
+- Security requirements beyond basics? (Encryption at rest, audit logs, SOC2, HIPAA)
+- Accessibility requirements?
+- Internationalization/localization needs?
+- Monitoring, observability, alerting expectations?
+
+**10. Success Criteria and Timeline**
+- What does "done" look like for v1?
+- Any hard deadlines or milestones?
+- How will success be measured?
+
+**Adaptive behavior:**
+- You do NOT need to ask all of the above if the conversation naturally covers them.
+- You DO need to ensure all areas are addressed to a satisfactory depth.
+- If the user provides a very detailed initial answer that covers multiple areas, acknowledge what you learned and focus follow-ups on the gaps.
+- If the user says "I don't know" or "haven't decided" for a particular area, note it as an open question and move on -- but circle back if it affects architecture decisions.
+- For brownfield projects where codebase exists, some technical questions can be deferred to the codebase analysis step. Focus discovery on intent, goals, and what needs to change.
+
+**Completion check:**
+
+Before ending the discovery phase, mentally review: "Do I have enough context to brief 5 independent research agents who will each investigate a different aspect of this project (stack, features, architecture, pitfalls, oversights)? Would any of those agents be confused or have to guess about the user's intent?"
+
+If the answer is yes (they would have to guess), ask more questions.
+
+If the answer is no (you have comprehensive understanding), proceed.
+
+**Compile the project brief:**
+
+After the discovery conversation is complete, compile a structured project brief (stored in memory for passing to downstream steps and agents). The brief should contain:
+
+```
+PROJECT BRIEF
+=============
+Name: {project name}
+Team Size: {N}
+Model: {opus/sonnet}
+
+Vision: {2-3 sentence summary of what the project is and why it exists}
+
+Target Users: {who uses this and in what context}
+
+Key Features (must-have for v1):
+- {feature 1}
+- {feature 2}
+- ...
+
+Deferred Features (post-v1):
+- {feature 1}
+- ...
+
+Technical Constraints:
+- {constraint 1}
+- ...
+
+Tech Stack Preferences: {any stated preferences or "no preference"}
+
+Scale Expectations: {rough numbers for users, data, traffic}
+
+Integrations: {third-party services, APIs, existing systems}
+
+Security/Compliance: {any specific requirements}
+
+Inspiration/References: {similar products, repos, designs}
+
+Open Questions: {anything the user explicitly deferred or was uncertain about}
+
+Success Criteria: {what "done" looks like}
+
+Additional Context: {anything else relevant from the conversation}
+```
+
+This project brief replaces the simple "one-sentence description" in all downstream steps. Wherever the plan previously passed "project description", pass this full project brief instead.
+
+Store the first sentence of "Vision" as the short project description for CLI commands that require `--description`.
+
 ---
 
 ## Step 5: Scaffold
@@ -165,7 +294,7 @@ Store the selection as `opus` or `sonnet`.
 Run the scaffold, config write, and research directory setup:
 
 ```bash
-node "${RAPID_TOOLS}" init scaffold --name "{name}" --description "{desc}" --team-size {N} --mode {mode}
+node "${RAPID_TOOLS}" init scaffold --name "{name}" --description "{short description from brief Vision}" --team-size {N} --mode {mode}
 ```
 
 Parse the JSON result:
@@ -213,7 +342,7 @@ Inform the user: "Existing codebase detected. Running codebase analysis before r
    - Pass the role instructions from `role-codebase-synthesizer.md` as the agent's primary instructions
    - Pass the project directory path (current working directory)
    - Pass the scan manifest data from `context detect`
-   - Pass the project description from Step 4
+   - Pass the full project brief from Step 4B
    - The agent writes `CODEBASE-ANALYSIS.md` to `.planning/research/`
 
 4. Wait for the agent to complete. If it fails, use AskUserQuestion to offer recovery:
@@ -250,11 +379,10 @@ src/modules/roles/role-research-oversights.md
 Spawn ALL 5 research agents in parallel using the Agent tool. Each agent receives:
 
 1. **Role instructions** -- the contents of its respective role file
-2. **Project name** -- from Step 4
-3. **Project description** -- from Step 4
-4. **Model selection** -- opus or sonnet from Step 4
-5. **Brownfield context** -- if brownfield, include the full contents of `.planning/research/CODEBASE-ANALYSIS.md`. If greenfield, include a note: "This is a greenfield project with no existing codebase."
-6. **Context7 instruction** -- "Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback."
+2. **Full project brief** -- the complete structured brief compiled in Step 4B (includes name, vision, target users, key features, constraints, tech preferences, scale expectations, integrations, security needs, references, open questions, success criteria, and all additional context)
+3. **Model selection** -- opus or sonnet from Step 4A
+4. **Brownfield context** -- if brownfield, include the full contents of `.planning/research/CODEBASE-ANALYSIS.md`. If greenfield, include a note: "This is a greenfield project with no existing codebase."
+5. **Context7 instruction** -- "Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback."
 
 Each agent writes its output to `.planning/research/`:
 - Stack agent -> `STACK.md`
@@ -311,9 +439,9 @@ Spawn the roadmapper agent:
 3. Use the Agent tool to spawn the roadmapper subagent:
    - Pass the role instructions from `role-roadmapper.md`
    - Pass the SUMMARY.md content
-   - Pass the project description from Step 4
-   - Pass the team size from Step 4
-   - Pass the model selection from Step 4
+   - Pass the full project brief from Step 4B (includes description, features, constraints, scale, and all discovery context)
+   - Pass the team size from Step 4A
+   - Pass the model selection from Step 4A
    - The agent returns a structured JSON response with three keys:
      - `roadmap` -- markdown string for ROADMAP.md
      - `state` -- STATE.json milestone/set/wave/job structure
@@ -359,7 +487,7 @@ c) Update STATE.json with the milestone/set/wave/job structure:
 Ask the user freeform: "What changes would you like to make to the roadmap?"
 
 Re-spawn the roadmapper agent with:
-- All original context (SUMMARY.md, description, team size, model)
+- All original context (SUMMARY.md, full project brief, team size, model)
 - The user's change request as additional feedback
 - The previous roadmap proposal for reference
 
