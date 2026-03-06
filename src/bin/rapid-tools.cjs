@@ -68,6 +68,8 @@ Commands:
   merge integration-test          Run post-wave integration test suite on main
   merge order                     Show merge order from DAG (wave-grouped)
   merge update-status <set> <status>  Update merge status in registry (reviewing/cleanup/merged/failed)
+  set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
+  set-init list-available        List pending sets without worktrees
 
 Options:
   --help, -h             Show this help message
@@ -147,6 +149,14 @@ async function main() {
 
     case 'merge':
       await handleMerge(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'set-init':
+      await handleSetInit(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'resume':
+      await handleResume(cwd, args.slice(1));
       break;
 
     default:
@@ -985,11 +995,181 @@ async function handleWorktree(cwd, subcommand, args) {
       break;
     }
 
+    case 'delete-branch': {
+      const branchName = args[0];
+      if (!branchName) {
+        error('Usage: rapid-tools worktree delete-branch <branch-name> [--force]');
+        process.exit(1);
+      }
+      const force = args.includes('--force');
+      try {
+        const result = wt.deleteBranch(cwd, branchName, force);
+        process.stdout.write(JSON.stringify(result) + '\n');
+        if (!result.deleted) {
+          process.exit(1);
+        }
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ deleted: false, error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
     default:
-      error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, generate-claude-md`);
+      error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, generate-claude-md, delete-branch`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
+}
+
+async function handleSetInit(cwd, subcommand, args) {
+  const fs = require('fs');
+  const path = require('path');
+  const wt = require('../lib/worktree.cjs');
+
+  switch (subcommand) {
+    case 'create': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools set-init create <set-name>');
+        process.exit(1);
+      }
+      try {
+        const result = await wt.setInit(cwd, setName);
+        process.stdout.write(JSON.stringify(result) + '\n');
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ created: false, error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'list-available': {
+      // Read STATE.json, find all sets with status 'pending' that don't have worktrees
+      try {
+        const sm = require('../lib/state-machine.cjs');
+        const stateResult = await sm.readState(cwd);
+        if (!stateResult || !stateResult.valid) {
+          process.stdout.write(JSON.stringify({ available: [], error: 'STATE.json not found or invalid' }) + '\n');
+          break;
+        }
+
+        const registry = wt.loadRegistry(cwd);
+        const registeredSets = new Set(Object.keys(registry.worktrees));
+
+        const available = [];
+        for (const milestone of stateResult.state.milestones) {
+          for (const set of (milestone.sets || [])) {
+            if (set.status === 'pending' && !registeredSets.has(set.id)) {
+              available.push({
+                id: set.id,
+                milestone: milestone.id,
+                status: set.status,
+              });
+            }
+          }
+        }
+
+        process.stdout.write(JSON.stringify({ available }) + '\n');
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ available: [], error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    default:
+      error(`Unknown set-init subcommand: ${subcommand}. Use: create, list-available`);
+      process.stdout.write(USAGE);
+      process.exit(1);
+  }
+}
+
+async function handleResume(cwd, args) {
+  const fs = require('fs');
+  const path = require('path');
+  const execute = require('../lib/execute.cjs');
+  const wt = require('../lib/worktree.cjs');
+
+  const setName = args[0];
+  if (!setName) {
+    error('Usage: rapid-tools resume <set-name>');
+    process.exit(1);
+  }
+
+  // Validate registry entry exists and is Paused
+  const registry = wt.loadRegistry(cwd);
+  const entry = registry.worktrees[setName];
+  if (!entry) {
+    error(`No worktree registered for set "${setName}"`);
+    process.exit(1);
+  }
+  if (entry.phase !== 'Paused') {
+    error(`Set "${setName}" is in phase "${entry.phase}", not Paused. Resume is only available for paused sets.`);
+    process.exit(1);
+  }
+
+  // Validate HANDOFF.md exists
+  const handoffPath = path.join(cwd, '.planning', 'sets', setName, 'HANDOFF.md');
+  if (!fs.existsSync(handoffPath)) {
+    error(`No HANDOFF.md found for set "${setName}" at ${handoffPath}`);
+    process.exit(1);
+  }
+
+  // Parse HANDOFF.md
+  const handoffRaw = fs.readFileSync(handoffPath, 'utf-8');
+  const handoff = execute.parseHandoff(handoffRaw);
+  if (!handoff) {
+    error(`Failed to parse HANDOFF.md for set "${setName}"`);
+    process.exit(1);
+  }
+
+  // Read STATE.json for set context (wave/job progress)
+  let stateContext = null;
+  try {
+    const sm = require('../lib/state-machine.cjs');
+    const stateResult = await sm.readState(cwd);
+    if (stateResult && stateResult.valid) {
+      // Find the set in state
+      for (const milestone of stateResult.state.milestones) {
+        const setData = (milestone.sets || []).find(s => s.id === setName);
+        if (setData) {
+          stateContext = {
+            milestoneId: milestone.id,
+            setId: setData.id,
+            status: setData.status,
+            waves: setData.waves || [],
+          };
+          break;
+        }
+      }
+    }
+  } catch (err) {
+    // Graceful -- STATE.json may not exist or be invalid
+  }
+
+  // Get definition and contract paths
+  const definitionPath = path.join('.planning', 'sets', setName, 'DEFINITION.md');
+  const contractPath = path.join('.planning', 'sets', setName, 'CONTRACT.json');
+
+  // Update registry: phase = Executing
+  await wt.registryUpdate(cwd, (reg) => {
+    if (reg.worktrees[setName]) {
+      reg.worktrees[setName].phase = 'Executing';
+      reg.worktrees[setName].updatedAt = new Date().toISOString();
+    }
+    return reg;
+  });
+
+  process.stdout.write(JSON.stringify({
+    resumed: true,
+    setName,
+    handoff,
+    stateContext,
+    definitionPath,
+    contractPath,
+    pauseCycles: entry.pauseCycles || 0,
+  }) + '\n');
 }
 
 async function handleExecute(cwd, subcommand, args) {

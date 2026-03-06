@@ -113,6 +113,43 @@ function removeWorktree(projectRoot, worktreePath) {
 }
 
 /**
+ * Delete a git branch with optional force mode.
+ *
+ * @param {string} cwd - Working directory (must be inside a git repo)
+ * @param {string} branchName - Branch name to delete
+ * @param {boolean} [force=false] - Use -D (force) instead of -d (safe)
+ * @returns {{ deleted: boolean, branch: string, forced?: boolean, reason?: string, message?: string }}
+ * @throws {Error} If branchName is empty or contains spaces
+ */
+function deleteBranch(cwd, branchName, force = false) {
+  if (!branchName || typeof branchName !== 'string' || branchName.trim() === '' || branchName.includes(' ')) {
+    throw new Error(`Invalid branch name: "${branchName}". Branch name must be non-empty and contain no spaces.`);
+  }
+
+  const flag = force ? '-D' : '-d';
+  const result = gitExec(['branch', flag, branchName], cwd);
+
+  if (result.ok) {
+    const ret = { deleted: true, branch: branchName };
+    if (force) ret.forced = true;
+    return ret;
+  }
+
+  // Branch not found
+  if (result.stderr.includes('not found') || result.stderr.includes('error: branch')) {
+    return { deleted: false, reason: 'not-found', branch: branchName, message: result.stderr };
+  }
+
+  // Unmerged branch (git branch -d fails when branch is not fully merged)
+  if (result.stderr.includes('not fully merged') || result.stderr.includes('is not fully merged')) {
+    return { deleted: false, reason: 'unmerged', branch: branchName, message: result.stderr };
+  }
+
+  // Other error
+  return { deleted: false, reason: 'error', branch: branchName, message: result.stderr };
+}
+
+/**
  * List all git worktrees in porcelain format.
  *
  * @param {string} projectRoot - Project root directory
@@ -259,6 +296,59 @@ async function reconcileRegistry(cwd) {
   } finally {
     await release();
   }
+}
+
+// ────────────────────────────────────────────────────────────────
+// Set Init Orchestration
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Initialize a set for development: create worktree, generate scoped CLAUDE.md,
+ * and register in REGISTRY.json. Does NOT transition set status in STATE.json.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setName - Name of the set to initialize
+ * @returns {Promise<{ created: boolean, branch: string, worktreePath: string, setName: string, claudeMdGenerated: boolean }>}
+ * @throws {Error} If branch/worktree already exists, or set definition is missing
+ */
+async function setInit(cwd, setName) {
+  // 1. Create the git worktree and branch
+  const { branch, path: worktreePath } = createWorktree(cwd, setName);
+
+  // 2. Generate scoped CLAUDE.md and write to worktree
+  let claudeMdGenerated = false;
+  try {
+    const claudeMd = generateScopedClaudeMd(cwd, setName);
+    fs.writeFileSync(path.join(worktreePath, 'CLAUDE.md'), claudeMd, 'utf-8');
+    claudeMdGenerated = true;
+  } catch (err) {
+    // Graceful -- worktree was created but CLAUDE.md generation failed
+    // (e.g., missing CONTRACT.json or DEFINITION.md)
+    // Still proceed with registration
+  }
+
+  // 3. Register in REGISTRY.json
+  await registryUpdate(cwd, (reg) => {
+    reg.worktrees[setName] = {
+      setName,
+      branch,
+      path: path.relative(cwd, worktreePath),
+      phase: 'Created',
+      status: 'active',
+      wave: null,
+      createdAt: new Date().toISOString(),
+    };
+    return reg;
+  });
+
+  // 4. Return structured result (do NOT call transitionSet -- set stays 'pending')
+  return {
+    created: true,
+    branch,
+    worktreePath,
+    setName,
+    claudeMdGenerated,
+  };
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -572,6 +662,173 @@ function generateScopedClaudeMd(cwd, setName) {
  * @param {string|null} [executionMode=null] - Execution mode label or null to omit
  * @returns {string} Formatted output with optional mode header
  */
+// ────────────────────────────────────────────────────────────────
+// Mark II Status Dashboard
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Sort priority for set statuses. Lower number = displayed first.
+ * @type {Object<string, number>}
+ */
+const STATUS_SORT_ORDER = {
+  executing: 0,
+  reviewing: 1,
+  merging: 2,
+  planning: 3,
+  pending: 4,
+  complete: 5,
+};
+
+/**
+ * Format a compact wave progress string for a set's waves.
+ * E.g., "W1: 3/5 done, W2: 0/3 pending"
+ *
+ * @param {Array<{id: string, status: string, jobs: Array<{id: string, status: string}>}>} waves
+ * @returns {string} Compact wave progress or "-" if no waves
+ */
+function formatWaveProgress(waves) {
+  if (!waves || waves.length === 0) return '-';
+
+  const parts = [];
+  for (let i = 0; i < waves.length; i++) {
+    const wave = waves[i];
+    const total = wave.jobs ? wave.jobs.length : 0;
+    const completed = wave.jobs ? wave.jobs.filter(j => j.status === 'complete').length : 0;
+    const label = `W${i + 1}`;
+
+    if (completed === total && total > 0) {
+      parts.push(`${label}: ${completed}/${total} done`);
+    } else if (completed > 0) {
+      parts.push(`${label}: ${completed}/${total} done`);
+    } else {
+      parts.push(`${label}: ${completed}/${total} pending`);
+    }
+  }
+
+  return parts.join(', ');
+}
+
+/**
+ * Format an ASCII status table for Mark II set > wave > job hierarchy.
+ * Reads from STATE.json for hierarchy data and REGISTRY.json for worktree paths.
+ *
+ * @param {{ milestone: string, sets: Array<{id: string, status: string, waves: Array}>}} stateData
+ * @param {{ worktrees: Object }} registryData
+ * @returns {string} Formatted ASCII table or "No sets found" message
+ */
+function formatMarkIIStatus(stateData, registryData) {
+  if (!stateData.sets || stateData.sets.length === 0) {
+    return 'No sets found in the current milestone.';
+  }
+
+  const headers = ['SET', 'STATUS', 'WAVES', 'WORKTREE', 'UPDATED'];
+
+  // Sort sets by status priority
+  const sortedSets = [...stateData.sets].sort((a, b) => {
+    const orderA = STATUS_SORT_ORDER[a.status] ?? 4;
+    const orderB = STATUS_SORT_ORDER[b.status] ?? 4;
+    return orderA - orderB;
+  });
+
+  // Build row data
+  const rows = sortedSets.map(set => {
+    const setId = set.id.length > 20 ? set.id.slice(0, 20) : set.id;
+    const status = set.status;
+    const waveProgress = formatWaveProgress(set.waves);
+
+    // Worktree path from registry
+    const regEntry = registryData.worktrees[set.id];
+    const worktreePath = regEntry ? regEntry.path : 'not created';
+
+    // Updated time from registry
+    const updatedAt = regEntry && regEntry.updatedAt ? relativeTime(regEntry.updatedAt) : '-';
+
+    return [setId, status, waveProgress, worktreePath, updatedAt];
+  });
+
+  // Calculate column widths
+  const widths = headers.map((h, i) => {
+    const maxDataLen = Math.max(...rows.map(r => String(r[i] || '').length));
+    return Math.max(h.length, maxDataLen);
+  });
+
+  const pad = (str, width) => String(str || '').padEnd(width);
+  const join = (cells) => cells.join('  ');
+
+  const headerLine = join(headers.map((h, i) => pad(h, widths[i])));
+  const separator = join(widths.map(w => '-'.repeat(w)));
+  const rowLines = rows.map(row =>
+    join(row.map((cell, i) => pad(cell, widths[i])))
+  );
+
+  return [headerLine, separator, ...rowLines].join('\n');
+}
+
+/**
+ * Derive context-aware next actions based on current state.
+ *
+ * @param {{ milestone: string, sets: Array<{id: string, status: string, waves: Array}>}} stateData
+ * @param {{ worktrees: Object }} registryData
+ * @returns {Array<{action: string, setName?: string, description: string}>} Max 5 actions
+ */
+function deriveNextActions(stateData, registryData) {
+  const actions = [];
+
+  for (const set of stateData.sets) {
+    const hasWorktree = !!registryData.worktrees[set.id];
+
+    switch (set.status) {
+      case 'pending':
+        if (!hasWorktree) {
+          actions.push({
+            action: `/set-init ${set.id}`,
+            setName: set.id,
+            description: `Initialize the ${set.id} set for development`,
+          });
+        } else {
+          actions.push({
+            action: `/discuss ${set.id}`,
+            setName: set.id,
+            description: `Start planning discussion for ${set.id}`,
+          });
+        }
+        break;
+      case 'executing':
+        actions.push({
+          action: `/execute ${set.id}`,
+          setName: set.id,
+          description: `Continue executing ${set.id}`,
+        });
+        break;
+      case 'reviewing':
+        actions.push({
+          action: `/review ${set.id}`,
+          setName: set.id,
+          description: `Run review for ${set.id}`,
+        });
+        break;
+      case 'merging':
+        actions.push({
+          action: `/merge ${set.id}`,
+          setName: set.id,
+          description: `Merge set ${set.id}`,
+        });
+        break;
+      case 'complete':
+        if (hasWorktree) {
+          actions.push({
+            action: `/cleanup ${set.id}`,
+            setName: set.id,
+            description: `Clean up worktree for completed set ${set.id}`,
+          });
+        }
+        break;
+    }
+  }
+
+  return actions.slice(0, 5);
+}
+
 function formatStatusOutput(worktrees, dagJson, executionMode) {
   const lines = [];
   if (executionMode) {
@@ -587,14 +844,18 @@ module.exports = {
   detectMainBranch,
   createWorktree,
   removeWorktree,
+  deleteBranch,
   listWorktrees,
   loadRegistry,
   registryUpdate,
   reconcileRegistry,
   ensureWorktreeDir,
+  setInit,
   formatStatusTable,
   formatStatusOutput,
   formatWaveSummary,
   renderProgressBar,
   generateScopedClaudeMd,
+  formatMarkIIStatus,
+  deriveNextActions,
 };
