@@ -1428,6 +1428,17 @@ async function handleExecute(cwd, subcommand, args) {
         error('Usage: rapid-tools execute resume <set-name>');
         process.exit(1);
       }
+      // Validate registry entry exists and is Paused
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setName];
+      if (!entry) {
+        error(`No worktree registered for set "${setName}"`);
+        process.exit(1);
+      }
+      if (entry.phase !== 'Paused') {
+        error(`Set "${setName}" is in phase "${entry.phase}", not Paused. Resume is only available for paused sets.`);
+        process.exit(1);
+      }
       // Validate HANDOFF.md exists
       const handoffPath = path.join(cwd, '.planning', 'sets', setName, 'HANDOFF.md');
       if (!fs.existsSync(handoffPath)) {
