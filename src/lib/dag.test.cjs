@@ -9,6 +9,8 @@ const {
   createDAG,
   validateDAG,
   getExecutionOrder,
+  createDAGv2,
+  validateDAGv2,
 } = require('./dag.cjs');
 
 // ────────────────────────────────────────────────────────────────
@@ -436,5 +438,300 @@ describe('getExecutionOrder', () => {
     assert.deepStrictEqual(order[0], ['A']);
     assert.deepStrictEqual(order[1], ['B']);
     assert.deepStrictEqual(order[2], ['C']);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// createDAGv2
+// ────────────────────────────────────────────────────────────────
+describe('createDAGv2', () => {
+  it('returns version:2 DAG with typed nodes', () => {
+    const nodes = [
+      { id: 'auth', type: 'set' },
+      { id: 'data', type: 'set' },
+      { id: 'api', type: 'set' },
+    ];
+    const edges = [
+      { from: 'auth', to: 'api' },
+      { from: 'data', to: 'api' },
+    ];
+    const dag = createDAGv2(nodes, edges);
+
+    assert.equal(dag.version, 2);
+    assert.ok(Array.isArray(dag.nodes));
+    assert.ok(Array.isArray(dag.edges));
+    assert.ok(typeof dag.waves === 'object');
+    assert.ok(typeof dag.metadata === 'object');
+
+    // All nodes have wave, status, type
+    for (const node of dag.nodes) {
+      assert.ok(typeof node.wave === 'number', `Node ${node.id} should have wave`);
+      assert.equal(node.status, 'pending');
+      assert.ok(['set', 'wave', 'job'].includes(node.type), `Node ${node.id} should have valid type`);
+    }
+  });
+
+  it('includes nodeTypes count in metadata', () => {
+    const nodes = [
+      { id: 'a', type: 'set' },
+      { id: 'b', type: 'wave' },
+      { id: 'c', type: 'job' },
+      { id: 'd', type: 'job' },
+    ];
+    const dag = createDAGv2(nodes, []);
+
+    assert.deepStrictEqual(dag.metadata.nodeTypes, { set: 1, wave: 1, job: 2 });
+    assert.equal(dag.metadata.totalNodes, 4);
+  });
+
+  it('rejects nodes missing type field', () => {
+    const nodes = [
+      { id: 'a', type: 'set' },
+      { id: 'b' }, // missing type
+    ];
+    assert.throws(
+      () => createDAGv2(nodes, []),
+      (err) => {
+        assert.ok(err instanceof Error);
+        assert.ok(err.message.includes('type'));
+        return true;
+      }
+    );
+  });
+
+  it('rejects nodes with invalid type value', () => {
+    const nodes = [{ id: 'a', type: 'invalid' }];
+    assert.throws(
+      () => createDAGv2(nodes, []),
+      (err) => {
+        assert.ok(err instanceof Error);
+        assert.ok(err.message.includes('type'));
+        return true;
+      }
+    );
+  });
+
+  it('rejects cross-type edges with descriptive error', () => {
+    const nodes = [
+      { id: 'a', type: 'set' },
+      { id: 'b', type: 'job' },
+    ];
+    const edges = [{ from: 'a', to: 'b' }];
+    assert.throws(
+      () => createDAGv2(nodes, edges),
+      (err) => {
+        assert.ok(err instanceof Error);
+        assert.ok(err.message.includes('Cross-type edge'));
+        assert.ok(err.message.includes('a'));
+        assert.ok(err.message.includes('b'));
+        assert.ok(err.message.includes('set'));
+        assert.ok(err.message.includes('job'));
+        return true;
+      }
+    );
+  });
+
+  it('allows same-type edges', () => {
+    const nodes = [
+      { id: 'a', type: 'job' },
+      { id: 'b', type: 'job' },
+    ];
+    const edges = [{ from: 'a', to: 'b' }];
+    const dag = createDAGv2(nodes, edges);
+    assert.equal(dag.nodes.length, 2);
+    assert.equal(dag.edges.length, 1);
+  });
+
+  it('assigns all nodes to wave 1 with no edges', () => {
+    const nodes = [
+      { id: 'x', type: 'set' },
+      { id: 'y', type: 'wave' },
+      { id: 'z', type: 'job' },
+    ];
+    const dag = createDAGv2(nodes, []);
+    for (const node of dag.nodes) {
+      assert.equal(node.wave, 1, `Node ${node.id} should be wave 1`);
+    }
+  });
+
+  it('assigns correct waves for diamond pattern', () => {
+    // A -> B, A -> C, B -> D, C -> D (all same type)
+    const nodes = [
+      { id: 'A', type: 'job' },
+      { id: 'B', type: 'job' },
+      { id: 'C', type: 'job' },
+      { id: 'D', type: 'job' },
+    ];
+    const edges = [
+      { from: 'A', to: 'B' },
+      { from: 'A', to: 'C' },
+      { from: 'B', to: 'D' },
+      { from: 'C', to: 'D' },
+    ];
+    const dag = createDAGv2(nodes, edges);
+
+    const nodeMap = {};
+    for (const n of dag.nodes) nodeMap[n.id] = n;
+
+    assert.equal(nodeMap['A'].wave, 1);
+    assert.equal(nodeMap['B'].wave, 2);
+    assert.equal(nodeMap['C'].wave, 2);
+    assert.equal(nodeMap['D'].wave, 3);
+  });
+
+  it('does not include set-specific checkpoint format in waves', () => {
+    const nodes = [
+      { id: 'a', type: 'job' },
+      { id: 'b', type: 'job' },
+    ];
+    const edges = [{ from: 'a', to: 'b' }];
+    const dag = createDAGv2(nodes, edges);
+
+    // v2 waves should not have checkpoint.contracts or checkpoint.artifacts
+    for (const waveKey of Object.keys(dag.waves)) {
+      const wave = dag.waves[waveKey];
+      assert.ok(!wave.checkpoint, `Wave ${waveKey} should not have v1 checkpoint format`);
+    }
+  });
+
+  it('metadata includes created, totalNodes, totalWaves, maxParallelism', () => {
+    const nodes = [
+      { id: 'a', type: 'set' },
+      { id: 'b', type: 'set' },
+      { id: 'c', type: 'set' },
+    ];
+    const edges = [
+      { from: 'a', to: 'c' },
+      { from: 'b', to: 'c' },
+    ];
+    const dag = createDAGv2(nodes, edges);
+
+    assert.ok(dag.metadata.created);
+    assert.equal(dag.metadata.totalNodes, 3);
+    assert.equal(dag.metadata.totalWaves, 2);
+    assert.equal(dag.metadata.maxParallelism, 2);
+  });
+
+  it('preserves extra node properties', () => {
+    const nodes = [{ id: 'a', type: 'job', parentId: 'parent1', label: 'My Job' }];
+    const dag = createDAGv2(nodes, []);
+    assert.equal(dag.nodes[0].parentId, 'parent1');
+    assert.equal(dag.nodes[0].label, 'My Job');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// validateDAGv2
+// ────────────────────────────────────────────────────────────────
+describe('validateDAGv2', () => {
+  it('returns { valid: true } for a well-formed v2 DAG', () => {
+    const dag = createDAGv2(
+      [{ id: 'A', type: 'job' }, { id: 'B', type: 'job' }],
+      [{ from: 'A', to: 'B' }]
+    );
+    const result = validateDAGv2(dag);
+    assert.deepStrictEqual(result, { valid: true });
+  });
+
+  it('returns { valid: false } if version is not 2', () => {
+    const dag = createDAGv2(
+      [{ id: 'A', type: 'job' }],
+      []
+    );
+    dag.version = 1;
+    const result = validateDAGv2(dag);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('version')));
+  });
+
+  it('returns { valid: false } for nodes missing type field', () => {
+    const result = validateDAGv2({
+      version: 2,
+      nodes: [{ id: 'A', wave: 1, status: 'pending' }],
+      edges: [],
+      waves: { 1: { nodes: ['A'] } },
+      metadata: { totalNodes: 1, totalWaves: 1, nodeTypes: { set: 0, wave: 0, job: 0 } },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('type')));
+  });
+
+  it('returns { valid: false } for nodes with invalid type value', () => {
+    const result = validateDAGv2({
+      version: 2,
+      nodes: [{ id: 'A', wave: 1, status: 'pending', type: 'invalid' }],
+      edges: [],
+      waves: { 1: { nodes: ['A'] } },
+      metadata: { totalNodes: 1, totalWaves: 1, nodeTypes: { set: 0, wave: 0, job: 0 } },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('type')));
+  });
+
+  it('returns { valid: false } for missing required top-level fields', () => {
+    const result = validateDAGv2({});
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.length > 0);
+  });
+
+  it('returns { valid: false } for missing node id', () => {
+    const result = validateDAGv2({
+      version: 2,
+      nodes: [{ wave: 1, status: 'pending', type: 'job' }],
+      edges: [],
+      waves: {},
+      metadata: { totalNodes: 1, totalWaves: 1 },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('id')));
+  });
+
+  it('returns { valid: false } for missing node wave', () => {
+    const result = validateDAGv2({
+      version: 2,
+      nodes: [{ id: 'A', status: 'pending', type: 'job' }],
+      edges: [],
+      waves: {},
+      metadata: { totalNodes: 1, totalWaves: 1 },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('wave')));
+  });
+
+  it('returns { valid: false } for missing node status', () => {
+    const result = validateDAGv2({
+      version: 2,
+      nodes: [{ id: 'A', wave: 1, type: 'job' }],
+      edges: [],
+      waves: {},
+      metadata: { totalNodes: 1, totalWaves: 1 },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('status')));
+  });
+
+  it('returns { valid: false } for edges missing from/to', () => {
+    const result = validateDAGv2({
+      version: 2,
+      nodes: [{ id: 'A', wave: 1, status: 'pending', type: 'job' }],
+      edges: [{ to: 'A' }],
+      waves: {},
+      metadata: { totalNodes: 1, totalWaves: 1 },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('from')));
+  });
+
+  it('validates metadata for totalNodes and totalWaves', () => {
+    const result = validateDAGv2({
+      version: 2,
+      nodes: [],
+      edges: [],
+      waves: {},
+      metadata: {},
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('totalNodes')));
+    assert.ok(result.errors.some(e => e.includes('totalWaves')));
   });
 });
