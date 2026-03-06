@@ -373,12 +373,13 @@ Plans:
   5. A roadmapper agent creates a roadmap with the new sets/waves/jobs structure based on research and user input
   6. /install preserves current env var methodology with shell detection, and /new-milestone starts a new milestone cycle
   7. /help shows all Mark II commands with workflow guidance for the new hierarchy
-**Plans**: TBD
+**Plans**: 4 plans (Wave 1: init library + agent roles + help || new-milestone, Wave 2: init SKILL.md pipeline)
 
 Plans:
-- [ ] 18-01: TBD
-- [ ] 18-02: TBD
-- [ ] 18-03: TBD
+- [ ] 18-01-PLAN.md -- Init library extensions: config model/teamSize, research-dir CLI, write-config CLI (INIT-01, INIT-02, INIT-05, INIT-06) [Wave 1]
+- [ ] 18-02-PLAN.md -- Agent role modules (8 roles) and help SKILL.md rewrite (INIT-03, INIT-04, INIT-05, INIT-06, UX-04) [Wave 1]
+- [ ] 18-03-PLAN.md -- Init SKILL.md full pipeline rewrite (INIT-01, INIT-02, INIT-03, INIT-04, INIT-05, INIT-06) [Wave 2, depends: 18-01, 18-02]
+- [ ] 18-04-PLAN.md -- New-milestone skill, addMilestone state-machine, /install verification (INIT-07, INIT-08, UX-04) [Wave 1]
 
 ### Phase 19: Set Lifecycle
 **Goal**: Developers can create, monitor, pause, resume, and clean up isolated set worktrees with full state tracking
@@ -499,9 +500,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 13. Merge and Cleanup Skill Prompts | v1.1 | 2/2 | Complete | 2026-03-06 |
 | 14. Install Skill Polish | v1.1 | 1/1 | Complete | 2026-03-06 |
 | 15. Global Error Recovery and Progress | v1.1 | 2/2 | Complete | 2026-03-06 |
-| 16. State Machine Foundation | 3/3 | Complete    | 2026-03-06 | - |
-| 17. Dependency Audit and Adapter Layer | 2/2 | Complete    | 2026-03-06 | - |
-| 18. Init and Project Setup | v2.0 | 0/3 | Not started | - |
+| 16. State Machine Foundation | v2.0 | 3/3 | Complete | 2026-03-06 |
+| 17. Dependency Audit and Adapter Layer | v2.0 | 2/2 | Complete | 2026-03-06 |
+| 18. Init and Project Setup | v2.0 | 0/4 | Not started | - |
 | 19. Set Lifecycle | v2.0 | 0/2 | Not started | - |
 | 20. Wave Planning | v2.0 | 0/2 | Not started | - |
 | 21. Execution Engine | v2.0 | 0/2 | Not started | - |
