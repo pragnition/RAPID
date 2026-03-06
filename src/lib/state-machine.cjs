@@ -136,6 +136,37 @@ function findJob(state, milestoneId, setId, waveId, jobId) {
   return job;
 }
 
+// ---- Status ordinals for progression checks ----
+
+const WAVE_STATUS_ORDER = {
+  pending: 0, discussing: 1, planning: 2, executing: 3,
+  reconciling: 4, complete: 5, failed: 3, // failed is at executing level
+};
+
+const SET_STATUS_ORDER = {
+  pending: 0, planning: 1, executing: 2, reviewing: 3,
+  merging: 4, complete: 5,
+};
+
+/**
+ * Check if applying a derived status would be a valid forward progression
+ * (or lateral move to 'failed'). Prevents derived status from regressing
+ * a parent entity to an earlier state (e.g., 'reviewing' -> 'executing').
+ *
+ * @param {object} orderMap - Status ordinal map
+ * @param {string} currentStatus - Current status
+ * @param {string} derivedStatus - Derived status to apply
+ * @returns {boolean} Whether the derived status should be applied
+ */
+function isDerivedStatusValid(orderMap, currentStatus, derivedStatus) {
+  if (derivedStatus === currentStatus) return false; // no change needed
+  const currentOrd = orderMap[currentStatus];
+  const derivedOrd = orderMap[derivedStatus];
+  if (currentOrd === undefined || derivedOrd === undefined) return false;
+  // Allow forward progression or lateral moves (e.g., executing -> failed)
+  return derivedOrd >= currentOrd;
+}
+
 // ---- Status derivation ----
 
 /**
@@ -218,14 +249,10 @@ async function transitionJob(cwd, milestoneId, setId, waveId, jobId, newStatus) 
     // Derive wave status from jobs
     const wave = findWave(state, milestoneId, setId, waveId);
     const derivedWaveStatus = deriveWaveStatus(wave.jobs);
-    // Only update wave status if the transition is valid
-    if (derivedWaveStatus !== wave.status) {
-      try {
-        validateTransition('wave', wave.status, derivedWaveStatus);
-        wave.status = derivedWaveStatus;
-      } catch (_) {
-        // Invalid transition -- leave wave status unchanged
-      }
+    // Only update wave status if it represents forward progression
+    // (prevents derived status from regressing e.g. 'reconciling' -> 'executing')
+    if (isDerivedStatusValid(WAVE_STATUS_ORDER, wave.status, derivedWaveStatus)) {
+      wave.status = derivedWaveStatus;
     }
 
     // Write state directly (skip lock since we already hold it)
@@ -261,14 +288,10 @@ async function transitionWave(cwd, milestoneId, setId, waveId, newStatus) {
     // Derive set status from waves
     const set = findSet(state, milestoneId, setId);
     const derivedSetStatus = deriveSetStatus(set.waves);
-    // Only update set status if the transition is valid
-    if (derivedSetStatus !== set.status) {
-      try {
-        validateTransition('set', set.status, derivedSetStatus);
-        set.status = derivedSetStatus;
-      } catch (_) {
-        // Invalid transition -- leave set status unchanged
-      }
+    // Only update set status if it represents forward progression
+    // (prevents derived status from regressing e.g. 'reviewing' -> 'executing')
+    if (isDerivedStatusValid(SET_STATUS_ORDER, set.status, derivedSetStatus)) {
+      set.status = derivedSetStatus;
     }
 
     // Write state directly (skip lock since we already hold it)
