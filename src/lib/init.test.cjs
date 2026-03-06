@@ -175,10 +175,55 @@ describe('generateConfigJson', () => {
     assert.equal(parsed.project.version, '0.1.0');
   });
 
-  it('contains planning section', () => {
+  it('contains planning section with default max_parallel_sets', () => {
     const parsed = JSON.parse(generateConfigJson());
     assert.ok(parsed.planning);
-    assert.equal(parsed.planning.max_parallel_sets, 3);
+    // Default teamSize=1 => floor(1*1.5) = 1
+    assert.equal(parsed.planning.max_parallel_sets, 1);
+  });
+
+  it('defaults model to sonnet when no opts provided', () => {
+    const parsed = JSON.parse(generateConfigJson());
+    assert.equal(parsed.model, 'sonnet');
+  });
+
+  it('defaults model to sonnet when empty opts provided', () => {
+    const parsed = JSON.parse(generateConfigJson({}));
+    assert.equal(parsed.model, 'sonnet');
+  });
+
+  it('sets model to opus when specified', () => {
+    const parsed = JSON.parse(generateConfigJson({ model: 'opus' }));
+    assert.equal(parsed.model, 'opus');
+  });
+
+  it('sets model to sonnet when specified', () => {
+    const parsed = JSON.parse(generateConfigJson({ model: 'sonnet' }));
+    assert.equal(parsed.model, 'sonnet');
+  });
+
+  it('computes max_parallel_sets from teamSize 4 as 6', () => {
+    const parsed = JSON.parse(generateConfigJson({ teamSize: 4 }));
+    assert.equal(parsed.planning.max_parallel_sets, 6);
+  });
+
+  it('computes max_parallel_sets from teamSize 1 as 1', () => {
+    const parsed = JSON.parse(generateConfigJson({ teamSize: 1 }));
+    assert.equal(parsed.planning.max_parallel_sets, 1);
+  });
+
+  it('computes max_parallel_sets from teamSize 3 as 4', () => {
+    const parsed = JSON.parse(generateConfigJson({ teamSize: 3 }));
+    // floor(3 * 1.5) = floor(4.5) = 4
+    assert.equal(parsed.planning.max_parallel_sets, 4);
+  });
+
+  it('includes all fields when name, model, and teamSize provided', () => {
+    const parsed = JSON.parse(generateConfigJson({ name: 'MyProject', model: 'opus', teamSize: 3 }));
+    assert.equal(parsed.project.name, 'MyProject');
+    assert.equal(parsed.model, 'opus');
+    assert.equal(parsed.planning.max_parallel_sets, 4);
+    assert.equal(parsed.project.version, '0.1.0');
   });
 });
 
@@ -238,6 +283,13 @@ describe('scaffoldProject', () => {
       assert.ok(fs.existsSync(path.join(planningDir, 'ROADMAP.md')));
       assert.ok(fs.existsSync(path.join(planningDir, 'REQUIREMENTS.md')));
       assert.ok(fs.existsSync(path.join(planningDir, 'config.json')));
+    });
+
+    it('creates .planning/research/ directory', () => {
+      scaffoldProject(tmpDir, { name: 'TestProj', description: 'A test', teamSize: 2 });
+      const researchDir = path.join(tmpDir, '.planning', 'research');
+      assert.ok(fs.existsSync(researchDir), '.planning/research/ should exist after fresh scaffold');
+      assert.ok(fs.statSync(researchDir).isDirectory(), '.planning/research/ should be a directory');
     });
 
     it('does NOT create .planning/phases/ directory', () => {
