@@ -301,11 +301,11 @@ Plans:
   1. No skill contains bare "STOP" or "halt" error handling -- every error path offers structured AskUserQuestion with retry/skip/help/cancel options
   2. During context skill codebase analysis, the developer sees progress text indicating analysis stage and files processed
   3. During merge skill reviewer and cleanup subagent operations, the developer sees progress text indicating review stage and current set
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: init+context STOP replacement+progress || merge progress)
 
 Plans:
-- [ ] 15-01: TBD
-- [ ] 15-02: TBD
+- [ ] 15-01: Replace STOP handling in init and context SKILL.md with 3-tier recovery, add context analysis progress banners (ERRR-03, PROG-02) [Wave 1]
+- [ ] 15-02: Add reviewer and cleanup subagent progress banners to merge SKILL.md (PROG-03) [Wave 1]
 
 ## Progress
 
