@@ -226,8 +226,9 @@ async function transitionJob(cwd, milestoneId, setId, waveId, jobId, newStatus) 
       wave.status = 'complete';
     } else if (derivedWaveStatus === 'pending') {
       wave.status = 'pending';
+    } else if (derivedWaveStatus === 'failed') {
+      wave.status = 'failed';
     }
-    // 'failed' is not a valid WaveStatus, so we leave wave status as-is for that case
 
     // Write state directly (skip lock since we already hold it)
     const validated = ProjectState.parse(state);
@@ -353,13 +354,19 @@ function recoverFromGit(cwd) {
  * @returns {{ committed: boolean }}
  */
 function commitState(cwd, message) {
+  // git add must succeed -- any failure is a real error
+  execFileSync('git', ['add', '.planning/STATE.json'], { cwd, stdio: 'pipe' });
+
   try {
-    execFileSync('git', ['add', '.planning/STATE.json'], { cwd, stdio: 'pipe' });
     execFileSync('git', ['commit', '-m', message], { cwd, stdio: 'pipe' });
     return { committed: true };
   } catch (err) {
-    // Exit code 1 from git commit means nothing to commit
-    return { committed: false };
+    // Exit code 1 from git commit means nothing to commit (clean tree)
+    if (err.status === 1) {
+      return { committed: false };
+    }
+    // Any other exit code is a real failure -- propagate it
+    return { committed: false, error: err.message };
   }
 }
 
