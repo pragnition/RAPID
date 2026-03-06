@@ -1,12 +1,93 @@
-
 # Requirements: RAPID
 
 **Defined:** 2026-03-03
 **Core Value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
 
-## v1.1 Requirements
+## v2.0 Requirements
 
-Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
+Requirements for Mark II overhaul. Each maps to roadmap phases.
+
+### State & Infrastructure
+
+- [ ] **STATE-01**: State machine persists hierarchical JSON state (project > milestone > set > wave > job) with lock-protected writes
+- [ ] **STATE-02**: State transitions validated — cannot skip states (e.g. pending > executing > complete)
+- [ ] **STATE-03**: Sets/Waves/Jobs data model with DAG computation extending dag.cjs
+- [ ] **STATE-04**: Dependency audit maps coupling in v1.0 lib modules and creates adapter layer
+- [ ] **STATE-05**: All inter-agent outputs use structured format (JSON/structured markdown) for reliable parsing
+
+### Init & Project Setup
+
+- [ ] **INIT-01**: /init detects greenfield vs brownfield projects
+- [ ] **INIT-02**: /init asks user for model selection (opus/sonnet) and team size for set scaling
+- [ ] **INIT-03**: Codebase synthesizer agent analyzes brownfield codebases (files, functions, API endpoints, code style, tech stack)
+- [ ] **INIT-04**: Parallel research agents investigate stack, features, architecture, pitfalls during init
+- [ ] **INIT-05**: Research synthesizer combines parallel research outputs into SUMMARY.md
+- [ ] **INIT-06**: Roadmapper agent creates roadmap with sets/waves/jobs structure
+- [ ] **INIT-07**: /install preserves current env var methodology with shell detection
+- [ ] **INIT-08**: /new-milestone command starts new milestone/version cycle
+
+### Set Lifecycle
+
+- [ ] **SETL-01**: /set-init creates git worktree and branch for a specified set
+- [ ] **SETL-02**: /set-init generates scoped CLAUDE.md per worktree with relevant contracts and context
+- [ ] **SETL-03**: Set planner runs during /set-init producing high-level set overview
+- [ ] **SETL-04**: /status displays cross-set dashboard with set > wave > job hierarchy
+- [ ] **SETL-05**: /pause saves per-set state with handoff file for later resumption
+- [ ] **SETL-06**: /cleanup removes completed set worktrees with safety checks
+- [ ] **SETL-07**: /context generates CLAUDE.md and project context files
+
+### Wave Lifecycle
+
+- [ ] **WAVE-01**: /discuss captures user implementation vision per wave via AskUserQuestion
+- [ ] **WAVE-02**: /discuss is comprehensive — probes uncovered facets, asks about edge cases, only acts autonomously if user opts in
+- [ ] **WAVE-03**: /plan spawns research agents to investigate how to implement wave jobs
+- [ ] **WAVE-04**: Wave Planner produces high-level per-job plans with structured output
+- [ ] **WAVE-05**: Job Planner creates detailed per-job implementation plans with user discussion
+- [ ] **WAVE-06**: Job Planner validates plans against interface contracts
+
+### Execution
+
+- [ ] **EXEC-01**: /execute runs parallel job execution within a wave via subagents or agent teams
+- [ ] **EXEC-02**: Executor agent executes jobs with atomic commits producing bisectable git history
+- [ ] **EXEC-03**: Per-job progress tracking with state updates surviving context resets
+- [ ] **EXEC-04**: Orchestrator dispatches commands based on current state and spawns appropriate subagents
+
+### Review Module
+
+- [ ] **REVW-01**: /review orchestrates unit test > bug hunt > UAT pipeline (per-wave or per-set)
+- [ ] **REVW-02**: Unit test agent generates test plan for user approval before writing tests
+- [ ] **REVW-03**: Unit test agent writes, runs, and reports with full observability (commands, stdout, pass/fail)
+- [ ] **REVW-04**: Bug hunter agent performs broad static analysis with risk/confidence scoring
+- [ ] **REVW-05**: Devils advocate agent attempts to disprove hunter findings with code evidence
+- [ ] **REVW-06**: Judge agent produces final ruling (ACCEPTED/DISMISSED/DEFERRED) with fix priorities and HITL for contested findings
+- [ ] **REVW-07**: Bugfix subagent fixes accepted bugs, pipeline iterates until clean
+- [ ] **REVW-08**: UAT agent generates multi-step test plan with automated/human step tagging
+- [ ] **REVW-09**: UAT agent executes automated steps via Playwright, prompts user for human steps
+
+### Merge Pipeline
+
+- [ ] **MERG-01**: /merge merges completed sets back to main with 5-level conflict detection (textual, structural, dependency, API, semantic)
+- [ ] **MERG-02**: 4-tier resolution cascade (deterministic > heuristic > AI-assisted > human escalation)
+- [ ] **MERG-03**: Per-set merge state tracking integrated with hierarchical state machine
+- [ ] **MERG-04**: Sets merge in dependency-graph order via DAG
+- [ ] **MERG-05**: Bisection recovery isolates breaking set interaction via binary search
+- [ ] **MERG-06**: Rollback with cascade revert undoes problematic merges and re-merges remaining sets
+
+### UX & Cross-Cutting
+
+- [ ] **UX-01**: AskUserQuestion used at every decision gate, queries batched to save tokens/time
+- [ ] **UX-02**: Progress indicators with emojis/color during subagent operations
+- [ ] **UX-03**: State updated at every step so user can /clear context between phases
+- [ ] **UX-04**: /help shows all Mark II commands with workflow guidance
+
+### Documentation
+
+- [ ] **DOCS-01**: DOCS.md comprehensively documents all commands, agents, architecture, and Mark II workflow
+- [ ] **DOCS-02**: README.md updated with Mark II hierarchy, workflow, and getting started guide
+
+## v1.1 Requirements (Validated)
+
+All v1.1 requirements shipped and validated.
 
 ### Structured Prompts
 
@@ -44,108 +125,94 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 - [x] **PROG-02**: Context skill shows progress during codebase analysis subagent
 - [x] **PROG-03**: Merge skill shows progress during reviewer and cleanup subagent operations
 
-## v1 Requirements (Validated)
+## v1.0 Requirements (Validated)
 
 All v1.0 requirements shipped and validated.
 
 ### Initialization
 
-- [x] **INIT-01**: Developer can run `/rapid:init` to scaffold `.planning/` directory with all required state files
-- [x] **INIT-02**: Init detects existing codebase and offers brownfield mapping before planning
-- [x] **INIT-03**: Init auto-generates CLAUDE.md with full project context (code style, architecture patterns, API conventions, project knowledge)
-- [x] **INIT-04**: Init auto-generates style guide for cross-worktree consistency (naming conventions, file structure, error handling patterns)
-- [x] **INIT-05**: Init configures git repo and validates prerequisites (git 2.30+, jq 1.6+, Node.js 18+)
+- [x] **v1-INIT-01**: Developer can run `/rapid:init` to scaffold `.planning/` directory with all required state files
+- [x] **v1-INIT-02**: Init detects existing codebase and offers brownfield mapping before planning
+- [x] **v1-INIT-03**: Init auto-generates CLAUDE.md with full project context
+- [x] **v1-INIT-04**: Init auto-generates style guide for cross-worktree consistency
+- [x] **v1-INIT-05**: Init configures git repo and validates prerequisites (git 2.30+, jq 1.6+, Node.js 18+)
 
 ### Set Planning
 
-- [x] **PLAN-01**: Developer can run `/rapid:plan` to decompose work into parallelizable sets with explicit boundaries
-- [x] **PLAN-02**: Each set has a machine-verifiable interface contract defining API surfaces, data shapes, and behavioral expectations between sets
-- [x] **PLAN-03**: Planning produces a set dependency graph (DAG) showing which sets can run in parallel and which have ordering constraints
-- [x] **PLAN-04**: Planning assigns shared-file ownership (package.json, configs, shared types) to specific sets to prevent merge conflicts
-- [x] **PLAN-05**: Developer can run `/rapid:assumptions` to surface Claude's mental model about a set's approach before planning begins
-- [x] **PLAN-06**: Planning respects loose sync gates — shared planning gate must complete before any set begins execution
+- [x] **v1-PLAN-01**: Developer can run `/rapid:plan` to decompose work into parallelizable sets
+- [x] **v1-PLAN-02**: Each set has a machine-verifiable interface contract
+- [x] **v1-PLAN-03**: Planning produces a set dependency graph (DAG)
+- [x] **v1-PLAN-04**: Planning assigns shared-file ownership to specific sets
+- [x] **v1-PLAN-05**: Developer can run `/rapid:assumptions` to surface Claude's mental model
+- [x] **v1-PLAN-06**: Planning respects loose sync gates
 
 ### Worktree Orchestration
 
-- [x] **WORK-01**: Each set gets its own git worktree and dedicated branch created automatically
-- [x] **WORK-02**: Developer can run `/rapid:status` to see all active worktrees, their set assignments, and lifecycle phase
-- [x] **WORK-03**: Completed worktrees are cleaned up automatically (worktree removed, branch optionally deleted after merge)
-- [x] **WORK-04**: Each worktree gets a scoped CLAUDE.md containing only its set's contracts, relevant context, and style guide
+- [x] **v1-WORK-01**: Each set gets its own git worktree and dedicated branch
+- [x] **v1-WORK-02**: Developer can run `/rapid:status` to see all active worktrees
+- [x] **v1-WORK-03**: Completed worktrees are cleaned up automatically
+- [x] **v1-WORK-04**: Each worktree gets a scoped CLAUDE.md
 
 ### Execution
 
-- [x] **EXEC-01**: Each set executes in a fresh context window (subagent per set) with only relevant contracts and context loaded
-- [x] **EXEC-02**: Each set goes through its own discuss, plan, execute phase lifecycle independently
-- [x] **EXEC-03**: Changes within sets are committed atomically per task (bisectable, blame-friendly history)
-- [x] **EXEC-04**: Developer can run `/rapid:status` to see progress across all sets and all phases
-- [x] **EXEC-05**: Developer can pause work on a set and resume later with full state restoration (handoff files)
-- [x] **EXEC-06**: RAPID detects EXPERIMENTAL_AGENT_TEAMS env var and offers agent teams execution mode with subagent fallback
-- [x] **EXEC-07**: Loose sync gates enforce: all sets must finish planning before any begins execution; execution is independent per set
-- [x] **EXEC-08**: Mandatory reconciliation after each execution wave
+- [x] **v1-EXEC-01**: Each set executes in a fresh context window with only relevant contracts
+- [x] **v1-EXEC-02**: Each set goes through its own discuss, plan, execute lifecycle independently
+- [x] **v1-EXEC-03**: Changes committed atomically per task
+- [x] **v1-EXEC-04**: Cross-set progress dashboard
+- [x] **v1-EXEC-05**: Pause and resume with state restoration
+- [x] **v1-EXEC-06**: EXPERIMENTAL_AGENT_TEAMS detection with subagent fallback
+- [x] **v1-EXEC-07**: Loose sync gates enforced
+- [x] **v1-EXEC-08**: Mandatory reconciliation after each wave
 
 ### Merge & Review
 
-- [x] **MERG-01**: Merge reviewer agent performs deep code review before any set merges to main
-- [x] **MERG-02**: Merge reviewer validates all interface contracts are satisfied
-- [x] **MERG-03**: Cleanup agent can be spawned when merge reviewer finds fixable issues
-- [x] **MERG-04**: Sets merge in dependency-graph order
+- [x] **v1-MERG-01**: Merge reviewer performs deep code review
+- [x] **v1-MERG-02**: Merge reviewer validates interface contracts
+- [x] **v1-MERG-03**: Cleanup agent for fixable issues
+- [x] **v1-MERG-04**: Dependency-graph ordered merging
 
-### State Management
+### State & Agent Architecture
 
-- [x] **STAT-01**: All project state lives in `.planning/` directory, committed to git
-- [x] **STAT-02**: Concurrent state access is prevented via mkdir-based atomic lock files
-- [x] **STAT-03**: Stale locks are detected and recovered automatically
-- [x] **STAT-04**: Developer can run `/rapid:help` to see all available commands and workflow guidance
+- [x] **v1-STAT-01**: All state in `.planning/`, committed to git
+- [x] **v1-STAT-02**: Concurrent access prevention via atomic locks
+- [x] **v1-STAT-03**: Stale lock detection and recovery
+- [x] **v1-STAT-04**: `/rapid:help` with workflow guidance
+- [x] **v1-AGNT-01**: Composable prompt modules
+- [x] **v1-AGNT-02**: Structured return protocol (COMPLETE/CHECKPOINT/BLOCKED)
+- [x] **v1-AGNT-03**: Filesystem artifact verification
 
-### Agent Architecture
+### Packaging & Setup
 
-- [x] **AGNT-01**: Agents are built from composable prompt modules
-- [x] **AGNT-02**: All agents use structured return protocol (COMPLETE/CHECKPOINT/BLOCKED)
-- [x] **AGNT-03**: Agent completion is verified by checking filesystem artifacts
+- [x] **v1-PKG-01**: Portable paths in all SKILL.md files
+- [x] **v1-PKG-02**: Version numbers synchronized
+- [x] **v1-PKG-03**: MIT LICENSE
+- [x] **v1-PKG-04**: DOCS.md documents all skills, agents, architecture
+- [ ] **v1-PKG-05**: Self-hosted marketplace.json
+- [ ] **v1-PKG-06**: Plugin passes validation for directory submission
+- [x] **v1-SETUP-01**: setup.sh bootstraps RAPID_TOOLS
+- [x] **v1-SETUP-02**: /rapid:install guided setup
+- [x] **v1-SETUP-03**: No fallback paths — bare ${RAPID_TOOLS}
 
-### Packaging (v1.0)
+## Future Requirements (v2.1+)
 
-- [x] **PKG-01**: All SKILL.md files use portable paths
-- [x] **PKG-02**: Version numbers synchronized across plugin.json and package.json
-- [x] **PKG-03**: MIT LICENSE file exists
-- [x] **PKG-04**: DOCS.md comprehensively documents all skills, agents, and architecture
-- [ ] **PKG-05**: Self-hosted marketplace.json enables distribution
-- [ ] **PKG-06**: Plugin passes validation for official directory submission
+Deferred from v2.0.
 
-### Setup & Installation (v1.0)
+### Ad-Hoc Tasks
 
-- [x] **SETUP-01**: setup.sh bootstraps RAPID_TOOLS env var for any installation method
-- [x] **SETUP-02**: /rapid:install skill provides guided in-Claude-Code setup
-- [x] **SETUP-03**: All path fallbacks removed -- bare ${RAPID_TOOLS} everywhere
-
-## v2 Requirements
-
-Deferred to future release.
+- **ADHOC-01**: /quick command for rapid single-task execution
+- **ADHOC-02**: /insert-job for ad-hoc job insertion into existing waves
 
 ### Advanced Team Features
 
 - **TEAM-01**: Real-time team status broadcasting
 - **TEAM-02**: Cross-agent-tool support (Codex CLI, Gemini CLI alongside Claude Code)
 - **TEAM-03**: Role-based task assignment
-- **TEAM-04**: Conflict detection across concurrent sets
 
 ### Polish
 
-- **PLSH-01**: Replan workflow (`/rapid:replan`) to restructure sets mid-project
+- **PLSH-01**: Replan workflow to restructure sets mid-project
 - **PLSH-02**: Custom merge strategies per set
 - **PLSH-03**: Issue tracker integration (GitHub Issues, Linear)
-- **PLSH-04**: Plugin/extension system for community contributions
-- **PLSH-05**: Codebase mapping integration for brownfield projects
-- **PLSH-06**: Verification/UAT phase beyond merge review
-
-### Pause UX (deferred from v1.1)
-
-- **PAUSE-01**: Pause skill provides structured template for manual pause data collection
-- **PAUSE-02**: Pause skill warns proactively before pausing when pause count >= 2
-
-### Plan Iteration (deferred from v1.1)
-
-- **PLANUX-01**: Plan skill adds iteration limit (3 rounds) to modification loop with re-plan suggestion
 
 ## Out of Scope
 
@@ -153,11 +220,11 @@ Deferred to future release.
 |---------|--------|
 | Standalone CLI | RAPID is a Claude Code plugin, not its own binary |
 | Central server/service | All state is git-native, zero infrastructure required |
-| Ad-hoc set creation during execution | Sets defined at planning time only |
-| Fully synchronized phase gates | Loose sync is the model |
-| Automated conflict resolution | Too risky; structured recovery is sufficient for v1.1 |
-| Real-time subagent streaming | Claude Code limitation; progress indicators are best we can do |
-| Custom prompt themes/styling | Over-engineering; standard AskUserQuestion UI is sufficient |
+| Dynamic set creation during execution | Sets defined at planning time only — prevents merge nightmares |
+| Fully synchronized phase gates | Loose sync is the model — shared planning gate, independent execution |
+| Fully automated review (no HITL) | AI review without human judgment leads to false confidence |
+| Real-time cross-set synchronization | Destroys isolation guarantees; loose sync + merge-time reconciliation instead |
+| AI-only merge conflict resolution | Multi-file conflicts need human judgment; 4-tier cascade with human escalation |
 
 ## Traceability
 
@@ -165,36 +232,63 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROMPT-01 | Phase 10 | Complete |
-| PROMPT-02 | Phase 10 | Complete |
-| PROMPT-03 | Phase 10 | Complete |
-| PROMPT-04 | Phase 11 | Complete |
-| PROMPT-05 | Phase 12 | Complete |
-| PROMPT-06 | Phase 12 | Complete |
-| PROMPT-07 | Phase 12 | Complete |
-| PROMPT-08 | Phase 12 | Complete |
-| PROMPT-09 | Phase 13 | Complete |
-| PROMPT-10 | Phase 13 | Complete |
-| PROMPT-11 | Phase 13 | Complete |
-| PROMPT-12 | Phase 11 | Complete |
-| PROMPT-13 | Phase 10 | Complete |
-| PROMPT-14 | Phase 11 | Complete |
-| INST-01 | Phase 14 | Complete |
-| INST-02 | Phase 14 | Complete |
-| INST-03 | Phase 14 | Complete |
-| ERRR-01 | Phase 13 | Complete |
-| ERRR-02 | Phase 13 | Complete |
-| ERRR-03 | Phase 15 | Complete |
-| ERRR-04 | Phase 13 | Complete |
-| PROG-01 | Phase 12 | Complete |
-| PROG-02 | Phase 15 | Complete |
-| PROG-03 | Phase 15 | Complete |
+| STATE-01 | TBD | Pending |
+| STATE-02 | TBD | Pending |
+| STATE-03 | TBD | Pending |
+| STATE-04 | TBD | Pending |
+| STATE-05 | TBD | Pending |
+| INIT-01 | TBD | Pending |
+| INIT-02 | TBD | Pending |
+| INIT-03 | TBD | Pending |
+| INIT-04 | TBD | Pending |
+| INIT-05 | TBD | Pending |
+| INIT-06 | TBD | Pending |
+| INIT-07 | TBD | Pending |
+| INIT-08 | TBD | Pending |
+| SETL-01 | TBD | Pending |
+| SETL-02 | TBD | Pending |
+| SETL-03 | TBD | Pending |
+| SETL-04 | TBD | Pending |
+| SETL-05 | TBD | Pending |
+| SETL-06 | TBD | Pending |
+| SETL-07 | TBD | Pending |
+| WAVE-01 | TBD | Pending |
+| WAVE-02 | TBD | Pending |
+| WAVE-03 | TBD | Pending |
+| WAVE-04 | TBD | Pending |
+| WAVE-05 | TBD | Pending |
+| WAVE-06 | TBD | Pending |
+| EXEC-01 | TBD | Pending |
+| EXEC-02 | TBD | Pending |
+| EXEC-03 | TBD | Pending |
+| EXEC-04 | TBD | Pending |
+| REVW-01 | TBD | Pending |
+| REVW-02 | TBD | Pending |
+| REVW-03 | TBD | Pending |
+| REVW-04 | TBD | Pending |
+| REVW-05 | TBD | Pending |
+| REVW-06 | TBD | Pending |
+| REVW-07 | TBD | Pending |
+| REVW-08 | TBD | Pending |
+| REVW-09 | TBD | Pending |
+| MERG-01 | TBD | Pending |
+| MERG-02 | TBD | Pending |
+| MERG-03 | TBD | Pending |
+| MERG-04 | TBD | Pending |
+| MERG-05 | TBD | Pending |
+| MERG-06 | TBD | Pending |
+| UX-01 | TBD | Pending |
+| UX-02 | TBD | Pending |
+| UX-03 | TBD | Pending |
+| UX-04 | TBD | Pending |
+| DOCS-01 | TBD | Pending |
+| DOCS-02 | TBD | Pending |
 
 **Coverage:**
-- v1.1 requirements: 24 total
-- Mapped to phases: 24
-- Unmapped: 0
+- v2.0 requirements: 50 total
+- Mapped to phases: 0
+- Unmapped: 50
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-06 after v1.1 roadmap creation (phases 10-15)*
+*Last updated: 2026-03-06 after v2.0 Mark II requirements definition*
