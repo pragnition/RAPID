@@ -13,10 +13,10 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 - [x] **PROMPT-02**: Init skill uses AskUserQuestion for team size selection with preset options (1, 2-3, 4-5, 6+)
 - [x] **PROMPT-03**: Init skill uses AskUserQuestion for fresh vs brownfield project decision
 - [x] **PROMPT-04**: Plan skill uses AskUserQuestion for re-plan/view/cancel gate
-- [ ] **PROMPT-05**: Execute skill uses AskUserQuestion for agent teams vs subagents choice with clear descriptions
-- [ ] **PROMPT-06**: Execute skill uses AskUserQuestion for paused set resume/restart/skip with consequence descriptions
-- [ ] **PROMPT-07**: Execute skill uses AskUserQuestion for planning gate override with risk explanation
-- [ ] **PROMPT-08**: Execute skill uses AskUserQuestion for wave reconciliation next steps based on result status
+- [x] **PROMPT-05**: Execute skill uses AskUserQuestion for agent teams vs subagents choice with clear descriptions
+- [x] **PROMPT-06**: Execute skill uses AskUserQuestion for paused set resume/restart/skip with consequence descriptions
+- [x] **PROMPT-07**: Execute skill uses AskUserQuestion for planning gate override with risk explanation
+- [x] **PROMPT-08**: Execute skill uses AskUserQuestion for wave reconciliation next steps based on result status
 - [ ] **PROMPT-09**: Merge skill uses AskUserQuestion for final merge confirmation before irreversible action
 - [ ] **PROMPT-10**: Merge skill uses AskUserQuestion for merge conflict recovery (resolve/show/revert)
 - [ ] **PROMPT-11**: Cleanup skill uses AskUserQuestion for destructive worktree removal confirmation
@@ -39,7 +39,7 @@ Requirements for UI/UX improvements milestone. Each maps to roadmap phases.
 
 ### Progress Visibility
 
-- [ ] **PROG-01**: Execute skill shows progress indicators during subagent execution with last activity updates
+- [x] **PROG-01**: Execute skill shows progress indicators during subagent execution with last activity updates
 - [ ] **PROG-02**: Context skill shows progress during codebase analysis subagent
 - [ ] **PROG-03**: Merge skill shows progress during reviewer and cleanup subagent operations
 
@@ -168,10 +168,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROMPT-02 | Phase 10 | Complete |
 | PROMPT-03 | Phase 10 | Complete |
 | PROMPT-04 | Phase 11 | Complete |
-| PROMPT-05 | Phase 12 | Pending |
-| PROMPT-06 | Phase 12 | Pending |
-| PROMPT-07 | Phase 12 | Pending |
-| PROMPT-08 | Phase 12 | Pending |
+| PROMPT-05 | Phase 12 | Complete |
+| PROMPT-06 | Phase 12 | Complete |
+| PROMPT-07 | Phase 12 | Complete |
+| PROMPT-08 | Phase 12 | Complete |
 | PROMPT-09 | Phase 13 | Pending |
 | PROMPT-10 | Phase 13 | Pending |
 | PROMPT-11 | Phase 13 | Pending |
@@ -185,7 +185,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERRR-02 | Phase 13 | Pending |
 | ERRR-03 | Phase 15 | Pending |
 | ERRR-04 | Phase 13 | Pending |
-| PROG-01 | Phase 12 | Pending |
+| PROG-01 | Phase 12 | Complete |
 | PROG-02 | Phase 15 | Pending |
 | PROG-03 | Phase 15 | Pending |
 
