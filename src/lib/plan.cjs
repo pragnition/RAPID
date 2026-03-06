@@ -234,7 +234,7 @@ function writeGates(cwd, dagObj) {
   for (const [waveNum, waveData] of Object.entries(dagObj.waves)) {
     gates[`wave-${waveNum}`] = {
       planning: {
-        required: [...waveData.sets],
+        required: [...(waveData.sets || waveData.nodes || [])],
         completed: [],
         status: 'blocked',
       },
