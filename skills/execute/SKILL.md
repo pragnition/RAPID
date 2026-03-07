@@ -1,20 +1,63 @@
 ---
-description: Execute sets in wave order -- drives discuss/plan/execute lifecycle per set via subagent spawning, with pause/resume and wave reconciliation
+description: Execute jobs within waves -- dispatches parallel subagents per job, tracks progress, reconciles per wave
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
 ---
 
-# /rapid:execute -- Set Execution Orchestrator
+# /rapid:execute -- Job Execution Orchestrator
 
-You are the RAPID execution orchestrator. This skill executes sets in dependency-ordered waves. Each set goes through a full discuss -> plan -> execute lifecycle via subagent invocations. You spawn one subagent per set per lifecycle phase using the Agent tool. Follow these steps IN ORDER. Do not skip steps.
+You are the RAPID execution orchestrator. This skill executes all waves in a given set sequentially. Each wave dispatches parallel subagents (one per job), tracks per-job progress, reconciles deliverables, and prompts for next action. Jobs are defined by JOB-PLAN.md files produced by `/rapid:discuss` and `/rapid:wave-plan`. Follow these steps IN ORDER. Do not skip steps.
 
-## Step 0: Detect Execution Mode
+## Step 0: Environment + Precondition Check
 
-Check if agent teams mode is available:
+### 0a: Load environment
 
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+```
+
+### 0b: Parse set-id argument
+
+The user invokes this skill with a set identifier: `/rapid:execute <set-id>`.
+
+If `<set-id>` was not provided, use AskUserQuestion to ask:
+- **question:** "Which set to execute?"
+- **options:** List available sets from STATE.json
+
+### 0c: Read STATE.json for set and wave information
+
+```bash
+node "${RAPID_TOOLS}" state get --all
+```
+
+Parse the JSON output to find the target set and its waves. Identify the milestone ID, set ID, and all wave IDs within the set.
+
+### 0d: Verify JOB-PLAN.md files exist
+
+For each wave in the set, check that JOB-PLAN.md files exist:
+
+```bash
+node "${RAPID_TOOLS}" wave-plan list-jobs <set-id> <wave-id>
+```
+
+Parse the JSON output. If no JOB-PLAN.md files exist for ANY wave in the set, inform the user:
+
+> No job plans found for set '{set-id}'. Run `/rapid:discuss` and `/rapid:wave-plan` first to create job plans.
+
+Then use AskUserQuestion:
+- **question:** "No job plans found"
+- **options:**
+  - "Run discuss" -- description: "Exit to run /rapid:discuss and /rapid:wave-plan first"
+  - "Cancel" -- description: "Exit without action"
+
+Do NOT auto-trigger `/rapid:discuss` or `/rapid:wave-plan`. Exit after the user responds.
+
+## Step 1: Detect Execution Mode
+
+Check if agent teams mode is available:
+
+```bash
 node "${RAPID_TOOLS}" execute detect-mode
 ```
 
@@ -35,563 +78,337 @@ Silently set `executionMode = 'Subagents'`. Do NOT prompt or inform the user abo
 
 **Mode is locked for the entire execution run.** Do not re-detect or re-prompt during wave processing.
 
-## Step 1: Load Execution Plan
+## Step 2: Smart Re-entry
 
-Read the DAG to determine wave order:
-
-```bash
-node "${RAPID_TOOLS}" plan list-sets
-```
-
-Then load the DAG for wave ordering:
+Read all job statuses across all waves in this set:
 
 ```bash
-cat "$(node "${RAPID_TOOLS}" plan list-sets 2>/dev/null | node -e "const j=require('fs').readFileSync('/dev/stdin','utf-8');const d=JSON.parse(j);console.log(d.projectRoot || '.')")/.planning/sets/DAG.json" 2>/dev/null || echo '{"waves":{}}'
+node "${RAPID_TOOLS}" execute job-status <set-id>
 ```
 
-Parse the DAG to get waves. Each wave contains a list of sets that can execute in parallel. Waves execute sequentially (Wave 1 before Wave 2).
+Parse the JSON output. For each wave, classify every job:
 
-Also check current execution state:
+| Current Status | Action | Display |
+|---------------|--------|---------|
+| `complete` | Skip | "already complete" |
+| `failed` | Re-execute | "retrying, previously failed" |
+| `executing` | Treat as stale/failed, re-execute | "stale state, re-executing" |
+| `pending` | Normal execution | "pending" |
 
-```bash
-node "${RAPID_TOOLS}" execute wave-status
+Show a summary of what will be executed vs skipped:
+
+```
+--- Re-entry Summary ---
+Wave {waveId}:
+  {jobId}: pending
+  {jobId}: already complete (skip)
+  {jobId}: retrying, previously failed
+Wave {waveId}:
+  {jobId}: pending
+  {jobId}: stale state, re-executing
+------------------------
 ```
 
-Show the user the execution plan:
+**If ALL jobs across ALL waves are complete**, inform the user:
 
-> **Execution Plan:**
-> - Wave 1: {set names} (parallel)
-> - Wave 2: {set names} (depends on Wave 1)
-> - ...
->
-> **Current progress:** {wave-status summary}
+> All jobs in set '{set-id}' are already complete. Nothing to execute.
 
-Use AskUserQuestion to confirm:
-- **question:** "Execution plan"
+Use AskUserQuestion:
+- **question:** "All jobs complete"
 - **options:**
-  - "Begin" -- description: "Start executing Wave 1"
+  - "View status" -- description: "Run /rapid:status to review"
+  - "Done" -- description: "Exit"
+
+Exit after the user responds.
+
+**If there are jobs to execute**, use AskUserQuestion:
+- **question:** "Begin execution?"
+- **options:**
+  - "Begin execution" -- description: "Execute {N} pending/failed jobs across {M} waves"
   - "Cancel" -- description: "Exit without executing"
 
-If the developer selects "Cancel", print "Execution cancelled." and exit. If they want to start from a specific wave or skip already-completed sets, accommodate that.
-
-## Step 1.5: Check for Paused Sets
-
-After loading the DAG and wave status, check for any sets with HANDOFF.md files:
-
-```bash
-ls .planning/sets/*/HANDOFF.md 2>/dev/null
-```
-
-If any HANDOFF.md files exist, read each one to get pause details:
-
-```bash
-node "${RAPID_TOOLS}" execute resume {setName} 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));console.log(JSON.stringify(d.handoff,null,2))"
-```
-
-**Do NOT actually run `execute resume` yet** -- just read the HANDOFF.md directly to inspect it:
-
-```bash
-cat .planning/sets/{setName}/HANDOFF.md
-```
-
-Parse the frontmatter to get `tasks_completed`, `tasks_total`, and `pause_cycle`.
-
-For **each** paused set, use a separate AskUserQuestion prompt:
-- **question:** "{setName} -- Paused at task {tasks_completed}/{tasks_total}"
-- **options:**
-  - "Resume" -- description: "Continues from task {tasks_completed}/{tasks_total} -- completed work preserved"
-  - "Restart" -- description: "Discards handoff, re-executes all tasks from scratch"
-  - "Skip" -- description: "Left paused for later /rapid:execute run"
-
-If the developer selects **Resume**:
-- Run the resume command:
-  ```bash
-  node "${RAPID_TOOLS}" execute resume {setName}
-  ```
-- Parse the JSON output to get the handoff data
-- When spawning the executor subagent in Step 7, prepend the handoff content to the prompt (see Step 7 for the resume prompt template)
-
-If the developer selects **Restart**:
-- Delete the HANDOFF.md:
-  ```bash
-  rm .planning/sets/{setName}/HANDOFF.md
-  ```
-- Proceed with normal execution for that set
-
-If the developer selects **Skip**:
-- Leave the set paused
-- Continue with other sets in the wave
-
-## Step 2: Process Each Wave
-
-For each wave (in order), perform Steps 3-7. If a wave's sets are already in 'Done' phase (per registry), skip that wave and inform the user.
-
-Before starting a wave, check the planning gate:
-
-```bash
-node "${RAPID_TOOLS}" plan check-gate {waveNumber}
-```
-
-If the gate is not open, check the JSON output for details. The output includes `missingArtifacts` for disk-level verification:
-
-- If the gate is blocked, log the override for audit trail:
-  ```bash
-  # Log the override for audit trail
-  node -e "const p=require(process.env.RAPID_TOOLS ? require('path').resolve(process.env.RAPID_TOOLS, '..', '..', 'lib', 'plan.cjs') : (process.env.HOME + '/RAPID/src/lib/plan.cjs'));p.logGateOverride(process.cwd(), {waveNumber}, {missingSetsList})"
-  ```
-
-  Use AskUserQuestion to prompt the developer:
-  - **question:** "Planning gate -- unplanned sets: {set list}"
-  - **options:**
-    - "Override" -- description: "Proceeds without complete plans -- sets may fail or produce incomplete work. Unplanned: {set list}"
-    - "Run planning first" -- description: "Returns to planning before execution. Run /rapid:plan to complete set planning."
-
-  If the developer selects "Override", proceed with execution.
-  If the developer selects "Run planning first", print "Execution cancelled. Run /rapid:plan to complete set planning before executing." and exit.
-
-## Step 3: Create Worktrees (if needed)
-
-For each set in the current wave, check if a worktree already exists. If not, create one:
-
-```bash
-node "${RAPID_TOOLS}" worktree create {setName}
-```
-
-If the worktree already exists (created in a previous session), that is fine -- continue.
-
-## Step 4: Generate Contract Stubs
-
-For each set in the wave that has cross-set imports, generate stub files:
-
-```bash
-node "${RAPID_TOOLS}" execute generate-stubs {setName}
-```
-
-This creates `.rapid-stubs/` in the set's worktree with stub modules for each imported set's exports. The executor subagent can `require()` these stubs during development.
-
-## Step 5: Discuss Phase (Per-Wave Batch)
-
-For each set in the current wave, run the discuss phase. Present all sets' questions to the user before proceeding to planning.
-
-For each set:
-
-1. Prepare the discuss prompt:
-   ```bash
-   node "${RAPID_TOOLS}" execute prepare-context {setName}
-   ```
-
-2. Update registry phase:
-   ```bash
-   node "${RAPID_TOOLS}" execute update-phase {setName} Discussing
-   ```
-
-3. **Print progress before spawning:**
-   ```
-   Wave {N} -- Discuss ({completed}/{total} sets done)
-     {setName}: Discussing
-   [HH:MM]
-   ```
-   Derive the timestamp from `date +%H:%M`.
-
-4. Spawn a discuss subagent using the Agent tool. The subagent should:
-   - Receive the contract and definition for this set
-   - Ask the developer clarifying questions about implementation approach
-   - For simple/clear sets: state that no questions are needed and summarize the planned approach
-
-   Build the subagent prompt from `assembleExecutorPrompt(cwd, setName, 'discuss')` -- but since you are a skill (not a library), construct the prompt inline:
-
-   **Discuss subagent prompt template:**
-   > You are reviewing the '{setName}' set before implementation. Here is the set's contract and definition.
-   >
-   > ## Contract
-   > {Read .planning/sets/{setName}/CONTRACT.json}
-   >
-   > ## Definition
-   > {Read .planning/sets/{setName}/DEFINITION.md}
-   >
-   > Review the above and ask the developer any clarifying questions about implementation approach, edge cases, or integration points. If everything is clear, state your understanding and the approach you would take.
-
-5. After the discuss subagent returns, **print updated progress:**
-   ```
-   Wave {N} -- Discuss ({completed}/{total} sets done)
-     {setName}: Discussed
-   [HH:MM]
-   ```
-
-6. Collect the user's answers and the subagent's summary. Store these as the "discuss decisions" for this set.
-
-After all sets in the wave have been discussed, present a summary:
-> **Discussion complete for Wave {N}:**
-> - {setName}: {brief summary of decisions/approach}
-> - ...
-
-Use AskUserQuestion to confirm:
-- **question:** "Discussion complete"
-- **options:**
-  - "Continue to planning" -- description: "Proceed to plan phase for Wave {N} sets"
-  - "Cancel" -- description: "Exit execution"
-
 If the developer selects "Cancel", print "Execution cancelled." and exit.
 
-**Lightweight discuss option:** For sets with clear, unambiguous definitions (few tasks, no cross-set dependencies), you may skip the subagent and directly ask the user: "Set '{setName}' has a clear definition. Any questions before we plan it?" This saves a subagent invocation for simple sets.
+## Step 3: Process Each Wave (Sequential)
 
-## Step 6: Plan Phase (Per-Wave Batch)
+For each wave in order (Wave 1, Wave 2, etc.), perform Steps 3a through 3i. If a wave has no jobs needing execution (all complete), skip it with a message: "Wave {waveId}: all jobs complete, skipping."
 
-For each set in the current wave, spawn a planning subagent:
+### Step 3a: Transition wave to 'executing'
 
-1. Update registry phase:
+```bash
+node "${RAPID_TOOLS}" state transition wave <milestone> <set-id> <wave-id> executing
+```
+
+### Step 3b: Load job plans for this wave
+
+```bash
+node "${RAPID_TOOLS}" wave-plan list-jobs <set-id> <wave-id>
+```
+
+Parse the JSON output to get the list of JOB-PLAN.md file paths. Read each JOB-PLAN.md file to get its content, file ownership assignments, and implementation steps.
+
+### Step 3c: Print initial progress banner
+
+```
+--- RAPID Execute ---
+Wave {waveId} ({waveIndex}/{totalWaves})
+  {jobId}: Pending
+  {jobId}: Pending
+  {jobId}: Complete (skipped)
+[HH:MM]
+---------------------
+```
+
+Derive the timestamp from `date +%H:%M`. Show all jobs in the wave -- mark complete jobs as "Complete (skipped)" and jobs to execute as "Pending".
+
+### Step 3d: Dispatch parallel jobs
+
+Filter jobs that need execution (status is `pending`, `failed`, or stale `executing`). Dispatch them based on the execution mode.
+
+#### Subagent Mode
+
+For each job that needs execution:
+
+1. **Transition job to 'executing':**
    ```bash
-   node "${RAPID_TOOLS}" execute update-phase {setName} Planning
+   node "${RAPID_TOOLS}" state transition job <milestone> <set-id> <wave-id> <job-id> executing
    ```
 
-2. **Print progress before spawning:**
+2. **Print updated progress** showing this job as "Executing":
    ```
-   Wave {N} -- Plan ({completed}/{total} sets done)
-     {setName}: Planning
+   --- RAPID Execute ---
+   Wave {waveId} ({waveIndex}/{totalWaves})
+     {jobId}: Executing
+     {jobId}: Pending
    [HH:MM]
-   ```
-   Derive the timestamp from `date +%H:%M`.
-
-3. Spawn a plan subagent using the Agent tool. The subagent should:
-   - Receive the contract, definition, and discuss decisions
-   - Create a step-by-step implementation plan
-   - Output the plan in a structured format
-
-   **Plan subagent prompt template:**
-   > You are creating an implementation plan for the '{setName}' set.
-   >
-   > ## Contract
-   > {CONTRACT.json content}
-   >
-   > ## Definition
-   > {DEFINITION.md content}
-   >
-   > ## Discussion Decisions
-   > {decisions from Step 5}
-   >
-   > Create a step-by-step implementation plan. For each step specify:
-   > 1. Files to create or modify
-   > 2. What to implement
-   > 3. How to verify it works
-   > 4. What to commit (type(setName): description format)
-   >
-   > Each commit must leave the codebase in a working state.
-
-4. After the plan subagent returns, **print updated progress:**
-   ```
-   Wave {N} -- Plan ({completed}/{total} sets done)
-     {setName}: Planned
-   [HH:MM]
+   ---------------------
    ```
 
-5. Present the plan to the user for review. The user can approve, request changes, or skip.
+3. **Spawn subagent** using the Agent tool with the job executor prompt:
 
-After all sets are planned, present a summary and use AskUserQuestion for approval:
-- **question:** "Wave {N} plans"
-- **options:**
-  - "Approve" -- description: "Begin execution for all {count} sets in Wave {N}"
-  - "Modify" -- description: "Request changes to one or more set plans"
-  - "Cancel" -- description: "Exit execution"
-
-If the developer selects "Modify", collect changes and re-plan the affected set.
-If the developer selects "Cancel", print "Execution cancelled." and exit.
-
-## Step 7: Execute Phase (Per-Wave)
-
-Execution dispatch depends on the mode selected in Step 0.
-
-### Step 7a: Teams Mode Dispatch
-
-If `executionMode` is 'Agent Teams':
-
-For the current wave, create a team and spawn teammates:
-
-1. Note the team name for this wave:
-   The team follows the convention `rapid-wave-{waveNum}`.
-
-2. For each set in the wave, prepare the teammate:
-   - Generate scoped CLAUDE.md:
-     ```bash
-     node "${RAPID_TOOLS}" worktree generate-claude-md {setName}
-     ```
-   - Update registry phase:
-     ```bash
-     node "${RAPID_TOOLS}" execute update-phase {setName} Executing
-     ```
-
-3. **Print progress before batch spawn:**
    ```
-   Wave {N} -- Execute (0/{total} sets done)
-     {setName1}: Executing
-     {setName2}: Executing
-   [HH:MM]
-   ```
-   Derive the timestamp from `date +%H:%M`.
+   You are implementing job '{jobId}' in set '{setId}'.
 
-4. Use the Agent tool to create a team and spawn teammates. For each set in the wave, spawn a teammate with the same executor prompt as subagent mode (read from the set's worktree CLAUDE.md + implementation plan). Each teammate works in its own worktree directory.
+   ## Your JOB-PLAN
+   {Full content of {jobId}-PLAN.md}
 
-   **Teammate prompt template** (identical to subagent executor prompt):
-   > You are implementing the '{setName}' set in the worktree at {worktreePath}.
-   >
-   > {Content of scoped CLAUDE.md}
-   >
-   > ## Implementation Plan
-   > {plan from Step 6}
-   >
-   > ## Execution Instructions
-   > - Work ONLY in the worktree directory: {worktreePath}
-   > - Commit after each task: `git add <specific files> && git commit -m "type({setName}): description"`
-   > - NEVER use `git add .` or `git add -A`
-   > - If you need imports from other sets, use stub files in .rapid-stubs/
-   > - Run verification after each task
-   > - When complete, emit a RAPID:RETURN with status COMPLETE
+   ## File Ownership
+   You may ONLY modify these files:
+   {File list from WAVE-PLAN.md or JOB-PLAN.md file assignments}
 
-5. Track teammate completion. Check the tracking file for completions:
-   ```bash
-   cat .planning/teams/rapid-wave-{waveNum}-completions.jsonl 2>/dev/null | wc -l
+   ## Commit Convention
+   After each implementation step, commit with:
+     git add <specific files>
+     git commit -m "type({setId}): description"
+   Where type is feat|fix|refactor|test|docs|chore
+
+   ## Working Directory
+   {worktreePath -- from the set's worktree}
+
+   ## Completion
+   When all steps are complete, emit your final output in this format:
+
+   ## COMPLETE
+
+   | Field | Value |
+   |-------|-------|
+   | Status | COMPLETE |
+   | Artifacts | `file1`, `file2` |
+   | Commits | abc1234, def5678 |
+   | Tasks | N/N |
+
+   <!-- RAPID:RETURN {"status":"COMPLETE","artifacts":["file1","file2"],"commits":["abc1234","def5678"],"tasks_completed":N,"tasks_total":N} -->
+
+   If your context window is running low and you have remaining work:
+   <!-- RAPID:RETURN {"status":"CHECKPOINT","tasks_completed":N,"tasks_total":M,"handoff_done":"...","handoff_remaining":"...","handoff_resume":"..."} -->
+
+   If blocked on something outside your scope:
+   <!-- RAPID:RETURN {"status":"BLOCKED","category":"DEPENDENCY|PERMISSION|CLARIFICATION|ERROR","detail":"description"} -->
    ```
 
-   Wait until all teammates have completed (completions count equals number of sets in wave). As each teammate completes, **print updated progress:**
+**All jobs in a wave are spawned in parallel** (multiple Agent tool calls in a single response). If rate limits are hit (Agent tool errors with rate-limit-like messages such as 429, "rate limit", or "too many"), fall back to sequential execution within the wave and inform the user:
+
+> Warning: Rate limit hit. Falling back to sequential job execution for this wave.
+
+#### Agent Teams Mode
+
+Same prompt as subagent mode, but dispatched via agent teams:
+
+1. **Determine team name:**
    ```
-   Wave {N} -- Execute ({completed}/{total} sets done)
-     {setName}: Done
-   [HH:MM]
+   rapid-{setId}-{waveId}
    ```
 
-6. Clean up team tracking:
-   ```bash
-   rm -f .planning/teams/rapid-wave-{waveNum}-completions.jsonl
-   ```
+2. **For each job**, prepare teammate config using the same executor prompt as subagent mode. Each teammate works in the set's worktree directory.
 
-7. For each set, run verification (same as subagent mode):
-   ```bash
-   node "${RAPID_TOOLS}" execute verify {setName} --branch main
-   ```
-   Update registry phase based on results.
+3. **Spawn all teammates** in the team simultaneously.
 
-8. Clean up stubs for completed sets.
+4. **Track completions.** As each teammate completes, print updated progress.
 
-**If any team operation fails (team spawn fails, teammate crashes, any error):**
+**If any team operation fails** (team spawn, teammate crash, any error):
 
 Print a visible warning:
-> **Warning:** Agent teams failed for wave {waveNum}. Falling back to subagent execution.
+> **Warning:** Agent teams failed for wave {waveId}. Falling back to subagent execution.
 
-Then execute the ENTIRE wave using subagent mode (Step 7b below). This is a generic fallback -- do not inspect or special-case the error type.
+Then re-execute the ENTIRE wave using subagent mode (above). This is a generic fallback -- do not inspect or special-case the error type.
 
-### Step 7b: Subagent Mode Dispatch
+### Step 3e: Collect returns and transition jobs
 
-If `executionMode` is 'Subagents', OR if teams mode failed and we are falling back:
+After each subagent/teammate returns, process the output:
 
-For each set in the current wave, spawn an executor subagent. All sets in a wave can be spawned simultaneously (but be aware of rate limits -- if you encounter errors, reduce parallelism).
+**Parse the RAPID:RETURN marker** from the subagent output. Look for `<!-- RAPID:RETURN {...} -->` in the output text and parse the JSON.
 
-For each set:
+**If status is COMPLETE:**
+- Transition job to 'complete':
+  ```bash
+  node "${RAPID_TOOLS}" state transition job <milestone> <set-id> <wave-id> <job-id> complete
+  ```
+- Print updated progress showing this job as "Complete"
 
-1. Generate scoped CLAUDE.md for the worktree:
-   ```bash
-   node "${RAPID_TOOLS}" worktree generate-claude-md {setName}
-   ```
+**If status is CHECKPOINT:**
+- Generate a job handoff file at `.planning/waves/{setId}/{waveId}/{jobId}-HANDOFF.md` containing the handoff data (completed work, remaining work, resume instructions, task counts)
+- Job status stays as 'executing' in STATE.json (the skill notes it as paused for retry)
+- Print updated progress showing this job as "Paused (checkpoint)"
 
-2. Update registry phase:
-   ```bash
-   node "${RAPID_TOOLS}" execute update-phase {setName} Executing
-   ```
+**If status is BLOCKED:**
+- Transition job to 'failed':
+  ```bash
+  node "${RAPID_TOOLS}" state transition job <milestone> <set-id> <wave-id> <job-id> failed
+  ```
+- Print updated progress showing this job as "BLOCKED ({category}: {detail})"
 
-3. **Print progress before spawning:**
-   ```
-   Wave {N} -- Execute ({completed}/{total} sets done)
-     {setName}: Executing ({tasks_completed}/{tasks_total} tasks)
-   [HH:MM]
-   ```
-   Derive task counts from the implementation plan or registry/handoff data. Derive the timestamp from `date +%H:%M`.
+**If no RAPID:RETURN marker found in the output:**
+- Transition job to 'failed':
+  ```bash
+  node "${RAPID_TOOLS}" state transition job <milestone> <set-id> <wave-id> <job-id> failed
+  ```
+- Print warning: "Warning: Job '{jobId}' returned without a RAPID:RETURN marker. Marking as failed."
+- Print updated progress showing this job as "Failed (no return marker)"
 
-4. Spawn an executor subagent using the Agent tool. The subagent should:
-   - Work in the set's worktree directory ({worktreePath} from registry)
-   - Receive the scoped CLAUDE.md (contract, ownership, deny list, style guide)
-   - Receive the implementation plan from Step 6
-   - Implement each task, committing atomically per task
-   - Return COMPLETE with artifacts and commit hashes via RAPID:RETURN
+### Step 3f: Commit STATE.json after all jobs in wave resolve
 
-   **Executor subagent prompt template:**
-   > You are implementing the '{setName}' set in the worktree at {worktreePath}.
-   >
-   > {Content of scoped CLAUDE.md -- read from {worktreePath}/CLAUDE.md}
-   >
-   > ## Implementation Plan
-   > {plan from Step 6}
-   >
-   > ## Execution Instructions
-   > - Work ONLY in the worktree directory: {worktreePath}
-   > - Commit after each task: `git add <specific files> && git commit -m "type({setName}): description"`
-   > - NEVER use `git add .` or `git add -A`
-   > - If you need imports from other sets, use stub files in .rapid-stubs/ -- do NOT read other sets' actual implementations
-   > - Run verification after each task
-   > - When complete, emit a RAPID:RETURN with status COMPLETE listing all artifacts and commit hashes
-   > - If blocked, emit RAPID:RETURN with status BLOCKED and the appropriate category
-   >
-   > ## Context Window Management
-   > If you are approaching your context window limit and have more tasks to complete:
-   > 1. Commit all current work
-   > 2. Emit a RAPID:RETURN with status CHECKPOINT and include:
-   >    - handoff_done: bullet list of completed tasks with commit hashes
-   >    - handoff_remaining: bullet list of remaining tasks
-   >    - handoff_resume: specific instructions for the next session
-   >    - tasks_completed: number of tasks finished
-   >    - tasks_total: total tasks in the plan
-   > 3. This will trigger an automatic pause and your state will be saved
-
-   **If resuming from a pause (HANDOFF.md exists):**
-
-   Prepend the following to the executor prompt before the Implementation Plan section:
-
-   > ## Resuming from Pause
-   > You are continuing execution of set '{setName}' from a previous session.
-   >
-   > ### Previously Completed
-   > {handoff.completedWork}
-   >
-   > ### Remaining Work
-   > {handoff.remainingWork}
-   >
-   > ### Resume Instructions
-   > {handoff.resumeInstructions}
-   >
-   > Start from the first incomplete task. Do NOT redo completed work.
-
-5. After the subagent returns, **print updated progress:**
-   ```
-   Wave {N} -- Execute ({completed}/{total} sets done)
-     {setName}: {Done/Paused/Error}
-   [HH:MM]
-   ```
-
-6. Check the return status:
-
-   **If return status is COMPLETE:**
-   - Parse the structured return and run verification:
-     ```bash
-     node "${RAPID_TOOLS}" execute verify {setName} --branch main
-     ```
-     (Note: Replace 'main' with the actual base branch name)
-   - Update registry phase based on results:
-     ```bash
-     # On success:
-     node "${RAPID_TOOLS}" execute update-phase {setName} Done
-
-     # On failure:
-     node "${RAPID_TOOLS}" execute update-phase {setName} Error
-     ```
-
-   **If return status is CHECKPOINT (context window limit reached):**
-   - Pipe the checkpoint data to the pause CLI:
-     ```bash
-     echo '{"handoff_done":"...","handoff_remaining":"...","handoff_resume":"...","tasks_completed":N,"tasks_total":M}' | node "${RAPID_TOOLS}" execute pause {setName}
-     ```
-   - Inform the user:
-     > Set '{setName}' was paused (context limit reached). Resume with `/rapid:execute` or manage with `/rapid:pause`.
-   - Mark the set as paused and move on to the next set in the wave (do NOT block the whole wave)
-
-   **If return status is BLOCKED:**
-   - Update registry phase to Error:
-     ```bash
-     node "${RAPID_TOOLS}" execute update-phase {setName} Error
-     ```
-
-7. Clean up stubs (for COMPLETE and BLOCKED, not for CHECKPOINT/paused):
-   ```bash
-   node "${RAPID_TOOLS}" execute cleanup-stubs {setName}
-   ```
-
-## Step 8: Wave Reconciliation
-
-After all sets in a wave complete (or are paused), run mandatory reconciliation:
-
-1. Run reconciliation (passing execution mode for wave summary metadata):
-   ```bash
-   node "${RAPID_TOOLS}" execute reconcile {waveNumber} --mode "{executionMode}"
-   ```
-
-2. Parse the JSON output for overall result and details.
-
-3. Present results to the user:
-
-   > **Wave {N} Reconciliation Results:**
-   >
-   > **Overall:** {PASS/PASS_WITH_WARNINGS/FAIL}
-   >
-   > {Per-set details from WAVE-{N}-SUMMARY.md}
-   >
-   > **Hard Blocks:** {list or "None"}
-   > **Soft Blocks:** {list or "None"}
-
-4. Use AskUserQuestion with dynamic options based on the reconciliation result:
-
-   **If PASS (all contracts satisfied):**
-   - **question:** "Reconciliation"
-   - **options:**
-     - "Continue to Wave {N+1}" -- description: "All contracts satisfied -- proceed to next wave"
-     - "Pause here" -- description: "Pause execution after successful wave"
-
-   If the developer selects "Pause here", print "Execution paused after Wave {N}. Resume with /rapid:execute." and exit.
-
-   **If hard blocks exist:**
-   - **question:** "Reconciliation"
-   - **options:**
-     - "Fix failed sets" -- description: "Re-execute sets that did not pass verification"
-     - "Cancel execution" -- description: "Exit -- failed sets remain in error state"
-
-   If the developer selects "Fix failed sets", re-execute the failed sets (back to Step 7 for those sets).
-   If the developer selects "Cancel execution", print "Execution cancelled. Failed sets remain in error state." and exit.
-
-   **If soft blocks (no hard blocks):**
-   - **question:** "Reconciliation"
-   - **options:**
-     - "Proceed anyway" -- description: "Accept soft blocks and continue to Wave {N+1}"
-     - "Fix first" -- description: "Re-execute to address soft blocks before proceeding"
-     - "Cancel" -- description: "Exit execution"
-
-   If the developer selects "Cancel", print "Execution cancelled." and exit.
-
-Then move to the next wave (back to Step 2).
-
-## Step 9: Execution Complete
-
-After all waves complete:
+After all jobs in the wave have returned (complete, failed, or checkpointed):
 
 ```bash
-node "${RAPID_TOOLS}" execute wave-status
+node "${RAPID_TOOLS}" execute commit-state "chore({setId}): complete wave {waveId} execution"
 ```
 
-Present final summary:
+### Step 3g: Reconcile wave
 
-> **Execution Complete**
->
-> All {N} sets across {M} waves have been executed.
->
-> **Summary:**
-> - Total sets: {N}
-> - Total commits: {sum}
-> - Verification: {pass/fail counts}
-> - Paused sets: {count, if any}
->
-> **Execution mode used:** {executionMode}
+Run job-level wave reconciliation:
+
+```bash
+node "${RAPID_TOOLS}" execute reconcile-jobs <set-id> <wave-id> --branch main --mode "{executionMode}"
+```
+
+Parse the JSON output for:
+- `overall`: PASS, PASS_WITH_WARNINGS, or FAIL
+- `hardBlocks`: list of hard blocking issues
+- `softBlocks`: list of soft blocking issues (missing files, commit format violations)
+- `jobResults`: per-job reconciliation details
+
+Present results to the user:
+
+```
+--- Wave {waveId} Reconciliation ---
+Overall: {PASS/PASS_WITH_WARNINGS/FAIL}
+
+{For each job:}
+  {jobId}: {filesDelivered}/{filesPlanned} files
+    Missing: {list or "none"}
+    Commit violations: {list or "none"}
+
+Hard blocks: {count or "none"}
+Soft blocks: {count or "none"}
+---------------------------------
+```
+
+### Step 3h: Transition wave status
+
+After reconciliation, transition wave status:
+
+```bash
+node "${RAPID_TOOLS}" state transition wave <milestone> <set-id> <wave-id> reconciling
+```
+
+If reconciliation result is PASS or PASS_WITH_WARNINGS:
+```bash
+node "${RAPID_TOOLS}" state transition wave <milestone> <set-id> <wave-id> complete
+```
+
+If reconciliation result is FAIL, leave wave in 'reconciling' state for retry.
+
+### Step 3i: User decision after wave reconciliation
+
+Use AskUserQuestion with dynamic options based on the reconciliation result:
+
+**If PASS:**
+- **question:** "Wave {waveId} reconciliation passed"
+- **options:**
+  - "Continue to next wave" -- description: "All deliverables verified. Proceed to wave {nextWaveId}."
+  - "Pause here" -- description: "Save state and exit. Resume with /rapid:execute {set-id}."
+
+**If PASS_WITH_WARNINGS:**
+- **question:** "Wave {waveId} reconciliation passed with warnings"
+- **options:**
+  - "Continue anyway" -- description: "Accept warnings and proceed to wave {nextWaveId}"
+  - "Retry failed jobs" -- description: "Re-execute only the jobs with issues in this wave"
+  - "Pause" -- description: "Save state and exit. Resume with /rapid:execute {set-id}."
+
+**If FAIL:**
+- **question:** "Wave {waveId} reconciliation failed"
+- **options:**
+  - "Retry failed jobs" -- description: "Re-execute failed jobs in this wave"
+  - "Cancel execution" -- description: "Save state and exit"
+
+**Action based on user choice:**
+- "Continue" / "Continue anyway": Proceed to the next wave (back to Step 3a for next wave)
+- "Retry failed jobs": Re-execute only failed jobs in this wave (go back to Step 3d for those jobs only, with other jobs showing as complete)
+- "Pause" / "Pause here": Commit state and print resume instructions:
+  > Execution paused after wave {waveId}. Resume with `/rapid:execute {set-id}`.
+  Exit.
+- "Cancel execution": Commit state and exit:
+  > Execution cancelled. State saved. Resume with `/rapid:execute {set-id}`.
+  Exit.
+
+## Step 4: Final Summary
+
+After all waves in the set complete:
+
+```
+--- RAPID Execute Complete ---
+Set: {setId}
+Waves: {completedWaves}/{totalWaves}
+Jobs: {completedJobs}/{totalJobs}
+Execution mode: {executionMode}
+-------------------------------
+```
+
+Show per-wave breakdown:
+```
+Wave {waveId}: {status}
+  {jobId}: {status}
+  {jobId}: {status}
+```
 
 Use AskUserQuestion for next steps:
 - **question:** "Execution complete"
 - **options:**
-  - "View status" -- description: "Run /rapid:status to review worktree state"
-  - "Start merge" -- description: "Begin merge pipeline for completed sets"
-  - "Done" -- description: "Exit -- sets remain on rapid/{set-name} branches"
+  - "View status" -- description: "Run /rapid:status to review detailed state"
+  - "Start review" -- description: "Begin review pipeline for completed work"
+  - "Done" -- description: "Exit -- work committed on worktree branch"
 
 ## Important Notes
 
-- **Agent tool usage:** This skill uses the Agent tool to spawn subagents. Each subagent runs in its own context window. Subagents CANNOT spawn other subagents -- this skill (the orchestrator) drives all 3 lifecycle phases.
-- **Rate limiting:** If spawning multiple parallel subagents causes rate limit errors, reduce to sequential execution within the wave and inform the user.
-- **Registry updates:** Always update the worktree registry phase after each lifecycle transition via the CLI. This ensures `/rapid:status` reflects current progress.
-- **Stub cleanup:** Always clean up stub files after execution completes, even if execution failed. Stubs should not be committed. Do NOT clean up stubs for paused sets (they may need them on resume).
-- **Idempotent re-entry:** If execution is interrupted and restarted, check registry state to determine which sets/phases have already completed. Skip completed work and resume from the current point.
-- **Pause handling:** CHECKPOINT returns trigger automatic pause via the pause CLI. The handoff file preserves state for the next session. Paused sets do not block the rest of the wave.
-- **Wave reconciliation:** Mandatory after every wave. Contract test failures are hard blocks (must fix). Missing artifacts are soft blocks (can be overridden). Developer must acknowledge results before the next wave proceeds.
-- **Gate overrides:** If the planning gate is blocked but the user wants to proceed, log the override for audit trail and show explicit confirmation before continuing.
-- **Dual-mode execution:** Mode is detected once at Step 0 and locked for the entire run. Teams mode creates one team per wave with one teammate per set. Both modes use identical verification, reconciliation, and status output.
-- **Teams fallback:** If any team operation fails mid-execution, the entire wave is re-executed using subagent mode. The fallback is generic and does not inspect error types. A visible warning is printed when fallback occurs.
-- **No inter-teammate messaging:** Teammates work in isolation. Contracts replace the need for communication (per user decision).
+- **Agent tool isolation:** This skill uses the Agent tool to spawn subagents. Each subagent runs in its own context window. Subagents CANNOT spawn sub-subagents -- this skill (the orchestrator) is the sole dispatcher.
+- **Rate limiting:** If spawning multiple parallel subagents causes rate limit errors, reduce to sequential execution within the wave and inform the user. Do not retry the parallel batch -- switch to sequential for the remainder of the wave.
+- **Smart re-entry:** On every invocation, read STATE.json first. Skip complete jobs, retry failed jobs, re-execute stale 'executing' jobs. This makes the skill idempotent and crash-safe.
+- **File ownership enforcement:** Each job may only modify files listed in its JOB-PLAN.md. File ownership violations are caught during wave reconciliation (Step 3g). The orchestrator does not enforce this at dispatch time -- it is the job executor's responsibility.
+- **Git commits:** Parallel job agents commit to the same branch in the same worktree. Each stages only its own files via `git add <specific files>`. If a commit fails with a HEAD race (`error: cannot lock ref 'HEAD'`), the job executor should retry once.
+- **STATE.json committed at workflow boundaries:** STATE.json is committed after each wave completes (Step 3f), not after every individual job transition. Individual job transitions write to STATE.json in-memory/on-disk but the git commit happens at the wave boundary.
+- **Backward compatibility:** The existing `role-executor.md` stays for v1.0 set-level execution. New job-level execution uses `role-job-executor.md`. Both are registered in the assembler.
+- **Discuss and plan are NOT part of this skill.** If JOB-PLAN.md files are missing, prompt the user to run `/rapid:discuss` and `/rapid:wave-plan` first. Do NOT auto-trigger those commands.
+- **Dual-mode execution:** Mode is detected once at Step 1 and locked for the entire run. Agent teams mode creates one team per wave with one teammate per job. Both modes use identical prompt templates, reconciliation, and progress output.
+- **Teams fallback:** If any agent teams operation fails mid-execution, the entire wave is re-executed using subagent mode. The fallback is generic -- do not inspect or special-case the error type. A visible warning is printed when fallback occurs.
+- **No inter-agent messaging:** Job executor subagents work in isolation. They share a branch but modify different files. There is no inter-agent communication channel. File ownership from WAVE-PLAN.md prevents conflicts.
+- **Handoff storage:** Job-level handoffs are stored at `.planning/waves/{setId}/{waveId}/{jobId}-HANDOFF.md`, separate from v1.0 set-level handoffs at `.planning/sets/{setName}/HANDOFF.md`.
