@@ -426,11 +426,12 @@ Plans:
   3. Per-job progress is tracked with state updates that survive context resets -- developer can /clear and see accurate progress
   4. The orchestrator dispatches commands based on current state and spawns appropriate subagents for the current workflow step
   5. Progress indicators with visual formatting show active jobs and completion status during subagent operations
-**Plans**: TBD
+**Plans**: 3 plans (Wave 1: library extensions + CLI || agent role + assembler, Wave 2: skill rewrite + verification)
 
 Plans:
-- [ ] 21-01: TBD
-- [ ] 21-02: TBD
+- [ ] 21-01-PLAN.md -- Job-level reconciliation, progress banners, handoff, teams config, role-job-executor.md, assembler registration (EXEC-02, EXEC-03, UX-02) [Wave 1]
+- [ ] 21-02-PLAN.md -- CLI subcommands for job execution management: reconcile-jobs, job-status, list-jobs, commit-state (EXEC-03, EXEC-04) [Wave 1]
+- [ ] 21-03-PLAN.md -- Execute SKILL.md rewrite for Mark II job-level dispatch orchestrator (EXEC-01, EXEC-04, UX-02) [Wave 2, depends: 21-01, 21-02]
 
 ### Phase 22: Review Module
 **Goal**: Completed waves undergo automated testing and adversarial bug hunting before merge eligibility
@@ -507,7 +508,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 18. Init and Project Setup | 4/4 | Complete   | 2026-03-06 | - |
 | 19. Set Lifecycle | 3/3 | Complete    | 2026-03-06 | - |
 | 20. Wave Planning | 3/3 | Complete    | 2026-03-06 | - |
-| 21. Execution Engine | v2.0 | 0/2 | Not started | - |
+| 21. Execution Engine | v2.0 | 0/3 | Not started | - |
 | 22. Review Module | v2.0 | 0/3 | Not started | - |
 | 23. Merge Pipeline | v2.0 | 0/3 | Not started | - |
 | 24. Documentation | v2.0 | 0/1 | Not started | - |
