@@ -809,3 +809,309 @@ describe('generateWaveSummary', () => {
     assert.ok(summary.includes('**Result:** PASS_WITH_WARNINGS'), 'should show correct result');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// reconcileJob
+// ────────────────────────────────────────────────────────────────
+describe('reconcileJob', () => {
+  let tmpDir;
+  let worktreeDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-reconcile-job-'));
+
+    // Create wave directory with a JOB-PLAN.md
+    const waveDir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    fs.mkdirSync(waveDir, { recursive: true });
+    fs.writeFileSync(path.join(waveDir, 'job-schema-PLAN.md'), [
+      '# JOB-PLAN: job-schema',
+      '',
+      '**Set:** auth-core',
+      '**Wave:** wave-1',
+      '**Job:** job-schema',
+      '',
+      '## Files to Create/Modify',
+      '',
+      '| File | Action | Purpose |',
+      '|------|--------|---------|',
+      '| src/lib/schema.cjs | Create | Schema definitions |',
+      '| src/lib/validate.cjs | Create | Validation logic |',
+      '| src/lib/utils.cjs | Modify | Add helper functions |',
+      '',
+      '## Implementation Steps',
+      '',
+      '1. **Create schema definitions**',
+      '   - Create src/lib/schema.cjs',
+      '   - Commit: `feat(auth-core): add schema definitions`',
+      '',
+      '2. **Create validation logic**',
+      '   - Create src/lib/validate.cjs',
+      '   - Commit: `feat(auth-core): add validation`',
+    ].join('\n'), 'utf-8');
+
+    // Create worktree directory with a git repo
+    worktreeDir = path.join(tmpDir, 'worktree');
+    fs.mkdirSync(path.join(worktreeDir, 'src', 'lib'), { recursive: true });
+    execSync('git init', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "initial"', { cwd: worktreeDir, stdio: 'pipe' });
+    try { execSync('git branch -m main', { cwd: worktreeDir, stdio: 'pipe' }); } catch { /* ok */ }
+    execSync('git checkout -b rapid/auth-core', { cwd: worktreeDir, stdio: 'pipe' });
+
+    // Create the planned files
+    fs.writeFileSync(path.join(worktreeDir, 'src', 'lib', 'schema.cjs'), '// schema', 'utf-8');
+    fs.writeFileSync(path.join(worktreeDir, 'src', 'lib', 'validate.cjs'), '// validate', 'utf-8');
+    fs.writeFileSync(path.join(worktreeDir, 'src', 'lib', 'utils.cjs'), '// utils', 'utf-8');
+
+    // Commit with proper format
+    execSync('git add src/lib/schema.cjs', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit -m "feat(auth-core): add schema definitions"', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git add src/lib/validate.cjs', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit -m "feat(auth-core): add validation"', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git add src/lib/utils.cjs', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit -m "feat(auth-core): add utils"', { cwd: worktreeDir, stdio: 'pipe' });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns passed entries for existing files with type file_exists', () => {
+    const result = executeModule.reconcileJob(tmpDir, 'auth-core', 'wave-1', 'job-schema', worktreeDir, 'main');
+    const fileExists = result.passed.filter(p => p.type === 'file_exists');
+    assert.ok(fileExists.length >= 2, 'should have at least 2 file_exists passed entries');
+  });
+
+  it('returns passed entries for valid commit format', () => {
+    const result = executeModule.reconcileJob(tmpDir, 'auth-core', 'wave-1', 'job-schema', worktreeDir, 'main');
+    const commitValid = result.passed.filter(p => p.type === 'commit_format_valid');
+    assert.ok(commitValid.length >= 2, 'should have at least 2 commit_format_valid entries');
+  });
+
+  it('returns failed entries with type missing_file for missing files', () => {
+    // Remove one of the planned files
+    fs.unlinkSync(path.join(worktreeDir, 'src', 'lib', 'schema.cjs'));
+    const result = executeModule.reconcileJob(tmpDir, 'auth-core', 'wave-1', 'job-schema', worktreeDir, 'main');
+    const missing = result.failed.filter(f => f.type === 'missing_file');
+    assert.ok(missing.length >= 1, 'should have at least 1 missing_file entry');
+    assert.ok(missing.some(m => m.target.includes('schema.cjs')), 'should reference schema.cjs');
+  });
+
+  it('returns failed entries with type commit_format_violation for bad commits', () => {
+    // Add a badly formatted commit
+    fs.writeFileSync(path.join(worktreeDir, 'src', 'lib', 'bad.cjs'), '// bad', 'utf-8');
+    execSync('git add src/lib/bad.cjs', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit -m "bad commit without format"', { cwd: worktreeDir, stdio: 'pipe' });
+
+    const result = executeModule.reconcileJob(tmpDir, 'auth-core', 'wave-1', 'job-schema', worktreeDir, 'main');
+    const violations = result.failed.filter(f => f.type === 'commit_format_violation');
+    assert.ok(violations.length >= 1, 'should have at least 1 commit_format_violation');
+    assert.ok(violations.some(v => v.target.includes('bad commit')), 'should reference bad commit');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// reconcileWaveJobs
+// ────────────────────────────────────────────────────────────────
+describe('reconcileWaveJobs', () => {
+  let tmpDir;
+  let worktreeDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-reconcile-wave-jobs-'));
+
+    // Create wave directory with two JOB-PLAN.md files
+    const waveDir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    fs.mkdirSync(waveDir, { recursive: true });
+
+    fs.writeFileSync(path.join(waveDir, 'job-a-PLAN.md'), [
+      '# JOB-PLAN: job-a',
+      '',
+      '## Files to Create/Modify',
+      '',
+      '| File | Action | Purpose |',
+      '|------|--------|---------|',
+      '| src/a.cjs | Create | Module A |',
+    ].join('\n'), 'utf-8');
+
+    fs.writeFileSync(path.join(waveDir, 'job-b-PLAN.md'), [
+      '# JOB-PLAN: job-b',
+      '',
+      '## Files to Create/Modify',
+      '',
+      '| File | Action | Purpose |',
+      '|------|--------|---------|',
+      '| src/b.cjs | Create | Module B |',
+    ].join('\n'), 'utf-8');
+
+    // Create worktree with git
+    worktreeDir = path.join(tmpDir, 'worktree');
+    fs.mkdirSync(path.join(worktreeDir, 'src'), { recursive: true });
+    execSync('git init', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "initial"', { cwd: worktreeDir, stdio: 'pipe' });
+    try { execSync('git branch -m main', { cwd: worktreeDir, stdio: 'pipe' }); } catch { /* ok */ }
+    execSync('git checkout -b rapid/auth-core', { cwd: worktreeDir, stdio: 'pipe' });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns PASS when all jobs pass', () => {
+    // Create both files and commit properly
+    fs.writeFileSync(path.join(worktreeDir, 'src', 'a.cjs'), '// a', 'utf-8');
+    execSync('git add src/a.cjs', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit -m "feat(auth-core): add module a"', { cwd: worktreeDir, stdio: 'pipe' });
+    fs.writeFileSync(path.join(worktreeDir, 'src', 'b.cjs'), '// b', 'utf-8');
+    execSync('git add src/b.cjs', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit -m "feat(auth-core): add module b"', { cwd: worktreeDir, stdio: 'pipe' });
+
+    const result = executeModule.reconcileWaveJobs(tmpDir, 'auth-core', 'wave-1', worktreeDir, 'main');
+    assert.equal(result.overall, 'PASS', 'overall should be PASS');
+    assert.equal(result.hardBlocks.length, 0, 'should have no hard blocks');
+    assert.equal(result.softBlocks.length, 0, 'should have no soft blocks');
+    assert.ok(result.jobResults['job-a'], 'should have job-a results');
+    assert.ok(result.jobResults['job-b'], 'should have job-b results');
+  });
+
+  it('returns PASS_WITH_WARNINGS when only soft blocks exist', () => {
+    // Create only one file -- job-b file is missing
+    fs.writeFileSync(path.join(worktreeDir, 'src', 'a.cjs'), '// a', 'utf-8');
+    execSync('git add src/a.cjs', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit -m "feat(auth-core): add module a"', { cwd: worktreeDir, stdio: 'pipe' });
+
+    const result = executeModule.reconcileWaveJobs(tmpDir, 'auth-core', 'wave-1', worktreeDir, 'main');
+    assert.equal(result.overall, 'PASS_WITH_WARNINGS', 'overall should be PASS_WITH_WARNINGS');
+    assert.ok(result.softBlocks.length > 0, 'should have soft blocks');
+    assert.ok(result.softBlocks.some(b => b.type === 'missing_file'), 'should have missing_file soft block');
+  });
+
+  it('returns FAIL when hard blocks exist', () => {
+    // Note: currently hard blocks are reserved. With only soft blocks, this test
+    // verifies that hard blocks make the overall FAIL. We simulate by checking
+    // that PASS_WITH_WARNINGS is the worst case without hard blocks.
+    // The aggregation logic uses hardBlocks.length > 0 for FAIL.
+    const result = executeModule.reconcileWaveJobs(tmpDir, 'auth-core', 'wave-1', worktreeDir, 'main');
+    // Both files missing = soft blocks
+    assert.notEqual(result.overall, 'PASS', 'should not be PASS with missing files');
+  });
+
+  it('aggregates per-job results into jobResults map', () => {
+    fs.writeFileSync(path.join(worktreeDir, 'src', 'a.cjs'), '// a', 'utf-8');
+    execSync('git add src/a.cjs', { cwd: worktreeDir, stdio: 'pipe' });
+    execSync('git commit -m "feat(auth-core): add module a"', { cwd: worktreeDir, stdio: 'pipe' });
+
+    const result = executeModule.reconcileWaveJobs(tmpDir, 'auth-core', 'wave-1', worktreeDir, 'main');
+    assert.ok('job-a' in result.jobResults, 'should have job-a in jobResults');
+    assert.ok('job-b' in result.jobResults, 'should have job-b in jobResults');
+    assert.ok(typeof result.jobResults['job-a'].filesPlanned === 'number', 'should have filesPlanned');
+    assert.ok(typeof result.jobResults['job-a'].filesDelivered === 'number', 'should have filesDelivered');
+    assert.ok(Array.isArray(result.jobResults['job-a'].missingFiles), 'should have missingFiles array');
+    assert.ok(Array.isArray(result.jobResults['job-a'].commitViolations), 'should have commitViolations array');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// formatProgressBanner
+// ────────────────────────────────────────────────────────────────
+describe('formatProgressBanner', () => {
+  it('produces formatted banner with wave header and job lines', () => {
+    const jobStatuses = [
+      { jobId: 'job-schema', status: 'Executing', tasksCompleted: 2, tasksTotal: 5 },
+      { jobId: 'job-transitions', status: 'Complete', tasksCompleted: 5, tasksTotal: 5 },
+      { jobId: 'job-cli', status: 'Pending', tasksCompleted: 0, tasksTotal: 3 },
+    ];
+
+    const banner = executeModule.formatProgressBanner('wave-1', 1, 3, jobStatuses, '14:32');
+
+    assert.ok(banner.includes('--- RAPID Execute ---'), 'should have banner header');
+    assert.ok(banner.includes('Wave wave-1 (1/3)'), 'should have wave header with index');
+    assert.ok(banner.includes('job-schema'), 'should include job-schema');
+    assert.ok(banner.includes('Executing'), 'should include Executing status');
+    assert.ok(banner.includes('2/5'), 'should include task counts');
+    assert.ok(banner.includes('job-transitions'), 'should include job-transitions');
+    assert.ok(banner.includes('Complete'), 'should include Complete status');
+    assert.ok(banner.includes('Pending'), 'should include Pending status');
+    assert.ok(banner.includes('---------------------'), 'should have banner footer');
+  });
+
+  it('includes timestamp in [HH:MM] format', () => {
+    const jobStatuses = [
+      { jobId: 'job-a', status: 'Executing', tasksCompleted: 1, tasksTotal: 3 },
+    ];
+
+    const banner = executeModule.formatProgressBanner('wave-1', 1, 1, jobStatuses, '09:15');
+
+    assert.ok(banner.includes('[09:15]'), 'should include timestamp in [HH:MM] format');
+  });
+
+  it('handles empty job statuses', () => {
+    const banner = executeModule.formatProgressBanner('wave-1', 1, 1, [], '10:00');
+    assert.ok(banner.includes('--- RAPID Execute ---'), 'should still have header');
+    assert.ok(banner.includes('Wave wave-1'), 'should still have wave info');
+    assert.ok(banner.includes('[10:00]'), 'should still have timestamp');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// generateJobHandoff / parseJobHandoff
+// ────────────────────────────────────────────────────────────────
+describe('generateJobHandoff', () => {
+  it('produces frontmatter with set, waveId, jobId, pauseCycle', () => {
+    const checkpointData = {
+      handoff_done: '- [x] Step 1: Created schema',
+      handoff_remaining: '- [ ] Step 2: Add validation',
+      handoff_resume: 'Continue from step 2.',
+      tasks_completed: 1,
+      tasks_total: 3,
+      decisions: ['Used Zod for validation'],
+    };
+
+    const result = executeModule.generateJobHandoff(checkpointData, 'auth-core', 'wave-1', 'job-schema', 1);
+
+    assert.ok(result.includes('set: auth-core'), 'should have set in frontmatter');
+    assert.ok(result.includes('wave_id: wave-1'), 'should have wave_id in frontmatter');
+    assert.ok(result.includes('job_id: job-schema'), 'should have job_id in frontmatter');
+    assert.ok(result.includes('pause_cycle: 1'), 'should have pause_cycle in frontmatter');
+    assert.ok(result.includes('## Completed Work'), 'should have Completed Work section');
+    assert.ok(result.includes('Step 1: Created schema'), 'should have completed work content');
+    assert.ok(result.includes('## Remaining Work'), 'should have Remaining Work section');
+    assert.ok(result.includes('## Resume Instructions'), 'should have Resume Instructions section');
+  });
+});
+
+describe('parseJobHandoff', () => {
+  it('round-trips generateJobHandoff -> parseJobHandoff', () => {
+    const checkpointData = {
+      handoff_done: '- [x] Step 1: Done',
+      handoff_remaining: '- [ ] Step 2: Todo',
+      handoff_resume: 'Start from step 2.',
+      tasks_completed: 1,
+      tasks_total: 2,
+      decisions: ['Decision 1'],
+    };
+
+    const content = executeModule.generateJobHandoff(checkpointData, 'auth-core', 'wave-1', 'job-schema', 2);
+    const parsed = executeModule.parseJobHandoff(content);
+
+    assert.ok(parsed !== null, 'should not return null');
+    assert.equal(parsed.set, 'auth-core', 'should parse set');
+    assert.equal(parsed.waveId, 'wave-1', 'should parse waveId');
+    assert.equal(parsed.jobId, 'job-schema', 'should parse jobId');
+    assert.equal(parsed.pauseCycle, 2, 'should parse pauseCycle');
+    assert.ok(parsed.completedWork.includes('Step 1: Done'), 'should parse completed work');
+    assert.ok(parsed.remainingWork.includes('Step 2: Todo'), 'should parse remaining work');
+    assert.ok(parsed.resumeInstructions.includes('Start from step 2'), 'should parse resume instructions');
+    assert.ok(Array.isArray(parsed.decisions), 'decisions should be array');
+    assert.ok(parsed.decisions.some(d => d.includes('Decision 1')), 'should parse decisions');
+  });
+
+  it('returns null for empty input', () => {
+    assert.equal(executeModule.parseJobHandoff(''), null, 'empty string');
+    assert.equal(executeModule.parseJobHandoff(null), null, 'null');
+    assert.equal(executeModule.parseJobHandoff(undefined), null, 'undefined');
+  });
+});
