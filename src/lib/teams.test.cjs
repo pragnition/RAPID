@@ -221,4 +221,110 @@ describe('teams.cjs', () => {
       teams.cleanupTeamTracking(tmpDir, 'rapid-wave-nonexistent');
     });
   });
+
+  // ────────────────────────────────────────
+  // buildJobTeammateConfig()
+  // ────────────────────────────────────────
+  describe('buildJobTeammateConfig()', () => {
+    it('returns { name, prompt, worktreePath } with correct name format', () => {
+      const jobPlanContent = [
+        '# JOB-PLAN: job-schema',
+        '',
+        '## Files to Create/Modify',
+        '',
+        '| File | Action | Purpose |',
+        '|------|--------|---------|',
+        '| src/lib/schema.cjs | Create | Schema defs |',
+        '',
+        '## Implementation Steps',
+        '1. Create schema',
+      ].join('\n');
+
+      const result = teams.buildJobTeammateConfig(
+        '/fake/cwd', 'auth-core', 'wave-1', 'job-schema',
+        '/path/to/worktree', jobPlanContent
+      );
+
+      assert.equal(result.name, 'auth-core-job-schema', 'name should be {setId}-{jobId}');
+      assert.equal(typeof result.prompt, 'string', 'prompt should be a string');
+      assert.ok(result.prompt.length > 0, 'prompt should not be empty');
+      assert.equal(result.worktreePath, '/path/to/worktree', 'worktreePath should match');
+    });
+
+    it('prompt contains jobId and setId', () => {
+      const jobPlanContent = '# JOB-PLAN: job-transitions\n\n## Implementation Steps\n1. Do stuff';
+
+      const result = teams.buildJobTeammateConfig(
+        '/fake/cwd', 'my-set', 'wave-2', 'job-transitions',
+        '/wt/path', jobPlanContent
+      );
+
+      assert.ok(result.prompt.includes('job-transitions'), 'prompt should contain jobId');
+      assert.ok(result.prompt.includes('my-set'), 'prompt should contain setId');
+    });
+
+    it('prompt contains job plan content', () => {
+      const jobPlanContent = '# JOB-PLAN: job-test\n\n## Files to Create/Modify\n\n| File | Action |\n|------|--------|\n| src/test.cjs | Create |\n\n## Implementation Steps\n1. Create test module with special logic';
+
+      const result = teams.buildJobTeammateConfig(
+        '/fake/cwd', 'test-set', 'wave-1', 'job-test',
+        '/wt/test', jobPlanContent
+      );
+
+      assert.ok(result.prompt.includes('special logic'), 'prompt should contain plan content');
+    });
+
+    it('prompt contains commit convention with set name', () => {
+      const jobPlanContent = '# JOB-PLAN: job-x\n\n## Steps\n1. Do it';
+
+      const result = teams.buildJobTeammateConfig(
+        '/fake/cwd', 'data-layer', 'wave-1', 'job-x',
+        '/wt/data', jobPlanContent
+      );
+
+      assert.ok(result.prompt.includes('data-layer'), 'commit convention should reference set name');
+      assert.ok(result.prompt.includes('type('), 'should have type( prefix in commit convention');
+    });
+  });
+
+  // ────────────────────────────────────────
+  // waveJobTeamMeta()
+  // ────────────────────────────────────────
+  describe('waveJobTeamMeta()', () => {
+    it('returns correct metadata with teamName format rapid-{setId}-{waveId}', () => {
+      const result = teams.waveJobTeamMeta('auth-core', 'wave-1');
+      assert.deepStrictEqual(result, {
+        teamName: 'rapid-auth-core-wave-1',
+        setId: 'auth-core',
+        waveId: 'wave-1',
+      });
+    });
+
+    it('returns correct metadata for different inputs', () => {
+      const result = teams.waveJobTeamMeta('data-layer', 'wave-3');
+      assert.equal(result.teamName, 'rapid-data-layer-wave-3');
+      assert.equal(result.setId, 'data-layer');
+      assert.equal(result.waveId, 'wave-3');
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// Assembler registration tests for job-executor role
+// ────────────────────────────────────────────────────────────────
+describe('assembler.cjs job-executor registration', () => {
+  const assembler = require('./assembler.cjs');
+
+  it('ROLE_TOOLS includes job-executor with correct tools', () => {
+    const modules = assembler.listModules();
+    assert.ok(modules.roles.includes('role-job-executor.md'), 'role-job-executor.md should be in roles list');
+  });
+
+  it('assembler can generate frontmatter for job-executor role', () => {
+    const frontmatter = assembler.generateFrontmatter('job-executor');
+    assert.ok(frontmatter.includes('rapid-job-executor'), 'frontmatter should include rapid-job-executor');
+    assert.ok(frontmatter.includes('Read'), 'should include Read tool');
+    assert.ok(frontmatter.includes('Write'), 'should include Write tool');
+    assert.ok(frontmatter.includes('Bash'), 'should include Bash tool');
+  });
 });
