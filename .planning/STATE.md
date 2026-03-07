@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: completed
-stopped_at: Phase 21 context gathered
-last_updated: "2026-03-07T09:54:07.715Z"
-last_activity: 2026-03-07 — Completed 20-03 (Wave planning skill orchestrating research-plan-validate pipeline)
+status: in-progress
+stopped_at: Completed 21-02-PLAN.md
+last_updated: "2026-03-07T10:20:49Z"
+last_activity: 2026-03-07 — Completed 21-02 (Job execution CLI subcommands)
 progress:
   total_phases: 26
   completed_phases: 21
-  total_plans: 52
-  completed_plans: 51
-  percent: 98
+  total_plans: 55
+  completed_plans: 52
+  percent: 95
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 20 - Wave Planning (v2.0 Mark II)
+**Current focus:** Phase 21 - Execution Engine (v2.0 Mark II)
 
 ## Current Position
 
-Phase: 20 of 24 (Wave Planning)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: Phase Complete
-Last activity: 2026-03-07 — Completed 20-03 (Wave planning skill orchestrating research-plan-validate pipeline)
+Phase: 21 of 24 (Execution Engine)
+Plan: 2 of 3 in current phase
+Status: In Progress
+Last activity: 2026-03-07 — Completed 21-02 (Job execution CLI subcommands)
 
-Progress: [██████████] 98% (51/52 plans complete)
+Progress: [██████████] 95% (52/55 plans complete)
 
 ## Accumulated Context
 
@@ -77,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 20]: Sequential pipeline (research -> wave plan -> job plans) with parallel fan-out for 3+ job planners
 - [Phase 20]: Contract validation gate with three escalation options: Fix plan, Update contract, Override
 - [Phase 20]: Graceful degradation: research failure allows skip, partial job plan failures allow continue
+- [Phase 21]: Guard reconcileWaveJobs call with typeof check since plan 01 library functions may not exist yet
+- [Phase 21]: Use output() for new subcommands consistent with other recently-added subcommands (detect-mode, merge)
 
 ### Pending Todos
 
@@ -108,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T09:54:07.710Z
-Stopped at: Phase 21 context gathered
-Resume file: .planning/phases/21-execution-engine/21-CONTEXT.md
+Last session: 2026-03-07T10:20:49Z
+Stopped at: Completed 21-02-PLAN.md
+Resume file: .planning/phases/21-execution-engine/21-02-SUMMARY.md
