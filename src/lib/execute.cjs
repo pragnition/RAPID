@@ -639,6 +639,320 @@ function generateWaveSummary(waveNum, reconcileResult, timestamp, executionMode)
   return lines.join('\n');
 }
 
+// ────────────────────────────────────────────────────────────────
+// Job-level reconciliation
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Parse the "Files to Create/Modify" table from a JOB-PLAN.md content string.
+ *
+ * Looks for a Markdown table under "## Files to Create/Modify" and extracts
+ * rows with file path, action (Create/Modify), and purpose.
+ *
+ * @param {string} jobPlanContent - Raw JOB-PLAN.md content
+ * @returns {Array<{ path: string, action: string, purpose: string }>}
+ */
+function parseJobPlanFiles(jobPlanContent) {
+  const files = [];
+  const lines = jobPlanContent.split('\n');
+  let inFilesSection = false;
+  let headerPassed = false;
+
+  for (const line of lines) {
+    if (line.startsWith('## Files to Create/Modify')) {
+      inFilesSection = true;
+      continue;
+    }
+    if (inFilesSection && line.startsWith('## ')) {
+      break; // Next section
+    }
+    if (!inFilesSection) continue;
+
+    const trimmed = line.trim();
+
+    // Skip header row and separator
+    if (trimmed.startsWith('| File') || trimmed.startsWith('|---')) {
+      headerPassed = true;
+      continue;
+    }
+
+    // Parse table rows: | path | action | purpose |
+    if (headerPassed && trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+      if (cells.length >= 2) {
+        files.push({
+          path: cells[0],
+          action: cells[1],
+          purpose: cells[2] || '',
+        });
+      }
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Reconcile a single job's deliverables against its JOB-PLAN.md.
+ *
+ * Reads the job plan from `.planning/waves/{setId}/{waveId}/{jobId}-PLAN.md`.
+ * Checks file existence in worktreePath and commit format using
+ * `type(setId): description` pattern.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {string} waveId - Wave identifier
+ * @param {string} jobId - Job identifier
+ * @param {string} worktreePath - Absolute path to the worktree
+ * @param {string} baseBranch - Base branch for commit comparison
+ * @returns {{ passed: Array<{type: string, target: string}>, failed: Array<{type: string, target: string}> }}
+ */
+function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
+  const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+  const jobPlanPath = path.join(waveDir, `${jobId}-PLAN.md`);
+  const jobPlan = fs.readFileSync(jobPlanPath, 'utf-8');
+
+  const results = { passed: [], failed: [] };
+
+  // 1. Parse "Files to Create/Modify" table from JOB-PLAN.md
+  const plannedFiles = parseJobPlanFiles(jobPlan);
+
+  // 2. Check each planned file exists in worktree
+  for (const file of plannedFiles) {
+    const fullPath = path.join(worktreePath, file.path);
+    if (fs.existsSync(fullPath)) {
+      results.passed.push({ type: 'file_exists', target: file.path });
+    } else if (file.action === 'Create') {
+      results.failed.push({ type: 'missing_file', target: file.path });
+    }
+  }
+
+  // 3. Commit format check
+  const messages = getCommitMessages(worktreePath, baseBranch);
+  const formatPattern = new RegExp(`^(feat|fix|refactor|test|docs|chore)\\(${escapeRegExp(setId)}\\):`);
+  for (const msg of messages) {
+    if (formatPattern.test(msg)) {
+      results.passed.push({ type: 'commit_format_valid', target: msg });
+    } else {
+      results.failed.push({ type: 'commit_format_violation', target: msg });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Aggregate per-job reconciliation into wave-level results.
+ *
+ * Reads all `*-PLAN.md` files from `.planning/waves/{setId}/{waveId}/`.
+ * Calls reconcileJob for each. Computes hardBlocks, softBlocks, and
+ * overall PASS/PASS_WITH_WARNINGS/FAIL.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {string} waveId - Wave identifier
+ * @param {string} worktreePath - Absolute path to the worktree
+ * @param {string} baseBranch - Base branch for commit comparison
+ * @returns {{ hardBlocks: Array, softBlocks: Array, jobResults: Object, overall: string }}
+ */
+function reconcileWaveJobs(cwd, setId, waveId, worktreePath, baseBranch) {
+  const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+  const jobPlanFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
+
+  const hardBlocks = [];
+  const softBlocks = [];
+  const jobResults = {};
+
+  for (const planFile of jobPlanFiles) {
+    const jobId = planFile.replace('-PLAN.md', '');
+    const result = reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch);
+
+    jobResults[jobId] = {
+      filesPlanned: result.passed.filter(p => p.type === 'file_exists').length +
+                     result.failed.filter(f => f.type === 'missing_file').length,
+      filesDelivered: result.passed.filter(p => p.type === 'file_exists').length,
+      missingFiles: result.failed.filter(f => f.type === 'missing_file').map(f => f.target),
+      commitViolations: result.failed.filter(f => f.type === 'commit_format_violation').map(f => f.target),
+    };
+
+    // Missing files are soft blocks
+    for (const f of result.failed.filter(f => f.type === 'missing_file')) {
+      softBlocks.push({ job: jobId, type: 'missing_file', detail: f.target });
+    }
+    // Commit violations are soft blocks
+    for (const f of result.failed.filter(f => f.type === 'commit_format_violation')) {
+      softBlocks.push({ job: jobId, type: 'commit_format_violation', detail: f.target });
+    }
+  }
+
+  let overall = 'PASS';
+  if (hardBlocks.length > 0) {
+    overall = 'FAIL';
+  } else if (softBlocks.length > 0) {
+    overall = 'PASS_WITH_WARNINGS';
+  }
+
+  return { hardBlocks, softBlocks, jobResults, overall };
+}
+
+// ────────────────────────────────────────────────────────────────
+// Progress banner generation
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Generate a formatted progress banner for wave execution.
+ *
+ * Produces a banner block with wave header, indented job status lines, and timestamp.
+ *
+ * @param {string} waveId - Wave identifier
+ * @param {number} waveIndex - Current wave index (1-based)
+ * @param {number} totalWaves - Total number of waves
+ * @param {Array<{ jobId: string, status: string, tasksCompleted: number, tasksTotal: number }>} jobStatuses
+ * @param {string} timestamp - Timestamp string (HH:MM format)
+ * @returns {string} Formatted banner string
+ */
+function formatProgressBanner(waveId, waveIndex, totalWaves, jobStatuses, timestamp) {
+  const lines = [
+    '--- RAPID Execute ---',
+    `Wave ${waveId} (${waveIndex}/${totalWaves})`,
+  ];
+
+  for (const job of jobStatuses) {
+    lines.push(`  ${job.jobId}: ${job.status} (${job.tasksCompleted}/${job.tasksTotal} steps)`);
+  }
+
+  lines.push(`[${timestamp}]`);
+  lines.push('---------------------');
+
+  return lines.join('\n');
+}
+
+// ────────────────────────────────────────────────────────────────
+// Job-level handoff generation and parsing
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Generate HANDOFF.md content for a job-level CHECKPOINT return.
+ *
+ * Like generateHandoff but includes wave and job context in frontmatter.
+ * Stores at `.planning/waves/{setId}/{waveId}/{jobId}-HANDOFF.md`.
+ *
+ * @param {Object} checkpointData - Parsed CHECKPOINT return data
+ * @param {string} setId - Set identifier
+ * @param {string} waveId - Wave identifier
+ * @param {string} jobId - Job identifier
+ * @param {number} pauseCycle - Current pause cycle count
+ * @returns {string} Markdown content for job-level HANDOFF.md
+ */
+function generateJobHandoff(checkpointData, setId, waveId, jobId, pauseCycle) {
+  const frontmatter = [
+    '---',
+    `set: ${setId}`,
+    `wave_id: ${waveId}`,
+    `job_id: ${jobId}`,
+    `paused_at: ${new Date().toISOString()}`,
+    `pause_cycle: ${pauseCycle}`,
+    `tasks_completed: ${checkpointData.tasks_completed || 0}`,
+    `tasks_total: ${checkpointData.tasks_total || 0}`,
+    '---',
+  ].join('\n');
+
+  const sections = [
+    frontmatter,
+    '',
+    '## Completed Work',
+    checkpointData.handoff_done || '(none recorded)',
+    '',
+    '## Remaining Work',
+    checkpointData.handoff_remaining || '(none recorded)',
+    '',
+    '## Resume Instructions',
+    checkpointData.handoff_resume || 'Continue from where execution stopped.',
+  ];
+
+  if (checkpointData.decisions && checkpointData.decisions.length > 0) {
+    sections.push('', '## Decisions Made');
+    for (const d of checkpointData.decisions) {
+      sections.push(`- ${d}`);
+    }
+  }
+
+  return sections.join('\n') + '\n';
+}
+
+/**
+ * Parse job-level HANDOFF.md content into a structured object.
+ *
+ * Like parseHandoff but extracts waveId and jobId from frontmatter.
+ *
+ * @param {string} handoffContent - Raw Markdown content
+ * @returns {{ set: string, waveId: string, jobId: string, pauseCycle: number, tasksCompleted: number, tasksTotal: number, completedWork: string, remainingWork: string, resumeInstructions: string, decisions: string[] } | null}
+ */
+function parseJobHandoff(handoffContent) {
+  if (!handoffContent) return null;
+
+  const content = handoffContent.trim();
+  if (content.length === 0) return null;
+
+  // Parse frontmatter between --- markers
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const frontmatter = {};
+  if (fmMatch) {
+    const fmLines = fmMatch[1].split('\n');
+    for (const line of fmLines) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx === -1) continue;
+      const key = line.slice(0, colonIdx).trim();
+      const value = line.slice(colonIdx + 1).trim();
+      frontmatter[key] = value;
+    }
+  }
+
+  // Parse sections: extract text under each ## heading
+  const sections = {};
+  const sectionRegex = /^## (.+)$/gm;
+  let match;
+  const sectionStarts = [];
+
+  while ((match = sectionRegex.exec(content)) !== null) {
+    sectionStarts.push({ name: match[1], index: match.index + match[0].length });
+  }
+
+  for (let i = 0; i < sectionStarts.length; i++) {
+    const start = sectionStarts[i].index;
+    const end = i + 1 < sectionStarts.length
+      ? content.lastIndexOf('## ', sectionStarts[i + 1].index)
+      : content.length;
+    const sectionContent = content.slice(start, end).trim();
+    sections[sectionStarts[i].name] = sectionContent;
+  }
+
+  // Parse decisions from "Decisions Made" section
+  const decisions = [];
+  if (sections['Decisions Made']) {
+    const lines = sections['Decisions Made'].split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('- ')) {
+        decisions.push(trimmed.slice(2));
+      }
+    }
+  }
+
+  return {
+    set: frontmatter.set || '',
+    waveId: frontmatter.wave_id || '',
+    jobId: frontmatter.job_id || '',
+    pauseCycle: parseInt(frontmatter.pause_cycle, 10) || 0,
+    tasksCompleted: parseInt(frontmatter.tasks_completed, 10) || 0,
+    tasksTotal: parseInt(frontmatter.tasks_total, 10) || 0,
+    completedWork: sections['Completed Work'] || '',
+    remainingWork: sections['Remaining Work'] || '',
+    resumeInstructions: sections['Resume Instructions'] || '',
+    decisions,
+  };
+}
+
 module.exports = {
   prepareSetContext,
   assembleExecutorPrompt,
@@ -650,4 +964,9 @@ module.exports = {
   parseHandoff,
   reconcileWave,
   generateWaveSummary,
+  reconcileJob,
+  reconcileWaveJobs,
+  formatProgressBanner,
+  generateJobHandoff,
+  parseJobHandoff,
 };
