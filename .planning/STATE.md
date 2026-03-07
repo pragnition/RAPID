@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: in-progress
-stopped_at: Completed 21-02-PLAN.md
-last_updated: "2026-03-07T10:20:49Z"
-last_activity: 2026-03-07 — Completed 21-02 (Job execution CLI subcommands)
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-03-07T10:21:44Z"
+last_activity: 2026-03-07 — Completed 21-01 (Execution engine library extensions)
 progress:
   total_phases: 26
   completed_phases: 21
@@ -79,6 +79,9 @@ Recent decisions affecting current work:
 - [Phase 20]: Graceful degradation: research failure allows skip, partial job plan failures allow continue
 - [Phase 21]: Guard reconcileWaveJobs call with typeof check since plan 01 library functions may not exist yet
 - [Phase 21]: Use output() for new subcommands consistent with other recently-added subcommands (detect-mode, merge)
+- [Phase 21]: Job-level reconciliation checks file existence and commit format per JOB-PLAN.md, not DEFINITION.md
+- [Phase 21]: Missing files and commit violations are soft blocks; hard blocks reserved for future test-based checks
+- [Phase 21]: buildJobTeammateConfig assembles inline prompt (not via assembleExecutorPrompt) with job plan content
 
 ### Pending Todos
 
@@ -110,6 +113,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T10:20:49Z
-Stopped at: Completed 21-02-PLAN.md
-Resume file: .planning/phases/21-execution-engine/21-02-SUMMARY.md
+Last session: 2026-03-07T10:21:44Z
+Stopped at: Completed 21-01-PLAN.md
+Resume file: .planning/phases/21-execution-engine/21-01-SUMMARY.md
