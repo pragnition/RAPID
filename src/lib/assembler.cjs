@@ -19,6 +19,7 @@ const ROLE_TOOLS = {
   'wave-researcher': 'Read, Grep, Glob, Bash, WebFetch',
   'wave-planner': 'Read, Write, Grep, Glob',
   'job-planner': 'Read, Write, Grep, Glob',
+  'job-executor': 'Read, Write, Edit, Bash, Grep, Glob',
 };
 
 /**
@@ -33,6 +34,7 @@ const ROLE_DESCRIPTIONS = {
   'wave-researcher': 'RAPID wave research agent -- investigates implementation specifics for a wave',
   'wave-planner': 'RAPID wave planner agent -- produces high-level per-job plans for a wave',
   'job-planner': 'RAPID job planner agent -- creates detailed implementation plan for a single job',
+  'job-executor': 'RAPID job executor agent -- implements a single job within a wave per JOB-PLAN.md',
 };
 
 /**

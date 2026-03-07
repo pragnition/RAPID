@@ -82,10 +82,111 @@ function cleanupTeamTracking(cwd, teamName) {
   }
 }
 
+/**
+ * Build teammate spawn configuration for a single job within a wave.
+ *
+ * Constructs an inline prompt for job-level execution (not via
+ * assembleExecutorPrompt which is set-level).
+ *
+ * @param {string} cwd - Project root (unused currently, reserved for future context loading)
+ * @param {string} setId - Set identifier
+ * @param {string} waveId - Wave identifier
+ * @param {string} jobId - Job identifier
+ * @param {string} worktreePath - Worktree path for this job
+ * @param {string} jobPlanContent - Full content of the JOB-PLAN.md
+ * @returns {{ name: string, prompt: string, worktreePath: string }}
+ */
+function buildJobTeammateConfig(cwd, setId, waveId, jobId, worktreePath, jobPlanContent) {
+  // Parse file ownership from job plan content
+  const ownedFiles = [];
+  const lines = jobPlanContent.split('\n');
+  let inFilesSection = false;
+  let headerPassed = false;
+
+  for (const line of lines) {
+    if (line.startsWith('## Files to Create/Modify')) {
+      inFilesSection = true;
+      continue;
+    }
+    if (inFilesSection && line.startsWith('## ')) break;
+    if (!inFilesSection) continue;
+
+    const trimmed = line.trim();
+    if (trimmed.startsWith('| File') || trimmed.startsWith('|---')) {
+      headerPassed = true;
+      continue;
+    }
+    if (headerPassed && trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+      if (cells.length >= 1) {
+        ownedFiles.push(cells[0]);
+      }
+    }
+  }
+
+  const fileList = ownedFiles.length > 0
+    ? ownedFiles.map(f => `- ${f}`).join('\n')
+    : '(see JOB-PLAN above)';
+
+  const prompt = [
+    `# Job: ${jobId} -- Execution`,
+    '',
+    `You are implementing job '${jobId}' in set '${setId}'.`,
+    '',
+    '## Your JOB-PLAN',
+    '',
+    jobPlanContent,
+    '',
+    '## File Ownership',
+    'You may ONLY modify these files:',
+    fileList,
+    '',
+    '## Commit Convention',
+    `After each implementation step, commit with:`,
+    `  git add <specific files>`,
+    `  git commit -m "type(${setId}): description"`,
+    'Where type is feat|fix|refactor|test|docs|chore',
+    '',
+    '## Working Directory',
+    worktreePath,
+    '',
+    '## Completion',
+    'When all steps complete, emit RAPID:RETURN with status COMPLETE.',
+    'If context window limit reached, emit CHECKPOINT.',
+    'If blocked, emit BLOCKED.',
+  ].join('\n');
+
+  return {
+    name: `${setId}-${jobId}`,
+    prompt,
+    worktreePath,
+  };
+}
+
+/**
+ * Generate metadata for a job-level wave team.
+ *
+ * Team naming convention: rapid-{setId}-{waveId}.
+ * One team per wave within a set.
+ *
+ * @param {string} setId - Set identifier
+ * @param {string} waveId - Wave identifier
+ * @returns {{ teamName: string, setId: string, waveId: string }}
+ */
+function waveJobTeamMeta(setId, waveId) {
+  return {
+    teamName: `rapid-${setId}-${waveId}`,
+    setId,
+    waveId,
+  };
+}
+
 module.exports = {
   detectAgentTeams,
   waveTeamMeta,
   buildTeammateConfig,
   readCompletions,
   cleanupTeamTracking,
+  buildJobTeammateConfig,
+  waveJobTeamMeta,
 };
