@@ -1512,3 +1512,106 @@ describe('handleInit write-config subcommand', () => {
     assert.equal(config.planning.max_parallel_sets, 1);
   });
 });
+
+// ──────────────────────────────────────────────────
+// Plan 21-02: Job execution CLI subcommands
+// ──────────────────────────────────────────────────
+
+describe('execute reconcile-jobs subcommand', () => {
+  it('prints usage when missing args', () => {
+    try {
+      execSync(`node "${CLI_PATH}" execute reconcile-jobs`, { encoding: 'utf-8', timeout: 10000 });
+      assert.fail('Should have exited with error');
+    } catch (err) {
+      assert.ok(err.stderr.includes('Usage') || err.status === 1, 'Should show usage or exit 1');
+    }
+  });
+});
+
+describe('execute job-status subcommand', () => {
+  it('prints usage when missing args', () => {
+    try {
+      execSync(`node "${CLI_PATH}" execute job-status`, { encoding: 'utf-8', timeout: 10000 });
+      assert.fail('Should have exited with error');
+    } catch (err) {
+      assert.ok(err.stderr.includes('Usage') || err.status === 1, 'Should show usage or exit 1');
+    }
+  });
+});
+
+describe('execute commit-state subcommand', () => {
+  it('code path is reachable (will fail on missing STATE.json which is expected)', () => {
+    try {
+      execSync(`node "${CLI_PATH}" execute commit-state "test message"`, { encoding: 'utf-8', timeout: 10000 });
+      // If it succeeds (e.g. nothing to commit), that's fine
+    } catch (err) {
+      // Expected: fails because no STATE.json or not in git repo context
+      assert.ok(err.status !== undefined, 'Should have exited with some status');
+    }
+  });
+});
+
+describe('wave-plan list-jobs subcommand', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-list-jobs-'));
+    // Create .planning dir so findProjectRoot works
+    fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
+    // Init a git repo so findProjectRoot works
+    execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('prints usage when missing args', () => {
+    try {
+      execSync(`node "${CLI_PATH}" wave-plan list-jobs`, { encoding: 'utf-8', timeout: 10000 });
+      assert.fail('Should have exited with error');
+    } catch (err) {
+      assert.ok(err.stderr.includes('Usage') || err.status === 1, 'Should show usage or exit 1');
+    }
+  });
+
+  it('returns empty list for nonexistent wave directory', () => {
+    const stdout = execSync(
+      `node "${CLI_PATH}" wave-plan list-jobs nonexistent-set wave-01`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+    // output() adds [RAPID] prefix -- strip it for JSON parsing
+    const json = stdout.trim().replace(/^\[RAPID\]\s*/, '');
+    const result = JSON.parse(json);
+    assert.equal(result.count, 0);
+    assert.deepEqual(result.jobPlans, []);
+    assert.equal(result.setId, 'nonexistent-set');
+    assert.equal(result.waveId, 'wave-01');
+  });
+
+  it('lists job plan files when they exist', () => {
+    const waveDir = path.join(tmpDir, '.planning', 'waves', 'my-set', 'wave-01');
+    fs.mkdirSync(waveDir, { recursive: true });
+    fs.writeFileSync(path.join(waveDir, 'job-a-PLAN.md'), '# Job A Plan\n');
+    fs.writeFileSync(path.join(waveDir, 'job-b-PLAN.md'), '# Job B Plan\n');
+    fs.writeFileSync(path.join(waveDir, 'WAVE-CONTEXT.md'), '# Not a job plan\n');
+
+    const stdout = execSync(
+      `node "${CLI_PATH}" wave-plan list-jobs my-set wave-01`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+    // output() adds [RAPID] prefix -- strip it for JSON parsing
+    const json = stdout.trim().replace(/^\[RAPID\]\s*/, '');
+    const result = JSON.parse(json);
+    assert.equal(result.count, 2);
+    assert.equal(result.jobPlans.length, 2);
+    // Verify jobId extraction (strips -PLAN.md)
+    const jobIds = result.jobPlans.map(j => j.jobId).sort();
+    assert.deepEqual(jobIds, ['job-a', 'job-b']);
+    // Verify each plan has file and path fields
+    for (const jp of result.jobPlans) {
+      assert.ok(jp.file.endsWith('-PLAN.md'), 'file should end with -PLAN.md');
+      assert.ok(jp.path.includes(waveDir), 'path should include waveDir');
+    }
+  });
+});

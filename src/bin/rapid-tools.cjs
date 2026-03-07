@@ -64,6 +64,9 @@ Commands:
   execute resume <set>            Resume execution from HANDOFF.md
   execute reconcile <wave>        Reconcile a wave and write WAVE-{N}-SUMMARY.md
   execute detect-mode             Detect if agent teams mode is available
+  execute reconcile-jobs <set> <wave> [--branch <b>] [--mode <m>]  Reconcile jobs in a wave
+  execute job-status <set>        Show per-wave/per-job statuses from STATE.json
+  execute commit-state [message]  Commit STATE.json with a given message
   merge review <set>              Run programmatic gate + write REVIEW.md
   merge execute <set>             Merge set branch into main (--no-ff)
   merge status                    Show merge pipeline status (per-set verdicts)
@@ -75,6 +78,7 @@ Commands:
   wave-plan resolve-wave <waveId>              Find wave in state, output milestone/set/wave JSON
   wave-plan create-wave-dir <setId> <waveId>   Create .planning/waves/{setId}/{waveId}/ directory
   wave-plan validate-contracts <setId> <waveId> Validate job plans against CONTRACT.json
+  wave-plan list-jobs <setId> <waveId>          List JOB-PLAN.md files for a wave
 
 Options:
   --help, -h             Show this help message
@@ -1261,8 +1265,31 @@ async function handleWavePlan(cwd, subcommand, args) {
       break;
     }
 
+    case 'list-jobs': {
+      const setId = args[0];
+      const waveId = args[1];
+      if (!setId || !waveId) {
+        error('Usage: rapid-tools wave-plan list-jobs <set-id> <wave-id>');
+        process.exit(1);
+      }
+      const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+      let jobPlans = [];
+      try {
+        const files = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
+        jobPlans = files.map(f => ({
+          file: f,
+          jobId: f.replace('-PLAN.md', ''),
+          path: path.join(waveDir, f),
+        }));
+      } catch {
+        // Directory doesn't exist -- no job plans
+      }
+      output(JSON.stringify({ setId, waveId, jobPlans, count: jobPlans.length }));
+      break;
+    }
+
     default:
-      error(`Unknown wave-plan subcommand: ${subcommand}. Use: resolve-wave, create-wave-dir, validate-contracts`);
+      error(`Unknown wave-plan subcommand: ${subcommand}. Use: resolve-wave, create-wave-dir, validate-contracts, list-jobs`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
@@ -1712,8 +1739,84 @@ async function handleExecute(cwd, subcommand, args) {
       break;
     }
 
+    case 'reconcile-jobs': {
+      const setId = args[0];
+      const waveId = args[1];
+      if (!setId || !waveId) {
+        error('Usage: rapid-tools execute reconcile-jobs <set-id> <wave-id> [--branch <branch>] [--mode <mode>]');
+        process.exit(1);
+      }
+      // Parse --branch flag (default: main)
+      let branch = 'main';
+      const branchIdx = args.indexOf('--branch');
+      if (branchIdx !== -1 && args[branchIdx + 1]) branch = args[branchIdx + 1];
+      // Parse --mode flag (default: Subagents)
+      let mode = 'Subagents';
+      const modeIdx = args.indexOf('--mode');
+      if (modeIdx !== -1 && args[modeIdx + 1]) mode = args[modeIdx + 1];
+      // Find worktree path for this set
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setId];
+      const worktreePath = entry ? path.resolve(cwd, entry.path) : cwd;
+      // Run job-level reconciliation
+      if (typeof execute.reconcileWaveJobs !== 'function') {
+        error('reconcileWaveJobs not available -- ensure plan 01 (execution engine library) is implemented first');
+        process.exit(1);
+      }
+      const result = execute.reconcileWaveJobs(cwd, setId, waveId, worktreePath, branch);
+      // Generate wave summary
+      const timestamp = new Date().toISOString();
+      const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+      const summaryContent = typeof execute.generateWaveJobsSummary === 'function'
+        ? execute.generateWaveJobsSummary(waveId, result, timestamp, mode)
+        : JSON.stringify(result, null, 2);
+      // Write summary file
+      const summaryPath = path.join(waveDir, 'WAVE-SUMMARY.md');
+      fs.mkdirSync(waveDir, { recursive: true });
+      fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
+      output(JSON.stringify({ ...result, summaryPath }));
+      break;
+    }
+
+    case 'job-status': {
+      const sm = require('../lib/state-machine.cjs');
+      const setId = args[0];
+      if (!setId) {
+        error('Usage: rapid-tools execute job-status <set-id>');
+        process.exit(1);
+      }
+      const result = await sm.readState(cwd);
+      if (!result || !result.valid) {
+        error('STATE.json is missing or invalid');
+        process.exit(1);
+      }
+      const state = result.state;
+      const milestoneId = state.currentMilestone;
+      const set = sm.findSet(state, milestoneId, setId);
+      const waves = (set.waves || []).map(w => ({
+        waveId: w.id,
+        status: w.status,
+        jobs: (w.jobs || []).map(j => ({
+          jobId: j.id,
+          status: j.status,
+          startedAt: j.startedAt || null,
+          completedAt: j.completedAt || null,
+        })),
+      }));
+      output(JSON.stringify({ setId, milestoneId, waves }));
+      break;
+    }
+
+    case 'commit-state': {
+      const sm = require('../lib/state-machine.cjs');
+      const message = args.join(' ') || 'chore: update STATE.json';
+      const result = sm.commitState(cwd, message);
+      output(JSON.stringify(result));
+      break;
+    }
+
     default:
-      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, detect-mode`);
+      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, detect-mode, reconcile-jobs, job-status, commit-state`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
