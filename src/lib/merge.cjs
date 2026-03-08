@@ -1242,6 +1242,343 @@ function runIntegrationTests(projectRoot) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Bisection Recovery (MERG-05)
+// ────────────────────────────────────────────────────────────────
+
+const os = require('os');
+
+/**
+ * Get current HEAD commit hash before wave merging starts.
+ * Used to record the pre-wave commit for later bisection.
+ *
+ * @param {string} cwd - Git repo directory
+ * @returns {string} Current HEAD commit hash
+ */
+function getPreWaveCommit(cwd) {
+  return execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd, encoding: 'utf-8', stdio: 'pipe',
+  }).trim();
+}
+
+/**
+ * Bisect a wave to find the breaking set via binary search.
+ *
+ * 1. Saves .planning/ directory to temp location (fs.cpSync)
+ * 2. Runs git reset --hard to preWaveCommit
+ * 3. Binary search: splits mergedSets, re-merges subset via mergeSet(), runs runIntegrationTests()
+ * 4. After each iteration, resets back to preWaveCommit
+ * 5. When breaking set identified, restores .planning/ from temp
+ * 6. Updates MERGE-STATE.json bisection field for the breaking set
+ * 7. Returns {breakingSet, iterations, testOutput}
+ *
+ * @param {string} cwd - Git repo directory
+ * @param {string} baseBranch - Base branch name (e.g., 'main')
+ * @param {string[]} mergedSets - Array of set names that were merged in this wave
+ * @param {string} preWaveCommit - Commit hash before wave merging started
+ * @returns {{ breakingSet: string, iterations: number, testOutput: string }}
+ */
+function bisectWave(cwd, baseBranch, mergedSets, preWaveCommit) {
+  const planningDir = path.join(cwd, '.planning');
+  const tempDir = path.join(os.tmpdir(), `rapid-bisect-planning-${Date.now()}`);
+
+  // 1. Save .planning/ to temp
+  if (fs.existsSync(planningDir)) {
+    fs.cpSync(planningDir, tempDir, { recursive: true });
+  }
+
+  let breakingSet = mergedSets[0]; // default for single-set case
+  let iterations = 0;
+  let lastTestOutput = '';
+
+  try {
+    // Trivial case: single set
+    if (mergedSets.length === 1) {
+      // Reset to pre-wave state
+      execFileSync('git', ['reset', '--hard', preWaveCommit], {
+        cwd, stdio: 'pipe',
+      });
+
+      // Re-merge the single set
+      mergeSet(cwd, mergedSets[0], baseBranch);
+      iterations = 1;
+
+      // Run tests -- should fail (this set is the breaker)
+      const testResult = runIntegrationTests(cwd);
+      lastTestOutput = testResult.output || '';
+      breakingSet = mergedSets[0];
+    } else {
+      // Binary search over merged sets
+      let lo = 0;
+      let hi = mergedSets.length - 1;
+
+      while (lo < hi) {
+        iterations++;
+        const mid = Math.floor((lo + hi) / 2);
+
+        // Reset to pre-wave state
+        execFileSync('git', ['reset', '--hard', preWaveCommit], {
+          cwd, stdio: 'pipe',
+        });
+
+        // Re-merge the first half (lo..mid)
+        for (let i = lo; i <= mid; i++) {
+          mergeSet(cwd, mergedSets[i], baseBranch);
+        }
+
+        // Run tests
+        const testResult = runIntegrationTests(cwd);
+        lastTestOutput = testResult.output || '';
+
+        if (!testResult.passed) {
+          // Breaking set is in first half
+          hi = mid;
+        } else {
+          // Breaking set is in second half
+          lo = mid + 1;
+        }
+
+        // Reset for next iteration
+        execFileSync('git', ['reset', '--hard', preWaveCommit], {
+          cwd, stdio: 'pipe',
+        });
+      }
+
+      breakingSet = mergedSets[lo];
+    }
+  } finally {
+    // 5. Restore .planning/ from temp
+    if (fs.existsSync(tempDir)) {
+      // Remove any .planning/ that git reset may have left
+      if (fs.existsSync(planningDir)) {
+        fs.rmSync(planningDir, { recursive: true, force: true });
+      }
+      fs.cpSync(tempDir, planningDir, { recursive: true });
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+
+  // 6. Update MERGE-STATE.json with bisection results
+  try {
+    const currentState = readMergeState(cwd, breakingSet);
+    if (currentState) {
+      updateMergeState(cwd, breakingSet, {
+        bisection: {
+          triggered: true,
+          breakingSet,
+          iterations,
+          completedAt: new Date().toISOString(),
+        },
+      });
+    } else {
+      // Create a new MERGE-STATE for the breaking set
+      writeMergeState(cwd, breakingSet, {
+        setId: breakingSet,
+        status: 'failed',
+        bisection: {
+          triggered: true,
+          breakingSet,
+          iterations,
+          completedAt: new Date().toISOString(),
+        },
+        lastUpdatedAt: new Date().toISOString(),
+      });
+    }
+  } catch {
+    // Non-critical: bisection result is still returned even if state write fails
+  }
+
+  return { breakingSet, iterations, testOutput: lastTestOutput };
+}
+
+// ────────────────────────────────────────────────────────────────
+// Single-Set Rollback (MERG-06)
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Revert a single set's merge commit using git revert -m 1 --no-edit.
+ * Reads MERGE-STATE.json to get the mergeCommit hash.
+ *
+ * @param {string} cwd - Git repo directory
+ * @param {string} setId - Set identifier
+ * @returns {{ reverted: boolean, revertCommit?: string, reason?: string, detail?: string }}
+ */
+function revertSetMerge(cwd, setId) {
+  // Read MERGE-STATE to get the merge commit hash
+  const state = readMergeState(cwd, setId);
+  if (!state || !state.mergeCommit) {
+    return {
+      reverted: false,
+      reason: 'no merge commit: missing mergeCommit in MERGE-STATE.json',
+      detail: state ? 'MERGE-STATE exists but mergeCommit field is not set' : 'No MERGE-STATE.json found',
+    };
+  }
+
+  const mergeCommitHash = state.mergeCommit;
+
+  try {
+    // -m 1 specifies parent 1 (base branch before merge)
+    execFileSync('git', ['revert', '-m', '1', '--no-edit', mergeCommitHash], {
+      cwd, encoding: 'utf-8', stdio: 'pipe',
+    });
+
+    // Get the revert commit hash
+    const revertHash = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd, encoding: 'utf-8', stdio: 'pipe',
+    }).trim();
+
+    return { reverted: true, revertCommit: revertHash };
+  } catch (err) {
+    const output = ((err.stdout || '') + (err.stderr || '')).toString();
+
+    // Abort any in-progress revert to leave repo clean
+    try { execFileSync('git', ['revert', '--abort'], { cwd, stdio: 'pipe' }); } catch { /* ok */ }
+
+    if (output.includes('CONFLICT') || output.includes('conflict')) {
+      return { reverted: false, reason: 'conflict', detail: output.trim() };
+    }
+    return { reverted: false, reason: 'error', detail: output.trim() };
+  }
+}
+
+/**
+ * Detect cascade impact of rolling back a set.
+ * Reads DAG.json to find sets that depend on setId AND have already been merged.
+ *
+ * @param {string} cwd - Git repo directory
+ * @param {string} setId - Set identifier being rolled back
+ * @returns {{ hasCascade: boolean, affectedSets: string[], recommendation: string }}
+ */
+function detectCascadeImpact(cwd, setId) {
+  // Read DAG.json
+  const dagPath = path.join(cwd, '.planning', 'DAG.json');
+  let dagData;
+  try {
+    dagData = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+  } catch {
+    return { hasCascade: false, affectedSets: [], recommendation: 'No DAG.json found -- cannot assess cascade impact' };
+  }
+
+  // Find sets that depend on setId (edges where setId is the "from" / dependency)
+  const dependentSetIds = [];
+  for (const edge of (dagData.edges || [])) {
+    if (edge.from === setId) {
+      dependentSetIds.push(edge.to);
+    }
+  }
+
+  if (dependentSetIds.length === 0) {
+    return { hasCascade: false, affectedSets: [], recommendation: 'No dependent sets in DAG' };
+  }
+
+  // Check which dependents have already been merged (status = 'complete' in MERGE-STATE)
+  const affectedSets = [];
+  for (const depSetId of dependentSetIds) {
+    const depState = readMergeState(cwd, depSetId);
+    if (depState && depState.status === 'complete') {
+      affectedSets.push(depSetId);
+    }
+  }
+
+  if (affectedSets.length === 0) {
+    return {
+      hasCascade: false,
+      affectedSets: [],
+      recommendation: `${dependentSetIds.length} dependent set(s) found but none have merged yet -- safe to rollback`,
+    };
+  }
+
+  return {
+    hasCascade: true,
+    affectedSets,
+    recommendation: `Rolling back ${setId} may affect ${affectedSets.length} already-merged dependent set(s): ${affectedSets.join(', ')}. Run integration tests after rollback and consider reverting dependent sets if tests fail.`,
+  };
+}
+
+// ────────────────────────────────────────────────────────────────
+// Agent Integration (MERG-01, MERG-02 completion)
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Integrate merger agent's semantic conflict findings into the detection report.
+ * Returns a new detection results object with the semantic field populated.
+ * Does NOT mutate the original detectionResults.
+ *
+ * @param {Object} detectionResults - Detection results from detectConflicts (semantic may be null)
+ * @param {Object} agentResults - Agent output with semantic_conflicts array
+ * @returns {Object} Updated detection results with semantic field populated
+ */
+function integrateSemanticResults(detectionResults, agentResults) {
+  // Deep-copy to avoid mutation
+  const result = JSON.parse(JSON.stringify(detectionResults));
+
+  if (agentResults && agentResults.semantic_conflicts) {
+    result.semantic = {
+      ran: true,
+      conflicts: agentResults.semantic_conflicts.map(sc => ({
+        description: sc.description,
+        sets: sc.sets || [],
+        confidence: sc.confidence,
+      })),
+    };
+  } else {
+    result.semantic = { ran: true, conflicts: [] };
+  }
+
+  return result;
+}
+
+/**
+ * Apply merger agent's resolutions, categorizing as tier 3 (applied) or tier 4 (escalated)
+ * based on confidence threshold.
+ *
+ * @param {Array} resolutions - Existing resolution array from resolveConflicts
+ * @param {Object} agentResults - Agent output with resolutions array
+ * @param {number} [confidenceThreshold=0.7] - Threshold for tier 3 vs tier 4
+ * @returns {Array<{conflict: string, tier: 3|4, resolved: boolean, confidence: number, resolution?: string, escalation?: string}>}
+ */
+function applyAgentResolutions(resolutions, agentResults, confidenceThreshold) {
+  const threshold = confidenceThreshold !== undefined ? confidenceThreshold : 0.7;
+
+  const agentResolutionMap = {};
+  if (agentResults && agentResults.resolutions) {
+    for (const ar of agentResults.resolutions) {
+      agentResolutionMap[ar.conflict] = ar;
+    }
+  }
+
+  const results = [];
+  for (const res of resolutions) {
+    const agentRes = agentResolutionMap[res.conflict];
+    if (agentRes) {
+      if (agentRes.confidence >= threshold) {
+        // Tier 3: AI-assisted resolution applied
+        results.push({
+          conflict: res.conflict,
+          tier: 3,
+          resolved: true,
+          confidence: agentRes.confidence,
+          resolution: agentRes.resolution,
+        });
+      } else {
+        // Tier 4: Human escalation
+        results.push({
+          conflict: res.conflict,
+          tier: 4,
+          resolved: false,
+          confidence: agentRes.confidence,
+          escalation: `Agent confidence ${agentRes.confidence} below threshold ${threshold} -- requires human review`,
+        });
+      }
+    } else {
+      // No agent resolution for this conflict -- keep as-is
+      results.push({ ...res });
+    }
+  }
+
+  return results;
+}
+
+// ────────────────────────────────────────────────────────────────
 // Module Exports
 // ────────────────────────────────────────────────────────────────
 
@@ -1273,6 +1610,18 @@ module.exports = {
   writeMergeState,
   readMergeState,
   updateMergeState,
+
+  // v2.0 Bisection Recovery (MERG-05)
+  bisectWave,
+  getPreWaveCommit,
+
+  // v2.0 Rollback (MERG-06)
+  revertSetMerge,
+  detectCascadeImpact,
+
+  // v2.0 Agent Integration (MERG-01, MERG-02 completion)
+  integrateSemanticResults,
+  applyAgentResolutions,
 
   // Preserved v1.0 Functions (MERG-04)
   runProgrammaticGate,
