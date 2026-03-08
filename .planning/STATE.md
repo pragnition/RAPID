@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: in-progress
+status: completed
 stopped_at: Completed 21-03-PLAN.md
-last_updated: "2026-03-08T09:55:03.783Z"
+last_updated: "2026-03-08T10:00:17.509Z"
 last_activity: 2026-03-08 — Completed 21-03 (Execute SKILL.md rewrite for Mark II)
 progress:
   total_phases: 26
