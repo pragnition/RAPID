@@ -4,7 +4,7 @@ milestone: v2.0
 milestone_name: Mark II
 status: completed
 stopped_at: Completed 22-05-PLAN.md
-last_updated: "2026-03-08T12:43:20.991Z"
+last_updated: "2026-03-08T13:30:08.287Z"
 last_activity: "2026-03-08 — Completed 22-05 (gap closure: speculative state-machine key_link removed)"
 progress:
   total_phases: 26
