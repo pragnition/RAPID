@@ -25,6 +25,37 @@ If `<set-id>` was not provided, use AskUserQuestion to ask:
 - **question:** "Which set to execute?"
 - **options:** List available sets from STATE.json
 
+### 0b.1: Check for --fix-issues flag
+
+If the user invoked `/rapid:execute <set-id> --fix-issues`, enter issue fix mode instead of normal execution:
+
+1. Load all open issues:
+   ```bash
+   node "${RAPID_TOOLS}" review list-issues <set-id> --status open
+   ```
+
+2. If no open issues: inform user "No open issues for set '{set-id}'." and exit.
+
+3. Present issue summary to user using AskUserQuestion:
+   - **question:** "{N} open issue(s) across {W} waves. Fix all or select?"
+   - **options:**
+     - "Fix all" -- description: "Spawn bugfix agent for all {N} open issues"
+     - "Select issues" -- description: "Choose which issues to fix"
+     - "Cancel" -- description: "Exit without fixing"
+
+4. For "Fix all" or selected issues: spawn a bugfix subagent (role: bugfix) with the issues as input. The bugfix agent will:
+   - Read each issue's file and description
+   - Apply targeted fixes
+   - Commit atomically
+   - Return COMPLETE with fixed/unfixable arrays
+
+5. After bugfix returns, update issue statuses:
+   ```bash
+   node "${RAPID_TOOLS}" review update-issue <set-id> <wave-id> <issue-id> fixed
+   ```
+
+6. Print summary of fixes and exit.
+
 ### 0c: Read STATE.json for set and wave information
 
 ```bash
@@ -322,6 +353,32 @@ Hard blocks: {count or "none"}
 Soft blocks: {count or "none"}
 ---------------------------------
 ```
+
+### Step 3g.1: Lean wave review
+
+After successful reconciliation (PASS or PASS_WITH_WARNINGS), run lean review automatically:
+
+```bash
+node "${RAPID_TOOLS}" review lean <set-id> <wave-id>
+```
+
+Parse the JSON output for `{ issues, autoFixed, needsAttention }`.
+
+**If autoFixed > 0 and needsAttention is empty:** Print silently:
+> Lean review: {autoFixed} issue(s) auto-fixed.
+
+Continue to next step.
+
+**If needsAttention is not empty:** Present each issue briefly, then use AskUserQuestion:
+- **question:** "Lean review found {N} issue(s) that could not be auto-fixed"
+- **options:**
+  - "Log and continue" -- description: "Record issues for later review via /rapid:review. Recommended."
+  - "Pause execution" -- description: "Stop here to investigate. Resume with /rapid:execute {set-id}."
+
+If "Log and continue": proceed to next step (issues are already logged in REVIEW-ISSUES.json).
+If "Pause execution": commit state and exit with resume instructions.
+
+**If reconciliation was FAIL:** Skip lean review entirely (wave needs re-execution first).
 
 ### Step 3h: Transition wave status
 
