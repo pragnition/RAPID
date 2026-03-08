@@ -26,6 +26,7 @@ const ROLE_TOOLS = {
   'judge': 'Read, Write, Grep, Glob',
   'bugfix': 'Read, Write, Edit, Bash, Grep, Glob',
   'uat': 'Read, Write, Bash, Grep, Glob',
+  'merger': 'Read, Write, Bash, Grep, Glob',
 };
 
 /**
@@ -47,6 +48,7 @@ const ROLE_DESCRIPTIONS = {
   'judge': 'RAPID judge agent -- rules on contested findings with ACCEPTED/DISMISSED/DEFERRED',
   'bugfix': 'RAPID bugfix agent -- fixes accepted bugs with atomic commits',
   'uat': 'RAPID UAT agent -- generates and executes acceptance test plans',
+  'merger': 'RAPID merger agent -- performs semantic conflict detection and AI-assisted resolution',
 };
 
 /**
