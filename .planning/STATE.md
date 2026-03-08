@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: completed
-stopped_at: Completed 22-05-PLAN.md
-last_updated: "2026-03-08T13:30:08.287Z"
+stopped_at: Phase 23 context gathered
+last_updated: "2026-03-08T13:47:06.080Z"
 last_activity: "2026-03-08 — Completed 22-05 (gap closure: speculative state-machine key_link removed)"
 progress:
   total_phases: 26
@@ -128,6 +128,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T12:43:20.988Z
-Stopped at: Completed 22-05-PLAN.md
-Resume file: None
+Last session: 2026-03-08T13:47:06.078Z
+Stopped at: Phase 23 context gathered
+Resume file: .planning/phases/23-merge-pipeline/23-CONTEXT.md
