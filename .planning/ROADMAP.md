@@ -480,7 +480,7 @@ Plans:
 **Plans**: 2 plans (Wave 1: DOCS.md commands+workflow+concepts, Wave 2: DOCS.md architecture+agents+libs+CLI+config + README.md)
 
 Plans:
-- [ ] 24-01-PLAN.md -- DOCS.md rewrite: introduction, installation, quick start, 17 command reference, workflow lifecycle, key concepts (DOCS-01) [Wave 1]
+- [x] 24-01-PLAN.md -- DOCS.md rewrite: introduction, installation, quick start, 17 command reference, workflow lifecycle, key concepts (DOCS-01) [Wave 1]
 - [ ] 24-02-PLAN.md -- DOCS.md architecture/agents/libraries/CLI/state-machine/config + README.md Mark II landing page (DOCS-01, DOCS-02) [Wave 2, depends: 24-01]
 
 ## Progress
@@ -515,4 +515,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 21. Execution Engine | 3/3 | Complete    | 2026-03-08 | - |
 | 22. Review Module | 5/5 | Complete    | 2026-03-08 | - |
 | 23. Merge Pipeline | 4/4 | Complete    | 2026-03-08 | - |
-| 24. Documentation | v2.0 | 0/2 | Not started | - |
+| 24. Documentation | v2.0 | 1/2 | In Progress | - |

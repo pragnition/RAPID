@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: completed
-stopped_at: Completed 23-04-PLAN.md
-last_updated: "2026-03-08T14:58:44.025Z"
-last_activity: 2026-03-08 — Completed 23-04 (CLI subcommands and merge SKILL.md orchestrator)
+status: in-progress
+stopped_at: Completed 24-01-PLAN.md
+last_updated: "2026-03-08T15:51:00.000Z"
+last_activity: 2026-03-08 — Completed 24-01 (DOCS.md commands, workflow, and key concepts)
 progress:
   total_phases: 26
   completed_phases: 24
   total_plans: 64
-  completed_plans: 63
-  percent: 98
+  completed_plans: 64
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 23 - Merge Pipeline (v2.0 Mark II)
+**Current focus:** Phase 24 - Documentation (v2.0 Mark II)
 
 ## Current Position
 
-Phase: 23 of 26 (Merge Pipeline)
-Plan: 4 of 4 in current phase (COMPLETE)
-Status: Phase 23 Complete
-Last activity: 2026-03-08 — Completed 23-04 (CLI subcommands and merge SKILL.md orchestrator)
+Phase: 24 of 26 (Documentation)
+Plan: 1 of 2 in current phase
+Status: Phase 24 In Progress
+Last activity: 2026-03-08 — Completed 24-01 (DOCS.md commands, workflow, and key concepts)
 
-Progress: [██████████] 98% (63/64 plans complete)
+Progress: [██████████] 100% (64/64 plans complete)
 
 ## Accumulated Context
 
@@ -105,6 +105,9 @@ Recent decisions affecting current work:
 - [Phase 23-merge-pipeline]: CLI rollback returns cascade warning JSON (no --force) for skill AskUserQuestion gate; --force bypasses after user confirms
 - [Phase 23-merge-pipeline]: Reviewer subagent removed from merge SKILL.md -- review handled by Phase 22 review module
 - [Phase 23-merge-pipeline]: Execute subcommand writes MERGE-STATE.json on successful merge for downstream bisection/rollback
+- [Phase 24]: Every DOCS.md command description derived from reading actual current SKILL.md, not v1.0 DOCS.md
+- [Phase 24]: State transitions verified against state-transitions.cjs source code
+- [Phase 24]: Version kept at 1.0.0 from plugin.json -- version bump is a packaging concern, not docs
 
 ### Pending Todos
 
@@ -136,6 +139,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T14:52:05.000Z
-Stopped at: Completed 23-04-PLAN.md
+Last session: 2026-03-08T15:51:00.000Z
+Stopped at: Completed 24-01-PLAN.md
 Resume file: None
