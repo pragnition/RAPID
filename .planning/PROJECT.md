@@ -45,7 +45,19 @@ Multiple developers using Claude Code can work on the same project simultaneousl
 
 ### Active
 
-(None yet — define with `/gsd:new-milestone`)
+#### Current Milestone: v2.1 Improvements & Fixes
+
+**Goal:** Streamline the RAPID workflow, remove GSD vestiges, reduce UX friction, and improve context efficiency through better subagent delegation.
+
+**Target features:**
+- GSD agent type decontamination in skill files
+- Streamlined workflow (init → auto-plan → set-init → discuss → wave-plan → execute → review → merge)
+- Parallel wave planning with dependency-aware sequencing
+- Plan verifier agent (coverage + implementability checks)
+- Numeric ID shorthand for set commands
+- Batched questioning during discuss phase
+- Context-efficient review with scoper delegation
+- Leaner review stage overall
 
 ### Out of Scope
 
@@ -93,11 +105,11 @@ v2.0 overhauled the entire workflow around Sets/Waves/Jobs hierarchy.
 | Adapt gsd_merge_agent for merger | Proven 5-level detection and tiered resolution for parallel branch merging | ✓ Good — L1-L4 detection + T1-T2 resolution working |
 | Hunter/Devils-Advocate/Judge pipeline | Adversarial multi-agent approach minimizes false negatives while pruning false positives | ✓ Good — 3-cycle iteration with scope narrowing |
 | Jobs = v1.0 plans in granularity | Proven granularity — contains multiple related tasks per job | ✓ Good — natural decomposition unit |
-| Defer /quick and /insert-job to v2.1 | Focus v2.0 on core workflow overhaul | ✓ Good — kept v2.0 scope manageable |
+| Defer /quick and /insert-job to v2.1 | Focus v2.0 on core workflow overhaul | ⚠️ Revisit — /quick may not be needed if workflow is streamlined |
 | Zod 3.24.4 for schemas | CommonJS compatibility (3.25+ breaks require) | ✓ Good — type-safe validation everywhere |
 | Hand-rolled state machine (~50 lines) | Simpler than XState, sufficient for hierarchical state tracking | ✓ Good — crash recovery + validated transitions |
 | STATE.json replaces STATE.md | Clean break, machine-readable source of truth | ✓ Good — no hybrid state confusion |
 | Sequential pipeline with parallel fan-out | Research → wave plan → parallel job planners, each producing validated artifacts | ✓ Good — clean handoff boundaries |
 
 ---
-*Last updated: 2026-03-09 after v2.0 milestone*
+*Last updated: 2026-03-09 after v2.1 milestone started*

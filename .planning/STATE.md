@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Mark II
-status: shipped
-stopped_at: v2.0 Mark II milestone archived
+milestone: v2.1
+milestone_name: Improvements & Fixes
+status: active
+stopped_at: null
 last_updated: "2026-03-09"
-last_activity: 2026-03-09 — v2.0 Mark II milestone shipped and archived
+last_activity: 2026-03-09 — Milestone v2.1 started
 progress:
-  total_phases: 9
-  completed_phases: 9
-  total_plans: 29
-  completed_plans: 29
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,13 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Planning next milestone
+**Current focus:** Defining requirements for v2.1
 
 ## Current Position
 
-Milestone: v2.0 Mark II — SHIPPED 2026-03-09
-Status: Milestone archived to .planning/milestones/
-Next step: `/gsd:new-milestone` to start v2.1
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-09 — Milestone v2.1 started
 
 ## Accumulated Context
 
@@ -47,7 +48,6 @@ None.
 
 ### Blockers/Concerns
 
-- Phase 09.1 (marketplace packaging) still partial from v1.0 — 1 missing plan (09.1-03 marketplace submission)
 - Token cost for 3-agent adversarial review needs monitoring in production use
 
 ### Quick Tasks Completed
@@ -65,5 +65,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: v2.0 Mark II milestone archived
+Stopped at: Milestone v2.1 started — defining requirements
 Resume file: None
