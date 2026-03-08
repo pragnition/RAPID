@@ -56,7 +56,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 20: Wave Planning** - /discuss for implementation vision capture, wave planner, job planner with contract validation (completed 2026-03-06)
 - [x] **Phase 21: Execution Engine** - Parallel job execution within waves, atomic commits, per-job progress tracking, orchestrator dispatch (completed 2026-03-08)
 - [x] **Phase 22: Review Module** - Unit test agent, bug hunting pipeline (hunter/devils-advocate/judge), UAT with Playwright automation (completed 2026-03-08)
-- [ ] **Phase 23: Merge Pipeline** - 5-level conflict detection, 4-tier resolution cascade, DAG-ordered merging, bisection recovery, rollback
+- [x] **Phase 23: Merge Pipeline** - 5-level conflict detection, 4-tier resolution cascade, DAG-ordered merging, bisection recovery, rollback (completed 2026-03-08)
 - [ ] **Phase 24: Documentation** - Comprehensive DOCS.md and README.md for Mark II
 
 ## Phase Details
@@ -513,5 +513,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 20. Wave Planning | 3/3 | Complete    | 2026-03-06 | - |
 | 21. Execution Engine | 3/3 | Complete    | 2026-03-08 | - |
 | 22. Review Module | 5/5 | Complete    | 2026-03-08 | - |
-| 23. Merge Pipeline | 3/4 | In Progress|  | - |
+| 23. Merge Pipeline | 4/4 | Complete   | 2026-03-08 | - |
 | 24. Documentation | v2.0 | 0/1 | Not started | - |
