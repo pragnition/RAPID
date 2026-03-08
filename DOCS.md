@@ -480,4 +480,201 @@ Usage:
 
 Subagents spawned: 5 research agents, research-synthesizer, roadmapper.
 
+## Workflow Lifecycle
+
+The Mark II workflow follows a structured lifecycle with a per-set loop at its center:
+
+```
+INSTALL -> INIT -> CONTEXT -> PLAN -> [ per set: SET-INIT -> DISCUSS -> WAVE-PLAN -> EXECUTE -> REVIEW ] -> MERGE -> CLEANUP -> NEW-MILESTONE
+```
+
+### Stage-by-Stage Breakdown
+
+| Stage | Command | What Happens |
+|-------|---------|--------------|
+| **Install** | `/rapid:install` | One-time plugin setup. Configures RAPID_TOOLS env var and validates prerequisites. |
+| **Initialize** | `/rapid:init` | Deep project discovery, parallel research (5 agents), roadmap generation with sets/waves/jobs structure. |
+| **Context** | `/rapid:context` | Codebase analysis for brownfield projects. Generates style guide, conventions, and architecture docs. |
+| **Plan** | `/rapid:plan` | Decomposes work into parallelizable sets with contracts, dependency DAG, and file ownership. |
+| **Set Init** | `/rapid:set-init` | Creates isolated worktree and branch per set, generates scoped CLAUDE.md. |
+| **Discuss** | `/rapid:discuss` | Developer captures implementation vision for a wave via structured discussion. |
+| **Wave Plan** | `/rapid:wave-plan` | Research agent investigates, wave planner produces high-level plan, job planners detail each job. |
+| **Execute** | `/rapid:execute` | Parallel job execution within waves via subagents or agent teams, with per-wave reconciliation. |
+| **Review** | `/rapid:review` | Unit test + adversarial bug hunt (hunter/advocate/judge) + UAT pipeline. |
+| **Merge** | `/rapid:merge` | 5-level conflict detection, 4-tier resolution, DAG-ordered merge with integration gates. |
+| **Cleanup** | `/rapid:cleanup` | Removes completed worktrees, optionally deletes branches. |
+| **New Milestone** | `/rapid:new-milestone` | Archives current milestone, bumps version, re-runs research and roadmap for new scope. |
+
+### Parallelism Model
+
+- **Sets run in parallel** across developers. Each set has its own git worktree and branch.
+- **Waves execute sequentially** within a set. Wave 1 must complete before Wave 2 begins.
+- **Jobs execute in parallel** within a wave. Each job has its own subagent and modifies only its assigned files.
+- **Review gates** prevent merging untested code. The adversarial bug hunt pipeline (hunter/advocate/judge) provides quality assurance.
+
+### Per-Set Loop Detail
+
+```
+SET-INIT                          Create worktree + branch + scoped CLAUDE.md
+    |
+    v
+DISCUSS (per wave)                Capture implementation vision, identify gray areas
+    |
+    v
+WAVE-PLAN (per wave)              Research -> Wave plan -> Job plans -> Contract validation
+    |
+    v
+EXECUTE (per wave)                Parallel job agents -> Reconciliation -> Lean review
+    |
+    v
+REVIEW (per set)                  Unit test -> Bug hunt (3 cycles) -> UAT
+    |
+    v
+[Set ready for merge]
+```
+
+## Key Concepts
+
+### 1. Sets
+
+Independent workstreams that run in isolated git worktrees. Each set has a DEFINITION.md describing its scope, file ownership, and acceptance criteria, plus a CONTRACT.json defining its API surface. Sets within the same wave execute in parallel; sets in later waves depend on earlier ones. In Mark II, sets go through a full lifecycle: `pending -> planning -> executing -> reviewing -> merging -> complete`.
+
+### 2. Waves
+
+Dependency-ordered execution groups within sets. Wave 1 jobs have no dependencies and run first. Wave 2 jobs depend on Wave 1 outputs. Within a set, waves execute sequentially. Wave reconciliation runs between waves to validate that all planned files were delivered and commits follow conventions. Waves have their own state lifecycle: `pending -> discussing -> planning -> executing -> reconciling -> complete`.
+
+### 3. Jobs
+
+Granular work units within waves (equivalent to v1.0 "plans"). Each job has a JOB-PLAN.md with detailed implementation steps, file assignments, and acceptance criteria. Jobs within a wave execute in parallel via subagents, each working in the same worktree but modifying only its assigned files. Jobs have a simple lifecycle: `pending -> executing -> complete` (or `failed -> executing` for retries).
+
+### 4. State Machine
+
+Mark II tracks all project state in a hierarchical JSON structure (STATE.json) with lock-protected atomic writes. The hierarchy is:
+
+```
+ProjectState
+  +-- milestones[]
+      +-- MilestoneState (id, name)
+          +-- sets[]
+              +-- SetState
+                  +-- waves[]
+                      +-- WaveState
+                          +-- jobs[]
+                              +-- JobState
+```
+
+State transitions are validated -- attempting to skip states (e.g., `pending` to `complete` without going through `executing`) produces a clear error. All schemas are Zod-validated. State updates survive context resets, enabling `/rapid:status` to always show accurate progress.
+
+**State transition diagrams:**
+
+```
+Set:  pending -> planning -> executing -> reviewing -> merging -> complete
+
+Wave: pending -> discussing -> planning -> executing -> reconciling -> complete
+      failed -> executing (retry)
+
+Job:  pending -> executing -> complete
+      pending -> executing -> failed
+      failed -> executing (retry)
+```
+
+### 5. Milestones
+
+Version cycles with archive/re-plan lifecycle. A milestone (e.g., "v2.0 Mark II") contains all sets, waves, and jobs for that version. When a milestone is complete, `/rapid:new-milestone` archives it and creates a new milestone with fresh research and roadmapping. Unfinished sets can be carried forward with deep copy isolation.
+
+### 6. Interface Contracts
+
+Machine-verifiable JSON schemas that define the API surface between sets. Contracts specify:
+- **Exports:** Functions and types a set provides (name, file, params, returns)
+- **Imports:** Functions and types consumed from other sets
+- **Behavioral invariants:** Conditions that must always hold (e.g., "authenticate returns null, never throws, for invalid tokens")
+- **Side effects:** Observable effects (e.g., "writes session to disk", "emits auth:login event")
+
+Contracts are validated automatically during wave planning (contract validation gate) and before merge (programmatic gate).
+
+### 7. Set Initialization
+
+The `/rapid:set-init` command creates an isolated development environment per set:
+- Creates a git worktree at `.rapid-worktrees/{set-name}` on branch `rapid/{set-name}`
+- Generates a scoped CLAUDE.md containing only the set's contracts, relevant context, and style guide
+- Spawns a set planner to produce SET-OVERVIEW.md with implementation approach
+
+This ensures each developer (or Claude instance) works in full isolation with only relevant context loaded.
+
+### 8. Wave Discussion
+
+The `/rapid:discuss` command captures developer implementation vision before autonomous planning begins. It identifies 5-8 gray areas (tradeoffs, edge cases, integration points) and runs a structured 4-question deep-dive loop for each selected area. Every question includes a "Let Claude decide" option for delegation. The output is WAVE-CONTEXT.md, which downstream planners use as their primary guidance.
+
+### 9. Wave Planning Pipeline
+
+A sequential pipeline that produces detailed implementation plans:
+1. **Research:** Wave researcher investigates implementation specifics, using Context7 MCP for documentation
+2. **Wave plan:** Wave planner produces WAVE-PLAN.md with per-job summaries, file assignments, and coordination notes
+3. **Job plans:** Job planners (one per job, parallel for 3+) produce detailed {jobId}-PLAN.md files
+4. **Contract validation:** All job plans validated against interface contracts with escalation for violations
+
+### 10. Review Pipeline
+
+A multi-stage quality assurance pipeline:
+- **Unit testing:** Test plan generation with approval gate, then test writing and execution
+- **Adversarial bug hunt:** Three-agent pipeline with up to 3 iteration cycles:
+  - **Bug hunter** performs broad static analysis with risk/confidence scoring
+  - **Devils advocate** (read-only) challenges findings with counter-evidence from the code
+  - **Judge** produces final rulings: ACCEPTED, DISMISSED, or DEFERRED (escalated to developer)
+  - **Bugfix agent** fixes accepted bugs; re-hunt narrows scope to modified files only
+- **UAT:** Acceptance testing with browser automation (Chrome DevTools MCP or Playwright), mixing automated and human-verified steps
+
+### 11. 5-Level Conflict Detection
+
+The merge pipeline detects conflicts at five escalating levels of sophistication:
+1. **L1 Textual:** Standard git diff-based textual conflicts
+2. **L2 Structural:** Function-scope mapping via diff hunk headers -- detects when two sets modify the same function
+3. **L3 Dependency:** Analyzes import/require changes to detect broken dependency chains
+4. **L4 API:** 3-way comparison (ancestor vs branch vs base) using `git merge-base` to detect incompatible API changes
+5. **L5 Semantic:** AI-powered analysis via the merger agent for subtle behavioral conflicts that pass textual checks
+
+### 12. 4-Tier Resolution Cascade
+
+Detected conflicts are resolved through an escalating cascade:
+1. **Tier 1 (Deterministic):** Automatic resolution for trivial conflicts (whitespace, import ordering, additive-only changes)
+2. **Tier 2 (Heuristic):** Pattern-based resolution using ownership information and contract data
+3. **Tier 3 (AI-assisted):** Merger agent resolves with confidence scoring; resolutions above 0.7 threshold are applied automatically
+4. **Tier 4 (Human escalation):** Low-confidence resolutions are escalated to the developer with proposed resolution and reasoning
+
+### 13. Bisection Recovery
+
+When an integration test fails after merging a wave of sets, RAPID automatically runs binary search to isolate which set introduced the failure. The bisection saves and restores `.planning/` state to `os.tmpdir()` during search, avoiding git stash issues with untracked files. After identifying the breaking set, the developer can rollback, investigate, or abort.
+
+### 14. Rollback
+
+Cascade-aware revert for problematic merges. Before rolling back a set, RAPID checks for dependent sets that have already been merged and warns about cascade impact. The `--force` flag bypasses the cascade warning after the developer confirms via AskUserQuestion.
+
+### 15. Planning Gates
+
+Enforcement that all sets in a wave must be planned before execution begins. GATES.json tracks planning and execution state transitions per wave, preventing premature execution. Wave 2 planning can overlap with Wave 1 execution.
+
+### 16. Wave Reconciliation
+
+Mandatory validation between execution waves. After all jobs in a wave complete, reconciliation verifies:
+- All planned files were delivered (file existence check per JOB-PLAN.md)
+- Commits follow the required format
+- No file ownership violations
+
+Results are PASS, PASS_WITH_WARNINGS, or FAIL. A lean review runs automatically on successful reconciliation to catch obvious issues early.
+
+### 17. File Ownership
+
+Every file that could be modified belongs to exactly one set. Cross-set file access is tracked via CONTRIBUTIONS.json, where a set can declare intent to modify a file owned by another set (with section, priority, and intent metadata). Ownership violations are detected during wave reconciliation and flagged during merge review. This prevents merge conflicts from parallel development.
+
+## Prerequisites
+
+The following tools are validated by `/rapid:install` and `/rapid:init`:
+
+| Tool | Minimum Version | Required | Purpose |
+|------|----------------|----------|---------|
+| **Node.js** | 18+ | Yes | Runtime for tool libraries and CLI |
+| **git** | 2.30+ | Yes | Worktree support for parallel development |
+| **jq** | 1.6+ | No | Optional JSON processing utilities |
+| **Claude Code** | Latest | Yes | Plugin host environment |
+
 <!-- PLAN 02: Architecture, agents, libraries, CLI reference, state machine, configuration sections will be added below -->
