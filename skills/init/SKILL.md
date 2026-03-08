@@ -1,5 +1,4 @@
 ---
-name: init
 description: Initialize a new RAPID project with research and roadmap generation
 allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
 ---

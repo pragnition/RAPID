@@ -1,5 +1,4 @@
 ---
-name: wave-plan
 description: Run the wave planning pipeline -- research, wave plan, job plans, and contract validation
 allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
 ---

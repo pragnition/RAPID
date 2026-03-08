@@ -1,5 +1,4 @@
 ---
-name: set-init
 description: Initialize a set for development -- creates isolated worktree, generates scoped CLAUDE.md, and runs set planner
 allowed-tools: Bash(rapid-tools:*), Read, AskUserQuestion, Agent
 ---

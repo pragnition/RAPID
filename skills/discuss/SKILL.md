@@ -1,5 +1,4 @@
 ---
-name: discuss
 description: Capture developer implementation vision for a wave via structured discussion
 allowed-tools: Bash(rapid-tools:*), Read, AskUserQuestion, Glob, Grep, Agent
 ---
