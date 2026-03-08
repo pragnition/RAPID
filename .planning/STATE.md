@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: completed
-stopped_at: Completed 21-03-PLAN.md
-last_updated: "2026-03-08T10:00:17.509Z"
+stopped_at: Phase 22 context gathered
+last_updated: "2026-03-08T11:14:51.534Z"
 last_activity: 2026-03-08 — Completed 21-03 (Execute SKILL.md rewrite for Mark II)
 progress:
   total_phases: 26
@@ -116,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T09:55:03.781Z
-Stopped at: Completed 21-03-PLAN.md
-Resume file: None
+Last session: 2026-03-08T11:14:51.532Z
+Stopped at: Phase 22 context gathered
+Resume file: .planning/phases/22-review-module/22-CONTEXT.md
