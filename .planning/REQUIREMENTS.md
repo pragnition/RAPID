@@ -66,8 +66,8 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 
 ### Merge Pipeline
 
-- [ ] **MERG-01**: /merge merges completed sets back to main with 5-level conflict detection (textual, structural, dependency, API, semantic)
-- [ ] **MERG-02**: 4-tier resolution cascade (deterministic > heuristic > AI-assisted > human escalation)
+- [x] **MERG-01**: /merge merges completed sets back to main with 5-level conflict detection (textual, structural, dependency, API, semantic)
+- [x] **MERG-02**: 4-tier resolution cascade (deterministic > heuristic > AI-assisted > human escalation)
 - [ ] **MERG-03**: Per-set merge state tracking integrated with hierarchical state machine
 - [ ] **MERG-04**: Sets merge in dependency-graph order via DAG
 - [ ] **MERG-05**: Bisection recovery isolates breaking set interaction via binary search
@@ -271,8 +271,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REVW-07 | Phase 22 | Complete |
 | REVW-08 | Phase 22 | Complete |
 | REVW-09 | Phase 22 | Complete |
-| MERG-01 | Phase 23 | Pending |
-| MERG-02 | Phase 23 | Pending |
+| MERG-01 | Phase 23 | Complete |
+| MERG-02 | Phase 23 | Complete |
 | MERG-03 | Phase 23 | Pending |
 | MERG-04 | Phase 23 | Pending |
 | MERG-05 | Phase 23 | Pending |
