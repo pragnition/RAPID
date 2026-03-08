@@ -68,11 +68,16 @@ Commands:
   execute job-status <set>        Show per-wave/per-job statuses from STATE.json
   execute commit-state [message]  Commit STATE.json with a given message
   merge review <set>              Run programmatic gate + write REVIEW.md
-  merge execute <set>             Merge set branch into main (--no-ff)
-  merge status                    Show merge pipeline status (per-set verdicts)
+  merge execute <set>             Merge set branch into main (--no-ff) + update MERGE-STATE
+  merge status                    Show merge pipeline status (per-set verdicts + MERGE-STATE)
   merge integration-test          Run post-wave integration test suite on main
   merge order                     Show merge order from DAG (wave-grouped)
-  merge update-status <set> <status>  Update merge status in registry (reviewing/cleanup/merged/failed)
+  merge update-status <set> <status>  Update merge status in registry + MERGE-STATE
+  merge detect <set>              Run 5-level conflict detection (returns JSON)
+  merge resolve <set>             Run resolution cascade on detected conflicts
+  merge bisect <waveNum>          Run bisection recovery for a failed wave
+  merge rollback <set> [--force]  Revert a merged set's merge commit (cascade check)
+  merge merge-state <set>         Show MERGE-STATE.json for a set
   set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
   set-init list-available        List pending sets without worktrees
   wave-plan resolve-wave <waveId>              Find wave in state, output milestone/set/wave JSON
@@ -2026,6 +2031,7 @@ async function handleExecute(cwd, subcommand, args) {
 
 async function handleMerge(cwd, subcommand, args) {
   const path = require('path');
+  const fs = require('fs');
   const merge = require('../lib/merge.cjs');
   const wt = require('../lib/worktree.cjs');
 
@@ -2073,6 +2079,22 @@ async function handleMerge(cwd, subcommand, args) {
           }
           return reg;
         });
+        // Also update MERGE-STATE.json with merge commit and status
+        try {
+          merge.updateMergeState(cwd, setName, {
+            status: 'complete',
+            mergeCommit: result.commitHash,
+            completedAt: new Date().toISOString(),
+          });
+        } catch {
+          // MERGE-STATE may not exist yet if detection was skipped; create it
+          merge.writeMergeState(cwd, setName, {
+            setId: setName,
+            status: 'complete',
+            mergeCommit: result.commitHash,
+            completedAt: new Date().toISOString(),
+          });
+        }
       }
       output(JSON.stringify(result));
       break;
@@ -2082,11 +2104,13 @@ async function handleMerge(cwd, subcommand, args) {
       const registry = wt.loadRegistry(cwd);
       const statuses = {};
       for (const [name, entry] of Object.entries(registry.worktrees || {})) {
+        const mergeState = merge.readMergeState(cwd, name);
         statuses[name] = {
           phase: entry.phase || 'unknown',
           mergeStatus: entry.mergeStatus || 'pending',
           mergedAt: entry.mergedAt || null,
           mergeCommit: entry.mergeCommit || null,
+          mergeState: mergeState || null,
         };
       }
       output(JSON.stringify(statuses));
@@ -2118,12 +2142,278 @@ async function handleMerge(cwd, subcommand, args) {
         }
         return reg;
       });
+      // Also update MERGE-STATE.json status
+      try {
+        merge.updateMergeState(cwd, setName, { status });
+      } catch {
+        // MERGE-STATE may not exist yet -- create minimal state
+        merge.writeMergeState(cwd, setName, {
+          setId: setName,
+          status,
+          startedAt: new Date().toISOString(),
+        });
+      }
       output(JSON.stringify({ updated: true, set: setName, mergeStatus: status }));
       break;
     }
 
+    case 'detect': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools merge detect <set-name>');
+        process.exit(1);
+      }
+      const baseBranch = wt.detectMainBranch(cwd);
+      // Create/update MERGE-STATE with detecting status
+      try {
+        merge.updateMergeState(cwd, setName, { status: 'detecting' });
+      } catch {
+        merge.writeMergeState(cwd, setName, {
+          setId: setName,
+          status: 'detecting',
+          startedAt: new Date().toISOString(),
+        });
+      }
+      // Run 5-level detection (L5 semantic = null, filled by agent)
+      const detectionResults = merge.detectConflicts(cwd, setName, baseBranch);
+      // Update MERGE-STATE with detection results
+      merge.updateMergeState(cwd, setName, {
+        detection: {
+          textual: {
+            ran: true,
+            conflicts: (detectionResults.textual && detectionResults.textual.conflicts) || [],
+          },
+          structural: {
+            ran: true,
+            conflicts: (detectionResults.structural && detectionResults.structural.conflicts) || [],
+          },
+          dependency: {
+            ran: true,
+            conflicts: (detectionResults.dependency && detectionResults.dependency.conflicts) || [],
+          },
+          api: {
+            ran: true,
+            conflicts: (detectionResults.api && detectionResults.api.conflicts) || [],
+          },
+          semantic: detectionResults.semantic || undefined,
+        },
+      });
+      output(JSON.stringify(detectionResults));
+      break;
+    }
+
+    case 'resolve': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools merge resolve <set-name>');
+        process.exit(1);
+      }
+      // Load detection results from MERGE-STATE.json
+      const mergeState = merge.readMergeState(cwd, setName);
+      if (!mergeState || !mergeState.detection) {
+        error(`No detection results found for set '${setName}'. Run 'merge detect ${setName}' first.`);
+        process.exit(1);
+      }
+      // Update status to resolving
+      merge.updateMergeState(cwd, setName, { status: 'resolving' });
+      // Flatten detection results into allConflicts array for resolveConflicts()
+      const allConflicts = [];
+      const det = mergeState.detection;
+      if (det.textual && det.textual.conflicts) {
+        for (const c of det.textual.conflicts) {
+          allConflicts.push({ ...c, level: 'textual' });
+        }
+      }
+      if (det.structural && det.structural.conflicts) {
+        for (const c of det.structural.conflicts) {
+          allConflicts.push({ ...c, level: 'structural' });
+        }
+      }
+      if (det.dependency && det.dependency.conflicts) {
+        for (const c of det.dependency.conflicts) {
+          allConflicts.push({ ...c, level: 'dependency' });
+        }
+      }
+      if (det.api && det.api.conflicts) {
+        for (const c of det.api.conflicts) {
+          allConflicts.push({ ...c, level: 'api' });
+        }
+      }
+      // Load OWNERSHIP.json and DAG.json for heuristic context
+      let ownership = {};
+      let dagOrder = [];
+      try {
+        const ownershipPath = path.join(cwd, '.planning', 'sets', setName, 'OWNERSHIP.json');
+        if (fs.existsSync(ownershipPath)) {
+          ownership = JSON.parse(fs.readFileSync(ownershipPath, 'utf-8'));
+        }
+      } catch { /* no ownership data */ }
+      try {
+        const dagPath = path.join(cwd, '.planning', 'DAG.json');
+        if (fs.existsSync(dagPath)) {
+          const dagData = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+          dagOrder = dagData.order || dagData.edges || [];
+        }
+      } catch { /* no DAG data */ }
+      // Run resolution cascade
+      const resolutionResults = merge.resolveConflicts({ allConflicts }, { ownership, dagOrder });
+      // Compute resolution summary
+      const tier1Count = resolutionResults.filter(r => r.tier === 1 && r.resolved).length;
+      const tier2Count = resolutionResults.filter(r => r.tier === 2 && r.resolved).length;
+      const unresolvedCount = resolutionResults.filter(r => !r.resolved).length;
+      // Update MERGE-STATE with resolution counts
+      merge.updateMergeState(cwd, setName, {
+        resolution: {
+          tier1Resolved: tier1Count,
+          tier2Resolved: tier2Count,
+          unresolvedForAgent: unresolvedCount,
+          total: resolutionResults.length,
+        },
+      });
+      output(JSON.stringify({
+        results: resolutionResults,
+        summary: {
+          tier1Resolved: tier1Count,
+          tier2Resolved: tier2Count,
+          unresolvedForAgent: unresolvedCount,
+          total: resolutionResults.length,
+        },
+      }));
+      break;
+    }
+
+    case 'bisect': {
+      const waveNumStr = args[0];
+      if (!waveNumStr) {
+        error('Usage: rapid-tools merge bisect <waveNum>');
+        process.exit(1);
+      }
+      const waveNum = parseInt(waveNumStr, 10);
+      if (isNaN(waveNum) || waveNum < 1) {
+        error('Wave number must be a positive integer');
+        process.exit(1);
+      }
+      const baseBranch = wt.detectMainBranch(cwd);
+      // Get wave-grouped merge order
+      const waves = merge.getMergeOrder(cwd);
+      if (waveNum > waves.length) {
+        error(`Wave ${waveNum} does not exist. There are ${waves.length} waves.`);
+        process.exit(1);
+      }
+      const waveSets = waves[waveNum - 1]; // 0-indexed
+      // Find merged sets and their pre-wave commit from MERGE-STATE.json
+      const mergedSets = [];
+      let earliestMergeTime = null;
+      let preWaveCommit = null;
+      for (const setName of waveSets) {
+        const ms = merge.readMergeState(cwd, setName);
+        if (ms && ms.status === 'complete' && ms.mergeCommit) {
+          mergedSets.push(setName);
+          // Track earliest merge to find preWaveCommit
+          if (ms.startedAt && (!earliestMergeTime || ms.startedAt < earliestMergeTime)) {
+            earliestMergeTime = ms.startedAt;
+          }
+        }
+      }
+      if (mergedSets.length === 0) {
+        error(`No merged sets found in wave ${waveNum}. Nothing to bisect.`);
+        process.exit(1);
+      }
+      // Get preWaveCommit: commit before earliest merge in this wave
+      // Use git log to find commit before the earliest merge commit
+      try {
+        const firstMergedState = merge.readMergeState(cwd, mergedSets[0]);
+        if (firstMergedState && firstMergedState.mergeCommit) {
+          preWaveCommit = require('child_process').execFileSync(
+            'git', ['rev-parse', firstMergedState.mergeCommit + '~1'],
+            { cwd, encoding: 'utf-8', stdio: 'pipe' }
+          ).trim();
+        }
+      } catch {
+        // Fallback: use getPreWaveCommit
+        preWaveCommit = merge.getPreWaveCommit(cwd);
+      }
+      // Run bisection
+      const result = merge.bisectWave(cwd, baseBranch, mergedSets, preWaveCommit);
+      // Update MERGE-STATE for breaking set
+      if (result.breakingSet) {
+        try {
+          merge.updateMergeState(cwd, result.breakingSet, {
+            bisection: {
+              isBreaking: true,
+              iterations: result.iterations,
+              detectedAt: new Date().toISOString(),
+            },
+          });
+        } catch { /* may not have MERGE-STATE */ }
+      }
+      output(JSON.stringify(result));
+      break;
+    }
+
+    case 'rollback': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools merge rollback <set-name> [--force]');
+        process.exit(1);
+      }
+      const forceFlag = args.includes('--force');
+      // Check cascade impact first
+      const cascadeResult = merge.detectCascadeImpact(cwd, setName);
+      if (cascadeResult.hasCascade && !forceFlag) {
+        // Output warning JSON with affected sets -- caller decides whether to proceed
+        output(JSON.stringify({
+          rolledBack: false,
+          cascadeWarning: true,
+          affectedSets: cascadeResult.affectedSets,
+          recommendation: cascadeResult.recommendation,
+          hint: 'Use --force to rollback despite cascade impact',
+        }));
+        break;
+      }
+      // Proceed with rollback
+      const result = merge.revertSetMerge(cwd, setName);
+      if (result.reverted) {
+        // Update MERGE-STATE status to reverted
+        try {
+          merge.updateMergeState(cwd, setName, { status: 'reverted' });
+        } catch {
+          merge.writeMergeState(cwd, setName, {
+            setId: setName,
+            status: 'reverted',
+          });
+        }
+        // Update registry mergeStatus to reverted
+        await wt.registryUpdate(cwd, (reg) => {
+          if (reg.worktrees[setName]) {
+            reg.worktrees[setName].mergeStatus = 'reverted';
+          }
+          return reg;
+        });
+      }
+      output(JSON.stringify({
+        rolledBack: result.reverted,
+        revertCommit: result.revertCommit || null,
+        reason: result.reason || null,
+        detail: result.detail || null,
+        cascadeImpact: cascadeResult,
+      }));
+      break;
+    }
+
+    case 'merge-state': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools merge merge-state <set-name>');
+        process.exit(1);
+      }
+      const state = merge.readMergeState(cwd, setName);
+      output(JSON.stringify(state || {}));
+      break;
+    }
+
     default:
-      error(`Unknown merge subcommand: ${subcommand}. Use: review, execute, status, integration-test, order, update-status`);
+      error(`Unknown merge subcommand: ${subcommand}. Use: review, execute, status, integration-test, order, update-status, detect, resolve, bisect, rollback, merge-state`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
