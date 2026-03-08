@@ -9,7 +9,6 @@
  *
  * Depends on:
  *   - execute.cjs: getChangedFiles
- *   - state-machine.cjs: readState (future use)
  */
 
 const fs = require('fs');
