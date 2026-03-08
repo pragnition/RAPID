@@ -462,12 +462,13 @@ Plans:
   3. Per-set merge state is tracked in the hierarchical state machine and sets merge in dependency-graph order via DAG
   4. When a merge introduces failures, bisection recovery isolates the breaking set interaction via binary search
   5. Rollback with cascade revert can undo a problematic merge and re-merge remaining sets cleanly
-**Plans**: TBD
+**Plans**: 4 plans (Wave 1: merge library TDD + merger agent role, Wave 2: bisection/rollback TDD, Wave 3: CLI + SKILL.md)
 
 Plans:
-- [ ] 23-01: TBD
-- [ ] 23-02: TBD
-- [ ] 23-03: TBD
+- [ ] 23-01-PLAN.md -- Merge library v2.0 rewrite: 5-level detection (L1-L4), 4-tier resolution (T1-T2), MERGE-STATE.json, DAG ordering, preserved v1.0 functions (MERG-01, MERG-02, MERG-03, MERG-04) [Wave 1, TDD]
+- [ ] 23-02-PLAN.md -- Merger agent role (role-merger.md) and assembler registration (MERG-01, MERG-02) [Wave 1]
+- [ ] 23-03-PLAN.md -- Bisection recovery, rollback, cascade detection, agent integration functions (MERG-05, MERG-06) [Wave 2, depends: 23-01, TDD]
+- [ ] 23-04-PLAN.md -- CLI subcommands rewrite and merge SKILL.md v2.0 pipeline orchestrator (MERG-01, MERG-02, MERG-03, MERG-04, MERG-05, MERG-06) [Wave 3, depends: 23-01, 23-02, 23-03]
 
 ### Phase 24: Documentation
 **Goal**: Mark II is comprehensively documented for both new users and developers extending RAPID
@@ -512,5 +513,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 20. Wave Planning | 3/3 | Complete    | 2026-03-06 | - |
 | 21. Execution Engine | 3/3 | Complete    | 2026-03-08 | - |
 | 22. Review Module | 5/5 | Complete    | 2026-03-08 | - |
-| 23. Merge Pipeline | v2.0 | 0/3 | Not started | - |
+| 23. Merge Pipeline | v2.0 | 0/4 | Not started | - |
 | 24. Documentation | v2.0 | 0/1 | Not started | - |
