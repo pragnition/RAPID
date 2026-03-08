@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: executing
-stopped_at: Completed 22-04-PLAN.md
-last_updated: "2026-03-08T12:26:00.000Z"
-last_activity: "2026-03-08 — Completed 22-04 (/rapid:review SKILL.md full pipeline orchestrator)"
+status: completed
+stopped_at: Completed 22-05-PLAN.md
+last_updated: "2026-03-08T12:43:20.991Z"
+last_activity: "2026-03-08 — Completed 22-05 (gap closure: speculative state-machine key_link removed)"
 progress:
   total_phases: 26
   completed_phases: 23
-  total_plans: 59
-  completed_plans: 58
+  total_plans: 60
+  completed_plans: 59
   percent: 98
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 Phase: 23 of 26 (Merge Pipeline)
 Plan: 0 of 3 in current phase
 Status: Phase 22 Complete, Phase 23 Not Started
-Last activity: 2026-03-08 — Completed 22-04 (/rapid:review SKILL.md full pipeline orchestrator)
+Last activity: 2026-03-08 — Completed 22-05 (gap closure: speculative state-machine key_link removed)
 
-Progress: [██████████] 98% (58/59 plans complete)
+Progress: [██████████] 98% (59/60 plans complete)
 
 ## Accumulated Context
 
@@ -96,6 +96,7 @@ Recent decisions affecting current work:
 - [Phase 22]: 3-cycle bugfix iteration limit with scope narrowing to prevent infinite re-hunt loops
 - [Phase 22]: DEFERRED judge rulings present hunter and advocate evidence side-by-side for developer arbitration via AskUserQuestion
 - [Phase 22]: UAT browser automation tool configurable via config.json browserAutomation field with AskUserQuestion fallback
+- [Phase 22]: Remove speculative state-machine key_link rather than implement it -- state transitions handled via CLI in SKILL.md orchestrators
 
 ### Pending Todos
 
@@ -127,6 +128,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T12:26:00.000Z
-Stopped at: Completed 22-04-PLAN.md
+Last session: 2026-03-08T12:43:20.988Z
+Stopped at: Completed 22-05-PLAN.md
 Resume file: None
