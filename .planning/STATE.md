@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 22-02-PLAN.md
-last_updated: "2026-03-08T12:11:12.848Z"
-last_activity: 2026-03-08 — Completed 22-02 (6 review agent roles with assembler registration)
+stopped_at: Completed 22-03-PLAN.md
+last_updated: "2026-03-08T12:17:01.963Z"
+last_activity: 2026-03-08 — Completed 22-03 (review CLI subcommands and lean review integration)
 progress:
   total_phases: 26
   completed_phases: 22
   total_plans: 59
-  completed_plans: 56
-  percent: 95
+  completed_plans: 57
+  percent: 97
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 22 of 26 (Review Module)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In Progress
-Last activity: 2026-03-08 — Completed 22-02 (6 review agent roles with assembler registration)
+Last activity: 2026-03-08 — Completed 22-03 (review CLI subcommands and lean review integration)
 
-Progress: [██████████] 95% (56/59 plans complete)
+Progress: [██████████] 97% (57/59 plans complete)
 
 ## Accumulated Context
 
@@ -91,6 +91,7 @@ Recent decisions affecting current work:
 - [Phase 22]: devils-advocate is strictly read-only (Read, Grep, Glob) -- no Write, Bash, or Edit
 - [Phase 22]: judge has Write for REVIEW-BUGS.md but no Bash -- rulings based on static analysis only
 - [Phase 22]: unit-tester and uat use CHECKPOINT-then-COMPLETE flow for test plan approval before execution
+- [Phase 22]: Lean review verifies planned artifacts by parsing JOB-PLAN.md tables and checking file existence in worktree
 
 ### Pending Todos
 
@@ -122,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T12:11:12.846Z
-Stopped at: Completed 22-02-PLAN.md
+Last session: 2026-03-08T12:17:01.961Z
+Stopped at: Completed 22-03-PLAN.md
 Resume file: None
