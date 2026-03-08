@@ -4,7 +4,7 @@ milestone: v2.0
 milestone_name: Mark II
 status: completed
 stopped_at: Completed 24-02-PLAN.md (Phase 24 complete)
-last_updated: "2026-03-08T15:59:25.674Z"
+last_updated: "2026-03-08T16:03:19.264Z"
 last_activity: 2026-03-08 — Completed 24-02 (DOCS.md architecture + README.md landing page)
 progress:
   total_phases: 26
