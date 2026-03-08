@@ -47,7 +47,7 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 
 ### Execution
 
-- [ ] **EXEC-01**: /execute runs parallel job execution within a wave via subagents or agent teams
+- [x] **EXEC-01**: /execute runs parallel job execution within a wave via subagents or agent teams
 - [x] **EXEC-02**: Executor agent executes jobs with atomic commits producing bisectable git history
 - [x] **EXEC-03**: Per-job progress tracking with state updates surviving context resets
 - [x] **EXEC-04**: Orchestrator dispatches commands based on current state and spawns appropriate subagents
@@ -258,7 +258,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WAVE-04 | Phase 20 | Complete |
 | WAVE-05 | Phase 20 | Complete |
 | WAVE-06 | Phase 20 | Complete |
-| EXEC-01 | Phase 21 | Pending |
+| EXEC-01 | Phase 21 | Complete |
 | EXEC-02 | Phase 21 | Complete |
 | EXEC-03 | Phase 21 | Complete |
 | EXEC-04 | Phase 21 | Complete |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: in-progress
-stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-03-07T10:21:44Z"
-last_activity: 2026-03-07 — Completed 21-01 (Execution engine library extensions)
+stopped_at: Completed 21-03-PLAN.md
+last_updated: "2026-03-08T09:55:03.783Z"
+last_activity: 2026-03-08 — Completed 21-03 (Execute SKILL.md rewrite for Mark II)
 progress:
   total_phases: 26
-  completed_phases: 21
+  completed_phases: 22
   total_plans: 55
-  completed_plans: 52
-  percent: 95
+  completed_plans: 54
+  percent: 98
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 21 of 24 (Execution Engine)
-Plan: 2 of 3 in current phase
-Status: In Progress
-Last activity: 2026-03-07 — Completed 21-02 (Job execution CLI subcommands)
+Plan: 3 of 3 in current phase (COMPLETE)
+Status: Phase Complete
+Last activity: 2026-03-08 — Completed 21-03 (Execute SKILL.md rewrite for Mark II)
 
-Progress: [██████████] 95% (52/55 plans complete)
+Progress: [██████████] 98% (54/55 plans complete)
 
 ## Accumulated Context
 
@@ -82,6 +82,9 @@ Recent decisions affecting current work:
 - [Phase 21]: Job-level reconciliation checks file existence and commit format per JOB-PLAN.md, not DEFINITION.md
 - [Phase 21]: Missing files and commit violations are soft blocks; hard blocks reserved for future test-based checks
 - [Phase 21]: buildJobTeammateConfig assembles inline prompt (not via assembleExecutorPrompt) with job plan content
+- [Phase 21]: Execute skill is dispatch-only -- discuss and plan steps are NOT included, precondition check prompts user to run them if missing
+- [Phase 21]: Dual-mode execution locked at Step 1 for entire run; generic teams fallback re-executes entire wave via subagents
+- [Phase 21]: STATE.json committed at wave boundaries only, not per-job transition; job handoffs at .planning/waves/{setId}/{waveId}/{jobId}-HANDOFF.md
 
 ### Pending Todos
 
@@ -113,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T10:21:44Z
-Stopped at: Completed 21-01-PLAN.md
-Resume file: .planning/phases/21-execution-engine/21-01-SUMMARY.md
+Last session: 2026-03-08T09:55:03.781Z
+Stopped at: Completed 21-03-PLAN.md
+Resume file: None

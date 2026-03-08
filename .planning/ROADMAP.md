@@ -54,7 +54,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 18: Init and Project Setup** - Overhauled /init with greenfield/brownfield detection, research agents, roadmapper, and /new-milestone (completed 2026-03-06)
 - [x] **Phase 19: Set Lifecycle** - /set-init worktree creation, scoped CLAUDE.md, set planning, status dashboard, pause/resume, cleanup (completed 2026-03-06)
 - [x] **Phase 20: Wave Planning** - /discuss for implementation vision capture, wave planner, job planner with contract validation (completed 2026-03-06)
-- [ ] **Phase 21: Execution Engine** - Parallel job execution within waves, atomic commits, per-job progress tracking, orchestrator dispatch
+- [x] **Phase 21: Execution Engine** - Parallel job execution within waves, atomic commits, per-job progress tracking, orchestrator dispatch (completed 2026-03-08)
 - [ ] **Phase 22: Review Module** - Unit test agent, bug hunting pipeline (hunter/devils-advocate/judge), UAT with Playwright automation
 - [ ] **Phase 23: Merge Pipeline** - 5-level conflict detection, 4-tier resolution cascade, DAG-ordered merging, bisection recovery, rollback
 - [ ] **Phase 24: Documentation** - Comprehensive DOCS.md and README.md for Mark II
@@ -508,7 +508,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 18. Init and Project Setup | 4/4 | Complete   | 2026-03-06 | - |
 | 19. Set Lifecycle | 3/3 | Complete    | 2026-03-06 | - |
 | 20. Wave Planning | 3/3 | Complete    | 2026-03-06 | - |
-| 21. Execution Engine | 2/3 | In Progress|  | - |
+| 21. Execution Engine | 3/3 | Complete   | 2026-03-08 | - |
 | 22. Review Module | v2.0 | 0/3 | Not started | - |
 | 23. Merge Pipeline | v2.0 | 0/3 | Not started | - |
 | 24. Documentation | v2.0 | 0/1 | Not started | - |
