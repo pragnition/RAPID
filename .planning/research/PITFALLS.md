@@ -1,296 +1,276 @@
 # Pitfalls Research
 
-**Domain:** Metaprompting framework overhaul -- adding Sets/Waves/Jobs hierarchy, review module, and adapted merger to existing RAPID plugin
-**Researched:** 2026-03-06
-**Confidence:** HIGH (based on existing codebase analysis, gsd_merge_agent specs, review module specs, and multi-agent systems research)
+**Domain:** Adding workflow simplification, parallel planning, plan verification, and context optimization to an existing Claude Code plugin system (RAPID v2.1)
+**Researched:** 2026-03-09
+**Confidence:** HIGH (based on direct codebase analysis of 17 skills, 21 libraries, 14 agent role modules, plus operational user feedback in todo.md)
 
-Note: This supersedes the 2026-03-03 research. Previous pitfalls about general RAPID architecture (worktree branch exclusivity, lock files, context overflow, etc.) remain valid but are not repeated here. This document focuses specifically on pitfalls when ADDING the v2.0 Mark II features to the existing system.
+Note: This supersedes the 2026-03-06 v2.0 research. Previous pitfalls about state machine design, merge adaptation, and Playwright UAT were addressed in v2.0 implementation. This document focuses specifically on pitfalls when ADDING v2.1 features (workflow streamlining, GSD decontamination, parallel wave planning, plan verifier, numeric ID shorthand, batched questioning, context-efficient review) to the existing v2.0 system.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: State Schema Bifurcation During Hierarchy Migration
+### Pitfall 1: Incomplete GSD Decontamination Causing Runtime Agent Identity Confusion
 
 **What goes wrong:**
-The current state management uses a flat markdown-based STATE.md with regex parsing (`**Field:** value` pattern via `state.cjs`). Migrating from "phases" to Sets > Waves > Jobs requires hierarchical state -- a Job has a status, its parent Wave has a status derived from its Jobs, its parent Set has a status derived from its Waves. The flat STATE.md format cannot represent this nesting. Developers attempt to "extend" the existing format, creating a hybrid where some state is flat markdown and some is nested JSON, leading to parsing failures and data loss on context resets.
+GSD references exist at three distinct layers and missing any one layer causes agents to spawn with wrong identity prefixes. The user's todo.md documents this exact failure: agents spawning as `gsd-phase-researcher`, `gsd-wave planner`, and `gsd-review` at runtime. The codebase currently has:
+1. **Source code:** `gsd_state_version: 1.0` in `src/lib/init.cjs:53` and its test assertion in `init.test.cjs:90-92`
+2. **Planning artifacts:** 60+ GSD references across `.planning/research/` files, `.planning/phases/` context and research documents -- these get loaded into agent context during research synthesis and wave planning, leaking the GSD identity into agent prompts
+3. **Runtime environment:** The user's Claude Code installation at `~/.claude/` has the GSD framework installed (get-shit-done plugin) which defines agent types like `gsd-phase-researcher`. When RAPID skills spawn agents using the Agent tool, Claude Code may resolve agent type names from the GSD registry if RAPID's own naming is ambiguous or if the prompt lacks strong identity anchoring
+
+The `assembler.cjs` generates frontmatter with `name: rapid-{role}` (line 65), but this only applies to agents assembled through the formal assembler pipeline. The wave-plan, discuss, review, execute, and init skills all construct agent prompts INLINE within their SKILL.md files -- they read role modules from `src/modules/roles/` and paste them into Agent tool calls. These inline prompts do not go through the assembler and therefore miss the `name: rapid-{role}` frontmatter entirely. Claude Code then falls back to its own agent type resolution, which may match GSD agent types from the user's installed plugins.
 
 **Why it happens:**
-The existing `stateGet`/`stateUpdate` functions in `state.cjs` use line-by-line regex matching. This works for flat key-value pairs but cannot represent tree-structured state. The temptation is to keep the existing format "working" while layering new state on top, rather than making a clean break to a structured format.
+The decontamination is treated as a simple find-and-replace when it is actually a three-layer problem (source, planning artifacts, runtime environment). Developers fix the obvious layer (source code) and miss the less obvious layers (archived planning documents that get loaded as agent context, and the runtime agent name resolution in Claude Code).
 
 **How to avoid:**
-Replace STATE.md with a JSON-based state file (STATE.json) from the start. The gsd_merge_agent already uses this pattern (`state.json` with schema validation on every read/write). Define the full state schema upfront:
-```json
-{
-  "project": { "milestone": "v2.0", "status": "active" },
-  "sets": {
-    "auth": {
-      "status": "executing",
-      "branch": "set/auth",
-      "worktree": "/path/to/worktree",
-      "waves": {
-        "w1": {
-          "status": "complete",
-          "jobs": {
-            "j1": { "status": "complete", "commits": ["abc123"] },
-            "j2": { "status": "executing" }
-          }
-        }
-      }
-    }
-  }
-}
-```
-Keep the `stateGet`/`stateUpdate` API surface but reimplement against JSON. Add a migration function that converts existing STATE.md to STATE.json for brownfield RAPID projects.
+1. **Source code sweep:** grep the entire `src/` tree for `gsd`, `GSD`, `get-shit-done`, `get.shit.done` (case-insensitive). Fix `init.cjs:53` (rename `gsd_state_version` to `rapid_state_version`) and update `init.test.cjs:90-92` to match. Run all tests afterward.
+2. **Planning artifact sweep:** Search `.planning/` for GSD references. For historical/research files in `.planning/phases/` and `.planning/research/`, these can stay as-is since they document v2.0 development history. But ensure no active SKILL.md or role module loads these files as context for new agents.
+3. **Agent identity anchoring in skills:** Ensure every Agent tool invocation in every SKILL.md includes explicit identity: "You are a RAPID agent named rapid-{role}." The role modules already say "RAPID agent" but the skill-level prompt construction should reinforce this with a consistent preamble.
+4. **Integration test:** After decontamination, run a smoke test of each skill that spawns agents (init, wave-plan, execute, review) and verify the agent type names displayed in the Claude Code UI start with "rapid-" not "gsd-".
 
 **Warning signs:**
-- Writing regex patterns with more than 2 levels of nesting
-- Adding "section" parsing to state.cjs (e.g., "parse the Jobs section under Wave 2 under Set auth")
-- State reads returning `null` for fields that definitely exist
-- Two state files existing side by side (STATE.md and STATE.json)
+- Agent spawn messages in Claude Code UI showing "gsd-" prefixed names
+- Agents referring to "GSD workflow" or "phases" instead of "sets/waves/jobs"
+- Subagents attempting to use `gsd-tools.cjs` instead of `rapid-tools.cjs` via RAPID_TOOLS
+- Test assertions still referencing `gsd_state_version`
 
 **Phase to address:**
-Phase 1 (State Machine) -- must be the first thing built. Everything downstream depends on hierarchical state.
+First phase -- GSD decontamination must happen before any other workflow changes, because agents with confused identity will mis-execute all subsequent features.
 
 ---
 
-### Pitfall 2: Merge Agent Namespace and Path Collisions
+### Pitfall 2: State Transition Table Gaps When Adding Plan Verification Stage
 
 **What goes wrong:**
-The gsd_merge_agent uses `.gsd-merge/` for state, `gsd-merge/integrate-*` for branches, and `phase/NN-*` for branch naming. RAPID uses `.planning/` for state, `.rapid-worktrees/` for worktrees, and `set/name` for branches. Naively porting the merge agent creates two parallel state systems that don't know about each other. Worse, the merge agent's branch naming (`phase/NN-*`) conflicts with RAPID's set-based branching, and the merge agent's `state.json` (in `.gsd-merge/`) conflicts conceptually with RAPID's own state machine.
+The current wave state machine in `state-transitions.cjs` defines a linear progression: `pending -> discussing -> planning -> executing -> reconciling -> complete`. Adding a plan verification stage as a new state (e.g., `verified` or `validated`) between `planning` and `executing` requires coordinated updates across four tightly coupled files:
+
+1. `state-transitions.cjs` -- the `WAVE_TRANSITIONS` map (lines 12-20) must include the new state and its allowed transitions
+2. `state-schemas.cjs` -- the `WaveStatus` Zod enum must include the new status string, or writes will fail Zod validation
+3. `state-machine.cjs` -- the `WAVE_STATUS_ORDER` ordinal map (lines 141-144) must assign the correct ordinal, and `deriveWaveStatus()` (lines 182-197) must handle the new status in its derivation logic
+4. `rapid-tools.cjs` -- CLI commands that check wave status must recognize the new state
+
+If any of these four files is missed, the system enters an inconsistent state. A wave stuck in `validated` with no valid transition out will block the entire set's execution. Zod will reject STATE.json writes containing the unrecognized status. The ordinal map will return `undefined` for the new status, causing `isDerivedStatusValid()` (lines 161-168) to return `false` and silently skip set status updates.
 
 **Why it happens:**
-The gsd_merge_agent was built as a standalone plugin for GSD, not as a module within RAPID. Its scripts (26 TypeScript files in `scripts/`), schemas, and state management are self-contained -- it has its own `state.ts`, `config.ts`, `plan.ts` which shadow RAPID's existing `state.cjs`, `core.cjs`, `plan.cjs`. The TypeScript/CJS mismatch (gsd uses `.ts`, RAPID uses `.cjs`) adds friction. The gsd_merge_agent has its own hooks directory, its own skill definitions (4 skills: merge, merge-abort, merge-report, merge-status), and its own npm dependencies.
+The state machine is distributed across four files for separation of concerns (schemas, transitions, derivation, CLI). This is good design for maintenance but dangerous for additive changes -- adding a state is a cross-cutting concern that must touch all four files atomically.
 
 **How to avoid:**
-Do NOT port the gsd_merge_agent as a standalone subsystem. Extract the algorithmic components and integrate them into RAPID's existing module structure:
-- Conflict detection logic (from `conflict-classify.ts`, `detect-api.ts`, `detect-deps.ts`, `detect-structural.ts`) becomes functions in a new `src/lib/merge/` directory using RAPID's CJS format
-- Resolution cascade logic (from `resolve-deterministic.ts`, `resolve-heuristic.ts`, `resolve-ai.ts`) becomes modules under the same directory
-- State for merge sessions lives as a nested object inside RAPID's main STATE.json (under a `merge` key per set), not a separate `.gsd-merge/state.json`
-- Branch naming uses RAPID's existing `set/name` convention, not `phase/NN-*`
-- The bisection and rollback algorithms (from `bisect.ts`, `rollback.ts`) are ported as utility functions, not as standalone workflows
-- Merge skills become RAPID skills (`/rapid:merge`, `/rapid:merge-status`) not separate `/merge` commands
-
-Maintain a clear mapping document: "gsd_merge_agent component X -> RAPID module Y".
+1. **Strong recommendation: Do NOT add a new state.** Implement the plan verifier as a sub-step within the `planning` state. The wave stays in `planning` until verification passes, then transitions to `executing`. The verification result is an artifact (VERIFICATION-REPORT.md), not a state. This approach requires zero changes to the state machine.
+2. **If a new state IS required:** Create a checklist that must be followed:
+   - Add to `WAVE_TRANSITIONS` in `state-transitions.cjs`
+   - Add to `WaveStatus` Zod enum in `state-schemas.cjs`
+   - Add ordinal to `WAVE_STATUS_ORDER` in `state-machine.cjs`
+   - Update `deriveWaveStatus()` if the new status should be derivable from child statuses
+   - Update any status-checking logic in `rapid-tools.cjs` CLI
+   - Update SKILL.md files that hardcode status checks (wave-plan Step 2, discuss Step 2, execute Step 0c, review Step 0c all check wave/set status)
+   - Write transition tests FIRST, run them, watch them fail, then add the state
+3. **Run the full state machine test suite:** `node --test src/lib/state-machine.test.cjs && node --test src/lib/state-transitions.test.cjs && node --test src/lib/state-schemas.test.cjs` after any state change.
 
 **Warning signs:**
-- Two `state.json` files in different directories
-- Branch naming patterns that don't match the rest of RAPID
-- Import paths crossing between gsd_merge_agent scripts and RAPID lib
-- Having to "sync" state between two different state stores
-- `.gsd-merge/` directory appearing in RAPID projects
+- Zod validation errors when writing STATE.json with a new status
+- `isDerivedStatusValid()` returning false for what should be valid progressions
+- Skills checking for the old status list and missing the new one (e.g., execute skill rejects a wave in `validated` because it only accepts `planning`)
+- Tests in `state-machine.test.cjs` or `state-transitions.test.cjs` failing after changes
 
 **Phase to address:**
-Phase 3 (Merger Adaptation) -- but the state integration decision must be locked in Phase 1 (State Machine) since the merge state schema needs to be part of the unified state design.
+Plan verification phase -- but strongly recommend the sub-step approach (no new state) as the lower-risk path.
 
 ---
 
-### Pitfall 3: Bug Hunting Pipeline Token Explosion
+### Pitfall 3: Parallel Wave Planning Creating Race Conditions on Shared Artifacts
 
 **What goes wrong:**
-The hunter/devils-advocate/judge pipeline requires 3 serial agent invocations per review cycle, with each agent needing full codebase context. For a non-trivial codebase, the hunter alone consumes 50-100K tokens reading files + 10-30K generating findings. The devils-advocate then needs those findings PLUS re-reads the codebase (another 50-100K). The judge needs both reports PLUS codebase access. A single review cycle can cost $15-45 on Opus, and the spec says "iterate from the top till the judge judges there are no bugs" -- creating an unbounded loop. Three iterations costs $45-135 per review. Research confirms agent teams use approximately 7x more tokens than standard sessions.
+The v2.1 goal of parallel wave planning means multiple wave-plan invocations running simultaneously for different waves within the same set. The state machine itself is lock-protected (via proper-lockfile in `transitionWave()`, state-machine.cjs line 275), so STATUS transitions are race-safe. However, the planning ARTIFACTS that wave-plan produces have a collision risk:
+
+1. **VALIDATION-REPORT.md** -- Currently written to `.planning/sets/{setId}/VALIDATION-REPORT.md` (wave-plan SKILL.md Step 6, line 255). Two parallel wave-plan runs for different waves both write to this same path, causing last-write-wins data loss.
+2. **Git commits** -- Wave-plan SKILL.md Step 7 runs `git add ".planning/waves/${SET_ID}/${WAVE_ID}/"` then `git commit`. Two concurrent git commits can fail with `error: cannot lock ref 'HEAD'` race. Git serializes commits via the HEAD lockfile, but the second commit may fail rather than retry.
+3. **OWNERSHIP.json** -- If wave planning produces ownership updates (from contract validation), concurrent writes to `.planning/sets/OWNERSHIP.json` could corrupt the file.
 
 **Why it happens:**
-The adversarial pattern is designed for thoroughness, not efficiency. Each agent is a separate subagent with its own 200K context window, so codebase context cannot be shared -- it must be re-read by each agent independently. The scoring system in the draft prompts ("maximize your score", "+3 points for each true positive found") incentivizes agents to be exhaustive rather than focused, generating more findings and more analysis. The draft prompts in `hunter.md` say "Cast a WIDE net" and "it is better to flag a false positive than to miss a real bug" -- this is the correct bias for the hunter but creates volume that cascades through the pipeline.
+The state machine was designed with concurrency protection (locks, atomic writes). But the SKILL.md-level orchestration was designed for sequential execution -- it writes artifacts to fixed paths without considering concurrent invocations. The artifact paths are hardcoded in the natural language instructions of SKILL.md, not in the CLI tool where locking could be added.
 
 **How to avoid:**
-1. **Scope bug hunting to the diff, not the full codebase.** Each review should only analyze files changed in the current wave/job, not the entire project. The existing `execute.cjs` already has a `getChangedFiles` function that can provide this scoping.
-2. **Set a hard iteration cap (max 2 cycles).** After 2 rounds, any remaining DEFERRED items become tickets, not re-hunt targets. Make this configurable but default to 2.
-3. **Use Sonnet for the hunter and devils-advocate.** Only the judge needs Opus-level reasoning. Sonnet is 5x cheaper per token. The hunter's job is pattern recognition (Sonnet excels); the DA's job is verification (also pattern-based). Only the judge requires nuanced judgment.
-4. **Pre-filter with static analysis.** Run linter, type-checker, and any project-specific lint rules before spawning agents. Remove findings that tools can catch mechanically. No need to spend tokens on "missing type annotation" when `tsc --noEmit` catches it.
-5. **Pass structured JSON between agents, not markdown reports.** The hunter's output to the DA should be a JSON array of `{ id, file, line, category, risk, confidence, description, reproduction }` objects validated against a schema. This eliminates parsing ambiguity (see Pitfall 7).
-6. **Remove the gamified scoring from prompts.** The "+3 for true positive, -2 for missed" language causes agents to over-report to pad scores. Replace with clear criteria: "Report only findings where you can identify a concrete code path to failure."
+1. **Move VALIDATION-REPORT.md to wave directory:** Change the path from `.planning/sets/{setId}/VALIDATION-REPORT.md` to `.planning/waves/{setId}/{waveId}/VALIDATION-REPORT.md`. Since each wave writes to its own subdirectory, this eliminates the collision. Update both the SKILL.md and the CLI `validate-contracts` subcommand.
+2. **Serialize git commits with retry:** Add a retry loop around the git commit in wave-plan Step 7: try `git commit`, if it fails with a lock error, wait 1-2 seconds and retry up to 3 times. Alternatively, each wave-plan run stages and commits its own wave directory independently.
+3. **Lock shared artifact writes:** If any artifact must remain at the set level, use the existing `acquireLock()` from `lock.cjs` before writing.
+4. **Test parallel scenarios:** Write an integration test that spawns two wave-plan operations on different waves in the same set and verifies both produce correct artifacts without corruption.
 
 **Warning signs:**
-- Single review cycle exceeding $20
-- Hunter generating more than 20 findings per wave review (indicates over-reporting)
-- More than 2 review iterations before convergence
-- Devils-advocate CONFIRMING more than 50% of findings (indicates hunter is too conservative, or DA is rubber-stamping)
-- Total review cost exceeding execution cost for the same wave
+- VALIDATION-REPORT.md containing results for the wrong wave
+- Git commit failures with `cannot lock ref 'HEAD'` during parallel wave planning
+- OWNERSHIP.json containing partial or corrupted data
+- One wave's planning artifacts overwriting another's
 
 **Phase to address:**
-Phase 4 (Review Module) -- token budgets and scoping rules must be part of the initial design, not retrofitted.
+Parallel wave planning phase. The VALIDATION-REPORT.md path fix should be the first change when enabling parallel planning.
 
 ---
 
-### Pitfall 4: Playwright UAT Flakiness in Claude Code Plugin Context
+### Pitfall 4: Context Window Exhaustion in Review Pipeline From Centralized File Loading
 
 **What goes wrong:**
-Playwright UAT tests in a Claude Code plugin context face unique challenges: (a) the plugin runs inside Claude Code's sandbox, which may restrict browser process spawning, (b) the dev server must be running before tests execute but the plugin cannot assume it is, (c) test timeouts interact badly with Claude Code's own response timeouts (Bash tool default 120s), and (d) browser lifecycle (launch/close) failures leave zombie Chromium processes that consume memory and block future test runs. The spec calls for "automated" vs "human" UAT steps, but the boundary between these is fluid -- a test that works locally may fail in a worktree with different port assignments.
+The review SKILL.md is 790 lines. The orchestrating skill spawns up to 7 subagent types (unit-tester, bug-hunter, devils-advocate, judge, bugfix, UAT, plus potentially a scoper). For each subagent, the orchestrator currently:
+- Reads the role module via `cat src/modules/roles/role-*.md` (50-150 lines each)
+- Reads context files: WAVE-CONTEXT.md, CONTRACT.json, SET-OVERVIEW.md
+- Reads JOB-PLAN.md files (one per job, 50-100 lines each)
+- For the bug hunt pipeline: passes source file contents inline and previous stage results
+
+For a wave with 5 jobs touching 5 files each, the orchestrator's context consumption grows to 50K+ tokens before the adversarial pipeline even starts. The 3-cycle bug hunt (hunter + advocate + judge + bugfix per cycle) multiplies this by 4 agents x 3 cycles = 12 additional agent spawns, each receiving accumulated context from previous stages.
+
+The user's todo.md explicitly flags this: "currently the agents eat quite a lot of context, we need to find a way to make use of more subagents/agent teams" and "for the review, perhaps the review agent should spawn a scoper as well so the context length doesn't get eaten up."
 
 **Why it happens:**
-Playwright assumes it controls the full execution environment -- it launches browsers, manages processes, handles signals. Claude Code plugins run inside a constrained agent environment where shell commands have timeouts (120s default, 600s max), processes can be killed mid-execution, and the working directory might be a worktree (not the main repo). The existing `playwright-cli` skill in `.claude/skills/` exists but its integration with review workflows and multi-worktree environments is untested territory.
+The current review skill loads all source file CONTENTS into the orchestrator's context to pass inline to subagents. This was a reasonable approach at small scale but becomes the primary bottleneck at larger scale. The orchestrator becomes a context-window chokepoint because it must hold enough information to construct intelligent prompts for each subagent.
 
 **How to avoid:**
-1. Always use `npx playwright test` with `--reporter=json` for machine-parseable results. Never parse human-readable Playwright output.
-2. Add explicit server health checks before running tests: hit the server URL with a retry loop (3 attempts, 2s apart) before launching the test suite. If the server isn't running, start it in the background and wait for health check to pass.
-3. Set Playwright's own timeout (30s default) LOWER than Claude Code's Bash tool timeout to ensure Playwright reports failures before Claude Code kills the process. Use `timeout: 30000` in Playwright config, and `timeout: 120000` in the Bash tool call.
-4. Use `browser.close()` in a `finally` block and add a cleanup step that kills orphan Chromium processes: `pkill -f chromium || true` after every test run.
-5. Pin tests to a single browser (Chromium). Multi-browser testing adds flakiness without proportional value in this context.
-6. For "automated" vs "human" UAT classification: default to "human" for anything involving visual regression, animations, complex drag-and-drop, or interactions that require judgment. Only tag as "automated" when the assertion is purely data-driven (text content, HTTP status, element presence, form submission).
-7. Isolate Playwright config per worktree -- each worktree gets its own `playwright.config.ts` with unique base URLs derived from the set's port allocation.
-8. Use Playwright's `webServer` config option to auto-start the dev server rather than managing it manually.
+1. **Scoper-first pattern:** Spawn a scoper subagent BEFORE the review pipeline. The scoper reads all source files, computes the review scope (changed files + one-hop dependents), and returns a structured summary: file paths, key function signatures, dependency map, and a brief per-file summary (3-5 lines per file). The orchestrator receives only this summary (~2K tokens for 20 files), not the full source (~30K tokens).
+2. **Subagents load their own files:** Instead of passing source file contents inline in the Agent prompt, pass FILE PATHS and let subagents use the Read tool to load them from disk. Each subagent has its own fresh 200K context window. This shifts the context cost from the orchestrator (shared, accumulating) to each subagent (fresh, independent).
+3. **Stage results compression:** After each pipeline stage, extract only the actionable structured data (findings array, test results array) and discard verbose output (full test runner logs, raw agent reasoning). Pass the compressed structured data to the next stage.
+4. **Lean default, full opt-in:** Change the review default from "All stages" to "Unit test + lean review" for wave-level review. Full adversarial bug hunt becomes opt-in for set-level or pre-merge review.
 
 **Warning signs:**
-- Tests passing locally but failing in worktrees
-- "Browser closed unexpectedly" or "Target page, context or browser has been closed" errors
-- Zombie Chromium processes accumulating (check with `ps aux | grep chromium`)
-- Timeouts that don't produce actionable error messages (killed by Bash tool, not by Playwright)
-- Port collision errors between worktrees running UAT simultaneously
+- Orchestrator running into context window limits during review
+- Review subagents returning CHECKPOINT because they ran out of context mid-analysis
+- Subagent outputs becoming increasingly shallow in later pipeline stages
+- Total review cost exceeding $30 for a single wave
 
 **Phase to address:**
-Phase 4 (Review Module) -- but Playwright infrastructure decisions (port allocation, config template) should be settled in the set-init phase since UAT depends on deterministic server configuration.
+Context-efficient review phase. The scoper pattern and file-path delegation should be designed as a unit, not as independent changes.
 
 ---
 
-### Pitfall 5: State Loss and Inconsistency Across Context Resets
+### Pitfall 5: Numeric ID Shorthand Creating Inconsistent UX Across Skills
 
 **What goes wrong:**
-Claude Code sessions are ephemeral -- when context resets (compaction, new conversation, or crash), all in-memory state is lost. The v2.0 workflow has multi-step operations (discuss > plan > execute > review per wave, iterating across waves, with bug hunt iterations inside review) that span multiple context resets. If state is partially written when a reset occurs, the next session finds an inconsistent state: a Wave marked "executing" with only 2 of 5 Jobs completed, or a review cycle mid-iteration with the hunter's report written but the DA not yet spawned. The new session cannot determine whether to resume, restart, or abort.
+The v2.1 feature of numeric ID shorthand (e.g., `/set-init 1` instead of `/set-init set-01-foundation`) must work consistently across 7+ skills that accept entity IDs: set-init, discuss, wave-plan, execute, review, merge, and status. If numeric resolution is implemented per-skill in the SKILL.md natural language instructions:
+- Each skill independently interprets "1" -- some as 0-indexed, some as 1-indexed, some as prefix match
+- When a new skill is added, the developer must remember to copy the resolution logic
+- Edge cases diverge: skill A handles "1" when set names start with numbers, skill B does not
+- Claude's interpretation of natural language resolution instructions is non-deterministic -- the same instruction may produce different behaviors across invocations
+
+If numeric resolution is implemented in the CLI (`rapid-tools.cjs`) but not all skills are updated to use it, some skills accept numeric IDs and others reject them with "not found" errors.
 
 **Why it happens:**
-The current `stateUpdate` function is atomic for single fields but there is no transaction concept. A wave execution involves updating multiple related fields: wave status, individual job statuses, commit references, and potentially merge state. These updates happen at different points during execution via separate `stateUpdate` calls. If a context reset occurs between updating the wave status to "executing" and updating individual job statuses, the state is internally inconsistent. The gsd_merge_agent handles this with a `mode` field (active/paused/conflicted/completed/aborted) but RAPID's current state model has no equivalent.
+The path of least resistance is to add numeric resolution to the first skill that needs it (set-init, per the todo.md) and plan to "roll it out" to other skills later. But "later" becomes "never" because each skill works individually, and the inconsistency is only noticed when users try different commands.
 
 **How to avoid:**
-1. **Atomic state transitions.** A `transitionWaveStatus(setId, waveId, fromStatus, toStatus, jobUpdates)` function that writes ALL related state changes in a single JSON file write, guarded by the existing lock mechanism. Never update wave status and job statuses in separate writes.
-2. **Last-operation breadcrumb.** Every state write includes a `lastOperation` field:
-   ```json
-   {
-     "operation": "execute-jobs",
-     "setId": "auth",
-     "waveId": "w1",
-     "completedJobs": ["j1", "j2"],
-     "pendingJobs": ["j3", "j4", "j5"],
-     "timestamp": "2026-03-06T10:30:00Z"
-   }
-   ```
-   This gives the next session enough context to determine what happened and how to resume.
-3. **In-progress markers.** Borrow the gsd_merge_agent's pattern: the session `mode` field distinguishes between "actively processing" (in-progress, unstable state) and "resting" (stable, resumable state). On session start, if mode is "active" but no agent is running, the state is in a crash-recovery scenario.
-4. **Filesystem reconciliation.** On session start, always run a state reconciliation step: compare declared state against filesystem evidence (do the commits exist? do the output files exist? do the worktrees exist?). Trust the filesystem over the state file when they disagree. For example, if a job is marked "executing" but its branch has commits matching the expected output, mark it "complete."
-5. **Subagent results to disk first.** Subagent outputs must be persisted to disk (e.g., `.planning/sets/auth/waves/w1/jobs/j1/result.json`) BEFORE the parent orchestrator records completion in STATE.json. If the parent crashes before recording, the next session should find the output file and recover.
+1. **Implement in rapid-tools.cjs as a library function:** Add `resolveEntityId(state, entityType, input)` to `state-machine.cjs` that handles: exact string match (highest priority), numeric 1-based index into the ordered entity list, prefix match (e.g., "auth" matches "auth-system"). Return the resolved ID or throw with a disambiguation message.
+2. **Add a CLI subcommand:** `node "${RAPID_TOOLS}" resolve-id set "1"` that returns the resolved set ID as JSON. All skills call this before processing.
+3. **Update all skills simultaneously:** When adding numeric ID support, update every SKILL.md that accepts entity IDs in the same changeset. Use a consistent pattern: "If the user provided an ID, resolve it via `node "${RAPID_TOOLS}" resolve-id {entityType} {userInput}` before proceeding."
+4. **Test edge cases explicitly:**
+   - Set named "1-auth" with numeric input "1" -- should this match by prefix or by index?
+   - 10 sets where input "1" could mean index 1 or set "10-api" by prefix
+   - Wave ID "wave-1" with just "1" as input
+   - Resolution should follow: exact match > numeric index (1-based) > prefix match
 
 **Warning signs:**
-- State shows "executing" but no recent commits on the branch
-- Jobs marked "complete" but their output files don't exist
-- Multiple context resets during a single wave execution (indicates the operation is too long for a single context window)
-- Users reporting "it says it's done but nothing happened"
-- Wave status and job statuses disagreeing (wave is "executing" but all jobs are "complete")
+- User says "1" and gets a different entity in different commands
+- Some commands accept "1" and others give "not found" errors
+- Off-by-one errors (user says "1", gets the second entity)
+- Ambiguous match errors that only occur in specific commands
 
 **Phase to address:**
-Phase 1 (State Machine) -- the transaction and recovery model must be baked into the state system from day one, not patched onto a naive read/write layer.
+Numeric ID shorthand phase. Must be implemented as a library function first, then rolled out to all skills in one pass. Do NOT ship partial support.
 
 ---
 
-### Pitfall 6: Selective Reuse Creating Hidden Coupling
+### Pitfall 6: Batched Questioning Breaking the AskUserQuestion Structured Options Pattern
 
 **What goes wrong:**
-v2.0 keeps proven v1.0 components (agent framework, plugin shell, context generation, worktrees) while rewriting workflow/planning/review/merge. The kept components have implicit assumptions about the old workflow. Specifically:
-- `worktree.cjs` calls `plan.loadSet()` which expects the v1.0 set structure (phases, not waves/jobs)
-- `merge.cjs` imports from `contract.cjs`, `dag.cjs`, `worktree.cjs`, `execute.cjs`, and `plan.cjs` -- 5 dependencies that are all being rewritten
-- `dag.cjs` provides `getExecutionOrder` which assumes phase-based topological ordering, not wave-based parallel groups
-- `contract.cjs` validates against the v1.0 contract schema (single interface boundary, not the multi-layer hierarchy)
-- `execute.cjs` has `getChangedFiles` that the review module will need, but the function assumes phase-based branching
+The current discuss skill asks one question at a time using AskUserQuestion with structured options (SKILL.md lines 117-207). The v2.1 goal of batched questioning aims to reduce the latency of answer -> wait 30-60s -> answer -> wait cycle. But AskUserQuestion is designed for single questions with structured options. There is no native "batch question" API -- you cannot send 3 questions in one AskUserQuestion call.
 
-These hidden couplings mean "keeping" a module actually requires modifying it, but the modifications aren't planned because the module was categorized as "kept."
+Two broken implementations emerge:
+1. **Concatenated freeform:** Multiple questions crammed into a single freeform AskUserQuestion. The user's response is a blob of text that the agent must parse. If the user answers only 2 of 3 questions, the agent cannot detect which was skipped. If the user's answer is ambiguous about which question it addresses, decisions are assigned incorrectly. The WAVE-CONTEXT.md then contains wrong decisions that propagate through the entire planning and execution pipeline.
+2. **Rapid-fire sequential:** Questions asked sequentially but without waiting for agent processing between them. This does not actually solve the problem because the latency is in the agent's processing, not the user's typing.
 
 **Why it happens:**
-Selective reuse creates a false binary: modules are labeled "keep" or "rewrite." In reality, kept modules have tentacles into rewritten modules via imports, shared data structures, and assumptions about the workflow. Looking at `merge.cjs` alone: it requires `contract.cjs`, `dag.cjs`, `worktree.cjs`, `execute.cjs`, and `plan.cjs` at the top of the file. A module cannot be "kept" if all of its dependencies are being rewritten.
+The desire to reduce latency conflicts with the tool's single-question design. The "batching" that users actually want is not multiple simultaneous questions -- it is fewer, more substantive questions that cover more ground per interaction.
 
 **How to avoid:**
-1. **Dependency audit before coding.** For each "kept" module, trace every import, every function call, and every data structure assumption. Create an explicit map:
-   ```
-   worktree.cjs
-     imports: lock.cjs (keep), plan.cjs (REWRITE)
-     reads: REGISTRY.json (structure may change)
-     assumes: set structure has phases, not waves
-     verdict: KEPT WITH MODIFICATIONS (update plan.loadSet calls)
-   ```
-2. **Adapter interfaces.** Define clean interfaces between "kept" and "rewritten" modules. If `worktree.cjs` needs set data, it should accept a standardized set descriptor object (`{ name, branch, worktree, status }`), not call `plan.loadSet()` directly. This decouples the worktree module from the planning data structure.
-3. **Reclassify "kept" modules honestly.** The three categories should be:
-   - **Kept as-is:** No changes needed (e.g., `lock.cjs`, `returns.cjs`)
-   - **Kept with modifications:** API surface stays, internals change (e.g., `worktree.cjs`, `state.cjs`)
-   - **Rewrite:** New module, old one deleted (e.g., `merge.cjs`, `plan.cjs`, `dag.cjs`)
-4. **Integration tests at boundaries.** Write tests between kept and rewritten modules BEFORE writing new code. These tests serve as the contract that both sides must satisfy. If the test calls `worktree.createWorktree(setDescriptor)` and expects a specific result, both the old adapter and new implementation must pass.
+1. **Group by topic, not by count:** Instead of asking 8 questions one at a time, group related gray areas into 2-3 thematic clusters. Ask one AskUserQuestion per cluster with options that bundle related decisions. Example: "For the data layer approach: A) PostgreSQL with Prisma ORM and migration tooling, B) SQLite with raw queries for simplicity, C) Let Claude decide based on project scale." This bundles 3 decisions (database, ORM, migration) into one structured question.
+2. **Use multiSelect for independent choices:** AskUserQuestion already supports `multiSelect: true` (used in discuss SKILL.md line 117 for gray area selection). Extend this pattern: present all gray areas upfront, let the user select which to discuss, then only deep-dive selected ones.
+3. **"Let Claude decide all" fast path:** If the user selects zero gray areas (SKILL.md line 127: "select none to let me decide all"), the discuss skill should still produce valid WAVE-CONTEXT.md with documented autonomous decisions. This is the ultimate "batch" -- zero questions.
+4. **Never batch decisions that depend on each other:** If the answer to question 1 changes what question 2 should be, they cannot be batched. Only batch truly independent decisions.
+5. **Structured options always:** Never use freeform responses for batched questions. Structured options ensure unambiguous parsing.
 
 **Warning signs:**
-- "Kept" modules failing with `TypeError: Cannot read property 'X' of undefined` (structure mismatch between old and new)
-- Import cycles between old and new modules
-- Having to modify a "kept" module more than 3 times during implementation
-- Functions being duplicated because the old version can't handle new data structures
-- Tests for kept modules breaking when new modules are introduced
+- Users reporting the agent misunderstood their response
+- WAVE-CONTEXT.md containing decisions the user did not make
+- Discuss sessions taking MORE time due to misinterpretation and re-asking
+- Agent asking "which question were you answering?"
 
 **Phase to address:**
-Phase 0 (Architecture/Pre-work) -- the dependency audit and adapter design must happen before any implementation starts. If this is skipped, every subsequent phase will encounter unexpected breakage in "kept" modules.
+Discuss skill rework phase. Design the batching strategy DURING the discuss rework, not as a separate bolt-on.
 
 ---
 
-### Pitfall 7: Agent Prompt Specification Ambiguity Causing Coordination Failures
+### Pitfall 7: Plan Verifier Becoming a Rubber Stamp or an Over-Blocker
 
 **What goes wrong:**
-Research on multi-agent LLM systems shows that specification ambiguity causes 41.77% of failures and coordination breakdowns cause another 36.94% -- together accounting for ~79% of all multi-agent system failures. RAPID v2.0 introduces at minimum 8 new agent roles (orchestrator, wave planner, job planner, executor, UAT agent, unit-test agent, hunter, devils-advocate, judge) plus the merger agent. With prose-based prompt specifications (as currently drafted in `mark2-plans/review-module/`), agents misinterpret their role boundaries, duplicate work, or produce outputs that downstream agents cannot parse.
+The plan verifier is a new agent that checks coverage and implementability. Two failure modes:
+
+**Rubber stamp (too permissive):** The verifier duplicates checks already performed by `validateJobPlans()` in `wave-planning.cjs` (lines 160-223). That function already checks export coverage (are all contract export files covered by job plans?) and cross-set import validation (do imported functions exist in source set contracts?). The verifier that runs the same checks wastes an agent spawn ($2-5 per invocation) without adding value.
+
+**Over-blocker (too strict):** The verifier flags implementability concerns that are actually fine -- e.g., "this job modifies 8 files which is complex" or "implementation step 3 lacks detail about error handling." Developers are forced through unnecessary re-planning cycles, increasing friction rather than reducing it. The user's todo.md already notes "there is some form of over planning/granularity" -- adding a strict verifier amplifies this problem.
 
 **Why it happens:**
-The current draft prompts (hunter.md, devils-advocate.md, judge.md) are human-readable prose. They describe what the agent should do but not the exact output schema, not the exact input contract, and not the boundary conditions. The hunter prompt says "produce a structured report" and gives a markdown template, but an LLM will deviate from templates -- adding extra sections, changing field names, omitting fields it deems unimportant. When the devils-advocate receives this free-form output, it must parse it, and parsing failures cascade silently (the DA just misses findings it couldn't extract).
-
-The mark2.md spec explicitly notes "ALL Agent outputs that are meant to be parsed by other agents should be in some sort of structured format" -- but the draft prompts don't enforce this with schemas.
+The verifier's purpose is underspecified. "Coverage + implementability checks" is vague enough that the implementing developer will either duplicate existing checks (path of least resistance) or build an ambitiously thorough agent that second-guesses every plan detail (overengineering).
 
 **How to avoid:**
-1. **Define JSON schemas for every inter-agent message.** The hunter's output must validate against a `HunterReport` schema. Use the gsd_merge_agent's pattern: it has a `schemas/` directory where all data shapes are defined and validated on read/write.
-   ```json
-   {
-     "type": "object",
-     "required": ["summary", "findings"],
-     "properties": {
-       "summary": { "type": "object", "required": ["total", "critical", "high", "medium", "low"] },
-       "findings": {
-         "type": "array",
-         "items": {
-           "type": "object",
-           "required": ["id", "file", "line", "category", "risk", "confidence", "description"]
-         }
-       }
-     }
-   }
-   ```
-2. **Output validation in the orchestrator.** After each agent completes, validate its output against the expected schema before passing it to the next agent. If validation fails, retry the agent once with an explicit "your output did not match the required format, here is the schema" instruction. On second failure, abort with error.
-3. **Include concrete examples in prompts.** Instead of "produce a structured report," include a 5-entry example that shows exact field names, value formats, and edge cases (empty arrays, null fields).
-4. **Consider collapsing the DA and judge.** The hunter > DA > judge pipeline has 2 handoffs -- each is a potential failure point. If token costs and coordination overhead are too high, the DA and judge can be collapsed into a single "verification agent" that both challenges and rules on findings. This reduces handoffs from 2 to 1 and saves one full agent invocation.
+1. **Define the verifier's UNIQUE value -- what it checks that `validateJobPlans()` does NOT:**
+   - File conflict detection: do two jobs in the same wave plan to modify the same file? (This is not currently checked)
+   - Step ordering validation: does job A depend on job B's output but both execute in parallel? (This is not currently checked)
+   - Missing test coverage: do acceptance criteria in JOB-PLAN.md have corresponding test steps? (Not checked)
+   - Contract completeness: do new files created by jobs get exported in the contract if other sets need them? (Not checked)
+2. **Make it advisory, not blocking:** The verifier produces VERIFICATION-REPORT.md with findings. The user decides whether to re-plan. It does NOT automatically reject plans or require re-planning.
+3. **Set a cost budget:** The verifier should be a single agent invocation, not a multi-agent pipeline. Target: one agent, one pass, under $3.
+4. **Implement the deterministic checks in code, not in the agent:** File conflict detection and step ordering can be checked programmatically in `wave-planning.cjs` (no LLM needed). The agent adds natural-language assessment of implementability on top of the programmatic checks. This keeps the deterministic checks fast, reliable, and free.
 
 **Warning signs:**
-- Downstream agents producing "I couldn't parse the previous report" or hallucinating structure
-- Agent outputs that look different on every run despite identical inputs
-- The orchestrator needing per-agent parsing logic with special cases
-- Review cycles that never converge because agents keep reinterpreting each other's outputs
-- JSON parse errors when reading inter-agent messages
+- Verifier consistently returning "PASS" with no actionable findings (rubber stamp)
+- Verifier blocking every plan with vague implementability warnings (over-blocker)
+- Users routinely skipping the verifier because it never adds value
+- Verifier costing more than the wave-plan pipeline itself
 
 **Phase to address:**
-Phase 2 (Agent System) -- schema definitions must precede prompt writing. Write the schemas first, then write prompts that reference them.
+Plan verification phase. Define the exact check list in phase research BEFORE implementing the agent.
 
 ---
 
-### Pitfall 8: Worktree Port and Resource Conflicts Across Concurrent Sets
+### Pitfall 8: Workflow Streamlining Breaking Re-entry and Idempotency
 
 **What goes wrong:**
-RAPID's core value is parallel development across git worktrees. When multiple sets run dev servers simultaneously (each in its own worktree), they compete for ports (3000, 5173, 8080), database connections, file locks, and environment variables. The review module compounds this: UAT tests in Set A's worktree launch a browser against port 3000, but Set B's dev server is also on port 3000 in a different worktree. Tests pass or fail depending on which server responds first.
+The current workflow has explicit user-triggered transitions: `/init` -> `/set-init` -> `/discuss` -> `/wave-plan` -> `/execute` -> `/review` -> `/merge`. Each skill is designed for idempotent re-entry:
+- `/execute` skips completed jobs on re-invocation (execute SKILL.md Step 2, smart re-entry)
+- `/review` picks up where it left off if the set is already in `reviewing` state (review SKILL.md Step 0d)
+- `/discuss` offers to re-discuss or view existing context (discuss SKILL.md Step 2)
+- `/wave-plan` offers to re-plan or view existing plans (wave-plan SKILL.md Step 2)
+
+The v2.1 goal of auto-running plan after init creates a chain: init completes -> auto-triggers plan. But if the user interrupts during auto-plan (ctrl+c) and then runs `/init` again:
+- Init Step 3 detects existing `.planning/` files and offers Reinitialize/Upgrade/Cancel
+- If user selects "Upgrade," the partial planning state from the interrupted auto-plan is preserved but may be inconsistent
+- The auto-plan resumes (or re-runs) but encounters partially-written ROADMAP.md, incomplete STATE.json structures, or orphaned research artifacts from the interrupted init
+
+Similarly, if wave-plan is auto-triggered after discuss, and the user interrupts during wave-plan, running `/discuss` again will re-discuss (overwriting WAVE-CONTEXT.md) but the partially-completed wave-plan artifacts (partial WAVE-PLAN.md, some JOB-PLAN.md files) remain orphaned.
 
 **Why it happens:**
-Git worktrees share the same `.git` directory but have separate working trees. Most project tooling (package.json scripts, .env files, framework configs) assumes a single working directory. When you `npm run dev` in two worktrees, both try to bind the same port unless explicitly configured otherwise. The existing `worktree.cjs` creates worktrees and manages a registry but does not allocate resources.
+Each skill checks its own preconditions (entity state, artifact existence) but does NOT check for artifacts from DOWNSTREAM interrupted operations. Init checks for existing `.planning/` but not for partial ROADMAP.md. Discuss checks wave state but not for orphaned JOB-PLAN.md files from an interrupted wave-plan.
 
 **How to avoid:**
-1. During `/set-init`, generate a deterministic port offset per set. Set 1 gets base port 3000, Set 2 gets 3100, Set 3 gets 3200. Write these to a per-worktree `.env.local` that the project's dev server reads.
-2. The review module's Playwright config must derive its `baseURL` from the worktree's port allocation, not use a hardcoded default.
-3. For database resources, use separate database names per set (e.g., `myapp_set_auth`) or use SQLite with a file per worktree.
-4. Add a resource manifest to STATE.json: which ports and resources each set has claimed. The orchestrator checks for conflicts before spawning.
-5. Document that sets sharing external services (production APIs, shared databases) must coordinate access patterns -- this is an inherent limitation of parallel development, not something the tool can fully solve.
+1. **Auto-chain via user suggestion, not auto-execution:** Instead of automatically running the next step, display "Recommended next step: `/rapid:wave-plan {waveId}`" and let the user trigger it. This preserves clean re-entry boundaries. This is the safer approach.
+2. **If auto-chaining IS implemented:** Limit to ONE chain link only (init -> plan is acceptable; init -> plan -> set-init -> discuss is not). Each skill must check for artifacts from downstream interrupted operations at the start. Add artifact staleness detection: if WAVE-PLAN.md exists but is older than WAVE-CONTEXT.md, the plan is stale and should be regenerated.
+3. **State machine as authoritative source:** The STATE.json wave/job status should be the ONLY determinant of next steps. Skills should not infer workflow state from artifact existence. If wave status is `discussing`, wave-plan should work regardless of what artifacts exist.
+4. **Clean up on re-entry:** When a skill detects it is re-running after an interruption (same state as last run, stale artifacts present), offer to clean up orphaned artifacts before proceeding.
 
 **Warning signs:**
-- "EADDRINUSE" or "Port already in use" errors during execute or review
-- Tests passing in one worktree but failing in another with identical code
-- Database writes from one set appearing in another set's test data
-- Dev server crashes because another worktree's server grabbed the port first
+- Users running `/init` repeatedly and getting different behaviors each time
+- Orphaned planning artifacts from interrupted auto-chain runs
+- Skills failing with "unexpected state" errors after interruption
+- STATE.json showing a state that does not match the artifacts on disk (e.g., wave is `planning` but no WAVE-PLAN.md exists)
 
 **Phase to address:**
-Phase 1 (Set Init / Worktree Setup) -- port allocation must be part of worktree creation, not deferred to when servers are actually started.
+Workflow streamlining phase. Auto-chaining should be the LAST feature in workflow simplification, after all individual skill re-entry paths are verified.
 
 ---
 
@@ -298,113 +278,98 @@ Phase 1 (Set Init / Worktree Setup) -- port allocation must be part of worktree 
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Keep STATE.md format and add JSON sections inline | No migration needed for existing projects | Two parsing modes (regex + JSON), bugs at boundaries, impossible to validate holistically | Never -- the migration to JSON must be clean |
-| Copy-paste gsd_merge_agent scripts into RAPID as-is | Fast initial port, merge works immediately | Two state systems, namespace collisions, TS/CJS split, no shared context with RAPID state | Never -- extract algorithms, don't copy infrastructure |
-| Let review agents output free-form markdown instead of JSON | Faster prompt development, more natural agent responses | Parsing failures between agents, format drift across runs, downstream agent confusion | Only for human-facing outputs (progress messages, final user reports) |
-| Skip iteration caps on bug hunt pipeline | Maximum thoroughness, no bugs missed | Token costs scale linearly per iteration with diminishing returns after round 2 | Never -- always cap at 2-3 iterations |
-| Hardcode port numbers in Playwright configs | Works for single-worktree development | Breaks immediately when 2+ sets run concurrently | Early prototyping only, must be parameterized before review module ships |
-| Use Opus for all review agents (hunter, DA, judge) | Best quality findings from every agent | 5x cost vs Sonnet per agent; hunter and DA don't need Opus-level reasoning | Only for the judge agent; hunter and DA should use Sonnet |
-| Rewrite kept modules from scratch instead of adapting | Cleaner code, no legacy baggage | Lose proven patterns; introduce new bugs in areas that were stable; double the work | Only when the kept module's architecture is fundamentally incompatible with v2.0 |
+| Implementing numeric ID resolution in each SKILL.md separately | Quick to add per-skill | 7+ copies of resolution logic diverge over time; bugs fixed in one skill but not others | Never -- implement once in `state-machine.cjs` or `rapid-tools.cjs` |
+| Adding plan verifier as a full separate state in the wave state machine | Clean state modeling | 4-file coordinated update required; all skill status checks need updating; full test suite expansion | Never for v2.1 -- use sub-step within `planning` state |
+| Passing full source file contents in Agent prompts instead of file paths | Subagent has immediate access without additional tool calls | Orchestrator context exhaustion at scale; 5-job wave with 5 files each = 25 file contents loaded into orchestrator | Only for files under 50 lines; all others should be loaded by the subagent via Read tool |
+| Fixing GSD references one file at a time as encountered | Each fix is small and safe | Missed references cause runtime identity confusion; creates an ongoing multi-week cleanup instead of a one-time sweep | Never -- grep exhaustively, fix all at once |
+| Batching questions with freeform text instead of structured options | Fewer AskUserQuestion calls | Fragile parsing, misattributed decisions, re-asking loops that waste more time than they save | Never -- use structured options or multiSelect |
+| Auto-chaining more than one step (init -> plan -> set-init) | Smoother first-time experience | Re-entry after interruption becomes combinatorially complex; each chain link needs its own recovery path | Only for init -> plan (one link); never for deeper chains |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| gsd_merge_agent -> RAPID | Porting the plugin wholesale as a subdirectory with its own state | Extract conflict detection + resolution algorithms into `src/lib/merge/`; unify state into RAPID's STATE.json; translate all `phase/NN-*` references to `set/name` |
-| Playwright -> Claude Code | Assuming browser can always launch; not handling Bash tool timeout | Add health check with retry; set Playwright timeout < Bash timeout; kill orphan Chromium in cleanup |
-| Subagent results -> Parent orchestrator | Assuming subagent output is available in parent's memory after context reset | Subagents write results to disk first (`.planning/sets/.../result.json`); parent reads from disk on resume |
-| Review module -> Wave lifecycle | Running review as a standalone disconnected command | Review status must be a field in STATE.json under the wave; review completion blocks wave completion |
-| Bug hunt agents -> Each other | Passing unvalidated free-form text between hunter/DA/judge | Define JSON schemas for inter-agent messages; validate at every handoff; retry on validation failure |
-| v1.0 modules -> v2.0 data structures | Calling `plan.loadSet()` from kept modules expecting old structure | Create adapter functions that translate v2.0 set descriptors to the interface kept modules expect |
-| Lock files -> Concurrent worktrees | Using a single lock path assuming one working directory | Lock files must be scoped per resource; worktree-local locks use worktree-relative paths |
-| Merge state -> RAPID state | Separate `.gsd-merge/state.json` alongside RAPID's STATE.json | Merge state is a nested object under `sets.{name}.merge` in the unified STATE.json |
+| Plan verifier -> state machine | Adding a new wave state `verified` | Keep wave in `planning` state; verifier produces VERIFICATION-REPORT.md artifact; transition to `executing` only after verification passes (handled by wave-plan or execute skill) |
+| Numeric ID resolution -> existing CLI | Implementing resolution in SKILL.md natural language instructions | Add `resolveEntityId()` to `state-machine.cjs`; add `resolve-id` CLI subcommand; all SKILL.md files call the CLI before processing |
+| Scoper subagent -> review pipeline | Scoper returns full file contents to orchestrator | Scoper returns file paths + brief per-file summary (function signatures, key types); review subagents use Read tool to load files from paths |
+| Batched questions -> discuss skill | Concatenating multiple questions into one freeform AskUserQuestion | Group related decisions into single AskUserQuestion with structured options; use multiSelect for independent choices |
+| Auto-plan after init -> roadmap generation | Spawning a separate plan agent after init | Init already runs the roadmapper (init SKILL.md Step 9). Auto-plan means: init writes STATE.json and ROADMAP.md, then displays "next step: /set-init" without a separate invocation |
+| Parallel wave planning -> git commits | Two wave-plan runs both `git add .planning/` then `git commit` | Each wave-plan commits only its own wave directory: `git add .planning/waves/{setId}/{waveId}/`; separate commits prevent conflicts |
+| GSD decontamination -> test suite | Renaming `gsd_state_version` in init.cjs but forgetting tests | Must also update `init.test.cjs:90-92` assertion; run `node --test src/lib/init.test.cjs` to verify |
+| VALIDATION-REPORT.md -> parallel planning | Writing set-level report from concurrent wave-plan runs | Move VALIDATION-REPORT.md to `.planning/waves/{setId}/{waveId}/VALIDATION-REPORT.md` so each wave gets its own report |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Full codebase scan per review agent | Review takes 5+ min, costs >$15 per cycle | Scope to changed files via diff; use `getChangedFiles` from execute.cjs | Projects with 50+ files |
-| Unbounded bug hunt iterations | Review never converges, costs spiral | Hard cap at 2-3 iterations; DEFERRED findings become tickets | Any project -- structural issue, not scale |
-| Serial merge of many sets | Merge phase takes O(n) time with validation per step | Identify independent set clusters that can be merged as parallel sub-trees | More than 4 sets |
-| State file contention from concurrent agents | Lock timeouts, stale reads, agents blocked | Minimize lock scope; batch state updates; consider per-set state files that aggregate | More than 3 concurrent agents writing state |
-| Codebase context re-read per subagent | 8+ agents each reading the same 50+ files independently | Generate a codebase digest once, pass as context document to all agents | Projects with 50+ source files |
-| Running all 3 review types on every wave | Massive time/cost overhead for minor waves | Make UAT and bug-hunt optional per wave; always run unit tests; only run full review at set completion | Any project -- full review on every wave is overkill |
-
-## Security Mistakes
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Bug hunting agents reading .env files | Agent reports contain credentials in code snippets | Add .env, credentials.json, and key files to agent exclusion lists in prompts |
-| Playwright tests hitting production APIs | Test data written to production; rate limits triggered | Always use test/staging URLs; add pre-test URL validation against allowed domains |
-| Merge agent auto-resolving security-sensitive files | AI resolution of auth/crypto code introduces vulnerabilities | Maintain a security-critical file list; always escalate auth, crypto, and secrets files to human review |
-| Storing API keys in STATE.json or planning files | Keys committed to git, visible in worktrees | Never store secrets in planning files; use .env (gitignored) exclusively |
-| Review reports containing sensitive data | Bug hunt reports may include snippets with secrets/tokens | Sanitize report output; redact patterns matching common secret formats |
+| Review orchestrator loading all source files into its context | Slow review start, context window warnings, shallow subagent analysis | Scoper subagent pattern -- orchestrator receives summary only; subagents load files via Read | Waves with >10 changed files (~30K tokens of source code in orchestrator context) |
+| Sequential question-answer in discuss phase | User waits 30-60s between each of 8+ questions | Batch related decisions into structured multi-option questions; provide "Let Claude decide all" fast path | Sets with >5 gray areas (~8 minutes of waiting) |
+| Wave-plan spawning all agents sequentially | 5+ agent spawns = 5+ minutes for a 3-job wave | Parallel job planner spawning (already in wave-plan SKILL.md Step 5); verify parallel dispatching actually occurs by issuing all Agent tool calls in one response | Waves with >3 jobs |
+| Bug hunt 3-cycle iteration loading full scope each time | Each cycle re-reads all source files; 12 agent spawns for 3 full cycles | Narrow scope on cycles 2+ to only files modified by bugfix agent (already specified in review SKILL.md Step 3b.1); verify scope actually narrows | Review scope >15 files with >5 accepted bugs |
+| Plan verifier running as a multi-agent pipeline | $10+ per verification, taking longer than the planning itself | Single agent, single pass, under $3; deterministic checks in code, LLM for judgment only | Any project -- this is a design trap, not a scale issue |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Silent state transitions during multi-agent operations | User has no idea what 8 agents are doing; anxiety leads to interruption | Emit progress events at each transition: "Hunter analyzing 15/47 files...", "DA reviewing finding 3/12...", "Judge ruling on 8 contested findings..." |
-| Bug hunt producing 30+ findings before user sees anything | Overwhelming wall of text; user loses context and stops reading | Stream findings incrementally; show critical/high first; use AskUserQuestion to let user stop early if they've seen enough |
-| Review requiring user input at unpredictable points | User walks away, comes back to a stalled agent after 20 minutes | Batch all "human" UAT steps together; tell user upfront "I need you for 3 manual checks at steps 5, 9, and 12, then I can continue autonomously" |
-| Context reset losing the user's mental model | User returns to a new session with no idea where things stand | First action on session resume: display a 5-line status summary showing current set/wave/job state, what completed, what failed, and what's next |
-| Merger reporting conflicts in git jargon | User can't make merge decisions without understanding git diff3 | Translate conflicts to natural language: "Both Set A and Set B changed the login function -- Set A added rate limiting, Set B added OAuth. Which should come first?" |
-| Full review running when user just wants a quick check | 20+ minutes and $30+ when user just wanted to see if tests pass | Provide `/rapid:review --quick` (unit tests only) vs `/rapid:review --full` (all three types) |
+| Inconsistent numeric ID support across commands | User learns `/set-init 1` works, tries `/discuss 1`, gets "not found" | Implement in rapid-tools.cjs; roll out to ALL skills simultaneously; never ship partial support |
+| Auto-planning without user confirmation | User wanted to customize the plan but it already auto-ran | Display "Plan generated" and offer "Accept / Modify / Regenerate" (already in init SKILL.md Step 9); do not bypass this gate |
+| Verifier blocking plans with vague warnings | User forced to re-plan for non-issues; loses trust in the tool | Verifier is advisory only; findings require explicit user "Block this plan" action; default is to proceed |
+| Discuss phase asking 8+ individual questions with 30s+ waits | User fatigue and disengagement | Group into 2-3 thematic clusters; provide "Let Claude decide all" to skip entire discussion |
+| Review pipeline defaulting to "All stages" | First review costs $30-45 (hunter+advocate+judge x3 + unit test + UAT) | Default to "Unit test only" or "Unit test + lean review" for first pass; full bug hunt is opt-in |
+| Wave-plan requiring exact wave ID when set has only one wave | User must type "wave-1" when the choice is obvious | Auto-select the only available wave/set; only prompt for disambiguation when multiple options exist |
+| Workflow confusion about which command comes next | User runs wrong command, gets unhelpful error | Every skill's exit message should include the recommended next command with exact invocation syntax (most skills already do this; verify all do) |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **State Machine:** Often missing recovery from partial failures -- verify that every state transition has an explicit "what if context resets mid-write?" answer
-- [ ] **Merge Adapter:** Often missing branch naming translation -- verify ALL gsd_merge_agent `phase/NN-*` references are replaced with RAPID's `set/name` convention
-- [ ] **Merge Adapter:** Often missing state unification -- verify no `.gsd-merge/` directory is created; all merge state lives in STATE.json
-- [ ] **Bug Hunt Pipeline:** Often missing iteration caps -- verify that max iterations is configurable and defaults to 2
-- [ ] **Bug Hunt Pipeline:** Often missing inter-agent schema validation -- verify JSON schemas exist for hunter output, DA output, and judge output
-- [ ] **Playwright UAT:** Often missing server startup/shutdown lifecycle -- verify tests don't assume a running dev server and include health checks
-- [ ] **Playwright UAT:** Often missing cleanup -- verify no orphan Chromium processes remain after test completion
-- [ ] **Worktree Setup:** Often missing port isolation -- verify each worktree gets unique port assignments written to local config
-- [ ] **Agent Handoffs:** Often missing output schema validation -- verify every inter-agent message is validated before being passed downstream
-- [ ] **Review Module:** Often missing integration with wave lifecycle -- verify review completion updates wave state and blocks wave completion on review pass
-- [ ] **Selective Reuse:** Often missing adapter tests -- verify kept modules work with new data structures via integration tests
-- [ ] **Selective Reuse:** Often missing dependency audit -- verify a module-by-module import map exists documenting what changes are needed in "kept" modules
+- [ ] **GSD decontamination:** Often missing runtime agent name verification -- verify by actually running each skill that spawns agents and checking the displayed agent names in Claude Code UI, not just grepping source code
+- [ ] **GSD decontamination:** Often missing test assertion updates -- verify `init.test.cjs:90-92` passes after renaming `gsd_state_version`
+- [ ] **Numeric ID shorthand:** Often missing edge case for sets whose names start with numbers -- verify resolution logic with set named "1-auth" and numeric input "1"
+- [ ] **Numeric ID shorthand:** Often missing rollout to all skills -- verify numeric IDs work in set-init, discuss, wave-plan, execute, review, merge, and status
+- [ ] **Parallel wave planning:** Often missing VALIDATION-REPORT.md write path fix -- verify that two parallel wave-plan runs for different waves produce separate reports in their respective wave directories
+- [ ] **Parallel wave planning:** Often missing git commit serialization -- verify two concurrent `git commit` calls do not produce errors
+- [ ] **Batched questioning:** Often missing the "Let Claude decide all" fast path -- verify that selecting zero gray areas produces valid WAVE-CONTEXT.md with documented autonomous decisions
+- [ ] **Plan verifier:** Often missing uniqueness check -- verify the verifier adds checks BEYOND what `validateJobPlans()` already does (file conflicts, step ordering, test coverage)
+- [ ] **Context-efficient review:** Often missing subagent file loading delegation -- verify review subagents actually use Read tool to load files from paths, not receive file contents inline in their prompt
+- [ ] **Workflow streamlining:** Often missing re-entry after interruption testing -- verify by running `/init`, interrupting at Step 7 (research agents), then running `/init` again; verify clean recovery
+- [ ] **Leaner review stage:** Often missing cost measurement -- track agent spawn count and token usage before and after changes to verify measurable improvement
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| State schema bifurcation (hybrid MD+JSON) | HIGH | Write migration script from hybrid to pure JSON; update all agent prompts to reference new format; existing projects need one-time conversion |
-| Merge namespace collision (dual state files) | MEDIUM | Rename branches, move state into unified STATE.json, delete `.gsd-merge/` directory, update all merge-related imports; can be scripted but needs testing |
-| Token explosion in bug hunt | LOW | Add iteration caps and diff-based scoping; no architectural change needed, just prompt and orchestrator config updates |
-| Playwright flakiness | LOW | Add retry logic, health checks, cleanup scripts; mostly configuration and wrapper scripts, not architectural |
-| State loss on context reset | HIGH | Redesign state writes to be transactional; add reconciliation logic; requires touching every state-writing function in the system |
-| Hidden coupling in kept modules | MEDIUM | Write adapter layer, update imports, add integration tests; effort scales linearly with number of kept modules (~12 lib files, but only ~5 have cross-cutting dependencies) |
-| Agent specification ambiguity | MEDIUM | Define JSON schemas, add validation layer, rewrite prompts with examples and schema references; effort proportional to agent count (~8-10 agents) |
-| Resource conflicts across worktrees | LOW | Add port allocation to set-init; update configs to read from environment; mostly mechanical changes to worktree creation flow |
+| GSD agent names at runtime | LOW | Update the inline prompt in the offending SKILL.md to include explicit "You are rapid-{role}" identity; no state or artifact corruption; re-test the skill |
+| State machine gap from new verification state | MEDIUM | Revert `state-transitions.cjs`; manually fix any waves stuck in the invalid state by editing STATE.json (set their status to `planning`); validate with `node "${RAPID_TOOLS}" state detect-corruption` |
+| Race condition on VALIDATION-REPORT.md | LOW | Delete the corrupted report; re-run wave-plan for the affected wave; no state machine impact since artifacts are not state |
+| Context exhaustion in review | LOW | Split review into per-wave runs with smaller scope; for the exhausted run, check which stages completed (REVIEW-UNIT.md, REVIEW-BUGS.md exist?) and re-run only incomplete stages |
+| Wrong entity selected by numeric ID | LOW | No state change if caught before execution proceeds; if set-init ran on the wrong set, `git worktree remove` the wrong worktree and re-run on the correct set |
+| Misinterpreted batched question | MEDIUM | Re-run `/rapid:discuss` with "Re-discuss" to overwrite WAVE-CONTEXT.md; if wave-plan already ran, also re-run wave-plan (plans depend on context decisions) |
+| Plan verifier over-blocking | LOW | User can override or skip the verifier; no state impact since verifier is advisory only |
+| Auto-chain interruption leaving orphaned artifacts | MEDIUM | Check STATE.json for current entity statuses; delete orphaned planning artifacts (partial WAVE-PLAN.md, incomplete JOB-PLAN.md); re-run the interrupted step from its clean entry point |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| State schema bifurcation | Phase 1 (State Machine) | STATE.json exists and is valid JSON representing full Set > Wave > Job hierarchy; zero regex parsing in state access code |
-| Merge namespace collision | Phase 1 (State Machine) + Phase 3 (Merger) | Single state file; all branch names follow `set/name` convention; no `.gsd-merge/` directory appears during merge |
-| Token explosion in review | Phase 4 (Review Module) | Full review of a 50-file wave completes under $15 on Opus; iteration count never exceeds configured cap; hunter scopes to diff |
-| Playwright UAT flakiness | Phase 4 (Review Module) | Playwright tests pass 3/3 consecutive runs in a worktree; no orphan Chromium processes after completion; timeout ordering is correct |
-| State loss on context reset | Phase 1 (State Machine) | Kill a session mid-wave-execution 3 times; restart each time; state is consistent and resumable every time |
-| Hidden coupling in kept modules | Phase 0 (Architecture/Pre-work) | Dependency map document exists for all 12 lib modules; adapter interfaces defined; integration tests pass with mock v2.0 data structures |
-| Agent specification ambiguity | Phase 2 (Agent System) | JSON schemas exist in `schemas/` for every inter-agent message type; validation runs on every handoff; retry-on-failure works |
-| Resource conflicts across worktrees | Phase 1 (Set Init) | Two worktrees can run dev servers simultaneously without port conflicts; Playwright configs derive ports from worktree config |
+| Incomplete GSD decontamination | Phase 1: GSD Decontamination | Run each skill that spawns agents; verify "rapid-" prefix in UI; grep for zero "gsd" matches in `src/` active code (excluding tests that test legacy migration) |
+| State transition table gaps | Phase: Plan Verification | Verify wave transitions `planning -> executing` still works; run full state machine test suite; verify no Zod validation errors (recommend sub-step approach that requires zero state changes) |
+| Parallel wave planning races | Phase: Parallel Wave Planning | Run two wave-plan processes on different waves in same set; verify both produce correct artifacts; verify VALIDATION-REPORT.md writes to wave-level directories |
+| Context window exhaustion in review | Phase: Context-Efficient Review | Measure orchestrator context usage before and after scoper pattern; verify review completes for a 5-job wave without context warnings |
+| Numeric ID resolution inconsistency | Phase: Numeric ID Shorthand | Try numeric IDs in every skill accepting entity IDs (7+ skills); verify consistent behavior; test edge cases |
+| Batched questioning misinterpretation | Phase: Discuss Skill Rework | Run discuss with batched questions; verify WAVE-CONTEXT.md decisions match user responses; test "Let Claude decide all" path |
+| Plan verifier rubber stamp / over-block | Phase: Plan Verification | Verify verifier catches at least one issue in a test plan with known problems (file conflict, missing test coverage); verify verifier does NOT block a valid plan |
+| Workflow auto-chain breaking re-entry | Phase: Workflow Streamlining | Interrupt at each auto-chain point; verify re-running the triggering command recovers cleanly; verify no orphaned artifacts |
 
 ## Sources
 
-- RAPID codebase analysis: `src/lib/state.cjs`, `src/lib/merge.cjs`, `src/lib/worktree.cjs`, `src/lib/execute.cjs` (existing architecture and coupling)
-- gsd_merge_agent specs: `mark2-plans/gsd_merge_agent/DOCS.md`, `scripts/`, `schemas/` (merge pipeline design, state machine, 26 TypeScript modules)
-- Review module specs: `mark2-plans/review-module/user_plan.md`, `hunter.md`, `devils-advocate.md`, `judge.md`, `unit-test.md`
-- Mark II design document: `mark2-plans/mark2.md` (workflow, hierarchy, agent roles, requirements)
-- [Why Do Multi-Agent LLM Systems Fail? (UC Berkeley, 2025)](https://arxiv.org/abs/2503.13657) -- 14 failure modes; 41.77% from specification ambiguity, 36.94% from coordination failures
-- [Why Multi-Agent LLM Systems Fail and How to Fix Them (Augment Code)](https://www.augmentcode.com/guides/why-multi-agent-llm-systems-fail-and-how-to-fix-them) -- JSON schema specs, structured protocols, independent judge agents, resource ownership
-- [How to Detect and Avoid Playwright Flaky Tests (BrowserStack)](https://www.browserstack.com/guide/playwright-flaky-tests) -- auto-wait, isolation, determinism strategies
-- [15 Best Practices for Playwright Testing (BrowserStack)](https://www.browserstack.com/guide/playwright-best-practices) -- locator strategies, CI configuration, test isolation
-- [Claude Code Cost Management](https://code.claude.com/docs/en/costs) -- Opus $15/$75 per M tokens, Sonnet $3/$15, agent teams use ~7x tokens
-- [Claude Code Context Window (Morph)](https://www.morphllm.com/claude-code-context-window) -- 200K limit, performance degrades at 147K, compaction behavior
+- **Direct codebase analysis:** `src/lib/state-machine.cjs` (463 lines), `state-transitions.cjs` (73 lines), `state-schemas.cjs`, `wave-planning.cjs` (230 lines), `review.cjs` (433 lines), `execute.cjs` (973 lines), `assembler.cjs` (243 lines), `teams.cjs` (193 lines), `init.cjs`, `verify.cjs` (161 lines)
+- **Skill analysis:** All 17 SKILL.md files examined; 6 analyzed in depth: wave-plan (353 lines), discuss (335 lines), execute (472 lines), review (790 lines), init (556 lines), set-init (162 lines)
+- **Agent role modules:** `src/modules/roles/` (26 role modules); key modules analyzed: wave-researcher (106 lines), orchestrator (27 lines)
+- **User feedback:** `todo.md` (60 lines of operational issues including GSD naming, workflow confusion, context consumption, review bulk, numeric IDs, batched questions)
+- **Project context:** `.planning/PROJECT.md` (v2.1 milestone definition with 8 target features)
+- **Config analysis:** `config.json` (agent assembly configuration with 5 agent role mappings)
+- **State machine tests:** `src/lib/state-machine.test.cjs`, `state-transitions.test.cjs` (existing test coverage for transition validation)
 
 ---
-*Pitfalls research for: RAPID v2.0 Mark II workflow overhaul*
-*Researched: 2026-03-06*
+*Pitfalls research for: RAPID v2.1 -- workflow simplification, parallel planning, plan verification, context optimization*
+*Researched: 2026-03-09*

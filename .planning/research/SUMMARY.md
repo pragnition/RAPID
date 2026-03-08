@@ -1,188 +1,253 @@
 # Project Research Summary
 
-**Project:** RAPID Mark II (Rapid Agentic Parallelizable and Isolatable Development)
-**Domain:** Metaprompting plugin -- Claude Code workflow overhaul (Sets/Waves/Jobs hierarchy, review module, adversarial agents, merger adaptation)
-**Researched:** 2026-03-06
+**Project:** RAPID v2.1 — Workflow Improvements & Fixes
+**Domain:** Claude Code plugin — workflow orchestration, subagent delegation, plan verification
+**Researched:** 2026-03-09
 **Confidence:** HIGH
 
 ## Executive Summary
 
-RAPID Mark II is an overhaul of an existing Claude Code plugin that introduces hierarchical parallel development (Sets > Waves > Jobs), an adversarial multi-agent code review pipeline (Hunter/Devils-Advocate/Judge), automated UAT via Playwright, and an adapted 5-level merge conflict system from the gsd_merge_agent. The existing v1.0 codebase provides solid foundations -- worktree management, DAG computation, contract validation, lock-based state, and agent teams -- that Mark II extends rather than replaces. The recommended approach is to preserve the minimal-dependency CJS philosophy (only 1 new runtime dependency: `playwright`), replace the flat STATE.md with hierarchical JSON state as the single source of truth, and build outward from the state machine foundation through planning, execution, review, and merge phases.
+RAPID v2.1 is a quality-of-life milestone that improves an already-working system. Every feature targets a known friction point documented in user feedback: manual multi-step invocations between init and execution, slow sequential questioning during the discuss phase, context exhaustion in the review pipeline, tedious full-ID typing, and residual GSD framework branding contaminating agent identities at runtime. Research confirms that all 7 planned improvements are achievable using the existing Node.js + Zod + CommonJS + Claude Code subagent stack with zero new npm dependencies. The stack changes are architectural, not technological: new library modules, new agent definitions, and skill rewrites.
 
-The key risks are: (1) state schema bifurcation if the migration from flat Markdown to hierarchical JSON is not clean and atomic, (2) token cost explosion in the 3-agent adversarial review pipeline (estimated $15-45 per cycle without scoping controls), (3) hidden coupling in "kept" v1.0 modules that have implicit dependencies on the old workflow structure, and (4) agent specification ambiguity causing coordination failures between the 8+ new agent roles. Research shows specification ambiguity and coordination breakdowns account for ~79% of multi-agent system failures. Mitigation requires JSON schemas for all inter-agent messages, diff-scoped review (not full codebase), iteration caps on bug hunting, and a thorough dependency audit of kept modules before implementation begins.
+The recommended approach is to treat v2.1 as three sequential phases: (1) foundation cleanup that eliminates technical debt and installs shared infrastructure, (2) core workflow improvements that reduce user interaction friction across the plan/discuss/wave-plan pipeline, and (3) advanced orchestration improvements that reduce cost and context consumption in the review stage. Phases 1 and 2 can be built and shipped incrementally. Phase 3 has two independent tracks (planning parallelism vs. review context efficiency) that can run in parallel with each other. The key architectural insight is that all improvements are prompt-engineering and orchestration changes — no architectural rewrites, no new state machine states, no new dependencies.
 
-The architecture follows RAPID's existing layered pattern (commands > skills > lib modules > state files > git layer) without introducing a central orchestrator agent. Instead, each skill reads STATE.json on entry and self-dispatches based on current state -- a re-entrant, state-driven pattern that survives context resets. The review module, planner chain, and merger can be built semi-independently once the state machine foundation exists, enabling parallel development of the overhaul itself.
+The primary risks are implementation-level: incomplete GSD decontamination that misses the runtime layer (agents still spawn with gsd-* names despite source code being clean), state machine corruption if a new wave state is added carelessly, race conditions in shared artifact writes during parallel wave planning, and inconsistent numeric ID rollout that ships support in some skills but not others. All risks have clear mitigations: exhaustive grep sweeps followed by integration testing, implementing plan verification as a sub-step within the `planning` state (not a new state), path isolation per-wave for all planning artifacts, and a library-first resolution implementation rolled out to all 7+ skills simultaneously.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack recommendation is aggressively minimal: 1 new runtime dependency (`playwright` for UAT browser automation) and zero new libraries for state management, agent coordination, or merge logic. The existing stack (Node.js v25.8, `ajv` for schema validation, `proper-lockfile` for concurrent access, `node:test` for testing) handles everything Mark II needs. The state machine is hand-rolled (~50-line transition table with JSON persistence), not a library like XState. The adversarial review pipeline uses pure prompt engineering + file-based report handoff, not LangChain or CrewAI.
+No new dependencies. All 7 v2.1 features are implemented through: new library module files (`src/lib/resolve.cjs`, extensions to `src/lib/verify.cjs` and `src/lib/review.cjs`), new agent role modules (`src/modules/roles/role-plan-verifier.md`, `src/modules/roles/role-review-scoper.md`), one new Claude Code native subagent definition (`agents/rapid-scoper.md`), and targeted rewrites of skill orchestration files. The existing stack — Node.js >=18, Zod 3.25.76 (CommonJS), proper-lockfile, ajv, git worktrees — is retained exactly.
 
-**Core technologies:**
-- **Playwright (library mode, ^1.52):** UAT browser automation -- use as library for programmatic `chromium.launch()`, not as `@playwright/test` runner. Falls back to MCP for interactive sessions, then to manual AskUserQuestion prompts.
-- **Hand-rolled state machine (`state-machine.cjs`):** Transition validation table for Set/Wave/Job lifecycle states -- XState rejected as overkill for flat linear progressions. ~50 lines of plain JS with `ajv` schema validation.
-- **`node:test` `run()` API:** Programmatic test execution with structured `TestsStream` events for the Unit Test agent. Zero new dependencies. Target projects use their own runners; RAPID detects and delegates.
-- **`ajv` (existing, extended):** New schemas for BugReport, Verdict, Ruling, UAT Plan, Wave/Job state -- leverages existing validation infrastructure.
+**Core technologies (unchanged):**
+- Node.js >=18: runtime — all .cjs format, no migration needed
+- Zod 3.25.76: schema validation — add PlanVerification schema to verify.cjs
+- proper-lockfile 4.1.2: atomic state writes — serializes parallel planning state transitions safely
+- git worktrees: set isolation — core mechanism, unchanged
+- node:test (built-in): test framework — all new modules get .test.cjs files
+
+**New components (no new dependencies):**
+- `src/lib/resolve.cjs`: numeric ID + substring resolution (~30 lines, parseInt + array indexing)
+- `src/modules/roles/role-plan-verifier.md`: read-only verification agent (file conflicts, step ordering, test coverage gaps)
+- `src/modules/roles/role-review-scoper.md`: review scoping agent (produces REVIEW-SCOPE.md for downstream review agents)
+- `agents/rapid-scoper.md`: native Claude Code subagent definition using `model: haiku` and `permissionMode: dontAsk`
 
 ### Expected Features
 
-**Must have (table stakes -- Mark II is broken without these):**
-- Hierarchical state machine with JSON persistence across context resets
-- Sets/Waves/Jobs hierarchy with DAG-based ordering (reuses v1.0's `dag.cjs`)
-- Orchestrator pattern via state-driven re-entrant skills (not a central agent)
-- `/set-init` with worktree + branch creation + wave planning
-- Wave Planner agent (decomposes sets into parallelizable job waves)
-- Job Planner agent (detailed per-job implementation plans with user discussion)
-- Merger with 5-level conflict detection and 4-tier resolution cascade (adapted from gsd_merge_agent)
+**Must have — table stakes (users already feel these gaps):**
+- GSD agent type decontamination — agents spawn with gsd-* names; erodes trust; embarrassing
+- Numeric ID shorthand (`/rapid:discuss 1` not `/rapid:discuss set-01-foundation`) — critical ergonomic fix
+- Batched questioning in discuss — 20 sequential AskUserQuestion calls per session is unsustainable
 
-**Should have (differentiators -- competitive advantage):**
-- Hunter/Devils-Advocate/Judge adversarial bug hunting pipeline (47% more unique bug discovery per research)
-- UAT with Playwright automation (automated + human step tagging)
-- Unit test agent with plan approval flow (HITL prevents fluff tests)
-- Bisection recovery for merge failures (O(log n) isolation of breaking set)
-- Discuss phase with structured context gathering per wave
-- Merger rollback with cascade revert
+**Should have — core value of v2.1:**
+- Streamlined workflow (init auto-suggests set-init; each skill suggests the next step with exact invocation syntax) — eliminates manual command chain memorization
+- Plan verifier agent (coverage, file conflicts, step ordering, test coverage gaps) — catches planning errors before execution
 
-**Defer (v2.1+):**
-- `/quick` ad-hoc task command
-- `/insert-job` ad-hoc job insertion mid-execution
-- `/new-milestone` lifecycle management
+**Competitive differentiators (advanced orchestration):**
+- Parallel wave planning with dependency-aware sequencing — auto-chain sequential waves; parallel planning for independent waves
+- Context-efficient review with scoper delegation — 60-80% context reduction; lean review default; full adversarial pipeline opt-in
+
+**Defer to v2.2+:**
+- Express mode (auto-accept defaults at non-critical gates) — defer until workflow streamlining is proven
+- Cross-milestone plan comparison — defer until multiple milestones are common in practice
+- Selective wave re-planning — defer until parallel wave planning reveals re-plan patterns
+- Review scoper learning/persistent memory — defer until scoper utility is validated
 
 ### Architecture Approach
 
-The architecture extends RAPID's existing layered pattern without introducing new architectural concepts. The biggest change is inside each set: replacing the monolithic discuss/plan/execute cycle with a Wave Planner > Job Planner > Executor > Reviewer pipeline. State moves from flat STATE.md (regex-parsed) to hierarchical STATE.json (source of truth) with STATE.md as a read-only human projection. Agent chaining follows the existing pattern: skills orchestrate, agents execute and write structured reports to disk, the next agent reads the previous agent's output. No agent spawns agents (Claude Code platform limitation).
+RAPID's architecture is a 4-layer system: Skill Layer (SKILL.md orchestrators) -> Agent Composition Layer (assembler.cjs + role modules) -> CLI Layer (rapid-tools.cjs, ~95 subcommands) -> Library Layer (21 .cjs files) -> State/Filesystem (STATE.json + .planning/). All v2.1 changes respect this layering strictly: resolution logic lives in the library layer callable via CLI, skills call CLI subcommands to access all state, agents communicate via filesystem artifacts (not direct data passing), and all STATE.json writes go through lock-protected Zod-validated functions.
 
-**Major components:**
-1. **Hierarchical State Machine** -- JSON-based state tracking for Project > Milestone > Set > Wave > Job with validated transitions, atomic writes, and crash-recovery breadcrumbs. Replaces `state.cjs` internals while preserving backward-compatible API wrappers.
-2. **Wave/Job Planning Engine** -- Two new agents (Wave Planner, Job Planner) plus `plan.cjs` extensions for WAVES.json and per-job PLAN.md files. Extends existing `dag.cjs` with intra-set job DAGs.
-3. **Review Module** -- Five new agents (Hunter, Devils-Advocate, Judge, Unit-Test, UAT) plus `review.cjs` lib module. Three sub-pipelines (UAT > Unit Tests > Bug Hunt) orchestrated by a review skill. Additive -- does not modify existing modules.
-4. **Enhanced Merger** -- 5-level conflict classification (textual, structural, dependency, API, semantic) and 4-tier resolution cascade (deterministic, heuristic, AI-assisted, human escalation) adapted from gsd_merge_agent. Includes bisection recovery and cascade rollback. Enhances `merge.cjs` internals.
-5. **Command Surface** -- New commands (`/set-init`, `/discuss`, `/review`, `/uat`, `/unit-test`, `/bug-hunt`) plus enhanced existing commands (`/execute`, `/merge`, `/status`).
+**Major components and v2.1 changes:**
+1. `state-machine.cjs` — add `resolveEntityId()` for numeric + substring ID resolution (additive, no changes to existing functions)
+2. `wave-planning.cjs` — add `listWavesInOrder()` and `getPlannableWaves()` for multi-wave planning (additive)
+3. `review.cjs` — add `generateScopeInput()` to produce scoper input from wave scope data (additive)
+4. `rapid-tools.cjs` — add `state resolve-id` and `wave-plan plan-all` subcommands (new routes, existing routes unchanged)
+5. `skills/discuss/SKILL.md` — restructure 4-question loop into 2-interaction batched approach (rewrite of Step 5)
+6. `skills/wave-plan/SKILL.md` — add multi-wave mode and plan verifier step between job planning and contract validation (major extension)
+7. `skills/review/SKILL.md` — add scoper delegation before bug hunt pipeline; lean review as default (restructure)
+
+**Key patterns to maintain:**
+- CLI-Mediated State Access: skills never read/write STATE.json directly; always via rapid-tools.cjs
+- Subagent Orchestration from SKILL.md: one level of delegation only; agents cannot spawn sub-agents
+- Artifact-Based Communication: PLAN-VERIFICATION.md and REVIEW-SCOPE.md as new pipeline artifacts
+- Lock-Protected Atomic Writes: parallel wave planning serializes STATE.json access through existing lock mechanism
+- No new wave state statuses: plan verification runs as a sub-step within `planning` state; artifact existence signals completion
 
 ### Critical Pitfalls
 
-1. **State schema bifurcation** -- Attempting to layer hierarchical JSON on top of the existing flat STATE.md regex parsing creates a hybrid that fails at boundaries. **Avoid:** Clean break to STATE.json from day one. No hybrid format. Migration function for existing projects.
-2. **Token explosion in review pipeline** -- 3 serial agents each needing full codebase context costs $15-45/cycle with unbounded iterations. **Avoid:** Scope to diff (changed files only), cap iterations at 2, use Sonnet for hunter/DA (Opus only for judge), pre-filter with static analysis.
-3. **Hidden coupling in "kept" modules** -- Modules labeled "keep" (worktree.cjs, merge.cjs) have implicit dependencies on v1.0 data structures via imports. **Avoid:** Dependency audit before coding, adapter interfaces between kept and rewritten modules, integration tests at boundaries.
-4. **Agent specification ambiguity** -- Free-form prose prompts cause 41.77% of multi-agent failures. **Avoid:** JSON schemas for every inter-agent message, output validation at every handoff, concrete examples in prompts, retry-on-validation-failure.
-5. **State loss across context resets** -- Multi-step operations (discuss > plan > execute > review) span many context resets. Partial writes leave inconsistent state. **Avoid:** Atomic state transitions (single JSON write per transition), last-operation breadcrumbs, filesystem reconciliation on session start.
+1. **Incomplete GSD decontamination (three-layer problem)** — source code clean does not mean runtime clean. Fix requires: grep sweep of all `src/` code, update test assertions in `init.test.cjs:90-92`, add explicit "You are rapid-{role}" identity anchoring in all Agent tool spawns in SKILL.md files, and integration-test by actually running each skill and inspecting displayed agent names in Claude Code UI.
+
+2. **Adding a new wave state for plan verification** — do NOT add a `verified` state to the wave state machine; it requires coordinated 4-file updates (state-transitions.cjs, state-schemas.cjs, state-machine.cjs, rapid-tools.cjs) and breaks all skill status checks. Instead, run the plan verifier as a sub-step within the `planning` state; use PLAN-VERIFICATION.md artifact existence as implicit status; transition to `executing` only after verification passes.
+
+3. **Race conditions during parallel wave planning** — VALIDATION-REPORT.md is currently written to `.planning/sets/{setId}/VALIDATION-REPORT.md` (set-level); parallel wave-plan runs will overwrite each other. Fix first: move to `.planning/waves/{setId}/{waveId}/VALIDATION-REPORT.md` (wave-level). Also: each wave-plan run must commit only its own wave directory to avoid git HEAD lock conflicts.
+
+4. **Inconsistent numeric ID rollout across skills** — partial rollout creates a broken UX where `/set-init 1` works but `/discuss 1` does not. Implement `resolveEntityId()` in state-machine.cjs + `state resolve-id` CLI subcommand first, then update all 7+ skills simultaneously in one changeset. Never ship partial support.
+
+5. **Plan verifier becoming a rubber stamp or over-blocker** — the existing `validateJobPlans()` already checks contract coverage and cross-set imports. The verifier's unique value is: file conflict detection (two jobs claiming the same file in the same wave), step ordering issues (job A depends on job B's output but both execute in parallel), missing test coverage for acceptance criteria. Implement deterministic checks in code; use LLM only for implementability judgment; make findings advisory, not blocking.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+Based on the combined research, a 4-phase structure is strongly recommended. Phases 1 and 2 are sequential with safe, incremental commits. Phase 3 has two independent tracks (wave planning vs. review) that can run in parallel. Phase 4 is integration testing.
 
-### Phase 1: State Machine Foundation
-**Rationale:** Every other feature depends on hierarchical state. This is the universal dependency. Both ARCHITECTURE.md and PITFALLS.md identify this as the "must be first" component. Pitfall 1 (state bifurcation) and Pitfall 5 (state loss) must be addressed here or they cascade through everything.
-**Delivers:** STATE.json schema, rewritten `state.cjs` with hierarchical accessors, STATE.md auto-generation, transition validation table, atomic write semantics, crash-recovery breadcrumbs, CLI extensions for state queries.
-**Addresses:** State machine (P1 table stake), Sets/Waves/Jobs hierarchy data model (P1)
-**Avoids:** Pitfall 1 (state bifurcation), Pitfall 5 (state loss on context reset)
+### Phase 1: Foundation Cleanup
 
-### Phase 2: Dependency Audit and Adapter Layer
-**Rationale:** Pitfall 6 (hidden coupling) specifically calls for a "Phase 0" pre-work step. Before building new features on kept modules, their implicit dependencies on v1.0 structures must be mapped and adapted. Skipping this causes every subsequent phase to encounter unexpected breakage.
-**Delivers:** Module-by-module dependency map, adapter interfaces for `worktree.cjs`, `merge.cjs`, `execute.cjs`, `plan.cjs` interactions with new data structures, integration tests at module boundaries.
-**Addresses:** Foundation for all subsequent phases
-**Avoids:** Pitfall 6 (hidden coupling in kept modules)
+**Rationale:** GSD decontamination must come first — agents with confused identity will mis-execute all subsequent features. Numeric ID resolution comes second — it is the shared library primitive that all skill modifications in Phases 2 and 3 depend on. Role module skeletons can be created here while skills remain unchanged. All items are independent, zero-risk, and have clear completion criteria.
 
-### Phase 3: Wave/Job Planning Infrastructure
-**Rationale:** Execution depends on having wave/job plans. This phase creates the data structures and agents that decompose sets into actionable work units.
-**Delivers:** WAVES.json schema, `plan.cjs` extensions (createWavePlan, loadWavePlan, createJobPlan, loadJobPlan), `dag.cjs` extension (createJobDAG), Wave Planner agent, Job Planner agent.
-**Addresses:** Wave Planner (P1), Job Planner (P1)
-**Avoids:** Pitfall 7 (agent specification ambiguity) -- schemas for wave/job plan outputs defined here
+**Delivers:** Clean agent identity (no more gsd-* names in Claude Code UI), testable resolve.cjs library and CLI subcommand, role module stubs for verifier and scoper, fix gsd_state_version in source and tests.
 
-### Phase 4: /set-init and Discuss Commands
-**Rationale:** Depends on state machine (Phase 1) and wave planning (Phase 3). This is the entry point for Mark II workflow -- users cannot start without it.
-**Delivers:** `/rapid:set-init` command and skill, `/rapid:discuss` command and skill, worktree creation + wave planning trigger, port allocation per worktree.
-**Addresses:** /set-init (P1), Discuss phase (differentiator)
-**Avoids:** Pitfall 8 (resource conflicts across worktrees) -- port allocation established here
+**Features addressed:**
+- GSD agent type decontamination (P1 table stakes)
+- Numeric ID shorthand library and CLI infrastructure (P1 foundation for all skills)
 
-### Phase 5: Enhanced Execution
-**Rationale:** Depends on wave/job structure (Phase 3) and set-init (Phase 4). Transforms execution from set-level to job-level dispatch within waves.
-**Delivers:** Rewritten execute skill with job-level dispatch, per-job commit tracking, job-level pause/resume, parallel job execution within waves.
-**Addresses:** Executor agent (P1)
+**New files:** `src/lib/resolve.cjs`, `src/lib/resolve.test.cjs`, `src/modules/roles/role-plan-verifier.md`, `src/modules/roles/role-review-scoper.md`
 
-### Phase 6: Review Module
-**Rationale:** Independent of the planner/executor chain -- only needs state machine. Can conceptually be built in parallel with Phases 3-5, but sequencing after execution ensures the pipeline can be tested end-to-end. This is the highest-complexity differentiator.
-**Delivers:** `review.cjs`, 6 agent prompts (Hunter, DA, Judge, Unit-Test, UAT, Bugfix), 4 new skills and commands, JSON schemas for inter-agent messages, Playwright UAT integration, review gate for merge.
-**Addresses:** Bug hunting pipeline (P2 differentiator), UAT (P2), Unit tests (P2)
-**Avoids:** Pitfall 3 (token explosion -- scoping and caps), Pitfall 4 (Playwright flakiness), Pitfall 7 (agent ambiguity -- schemas)
+**Modified files:** `src/lib/init.cjs` (rename gsd_state_version), `src/lib/init.test.cjs` (update test assertion), `rapid-tools.cjs` (add resolve-id subcommand)
 
-### Phase 7: Enhanced Merger
-**Rationale:** Depends on review module (Phase 6) for review gate integration. Most complex adaptation from gsd_merge_agent. Building after review ensures merge validation can include review checks.
-**Delivers:** 5-level conflict classification, 4-tier resolution cascade, integration branch pattern, merge state in STATE.json, enhanced merge skill.
-**Addresses:** Merger core (P1 table stake), 5-level conflict detection
-**Avoids:** Pitfall 2 (merge namespace collision -- unified state, RAPID branch naming)
+**Pitfalls to avoid:** Three-layer GSD decontamination (source + tests + runtime identity anchoring in all SKILL.md Agent spawns); implement resolve.cjs as library first, not per-skill
 
-### Phase 8: Advanced Recovery and Polish
-**Rationale:** Bisection and rollback extend the core merger. /init overhaul and status enhancements are polish that should not block the core workflow.
-**Delivers:** Bisection recovery, cascade rollback, enhanced /init with roadmap creation, enhanced /status with wave/job display, /review --quick mode.
-**Addresses:** Bisection (P3), Rollback (P3), /init overhaul
+**Research flag:** Standard patterns — no phase research needed.
+
+---
+
+### Phase 2: Workflow and Planning Improvements
+
+**Rationale:** Depends on Phase 1 numeric ID infrastructure. This is the highest user-value phase — it addresses the explicit friction points in todo.md: batched questioning, streamlined workflow suggestions, and plan verification. Skills are updated to use the resolve.cjs infrastructure from Phase 1.
+
+**Delivers:** Dramatically fewer user interactions per session, explicit next-step guidance after each skill with exact invocation syntax, verified job plans before execution.
+
+**Features addressed:**
+- Batched questioning in discuss (P1 table stakes — 50-75% reduction in AskUserQuestion calls)
+- Streamlined workflow (P2 core value — each skill suggests exact next command with numeric shorthand)
+- Plan verifier agent (P2 core value — unique checks: file conflicts, step ordering, test coverage gaps)
+- Numeric ID rollout to all 7+ skills (P1 table stakes — uses Phase 1 library)
+
+**Architecture deliverables:** Extensions to wave-planning.cjs (listWavesInOrder, getPlannableWaves), wave-plan SKILL.md restructure with verifier step, discuss SKILL.md batching rewrite, all skills updated for numeric ID support.
+
+**Pitfalls to avoid:** Do NOT add new wave states (use sub-step within `planning`); update ALL skills for numeric IDs simultaneously; keep plan verifier advisory not blocking; do not batch questions across different gray areas (different areas = different concerns).
+
+**Research flag:** Batched questioning design may need a mini-spike — AskUserQuestion option limits and grouping behavior are medium-confidence from third-party sources. Test empirically at the start of this phase before committing to the full batching implementation.
+
+---
+
+### Phase 3A: Parallel Wave Planning
+
+**Rationale:** Depends on Phase 2 plan verifier (parallel-planned waves each need independent verification). Sequential multi-wave auto-chaining is the primary win (most sets have linearly dependent waves); true parallel dispatch is an optimization on top. Start with sequential multi-wave auto-chaining; add parallel dispatch only after sequential flow is stable.
+
+**Delivers:** Single command to plan all waves in a set; no more manual per-wave invocations; wave-level VALIDATION-REPORT.md isolation.
+
+**Features addressed:**
+- Parallel wave planning with dependency-aware sequencing (P3 differentiator)
+
+**Architecture deliverables:** wave-plan SKILL.md `--all` mode, `wave-plan plan-all` CLI subcommand in rapid-tools.cjs, VALIDATION-REPORT.md path migration from set-level to wave-level directories.
+
+**Pitfalls to avoid:** Fix VALIDATION-REPORT.md write path before enabling parallel dispatch; serialize git commits per wave directory; test two concurrent wave-plan runs producing separate artifacts without collision.
+
+**Research flag:** Sequential auto-chaining follows standard patterns — no phase research needed. Parallel dispatch: test Claude Code's 5-simultaneous-subagent limit empirically before designing the fan-out. Start with 2-wave parallelism.
+
+---
+
+### Phase 3B: Context-Efficient Review
+
+**Rationale:** Independent of Phase 3A — modifies review skill and review.cjs, not wave-plan skill or wave-planning.cjs. Depends on Phase 1 role module stubs. The scoper pattern reduces review cost from $15-45/cycle to an estimated $5-15/cycle. Lean review as default eliminates the primary cost surprise for new users.
+
+**Delivers:** 60-80% estimated context reduction per review agent; lean review as default; full adversarial pipeline as explicit opt-in with cost warning.
+
+**Features addressed:**
+- Context-efficient review with scoper delegation (P3 differentiator)
+- Leaner review stage default (complements scoper work — the two changes ship together)
+
+**Architecture deliverables:** Complete `role-review-scoper.md` agent role, `generateScopeInput()` in review.cjs, REVIEW-SCOPE.md artifact format, review SKILL.md restructure (scoper spawned first at Step 3.0, lean default with full pipeline opt-in).
+
+**Pitfalls to avoid:** Scoper returns file paths + brief summaries (not full file contents) to orchestrator; review subagents use Read tool to load files from paths directly; conservative initial scoping (flag uncertain files as cross-cutting); use Haiku model for scoper via `model: haiku` in agent frontmatter for cost efficiency.
+
+**Research flag:** Context scoping strategy is medium-confidence. Claude Code has no enforced scoped context passing (GitHub #4908 confirmed) — scoping is advisory only (prompt-level). Design the scoper's judgment threshold conservatively and calibrate with real waves before declaring this phase complete.
+
+---
+
+### Phase 4: Integration Testing
+
+**Rationale:** Must come after all individual features are stable. End-to-end flow validation catches regressions and interaction effects (e.g., numeric IDs + parallel planning + scoped review in the same session).
+
+**Delivers:** Validated end-to-end workflow from `/rapid:init` through `/rapid:merge` with all v2.1 features active; measurable context and cost improvements documented.
+
+**Verification checklist (from PITFALLS.md "Looks Done But Isn't"):**
+- Numeric IDs work consistently in all 7+ skills; test edge cases (sets named "1-auth", numeric input "1")
+- Agent spawn names all start with "rapid-" in Claude Code UI (not just in source code)
+- Plan verifier catches known issues (file conflicts, step ordering) and does NOT block valid plans
+- Two concurrent wave-plan runs produce separate wave-level VALIDATION-REPORT.md files
+- Review context usage measurably lower than baseline (track token counts before and after)
+- Re-entry after interruption at each skill boundary recovers cleanly
+
+**Research flag:** Standard testing patterns — no phase research needed.
+
+---
 
 ### Phase Ordering Rationale
 
-- **State machine first** because it is the universal dependency. Architecture, features, and pitfalls research all converge on this.
-- **Dependency audit second** because hidden coupling in kept modules (Pitfall 6) will silently break every subsequent phase if not addressed upfront. This is cheap insurance.
-- **Planning before execution** because executors need plans to execute. DAG/wave/job structures must exist before dispatch logic.
-- **Review after execution** because it needs built code to review, and end-to-end testing requires the full pipeline.
-- **Merger after review** because the review gate must exist before the merger can enforce it. The merger is also the most complex adaptation and benefits from having all other infrastructure stable.
-- **Recovery and polish last** because these extend core features and have the lowest user value relative to complexity.
-- **Phases 3-5 and Phase 6 have limited interdependency** -- in practice, they could be parallelized if two developers are available. Review only needs the state machine, not the full planner chain.
+The ordering follows hard dependency chains identified across all 4 research files:
+
+- Phase 1 before everything: GSD decontamination prevents identity poisoning of all subsequent agent work; resolve.cjs is the shared primitive that Phases 2 and 3A both depend on
+- Phase 2 before Phase 3A: plan verifier (Phase 2) is a prerequisite for parallel wave planning (Phase 3A) — parallel-planned waves each need independent verification
+- Phase 3A and 3B can proceed in parallel: they modify different skills (wave-plan vs review) and different library files (wave-planning.cjs vs review.cjs) with no shared dependencies
+- Phase 4 gates release: integration testing validates the combined system, not individual features in isolation
+
+The FEATURES.md dependency graph confirms this ordering:
+```
+GSD Decontam    ─────────────────────────────────────────────> [All phases]
+Numeric ID      ──> Streamlined Workflow ──> Parallel Planning
+                ──> Batched Questioning ──> Plan Verifier ──> Parallel Planning
+                                                           ──> Context Review
+```
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 6 (Review Module):** Highest complexity, 6 new agents, 3 sub-pipelines, Playwright integration, token cost optimization. Needs research on optimal agent prompt design, inter-agent schema finalization, and Playwright MCP vs library mode tradeoffs per UAT scenario.
-- **Phase 7 (Enhanced Merger):** Complex adaptation from gsd_merge_agent (26 TypeScript files to CJS port). Needs research on exact algorithm translation for conflict classification and resolution cascade.
-- **Phase 2 (Dependency Audit):** Needs thorough code analysis of all 12 lib modules to map cross-cutting dependencies. Not research in the traditional sense but requires systematic investigation.
+**Needs investigation during phase planning:**
+- **Phase 2 (Batched questioning):** AskUserQuestion option limits and grouping behavior documented in third-party sources only; run a spike at the start of Phase 2 with 15+ options before committing to the batching design
+- **Phase 3B (Scoper calibration):** The "needs full read" vs "summary sufficient" judgment is LLM-based; calibrate with real waves before shipping; start conservative (more cross-cutting, fewer isolated scopes)
+- **Phase 3A (Parallel dispatch ceiling):** Claude Code 5-simultaneous-subagent limit confirmed in docs but real-world behavior with nested planning subagents is unknown; test with 2 waves before scaling to 5
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (State Machine):** Well-understood problem. JSON state with transition tables is a solved pattern. The ARCHITECTURE.md research provides complete schema and implementation guidance.
-- **Phase 4 (/set-init):** Composes existing worktree.cjs functions with new state machine. Straightforward wiring.
-- **Phase 5 (Enhanced Execution):** Extension of existing execute.cjs with job-level dispatch. Pattern already established in v1.0.
+**Standard patterns — skip phase research:**
+- **Phase 1:** GSD grep sweep + test fix + library module creation — all well-understood operations
+- **Phase 2 (except batching):** State machine additions, skill restructuring, and CLI subcommands follow established RAPID patterns thoroughly documented in ARCHITECTURE.md
+- **Phase 4:** Integration testing follows standard RAPID workflow verification patterns
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Based on direct codebase analysis of existing dependencies, version compatibility verified, alternatives systematically evaluated and rejected with clear rationale. Only 1 new dependency. |
-| Features | HIGH | Features derived from first-party design docs (mark2.md, review module specs, gsd_merge_agent docs) plus competitor analysis against Turborepo, Nx, Bazel, CrewAI. Dependency graph validated against codebase. |
-| Architecture | HIGH | Based on thorough analysis of existing codebase (12 lib modules, all skills, all agents). Integration points mapped with specific function names and file paths. Anti-patterns identified from platform constraints (no nested agent spawning). |
-| Pitfalls | HIGH | Grounded in existing code analysis, published multi-agent failure research (UC Berkeley), cost modeling from Claude Code pricing, and direct experience with gsd_merge_agent integration surface. Recovery costs estimated per pitfall. |
+| Stack | HIGH | All technologies are existing; no new deps; Zod 3.25.76 CommonJS compatibility verified locally; no upgrade risks |
+| Features | HIGH | Features derived from first-party user feedback (todo.md) + direct codebase analysis of all 17 skills, 21 libraries, 26 role modules |
+| Architecture | HIGH | Based on direct analysis of all source files; integration points and component boundaries are authoritative; specific function names and line numbers cited |
+| Pitfalls | HIGH | Derived from actual failure modes observed in production (GSD naming bug exists now); state machine pitfall derived from codebase structure; race condition identified from specific artifact paths in existing code |
 
-**Overall confidence:** HIGH
-
-All four research files drew from first-party sources (existing RAPID codebase, mark2.md design doc, gsd_merge_agent specs, review module drafts) supplemented by official documentation (Node.js, Playwright, Microsoft/Google agent patterns) and peer-reviewed research. The domain is well-understood because the existing v1.0 codebase provides concrete implementation reference.
+**Overall confidence: HIGH**
 
 ### Gaps to Address
 
-- **Sonnet vs Opus for review agents:** The recommendation to use Sonnet for hunter/DA and Opus for judge is based on cost analysis, not empirical testing. Validate during Phase 6 implementation that Sonnet produces adequate finding quality for the hunter role.
-- **EXPERIMENTAL_AGENT_TEAMS reliability:** The architecture assumes agent teams with subagent fallback, but teams behavior under heavy load (8+ concurrent agents across worktrees) is not well-documented. Test team stability during Phase 5/6.
-- **Port allocation scheme:** The suggested deterministic port offset (Set 1: 3000, Set 2: 3100, etc.) may conflict with projects that use non-standard port ranges. Needs validation against real project configurations during Phase 4.
-- **STATE.md backward compatibility:** The migration from STATE.md to STATE.json needs a concrete migration path for existing RAPID v1.0 projects. Design the migration function during Phase 1 implementation.
-- **Playwright in worktree environments:** The interaction between Playwright browser lifecycle, Claude Code sandbox restrictions, and git worktree working directories is untested. Validate during Phase 6 with a real web project.
+- **AskUserQuestion option limits:** multiSelect is confirmed supported and used in discuss SKILL.md, but practical limits on option count and grouping come from a third-party blog post. Resolve by testing at the start of Phase 2 with a spike call using 15+ options.
+- **Claude Code subagent `model` field behavior:** STACK.md notes `model: haiku` in agents/ frontmatter enables cheap scoper runs, sourced from official docs (March 2026). Verify this field is still honored before relying on it in Phase 3B cost projections.
+- **Scoper "full read" calibration:** The review scoper's ability to correctly distinguish "summary sufficient" from "needs full read" has no deterministic guarantee. Start Phase 3B with conservative calibration (default to "needs full read"); tune based on real wave review runs before declaring cost savings realized.
+- **True parallelism ceiling in practice:** The 5-simultaneous-subagent limit is confirmed in docs, but real-world behavior with 5 concurrent wave-planning agents (each spawning research + planning + job planning subagents themselves) is untested. Phase 3A should start with 2-wave parallelism and increase only after verifying stability.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- RAPID v1.0 codebase (`src/lib/*.cjs`, 12 modules, 16 test files) -- existing architecture, module APIs, data structures
-- mark2.md design document (`mark2-plans/mark2.md`) -- project owner's design spec for Mark II
-- gsd_merge_agent documentation (`mark2-plans/gsd_merge_agent/DOCS.md`, 26 TypeScript modules) -- merge pipeline reference
-- Review module specifications (`mark2-plans/review-module/*.md`) -- agent prompt drafts and pipeline design
-- Node.js v25.8.0 `node:test` documentation -- `run()` API, TestsStream events
-- Playwright Library documentation -- library vs test runner mode, API surface
-- Bazel official documentation -- task-based build system patterns
+- RAPID v2.0 codebase: all 17 SKILL.md files, 21 .cjs library files, 26 role modules — direct analysis, authoritative source for integration points and pitfall identification
+- `todo.md` (60 lines): first-party user feedback — direct requirements for all 7 v2.1 features
+- `.planning/PROJECT.md`: first-party v2.1 milestone definition
+- `package.json` + `node_modules/zod/package.json`: verified Zod 3.25.76 CommonJS compatibility
+- [Claude Code Subagent Documentation](https://code.claude.com/docs/en/sub-agents): subagent architecture, model selection, permissionMode, tools allowlist, agents/ directory format
+- [Claude Code Skills Documentation](https://code.claude.com/docs/en/skills): $ARGUMENTS, $0/$1 positional args, context: fork
+- [GitHub Issue #4908: Scoped Context Passing](https://github.com/anthropics/claude-code/issues/4908): confirms scoped context is advisory-only, not tool-enforced
 
 ### Secondary (MEDIUM confidence)
-- Microsoft Azure AI Agent Design Patterns -- supervisor/orchestrator patterns
-- Google ADK Multi-Agent Patterns -- agent coordination strategies
-- Multi-Agent Adversarial Testing Framework (ResearchGate) -- 47% bug discovery improvement with Red-Blue dynamics
-- Simon Willison: Playwright MCP with Claude Code -- MCP integration approach
-- Turborepo/Nx community analysis -- monorepo tooling patterns
+- [Claude Code AskUserQuestion Guide](https://smartscope.blog/en/generative-ai/claude/claude-code-askuserquestion-tool-guide/): multiSelect support, timeout behavior, practical option limits
+- [Claude Code Sub-Agent Best Practices](https://claudefa.st/blog/guide/agents/sub-agent-best-practices): parallel vs. sequential patterns, context window management
+- [GitHub Issue #27645: Subagent Token Waste](https://github.com/anthropics/claude-code/issues/27645): confirms community recognition of token waste in subagent delegation
 
 ### Tertiary (LOW confidence)
-- LangGraph State Machines article -- agent task flow patterns (community article, used for comparison only)
-- Claude Code context window analysis (Morph) -- 200K limit, compaction behavior (third-party analysis)
+- Cost estimates ($5-15 scoped vs $15-45 full adversarial review): derived from per-agent token consumption estimates, not empirical measurement — validate during Phase 3B implementation
 
 ---
-*Research completed: 2026-03-06*
+*Research completed: 2026-03-09*
 *Ready for roadmap: yes*
