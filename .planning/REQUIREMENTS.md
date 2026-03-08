@@ -25,7 +25,7 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 ### Workflow Clarity
 
 - [ ] **FLOW-01**: Wave-plan accepts set+wave context (not just wave ID in isolation)
-- [ ] **FLOW-02**: Agents have clear internal knowledge of the correct workflow order (init → set-init → discuss → wave-plan → execute → review → merge)
+- [ ] **FLOW-02**: Agents have clear internal knowledge of the correct workflow order (init -> set-init -> discuss -> wave-plan -> execute -> review -> merge)
 - [ ] **FLOW-03**: Job granularity defaults to coarser sizing (fewer, larger jobs per wave)
 
 ### Planning Pipeline
@@ -54,15 +54,15 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 
 ### Deferred from v2.1
 
-- **EXPRESS-01**: Express mode — auto-accept defaults at non-critical gates
-- **LEARN-01**: Review scoper learning/memory — persistent memory per project for better scoping over time
-- **REPLAN-01**: Selective wave re-planning — re-plan individual waves without re-planning entire set
+- **EXPRESS-01**: Express mode -- auto-accept defaults at non-critical gates
+- **LEARN-01**: Review scoper learning/memory -- persistent memory per project for better scoping over time
+- **REPLAN-01**: Selective wave re-planning -- re-plan individual waves without re-planning entire set
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Fully automatic workflow (zero user gates) | PROJECT.md explicitly rejects "fully automated review (no HITL)" — streamlining reduces friction, not decisions |
+| Fully automatic workflow (zero user gates) | PROJECT.md explicitly rejects "fully automated review (no HITL)" -- streamlining reduces friction, not decisions |
 | Real-time cross-wave coordination during planning | Destroys isolation guarantees; subagents cannot spawn sub-subagents (Claude Code hard constraint) |
 | Dynamic wave/job creation during execution | RAPID's isolation model depends on sets being defined at planning time |
 | Per-file review granularity control | Manual file scoping is tedious and error-prone; scoper agent handles this automatically |
@@ -74,37 +74,37 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CLEAN-01 | — | Pending |
-| CLEAN-02 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
-| UX-04 | — | Pending |
-| UX-05 | — | Pending |
-| UX-06 | — | Pending |
-| UX-07 | — | Pending |
-| FLOW-01 | — | Pending |
-| FLOW-02 | — | Pending |
-| FLOW-03 | — | Pending |
-| PLAN-01 | — | Pending |
-| PLAN-02 | — | Pending |
-| PLAN-03 | — | Pending |
-| PLAN-04 | — | Pending |
-| PLAN-05 | — | Pending |
-| WAVE-01 | — | Pending |
-| WAVE-02 | — | Pending |
-| WAVE-03 | — | Pending |
-| WAVE-04 | — | Pending |
-| REV-01 | — | Pending |
-| REV-02 | — | Pending |
-| REV-03 | — | Pending |
-| REV-04 | — | Pending |
+| CLEAN-01 | Phase 25 | Pending |
+| CLEAN-02 | Phase 25 | Pending |
+| UX-01 | Phase 26 | Pending |
+| UX-02 | Phase 26 | Pending |
+| UX-03 | Phase 26 | Pending |
+| UX-04 | Phase 28 | Pending |
+| UX-05 | Phase 29 | Pending |
+| UX-06 | Phase 27 | Pending |
+| UX-07 | Phase 27 | Pending |
+| FLOW-01 | Phase 28 | Pending |
+| FLOW-02 | Phase 28 | Pending |
+| FLOW-03 | Phase 28 | Pending |
+| PLAN-01 | Phase 30 | Pending |
+| PLAN-02 | Phase 30 | Pending |
+| PLAN-03 | Phase 30 | Pending |
+| PLAN-04 | Phase 30 | Pending |
+| PLAN-05 | Phase 30 | Pending |
+| WAVE-01 | Phase 31 | Pending |
+| WAVE-02 | Phase 31 | Pending |
+| WAVE-03 | Phase 31 | Pending |
+| WAVE-04 | Phase 31 | Pending |
+| REV-01 | Phase 32 | Pending |
+| REV-02 | Phase 32 | Pending |
+| REV-03 | Phase 32 | Pending |
+| REV-04 | Phase 32 | Pending |
 
 **Coverage:**
 - v2.1 requirements: 25 total
-- Mapped to phases: 0
-- Unmapped: 25 ⚠️
+- Mapped to phases: 25
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-09*
-*Last updated: 2026-03-09 after initial definition*
+*Last updated: 2026-03-09 after roadmap creation*

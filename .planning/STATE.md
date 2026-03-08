@@ -5,9 +5,9 @@ milestone_name: Improvements & Fixes
 status: active
 stopped_at: null
 last_updated: "2026-03-09"
-last_activity: 2026-03-09 — Milestone v2.1 started
+last_activity: 2026-03-09 — Roadmap created (8 phases, 25 requirements mapped)
 progress:
-  total_phases: 0
+  total_phases: 8
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,20 +21,41 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Defining requirements for v2.1
+**Current focus:** Phase 25 - GSD Decontamination
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-09 — Milestone v2.1 started
+Phase: 25 (first of 8 in v2.1: Phases 25-32)
+Plan: --
+Status: Ready to plan
+Last activity: 2026-03-09 -- Roadmap created for v2.1
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0
+- Average duration: --
+- Total execution time: 0 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
 ### Decisions
 
 Full decision log in PROJECT.md Key Decisions table.
+
+Recent:
+- v2.1 roadmap: 8 phases derived from 25 requirements at fine granularity
+- Phase 27 (branding) and Phase 32 (review) can run as independent tracks
 
 ### Pending Todos
 
@@ -45,10 +66,13 @@ None.
 - v1.0 Core: Phases 1-9.2 (shipped)
 - v1.1 UI UX Improvements: Phases 10-15 (shipped)
 - v2.0 Mark II: Phases 16-24 (shipped 2026-03-09)
+- v2.1 Improvements & Fixes: Phases 25-32 (in progress)
 
 ### Blockers/Concerns
 
 - Token cost for 3-agent adversarial review needs monitoring in production use
+- AskUserQuestion batching behavior (Phase 29) needs empirical spike before full implementation
+- Claude Code 5-subagent parallelism ceiling (Phase 31) needs testing with 2 waves first
 
 ### Quick Tasks Completed
 
@@ -65,5 +89,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Milestone v2.1 started — defining requirements
+Stopped at: Roadmap created for v2.1 milestone
 Resume file: None
