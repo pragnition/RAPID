@@ -79,6 +79,12 @@ Commands:
   wave-plan create-wave-dir <setId> <waveId>   Create .planning/waves/{setId}/{waveId}/ directory
   wave-plan validate-contracts <setId> <waveId> Validate job plans against CONTRACT.json
   wave-plan list-jobs <setId> <waveId>          List JOB-PLAN.md files for a wave
+  review scope <set-id> <wave-id> [--branch <b>]     Scope wave files for review
+  review log-issue <set-id> <wave-id>                Log issue from stdin JSON
+  review list-issues <set-id> [--status <s>]         List all issues for a set
+  review update-issue <set-id> <wave-id> <issue-id> <status>  Update issue status
+  review lean <set-id> <wave-id>                     Run lean wave-level review
+  review summary <set-id>                            Generate REVIEW-SUMMARY.md
 
 Options:
   --help, -h             Show this help message
@@ -166,6 +172,10 @@ async function main() {
 
     case 'wave-plan':
       await handleWavePlan(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'review':
+      await handleReview(cwd, subcommand, args.slice(2));
       break;
 
     case 'resume':
@@ -1290,6 +1300,198 @@ async function handleWavePlan(cwd, subcommand, args) {
 
     default:
       error(`Unknown wave-plan subcommand: ${subcommand}. Use: resolve-wave, create-wave-dir, validate-contracts, list-jobs`);
+      process.stdout.write(USAGE);
+      process.exit(1);
+  }
+}
+
+async function handleReview(cwd, subcommand, args) {
+  const fs = require('fs');
+  const path = require('path');
+  const review = require('../lib/review.cjs');
+  const wt = require('../lib/worktree.cjs');
+
+  switch (subcommand) {
+    case 'scope': {
+      const setId = args[0];
+      const waveId = args[1];
+      if (!setId || !waveId) {
+        error('Usage: rapid-tools review scope <set-id> <wave-id> [--branch <branch>]');
+        process.exit(1);
+      }
+      // Parse --branch flag (default: main)
+      let baseBranch = 'main';
+      const branchIdx = args.indexOf('--branch');
+      if (branchIdx !== -1 && args[branchIdx + 1]) baseBranch = args[branchIdx + 1];
+      // Resolve worktree path from registry
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setId];
+      const worktreePath = entry ? path.resolve(cwd, entry.path) : cwd;
+      try {
+        const result = review.scopeWaveForReview(cwd, worktreePath, baseBranch);
+        output(JSON.stringify(result));
+      } catch (err) {
+        output(JSON.stringify({ error: err.message }));
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'log-issue': {
+      const setId = args[0];
+      const waveId = args[1];
+      if (!setId || !waveId) {
+        error('Usage: rapid-tools review log-issue <set-id> <wave-id>  (reads JSON issue from stdin)');
+        process.exit(1);
+      }
+      try {
+        const stdinData = fs.readFileSync(0, 'utf-8').trim();
+        if (!stdinData) {
+          error('No issue data on stdin. Pipe a JSON issue object.');
+          process.exit(1);
+        }
+        const issue = JSON.parse(stdinData);
+        review.logIssue(cwd, setId, waveId, issue);
+        output(JSON.stringify({ logged: true, issueId: issue.id }));
+      } catch (err) {
+        output(JSON.stringify({ error: err.message }));
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'list-issues': {
+      const setId = args[0];
+      if (!setId) {
+        error('Usage: rapid-tools review list-issues <set-id> [--status <status>]');
+        process.exit(1);
+      }
+      // Parse optional --status filter
+      let statusFilter = null;
+      const statusIdx = args.indexOf('--status');
+      if (statusIdx !== -1 && args[statusIdx + 1]) statusFilter = args[statusIdx + 1];
+      try {
+        let issues = review.loadSetIssues(cwd, setId);
+        if (statusFilter) {
+          issues = issues.filter(i => i.status === statusFilter);
+        }
+        output(JSON.stringify(issues));
+      } catch (err) {
+        output(JSON.stringify({ error: err.message }));
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'update-issue': {
+      const setId = args[0];
+      const waveId = args[1];
+      const issueId = args[2];
+      const newStatus = args[3];
+      if (!setId || !waveId || !issueId || !newStatus) {
+        error('Usage: rapid-tools review update-issue <set-id> <wave-id> <issue-id> <status>');
+        process.exit(1);
+      }
+      try {
+        review.updateIssueStatus(cwd, setId, waveId, issueId, newStatus);
+        output(JSON.stringify({ updated: true }));
+      } catch (err) {
+        output(JSON.stringify({ error: err.message }));
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'lean': {
+      const setId = args[0];
+      const waveId = args[1];
+      if (!setId || !waveId) {
+        error('Usage: rapid-tools review lean <set-id> <wave-id>');
+        process.exit(1);
+      }
+      // Resolve worktree path from registry
+      const registry = wt.loadRegistry(cwd);
+      const entry = registry.worktrees[setId];
+      const worktreePath = entry ? path.resolve(cwd, entry.path) : cwd;
+      const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+
+      const issues = [];
+      let autoFixed = 0;
+      const needsAttention = [];
+
+      try {
+        // Read JOB-PLAN.md files in the wave dir to find planned artifacts
+        const plannedArtifacts = [];
+        if (fs.existsSync(waveDir)) {
+          const planFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
+          for (const planFile of planFiles) {
+            const content = fs.readFileSync(path.join(waveDir, planFile), 'utf-8');
+            // Extract files from "Files to Create/Modify" table
+            const tableRegex = /\|\s*`?([^`\|]+?)`?\s*\|\s*(Create|Modify)\s*\|/gi;
+            let match;
+            while ((match = tableRegex.exec(content)) !== null) {
+              const filePath = match[1].trim();
+              if (filePath && filePath !== 'File' && !filePath.startsWith('---')) {
+                plannedArtifacts.push({ file: filePath, jobId: planFile.replace('-PLAN.md', '') });
+              }
+            }
+          }
+        }
+
+        // Verify each planned artifact exists in the worktree
+        for (const artifact of plannedArtifacts) {
+          const fullPath = path.join(worktreePath, artifact.file);
+          if (!fs.existsSync(fullPath)) {
+            const issueId = `lean-${waveId}-${artifact.jobId}-${path.basename(artifact.file)}`;
+            const issue = {
+              id: issueId,
+              type: 'artifact',
+              severity: 'high',
+              file: artifact.file,
+              description: `Missing artifact: ${artifact.file} (expected from job ${artifact.jobId})`,
+              autoFixAttempted: false,
+              autoFixSucceeded: false,
+              source: 'lean-review',
+              status: 'open',
+              createdAt: new Date().toISOString(),
+            };
+            // Log the issue
+            review.logIssue(cwd, setId, waveId, issue);
+            issues.push(issue);
+            needsAttention.push(issue);
+          }
+        }
+
+        output(JSON.stringify({ issues, autoFixed, needsAttention }));
+      } catch (err) {
+        output(JSON.stringify({ error: err.message }));
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'summary': {
+      const setId = args[0];
+      if (!setId) {
+        error('Usage: rapid-tools review summary <set-id>');
+        process.exit(1);
+      }
+      try {
+        const issues = review.loadSetIssues(cwd, setId);
+        const summaryContent = review.generateReviewSummary(setId, issues);
+        const summaryPath = path.join(cwd, '.planning', 'waves', setId, 'REVIEW-SUMMARY.md');
+        fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
+        fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
+        output(JSON.stringify({ written: true, path: summaryPath, issueCount: issues.length }));
+      } catch (err) {
+        output(JSON.stringify({ error: err.message }));
+        process.exit(1);
+      }
+      break;
+    }
+
+    default:
+      error(`Unknown review subcommand: ${subcommand}. Use: scope, log-issue, list-issues, update-issue, lean, summary`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
