@@ -55,14 +55,14 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 ### Review Module
 
 - [x] **REVW-01**: /review orchestrates unit test > bug hunt > UAT pipeline (per-wave or per-set)
-- [ ] **REVW-02**: Unit test agent generates test plan for user approval before writing tests
-- [ ] **REVW-03**: Unit test agent writes, runs, and reports with full observability (commands, stdout, pass/fail)
+- [x] **REVW-02**: Unit test agent generates test plan for user approval before writing tests
+- [x] **REVW-03**: Unit test agent writes, runs, and reports with full observability (commands, stdout, pass/fail)
 - [x] **REVW-04**: Bug hunter agent performs broad static analysis with risk/confidence scoring
-- [ ] **REVW-05**: Devils advocate agent attempts to disprove hunter findings with code evidence
-- [ ] **REVW-06**: Judge agent produces final ruling (ACCEPTED/DISMISSED/DEFERRED) with fix priorities and HITL for contested findings
+- [x] **REVW-05**: Devils advocate agent attempts to disprove hunter findings with code evidence
+- [x] **REVW-06**: Judge agent produces final ruling (ACCEPTED/DISMISSED/DEFERRED) with fix priorities and HITL for contested findings
 - [x] **REVW-07**: Bugfix subagent fixes accepted bugs, pipeline iterates until clean
 - [x] **REVW-08**: UAT agent generates multi-step test plan with automated/human step tagging
-- [ ] **REVW-09**: UAT agent executes automated steps via Playwright, prompts user for human steps
+- [x] **REVW-09**: UAT agent executes automated steps via Playwright, prompts user for human steps
 
 ### Merge Pipeline
 
@@ -263,14 +263,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXEC-03 | Phase 21 | Complete |
 | EXEC-04 | Phase 21 | Complete |
 | REVW-01 | Phase 22 | Complete |
-| REVW-02 | Phase 22 | Pending |
-| REVW-03 | Phase 22 | Pending |
+| REVW-02 | Phase 22 | Complete |
+| REVW-03 | Phase 22 | Complete |
 | REVW-04 | Phase 22 | Complete |
-| REVW-05 | Phase 22 | Pending |
-| REVW-06 | Phase 22 | Pending |
+| REVW-05 | Phase 22 | Complete |
+| REVW-06 | Phase 22 | Complete |
 | REVW-07 | Phase 22 | Complete |
 | REVW-08 | Phase 22 | Complete |
-| REVW-09 | Phase 22 | Pending |
+| REVW-09 | Phase 22 | Complete |
 | MERG-01 | Phase 23 | Pending |
 | MERG-02 | Phase 23 | Pending |
 | MERG-03 | Phase 23 | Pending |

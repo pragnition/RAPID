@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-03-08T12:07:40.070Z"
-last_activity: 2026-03-08 — Completed 22-01 (Review library with Zod schemas, scoping, issue management)
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-03-08T12:11:12.848Z"
+last_activity: 2026-03-08 — Completed 22-02 (6 review agent roles with assembler registration)
 progress:
   total_phases: 26
   completed_phases: 22
   total_plans: 59
-  completed_plans: 55
-  percent: 93
+  completed_plans: 56
+  percent: 95
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 22 of 26 (Review Module)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In Progress
-Last activity: 2026-03-08 — Completed 22-01 (Review library with Zod schemas, scoping, issue management)
+Last activity: 2026-03-08 — Completed 22-02 (6 review agent roles with assembler registration)
 
-Progress: [█████████░] 93% (55/59 plans complete)
+Progress: [██████████] 95% (56/59 plans complete)
 
 ## Accumulated Context
 
@@ -88,6 +88,9 @@ Recent decisions affecting current work:
 - [Phase 22]: findDependents uses string-matching for require/import patterns rather than AST parsing -- simpler, faster, sufficient for one-hop discovery
 - [Phase 22]: REVIEW-ISSUES.json uses non-locked writes since review operations are sequential within a pipeline
 - [Phase 22]: walkDir skips node_modules, .git, .planning, .worktrees for performance and relevance
+- [Phase 22]: devils-advocate is strictly read-only (Read, Grep, Glob) -- no Write, Bash, or Edit
+- [Phase 22]: judge has Write for REVIEW-BUGS.md but no Bash -- rulings based on static analysis only
+- [Phase 22]: unit-tester and uat use CHECKPOINT-then-COMPLETE flow for test plan approval before execution
 
 ### Pending Todos
 
@@ -119,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T12:07:40.068Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-03-08T12:11:12.846Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
