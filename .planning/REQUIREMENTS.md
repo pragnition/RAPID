@@ -82,8 +82,8 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 
 ### Documentation
 
-- [ ] **DOCS-01**: DOCS.md comprehensively documents all commands, agents, architecture, and Mark II workflow
-- [ ] **DOCS-02**: README.md updated with Mark II hierarchy, workflow, and getting started guide
+- [x] **DOCS-01**: DOCS.md comprehensively documents all commands, agents, architecture, and Mark II workflow
+- [x] **DOCS-02**: README.md updated with Mark II hierarchy, workflow, and getting started guide
 
 ## v1.1 Requirements (Validated)
 
@@ -281,8 +281,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-02 | Phase 21 | Complete |
 | UX-03 | Phase 16 | Complete |
 | UX-04 | Phase 18 | Complete |
-| DOCS-01 | Phase 24 | Pending |
-| DOCS-02 | Phase 24 | Pending |
+| DOCS-01 | Phase 24 | Complete |
+| DOCS-02 | Phase 24 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 50 total
