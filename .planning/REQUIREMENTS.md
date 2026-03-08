@@ -70,8 +70,8 @@ Requirements for Mark II overhaul. Each maps to roadmap phases.
 - [x] **MERG-02**: 4-tier resolution cascade (deterministic > heuristic > AI-assisted > human escalation)
 - [x] **MERG-03**: Per-set merge state tracking integrated with hierarchical state machine
 - [x] **MERG-04**: Sets merge in dependency-graph order via DAG
-- [ ] **MERG-05**: Bisection recovery isolates breaking set interaction via binary search
-- [ ] **MERG-06**: Rollback with cascade revert undoes problematic merges and re-merges remaining sets
+- [x] **MERG-05**: Bisection recovery isolates breaking set interaction via binary search
+- [x] **MERG-06**: Rollback with cascade revert undoes problematic merges and re-merges remaining sets
 
 ### UX & Cross-Cutting
 
@@ -275,8 +275,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MERG-02 | Phase 23 | Complete |
 | MERG-03 | Phase 23 | Complete |
 | MERG-04 | Phase 23 | Complete |
-| MERG-05 | Phase 23 | Pending |
-| MERG-06 | Phase 23 | Pending |
+| MERG-05 | Phase 23 | Complete |
+| MERG-06 | Phase 23 | Complete |
 | UX-01 | Phase 19 | Complete |
 | UX-02 | Phase 21 | Complete |
 | UX-03 | Phase 16 | Complete |

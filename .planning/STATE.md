@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 23-01-PLAN.md
-last_updated: "2026-03-08T14:37:13.568Z"
-last_activity: 2026-03-08 — Completed 23-01 (merge library v2.0 with detection, resolution, state management)
+stopped_at: Completed 23-03-PLAN.md
+last_updated: "2026-03-08T14:45:36.749Z"
+last_activity: 2026-03-08 — Completed 23-03 (bisection recovery, rollback, agent integration)
 progress:
   total_phases: 26
   completed_phases: 23
   total_plans: 64
-  completed_plans: 61
-  percent: 100
+  completed_plans: 62
+  percent: 97
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 23 of 26 (Merge Pipeline)
-Plan: 2 of 4 in current phase
+Plan: 4 of 4 in current phase
 Status: Phase 23 In Progress
-Last activity: 2026-03-08 — Completed 23-01 (merge library v2.0 with detection, resolution, state management)
+Last activity: 2026-03-08 — Completed 23-03 (bisection recovery, rollback, agent integration)
 
-Progress: [██████████] 100% (61/61 plans complete)
+Progress: [██████████] 97% (62/64 plans complete)
 
 ## Accumulated Context
 
@@ -100,6 +100,8 @@ Recent decisions affecting current work:
 - [Phase 23]: Merger role follows leaf-agent pattern: no sub-agent spawning, no commits, API changes always escalate
 - [Phase 23]: Function-scope mapping (extractModifiedFunctions) for L2 structural conflict detection -- parses diff hunk headers and maps changed lines to enclosing function
 - [Phase 23]: 3-way dependency/API comparison (ancestor vs branch vs base) using git merge-base for precise conflict attribution
+- [Phase 23-merge-pipeline]: bisectWave uses fs.cpSync to save/restore .planning/ to os.tmpdir() -- avoids git stash and handles untracked files
+- [Phase 23-merge-pipeline]: Default confidence threshold 0.7 for tier 3 vs tier 4 agent resolution categorization
 
 ### Pending Todos
 
@@ -131,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T14:37:13.566Z
-Stopped at: Completed 23-01-PLAN.md
+Last session: 2026-03-08T14:45:36.747Z
+Stopped at: Completed 23-03-PLAN.md
 Resume file: None
