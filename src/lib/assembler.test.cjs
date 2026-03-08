@@ -141,12 +141,12 @@ describe('assembler', () => {
   });
 
   describe('listModules', () => {
-    it('returns correct counts (5 core, 6 roles)', () => {
+    it('returns correct counts (5 core, 25 roles)', () => {
       const result = assembler.listModules();
       assert.ok(result.core, 'Should have core array');
       assert.ok(result.roles, 'Should have roles array');
       assert.equal(result.core.length, 5, `Expected 5 core modules, got ${result.core.length}`);
-      assert.equal(result.roles.length, 6, `Expected 6 role modules, got ${result.roles.length}`);
+      assert.equal(result.roles.length, 25, `Expected 25 role modules, got ${result.roles.length}`);
     });
 
     it('lists the correct core module files', () => {
@@ -164,12 +164,31 @@ describe('assembler', () => {
     it('lists the correct role module files', () => {
       const result = assembler.listModules();
       const expectedRoles = [
+        'role-bugfix.md',
+        'role-bug-hunter.md',
+        'role-codebase-synthesizer.md',
         'role-context-generator.md',
+        'role-devils-advocate.md',
         'role-executor.md',
+        'role-job-executor.md',
+        'role-job-planner.md',
+        'role-judge.md',
         'role-orchestrator.md',
         'role-planner.md',
+        'role-research-architecture.md',
+        'role-research-features.md',
+        'role-research-oversights.md',
+        'role-research-pitfalls.md',
+        'role-research-stack.md',
+        'role-research-synthesizer.md',
         'role-reviewer.md',
+        'role-roadmapper.md',
+        'role-set-planner.md',
+        'role-uat.md',
+        'role-unit-tester.md',
         'role-verifier.md',
+        'role-wave-planner.md',
+        'role-wave-researcher.md',
       ];
       assert.deepEqual(result.roles.sort(), expectedRoles.sort(), 'Role modules should match expected list');
     });
@@ -354,6 +373,99 @@ describe('assembler', () => {
       });
       const sizeKB = Buffer.byteLength(result, 'utf-8') / 1024;
       assert.ok(sizeKB < 15, `Assembled agent is ${sizeKB.toFixed(1)}KB, should be under 15KB`);
+    });
+  });
+
+  describe('review role registration', () => {
+    const REVIEW_ROLES = ['unit-tester', 'bug-hunter', 'devils-advocate', 'judge', 'bugfix', 'uat'];
+
+    it('all 6 review roles appear in ROLE_TOOLS', () => {
+      for (const role of REVIEW_ROLES) {
+        const fm = assembler.generateFrontmatter(role);
+        assert.ok(
+          fm.includes(`name: rapid-${role}`),
+          `${role} should have a registered name in frontmatter`
+        );
+        // Verify it does NOT fall back to the default tools
+        // (default fallback is 'Read, Bash, Grep, Glob' for unknown roles)
+        assert.ok(
+          !fm.includes('description: RAPID ' + role + ' agent\n'),
+          `${role} should have a custom description, not the fallback`
+        );
+      }
+    });
+
+    it('all 6 review roles appear in ROLE_DESCRIPTIONS', () => {
+      const descriptions = {
+        'unit-tester': 'generates test plans and writes/runs tests',
+        'bug-hunter': 'performs static analysis and identifies bugs',
+        'devils-advocate': 'challenges bug hunter findings with evidence',
+        'judge': 'rules on contested findings with ACCEPTED/DISMISSED/DEFERRED',
+        'bugfix': 'fixes accepted bugs with atomic commits',
+        'uat': 'generates and executes acceptance test plans',
+      };
+      for (const [role, descFragment] of Object.entries(descriptions)) {
+        const fm = assembler.generateFrontmatter(role);
+        assert.ok(
+          fm.includes(descFragment),
+          `${role} frontmatter should include description fragment: "${descFragment}"`
+        );
+      }
+    });
+
+    it('devils-advocate has NO Write or Bash tool (read-only enforcement)', () => {
+      const fm = assembler.generateFrontmatter('devils-advocate');
+      assert.ok(fm.includes('tools: Read, Grep, Glob'), `devils-advocate should have Read, Grep, Glob only, got: ${fm}`);
+      assert.ok(!fm.includes('Write'), 'devils-advocate must NOT have Write tool');
+      assert.ok(!fm.includes('Bash'), 'devils-advocate must NOT have Bash tool');
+      assert.ok(!fm.includes('Edit'), 'devils-advocate must NOT have Edit tool');
+    });
+
+    it('bugfix has Edit tool (needed for targeted fixes)', () => {
+      const fm = assembler.generateFrontmatter('bugfix');
+      assert.ok(fm.includes('Edit'), 'bugfix should have Edit tool for targeted code fixes');
+      assert.ok(fm.includes('Write'), 'bugfix should have Write tool');
+      assert.ok(fm.includes('Bash'), 'bugfix should have Bash tool for running tests');
+    });
+
+    it('judge has Write but no Bash (for REVIEW-BUGS.md only)', () => {
+      const fm = assembler.generateFrontmatter('judge');
+      assert.ok(fm.includes('Write'), 'judge should have Write tool for REVIEW-BUGS.md');
+      assert.ok(!fm.includes('Bash'), 'judge should NOT have Bash tool');
+      assert.ok(!fm.includes('Edit'), 'judge should NOT have Edit tool');
+    });
+
+    it('unit-tester has Write and Bash but no Edit', () => {
+      const fm = assembler.generateFrontmatter('unit-tester');
+      assert.ok(fm.includes('Write'), 'unit-tester should have Write tool for creating test files');
+      assert.ok(fm.includes('Bash'), 'unit-tester should have Bash tool for running tests');
+      assert.ok(!fm.includes('Edit'), 'unit-tester should NOT have Edit tool');
+    });
+
+    it('bug-hunter has Bash but no Write or Edit (read-only + linting)', () => {
+      const fm = assembler.generateFrontmatter('bug-hunter');
+      assert.ok(fm.includes('Bash'), 'bug-hunter should have Bash tool for linting');
+      assert.ok(!fm.includes('Write'), 'bug-hunter must NOT have Write tool');
+      assert.ok(!fm.includes('Edit'), 'bug-hunter must NOT have Edit tool');
+    });
+
+    it('uat has Write and Bash but no Edit', () => {
+      const fm = assembler.generateFrontmatter('uat');
+      assert.ok(fm.includes('Write'), 'uat should have Write tool for REVIEW-UAT.md');
+      assert.ok(fm.includes('Bash'), 'uat should have Bash tool for automation');
+      assert.ok(!fm.includes('Edit'), 'uat should NOT have Edit tool');
+    });
+
+    it('generateFrontmatter works for each new role (returns valid YAML)', () => {
+      for (const role of REVIEW_ROLES) {
+        const fm = assembler.generateFrontmatter(role);
+        assert.ok(fm.startsWith('---'), `${role} frontmatter should start with ---`);
+        assert.ok(fm.endsWith('---'), `${role} frontmatter should end with ---`);
+        assert.ok(fm.includes(`name: rapid-${role}`), `${role} frontmatter should include name`);
+        assert.ok(fm.includes('model: inherit'), `${role} frontmatter should include model: inherit`);
+        assert.ok(fm.includes('tools:'), `${role} frontmatter should include tools field`);
+        assert.ok(fm.includes('description:'), `${role} frontmatter should include description field`);
+      }
     });
   });
 });

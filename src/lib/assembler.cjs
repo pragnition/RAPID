@@ -20,6 +20,12 @@ const ROLE_TOOLS = {
   'wave-planner': 'Read, Write, Grep, Glob',
   'job-planner': 'Read, Write, Grep, Glob',
   'job-executor': 'Read, Write, Edit, Bash, Grep, Glob',
+  'unit-tester': 'Read, Write, Bash, Grep, Glob',
+  'bug-hunter': 'Read, Grep, Glob, Bash',
+  'devils-advocate': 'Read, Grep, Glob',
+  'judge': 'Read, Write, Grep, Glob',
+  'bugfix': 'Read, Write, Edit, Bash, Grep, Glob',
+  'uat': 'Read, Write, Bash, Grep, Glob',
 };
 
 /**
@@ -35,6 +41,12 @@ const ROLE_DESCRIPTIONS = {
   'wave-planner': 'RAPID wave planner agent -- produces high-level per-job plans for a wave',
   'job-planner': 'RAPID job planner agent -- creates detailed implementation plan for a single job',
   'job-executor': 'RAPID job executor agent -- implements a single job within a wave per JOB-PLAN.md',
+  'unit-tester': 'RAPID unit test agent -- generates test plans and writes/runs tests',
+  'bug-hunter': 'RAPID bug hunter agent -- performs static analysis and identifies bugs',
+  'devils-advocate': 'RAPID devils advocate agent -- challenges bug hunter findings with evidence',
+  'judge': 'RAPID judge agent -- rules on contested findings with ACCEPTED/DISMISSED/DEFERRED',
+  'bugfix': 'RAPID bugfix agent -- fixes accepted bugs with atomic commits',
+  'uat': 'RAPID UAT agent -- generates and executes acceptance test plans',
 };
 
 /**
