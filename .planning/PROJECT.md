@@ -2,89 +2,78 @@
 
 ## What This Is
 
-RAPID is a Claude Code plugin (metaprompting framework) that enables team-based parallel development. Unlike linear frameworks like GSD and PAUL where phases depend on previous phases and block other developers, RAPID ensures that work can be planned into isolated, parallelizable "sets" that multiple developers can build simultaneously in their own git worktrees, then merge back together through an automated review process.
+RAPID is a Claude Code plugin (metaprompting framework) that enables team-based parallel development using a Sets/Waves/Jobs hierarchy. Multiple developers work in isolated git worktrees, go through discuss → plan → execute → review loops per wave, then merge back via an automated pipeline with 5-level conflict detection and adversarial code review.
 
 ## Core Value
 
 Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence that their independent work will merge cleanly.
 
-## Current Milestone: v2.0 Mark II
-
-**Goal:** Major overhaul of the workflow hierarchy, agent system, and development lifecycle — restructuring around Sets/Waves/Jobs with comprehensive review capabilities and an adapted merge pipeline.
-
-**Target features:**
-- New hierarchy: Project > Milestones > Sets > Waves > Jobs
-- Overhauled /init with greenfield/brownfield detection and roadmap creation
-- /set-init for worktree+branch creation per set with set planning
-- Per-wave discuss > plan > execute > review loop
-- Review module with UAT, unit testing, and bug hunting (hunter/devils-advocate/judge pipeline)
-- Merger agent adapted from gsd_merge_agent with 5-level conflict detection
-- State machine for continuous state tracking across context resets
-- AskUserQuestion-driven UX throughout all commands
-
 ## Requirements
 
 ### Validated
 
-- Sets defined during planning with interface contracts and boundaries
-- Each set gets its own git worktree/branch for physical isolation
-- Interface contracts define boundaries between sets upfront
-- Loose sync model — shared planning gate, independent execution phases
-- Git-native shared state with lock files to prevent concurrent modification
-- Merge reviewer agent that does deep code review and blocks on contract/test violations
-- Cleanup agent spawnable when merge reviewer finds issues
-- CLAUDE.md generation with full context (code style, architecture patterns, API conventions, project knowledge)
-- EXPERIMENTAL_AGENT_TEAMS support with subagent fallback
-- Plugin architecture (skills, agents, hooks in .claude/)
-- Discuss/plan/execute phase strategy per set
-- Styling guide auto-generated during init for cross-worktree consistency
-- All skills use AskUserQuestion for decision gates
-- Install skill detects shell, auto-sources config, verifies RAPID_TOOLS
-- Error recovery paths with structured options replace bare STOP handling
-- Progress indicators during subagent operations
+- ✓ Sets defined during planning with interface contracts and boundaries — v1.0
+- ✓ Each set gets its own git worktree/branch for physical isolation — v1.0
+- ✓ Interface contracts define boundaries between sets upfront — v1.0
+- ✓ Loose sync model — shared planning gate, independent execution phases — v1.0
+- ✓ Git-native shared state with lock files to prevent concurrent modification — v1.0
+- ✓ Merge reviewer agent that does deep code review and blocks on contract/test violations — v1.0
+- ✓ Cleanup agent spawnable when merge reviewer finds issues — v1.0
+- ✓ CLAUDE.md generation with full context (code style, architecture, API conventions) — v1.0
+- ✓ EXPERIMENTAL_AGENT_TEAMS support with subagent fallback — v1.0
+- ✓ Plugin architecture (skills, agents, hooks in .claude/) — v1.0
+- ✓ Discuss/plan/execute phase strategy per set — v1.0
+- ✓ Styling guide auto-generated during init — v1.0
+- ✓ All skills use AskUserQuestion for decision gates — v1.1
+- ✓ Install skill detects shell, auto-sources config, verifies RAPID_TOOLS — v1.1
+- ✓ Error recovery paths with structured options replace bare STOP handling — v1.1
+- ✓ Progress indicators during subagent operations — v1.1
+- ✓ Sets/Waves/Jobs hierarchy replacing linear phase model — v2.0
+- ✓ Hierarchical state machine with Zod schemas and validated transitions — v2.0
+- ✓ Overhauled /init with greenfield/brownfield detection and roadmap creation — v2.0
+- ✓ /set-init command for per-set worktree+branch creation with set planning — v2.0
+- ✓ Wave Planner agent for per-wave parallel job planning — v2.0
+- ✓ Job Planner agent for detailed per-job implementation planning — v2.0
+- ✓ Executor agent for job execution with atomic commits — v2.0
+- ✓ Review module: UAT testing with Playwright automation — v2.0
+- ✓ Review module: Unit test agent with test plan approval flow — v2.0
+- ✓ Review module: Bug hunting pipeline (hunter/devils-advocate/judge) — v2.0
+- ✓ Merger with 5-level conflict detection and 4-tier resolution cascade — v2.0
+- ✓ Bisection recovery and rollback with cascade detection — v2.0
+- ✓ Orchestrator agent for command dispatch and subagent spawning — v2.0
+- ✓ Comprehensive DOCS.md and README.md for Mark II — v2.0
 
 ### Active
 
-- [ ] Sets/Waves/Jobs hierarchy replacing linear phase model
-- [ ] Overhauled /init with integrated roadmap creation
-- [ ] /set-init command for per-set worktree+branch creation
-- [ ] Wave Planner agent for per-wave parallel job planning
-- [ ] Job Planner agent for detailed per-job implementation planning
-- [ ] Executor agent for job execution with atomic commits
-- [ ] Review module: UAT testing with Playwright automation
-- [ ] Review module: Unit test agent with test plan approval flow
-- [ ] Review module: Bug hunting pipeline (hunter/devils-advocate/judge)
-- [ ] Merger agent adapted from gsd_merge_agent (5-level conflict detection, tiered resolution)
-- [ ] State machine with continuous tracking across context resets
-- [ ] Orchestrator agent for command dispatch and subagent spawning
+(None yet — define with `/gsd:new-milestone`)
 
 ### Out of Scope
 
 - Standalone CLI — RAPID is a Claude Code plugin, not its own binary
 - Central server/service — all state is git-native
-- /quick ad-hoc task command — deferred to v2.1
-- /insert-job ad-hoc job insertion — deferred to v2.1
-- Fully synchronized phase gates — sets have independent phase lifecycles with loose sync points
+- Dynamic set creation during execution — sets defined at planning time only
+- Fully synchronized phase gates — sets have independent lifecycles with loose sync points
+- Fully automated review (no HITL) — AI review without human judgment leads to false confidence
+- Real-time cross-set synchronization — destroys isolation guarantees
+- AI-only merge conflict resolution — multi-file conflicts need human judgment
 
 ## Context
 
-- Inspired by GSD (get-shit-done) and PAUL metaprompting frameworks
-- GSD uses a linear phase model: Phase 1 > Phase 2 > Phase 3, each depending on the previous
-- Both work well for solo developers but break down with teams due to blocking
-- Claude Code supports EXPERIMENTAL_AGENT_TEAMS for multi-agent coordination
-- Claude Code plugin architecture provides skills, agents, hooks, and commands
-- Git worktrees allow multiple branches to be checked out simultaneously in separate directories
-- The project will be hosted at github.com/fishjojo1/RAPID
-- v1.0 and v1.1 established the core plugin infrastructure — v2.0 selectively reuses proven components
-- gsd_merge_agent (mark2-plans/gsd_merge_agent/) provides a proven merge pipeline to adapt
-- Review module specs (mark2-plans/review-module/) define hunter/devils-advocate/judge/unit-test agent architecture
+Shipped v2.0 Mark II with ~26,829 LOC (JavaScript/CommonJS + JSON).
+Tech stack: Node.js, Zod 3.24.4, git worktrees, Claude Code plugin API.
+17 skills, 21 runtime libraries, 14 agent role modules.
+Hosted at github.com/fishjojo1/RAPID.
+
+v1.0 established core plugin infrastructure (agent framework, state, worktrees, merge).
+v1.1 polished UX with structured prompts and error recovery.
+v2.0 overhauled the entire workflow around Sets/Waves/Jobs hierarchy.
 
 ## Constraints
 
-- **Platform**: Must be a Claude Code plugin — leverages existing plugin infrastructure (skills, agents, hooks)
+- **Platform**: Claude Code plugin — leverages existing plugin infrastructure (skills, agents, hooks)
 - **State management**: Git-native only — no external services, databases, or APIs required
-- **Compatibility**: Must detect and leverage EXPERIMENTAL_AGENT_TEAMS when available, gracefully fall back to subagents
-- **Isolation**: Sets must be truly independent — no shared mutable state during execution except through defined sync points
+- **Compatibility**: Detects EXPERIMENTAL_AGENT_TEAMS when available, falls back to subagents
+- **Isolation**: Sets are truly independent — no shared mutable state during execution except defined sync points
 - **Shell**: Use ~ instead of $HOME in all shell commands for Node compatibility
 - **UX**: AskUserQuestion for all user interactions; batch queries to save tokens/time
 
@@ -100,11 +89,15 @@ Multiple developers using Claude Code can work on the same project simultaneousl
 | Sets defined at planning time only | Keeps isolation guarantees tight, prevents scope creep during execution | ✓ Good |
 | Full-context CLAUDE.md generation | Every Claude instance needs consistent knowledge — style, patterns, conventions, project context | ✓ Good |
 | Team-first design (solo = team of one) | Avoids separate code paths, ensures the parallel model works at any scale | ✓ Good |
-| Selective reuse for v2.0 | Keep proven v1.0 components (agent framework, plugin shell, context gen, worktrees), rewrite workflow/planning/review/merge | — Pending |
-| Adapt gsd_merge_agent for merger | Proven 5-level conflict detection and tiered resolution, already works for parallel branch merging | — Pending |
-| Hunter/Devils-Advocate/Judge bug pipeline | Adversarial multi-agent approach minimizes false negatives while pruning false positives | — Pending |
-| Jobs ≈ v1.0 plans in granularity | Proven granularity from v1.0 — contains multiple related tasks per job | — Pending |
-| Defer /quick and /insert-job to v2.1 | Focus v2.0 on core workflow overhaul, add ad-hoc features later | — Pending |
+| Selective reuse for v2.0 | Keep proven v1.0 components, rewrite workflow/planning/review/merge | ✓ Good — enabled rapid v2.0 delivery |
+| Adapt gsd_merge_agent for merger | Proven 5-level detection and tiered resolution for parallel branch merging | ✓ Good — L1-L4 detection + T1-T2 resolution working |
+| Hunter/Devils-Advocate/Judge pipeline | Adversarial multi-agent approach minimizes false negatives while pruning false positives | ✓ Good — 3-cycle iteration with scope narrowing |
+| Jobs = v1.0 plans in granularity | Proven granularity — contains multiple related tasks per job | ✓ Good — natural decomposition unit |
+| Defer /quick and /insert-job to v2.1 | Focus v2.0 on core workflow overhaul | ✓ Good — kept v2.0 scope manageable |
+| Zod 3.24.4 for schemas | CommonJS compatibility (3.25+ breaks require) | ✓ Good — type-safe validation everywhere |
+| Hand-rolled state machine (~50 lines) | Simpler than XState, sufficient for hierarchical state tracking | ✓ Good — crash recovery + validated transitions |
+| STATE.json replaces STATE.md | Clean break, machine-readable source of truth | ✓ Good — no hybrid state confusion |
+| Sequential pipeline with parallel fan-out | Research → wave plan → parallel job planners, each producing validated artifacts | ✓ Good — clean handoff boundaries |
 
 ---
-*Last updated: 2026-03-06 after milestone v2.0 start*
+*Last updated: 2026-03-09 after v2.0 milestone*

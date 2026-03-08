@@ -2,130 +2,53 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
-status: completed
-stopped_at: Completed 24-02-PLAN.md (Phase 24 complete)
-last_updated: "2026-03-08T16:03:19.264Z"
-last_activity: 2026-03-08 — Completed 24-02 (DOCS.md architecture + README.md landing page)
+status: shipped
+stopped_at: v2.0 Mark II milestone archived
+last_updated: "2026-03-09"
+last_activity: 2026-03-09 — v2.0 Mark II milestone shipped and archived
 progress:
-  total_phases: 26
-  completed_phases: 25
-  total_plans: 66
-  completed_plans: 65
-  percent: 98
+  total_phases: 9
+  completed_phases: 9
+  total_plans: 29
+  completed_plans: 29
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-06)
+See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 24 - Documentation (v2.0 Mark II) -- COMPLETE
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 24 of 26 (Documentation)
-Plan: 2 of 2 in current phase (complete)
-Status: Phase 24 Complete
-Last activity: 2026-03-08 — Completed 24-02 (DOCS.md architecture + README.md landing page)
-
-Progress: [██████████] 98% (65/66 plans complete)
+Milestone: v2.0 Mark II — SHIPPED 2026-03-09
+Status: Milestone archived to .planning/milestones/
+Next step: `/gsd:new-milestone` to start v2.1
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [v2.0]: Selective reuse -- keep agent framework, plugin shell, context gen, worktrees; rewrite planning, execution, review, merge
-- [v2.0]: Adapt gsd_merge_agent for merger (5-level conflict detection, tiered resolution)
-- [v2.0]: Review module uses hunter/devils-advocate/judge adversarial pipeline
-- [v2.0]: STATE.json replaces STATE.md as source of truth (clean break, no hybrid)
-- [v2.0]: Hand-rolled state machine (~50 lines), not XState
-- [v2.0]: Jobs = v1.0 plans in granularity
-- [v2.0]: Defer /quick and /insert-job to v2.1
-- [Phase 16]: Zod 3.24.4 locked for CommonJS compatibility (3.25+ breaks require)
-- [Phase 16]: Status enums exported separately for reuse in transition validation
-- [Phase 16]: Extended dag.cjs/returns.cjs additively with v2.0 functions, no existing code modified
-- [Phase 16]: Zod discriminatedUnion on status field for type-safe inter-agent handoff validation
-- [Phase 16]: Validate state before acquiring lock for fail-fast in writeState
-- [Phase 16]: Transition functions acquire own lock and write directly to avoid double-lock
-- [Phase 17]: Clean break from state.cjs -- deleted without migration, state-machine.cjs is sole provider
-- [Phase 17]: CLI state commands use hierarchy-aware addressing (milestoneId/setId/waveId/jobId)
-- [Phase 17]: state transition replaces state update -- validated transitions with automatic parent derivation
-- [Phase 17]: STATE.json generated alongside STATE.md during scaffolding (dual source preserved)
-- [Phase 17]: createInitialState(opts.name, 'v1.0') used for consistent state initialization
-- [Phase 18]: Model field at top-level in config.json, max_parallel_sets = floor(teamSize * 1.5)
-- [Phase 18]: Research agents write independently to .planning/research/ -- no cross-agent dependencies
-- [Phase 18]: Roadmapper returns structured JSON; orchestrator handles atomic file writes via CLI
-- [Phase 18]: Deep copy carried sets via JSON.parse/stringify for full isolation between milestones
-- [Phase 18]: INIT-07 satisfied by existing install skill -- no modifications needed
-- [Phase 18]: Deep adaptive discovery replaces shallow one-sentence description in init -- 8-15+ probing questions across 10 areas
-- [Phase 19]: resume is top-level CLI command extending execute resume with STATE.json context
-- [Phase 19]: deleteBranch returns structured results (not throws) consistent with removeWorktree pattern
-- [Phase 19]: Context skill verified compatible with Mark II -- no changes needed
-- [Phase 19-set-lifecycle]: setInit does NOT transition set status -- stays pending until /discuss
-- [Phase 20]: Wave researcher gets WebFetch for Context7 MCP; planners get Write only -- no Agent tool for any wave planning role
-- [Phase 20]: File ownership assignment is Wave Planner's responsibility via dedicated table in WAVE-PLAN.md
-- [Phase 20]: Three-stage pipeline: WAVE-CONTEXT -> WAVE-RESEARCH -> WAVE-PLAN -> JOB-PLAN, each produced by separate agent
-- [Phase 20]: Wave artifacts stored in .planning/waves/{setId}/{waveId}/ (main repo, namespaced by setId)
-- [Phase 20]: resolveWave returns array for ambiguous matches, enabling AskUserQuestion disambiguation
-- [Phase 20]: Cross-set import validation uses case-insensitive matching per user "minor differences" decision
-- [Phase 20]: Missing export coverage = auto-fix severity; missing cross-set imports = major violation
-- [Phase 20]: Sequential pipeline (research -> wave plan -> job plans) with parallel fan-out for 3+ job planners
-- [Phase 20]: Contract validation gate with three escalation options: Fix plan, Update contract, Override
-- [Phase 20]: Graceful degradation: research failure allows skip, partial job plan failures allow continue
-- [Phase 21]: Guard reconcileWaveJobs call with typeof check since plan 01 library functions may not exist yet
-- [Phase 21]: Use output() for new subcommands consistent with other recently-added subcommands (detect-mode, merge)
-- [Phase 21]: Job-level reconciliation checks file existence and commit format per JOB-PLAN.md, not DEFINITION.md
-- [Phase 21]: Missing files and commit violations are soft blocks; hard blocks reserved for future test-based checks
-- [Phase 21]: buildJobTeammateConfig assembles inline prompt (not via assembleExecutorPrompt) with job plan content
-- [Phase 21]: Execute skill is dispatch-only -- discuss and plan steps are NOT included, precondition check prompts user to run them if missing
-- [Phase 21]: Dual-mode execution locked at Step 1 for entire run; generic teams fallback re-executes entire wave via subagents
-- [Phase 21]: STATE.json committed at wave boundaries only, not per-job transition; job handoffs at .planning/waves/{setId}/{waveId}/{jobId}-HANDOFF.md
-- [Phase 22]: findDependents uses string-matching for require/import patterns rather than AST parsing -- simpler, faster, sufficient for one-hop discovery
-- [Phase 22]: REVIEW-ISSUES.json uses non-locked writes since review operations are sequential within a pipeline
-- [Phase 22]: walkDir skips node_modules, .git, .planning, .worktrees for performance and relevance
-- [Phase 22]: devils-advocate is strictly read-only (Read, Grep, Glob) -- no Write, Bash, or Edit
-- [Phase 22]: judge has Write for REVIEW-BUGS.md but no Bash -- rulings based on static analysis only
-- [Phase 22]: unit-tester and uat use CHECKPOINT-then-COMPLETE flow for test plan approval before execution
-- [Phase 22]: Lean review verifies planned artifacts by parsing JOB-PLAN.md tables and checking file existence in worktree
-- [Phase 22]: 13 AskUserQuestion gates for user control at every decision point in the review pipeline
-- [Phase 22]: 3-cycle bugfix iteration limit with scope narrowing to prevent infinite re-hunt loops
-- [Phase 22]: DEFERRED judge rulings present hunter and advocate evidence side-by-side for developer arbitration via AskUserQuestion
-- [Phase 22]: UAT browser automation tool configurable via config.json browserAutomation field with AskUserQuestion fallback
-- [Phase 22]: Remove speculative state-machine key_link rather than implement it -- state transitions handled via CLI in SKILL.md orchestrators
-- [Phase 23]: Merger role follows leaf-agent pattern: no sub-agent spawning, no commits, API changes always escalate
-- [Phase 23]: Function-scope mapping (extractModifiedFunctions) for L2 structural conflict detection -- parses diff hunk headers and maps changed lines to enclosing function
-- [Phase 23]: 3-way dependency/API comparison (ancestor vs branch vs base) using git merge-base for precise conflict attribution
-- [Phase 23-merge-pipeline]: bisectWave uses fs.cpSync to save/restore .planning/ to os.tmpdir() -- avoids git stash and handles untracked files
-- [Phase 23-merge-pipeline]: Default confidence threshold 0.7 for tier 3 vs tier 4 agent resolution categorization
-- [Phase 23-merge-pipeline]: CLI rollback returns cascade warning JSON (no --force) for skill AskUserQuestion gate; --force bypasses after user confirms
-- [Phase 23-merge-pipeline]: Reviewer subagent removed from merge SKILL.md -- review handled by Phase 22 review module
-- [Phase 23-merge-pipeline]: Execute subcommand writes MERGE-STATE.json on successful merge for downstream bisection/rollback
-- [Phase 24]: Every DOCS.md command description derived from reading actual current SKILL.md, not v1.0 DOCS.md
-- [Phase 24]: State transitions verified against state-transitions.cjs source code
-- [Phase 24]: Version kept at 1.0.0 from plugin.json -- version bump is a packaging concern, not docs
-- [Phase 24]: 21 runtime libraries documented (research counted 22 by double-counting assembler update) -- verified against actual .cjs files
-- [Phase 24]: Core modules at src/modules/core/ (not src/modules/core-*.md) -- documented with correct path
+Full decision log in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Roadmap Evolution
 
-- v1.0 Core: Phases 1-9.2 (all complete)
-- v1.1 UI UX Improvements: Phases 10-15 (all complete)
-- v2.0 Mark II: Phases 16-24 (9 phases, 50 requirements, ready to plan)
+- v1.0 Core: Phases 1-9.2 (shipped)
+- v1.1 UI UX Improvements: Phases 10-15 (shipped)
+- v2.0 Mark II: Phases 16-24 (shipped 2026-03-09)
 
 ### Blockers/Concerns
 
-- [Phase 16]: STATE.md to STATE.json migration path for existing v1.0 projects needs design
-- [Phase 17]: Hidden coupling in v1.0 modules may cause unexpected breakage -- dependency audit is insurance
-- [Phase 22]: Token cost for 3-agent adversarial review ($15-45/cycle) -- needs scoping controls
+- Phase 09.1 (marketplace packaging) still partial from v1.0 — 1 missing plan (09.1-03 marketplace submission)
+- Token cost for 3-agent adversarial review needs monitoring in production use
 
 ### Quick Tasks Completed
 
@@ -141,6 +64,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T15:59:25.671Z
-Stopped at: Completed 24-02-PLAN.md (Phase 24 complete)
+Last session: 2026-03-09
+Stopped at: v2.0 Mark II milestone archived
 Resume file: None
