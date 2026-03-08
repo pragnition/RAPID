@@ -443,13 +443,14 @@ Plans:
   3. The bug hunter performs broad static analysis with risk/confidence scoring, the devils advocate attempts to disprove findings with code evidence, and the judge produces final ACCEPTED/DISMISSED/DEFERRED rulings with HITL for contested findings
   4. A bugfix subagent fixes accepted bugs, and the pipeline iterates until the codebase is clean
   5. The UAT agent generates multi-step test plans with automated/human step tagging, executes automated steps via Playwright, and prompts the developer for human steps
-**Plans**: 4 plans (Wave 1: review library+tests || agent roles+assembler, Wave 2: CLI+lean review, Wave 3: review SKILL.md+verification)
+**Plans**: 5 plans (Wave 1: review library+tests || agent roles+assembler, Wave 2: CLI+lean review, Wave 3: review SKILL.md+verification, Gap closure: speculative key_link cleanup)
 
 Plans:
 - [ ] 22-01-PLAN.md -- Review library with Zod schemas, scoping, issue logging, summary generation (REVW-01, REVW-04, REVW-07, REVW-08) [Wave 1]
 - [ ] 22-02-PLAN.md -- 6 agent role modules (unit-tester, bug-hunter, devils-advocate, judge, bugfix, uat) and assembler registration (REVW-02, REVW-03, REVW-04, REVW-05, REVW-06, REVW-07, REVW-08, REVW-09) [Wave 1]
 - [ ] 22-03-PLAN.md -- CLI subcommands for review management and lean review integration into execute SKILL.md (REVW-01, REVW-07) [Wave 2, depends: 22-01]
 - [ ] 22-04-PLAN.md -- /rapid:review SKILL.md full pipeline orchestrator with human verification (REVW-01, REVW-02, REVW-03, REVW-04, REVW-05, REVW-06, REVW-07, REVW-08, REVW-09) [Wave 3, depends: 22-01, 22-02, 22-03]
+- [ ] 22-05-PLAN.md -- Gap closure: remove speculative state-machine key_link from plan and review.cjs comment (REVW-01, REVW-04, REVW-07, REVW-08) [Wave 1, gap closure, depends: 22-01]
 
 ### Phase 23: Merge Pipeline
 **Goal**: Completed sets merge back to main with deep multi-level conflict detection, intelligent resolution, and recovery from failures
@@ -510,6 +511,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 19. Set Lifecycle | 3/3 | Complete    | 2026-03-06 | - |
 | 20. Wave Planning | 3/3 | Complete    | 2026-03-06 | - |
 | 21. Execution Engine | 3/3 | Complete    | 2026-03-08 | - |
-| 22. Review Module | 4/4 | Complete   | 2026-03-08 | - |
+| 22. Review Module | 4/5 | Gap closure | 2026-03-08 | - |
 | 23. Merge Pipeline | v2.0 | 0/3 | Not started | - |
 | 24. Documentation | v2.0 | 0/1 | Not started | - |
