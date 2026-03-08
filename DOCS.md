@@ -677,4 +677,303 @@ The following tools are validated by `/rapid:install` and `/rapid:init`:
 | **jq** | 1.6+ | No | Optional JSON processing utilities |
 | **Claude Code** | Latest | Yes | Plugin host environment |
 
-<!-- PLAN 02: Architecture, agents, libraries, CLI reference, state machine, configuration sections will be added below -->
+## Architecture
+
+### Directory Structure
+
+```
+RAPID/
+  .claude-plugin/
+    plugin.json                   Plugin manifest (name, version, description)
+  agents/                         Assembled agent prompts (gitignored, built at runtime)
+  commands/                       6 legacy command files (backward compatibility)
+    assumptions.md
+    context.md
+    help.md
+    init.md
+    install.md
+    plan.md
+  skills/                         17 skill orchestrators (primary command mechanism)
+    assumptions/
+    cleanup/
+    context/
+    discuss/
+    execute/
+    help/
+    init/
+    install/
+    merge/
+    new-milestone/
+    pause/
+    plan/
+    resume/
+    review/
+    set-init/
+    status/
+    wave-plan/
+  src/
+    bin/
+      rapid-tools.cjs             CLI entry point (50+ subcommands)
+    hooks/
+      rapid-task-completed.sh     Post-task hook for agent teams
+    lib/                          21 runtime libraries + test files
+    modules/
+      core/                       5 core agent modules (shared across all agents)
+        core-identity.md
+        core-returns.md
+        core-state-access.md
+        core-git.md
+        core-context-loading.md
+      roles/                      26 role-specific agent modules
+  config.json                     Agent assembly configuration
+  DOCS.md                         Full documentation (this file)
+  README.md                       GitHub landing page
+  LICENSE                         MIT license
+  package.json                    npm manifest and dependencies
+  setup.sh                        Installation script
+```
+
+### Agent Assembly
+
+RAPID uses a composable module system to build agent prompts at runtime. The `config.json` file maps 5 named agents to their component modules:
+
+- **5 core modules** are shared across all agents (identity, returns protocol, state access, git conventions, context loading)
+- **26 role modules** define specialized behavior for each agent type
+- **5 named agents** in `config.json` (rapid-planner, rapid-executor, rapid-reviewer, rapid-verifier, rapid-orchestrator) are assembled from core modules + one role module + context files
+- **Skills also spawn agents inline** by loading role module content directly, enabling the 26 role modules to be used without pre-assembly
+
+The assembler (`src/lib/assembler.cjs`) reads `config.json`, concatenates the core modules, appends the role module, and injects context files (project overview, contracts, style guide) based on the agent configuration.
+
+### Core Agent Modules
+
+| # | Module | Purpose |
+|---|--------|---------|
+| 1 | core-identity.md | RAPID agent identity and behavioral guidelines -- establishes the agent as part of a team-based parallel development system |
+| 2 | core-returns.md | Structured return protocol -- every agent invocation ends with a RAPID:RETURN marker (COMPLETE/CHECKPOINT/BLOCKED) containing both Markdown and JSON |
+| 3 | core-state-access.md | State access protocol -- all state access goes through rapid-tools.cjs CLI, never direct file reads of .planning/ |
+| 4 | core-git.md | Git commit conventions -- atomic commits, branch naming, bisectable history across parallel worktrees |
+| 5 | core-context-loading.md | Progressive context loading -- load minimum context needed, then expand as required within finite context budget |
+
+### Agent Roles
+
+| # | Role Module | Purpose | Spawned By |
+|---|-------------|---------|------------|
+| 1 | role-planner.md | Decomposes project work into parallelizable sets with contracts, DAG, and file ownership | `/rapid:plan` |
+| 2 | role-executor.md | Implements tasks within an assigned worktree (set-level, v1 compatibility) | `/rapid:execute` |
+| 3 | role-job-executor.md | Implements a single job within a wave with atomic commits per step | `/rapid:execute` |
+| 4 | role-reviewer.md | Deep code review for merge readiness -- catches style, contract, and architectural issues | `/rapid:merge` |
+| 5 | role-verifier.md | Filesystem artifact verification -- independently confirms claimed work exists and is substantive | `/rapid:execute` |
+| 6 | role-orchestrator.md | Top-level workflow coordination -- spawns and manages all other agents | `/rapid:execute` |
+| 7 | role-codebase-synthesizer.md | Deep brownfield codebase analysis producing structured report for downstream agents | `/rapid:init` |
+| 8 | role-context-generator.md | Codebase analysis and context file generation (CLAUDE.md, style guide, conventions) | `/rapid:context` |
+| 9 | role-research-stack.md | Technology stack research -- versions, compatibility, upgrade considerations | `/rapid:init` |
+| 10 | role-research-features.md | Feature implementation research -- decomposition strategies, libraries, services | `/rapid:init` |
+| 11 | role-research-architecture.md | Architecture pattern research -- structure, data flow, design decisions | `/rapid:init` |
+| 12 | role-research-pitfalls.md | Common pitfalls research -- failure modes, anti-patterns, stack-specific mistakes | `/rapid:init` |
+| 13 | role-research-oversights.md | Cross-cutting concern research -- easily-missed requirements spanning multiple systems | `/rapid:init` |
+| 14 | role-research-synthesizer.md | Combines 5 parallel research outputs into unified SUMMARY.md, deduplicates and resolves contradictions | `/rapid:init` |
+| 15 | role-roadmapper.md | Creates project roadmap with sets/waves/jobs hierarchy and interface contracts | `/rapid:init` |
+| 16 | role-set-planner.md | Produces SET-OVERVIEW.md with high-level implementation approach for a specific set | `/rapid:set-init` |
+| 17 | role-wave-researcher.md | Targeted research for a single wave's implementation specifics (uses Context7 MCP) | `/rapid:wave-plan` |
+| 18 | role-wave-planner.md | Produces WAVE-PLAN.md with per-job summaries, file assignments, and coordination notes | `/rapid:wave-plan` |
+| 19 | role-job-planner.md | Creates detailed per-job implementation plan (JOB-PLAN.md) with steps and acceptance criteria | `/rapid:wave-plan` |
+| 20 | role-unit-tester.md | Generates test plan for approval, then writes and runs tests with full observability | `/rapid:review` |
+| 21 | role-bug-hunter.md | Broad static analysis with risk/confidence scoring on scoped files | `/rapid:review` |
+| 22 | role-devils-advocate.md | Challenges hunter findings with counter-evidence from the code (strictly read-only) | `/rapid:review` |
+| 23 | role-judge.md | Final ACCEPTED/DISMISSED/DEFERRED rulings on contested findings | `/rapid:review` |
+| 24 | role-bugfix.md | Fixes accepted bugs with targeted, atomic changes | `/rapid:execute --fix-issues` |
+| 25 | role-uat.md | User acceptance testing with browser automation and human/automated step classification | `/rapid:review` |
+| 26 | role-merger.md | Level 5 semantic conflict detection and Tier 3 AI-assisted resolution with confidence scoring | `/rapid:merge` |
+
+### Runtime Libraries
+
+| # | Library | Purpose | v2.0 Status |
+|---|---------|---------|-------------|
+| 1 | core.cjs | Output formatting (`[RAPID]` prefix), project root detection, config loading | Unchanged |
+| 2 | lock.cjs | Cross-process atomic locking using mkdir strategy with proper-lockfile, 5-minute stale threshold | Unchanged |
+| 3 | prereqs.cjs | Prerequisite validation (git 2.30+, Node.js 18+, optional jq 1.6+) with semver comparison | Unchanged |
+| 4 | init.cjs | Project scaffolding -- PROJECT.md, STATE.md, ROADMAP.md, REQUIREMENTS.md, config.json, STATE.json | Unchanged |
+| 5 | assembler.cjs | Agent assembly from modular components -- now registers 26 role modules (was 6 in v1.0) | Updated |
+| 6 | returns.cjs | Structured return protocol parsing -- extracts RAPID:RETURN JSON from agent output | Unchanged |
+| 7 | verify.cjs | Tiered artifact verification -- lightweight (file existence) and heavyweight (tests + content) | Unchanged |
+| 8 | context.cjs | Brownfield codebase detection, language/framework scanning, directory mapping | Unchanged |
+| 9 | dag.cjs | Directed acyclic graph operations -- topological sort (Kahn's algorithm), wave assignment (BFS), execution ordering | Updated |
+| 10 | contract.cjs | Interface contract management -- Ajv JSON Schema validation, contract tests, manifest, file ownership maps | Unchanged |
+| 11 | stub.cjs | Contract stub generator -- produces CommonJS stubs from CONTRACT.json exports for cross-set development | Unchanged |
+| 12 | plan.cjs | Planning orchestration -- set creation, DAG/ownership/manifest/gate persistence, planning gate enforcement | Unchanged |
+| 13 | worktree.cjs | Git worktree lifecycle -- create, cleanup, reconcile, registry, scoped CLAUDE.md generation, branch deletion | Unchanged |
+| 14 | execute.cjs | Execution engine -- context preparation, prompt assembly, wave reconciliation, job status tracking | Updated |
+| 15 | merge.cjs | Merge pipeline -- 5-level conflict detection (L1-L4), 4-tier resolution (T1-T2), MERGE-STATE.json, DAG ordering | Major rewrite |
+| 16 | teams.cjs | Agent teams detection -- checks CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS env var for execution mode | Unchanged |
+| 17 | state-machine.cjs | Hierarchical JSON state management -- read/write with lock protection, atomic rename, transition functions, corruption detection, git recovery | **New in v2.0** |
+| 18 | state-schemas.cjs | Zod schemas for Project/Milestone/Set/Wave/Job state with status enums and default values | **New in v2.0** |
+| 19 | state-transitions.cjs | Valid state transition maps for set, wave, and job entities with validation function | **New in v2.0** |
+| 20 | wave-planning.cjs | Wave resolution across milestones/sets, wave directory management, contract validation for job plans | **New in v2.0** |
+| 21 | review.cjs | Review pipeline -- Zod-validated schemas, wave-scoped file discovery, issue logging, bugfix tracking, summary generation | **New in v2.0** |
+
+## State Machine Architecture
+
+### Hierarchy
+
+```
+ProjectState
+  +-- milestones[]
+      +-- MilestoneState (id, name)
+          +-- sets[]
+              +-- SetState (id, status)
+                  +-- waves[]
+                      +-- WaveState (id, status, jobs[])
+                          +-- jobs[]
+                              +-- JobState (id, status, startedAt, completedAt, commitSha, artifacts[])
+```
+
+### Schemas
+
+All state is validated with Zod schemas (`state-schemas.cjs`):
+
+| Schema | Fields | Defaults |
+|--------|--------|----------|
+| **ProjectState** | version (literal 1), projectName, currentMilestone, milestones[], lastUpdatedAt, createdAt | milestones: [] |
+| **MilestoneState** | id, name, sets[] | sets: [] |
+| **SetState** | id, status (SetStatus enum), waves[] | status: pending, waves: [] |
+| **WaveState** | id, status (WaveStatus enum), jobs[] | status: pending, jobs: [] |
+| **JobState** | id, status (JobStatus enum), startedAt?, completedAt?, commitSha?, artifacts[] | status: pending, artifacts: [] |
+
+### Transition Maps
+
+State transitions are validated -- attempting to skip states produces a clear error (`state-transitions.cjs`):
+
+**Set transitions:**
+```
+pending -> planning -> executing -> reviewing -> merging -> complete
+```
+
+**Wave transitions:**
+```
+pending -> discussing -> planning -> executing -> reconciling -> complete
+failed -> executing (retry)
+```
+
+**Job transitions:**
+```
+pending -> executing -> complete
+pending -> executing -> failed
+failed -> executing (retry)
+```
+
+### Lock-Protected Writes
+
+`state-machine.cjs` protects all state writes with a two-phase strategy:
+
+1. **Validate first:** State is validated against the Zod schema *before* acquiring the lock (fail-fast on bad data)
+2. **Lock acquisition:** Uses `lock.cjs` (proper-lockfile with mkdir strategy) to acquire a named lock (`state-machine`)
+3. **Atomic rename:** State is written to a temporary file (`STATE.json.tmp`) then renamed to `STATE.json` -- the rename is atomic on POSIX systems, preventing partial writes
+4. **Lock release:** The lock is released in a `finally` block, guaranteeing cleanup even on errors
+
+Transition functions (`transitionJob`, `transitionWave`, `transitionSet`) acquire their own lock and write directly to avoid double-lock issues. Child transitions automatically derive parent status (e.g., completing all jobs in a wave derives the wave status to `complete`).
+
+### Status Derivation
+
+Parent entity status is automatically derived from children:
+
+- **Wave status** derived from jobs: all pending = pending, all complete = complete, any failed + none executing = failed, otherwise = executing
+- **Set status** derived from waves: all pending = pending, all complete = complete, any active wave = executing
+
+Derived status only applies if it represents forward progression -- this prevents regressions (e.g., a wave in `reconciling` state will not be regressed to `executing` by a derived status).
+
+## CLI Reference
+
+The `rapid-tools.cjs` CLI provides 50+ subcommands organized into command groups. All commands are invoked via `node "$RAPID_TOOLS" <command> [subcommand] [args...]`.
+
+| Command Group | Subcommands | Purpose |
+|---------------|-------------|---------|
+| **lock** | acquire, status, release | Cross-process atomic locking for concurrent state access |
+| **state** | get (--all, milestone, set, wave, job), transition (set, wave, job), add-milestone, detect-corruption, recover | Hierarchical state management with hierarchy-aware addressing |
+| **assemble-agent** | (role), --list, --validate | Agent prompt assembly from modular components |
+| **parse-return** | (file), --validate | Structured return parsing from agent output |
+| **verify-artifacts** | (files), --heavy --test, --report | Tiered artifact verification (lightweight and heavyweight) |
+| **prereqs** | (default), --git-check, --json | Prerequisite validation (git, Node.js, jq) |
+| **init** | detect, scaffold | Project initialization and .planning/ directory setup |
+| **context** | detect, generate | Codebase analysis and context directory management |
+| **plan** | create-set, decompose, write-dag, check-gate, update-gate, list-sets, load-set | Set decomposition, DAG persistence, planning gate enforcement |
+| **assumptions** | (set-name) | Set assumption surfacing (read-only) |
+| **worktree** | create, list, cleanup, reconcile, status (--json), generate-claude-md, delete-branch (--force) | Git worktree lifecycle and registry management |
+| **resume** | (set-name) | Set resumption from paused state with STATE.json context |
+| **execute** | prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, detect-mode, reconcile-jobs, job-status, commit-state | Execution management -- context prep, wave reconciliation, job tracking |
+| **merge** | review, execute, status, integration-test, order, update-status, detect, resolve, bisect, rollback, merge-state | Merge pipeline -- 5-level detection, 4-tier resolution, bisection, rollback |
+| **set-init** | create, list-available | Set initialization -- worktree creation and pending set discovery |
+| **wave-plan** | resolve-wave, create-wave-dir, validate-contracts, list-jobs | Wave planning -- wave resolution, directory setup, contract validation |
+| **review** | scope, log-issue, list-issues, update-issue, lean, summary | Review management -- file scoping, issue tracking, summary generation |
+
+## Configuration
+
+### .planning/ Directory
+
+| File/Directory | Purpose | New in v2.0? |
+|----------------|---------|-------------|
+| PROJECT.md | Project overview, team size, model selection, key decisions | No |
+| STATE.md | Human-readable project state (position, decisions, blockers) | No |
+| ROADMAP.md | Phase/plan roadmap with dependency ordering | No |
+| REQUIREMENTS.md | Project requirements with traceability | No |
+| config.json | Planning configuration (mode, parallelization, model profile) | No |
+| sets/ | Per-set artifacts: DEFINITION.md, CONTRACT.json, HANDOFF.md | No |
+| contracts/ | Contract manifest, ownership map, contributions | No |
+| context/ | Generated context files: CODEBASE.md, ARCHITECTURE.md, CONVENTIONS.md, STYLE_GUIDE.md | No |
+| **STATE.json** | Machine-readable hierarchical state (source of truth for state machine) | **Yes** |
+| **research/** | Parallel research agent outputs from /rapid:init and /rapid:new-milestone | **Yes** |
+| **waves/{setId}/{waveId}/** | Wave/job planning artifacts: WAVE-CONTEXT.md, WAVE-RESEARCH.md, WAVE-PLAN.md, {jobId}-JOB-PLAN.md, VALIDATION-REPORT.md | **Yes** |
+| **worktrees/** | Worktree registry (REGISTRY.json) | **Yes** |
+| **.locks/** | Lock state directory for cross-process coordination | **Yes** |
+| **MERGE-STATE.json** | Per-set merge tracking (detection results, resolution outcomes) | **Yes** |
+| DAG.json | Dependency graph for set ordering | No |
+| OWNERSHIP.json | File-to-set ownership map | No |
+| GATES.json | Planning/execution gate status per wave | No |
+
+### Agent Assembly Configuration
+
+The root `config.json` defines 5 named agents with their module composition:
+
+```json
+{
+  "agents": {
+    "rapid-planner": {
+      "role": "planner",
+      "core": ["core-identity.md", "core-returns.md", "core-state-access.md", "core-git.md", "core-context-loading.md"],
+      "context": ["project", "contracts", "style"],
+      "context_files": ["CONVENTIONS.md", "ARCHITECTURE.md"]
+    }
+  },
+  "lock_timeout_ms": 300000,
+  "agent_size_warn_kb": 15
+}
+```
+
+Each agent entry specifies:
+- **role** -- Which role module to load from `src/modules/roles/`
+- **core** -- Which core modules to include (all 5 by default)
+- **context** -- Context categories to inject (project, contracts, style)
+- **context_files** -- Specific context files from `.planning/context/`
+
+Additional settings:
+- **lock_timeout_ms** -- Lock stale threshold (default: 300000ms / 5 minutes)
+- **agent_size_warn_kb** -- Warning threshold for assembled agent prompt size (default: 15 KB)
+
+### Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `RAPID_TOOLS` | Absolute path to `rapid-tools.cjs` CLI. Required by all RAPID commands and agent modules. | Must be set via `/rapid:install` or `setup.sh` |
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | Enable experimental agent teams execution mode (parallel job dispatch via Claude Code teams). | `0` (disabled -- subagent mode used instead) |
+
+## Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| zod | ^3.25.76 | Schema validation for STATE.json (Zod 3.24.4 locked for CommonJS compatibility) |
+| ajv | ^8.17.1 | JSON Schema validation for interface contracts (CONTRACT.json) |
+| ajv-formats | ^3.0.1 | Format validation extensions for Ajv (email, uri, date-time, etc.) |
+| proper-lockfile | ^4.1.2 | File-level locking for cross-process state protection (mkdir strategy) |
+
+---
+
+RAPID v1.0.0 -- Rapid Agentic Parallelizable and Isolatable Development for Claude Code
