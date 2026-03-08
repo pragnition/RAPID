@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 // ────────────────────────────────────────────────────────────────
 // Helper: create a mock project directory with merge pipeline structure
@@ -136,7 +136,7 @@ function createMockProject() {
 
 /**
  * Create a git repo with a set branch for merge testing.
- * Returns { projectRoot, worktreePath } where worktreePath is a simulated worktree.
+ * Returns tmpDir path.
  */
 function createGitProject() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-git-'));
@@ -165,9 +165,572 @@ function createGitProject() {
   return tmpDir;
 }
 
+/**
+ * Create a git repo with overlapping changes for conflict testing.
+ * Sets up main and rapid/test-set branches with conflicting modifications.
+ */
+function createConflictGitProject() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-conflict-'));
+
+  execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'pipe' });
+
+  // Create initial file and commit on main
+  fs.mkdirSync(path.join(tmpDir, 'src', 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(tmpDir, 'src', 'lib', 'shared.cjs'), [
+    "'use strict';",
+    '',
+    'function greet(name) {',
+    '  return "Hello, " + name;',
+    '}',
+    '',
+    'function farewell(name) {',
+    '  return "Goodbye, " + name;',
+    '}',
+    '',
+    "const utils = require('./utils.cjs');",
+    '',
+    'module.exports = { greet, farewell };',
+  ].join('\n'), 'utf-8');
+
+  fs.writeFileSync(path.join(tmpDir, 'src', 'lib', 'other.cjs'), [
+    "'use strict';",
+    'module.exports = { foo: () => 42 };',
+  ].join('\n'), 'utf-8');
+
+  execSync('git add -A', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git commit -m "initial commit"', { cwd: tmpDir, stdio: 'pipe' });
+  try { execSync('git branch -m main', { cwd: tmpDir, stdio: 'pipe' }); } catch { /* ok */ }
+
+  // Create feature branch
+  execSync('git checkout -b rapid/test-set', { cwd: tmpDir, stdio: 'pipe' });
+
+  // On the branch: modify greet, add a dependency, change exports
+  fs.writeFileSync(path.join(tmpDir, 'src', 'lib', 'shared.cjs'), [
+    "'use strict';",
+    '',
+    'function greet(name) {',
+    '  return "Hi there, " + name + "!";',
+    '}',
+    '',
+    'function farewell(name) {',
+    '  return "Goodbye, " + name;',
+    '}',
+    '',
+    "const utils = require('./utils.cjs');",
+    "const logger = require('./logger.cjs');",
+    '',
+    'function newHelper() { return true; }',
+    '',
+    'module.exports = { greet, farewell, newHelper };',
+  ].join('\n'), 'utf-8');
+
+  execSync('git add src/lib/shared.cjs', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git commit -m "feat(test-set): modify shared module"', { cwd: tmpDir, stdio: 'pipe' });
+
+  // Go back to main and make conflicting changes
+  execSync('git checkout main', { cwd: tmpDir, stdio: 'pipe' });
+
+  fs.writeFileSync(path.join(tmpDir, 'src', 'lib', 'shared.cjs'), [
+    "'use strict';",
+    '',
+    'function greet(name) {',
+    '  return "Welcome, " + name + ".";',
+    '}',
+    '',
+    'function farewell(name) {',
+    '  return "See you later, " + name;',
+    '}',
+    '',
+    "const utils = require('./utils.cjs');",
+    "const config = require('./config.cjs');",
+    '',
+    'module.exports = { greet, farewell };',
+  ].join('\n'), 'utf-8');
+
+  execSync('git add src/lib/shared.cjs', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git commit -m "feat: modify shared on main"', { cwd: tmpDir, stdio: 'pipe' });
+
+  return tmpDir;
+}
+
 // ────────────────────────────────────────────────────────────────
-// writeReviewMd
+// Detection Pipeline Tests (MERG-01)
 // ────────────────────────────────────────────────────────────────
+
+describe('extractFunctionNames', () => {
+  it('extracts function declarations and const/let arrow functions', () => {
+    const merge = require('./merge.cjs');
+    const diff = [
+      '+function greet(name) {',
+      '+  return name;',
+      '+}',
+      '+const helper = () => true;',
+      '+let process = async function doWork() {',
+      '-function oldFunc() {',
+      ' function unchanged() {',
+    ].join('\n');
+
+    const names = merge.extractFunctionNames(diff);
+    assert.ok(names.includes('greet'), 'should extract function declaration greet');
+    assert.ok(names.includes('helper'), 'should extract const arrow function helper');
+    assert.ok(names.includes('oldFunc'), 'should extract removed function declaration oldFunc');
+    // unchanged (no +/- prefix) should NOT be extracted
+    assert.ok(!names.includes('unchanged'), 'should not extract unchanged function');
+  });
+});
+
+describe('extractDependencies', () => {
+  it('extracts both require() and import-from patterns', () => {
+    const merge = require('./merge.cjs');
+    const content = [
+      "const fs = require('fs');",
+      "const path = require('path');",
+      "const { z } = require('zod');",
+      "import foo from 'bar';",
+      "import { baz } from 'qux';",
+    ].join('\n');
+
+    const deps = merge.extractDependencies(content);
+    assert.ok(deps.includes('fs'), 'should extract fs require');
+    assert.ok(deps.includes('path'), 'should extract path require');
+    assert.ok(deps.includes('zod'), 'should extract zod require');
+    assert.ok(deps.includes('bar'), 'should extract bar import');
+    assert.ok(deps.includes('qux'), 'should extract qux import');
+  });
+});
+
+describe('extractExports', () => {
+  it('extracts module.exports and named exports', () => {
+    const merge = require('./merge.cjs');
+    const content = [
+      'module.exports = { greet, farewell, helper };',
+    ].join('\n');
+
+    const exports = merge.extractExports(content);
+    assert.ok(exports.includes('greet'), 'should extract greet from module.exports');
+    assert.ok(exports.includes('farewell'), 'should extract farewell from module.exports');
+    assert.ok(exports.includes('helper'), 'should extract helper from module.exports');
+  });
+
+  it('extracts ESM named exports', () => {
+    const merge = require('./merge.cjs');
+    const content = [
+      'export function greet() {}',
+      'export const helper = () => {};',
+      'export { farewell };',
+    ].join('\n');
+
+    const exports = merge.extractExports(content);
+    assert.ok(exports.includes('greet'), 'should extract ESM function export');
+    assert.ok(exports.includes('helper'), 'should extract ESM const export');
+    assert.ok(exports.includes('farewell'), 'should extract ESM named export');
+  });
+});
+
+describe('parseConflictFiles', () => {
+  it('extracts file paths from git conflict output', () => {
+    const merge = require('./merge.cjs');
+    const output = [
+      'Auto-merging src/lib/shared.cjs',
+      'CONFLICT (content): Merge conflict in src/lib/shared.cjs',
+      'CONFLICT (content): Merge conflict in src/lib/other.cjs',
+      'Automatic merge failed; fix conflicts and then commit the result.',
+    ].join('\n');
+
+    const files = merge.parseConflictFiles(output);
+    assert.ok(files.some(c => c.file === 'src/lib/shared.cjs'), 'should extract shared.cjs');
+    assert.ok(files.some(c => c.file === 'src/lib/other.cjs'), 'should extract other.cjs');
+  });
+});
+
+describe('detectTextualConflicts', { concurrency: 1 }, () => {
+  let tmpDir;
+
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns hasConflicts=false when no conflicts exist', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createGitProject();
+
+    const result = merge.detectTextualConflicts(tmpDir, 'rapid/auth-core', 'main');
+    assert.equal(result.hasConflicts, false, 'should have no conflicts');
+  });
+
+  it('returns hasConflicts=true with file list when conflicts exist', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createConflictGitProject();
+
+    const result = merge.detectTextualConflicts(tmpDir, 'rapid/test-set', 'main');
+    assert.equal(result.hasConflicts, true, 'should detect conflicts');
+    assert.ok(result.conflicts.length > 0, 'should have conflict list');
+    assert.ok(result.conflicts.some(c => c.file === 'src/lib/shared.cjs'), 'should identify conflicting file');
+  });
+
+  it('always aborts merge (working tree clean after detection)', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createConflictGitProject();
+
+    merge.detectTextualConflicts(tmpDir, 'rapid/test-set', 'main');
+
+    // Working tree should be clean
+    const status = execSync('git status --porcelain', { cwd: tmpDir, encoding: 'utf-8' });
+    assert.equal(status.trim(), '', 'working tree should be clean after detection');
+  });
+});
+
+describe('detectStructuralConflicts', { concurrency: 1 }, () => {
+  let tmpDir;
+
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns empty when no overlapping function modifications', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createGitProject();
+
+    const result = merge.detectStructuralConflicts(tmpDir, 'rapid/auth-core', 'main');
+    assert.ok(Array.isArray(result.conflicts), 'should return conflicts array');
+    assert.equal(result.conflicts.length, 0, 'should have no structural conflicts');
+  });
+
+  it('detects when same function is modified in both branches', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createConflictGitProject();
+
+    const result = merge.detectStructuralConflicts(tmpDir, 'rapid/test-set', 'main');
+    assert.ok(Array.isArray(result.conflicts), 'should return conflicts array');
+    // Both branches modify greet and farewell in shared.cjs
+    const sharedConflict = result.conflicts.find(c => c.file === 'src/lib/shared.cjs');
+    assert.ok(sharedConflict, 'should detect structural conflict in shared.cjs');
+    assert.ok(sharedConflict.functions.includes('greet'), 'should detect greet function overlap');
+  });
+});
+
+describe('detectDependencyConflicts', { concurrency: 1 }, () => {
+  let tmpDir;
+
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('detects added/removed dependencies in overlapping files', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createConflictGitProject();
+
+    const result = merge.detectDependencyConflicts(tmpDir, 'rapid/test-set', 'main');
+    assert.ok(Array.isArray(result.conflicts), 'should return conflicts array');
+    // The branch added logger, main added config -- both added deps
+    // There should be a dependency conflict for shared.cjs
+    const depConflict = result.conflicts.find(c => c.file === 'src/lib/shared.cjs');
+    assert.ok(depConflict, 'should detect dependency conflict in shared.cjs');
+    assert.equal(depConflict.type, 'dependency', 'should be a dependency type');
+  });
+});
+
+describe('detectAPIConflicts', { concurrency: 1 }, () => {
+  let tmpDir;
+
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('detects changed exports in overlapping files', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createConflictGitProject();
+
+    const result = merge.detectAPIConflicts(tmpDir, 'rapid/test-set', 'main');
+    assert.ok(Array.isArray(result.conflicts), 'should return conflicts array');
+    // The branch added newHelper to exports, base did not
+    const apiConflict = result.conflicts.find(c => c.file === 'src/lib/shared.cjs');
+    assert.ok(apiConflict, 'should detect API conflict in shared.cjs');
+    assert.equal(apiConflict.type, 'api', 'should be api type');
+  });
+});
+
+describe('detectConflicts', { concurrency: 1 }, () => {
+  let tmpDir;
+
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('orchestrates all L1-L4 and returns structured report with L5=null', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createConflictGitProject();
+
+    const result = merge.detectConflicts(tmpDir, 'test-set', 'main');
+    assert.ok(result.textual, 'should have textual detection result');
+    assert.ok(result.structural, 'should have structural detection result');
+    assert.ok(result.dependency, 'should have dependency detection result');
+    assert.ok(result.api, 'should have api detection result');
+    assert.equal(result.semantic, null, 'L5 semantic should be null');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// Resolution Cascade Tests (MERG-02)
+// ────────────────────────────────────────────────────────────────
+
+describe('tryDeterministicResolve', () => {
+  it('resolves non-overlapping addition with confidence=1.0', () => {
+    const merge = require('./merge.cjs');
+    const conflict = {
+      file: 'src/lib/shared.cjs',
+      type: 'textual',
+      detail: 'non-overlapping',
+      nonOverlapping: true,
+    };
+
+    const result = merge.tryDeterministicResolve(conflict);
+    assert.equal(result.resolved, true, 'should resolve non-overlapping');
+    assert.equal(result.confidence, 1.0, 'confidence should be 1.0');
+  });
+
+  it('returns unresolved for overlapping changes', () => {
+    const merge = require('./merge.cjs');
+    const conflict = {
+      file: 'src/lib/shared.cjs',
+      type: 'structural',
+      functions: ['greet'],
+      nonOverlapping: false,
+    };
+
+    const result = merge.tryDeterministicResolve(conflict);
+    assert.equal(result.resolved, false, 'should not resolve overlapping');
+  });
+});
+
+describe('tryHeuristicResolve', () => {
+  it('prefers file owner version when ownership available', () => {
+    const merge = require('./merge.cjs');
+    const conflict = {
+      file: 'src/auth/token.cjs',
+      type: 'structural',
+      functions: ['createToken'],
+    };
+    const ownership = { 'src/auth/token.cjs': 'auth-core' };
+    const dagOrder = ['auth-core', 'api-routes'];
+
+    const result = merge.tryHeuristicResolve(conflict, ownership, dagOrder);
+    assert.equal(result.resolved, true, 'should resolve with ownership');
+    assert.ok(result.confidence >= 0.7 && result.confidence <= 0.9, 'confidence should be 0.7-0.9');
+    assert.ok(result.signal.includes('ownership'), 'signal should mention ownership');
+  });
+
+  it('prefers earlier-wave set when DAG order available', () => {
+    const merge = require('./merge.cjs');
+    const conflict = {
+      file: 'src/shared/utils.cjs',
+      type: 'structural',
+      functions: ['helper'],
+      setName: 'api-routes',
+    };
+    const ownership = {}; // no ownership info for this file
+    const dagOrder = ['auth-core', 'api-routes'];
+
+    const result = merge.tryHeuristicResolve(conflict, ownership, dagOrder);
+    assert.equal(result.resolved, true, 'should resolve with DAG order');
+    assert.ok(result.signal.includes('dag'), 'signal should mention dag order');
+  });
+
+  it('merges both entries for array-addition pattern', () => {
+    const merge = require('./merge.cjs');
+    const conflict = {
+      file: 'src/lib/routes.cjs',
+      type: 'textual',
+      detail: 'both-added-to-array',
+      pattern: 'array-addition',
+    };
+    const ownership = {};
+    const dagOrder = [];
+
+    const result = merge.tryHeuristicResolve(conflict, ownership, dagOrder);
+    assert.equal(result.resolved, true, 'should resolve array addition');
+    assert.ok(result.signal.includes('pattern'), 'signal should mention pattern');
+  });
+});
+
+describe('resolveConflicts', () => {
+  it('cascades through tiers correctly', () => {
+    const merge = require('./merge.cjs');
+    const detectionResults = {
+      allConflicts: [
+        { file: 'a.cjs', type: 'textual', nonOverlapping: true },
+        { file: 'b.cjs', type: 'structural', functions: ['foo'], setName: 'api-routes' },
+      ],
+    };
+    const options = {
+      ownership: {},
+      dagOrder: ['auth-core', 'api-routes'],
+    };
+
+    const results = merge.resolveConflicts(detectionResults, options);
+    assert.ok(Array.isArray(results), 'should return array');
+    assert.equal(results.length, 2, 'should have result per conflict');
+
+    // First conflict is non-overlapping -> T1
+    const t1Result = results.find(r => r.conflict.file === 'a.cjs');
+    assert.ok(t1Result, 'should have result for a.cjs');
+    assert.equal(t1Result.tier, 1, 'non-overlapping should be tier 1');
+
+    // Second conflict -> T2 (DAG order)
+    const t2Result = results.find(r => r.conflict.file === 'b.cjs');
+    assert.ok(t2Result, 'should have result for b.cjs');
+    assert.equal(t2Result.tier, 2, 'structural with DAG should be tier 2');
+  });
+
+  it('marks unresolvable conflicts as needsAgent', () => {
+    const merge = require('./merge.cjs');
+    const detectionResults = {
+      allConflicts: [
+        { file: 'c.cjs', type: 'structural', functions: ['bar'], nonOverlapping: false },
+      ],
+    };
+    const options = {
+      ownership: {},
+      dagOrder: [],
+    };
+
+    const results = merge.resolveConflicts(detectionResults, options);
+    assert.equal(results.length, 1, 'should have one result');
+    assert.equal(results[0].needsAgent, true, 'should mark as needsAgent');
+    assert.equal(results[0].tier, 3, 'should be tier 3');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// MERGE-STATE.json Tests (MERG-03)
+// ────────────────────────────────────────────────────────────────
+
+describe('MergeStateSchema', () => {
+  it('validates correct merge state object', () => {
+    const merge = require('./merge.cjs');
+    const valid = {
+      setId: 'auth-core',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    // Should not throw
+    const result = merge.MergeStateSchema.parse(valid);
+    assert.equal(result.setId, 'auth-core');
+    assert.equal(result.status, 'pending');
+  });
+
+  it('rejects invalid status values', () => {
+    const merge = require('./merge.cjs');
+    const invalid = {
+      setId: 'auth-core',
+      status: 'bogus-status',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    assert.throws(() => merge.MergeStateSchema.parse(invalid), 'should throw for invalid status');
+  });
+});
+
+describe('writeMergeState', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-state-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('creates file with validated content', () => {
+    const merge = require('./merge.cjs');
+    const state = {
+      setId: 'auth-core',
+      status: 'detecting',
+      startedAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    merge.writeMergeState(tmpDir, 'auth-core', state);
+
+    const filePath = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'MERGE-STATE.json');
+    assert.ok(fs.existsSync(filePath), 'should create MERGE-STATE.json');
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    assert.equal(written.setId, 'auth-core');
+    assert.equal(written.status, 'detecting');
+  });
+});
+
+describe('readMergeState', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-state-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns null for missing file', () => {
+    const merge = require('./merge.cjs');
+    const result = merge.readMergeState(tmpDir, 'nonexistent');
+    assert.equal(result, null, 'should return null for missing');
+  });
+
+  it('returns validated object for existing file', () => {
+    const merge = require('./merge.cjs');
+    const state = {
+      setId: 'auth-core',
+      status: 'merging',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    // Write first
+    merge.writeMergeState(tmpDir, 'auth-core', state);
+
+    // Read back
+    const result = merge.readMergeState(tmpDir, 'auth-core');
+    assert.ok(result, 'should return state object');
+    assert.equal(result.setId, 'auth-core');
+    assert.equal(result.status, 'merging');
+  });
+});
+
+describe('updateMergeState', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-state-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('merges partial updates correctly', () => {
+    const merge = require('./merge.cjs');
+    const initial = {
+      setId: 'auth-core',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    merge.writeMergeState(tmpDir, 'auth-core', initial);
+    merge.updateMergeState(tmpDir, 'auth-core', { status: 'detecting', startedAt: new Date().toISOString() });
+
+    const result = merge.readMergeState(tmpDir, 'auth-core');
+    assert.equal(result.status, 'detecting', 'should update status');
+    assert.ok(result.startedAt, 'should have startedAt');
+    assert.equal(result.setId, 'auth-core', 'should preserve setId');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// Preserved v1.0 Function Tests (MERG-04)
+// ────────────────────────────────────────────────────────────────
+
 describe('writeReviewMd', () => {
   let tmpDir;
 
@@ -222,7 +785,6 @@ describe('writeReviewMd', () => {
     merge.writeReviewMd(tmpDir, reviewData);
 
     const content = fs.readFileSync(path.join(tmpDir, 'REVIEW.md'), 'utf-8');
-    // Each empty findings sub-section should show "None"
     assert.ok(content.includes('None'), 'should show None for empty findings');
   });
 
@@ -250,9 +812,6 @@ describe('writeReviewMd', () => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────
-// parseReviewVerdict
-// ────────────────────────────────────────────────────────────────
 describe('parseReviewVerdict', () => {
   let tmpDir;
 
@@ -322,9 +881,6 @@ describe('parseReviewVerdict', () => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────
-// getMergeOrder
-// ────────────────────────────────────────────────────────────────
 describe('getMergeOrder', () => {
   let tmpDir;
 
@@ -347,9 +903,6 @@ describe('getMergeOrder', () => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────
-// mergeSet
-// ────────────────────────────────────────────────────────────────
 describe('mergeSet', { concurrency: 1 }, () => {
   let tmpDir;
 
@@ -400,9 +953,6 @@ describe('mergeSet', { concurrency: 1 }, () => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────
-// assembleReviewerPrompt
-// ────────────────────────────────────────────────────────────────
 describe('assembleReviewerPrompt', () => {
   let tmpDir;
 
@@ -447,16 +997,13 @@ describe('assembleReviewerPrompt', () => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────
-// runProgrammaticGate
-// ────────────────────────────────────────────────────────────────
 describe('runProgrammaticGate', { concurrency: 1 }, () => {
   let tmpDir;
 
   beforeEach(() => {
     tmpDir = createMockProject();
 
-    // Create source files at project root (contract tests resolve relative to set dir -> project root)
+    // Create source files at project root
     fs.mkdirSync(path.join(tmpDir, 'src', 'auth'), { recursive: true });
     fs.writeFileSync(path.join(tmpDir, 'src', 'auth', 'token.cjs'), [
       "'use strict';",
@@ -582,9 +1129,6 @@ describe('runProgrammaticGate', { concurrency: 1 }, () => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────
-// prepareReviewContext
-// ────────────────────────────────────────────────────────────────
 describe('prepareReviewContext', () => {
   let tmpDir;
 
@@ -607,9 +1151,6 @@ describe('prepareReviewContext', () => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────
-// runIntegrationTests
-// ────────────────────────────────────────────────────────────────
 describe('runIntegrationTests', { concurrency: 1 }, () => {
   let tmpDir;
 
@@ -642,7 +1183,6 @@ describe('runIntegrationTests', { concurrency: 1 }, () => {
     const merge = require('./merge.cjs');
 
     // Create a failing test file that throws at top level
-    // (node:test describe/it within nested node --test can swallow failures)
     fs.writeFileSync(path.join(tmpDir, 'src', 'lib', 'fail.test.cjs'), [
       "'use strict';",
       "process.exitCode = 1;",
@@ -659,22 +1199,48 @@ describe('runIntegrationTests', { concurrency: 1 }, () => {
 // Module exports check
 // ────────────────────────────────────────────────────────────────
 describe('merge.cjs module exports', () => {
-  it('exports all 8 required functions', () => {
+  it('exports all v2.0 and preserved v1.0 functions', () => {
     const merge = require('./merge.cjs');
 
     const expectedExports = [
+      // v2.0 detection
+      'detectConflicts',
+      'detectTextualConflicts',
+      'detectStructuralConflicts',
+      'detectDependencyConflicts',
+      'detectAPIConflicts',
+      // v2.0 resolution
+      'tryDeterministicResolve',
+      'tryHeuristicResolve',
+      'resolveConflicts',
+      // v2.0 state
+      'MergeStateSchema',
+      'writeMergeState',
+      'readMergeState',
+      'updateMergeState',
+      // v2.0 helpers
+      'getChangedFiles',
+      'extractFunctionNames',
+      'extractDependencies',
+      'extractExports',
+      'parseConflictFiles',
+      // preserved v1.0
+      'getMergeOrder',
+      'mergeSet',
+      'runIntegrationTests',
       'runProgrammaticGate',
       'prepareReviewContext',
       'assembleReviewerPrompt',
       'writeReviewMd',
       'parseReviewVerdict',
-      'getMergeOrder',
-      'mergeSet',
-      'runIntegrationTests',
     ];
 
     for (const name of expectedExports) {
-      assert.equal(typeof merge[name], 'function', `should export ${name} as a function`);
+      if (name === 'MergeStateSchema') {
+        assert.ok(merge[name], `should export ${name}`);
+      } else {
+        assert.equal(typeof merge[name], 'function', `should export ${name} as a function`);
+      }
     }
   });
 });
