@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 22-03-PLAN.md
-last_updated: "2026-03-08T12:17:01.963Z"
-last_activity: 2026-03-08 — Completed 22-03 (review CLI subcommands and lean review integration)
+stopped_at: Completed 22-04-PLAN.md
+last_updated: "2026-03-08T12:26:00.000Z"
+last_activity: "2026-03-08 — Completed 22-04 (/rapid:review SKILL.md full pipeline orchestrator)"
 progress:
   total_phases: 26
-  completed_phases: 22
+  completed_phases: 23
   total_plans: 59
-  completed_plans: 57
-  percent: 97
+  completed_plans: 58
+  percent: 98
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 22 - Review Module (v2.0 Mark II)
+**Current focus:** Phase 23 - Merge Pipeline (v2.0 Mark II)
 
 ## Current Position
 
-Phase: 22 of 26 (Review Module)
-Plan: 3 of 4 in current phase
-Status: In Progress
-Last activity: 2026-03-08 — Completed 22-03 (review CLI subcommands and lean review integration)
+Phase: 23 of 26 (Merge Pipeline)
+Plan: 0 of 3 in current phase
+Status: Phase 22 Complete, Phase 23 Not Started
+Last activity: 2026-03-08 — Completed 22-04 (/rapid:review SKILL.md full pipeline orchestrator)
 
-Progress: [██████████] 97% (57/59 plans complete)
+Progress: [██████████] 98% (58/59 plans complete)
 
 ## Accumulated Context
 
@@ -92,6 +92,10 @@ Recent decisions affecting current work:
 - [Phase 22]: judge has Write for REVIEW-BUGS.md but no Bash -- rulings based on static analysis only
 - [Phase 22]: unit-tester and uat use CHECKPOINT-then-COMPLETE flow for test plan approval before execution
 - [Phase 22]: Lean review verifies planned artifacts by parsing JOB-PLAN.md tables and checking file existence in worktree
+- [Phase 22]: 13 AskUserQuestion gates for user control at every decision point in the review pipeline
+- [Phase 22]: 3-cycle bugfix iteration limit with scope narrowing to prevent infinite re-hunt loops
+- [Phase 22]: DEFERRED judge rulings present hunter and advocate evidence side-by-side for developer arbitration via AskUserQuestion
+- [Phase 22]: UAT browser automation tool configurable via config.json browserAutomation field with AskUserQuestion fallback
 
 ### Pending Todos
 
@@ -123,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T12:17:01.961Z
-Stopped at: Completed 22-03-PLAN.md
+Last session: 2026-03-08T12:26:00.000Z
+Stopped at: Completed 22-04-PLAN.md
 Resume file: None
