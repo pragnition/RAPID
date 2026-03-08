@@ -1196,6 +1196,496 @@ describe('runIntegrationTests', { concurrency: 1 }, () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// Bisection Recovery Tests (MERG-05)
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Create a git project with multiple set branches for bisection testing.
+ * Sets up main with an initial commit, then creates N set branches with commits.
+ * Each set modifies a unique file (no conflicts between sets).
+ * One set (the "breaker") adds a file that causes the test script to fail.
+ */
+function createBisectionProject(breakerIndex) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-bisect-'));
+
+  execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'pipe' });
+
+  // Create initial structure on main
+  fs.mkdirSync(path.join(tmpDir, 'src', 'lib'), { recursive: true });
+  fs.mkdirSync(path.join(tmpDir, '.planning', 'sets'), { recursive: true });
+  fs.writeFileSync(path.join(tmpDir, 'README.md'), '# Test', 'utf-8');
+
+  // Create a simple test script that checks for the breaker file
+  fs.writeFileSync(path.join(tmpDir, 'src', 'lib', 'integ.test.cjs'), [
+    "'use strict';",
+    "const { describe, it } = require('node:test');",
+    "const assert = require('node:assert/strict');",
+    "const fs = require('fs');",
+    "const path = require('path');",
+    "describe('integration', () => {",
+    "  it('no breaker present', () => {",
+    "    const breaker = path.join(__dirname, '..', '..', 'BREAKER');",
+    "    assert.ok(!fs.existsSync(breaker), 'BREAKER file should not exist');",
+    "  });",
+    "});",
+  ].join('\n'), 'utf-8');
+
+  execSync('git add -A', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git commit -m "initial commit"', { cwd: tmpDir, stdio: 'pipe' });
+  try { execSync('git branch -m main', { cwd: tmpDir, stdio: 'pipe' }); } catch { /* ok */ }
+
+  // Create set branches
+  const setNames = ['set-alpha', 'set-beta', 'set-gamma'];
+  for (let i = 0; i < setNames.length; i++) {
+    const setName = setNames[i];
+    execSync('git checkout main', { cwd: tmpDir, stdio: 'pipe' });
+    execSync(`git checkout -b rapid/${setName}`, { cwd: tmpDir, stdio: 'pipe' });
+
+    // Each set creates a unique file
+    fs.writeFileSync(path.join(tmpDir, 'src', `${setName}.cjs`), `// ${setName}\nmodule.exports = {};`, 'utf-8');
+    execSync(`git add src/${setName}.cjs`, { cwd: tmpDir, stdio: 'pipe' });
+
+    // The breaker set also creates the BREAKER file
+    if (i === breakerIndex) {
+      fs.writeFileSync(path.join(tmpDir, 'BREAKER'), 'this causes test failure', 'utf-8');
+      execSync('git add BREAKER', { cwd: tmpDir, stdio: 'pipe' });
+    }
+
+    execSync(`git commit -m "feat(${setName}): add ${setName} module"`, { cwd: tmpDir, stdio: 'pipe' });
+
+    // Write MERGE-STATE.json for each set
+    const setDir = path.join(tmpDir, '.planning', 'sets', setName);
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'MERGE-STATE.json'), JSON.stringify({
+      setId: setName,
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    }, null, 2), 'utf-8');
+  }
+
+  execSync('git checkout main', { cwd: tmpDir, stdio: 'pipe' });
+
+  return { tmpDir, setNames };
+}
+
+describe('getPreWaveCommit', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createGitProject();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns current HEAD hash', () => {
+    const merge = require('./merge.cjs');
+    const head = execSync('git rev-parse HEAD', { cwd: tmpDir, encoding: 'utf-8' }).trim();
+    const result = merge.getPreWaveCommit(tmpDir);
+    assert.equal(result, head);
+  });
+});
+
+describe('bisectWave', { concurrency: 1 }, () => {
+  let tmpDir, setNames;
+
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('with single set returns that set as breaking (trivial case)', () => {
+    const merge = require('./merge.cjs');
+    // Create project where set-alpha is the breaker (index 0)
+    const proj = createBisectionProject(0);
+    tmpDir = proj.tmpDir;
+
+    // First merge the single breaker set
+    const preWaveCommit = merge.getPreWaveCommit(tmpDir);
+    merge.mergeSet(tmpDir, 'set-alpha', 'main');
+
+    const result = merge.bisectWave(tmpDir, 'main', ['set-alpha'], preWaveCommit);
+    assert.equal(result.breakingSet, 'set-alpha');
+    assert.equal(typeof result.iterations, 'number');
+    assert.ok(result.iterations >= 1);
+  });
+
+  it('with two sets identifies the one that causes test failure', () => {
+    const merge = require('./merge.cjs');
+    // set-beta (index 1) is the breaker
+    const proj = createBisectionProject(1);
+    tmpDir = proj.tmpDir;
+
+    const preWaveCommit = merge.getPreWaveCommit(tmpDir);
+    // Merge both sets
+    merge.mergeSet(tmpDir, 'set-alpha', 'main');
+    merge.mergeSet(tmpDir, 'set-beta', 'main');
+
+    const result = merge.bisectWave(tmpDir, 'main', ['set-alpha', 'set-beta'], preWaveCommit);
+    assert.equal(result.breakingSet, 'set-beta');
+  });
+
+  it('preserves .planning/ directory after completion', () => {
+    const merge = require('./merge.cjs');
+    const proj = createBisectionProject(0);
+    tmpDir = proj.tmpDir;
+
+    // Write extra .planning data to ensure it's preserved
+    const markerFile = path.join(tmpDir, '.planning', 'PRESERVE-MARKER.txt');
+    fs.writeFileSync(markerFile, 'must survive bisection', 'utf-8');
+    execSync('git add .planning/', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit -m "add planning marker"', { cwd: tmpDir, stdio: 'pipe' });
+
+    const preWaveCommit = merge.getPreWaveCommit(tmpDir);
+    merge.mergeSet(tmpDir, 'set-alpha', 'main');
+
+    merge.bisectWave(tmpDir, 'main', ['set-alpha'], preWaveCommit);
+
+    // .planning/ should be restored
+    assert.ok(fs.existsSync(markerFile), '.planning/ files should be preserved after bisection');
+    const content = fs.readFileSync(markerFile, 'utf-8');
+    assert.equal(content, 'must survive bisection');
+  });
+
+  it('updates MERGE-STATE.json with bisection results', () => {
+    const merge = require('./merge.cjs');
+    const proj = createBisectionProject(0);
+    tmpDir = proj.tmpDir;
+
+    // Ensure MERGE-STATE exists and commit it
+    execSync('git add .planning/', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit -m "add merge state"', { cwd: tmpDir, stdio: 'pipe' });
+
+    const preWaveCommit = merge.getPreWaveCommit(tmpDir);
+    merge.mergeSet(tmpDir, 'set-alpha', 'main');
+
+    merge.bisectWave(tmpDir, 'main', ['set-alpha'], preWaveCommit);
+
+    // Read the MERGE-STATE for the breaking set
+    const state = merge.readMergeState(tmpDir, 'set-alpha');
+    assert.ok(state, 'MERGE-STATE.json should exist for breaking set');
+    assert.ok(state.bisection, 'bisection field should exist');
+    assert.equal(state.bisection.triggered, true);
+    assert.equal(state.bisection.breakingSet, 'set-alpha');
+    assert.ok(state.bisection.iterations >= 1);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// Single-Set Rollback Tests (MERG-06)
+// ────────────────────────────────────────────────────────────────
+
+describe('revertSetMerge', { concurrency: 1 }, () => {
+  let tmpDir;
+
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('successfully reverts a merge commit', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createGitProject();
+
+    // Create .planning/sets with MERGE-STATE
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setDir, { recursive: true });
+
+    // Merge the set to get a merge commit
+    const mergeResult = merge.mergeSet(tmpDir, 'auth-core', 'main');
+    assert.ok(mergeResult.merged, 'merge should succeed');
+
+    // Write MERGE-STATE with the merge commit hash
+    merge.writeMergeState(tmpDir, 'auth-core', {
+      setId: 'auth-core',
+      status: 'complete',
+      mergeCommit: mergeResult.commitHash.trim(),
+      lastUpdatedAt: new Date().toISOString(),
+    });
+
+    // Now revert it
+    const result = merge.revertSetMerge(tmpDir, 'auth-core');
+    assert.equal(result.reverted, true);
+    assert.ok(result.revertCommit, 'should have revert commit hash');
+
+    // Verify the file is gone (reverted)
+    const tokenFile = path.join(tmpDir, 'src', 'auth', 'token.cjs');
+    assert.ok(!fs.existsSync(tokenFile), 'merged file should be removed after revert');
+  });
+
+  it('returns error when mergeCommit missing in MERGE-STATE.json', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createGitProject();
+
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setDir, { recursive: true });
+
+    // Write MERGE-STATE without mergeCommit
+    merge.writeMergeState(tmpDir, 'auth-core', {
+      setId: 'auth-core',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    });
+
+    const result = merge.revertSetMerge(tmpDir, 'auth-core');
+    assert.equal(result.reverted, false);
+    assert.ok(result.reason, 'should have a reason');
+    assert.ok(result.reason.includes('missing') || result.reason.includes('no merge commit'), 'reason should indicate missing commit');
+  });
+
+  it('handles conflict during revert gracefully', () => {
+    const merge = require('./merge.cjs');
+    tmpDir = createGitProject();
+
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setDir, { recursive: true });
+
+    // Merge the set
+    const mergeResult = merge.mergeSet(tmpDir, 'auth-core', 'main');
+    assert.ok(mergeResult.merged);
+
+    // Modify the merged file on main to create a conflict for revert
+    fs.writeFileSync(path.join(tmpDir, 'src', 'auth', 'token.cjs'), '// modified after merge\nmodule.exports = { changed: true };', 'utf-8');
+    execSync('git add src/auth/token.cjs', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit -m "modify merged file"', { cwd: tmpDir, stdio: 'pipe' });
+
+    merge.writeMergeState(tmpDir, 'auth-core', {
+      setId: 'auth-core',
+      status: 'complete',
+      mergeCommit: mergeResult.commitHash.trim(),
+      lastUpdatedAt: new Date().toISOString(),
+    });
+
+    // This may or may not conflict depending on git, but the function should handle it gracefully
+    const result = merge.revertSetMerge(tmpDir, 'auth-core');
+    assert.equal(typeof result.reverted, 'boolean', 'should return structured result');
+    if (!result.reverted) {
+      assert.ok(result.reason, 'failed revert should have a reason');
+    }
+  });
+});
+
+describe('detectCascadeImpact', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createMockProject();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns hasCascade=false for set with no dependents', () => {
+    const merge = require('./merge.cjs');
+
+    // Create DAG with no edges pointing to auth-core as a dependency
+    const dagPath = path.join(tmpDir, '.planning', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify({
+      nodes: [
+        { id: 'auth-core', wave: 1, status: 'complete' },
+        { id: 'api-routes', wave: 2, status: 'pending' },
+      ],
+      edges: [
+        { from: 'auth-core', to: 'api-routes' },
+      ],
+      waves: { '1': { sets: ['auth-core'] }, '2': { sets: ['api-routes'] } },
+      metadata: { totalSets: 2, totalWaves: 2 },
+    }, null, 2), 'utf-8');
+
+    // api-routes has NO merged state -- it's still pending
+    const result = merge.detectCascadeImpact(tmpDir, 'auth-core');
+    assert.equal(result.hasCascade, false, 'no cascade when dependents have not merged');
+    assert.deepEqual(result.affectedSets, []);
+  });
+
+  it('returns hasCascade=true with affected sets for set with merged dependents', () => {
+    const merge = require('./merge.cjs');
+
+    const dagPath = path.join(tmpDir, '.planning', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify({
+      nodes: [
+        { id: 'auth-core', wave: 1, status: 'complete' },
+        { id: 'api-routes', wave: 2, status: 'complete' },
+      ],
+      edges: [
+        { from: 'auth-core', to: 'api-routes' },
+      ],
+      waves: { '1': { sets: ['auth-core'] }, '2': { sets: ['api-routes'] } },
+      metadata: { totalSets: 2, totalWaves: 2 },
+    }, null, 2), 'utf-8');
+
+    // Write MERGE-STATE for api-routes showing it has merged
+    merge.writeMergeState(tmpDir, 'api-routes', {
+      setId: 'api-routes',
+      status: 'complete',
+      mergeCommit: 'abc123',
+      lastUpdatedAt: new Date().toISOString(),
+    });
+
+    const result = merge.detectCascadeImpact(tmpDir, 'auth-core');
+    assert.equal(result.hasCascade, true, 'cascade when dependent has merged');
+    assert.ok(result.affectedSets.includes('api-routes'), 'api-routes should be in affected sets');
+    assert.ok(result.recommendation, 'should provide a recommendation');
+  });
+
+  it('returns hasCascade=false when dependents have not merged yet', () => {
+    const merge = require('./merge.cjs');
+
+    const dagPath = path.join(tmpDir, '.planning', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify({
+      nodes: [
+        { id: 'auth-core', wave: 1, status: 'complete' },
+        { id: 'api-routes', wave: 2, status: 'pending' },
+        { id: 'ui-layer', wave: 2, status: 'pending' },
+      ],
+      edges: [
+        { from: 'auth-core', to: 'api-routes' },
+        { from: 'auth-core', to: 'ui-layer' },
+      ],
+      waves: { '1': { sets: ['auth-core'] }, '2': { sets: ['api-routes', 'ui-layer'] } },
+      metadata: { totalSets: 3, totalWaves: 2 },
+    }, null, 2), 'utf-8');
+
+    // Write MERGE-STATE for dependents as pending (not merged)
+    merge.writeMergeState(tmpDir, 'api-routes', {
+      setId: 'api-routes',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    });
+    merge.writeMergeState(tmpDir, 'ui-layer', {
+      setId: 'ui-layer',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    });
+
+    const result = merge.detectCascadeImpact(tmpDir, 'auth-core');
+    assert.equal(result.hasCascade, false, 'no cascade when dependents are still pending');
+    assert.deepEqual(result.affectedSets, []);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// Agent Integration Tests (MERG-01, MERG-02 completion)
+// ────────────────────────────────────────────────────────────────
+
+describe('integrateSemanticResults', () => {
+  it('merges agent findings into detection.semantic', () => {
+    const merge = require('./merge.cjs');
+
+    const detectionResults = {
+      textual: { hasConflicts: false, conflicts: [] },
+      structural: { conflicts: [] },
+      dependency: { conflicts: [] },
+      api: { conflicts: [] },
+      semantic: null,
+    };
+
+    const agentResults = {
+      semantic_conflicts: [
+        { description: 'Intent divergence on auth flow', sets: ['auth-core', 'api-routes'], confidence: 0.85 },
+        { description: 'Contract behavioral mismatch', sets: ['auth-core'], confidence: 0.6 },
+      ],
+    };
+
+    const result = merge.integrateSemanticResults(detectionResults, agentResults);
+
+    // Should update semantic field
+    assert.ok(result.semantic, 'semantic field should be populated');
+    assert.equal(result.semantic.conflicts.length, 2, 'should have 2 semantic conflicts');
+    assert.equal(result.semantic.conflicts[0].description, 'Intent divergence on auth flow');
+    assert.equal(result.semantic.conflicts[1].confidence, 0.6);
+
+    // Original detection results should not be mutated
+    assert.equal(detectionResults.semantic, null, 'original should not be mutated');
+  });
+});
+
+describe('applyAgentResolutions', () => {
+  it('marks high-confidence resolutions as tier 3 applied', () => {
+    const merge = require('./merge.cjs');
+
+    const resolutions = [
+      { conflict: 'auth-flow-conflict', tier: 2, resolved: false, confidence: 0.5 },
+    ];
+
+    const agentResults = {
+      resolutions: [
+        { conflict: 'auth-flow-conflict', resolution: 'merged both patterns', confidence: 0.9 },
+      ],
+    };
+
+    const result = merge.applyAgentResolutions(resolutions, agentResults, 0.7);
+    const authRes = result.find(r => r.conflict === 'auth-flow-conflict');
+    assert.ok(authRes, 'should have auth resolution');
+    assert.equal(authRes.tier, 3, 'high confidence should be tier 3');
+    assert.equal(authRes.resolved, true, 'should be resolved');
+    assert.ok(authRes.resolution, 'should have resolution text');
+  });
+
+  it('escalates low-confidence resolutions to tier 4', () => {
+    const merge = require('./merge.cjs');
+
+    const resolutions = [
+      { conflict: 'complex-conflict', tier: 2, resolved: false, confidence: 0.3 },
+    ];
+
+    const agentResults = {
+      resolutions: [
+        { conflict: 'complex-conflict', resolution: 'attempt at merge', confidence: 0.4 },
+      ],
+    };
+
+    const result = merge.applyAgentResolutions(resolutions, agentResults, 0.7);
+    const complexRes = result.find(r => r.conflict === 'complex-conflict');
+    assert.ok(complexRes, 'should have complex resolution');
+    assert.equal(complexRes.tier, 4, 'low confidence should be tier 4');
+    assert.equal(complexRes.resolved, false, 'should not be resolved');
+    assert.ok(complexRes.escalation, 'should have escalation info');
+  });
+
+  it('uses default threshold of 0.7', () => {
+    const merge = require('./merge.cjs');
+
+    const resolutions = [
+      { conflict: 'borderline', tier: 2, resolved: false, confidence: 0.5 },
+    ];
+
+    const agentResults = {
+      resolutions: [
+        { conflict: 'borderline', resolution: 'attempt', confidence: 0.65 },
+      ],
+    };
+
+    // No threshold arg -- should use default 0.7
+    const result = merge.applyAgentResolutions(resolutions, agentResults);
+    const borderRes = result.find(r => r.conflict === 'borderline');
+    assert.equal(borderRes.tier, 4, '0.65 should be below default 0.7 threshold');
+  });
+
+  it('respects custom threshold', () => {
+    const merge = require('./merge.cjs');
+
+    const resolutions = [
+      { conflict: 'custom-threshold', tier: 2, resolved: false, confidence: 0.5 },
+    ];
+
+    const agentResults = {
+      resolutions: [
+        { conflict: 'custom-threshold', resolution: 'attempt', confidence: 0.55 },
+      ],
+    };
+
+    // Custom threshold of 0.5 -- 0.55 >= 0.5 so should be tier 3
+    const result = merge.applyAgentResolutions(resolutions, agentResults, 0.5);
+    const customRes = result.find(r => r.conflict === 'custom-threshold');
+    assert.equal(customRes.tier, 3, '0.55 should be at or above 0.5 threshold');
+    assert.equal(customRes.resolved, true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // Module exports check
 // ────────────────────────────────────────────────────────────────
 describe('merge.cjs module exports', () => {
@@ -1233,6 +1723,15 @@ describe('merge.cjs module exports', () => {
       'assembleReviewerPrompt',
       'writeReviewMd',
       'parseReviewVerdict',
+      // v2.0 bisection (MERG-05)
+      'bisectWave',
+      'getPreWaveCommit',
+      // v2.0 rollback (MERG-06)
+      'revertSetMerge',
+      'detectCascadeImpact',
+      // v2.0 agent integration
+      'integrateSemanticResults',
+      'applyAgentResolutions',
     ];
 
     for (const name of expectedExports) {
