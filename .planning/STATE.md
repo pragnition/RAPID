@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Mark II
 status: executing
-stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-03-08T14:30:55.516Z"
-last_activity: 2026-03-08 — Completed 23-02 (merger agent role and assembler registration)
+stopped_at: Completed 23-01-PLAN.md
+last_updated: "2026-03-08T14:37:13.568Z"
+last_activity: 2026-03-08 — Completed 23-01 (merge library v2.0 with detection, resolution, state management)
 progress:
   total_phases: 26
   completed_phases: 23
   total_plans: 64
-  completed_plans: 60
+  completed_plans: 61
   percent: 100
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 23 of 26 (Merge Pipeline)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: Phase 23 In Progress
-Last activity: 2026-03-08 — Completed 23-02 (merger agent role and assembler registration)
+Last activity: 2026-03-08 — Completed 23-01 (merge library v2.0 with detection, resolution, state management)
 
-Progress: [██████████] 100% (60/61 plans complete)
+Progress: [██████████] 100% (61/61 plans complete)
 
 ## Accumulated Context
 
@@ -98,6 +98,8 @@ Recent decisions affecting current work:
 - [Phase 22]: UAT browser automation tool configurable via config.json browserAutomation field with AskUserQuestion fallback
 - [Phase 22]: Remove speculative state-machine key_link rather than implement it -- state transitions handled via CLI in SKILL.md orchestrators
 - [Phase 23]: Merger role follows leaf-agent pattern: no sub-agent spawning, no commits, API changes always escalate
+- [Phase 23]: Function-scope mapping (extractModifiedFunctions) for L2 structural conflict detection -- parses diff hunk headers and maps changed lines to enclosing function
+- [Phase 23]: 3-way dependency/API comparison (ancestor vs branch vs base) using git merge-base for precise conflict attribution
 
 ### Pending Todos
 
@@ -129,6 +131,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T14:30:50.006Z
-Stopped at: Completed 23-02-PLAN.md
+Last session: 2026-03-08T14:37:13.566Z
+Stopped at: Completed 23-01-PLAN.md
 Resume file: None

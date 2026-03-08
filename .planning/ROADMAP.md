@@ -513,5 +513,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 20. Wave Planning | 3/3 | Complete    | 2026-03-06 | - |
 | 21. Execution Engine | 3/3 | Complete    | 2026-03-08 | - |
 | 22. Review Module | 5/5 | Complete    | 2026-03-08 | - |
-| 23. Merge Pipeline | 1/4 | In Progress|  | - |
+| 23. Merge Pipeline | 2/4 | In Progress|  | - |
 | 24. Documentation | v2.0 | 0/1 | Not started | - |
