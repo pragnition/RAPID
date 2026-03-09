@@ -1,10 +1,19 @@
 {
   "name": "rapid",
-  "version": "1.0.0",
-  "description": "RAPID - Agentic Parallelizable and Isolatable Development for Claude Code",
+  "version": "2.0.0",
+  "description": "RAPID - Rapid Agentic Parallelizable and Isolatable Development for Claude Code",
   "author": { "name": "fishjojo1" },
   "homepage": "https://github.com/fishjojo1/RAPID",
   "repository": "https://github.com/fishjojo1/RAPID",
   "license": "MIT",
-  "keywords": ["rapid", "parallel", "development", "worktree", "multi-agent", "orchestration"]
+  "keywords": [
+    "rapid",
+    "parallel",
+    "development",
+    "worktree",
+    "multi-agent",
+    "orchestration",
+    "claude-code",
+    "plugin"
+  ]
 }

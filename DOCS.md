@@ -2,7 +2,7 @@
 
 RAPID (Rapid Agentic Parallelizable and Isolatable Development) enables team-based parallel development for Claude Code. It decomposes project work into a hierarchical structure of Sets, Waves, and Jobs that execute simultaneously in isolated git worktrees, connected by machine-verifiable interface contracts and validated through an adversarial review pipeline. Multiple developers work on the same project without blocking each other, with confidence their independent work merges cleanly through 5-level conflict detection and 4-tier resolution.
 
-**Version:** 1.0.0
+**Version:** 2.0.0
 
 ## Installation
 
@@ -674,7 +674,7 @@ The following tools are validated by `/rapid:install` and `/rapid:init`:
 |------|----------------|----------|---------|
 | **Node.js** | 18+ | Yes | Runtime for tool libraries and CLI |
 | **git** | 2.30+ | Yes | Worktree support for parallel development |
-| **jq** | 1.6+ | No | Optional JSON processing utilities |
+| **jq** | 1.6+ | v1.0 | Optional JSON processing utilities |
 | **Claude Code** | Latest | Yes | Plugin host environment |
 
 ## Architecture
@@ -787,29 +787,29 @@ The assembler (`src/lib/assembler.cjs`) reads `config.json`, concatenates the co
 
 ### Runtime Libraries
 
-| # | Library | Purpose | v2.0 Status |
+| # | Library | Purpose | Status |
 |---|---------|---------|-------------|
-| 1 | core.cjs | Output formatting (`[RAPID]` prefix), project root detection, config loading | Unchanged |
-| 2 | lock.cjs | Cross-process atomic locking using mkdir strategy with proper-lockfile, 5-minute stale threshold | Unchanged |
-| 3 | prereqs.cjs | Prerequisite validation (git 2.30+, Node.js 18+, optional jq 1.6+) with semver comparison | Unchanged |
-| 4 | init.cjs | Project scaffolding -- PROJECT.md, STATE.md, ROADMAP.md, REQUIREMENTS.md, config.json, STATE.json | Unchanged |
-| 5 | assembler.cjs | Agent assembly from modular components -- now registers 26 role modules (was 6 in v1.0) | Updated |
-| 6 | returns.cjs | Structured return protocol parsing -- extracts RAPID:RETURN JSON from agent output | Unchanged |
-| 7 | verify.cjs | Tiered artifact verification -- lightweight (file existence) and heavyweight (tests + content) | Unchanged |
-| 8 | context.cjs | Brownfield codebase detection, language/framework scanning, directory mapping | Unchanged |
-| 9 | dag.cjs | Directed acyclic graph operations -- topological sort (Kahn's algorithm), wave assignment (BFS), execution ordering | Updated |
-| 10 | contract.cjs | Interface contract management -- Ajv JSON Schema validation, contract tests, manifest, file ownership maps | Unchanged |
-| 11 | stub.cjs | Contract stub generator -- produces CommonJS stubs from CONTRACT.json exports for cross-set development | Unchanged |
-| 12 | plan.cjs | Planning orchestration -- set creation, DAG/ownership/manifest/gate persistence, planning gate enforcement | Unchanged |
-| 13 | worktree.cjs | Git worktree lifecycle -- create, cleanup, reconcile, registry, scoped CLAUDE.md generation, branch deletion | Unchanged |
-| 14 | execute.cjs | Execution engine -- context preparation, prompt assembly, wave reconciliation, job status tracking | Updated |
+| 1 | core.cjs | Output formatting (`[RAPID]` prefix), project root detection, config loading | Core |
+| 2 | lock.cjs | Cross-process atomic locking using mkdir strategy with proper-lockfile, 5-minute stale threshold | Core |
+| 3 | prereqs.cjs | Prerequisite validation (git 2.30+, Node.js 18+, optional jq 1.6+) with semver comparison | Core |
+| 4 | init.cjs | Project scaffolding -- PROJECT.md, STATE.md, ROADMAP.md, REQUIREMENTS.md, config.json, STATE.json | Core |
+| 5 | assembler.cjs | Agent assembly from modular components -- registers 26 role modules | Core |
+| 6 | returns.cjs | Structured return protocol parsing -- extracts RAPID:RETURN JSON from agent output | Core |
+| 7 | verify.cjs | Tiered artifact verification -- lightweight (file existence) and heavyweight (tests + content) | Core |
+| 8 | context.cjs | Brownfield codebase detection, language/framework scanning, directory mapping | Core |
+| 9 | dag.cjs | Directed acyclic graph operations -- topological sort (Kahn's algorithm), wave assignment (BFS), execution ordering | Core |
+| 10 | contract.cjs | Interface contract management -- Ajv JSON Schema validation, contract tests, manifest, file ownership maps | Core |
+| 11 | stub.cjs | Contract stub generator -- produces CommonJS stubs from CONTRACT.json exports for cross-set development | Core |
+| 12 | plan.cjs | Planning orchestration -- set creation, DAG/ownership/manifest/gate persistence, planning gate enforcement | Core |
+| 13 | worktree.cjs | Git worktree lifecycle -- create, cleanup, reconcile, registry, scoped CLAUDE.md generation, branch deletion | Core |
+| 14 | execute.cjs | Execution engine -- context preparation, prompt assembly, wave reconciliation, job status tracking | Core |
 | 15 | merge.cjs | Merge pipeline -- 5-level conflict detection (L1-L4), 4-tier resolution (T1-T2), MERGE-STATE.json, DAG ordering | Major rewrite |
-| 16 | teams.cjs | Agent teams detection -- checks CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS env var for execution mode | Unchanged |
-| 17 | state-machine.cjs | Hierarchical JSON state management -- read/write with lock protection, atomic rename, transition functions, corruption detection, git recovery | **New in v2.0** |
-| 18 | state-schemas.cjs | Zod schemas for Project/Milestone/Set/Wave/Job state with status enums and default values | **New in v2.0** |
-| 19 | state-transitions.cjs | Valid state transition maps for set, wave, and job entities with validation function | **New in v2.0** |
-| 20 | wave-planning.cjs | Wave resolution across milestones/sets, wave directory management, contract validation for job plans | **New in v2.0** |
-| 21 | review.cjs | Review pipeline -- Zod-validated schemas, wave-scoped file discovery, issue logging, bugfix tracking, summary generation | **New in v2.0** |
+| 16 | teams.cjs | Agent teams detection -- checks CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS env var for execution mode | Core |
+| 17 | state-machine.cjs | Hierarchical JSON state management -- read/write with lock protection, atomic rename, transition functions, corruption detection, git recovery | Core |
+| 18 | state-schemas.cjs | Zod schemas for Project/Milestone/Set/Wave/Job state with status enums and default values | Core |
+| 19 | state-transitions.cjs | Valid state transition maps for set, wave, and job entities with validation function | Core |
+| 20 | wave-planning.cjs | Wave resolution across milestones/sets, wave directory management, contract validation for job plans | Core |
+| 21 | review.cjs | Review pipeline -- Zod-validated schemas, wave-scoped file discovery, issue logging, bugfix tracking, summary generation | Core |
 
 ## State Machine Architecture
 
@@ -909,25 +909,25 @@ The `rapid-tools.cjs` CLI provides 50+ subcommands organized into command groups
 
 ### .planning/ Directory
 
-| File/Directory | Purpose | New in v2.0? |
+| File/Directory | Purpose | Since |
 |----------------|---------|-------------|
-| PROJECT.md | Project overview, team size, model selection, key decisions | No |
-| STATE.md | Human-readable project state (position, decisions, blockers) | No |
-| ROADMAP.md | Phase/plan roadmap with dependency ordering | No |
-| REQUIREMENTS.md | Project requirements with traceability | No |
-| config.json | Planning configuration (mode, parallelization, model profile) | No |
-| sets/ | Per-set artifacts: DEFINITION.md, CONTRACT.json, HANDOFF.md | No |
-| contracts/ | Contract manifest, ownership map, contributions | No |
-| context/ | Generated context files: CODEBASE.md, ARCHITECTURE.md, CONVENTIONS.md, STYLE_GUIDE.md | No |
-| **STATE.json** | Machine-readable hierarchical state (source of truth for state machine) | **Yes** |
-| **research/** | Parallel research agent outputs from /rapid:init and /rapid:new-milestone | **Yes** |
-| **waves/{setId}/{waveId}/** | Wave/job planning artifacts: WAVE-CONTEXT.md, WAVE-RESEARCH.md, WAVE-PLAN.md, {jobId}-JOB-PLAN.md, VALIDATION-REPORT.md | **Yes** |
-| **worktrees/** | Worktree registry (REGISTRY.json) | **Yes** |
-| **.locks/** | Lock state directory for cross-process coordination | **Yes** |
-| **MERGE-STATE.json** | Per-set merge tracking (detection results, resolution outcomes) | **Yes** |
-| DAG.json | Dependency graph for set ordering | No |
-| OWNERSHIP.json | File-to-set ownership map | No |
-| GATES.json | Planning/execution gate status per wave | No |
+| PROJECT.md | Project overview, team size, model selection, key decisions | v1.0 |
+| STATE.md | Human-readable project state (position, decisions, blockers) | v1.0 |
+| ROADMAP.md | Phase/plan roadmap with dependency ordering | v1.0 |
+| REQUIREMENTS.md | Project requirements with traceability | v1.0 |
+| config.json | Planning configuration (mode, parallelization, model profile) | v1.0 |
+| sets/ | Per-set artifacts: DEFINITION.md, CONTRACT.json, HANDOFF.md | v1.0 |
+| contracts/ | Contract manifest, ownership map, contributions | v1.0 |
+| context/ | Generated context files: CODEBASE.md, ARCHITECTURE.md, CONVENTIONS.md, STYLE_GUIDE.md | v1.0 |
+| **STATE.json** | Machine-readable hierarchical state (source of truth for state machine) | v2.0 |
+| **research/** | Parallel research agent outputs from /rapid:init and /rapid:new-milestone | v2.0 |
+| **waves/{setId}/{waveId}/** | Wave/job planning artifacts: WAVE-CONTEXT.md, WAVE-RESEARCH.md, WAVE-PLAN.md, {jobId}-JOB-PLAN.md, VALIDATION-REPORT.md | v2.0 |
+| **worktrees/** | Worktree registry (REGISTRY.json) | v2.0 |
+| **.locks/** | Lock state directory for cross-process coordination | v2.0 |
+| **MERGE-STATE.json** | Per-set merge tracking (detection results, resolution outcomes) | v2.0 |
+| DAG.json | Dependency graph for set ordering | v1.0 |
+| OWNERSHIP.json | File-to-set ownership map | v1.0 |
+| GATES.json | Planning/execution gate status per wave | v1.0 |
 
 ### Agent Assembly Configuration
 
@@ -976,4 +976,4 @@ Additional settings:
 
 ---
 
-RAPID v1.0.0 -- Rapid Agentic Parallelizable and Isolatable Development for Claude Code
+RAPID v2.0.0 -- Rapid Agentic Parallelizable and Isolatable Development for Claude Code
