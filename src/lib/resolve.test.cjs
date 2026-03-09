@@ -410,3 +410,119 @@ describe('resolveWave -- edge cases', () => {
     );
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// resolveWave -- with setId parameter (FLOW-01)
+// ────────────────────────────────────────────────────────────────
+describe('resolveWave -- with setId parameter (FLOW-01)', () => {
+  const state = makeState([
+    {
+      id: 'set-01-api',
+      status: 'pending',
+      waves: [
+        { id: 'wave-01', status: 'pending', jobs: [] },
+        { id: 'wave-02', status: 'pending', jobs: [] },
+      ],
+    },
+    {
+      id: 'set-02-data',
+      status: 'pending',
+      waves: [
+        { id: 'wave-01', status: 'pending', jobs: [] },
+        { id: 'wave-02', status: 'pending', jobs: [] },
+        { id: 'wave-03', status: 'pending', jobs: [] },
+      ],
+    },
+  ]);
+
+  beforeEach(() => {
+    createMockSets(tmpDir, ['set-01-api', 'set-02-data']);
+  });
+
+  it('resolves string setId + string waveId correctly', () => {
+    const result = resolveWave('wave-01', state, tmpDir, 'set-01-api');
+    assert.deepStrictEqual(result, {
+      setId: 'set-01-api',
+      waveId: 'wave-01',
+      setIndex: 1,
+      waveIndex: 1,
+      wasNumeric: false,
+    });
+  });
+
+  it('resolves second wave in first set via setId', () => {
+    const result = resolveWave('wave-02', state, tmpDir, 'set-01-api');
+    assert.deepStrictEqual(result, {
+      setId: 'set-01-api',
+      waveId: 'wave-02',
+      setIndex: 1,
+      waveIndex: 2,
+      wasNumeric: false,
+    });
+  });
+
+  it('resolves wave in second set via string setId', () => {
+    const result = resolveWave('wave-03', state, tmpDir, 'set-02-data');
+    assert.deepStrictEqual(result, {
+      setId: 'set-02-data',
+      waveId: 'wave-03',
+      setIndex: 2,
+      waveIndex: 3,
+      wasNumeric: false,
+    });
+  });
+
+  it('resolves numeric setId + string waveId correctly', () => {
+    const result = resolveWave('wave-01', state, tmpDir, '1');
+    assert.deepStrictEqual(result, {
+      setId: 'set-01-api',
+      waveId: 'wave-01',
+      setIndex: 1,
+      waveIndex: 1,
+      wasNumeric: false,
+    });
+  });
+
+  it('resolves numeric setId "2" + string waveId correctly', () => {
+    const result = resolveWave('wave-02', state, tmpDir, '2');
+    assert.deepStrictEqual(result, {
+      setId: 'set-02-data',
+      waveId: 'wave-02',
+      setIndex: 2,
+      waveIndex: 2,
+      wasNumeric: false,
+    });
+  });
+
+  it('throws on nonexistent wave in valid set with available waves listed', () => {
+    assert.throws(
+      () => resolveWave('nonexistent-wave', state, tmpDir, 'set-01-api'),
+      { message: /Wave 'nonexistent-wave' not found in set 'set-01-api'. Available waves: wave-01, wave-02/ }
+    );
+  });
+
+  it('throws on nonexistent set (delegates to resolveSet error)', () => {
+    assert.throws(
+      () => resolveWave('wave-01', state, tmpDir, 'nonexistent-set'),
+      { message: /Set 'nonexistent-set' not found/ }
+    );
+  });
+
+  it('backward compat: resolveWave without setId still works with dot notation', () => {
+    const result = resolveWave('1.1', state, tmpDir);
+    assert.deepStrictEqual(result, {
+      setId: 'set-01-api',
+      waveId: 'wave-01',
+      setIndex: 1,
+      waveIndex: 1,
+      wasNumeric: true,
+    });
+  });
+
+  it('backward compat: resolveWave without setId still works with string wave ID', () => {
+    const result = resolveWave('wave-02', state, tmpDir);
+    assert.equal(result.waveId, 'wave-02');
+    assert.equal(result.setId, 'set-01-api');
+    assert.equal(result.wasNumeric, false);
+  });
+});
