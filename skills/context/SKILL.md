@@ -60,14 +60,19 @@ Print progress banner before spawning the analysis subagent:
 
 Use the Agent tool with these instructions:
 
-**Subagent prompt must include:**
+Spawn the **rapid-context-generator** agent with this task:
 
-1. The role instructions from `role-context-generator.md` (the subagent should be instructed to follow the Context Generator role)
-2. The scan manifest JSON from Step 1 (passed as context so the subagent knows what to analyze)
-3. The project root path from Step 2
-4. Explicit mode instruction: **"Run in analysis-only mode. Read the sample files listed in the manifest. Analyze the codebase for architecture patterns, code conventions, naming patterns, error handling, test infrastructure, and style rules. Return your analysis as structured text. Do NOT write any files."**
+```
+Run in analysis-only mode. Read the sample files listed in the manifest. Analyze the codebase for architecture patterns, code conventions, naming patterns, error handling, test infrastructure, and style rules. Return your analysis as structured text. Do NOT write any files.
 
-The subagent should:
+## Scan Manifest
+{scan manifest JSON from Step 1}
+
+## Working Directory
+{project root path from Step 2}
+```
+
+The agent should:
 - Read each sample source file from the manifest's `sampleFiles` array
 - Analyze config files listed in the manifest's `configFiles` array (read any with `parsed: null` that seem important -- linting configs, formatting configs, TypeScript configs)
 - Identify architecture patterns, naming conventions, error handling approaches
@@ -123,13 +128,23 @@ Print progress banner before spawning the write subagent:
 
 Spawn the context-generator subagent again using the Agent tool, this time in **write mode**.
 
-**Subagent prompt must include:**
+Spawn the **rapid-context-generator** agent with this task:
 
-1. The role instructions from `role-context-generator.md`
-2. The full analysis findings from Step 3 (pass the subagent's analysis response as context)
-3. The project root path and context directory path
-4. Any user modifications from Step 4 (files to skip, content adjustments)
-5. Explicit mode instruction: **"Run in write mode. Using the analysis findings provided, write all context files. Write CLAUDE.md to the project root. Write all other context files to .planning/context/. Follow the file specifications in your role instructions. Ensure CLAUDE.md is under 80 lines. Use descriptive tone in STYLE_GUIDE.md."**
+```
+Run in write mode. Using the analysis findings provided, write all context files. Write CLAUDE.md to the project root. Write all other context files to .planning/context/. Follow the file specifications in your role instructions. Ensure CLAUDE.md is under 80 lines. Use descriptive tone in STYLE_GUIDE.md.
+
+## Analysis Findings
+{full analysis findings from Step 3}
+
+## User Modifications
+{any user modifications from Step 4 -- files to skip, content adjustments}
+
+## Working Directory
+{project root path}
+
+## Context Directory
+{context directory path from Step 2}
+```
 
 **Wait for the subagent to complete.**
 

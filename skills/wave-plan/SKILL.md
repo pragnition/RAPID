@@ -136,19 +136,31 @@ Read context to provide to the agent:
 - Read `.planning/sets/{setId}/SET-OVERVIEW.md` (if exists)
 - Read targeted source files referenced in CONTRACT.json exports (the `file` field in each export function)
 
-Use the Agent tool to spawn the wave-researcher:
+Spawn the **rapid-wave-researcher** agent with this task:
 
 ```
-Agent tool call:
-- Prompt: Include the full contents of src/modules/roles/role-wave-researcher.md as instructions
-- Task: "Research implementation specifics for wave '{waveId}' in set '{setId}'. Write WAVE-RESEARCH.md."
-- Context: Provide all read context inline:
-  - WAVE-CONTEXT.md full contents
-  - CONTRACT.json full contents
-  - SET-OVERVIEW.md full contents (if exists)
-  - Source file contents for each export file
-  - Job descriptions from the resolve step
-- Instruction: "Use Context7 MCP for documentation lookups. Write output to .planning/waves/{setId}/{waveId}/WAVE-RESEARCH.md"
+Research implementation specifics for wave '{waveId}' in set '{setId}'.
+
+## Wave Context
+{WAVE-CONTEXT.md full contents}
+
+## Contract
+{CONTRACT.json full contents}
+
+## Set Overview
+{SET-OVERVIEW.md full contents, if exists}
+
+## Source Files
+{Source file contents for each export file}
+
+## Jobs
+{Job descriptions from the resolve step}
+
+## Working Directory
+{worktreePath}
+
+## Instructions
+Use Context7 MCP for documentation lookups. Write output to .planning/waves/{setId}/{waveId}/WAVE-RESEARCH.md
 ```
 
 After agent completes:
@@ -181,20 +193,34 @@ Read additional context:
   node "${RAPID_TOOLS}" state get wave "${MILESTONE_ID}" "${SET_ID}" "${WAVE_ID}"
   ```
 
-Use the Agent tool to spawn the wave-planner:
+Spawn the **rapid-wave-planner** agent with this task:
 
 ```
-Agent tool call:
-- Prompt: Include the full contents of src/modules/roles/role-wave-planner.md as instructions
-- Task: "Produce WAVE-PLAN.md for wave '{waveId}' with per-job summaries, file assignments, and coordination notes."
-- Context: Provide all read context inline:
-  - WAVE-CONTEXT.md full contents
-  - WAVE-RESEARCH.md full contents (if exists)
-  - CONTRACT.json full contents
-  - SET-OVERVIEW.md full contents (if exists)
-  - OWNERSHIP.json full contents (if exists)
-  - Wave jobs JSON from state get command
-- Instruction: "Write output to .planning/waves/{setId}/{waveId}/WAVE-PLAN.md"
+Produce WAVE-PLAN.md for wave '{waveId}' with per-job summaries, file assignments, and coordination notes.
+
+## Wave Context
+{WAVE-CONTEXT.md full contents}
+
+## Wave Research
+{WAVE-RESEARCH.md full contents, if exists}
+
+## Contract
+{CONTRACT.json full contents}
+
+## Set Overview
+{SET-OVERVIEW.md full contents, if exists}
+
+## Ownership
+{OWNERSHIP.json full contents, if exists}
+
+## Wave Jobs
+{Wave jobs JSON from state get command}
+
+## Working Directory
+{worktreePath}
+
+## Output
+Write output to .planning/waves/{setId}/{waveId}/WAVE-PLAN.md
 ```
 
 After agent completes:
@@ -226,19 +252,34 @@ For each job in the wave:
 - If 3 or more jobs: Spawn all job planner agents **in parallel** using multiple Agent tool calls in a single response.
 - If 1-2 jobs: Spawn them sequentially.
 
-For each job, use the Agent tool:
+For each job, spawn the **rapid-job-planner** agent with this task:
 
 ```
-Agent tool call (per job):
-- Prompt: Include the full contents of src/modules/roles/role-job-planner.md as instructions
-- Task: "Produce {jobId}-PLAN.md for job '{jobId}' with detailed implementation steps."
-- Context: Provide all context inline:
-  - WAVE-PLAN.md full contents (with a note highlighting which job section is for this agent)
-  - WAVE-RESEARCH.md full contents
-  - WAVE-CONTEXT.md full contents
-  - CONTRACT.json full contents
-  - Source file contents for files assigned to this job in WAVE-PLAN.md
-- Instruction: "Write output to .planning/waves/{setId}/{waveId}/{jobId}-PLAN.md"
+Produce {jobId}-PLAN.md for job '{jobId}' with detailed implementation steps.
+
+## Your Job Section
+{Job section from WAVE-PLAN.md highlighted for this specific job}
+
+## Wave Plan
+{WAVE-PLAN.md full contents}
+
+## Wave Research
+{WAVE-RESEARCH.md full contents}
+
+## Wave Context
+{WAVE-CONTEXT.md full contents}
+
+## Contract
+{CONTRACT.json full contents}
+
+## Source Files
+{Source file contents for files assigned to this job in WAVE-PLAN.md}
+
+## Working Directory
+{worktreePath}
+
+## Output
+Write output to .planning/waves/{setId}/{waveId}/{jobId}-PLAN.md
 ```
 
 After all agents complete:

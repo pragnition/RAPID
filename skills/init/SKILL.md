@@ -339,19 +339,23 @@ Parse the JSON output for the `hasSourceCode` field.
 
 Inform the user: "Existing codebase detected. Running codebase analysis before research..."
 
-1. Read the codebase synthesizer role instructions:
-   ```bash
-   cat src/modules/roles/role-codebase-synthesizer.md
+1. Read the scan manifest for the project (included in the `context detect` output as `manifest`).
+
+2. Spawn the **rapid-codebase-synthesizer** agent with this task:
    ```
+   Analyze the existing codebase and produce CODEBASE-ANALYSIS.md.
 
-2. Read the scan manifest for the project (included in the `context detect` output as `manifest`).
+   ## Task Context
+   - Project directory: {current working directory}
+   - Scan manifest: {manifest data from context detect}
+   - Project brief: {full project brief from Step 4B}
 
-3. Use the Agent tool to spawn the codebase synthesizer subagent:
-   - Pass the role instructions from `role-codebase-synthesizer.md` as the agent's primary instructions
-   - Pass the project directory path (current working directory)
-   - Pass the scan manifest data from `context detect`
-   - Pass the full project brief from Step 4B
-   - The agent writes `CODEBASE-ANALYSIS.md` to `.planning/research/`
+   ## Working Directory
+   {projectRoot}
+
+   ## Output
+   Write CODEBASE-ANALYSIS.md to .planning/research/
+   ```
 
 4. Wait for the agent to complete. If it fails, use AskUserQuestion to offer recovery:
    - question: "Codebase analysis encountered an error: {error details}"
@@ -374,32 +378,116 @@ Set a flag noting this is greenfield -- research agents will receive a note that
 
 Ensure `.planning/research/` exists (already created in Step 5).
 
-Read ALL 5 research agent role files before spawning:
+Spawn ALL 5 research agents in parallel using the Agent tool. Each agent operates independently -- no agent reads another research agent's output.
 
+For each agent, provide ONLY task-specific context (the agent already knows its role from its system prompt):
+
+**1. Spawn the **rapid-research-stack** agent with this task:**
 ```
-src/modules/roles/role-research-stack.md
-src/modules/roles/role-research-features.md
-src/modules/roles/role-research-architecture.md
-src/modules/roles/role-research-pitfalls.md
-src/modules/roles/role-research-oversights.md
+Research the technology stack for this project.
+
+## Project Brief
+{full project brief from Step 4B}
+
+## Model Selection
+{opus or sonnet from Step 4A}
+
+## Brownfield Context
+{if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/STACK.md
 ```
 
-Spawn ALL 5 research agents in parallel using the Agent tool. Each agent receives:
+**2. Spawn the **rapid-research-features** agent with this task:**
+```
+Research the feature implementation approach for this project.
 
-1. **Role instructions** -- the contents of its respective role file
-2. **Full project brief** -- the complete structured brief compiled in Step 4B (includes name, vision, target users, key features, constraints, tech preferences, scale expectations, integrations, security needs, references, open questions, success criteria, and all additional context)
-3. **Model selection** -- opus or sonnet from Step 4A
-4. **Brownfield context** -- if brownfield, include the full contents of `.planning/research/CODEBASE-ANALYSIS.md`. If greenfield, include a note: "This is a greenfield project with no existing codebase."
-5. **Context7 instruction** -- "Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback."
+## Project Brief
+{full project brief from Step 4B}
 
-Each agent writes its output to `.planning/research/`:
-- Stack agent -> `STACK.md`
-- Features agent -> `FEATURES.md`
-- Architecture agent -> `ARCHITECTURE.md`
-- Pitfalls agent -> `PITFALLS.md`
-- Oversights agent -> `OVERSIGHTS.md`
+## Model Selection
+{opus or sonnet from Step 4A}
 
-**Parallel spawning:** Spawn all 5 agents in a single response using 5 Agent tool calls. Each agent operates independently -- no agent reads another research agent's output.
+## Brownfield Context
+{if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/FEATURES.md
+```
+
+**3. Spawn the **rapid-research-architecture** agent with this task:**
+```
+Research the architecture patterns for this project.
+
+## Project Brief
+{full project brief from Step 4B}
+
+## Model Selection
+{opus or sonnet from Step 4A}
+
+## Brownfield Context
+{if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/ARCHITECTURE.md
+```
+
+**4. Spawn the **rapid-research-pitfalls** agent with this task:**
+```
+Research potential pitfalls and risks for this project.
+
+## Project Brief
+{full project brief from Step 4B}
+
+## Model Selection
+{opus or sonnet from Step 4A}
+
+## Brownfield Context
+{if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/PITFALLS.md
+```
+
+**5. Spawn the **rapid-research-oversights** agent with this task:**
+```
+Research potential oversights and blind spots for this project.
+
+## Project Brief
+{full project brief from Step 4B}
+
+## Model Selection
+{opus or sonnet from Step 4A}
+
+## Brownfield Context
+{if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/OVERSIGHTS.md
+```
+
+**Parallel spawning:** Spawn all 5 agents in a single response using 5 Agent tool calls.
 
 **Sequential fallback:** If parallel spawning fails (Claude Code limitation), fall back to sequential execution. Inform the user: "Running research agents sequentially (parallel spawning unavailable)."
 
@@ -414,18 +502,25 @@ Wait for ALL 5 agents to complete. If any agent fails, use AskUserQuestion:
 
 ## Step 8: Research Synthesis
 
-Spawn the research synthesizer agent:
+Spawn the **rapid-research-synthesizer** agent with this task:
 
-1. Read the synthesizer role instructions:
-   ```
-   src/modules/roles/role-research-synthesizer.md
-   ```
+```
+Synthesize all research outputs into a unified research summary.
 
-2. Use the Agent tool to spawn the synthesizer subagent:
-   - Pass the role instructions from `role-research-synthesizer.md`
-   - The agent reads all 5 research output files from `.planning/research/` (STACK.md, FEATURES.md, ARCHITECTURE.md, PITFALLS.md, OVERSIGHTS.md)
-   - If brownfield, the agent also has access to CODEBASE-ANALYSIS.md for context
-   - The agent writes `.planning/research/SUMMARY.md`
+## Research Files to Read
+- .planning/research/STACK.md
+- .planning/research/FEATURES.md
+- .planning/research/ARCHITECTURE.md
+- .planning/research/PITFALLS.md
+- .planning/research/OVERSIGHTS.md
+{if brownfield: "- .planning/research/CODEBASE-ANALYSIS.md"}
+
+## Working Directory
+{projectRoot}
+
+## Output
+Write synthesized summary to .planning/research/SUMMARY.md
+```
 
 3. Wait for completion. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 6).
 
@@ -435,25 +530,34 @@ Spawn the research synthesizer agent:
 
 ## Step 9: Roadmap Generation
 
-Spawn the roadmapper agent:
+Read `.planning/research/SUMMARY.md` (the synthesized research output).
 
-1. Read the roadmapper role instructions:
-   ```
-   src/modules/roles/role-roadmapper.md
-   ```
+Spawn the **rapid-roadmapper** agent with this task:
 
-2. Read `.planning/research/SUMMARY.md` (the synthesized research output).
+```
+Generate the project roadmap from synthesized research.
 
-3. Use the Agent tool to spawn the roadmapper subagent:
-   - Pass the role instructions from `role-roadmapper.md`
-   - Pass the SUMMARY.md content
-   - Pass the full project brief from Step 4B (includes description, features, constraints, scale, and all discovery context)
-   - Pass the team size from Step 4A
-   - Pass the model selection from Step 4A
-   - The agent returns a structured JSON response with three keys:
-     - `roadmap` -- markdown string for ROADMAP.md
-     - `state` -- STATE.json milestone/set/wave/job structure
-     - `contracts` -- array of { setId, contract } objects for CONTRACT.json files
+## Research Summary
+{content of .planning/research/SUMMARY.md}
+
+## Project Brief
+{full project brief from Step 4B -- includes description, features, constraints, scale, and all discovery context}
+
+## Team Size
+{team size from Step 4A}
+
+## Model Selection
+{opus or sonnet from Step 4A}
+
+## Working Directory
+{projectRoot}
+
+## Return Format
+Return a structured JSON response with three keys:
+- roadmap -- markdown string for ROADMAP.md
+- state -- STATE.json milestone/set/wave/job structure
+- contracts -- array of { setId, contract } objects for CONTRACT.json files
+```
 
 4. Wait for the agent to complete. If it fails, use AskUserQuestion with Retry/Skip/Cancel options.
 
