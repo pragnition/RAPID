@@ -153,7 +153,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 |-------|-----------|----------------|--------|-----------|
 | 25. GSD Decontamination | 1/1 | Complete    | 2026-03-09 | - |
 | 26. Numeric ID Infrastructure | 2/2 | Complete    | 2026-03-09 | - |
-| 27. UX Branding & Colors | 2/2 | Complete   | 2026-03-09 | - |
+| 27. UX Branding & Colors | 2/2 | Complete    | 2026-03-09 | - |
 | 28. Workflow Clarity | v2.1 | 0/? | Not started | - |
 | 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
