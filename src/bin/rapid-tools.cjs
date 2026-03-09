@@ -93,6 +93,7 @@ Commands:
   review lean <set-id> <wave-id>                     Run lean wave-level review
   review summary <set-id>                            Generate REVIEW-SUMMARY.md
   display banner <stage> [target]  Display branded RAPID stage banner
+  build-agents              Build all agent .md files from source modules
 
 Options:
   --help, -h             Show this help message
@@ -217,6 +218,10 @@ async function main() {
 
     case 'resolve':
       await handleResolve(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'build-agents':
+      handleBuildAgents(cwd, args.slice(1));
       break;
 
     default:
@@ -514,6 +519,18 @@ function handleAssembleAgent(cwd, args) {
   });
 
   output(`Assembled ${agentName} -> ${result}`);
+}
+
+function handleBuildAgents(cwd, args) {
+  const { buildAllAgents } = require('../lib/assembler.cjs');
+  const { resolveRapidDir } = require('../lib/core.cjs');
+  const path = require('path');
+
+  const rapidDir = resolveRapidDir();
+  const agentsDir = path.join(rapidDir, 'agents');
+
+  const result = buildAllAgents(agentsDir);
+  output(`Built ${result.built} agents in ${agentsDir}`);
 }
 
 function handleParseReturn(args) {

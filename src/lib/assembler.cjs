@@ -27,6 +27,16 @@ const ROLE_TOOLS = {
   'bugfix': 'Read, Write, Edit, Bash, Grep, Glob',
   'uat': 'Read, Write, Bash, Grep, Glob',
   'merger': 'Read, Write, Bash, Grep, Glob',
+  'research-stack':        'Read, Grep, Glob, WebFetch, WebSearch',
+  'research-features':     'Read, Grep, Glob, WebFetch, WebSearch',
+  'research-architecture': 'Read, Grep, Glob, WebFetch, WebSearch',
+  'research-pitfalls':     'Read, Grep, Glob, WebFetch, WebSearch',
+  'research-oversights':   'Read, Grep, Glob, WebFetch, WebSearch',
+  'research-synthesizer':  'Read, Write, Grep, Glob',
+  'roadmapper':            'Read, Write, Grep, Glob',
+  'codebase-synthesizer':  'Read, Grep, Glob, Bash',
+  'context-generator':     'Read, Write, Grep, Glob, Bash',
+  'set-planner':           'Read, Write, Grep, Glob',
 };
 
 /**
@@ -54,6 +64,17 @@ const ROLE_COLORS = {
   'devils-advocate': 'purple',
   'unit-tester': 'cyan',
   uat: 'cyan',
+  // Research/init roles = blue (planning category)
+  'research-stack': 'blue',
+  'research-features': 'blue',
+  'research-architecture': 'blue',
+  'research-pitfalls': 'blue',
+  'research-oversights': 'blue',
+  'research-synthesizer': 'blue',
+  'roadmapper': 'blue',
+  'codebase-synthesizer': 'blue',
+  'context-generator': 'blue',
+  'set-planner': 'blue',
 };
 
 /**
@@ -76,6 +97,16 @@ const ROLE_DESCRIPTIONS = {
   'bugfix': 'RAPID bugfix agent -- fixes accepted bugs with atomic commits',
   'uat': 'RAPID UAT agent -- generates and executes acceptance test plans',
   'merger': 'RAPID merger agent -- performs semantic conflict detection and AI-assisted resolution',
+  'research-stack':        'RAPID research agent -- investigates technology stack options and recommendations',
+  'research-features':     'RAPID research agent -- analyzes feature requirements and implementation approaches',
+  'research-architecture': 'RAPID research agent -- evaluates architecture patterns and design decisions',
+  'research-pitfalls':     'RAPID research agent -- identifies common pitfalls and anti-patterns to avoid',
+  'research-oversights':   'RAPID research agent -- discovers overlooked concerns and edge cases',
+  'research-synthesizer':  'RAPID research synthesizer agent -- combines research findings into coherent recommendations',
+  'roadmapper':            'RAPID roadmapper agent -- creates phased implementation roadmaps from requirements',
+  'codebase-synthesizer':  'RAPID codebase synthesizer agent -- analyzes existing codebase structure and patterns',
+  'context-generator':     'RAPID context generator agent -- produces project context documents for agent consumption',
+  'set-planner':           'RAPID set planner agent -- decomposes milestones into parallelizable development sets',
 };
 
 /**
@@ -262,10 +293,85 @@ function validateConfig(config) {
   };
 }
 
+/**
+ * Per-role core module mapping.
+ * Defines which core modules each role needs in its assembled agent.
+ */
+const ROLE_CORE_MAP = {
+  // Original 5 -- keep their existing core module assignments
+  'planner':      ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md', 'core-context-loading.md'],
+  'executor':     ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
+  'reviewer':     ['core-identity.md', 'core-returns.md', 'core-state-access.md'],
+  'verifier':     ['core-identity.md', 'core-returns.md', 'core-state-access.md'],
+  'orchestrator': ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md', 'core-context-loading.md'],
+
+  // Wave planning agents -- need context loading
+  'wave-researcher': ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
+  'wave-planner':    ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
+  'job-planner':     ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
+  'set-planner':     ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
+
+  // Execution agents -- need git for commits
+  'job-executor': ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
+  'bugfix':       ['core-identity.md', 'core-returns.md', 'core-git.md'],
+  'merger':       ['core-identity.md', 'core-returns.md', 'core-git.md'],
+
+  // Review agents -- mostly read-only, returns for structured output
+  'unit-tester':      ['core-identity.md', 'core-returns.md'],
+  'bug-hunter':       ['core-identity.md', 'core-returns.md'],
+  'devils-advocate':  ['core-identity.md', 'core-returns.md'],
+  'judge':            ['core-identity.md', 'core-returns.md'],
+  'uat':              ['core-identity.md', 'core-returns.md'],
+
+  // Init/research agents -- lightweight, just identity + returns
+  'codebase-synthesizer':  ['core-identity.md', 'core-returns.md'],
+  'context-generator':     ['core-identity.md', 'core-returns.md'],
+  'research-stack':        ['core-identity.md', 'core-returns.md'],
+  'research-features':     ['core-identity.md', 'core-returns.md'],
+  'research-architecture': ['core-identity.md', 'core-returns.md'],
+  'research-pitfalls':     ['core-identity.md', 'core-returns.md'],
+  'research-oversights':   ['core-identity.md', 'core-returns.md'],
+  'research-synthesizer':  ['core-identity.md', 'core-returns.md'],
+  'roadmapper':            ['core-identity.md', 'core-returns.md'],
+};
+
+/**
+ * Build all 26 agent .md files from source modules.
+ *
+ * Iterates over ROLE_CORE_MAP, assembles each agent with the correct core modules,
+ * prepends the GENERATED comment, and writes to the output directory.
+ *
+ * @param {string} agentsDir - Absolute path to the output agents/ directory
+ * @returns {{ built: number, files: string[] }} Count and list of generated file paths
+ */
+function buildAllAgents(agentsDir) {
+  if (!fs.existsSync(agentsDir)) {
+    fs.mkdirSync(agentsDir, { recursive: true });
+  }
+
+  const GENERATED_COMMENT = '<!-- GENERATED by build-agents -- do not edit directly. Edit src/modules/ instead. -->\n';
+  const built = [];
+
+  for (const [role, coreModules] of Object.entries(ROLE_CORE_MAP)) {
+    const assembled = assembleAgent({ role, coreModules, context: {} });
+    const content = GENERATED_COMMENT + assembled;
+    const filePath = path.join(agentsDir, `rapid-${role}.md`);
+    fs.writeFileSync(filePath, content, 'utf-8');
+    built.push(filePath);
+  }
+
+  return { built: built.length, files: built };
+}
+
 module.exports = {
   assembleAgent,
   listModules,
   validateConfig,
   generateFrontmatter,
   loadContextFiles,
+  buildAllAgents,
+  ROLE_CORE_MAP,
+  ROLE_TOOLS,
+  ROLE_COLORS,
+  ROLE_DESCRIPTIONS,
 };
