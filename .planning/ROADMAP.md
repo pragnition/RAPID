@@ -35,11 +35,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. All agent spawn calls in SKILL.md files use "rapid-{role}" naming in the Agent tool description
   3. All test assertions reference RAPID-native names (no gsd_state_version or gsd-* patterns)
   4. Running any skill shows "rapid-{role}" in the Claude Code UI agent label, never "gsd-{role}"
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 25-01: TBD
-- [ ] 25-02: TBD
+- [ ] 25-01-PLAN.md -- Rename gsd_state_version, add migration function, archive legacy directories
 
 ### Phase 26: Numeric ID Infrastructure
 **Goal**: Users can reference sets and waves by short numeric index instead of typing full string IDs
@@ -136,7 +135,7 @@ Plans:
   1. A scoper agent categorizes changed files by concern (e.g., state logic, UI, tests) before any review agent runs
   2. Each review agent receives only the files the scoper assigned to its concern area
   3. Files the scoper is uncertain about are included in all review scopes as cross-cutting (no silent omissions)
-  4. Review results from scoped agents are merged into a single consolidated report before presentation to the user
+  4. Review results from scoped agents are merged before presentation to the user
 **Plans**: TBD
 
 Plans:
@@ -151,7 +150,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 25. GSD Decontamination | v2.1 | 0/? | Not started | - |
+| 25. GSD Decontamination | v2.1 | 0/1 | Not started | - |
 | 26. Numeric ID Infrastructure | v2.1 | 0/? | Not started | - |
 | 27. UX Branding & Colors | v2.1 | 0/? | Not started | - |
 | 28. Workflow Clarity | v2.1 | 0/? | Not started | - |
