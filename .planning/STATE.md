@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: in-progress
-stopped_at: Completed 27-01-PLAN.md
-last_updated: "2026-03-09T05:39:43Z"
-last_activity: 2026-03-09 -- Completed core display and agent color modules (plan 27-01)
+stopped_at: Completed 27-02-PLAN.md
+last_updated: "2026-03-09T05:45:39Z"
+last_activity: 2026-03-09 -- Wired display module into CLI and added banners to all 7 stage skills (plan 27-02)
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 5
-  completed_plans: 4
-  percent: 50
+  completed_plans: 5
+  percent: 63
 ---
 
 # Project State
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 27 in progress (third of 8 in v2.1: Phases 25-32)
-Plan: 01 complete (1 of 2 in Phase 27)
-Status: Plan 27-01 complete -- ready for plan 27-02
-Last activity: 2026-03-09 -- Completed core display and agent color modules (plan 27-01)
+Phase: 27 complete (third of 8 in v2.1: Phases 25-32)
+Plan: 02 complete (2 of 2 in Phase 27)
+Status: Phase 27 complete -- ready for next phase
+Last activity: 2026-03-09 -- Wired display module into CLI and added banners to all 7 stage skills (plan 27-02)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 3.5min
-- Total execution time: 0.23 hours
+- Total plans completed: 5
+- Average duration: 3.4min
+- Total execution time: 0.28 hours
 
 **By Phase:**
 
@@ -45,7 +45,7 @@ Progress: [█████░░░░░] 50%
 |-------|-------|-------|----------|
 | 25 | 1 | 3min | 3min |
 | 26 | 2 | 8min | 4min |
-| 27 | 1 | 3min | 3min |
+| 27 | 2 | 6min | 3min |
 
 *Updated after each plan completion*
 
@@ -68,6 +68,8 @@ Recent:
 - Phase 27: Used bright ANSI background variants (10Xm) for better readability with white text
 - Phase 27: ROLE_COLORS parallel map pattern, consistent with ROLE_TOOLS/ROLE_DESCRIPTIONS
 - Phase 27: Fixed 50-char padded banner width for visual consistency
+- Phase 27: Display command uses early return (no project root needed), only CLI command outputting raw ANSI text
+- Phase 27: Banner calls placed after env setup, before first functional step in each skill
 
 ### Pending Todos
 
@@ -100,6 +102,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T05:39:43Z
-Stopped at: Completed 27-01-PLAN.md
-Resume file: .planning/phases/27-ux-branding-colors/27-01-SUMMARY.md
+Last session: 2026-03-09T05:45:39Z
+Stopped at: Completed 27-02-PLAN.md
+Resume file: .planning/phases/27-ux-branding-colors/27-02-SUMMARY.md
