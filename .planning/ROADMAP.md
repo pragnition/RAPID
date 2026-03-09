@@ -16,7 +16,7 @@
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 25: GSD Decontamination** - Remove all GSD vestiges from source, tests, and runtime agent identities (completed 2026-03-09)
-- [ ] **Phase 26: Numeric ID Infrastructure** - Enable numeric shorthand for set and wave references across all skills
+- [x] **Phase 26: Numeric ID Infrastructure** - Enable numeric shorthand for set and wave references across all skills (completed 2026-03-09)
 - [ ] **Phase 27: UX Branding & Colors** - Add RAPID branding banners and color-coded agent type display
 - [ ] **Phase 28: Workflow Clarity** - Streamline workflow ordering, wave context, next-step guidance, and job sizing
 - [ ] **Phase 29: Discuss Phase Optimization** - Batch related questions to halve user interactions during discuss
@@ -151,7 +151,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 25. GSD Decontamination | 1/1 | Complete    | 2026-03-09 | - |
-| 26. Numeric ID Infrastructure | 1/2 | In Progress|  | - |
+| 26. Numeric ID Infrastructure | 2/2 | Complete   | 2026-03-09 | - |
 | 27. UX Branding & Colors | v2.1 | 0/? | Not started | - |
 | 28. Workflow Clarity | v2.1 | 0/? | Not started | - |
 | 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |

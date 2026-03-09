@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: in_progress
-stopped_at: Completed 26-01-PLAN.md
-last_updated: "2026-03-09T03:08:34.000Z"
-last_activity: 2026-03-09 -- Completed numeric ID resolver (plan 26-01)
+stopped_at: Completed 26-02-PLAN.md (Phase 26 complete)
+last_updated: "2026-03-09T03:17:14.850Z"
+last_activity: 2026-03-09 -- Completed skill integration for numeric IDs (plan 26-02)
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
-  percent: 25
+  completed_plans: 3
+  percent: 38
 ---
 
 # Project State
@@ -25,26 +25,26 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 26 (second of 8 in v2.1: Phases 25-32)
-Plan: 01 complete (1 of 2 in Phase 26)
-Status: Phase 26 in progress
-Last activity: 2026-03-09 -- Completed numeric ID resolver (plan 26-01)
+Phase: 26 complete (second of 8 in v2.1: Phases 25-32)
+Plan: 02 complete (2 of 2 in Phase 26)
+Status: Phase 26 complete -- ready for Phase 27
+Last activity: 2026-03-09 -- Completed skill integration for numeric IDs (plan 26-02)
 
-Progress: [██░░░░░░░░] 25%
+Progress: [████░░░░░░] 38%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 3.5min
-- Total execution time: 0.12 hours
+- Total plans completed: 3
+- Average duration: 3.7min
+- Total execution time: 0.18 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 25 | 1 | 3min | 3min |
-| 26 | 1 | 4min | 4min |
+| 26 | 2 | 8min | 4min |
 
 *Updated after each plan completion*
 
@@ -62,6 +62,8 @@ Recent:
 - Phase 26: resolveWave accepts pre-read state parameter (sync, testable) rather than reading STATE.json internally
 - Phase 26: Requires hoisted to module level in resolve.cjs -- no circular dependency risk
 - Phase 26: String wave IDs delegate to existing wave-planning.resolveWave for lookup, then enrich with indices
+- Phase 26: Resolver called ONCE at skill argument boundary -- all downstream operations use resolved string IDs
+- Phase 26: discuss/wave-plan replaced old wave-plan resolve-wave with resolve wave + state get --all
 
 ### Pending Todos
 
@@ -94,6 +96,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T03:08:34.000Z
-Stopped at: Completed 26-01-PLAN.md
-Resume file: .planning/phases/26-numeric-id-infrastructure/26-02-PLAN.md
+Last session: 2026-03-09T03:17:14.848Z
+Stopped at: Completed 26-02-PLAN.md (Phase 26 complete)
+Resume file: None
