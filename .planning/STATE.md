@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: active
-stopped_at: null
-last_updated: "2026-03-09"
-last_activity: 2026-03-09 — Roadmap created (8 phases, 25 requirements mapped)
+status: planning
+stopped_at: Phase 25 context gathered
+last_updated: "2026-03-09T01:57:09.720Z"
+last_activity: 2026-03-09 -- Roadmap created for v2.1
 progress:
   total_phases: 8
   completed_phases: 0
@@ -88,6 +88,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09
-Stopped at: Roadmap created for v2.1 milestone
-Resume file: None
+Last session: 2026-03-09T01:57:09.719Z
+Stopped at: Phase 25 context gathered
+Resume file: .planning/phases/25-gsd-decontamination/25-CONTEXT.md
