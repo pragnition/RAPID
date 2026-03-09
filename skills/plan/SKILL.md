@@ -75,14 +75,19 @@ Compile all gathered context into a structured brief for the planner subagent.
 
 ## Step 3: Planner Subagent -- Propose Sets
 
-Spawn the planner subagent using the Agent tool. The subagent's job is to analyze the requirements and codebase context and propose a set decomposition.
+Spawn the **rapid-planner** agent with this task:
 
-**Agent tool invocation:**
+```
+Analyze the project requirements and codebase context and propose a set decomposition.
 
-Provide the subagent with:
-1. The role instructions: "You are the RAPID planner. You decompose project work into parallelizable sets -- independent workstreams that different developers or Claude instances can work on simultaneously. Each set goes through its own full discuss/plan/execute lifecycle in an isolated worktree."
-2. All context gathered in Step 2 (REQUIREMENTS.md content, PROJECT.md content, codebase manifest, architecture/conventions if available)
-3. These decomposition guidelines:
+## Project Context
+{All context gathered in Step 2: REQUIREMENTS.md content, PROJECT.md content, codebase manifest, architecture/conventions if available}
+
+## Working Directory
+{projectRoot}
+```
+
+The agent already knows its role from its system prompt. Provide the following decomposition guidelines as additional task context:
 
 **Set Decomposition Strategy:**
 - Start with requirements groups: cluster related requirements into candidate sets

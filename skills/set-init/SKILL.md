@@ -140,17 +140,21 @@ Parse the JSON output:
 
 Display progress: "Generating SET-OVERVIEW.md..."
 
-Use the Agent tool to spawn a subagent with the `role-set-planner` role:
+Spawn the **rapid-set-planner** agent with this task:
 
 ```
-Agent tool call:
-- Role: role-set-planner
-- Task: "Generate SET-OVERVIEW.md for set '{set-name}'"
-- Context to provide:
-  - Read .planning/sets/{set-name}/CONTRACT.json
-  - Read .planning/sets/{set-name}/DEFINITION.md
-  - Read .planning/sets/OWNERSHIP.json (if exists)
-- Output: Write SET-OVERVIEW.md to .planning/sets/{set-name}/SET-OVERVIEW.md
+Generate SET-OVERVIEW.md for set '{set-name}'.
+
+## Context Files to Read
+- .planning/sets/{set-name}/CONTRACT.json
+- .planning/sets/{set-name}/DEFINITION.md
+- .planning/sets/OWNERSHIP.json (if exists)
+
+## Working Directory
+{worktreePath}
+
+## Output
+Write SET-OVERVIEW.md to .planning/sets/{set-name}/SET-OVERVIEW.md
 ```
 
 After the agent completes:

@@ -69,11 +69,22 @@ If the user invoked `/rapid:execute <set-id> --fix-issues`, enter issue fix mode
      - "Select issues" -- description: "Choose which issues to fix"
      - "Cancel" -- description: "Exit without fixing"
 
-4. For "Fix all" or selected issues: spawn a bugfix subagent (role: bugfix) with the issues as input. The bugfix agent will:
+4. For "Fix all" or selected issues: spawn the **rapid-bugfix** agent with the issues as input:
+   ```
+   Fix the following open issues for set '{setId}'.
+
+   ## Issues
+   {JSON array of open issues with file paths and descriptions}
+
+   ## Working Directory
+   {worktreePath}
+
+   ## Instructions
    - Read each issue's file and description
    - Apply targeted fixes
    - Commit atomically
    - Return COMPLETE with fixed/unfixable arrays
+   ```
 
 5. After bugfix returns, update issue statuses:
    ```bash
@@ -241,10 +252,10 @@ For each job that needs execution:
    ---------------------
    ```
 
-3. **Spawn subagent** using the Agent tool with the job executor prompt:
+3. **Spawn the **rapid-job-executor** agent** with this task:
 
    ```
-   You are implementing job '{jobId}' in set '{setId}'.
+   Implement job '{jobId}' in set '{setId}'.
 
    ## Your JOB-PLAN
    {Full content of {jobId}-PLAN.md}
@@ -489,7 +500,7 @@ Use AskUserQuestion for next steps:
 - **File ownership enforcement:** Each job may only modify files listed in its JOB-PLAN.md. File ownership violations are caught during wave reconciliation (Step 3g). The orchestrator does not enforce this at dispatch time -- it is the job executor's responsibility.
 - **Git commits:** Parallel job agents commit to the same branch in the same worktree. Each stages only its own files via `git add <specific files>`. If a commit fails with a HEAD race (`error: cannot lock ref 'HEAD'`), the job executor should retry once.
 - **STATE.json committed at workflow boundaries:** STATE.json is committed after each wave completes (Step 3f), not after every individual job transition. Individual job transitions write to STATE.json in-memory/on-disk but the git commit happens at the wave boundary.
-- **Backward compatibility:** The existing `role-executor.md` stays for v1.0 set-level execution. New job-level execution uses `role-job-executor.md`. Both are registered in the assembler.
+- **Backward compatibility:** The existing `rapid-executor` agent stays for v1.0 set-level execution. New job-level execution uses the `rapid-job-executor` agent. Both are registered in `agents/`.
 - **Discuss and plan are NOT part of this skill.** If JOB-PLAN.md files are missing, prompt the user to run `/rapid:discuss` and `/rapid:wave-plan` first. Do NOT auto-trigger those commands.
 - **Dual-mode execution:** Mode is detected once at Step 1 and locked for the entire run. Agent teams mode creates one team per wave with one teammate per job. Both modes use identical prompt templates, reconciliation, and progress output.
 - **Teams fallback:** If any agent teams operation fails mid-execution, the entire wave is re-executed using subagent mode. The fallback is generic -- do not inspect or special-case the error type. A visible warning is printed when fallback occurs.

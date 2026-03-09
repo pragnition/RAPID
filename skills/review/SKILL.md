@@ -180,31 +180,19 @@ Parse the JSON output to get the list of JOB-PLAN.md file paths. Read each JOB-P
 
 #### 3a.2: Spawn unit-tester subagent (test plan phase)
 
-Spawn the unit-tester subagent via the Agent tool. Read the role module first:
-
-```bash
-cat src/modules/roles/role-unit-tester.md
-```
-
-Pass to the Agent tool:
-- The role module content
-- The scoped file list (from review scope in Step 3.0)
-- The acceptance criteria extracted from JOB-PLAN.md files
-- Instruction to generate a test plan and return it via RAPID:RETURN with `status=CHECKPOINT`
-
-The subagent prompt should include:
+Spawn the **rapid-unit-tester** agent with this task:
 
 ```
-You are a unit-tester reviewing wave '{waveId}' in set '{setId}'.
-
-## Your Role
-{content of role-unit-tester.md}
+Review wave '{waveId}' in set '{setId}' -- Phase 1: Test Plan Generation.
 
 ## Scoped Files
 {list of files from review scope}
 
 ## Acceptance Criteria
 {acceptance criteria from JOB-PLAN.md files}
+
+## Working Directory
+{worktreePath}
 
 ## Phase 1: Test Plan Generation
 Generate a test plan listing every test case. Return it via:
@@ -243,16 +231,16 @@ Re-invoke the unit-tester subagent with the user's feedback appended to the prom
 
 #### 3a.4: Spawn unit-tester subagent (execution phase)
 
-Re-invoke the unit-tester subagent with approval signal:
+Re-invoke the **rapid-unit-tester** agent with this task:
 
 ```
-You are a unit-tester for wave '{waveId}' in set '{setId}'.
-
-## Your Role
-{content of role-unit-tester.md}
+Execute approved tests for wave '{waveId}' in set '{setId}' -- Phase 2: Write and Execute Tests.
 
 ## Approved Test Plan
 {the approved test plan}
+
+## Working Directory
+{worktreePath}
 
 ## Phase 2: Write and Execute Tests
 Write the test files according to the approved plan. Run them with `node --test`.
@@ -335,25 +323,19 @@ Initialize: `cycle = 1`, `modifiedFiles = []` (empty for cycle 1).
 
 ##### 3b.2: Spawn bug-hunter subagent
 
-Read the role module:
-
-```bash
-cat src/modules/roles/role-bug-hunter.md
-```
-
-Spawn bug-hunter subagent via Agent tool:
+Spawn the **rapid-bug-hunter** agent with this task:
 
 ```
-You are a bug-hunter analyzing wave '{waveId}' in set '{setId}' (cycle {cycle}).
-
-## Your Role
-{content of role-bug-hunter.md}
+Analyze wave '{waveId}' in set '{setId}' (cycle {cycle}).
 
 ## Scoped Files (ONLY report bugs in these files)
 {scoped file list for this cycle}
 
 ## Wave Context
 {wave context: what changed and why}
+
+## Working Directory
+{worktreePath}
 
 ## Instructions
 Analyze each scoped file for bugs, logic errors, and code quality issues.
@@ -373,25 +355,19 @@ Bug hunt cycle {cycle}: no findings. Codebase clean.
 
 ##### 3b.4: Spawn devils-advocate subagent
 
-Read the role module:
-
-```bash
-cat src/modules/roles/role-devils-advocate.md
-```
-
-Spawn devils-advocate subagent via Agent tool:
+Spawn the **rapid-devils-advocate** agent with this task:
 
 ```
-You are a devils-advocate challenging findings for wave '{waveId}' in set '{setId}'.
-
-## Your Role
-{content of role-devils-advocate.md}
+Challenge findings for wave '{waveId}' in set '{setId}'.
 
 ## Hunter Findings
 {JSON array of findings from bug-hunter}
 
 ## Scoped Files
 {same scoped file list}
+
+## Working Directory
+{worktreePath}
 
 ## Instructions
 Challenge each finding with counter-evidence from the code. You are read-only.
@@ -403,25 +379,19 @@ Parse RAPID:RETURN: `{ assessments }`.
 
 ##### 3b.5: Spawn judge subagent
 
-Read the role module:
-
-```bash
-cat src/modules/roles/role-judge.md
-```
-
-Spawn judge subagent via Agent tool:
+Spawn the **rapid-judge** agent with this task:
 
 ```
-You are the judge ruling on findings for wave '{waveId}' in set '{setId}'.
-
-## Your Role
-{content of role-judge.md}
+Rule on findings for wave '{waveId}' in set '{setId}'.
 
 ## Hunter Findings
 {JSON array of findings}
 
 ## Advocate Assessments
 {JSON array of assessments}
+
+## Working Directory
+{worktreePath}
 
 ## Instructions
 For each finding, weigh hunter evidence against advocate challenge and rule:
@@ -505,22 +475,16 @@ Collect all ACCEPTED bugs (including those upgraded from DEFERRED by the user in
 
 **If ACCEPTED bugs exist:**
 
-Read the bugfix role module:
-
-```bash
-cat src/modules/roles/role-bugfix.md
-```
-
-Spawn bugfix subagent via Agent tool:
+Spawn the **rapid-bugfix** agent with this task:
 
 ```
-You are a bugfix agent fixing accepted bugs for wave '{waveId}' in set '{setId}'.
-
-## Your Role
-{content of role-bugfix.md}
+Fix accepted bugs for wave '{waveId}' in set '{setId}'.
 
 ## Accepted Bugs
 {JSON array of accepted bug findings with full evidence}
+
+## Working Directory
+{worktreePath}
 
 ## Instructions
 For each accepted bug:
@@ -617,19 +581,10 @@ Record the chosen tool.
 
 #### 3c.3: Spawn UAT subagent (test plan phase)
 
-Read the role module:
-
-```bash
-cat src/modules/roles/role-uat.md
-```
-
-Spawn UAT subagent via Agent tool:
+Spawn the **rapid-uat** agent with this task:
 
 ```
-You are a UAT agent for wave '{waveId}' in set '{setId}'.
-
-## Your Role
-{content of role-uat.md}
+UAT for wave '{waveId}' in set '{setId}' -- Phase 1: Test Plan Generation.
 
 ## Acceptance Criteria
 {acceptance criteria from JOB-PLAN.md files}
@@ -639,6 +594,9 @@ You are a UAT agent for wave '{waveId}' in set '{setId}'.
 
 ## Browser Automation Tool
 {chosen tool: Chrome DevTools MCP / Playwright MCP / None}
+
+## Working Directory
+{worktreePath}
 
 ## Phase 1: Test Plan Generation
 Generate a UAT test plan with each step tagged as [automated] or [human].
@@ -674,19 +632,19 @@ Use AskUserQuestion:
 
 #### 3c.5: Spawn UAT subagent (execution phase)
 
-Re-invoke the UAT subagent with the approved plan:
+Re-invoke the **rapid-uat** agent with this task:
 
 ```
-You are a UAT agent executing approved tests for wave '{waveId}' in set '{setId}'.
-
-## Your Role
-{content of role-uat.md}
+Execute approved UAT tests for wave '{waveId}' in set '{setId}' -- Phase 2: Execute Tests.
 
 ## Approved Test Plan
 {the approved test plan with step types}
 
 ## Browser Automation Tool
 {chosen tool}
+
+## Working Directory
+{worktreePath}
 
 ## Phase 2: Execute Tests
 For [automated] steps: execute via the configured browser automation tool.

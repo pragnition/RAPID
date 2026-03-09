@@ -189,25 +189,36 @@ Collect contexts of other sets already merged in this wave by reading their CONT
 
 Get the unresolved conflicts from the resolution result (filter results where `resolved: false`).
 
-Build the merger agent prompt by populating the role-merger.md placeholders:
-- `{SET_NAME}`: the set being merged
-- `{BASE_BRANCH}`: the base branch (from `detectMainBranch`)
-- `{SET_CONTEXT}`: the set's CONTEXT.md content
-- `{OTHER_SET_CONTEXTS}`: contexts of sets already merged in this wave
-- `{DETECTION_REPORT}`: the full detection report JSON from MERGE-STATE
-- `{CONTRACTS}`: the set's CONTRACT.json content
-- `{UNRESOLVED_CONFLICTS}`: JSON array of unresolved conflicts from resolution cascade
-
-Assemble and spawn:
-
-```bash
-node "${RAPID_TOOLS}" assemble-agent merger
-```
-
 Print progress banner before spawning:
 > Spawning merger agent for {setName}...
 
-Spawn the merger agent using the Agent tool with the assembled prompt.
+Spawn the **rapid-merger** agent with this task:
+
+```
+Resolve conflicts for set '{setName}' merging into '{baseBranch}'.
+
+## Set Context
+{the set's CONTEXT.md content}
+
+## Other Set Contexts
+{contexts of sets already merged in this wave}
+
+## Detection Report
+{the full detection report JSON from MERGE-STATE}
+
+## Contracts
+{the set's CONTRACT.json content}
+
+## Unresolved Conflicts
+{JSON array of unresolved conflicts from resolution cascade}
+
+## Working Directory
+{worktreePath}
+
+## Return Format
+Return via:
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"semantic_conflicts":[...],"resolutions":[...],"escalations":[...]}} -->
+```
 
 ### 4d: Process merger agent results
 
