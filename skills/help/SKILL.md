@@ -74,6 +74,12 @@ Output this content now:
 | `/rapid:new-milestone` | Start a new milestone/version cycle (archive current, bump version, re-plan) |
 | `/rapid:help` | Show this command reference |
 
+### Internal / Developer
+
+| Command | Description |
+|---------|-------------|
+| `node rapid-tools.cjs build-agents` | Regenerate all agent .md files from source modules (run automatically during setup) |
+
 > Commands marked (Phase N) are planned but not yet implemented. All commands listed above are either available or in active development for Mark II.
 
 ## Typical Workflow

@@ -129,25 +129,32 @@ If "Try different ID": Loop back to Step 2 Question A only.
 
 Spawn 5 parallel research agents to explore the new milestone's scope. Use the milestone goals from Step 2 as the research context.
 
-Use the Agent tool to spawn each research agent with a focused research question derived from the milestone goals. Each agent should:
-1. Research a specific aspect of the milestone goals
-2. Write findings to `.planning/research/{milestoneId}-research-{N}.md`
-3. Return a summary of findings
+Spawn the following **rapid-research-*** agents in parallel, each with a focused research question derived from the milestone goals:
 
-```
-Agent: Research agent {N} for {milestoneId}
-Context: Milestone goals: {goals}
-Focus: {specific aspect}
-Output: .planning/research/{milestoneId}-research-{N}.md
-```
+1. Spawn the **rapid-research-stack** agent with this task:
+   - Research technology stack implications for the milestone goals
+   - Write findings to `.planning/research/{milestoneId}-research-stack.md`
 
-After all 5 agents complete, spawn a research synthesizer agent:
+2. Spawn the **rapid-research-features** agent with this task:
+   - Analyze feature requirements and implementation approaches
+   - Write findings to `.planning/research/{milestoneId}-research-features.md`
 
-```
-Agent: Research synthesizer for {milestoneId}
-Input: .planning/research/{milestoneId}-research-*.md
-Output: .planning/research/{milestoneId}-synthesis.md
-```
+3. Spawn the **rapid-research-architecture** agent with this task:
+   - Evaluate architecture patterns and design decisions
+   - Write findings to `.planning/research/{milestoneId}-research-architecture.md`
+
+4. Spawn the **rapid-research-pitfalls** agent with this task:
+   - Identify common pitfalls and anti-patterns to avoid
+   - Write findings to `.planning/research/{milestoneId}-research-pitfalls.md`
+
+5. Spawn the **rapid-research-oversights** agent with this task:
+   - Discover overlooked concerns and edge cases
+   - Write findings to `.planning/research/{milestoneId}-research-oversights.md`
+
+After all 5 agents complete, spawn the **rapid-research-synthesizer** agent with this task:
+- Combine all research findings into coherent recommendations
+- Input: `.planning/research/{milestoneId}-research-*.md`
+- Output: `.planning/research/{milestoneId}-synthesis.md`
 
 If any research agent fails, use AskUserQuestion:
 - question: "Research agent {N} failed"
@@ -158,15 +165,12 @@ If any research agent fails, use AskUserQuestion:
 
 ## Step 6: Run Roadmapper Pipeline
 
-Spawn the roadmapper agent to create a roadmap for the new milestone using the research synthesis:
-
-```
-Agent: Roadmapper for {milestoneId}
-Input: .planning/research/{milestoneId}-synthesis.md
-Milestone goals: {goals}
-Milestone name: {milestoneName}
-Output: Proposed roadmap sets and waves
-```
+Spawn the **rapid-roadmapper** agent with this task:
+- Create a roadmap for the new milestone using the research synthesis
+- Input: `.planning/research/{milestoneId}-synthesis.md`
+- Milestone goals: {goals}
+- Milestone name: {milestoneName}
+- Output: Proposed roadmap sets and waves
 
 The roadmapper should produce:
 - A list of proposed sets (groupings of related work)

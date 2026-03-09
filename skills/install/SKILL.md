@@ -28,7 +28,7 @@ echo "RAPID_ROOT=$RAPID_ROOT"
 
 ## Step 1: Run Non-Interactive Bootstrap
 
-Run setup.sh to handle prereqs, npm install, validation, .env writing, and plugin registration:
+Run setup.sh to handle prereqs, npm install, validation, .env writing, plugin registration, and `build-agents` (generates all agent .md files from source modules):
 
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
