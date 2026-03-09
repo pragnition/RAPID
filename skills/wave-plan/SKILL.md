@@ -64,26 +64,28 @@ SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFile
 
 Then resolve the wave within that set context using the wave ID argument.
 
-**After resolution, fall back to the existing wave-plan resolve-wave for full wave data (milestoneId, jobs, etc.):**
+**After resolution, load full wave data (milestoneId, jobs, status) from STATE.json:**
 
 ```bash
 # (env preamble here)
-WAVE_RESULT=$(node "${RAPID_TOOLS}" wave-plan resolve-wave <resolved-waveId>)
-echo "$WAVE_RESULT"
+WAVE_DATA=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null)
+echo "$WAVE_DATA"
 ```
 
-Parse the JSON result:
+Parse the JSON to find the resolved set and wave within the current milestone. Extract `milestoneId`, `setId`, `waveId`, `waveStatus`, and `jobs` from the state data.
 
-- **If `ambiguous: true`:** Present the matches using AskUserQuestion:
+- **If the resolved wave is not found in STATE.json:** Display: "Wave not found in state. Ensure the set has been initialized." and STOP.
+
+- **If `resolve wave` returned an ambiguous result** (wave ID string matches multiple sets): Present the matches using AskUserQuestion:
   ```
   "Wave '<waveId>' exists in multiple sets. Which set did you mean?"
   Options: one per match, e.g.:
   - "auth" -- "Set: auth, Wave status: pending"
   - "data-layer" -- "Set: data-layer, Wave status: pending"
   ```
-  After selection, re-resolve with the set context to get full wave data.
+  After selection, re-resolve with the set context.
 
-- **If `error`:** Display the error (which lists available waves) and STOP.
+- **If `error`:** Display the error and STOP.
 
 - **If single match:** Extract `milestoneId`, `setId`, `waveId`, `waveStatus`, and `jobs`.
 
