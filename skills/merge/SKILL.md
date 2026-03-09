@@ -504,12 +504,12 @@ Present final summary:
 > - Conflicts escalated (T4): {count}
 > - Bisection runs: {count or "none"}
 
-Use AskUserQuestion for next steps:
-- **question:** "Merge pipeline complete"
-- **options:**
-  - "Run cleanup" -- description: "Remove completed worktrees with /rapid:cleanup"
-  - "View status" -- description: "Show project status with /rapid:status"
-  - "Done" -- description: "Exit merge pipeline"
+Display the available next steps:
+
+> **Next steps:**
+> - `/rapid:cleanup` -- *Remove completed worktrees*
+> - `/rapid:status` -- *View project state*
+> - `/rapid:new-milestone` -- *Start planning next milestone (if all sets merged)*
 
 ## Important Notes
 

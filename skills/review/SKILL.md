@@ -49,11 +49,11 @@ Use `SET_NAME` for all subsequent operations.
 
 #### Resolve Wave Reference (if provided)
 
-If `<wave-id>` was also provided (e.g., `/rapid:review auth wave-1` or `/rapid:review 1 1.1`), resolve it through the numeric ID resolver:
+If `<wave-id>` was also provided (e.g., `/rapid:review auth wave-1` or `/rapid:review 1 1.1`), use the `--set` flag for single-call two-arg resolution:
 
 ```bash
 # (env preamble here)
-RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve wave "<wave-input>" 2>&1)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve wave "<wave-input>" --set "<set-input>" 2>&1)
 RESOLVE_EXIT=$?
 if [ $RESOLVE_EXIT -ne 0 ]; then
   echo "$RESOLVE_RESULT"
@@ -62,7 +62,7 @@ fi
 WAVE_ID=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.waveId)")
 ```
 
-Use `WAVE_ID` for all subsequent wave-specific operations.
+Parse the JSON result to extract `setId`, `waveId`, `setIndex`, `waveIndex`. Use `WAVE_ID` for all subsequent wave-specific operations.
 
 If `<set-id>` was not provided, use AskUserQuestion to ask:
 - **question:** "Which set to review?"
@@ -751,29 +751,18 @@ Review artifacts:
 
 Only list artifact paths for stages that were actually run. If a stage was skipped, omit its artifact line.
 
-## Step 5: Next Action
+## Step 5: Next Steps
 
-Use AskUserQuestion:
-- **question:** "Review complete for set '{set-id}'. What's next?"
-- **options:**
-  - "Proceed to merge" -- description: "Set is ready. Run /rapid:merge {set-id}"
-  - "Re-run review" -- description: "Run another review cycle on this set"
-  - "Fix issues first" -- description: "Run /rapid:execute {set-id} --fix-issues to address remaining issues"
-  - "Done for now" -- description: "Exit. Review artifacts saved."
+Display the available next steps. Extract the setIndex from the resolve step at Step 0b:
 
-**If "Proceed to merge":** Print instructions:
-> Ready for merge. Run `/rapid:merge {set-id}` to begin the merge process.
-Exit.
+> **Next steps:**
+> - `/rapid:merge {setIndex}` -- *Set is ready, proceed to merge*
+> - `/rapid:review {setIndex}` -- *Re-run review cycle on this set*
+> - `/rapid:execute {setIndex} --fix-issues` -- *Fix remaining issues first*
 
-**If "Re-run review":** Go back to Step 1 (stage selection). Do not re-transition state (already in `reviewing`).
+Where `{setIndex}` is the numeric index of the set resolved at Step 0.
 
-**If "Fix issues first":** Print instructions:
-> Run `/rapid:execute {set-id} --fix-issues` to batch-fix logged issues.
-Exit.
-
-**If "Done for now":** Print:
-> Review complete. Artifacts saved. Resume with `/rapid:review {set-id}` at any time.
-Exit.
+Then exit. Do NOT prompt for selection.
 
 ## Important Notes
 
