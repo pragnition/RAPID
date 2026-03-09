@@ -376,6 +376,124 @@ describe('assembler', () => {
     });
   });
 
+  describe('ROLE_COLORS and color frontmatter', () => {
+    const VALID_CLAUDE_CODE_COLORS = ['red', 'blue', 'green', 'purple', 'yellow', 'orange', 'cyan', 'default'];
+
+    it('generateFrontmatter("planner") includes "color: blue"', () => {
+      const result = assembler.generateFrontmatter('planner');
+      assert.ok(result.includes('color: blue'), `Expected color: blue in planner frontmatter, got:\n${result}`);
+    });
+
+    it('generateFrontmatter("executor") includes "color: green"', () => {
+      const result = assembler.generateFrontmatter('executor');
+      assert.ok(result.includes('color: green'), `Expected color: green in executor frontmatter, got:\n${result}`);
+    });
+
+    it('generateFrontmatter("reviewer") includes "color: red"', () => {
+      const result = assembler.generateFrontmatter('reviewer');
+      assert.ok(result.includes('color: red'), `Expected color: red in reviewer frontmatter, got:\n${result}`);
+    });
+
+    it('generateFrontmatter("bug-hunter") includes "color: yellow"', () => {
+      const result = assembler.generateFrontmatter('bug-hunter');
+      assert.ok(result.includes('color: yellow'), `Expected color: yellow in bug-hunter frontmatter, got:\n${result}`);
+    });
+
+    it('generateFrontmatter("devils-advocate") includes "color: purple"', () => {
+      const result = assembler.generateFrontmatter('devils-advocate');
+      assert.ok(result.includes('color: purple'), `Expected color: purple in devils-advocate frontmatter, got:\n${result}`);
+    });
+
+    it('generateFrontmatter("unit-tester") includes "color: cyan"', () => {
+      const result = assembler.generateFrontmatter('unit-tester');
+      assert.ok(result.includes('color: cyan'), `Expected color: cyan in unit-tester frontmatter, got:\n${result}`);
+    });
+
+    it('generateFrontmatter("uat") includes "color: cyan"', () => {
+      const result = assembler.generateFrontmatter('uat');
+      assert.ok(result.includes('color: cyan'), `Expected color: cyan in uat frontmatter, got:\n${result}`);
+    });
+
+    it('generateFrontmatter("merger") includes "color: green"', () => {
+      const result = assembler.generateFrontmatter('merger');
+      assert.ok(result.includes('color: green'), `Expected color: green in merger frontmatter, got:\n${result}`);
+    });
+
+    it('all 16 roles in ROLE_TOOLS also appear in ROLE_COLORS', () => {
+      const allRoles = [
+        'planner', 'executor', 'reviewer', 'verifier', 'orchestrator',
+        'wave-researcher', 'wave-planner', 'job-planner', 'job-executor',
+        'unit-tester', 'bug-hunter', 'devils-advocate', 'judge',
+        'bugfix', 'uat', 'merger',
+      ];
+      for (const role of allRoles) {
+        const fm = assembler.generateFrontmatter(role);
+        assert.ok(
+          fm.includes('color:'),
+          `Role "${role}" frontmatter should include a color field, got:\n${fm}`
+        );
+      }
+    });
+
+    it('every ROLE_COLORS value is one of the valid Claude Code colors', () => {
+      const allRoles = [
+        'planner', 'executor', 'reviewer', 'verifier', 'orchestrator',
+        'wave-researcher', 'wave-planner', 'job-planner', 'job-executor',
+        'unit-tester', 'bug-hunter', 'devils-advocate', 'judge',
+        'bugfix', 'uat', 'merger',
+      ];
+      for (const role of allRoles) {
+        const fm = assembler.generateFrontmatter(role);
+        const colorMatch = fm.match(/color: (\S+)/);
+        assert.ok(colorMatch, `Role "${role}" frontmatter should have color field`);
+        const colorValue = colorMatch[1];
+        assert.ok(
+          VALID_CLAUDE_CODE_COLORS.includes(colorValue),
+          `Role "${role}" has color "${colorValue}" which is not a valid Claude Code color. Valid: ${VALID_CLAUDE_CODE_COLORS.join(', ')}`
+        );
+      }
+    });
+
+    it('generateFrontmatter for an unknown role falls back to "default" color', () => {
+      const result = assembler.generateFrontmatter('nonexistent-role');
+      assert.ok(result.includes('color: default'), `Unknown role should fallback to color: default, got:\n${result}`);
+    });
+
+    it('planning roles all have blue color', () => {
+      const planningRoles = ['planner', 'wave-planner', 'job-planner', 'wave-researcher', 'orchestrator', 'verifier'];
+      for (const role of planningRoles) {
+        const fm = assembler.generateFrontmatter(role);
+        assert.ok(fm.includes('color: blue'), `Planning role "${role}" should have color: blue, got:\n${fm}`);
+      }
+    });
+
+    it('execution roles all have green color', () => {
+      const executionRoles = ['executor', 'job-executor', 'bugfix', 'merger'];
+      for (const role of executionRoles) {
+        const fm = assembler.generateFrontmatter(role);
+        assert.ok(fm.includes('color: green'), `Execution role "${role}" should have color: green, got:\n${fm}`);
+      }
+    });
+
+    it('review roles have their designated colors', () => {
+      const reviewColors = {
+        reviewer: 'red',
+        judge: 'red',
+        'bug-hunter': 'yellow',
+        'devils-advocate': 'purple',
+        'unit-tester': 'cyan',
+        uat: 'cyan',
+      };
+      for (const [role, expectedColor] of Object.entries(reviewColors)) {
+        const fm = assembler.generateFrontmatter(role);
+        assert.ok(
+          fm.includes(`color: ${expectedColor}`),
+          `Review role "${role}" should have color: ${expectedColor}, got:\n${fm}`
+        );
+      }
+    });
+  });
+
   describe('review role registration', () => {
     const REVIEW_ROLES = ['unit-tester', 'bug-hunter', 'devils-advocate', 'judge', 'bugfix', 'uat'];
 
