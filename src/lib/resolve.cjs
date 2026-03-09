@@ -1,6 +1,7 @@
 'use strict';
 
-const path = require('path');
+const plan = require('./plan.cjs');
+const wavePlanning = require('./wave-planning.cjs');
 
 const NUMERIC_SET_PATTERN = /^\d+$/;
 const NUMERIC_WAVE_PATTERN = /^\d+\.\d+$/;
@@ -17,7 +18,6 @@ const NUMERIC_WAVE_PATTERN = /^\d+\.\d+$/;
  * @throws {Error} On invalid index, out-of-range, no sets, or not found
  */
 function resolveSet(input, cwd) {
-  const plan = require('./plan.cjs');
   const sets = plan.listSets(cwd);
 
   if (sets.length === 0) {
@@ -70,14 +70,12 @@ function resolveSet(input, cwd) {
  */
 function resolveWave(input, state, cwd) {
   // Check for malformed dot notation patterns that don't match the strict regex
-  // e.g., "1.", ".1", "1.0." -- these contain dots but don't match N.N
+  // e.g., "1.", ".1" -- these contain dots but don't match N.N
   if (input.includes('.') && !NUMERIC_WAVE_PATTERN.test(input)) {
-    // Only throw malformed error if it looks like an attempted dot notation
-    // (contains a dot and at least one digit-dot or dot-digit)
     if (/^\d+\.$/.test(input) || /^\.\d+$/.test(input)) {
       throw new Error('Invalid wave reference. Use N.N format (e.g., 1.1 = set 1, wave 1).');
     }
-    // Otherwise fall through to string ID lookup (e.g., "1.1.1" or "some.thing")
+    // Otherwise fall through to string ID lookup (e.g., "1.1.1")
   }
 
   if (NUMERIC_WAVE_PATTERN.test(input)) {
@@ -121,15 +119,12 @@ function resolveWave(input, state, cwd) {
   }
 
   // String wave ID -- delegate to wave-planning.resolveWave for lookup
-  const wavePlanning = require('./wave-planning.cjs');
   const match = wavePlanning.resolveWave(state, input);
 
   // wave-planning.resolveWave returns single match or array of matches
-  // For the resolver, we take the first match (or single match)
   const resolved = Array.isArray(match) ? match[0] : match;
 
   // Compute set and wave indices
-  const plan = require('./plan.cjs');
   const sets = plan.listSets(cwd);
   const setIndex = sets.indexOf(resolved.setId) + 1;
 
