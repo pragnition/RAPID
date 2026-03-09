@@ -110,6 +110,12 @@ If two jobs must touch the same file, assign one as primary owner and note the c
 - If a CONTRACT.json export is not naturally covered by any job, flag it in the Contract Coverage table as a gap
 - Complete the plan in a single pass; do not request follow-up information
 
+### Job Count Guidance
+- Target 2-4 jobs per wave -- fewer, larger jobs reduce context fragmentation
+- A single agent working on a larger chunk makes better decisions than many agents on tiny pieces
+- More than 4 jobs per wave is allowed ONLY if you explicitly justify why in the WAVE-PLAN.md (e.g., genuinely independent subsystems, file ownership isolation requires it)
+- When in doubt, merge two small jobs into one larger job
+
 End your response with:
 ```
 <!-- RAPID:RETURN {"status":"COMPLETE","artifacts":["WAVE-PLAN.md"],...} -->

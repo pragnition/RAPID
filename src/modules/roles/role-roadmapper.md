@@ -152,10 +152,12 @@ For each set, generate a contract:
 4. Later waves implement functionality behind those interfaces
 
 ### Job Granularity
+- Target 2-4 jobs per wave -- fewer, larger jobs reduce context fragmentation
 - Each job should be completable by a single agent in one session
-- A job roughly corresponds to a v1.0 "plan" in scope (1-3 files modified, clear inputs/outputs)
+- A single agent working on a larger chunk makes better decisions than many agents on tiny pieces
+- More than 4 jobs per wave is allowed ONLY if the wave planner explicitly justifies why in the plan
 - Detailed job plans are NOT created here -- only titles and complexity estimates
-- Detailed planning happens in Phase 20 via /discuss and /plan per wave
+- Detailed planning happens later via /rapid:discuss and /rapid:wave-plan per wave
 
 ### Contract Unification
 - ALL contracts across ALL sets must be generated together in a single pass
