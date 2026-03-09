@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: completed
-stopped_at: Phase 26 planned (2 plans, 2 waves)
-last_updated: "2026-03-09T03:02:26.968Z"
-last_activity: 2026-03-09 -- Completed GSD decontamination plan 01
+status: in_progress
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-03-09T03:08:34.000Z"
+last_activity: 2026-03-09 -- Completed numeric ID resolver (plan 26-01)
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 3
-  completed_plans: 1
-  percent: 12
+  completed_plans: 2
+  percent: 25
 ---
 
 # Project State
@@ -21,29 +21,30 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 25 - GSD Decontamination
+**Current focus:** Phase 26 - Numeric ID Infrastructure
 
 ## Current Position
 
-Phase: 25 (first of 8 in v2.1: Phases 25-32)
-Plan: 01 complete (1 of 1 in Phase 25)
-Status: Phase 25 complete
-Last activity: 2026-03-09 -- Completed GSD decontamination plan 01
+Phase: 26 (second of 8 in v2.1: Phases 25-32)
+Plan: 01 complete (1 of 2 in Phase 26)
+Status: Phase 26 in progress
+Last activity: 2026-03-09 -- Completed numeric ID resolver (plan 26-01)
 
-Progress: [█░░░░░░░░░] 12%
+Progress: [██░░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 3min
-- Total execution time: 0.05 hours
+- Total plans completed: 2
+- Average duration: 3.5min
+- Total execution time: 0.12 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 25 | 1 | 3min | 3min |
+| 26 | 1 | 4min | 4min |
 
 *Updated after each plan completion*
 
@@ -58,6 +59,9 @@ Recent:
 - Phase 27 (branding) and Phase 32 (review) can run as independent tracks
 - Phase 25: Used require.main guard pattern to export CLI functions for testing
 - Phase 25: Migration-on-boot pattern for silent state version upgrades
+- Phase 26: resolveWave accepts pre-read state parameter (sync, testable) rather than reading STATE.json internally
+- Phase 26: Requires hoisted to module level in resolve.cjs -- no circular dependency risk
+- Phase 26: String wave IDs delegate to existing wave-planning.resolveWave for lookup, then enrich with indices
 
 ### Pending Todos
 
@@ -90,6 +94,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T03:02:26.966Z
-Stopped at: Phase 26 planned (2 plans, 2 waves)
-Resume file: .planning/phases/26-numeric-id-infrastructure/26-01-PLAN.md
+Last session: 2026-03-09T03:08:34.000Z
+Stopped at: Completed 26-01-PLAN.md
+Resume file: .planning/phases/26-numeric-id-infrastructure/26-02-PLAN.md

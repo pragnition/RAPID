@@ -14,9 +14,9 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 
 ### UX Polish
 
-- [ ] **UX-01**: User can reference sets by numeric index (`/set-init 1`, `/discuss 1`)
-- [ ] **UX-02**: User can reference waves by dot notation (`/wave-plan 1.1` = set 1, wave 1)
-- [ ] **UX-03**: Full string IDs still work (backward compatible)
+- [x] **UX-01**: User can reference sets by numeric index (`/set-init 1`, `/discuss 1`)
+- [x] **UX-02**: User can reference waves by dot notation (`/wave-plan 1.1` = set 1, wave 1)
+- [x] **UX-03**: Full string IDs still work (backward compatible)
 - [ ] **UX-04**: Each skill auto-suggests the next command with pre-filled numeric args on completion
 - [ ] **UX-05**: Discuss phase batches related questions into 2 interactions per gray area instead of 4
 - [ ] **UX-06**: Stage banners display with RAPID branding and color coding in terminal output
@@ -76,9 +76,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | CLEAN-01 | Phase 25 | Complete |
 | CLEAN-02 | Phase 25 | Complete |
-| UX-01 | Phase 26 | Pending |
-| UX-02 | Phase 26 | Pending |
-| UX-03 | Phase 26 | Pending |
+| UX-01 | Phase 26 | Complete |
+| UX-02 | Phase 26 | Complete |
+| UX-03 | Phase 26 | Complete |
 | UX-04 | Phase 28 | Pending |
 | UX-05 | Phase 29 | Pending |
 | UX-06 | Phase 27 | Pending |
