@@ -49,11 +49,11 @@ Plans:
   2. User can type `/wave-plan 1.1` and it resolves to set 1, wave 1
   3. Full string IDs (e.g., `/discuss set-01-foundation`) still work identically to before
   4. All 7+ skills that accept set or wave arguments support numeric resolution consistently
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 26-01: TBD
-- [ ] 26-02: TBD
+- [ ] 26-01-PLAN.md -- TDD: Core resolver module (resolve.cjs) + CLI integration + tests
+- [ ] 26-02-PLAN.md -- Integrate resolver into all 11 skills + status display with numeric indices
 
 ### Phase 27: UX Branding & Colors
 **Goal**: Terminal output is visually organized with RAPID branding and color-coded agent type indicators
@@ -151,7 +151,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 25. GSD Decontamination | 1/1 | Complete    | 2026-03-09 | - |
-| 26. Numeric ID Infrastructure | v2.1 | 0/? | Not started | - |
+| 26. Numeric ID Infrastructure | v2.1 | 0/2 | Planning complete | - |
 | 27. UX Branding & Colors | v2.1 | 0/? | Not started | - |
 | 28. Workflow Clarity | v2.1 | 0/? | Not started | - |
 | 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |
