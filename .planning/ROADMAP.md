@@ -97,11 +97,11 @@ Plans:
   2. Every agent's system prompt includes the canonical workflow order (init -> set-init -> discuss -> wave-plan -> execute -> review -> merge)
   3. Job granularity defaults to fewer, larger jobs per wave (coarser than v2.0 defaults)
   4. Each skill, upon successful completion, prints the exact next command the user should run with pre-filled numeric arguments
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 28-01: TBD
-- [ ] 28-02: TBD
+- [ ] 28-01-PLAN.md -- TDD: --set flag on resolveWave, workflow order in core-identity.md, job granularity in role modules, rebuild agents
+- [ ] 28-02-PLAN.md -- Replace end-of-skill AskUserQuestion with next-step blocks in all 7 stage skills, integrate --set flag in wave-aware skills
 
 ### Phase 29: Discuss Phase Optimization
 **Goal**: Users answer half as many sequential questions during the discuss phase without losing decision quality
@@ -174,7 +174,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 26. Numeric ID Infrastructure | 2/2 | Complete    | 2026-03-09 | - |
 | 27. UX Branding & Colors | 2/2 | Complete    | 2026-03-09 | - |
 | 27.1 Skill-to-Agent Overhaul | 3/3 | Complete    | 2026-03-09 | - |
-| 28. Workflow Clarity | v2.1 | 0/? | Not started | - |
+| 28. Workflow Clarity | v2.1 | 0/2 | Not started | - |
 | 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
 | 31. Wave Orchestration | v2.1 | 0/? | Not started | - |
