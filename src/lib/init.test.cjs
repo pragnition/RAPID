@@ -87,9 +87,14 @@ describe('generateStateMd', () => {
     assert.ok(parts.length >= 3, 'Should have opening and closing YAML frontmatter delimiters');
   });
 
-  it('contains gsd_state_version', () => {
+  it('contains rapid_state_version', () => {
     const result = generateStateMd();
-    assert.ok(result.includes('gsd_state_version: 1.0'));
+    assert.ok(result.includes('rapid_state_version: 1.0'));
+  });
+
+  it('does not contain gsd_state_version', () => {
+    const result = generateStateMd();
+    assert.ok(!result.includes('gsd_state_version'));
   });
 
   it('contains status initialized', () => {

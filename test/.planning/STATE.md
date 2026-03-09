@@ -1,5 +1,5 @@
 ---
-gsd_state_version: 1.0
+rapid_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: initialized
