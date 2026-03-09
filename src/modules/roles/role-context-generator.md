@@ -123,7 +123,7 @@ Lean project context file. Target **under 80 lines**. Structure:
 ## Context Files
 Detailed context is managed by RAPID in .planning/context/:
 - Architecture, conventions, and style details are injected into agent prompts automatically
-- Do not manually import these files -- the assembler handles injection
+- Do not manually import these files -- the build-agents system handles injection
 ```
 
 **6. Additional Files** (Claude's discretion)

@@ -45,7 +45,7 @@ You receive:
    - Use `require('node:test')` for `describe`, `it`, `before`, `after`
    - Use `require('node:assert/strict')` for assertions
    - Import the actual module under test and test real behavior
-   - Follow existing test patterns in the project (see assembler.test.cjs, etc.)
+   - Follow existing test patterns in the project (see build-agents.test.cjs, core.test.cjs, etc.)
 
 5. **Execute:** Run tests and capture results:
    ```bash
