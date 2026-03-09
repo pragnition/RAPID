@@ -7,6 +7,8 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
+const { migrateStateVersion } = require('./rapid-tools.cjs');
+
 const CLI_PATH = path.join(__dirname, 'rapid-tools.cjs');
 // resolveRapidDir returns path.resolve(__dirname, '..', '..') which is the rapid/ directory
 const RAPID_DIR = path.resolve(__dirname, '..', '..');
@@ -1613,5 +1615,93 @@ describe('wave-plan list-jobs subcommand', () => {
       assert.ok(jp.file.endsWith('-PLAN.md'), 'file should end with -PLAN.md');
       assert.ok(jp.path.includes(waveDir), 'path should include waveDir');
     }
+  });
+});
+
+describe('migrateStateVersion', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-migrate-test-'));
+  });
+
+  afterEach(() => {
+    if (tmpDir && fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('rewrites gsd_state_version to rapid_state_version', () => {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(planningDir, 'STATE.md'),
+      '---\ngsd_state_version: 1.0\nstatus: active\n---\n\n# State\n'
+    );
+
+    migrateStateVersion(tmpDir);
+
+    const content = fs.readFileSync(path.join(planningDir, 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('rapid_state_version: 1.0'));
+    assert.ok(!content.includes('gsd_state_version'));
+  });
+
+  it('preserves the version number', () => {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(planningDir, 'STATE.md'),
+      '---\ngsd_state_version: 1.0\n---\n'
+    );
+
+    migrateStateVersion(tmpDir);
+
+    const content = fs.readFileSync(path.join(planningDir, 'STATE.md'), 'utf-8');
+    assert.ok(content.includes('rapid_state_version: 1.0'));
+  });
+
+  it('preserves all other STATE.md content unchanged', () => {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    const original = '---\ngsd_state_version: 1.0\nstatus: active\nmilestone: v2.0\n---\n\n# State\n\n## Section\n\nSome content here.\n';
+    fs.writeFileSync(path.join(planningDir, 'STATE.md'), original);
+
+    migrateStateVersion(tmpDir);
+
+    const content = fs.readFileSync(path.join(planningDir, 'STATE.md'), 'utf-8');
+    const expected = original.replace(/gsd_state_version/g, 'rapid_state_version');
+    assert.equal(content, expected);
+  });
+
+  it('is a no-op when rapid_state_version is already present', () => {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    const original = '---\nrapid_state_version: 1.0\nstatus: active\n---\n';
+    fs.writeFileSync(path.join(planningDir, 'STATE.md'), original);
+
+    migrateStateVersion(tmpDir);
+
+    const content = fs.readFileSync(path.join(planningDir, 'STATE.md'), 'utf-8');
+    assert.equal(content, original);
+  });
+
+  it('is a no-op when STATE.md does not exist', () => {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+
+    // Should not throw
+    migrateStateVersion(tmpDir);
+
+    // .planning dir should still exist, no STATE.md created
+    assert.ok(fs.existsSync(planningDir));
+    assert.ok(!fs.existsSync(path.join(planningDir, 'STATE.md')));
+  });
+
+  it('is a no-op when .planning/ directory does not exist', () => {
+    // tmpDir has no .planning/ directory
+    // Should not throw
+    migrateStateVersion(tmpDir);
+
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.planning')));
   });
 });

@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-03-06T16:24:39Z",
+  "phase": {
+    "number": 19,
+    "name": "Set Lifecycle",
+    "requirements": ["SETL-01", "SETL-02", "SETL-03", "SETL-04", "SETL-05", "SETL-06", "SETL-07", "UX-01"],
+    "successCriteria": [
+      "/set-init creates a git worktree and branch for a specified set, ready for independent development",
+      "/set-init generates a scoped CLAUDE.md per worktree containing only relevant contracts, context, and style guide",
+      "A set planner runs during /set-init, producing a high-level set overview that guides wave planning",
+      "/status displays a cross-set dashboard showing the set > wave > job hierarchy with current state for each",
+      "/pause saves per-set state with a handoff file for later resumption, and /cleanup removes completed worktrees with safety checks",
+      "AskUserQuestion is used at every decision gate during set lifecycle commands, with queries batched to save tokens"
+    ]
+  },
+  "project": {
+    "type": "cli",
+    "language": "javascript",
+    "framework": "none",
+    "testFramework": "node:test",
+    "linter": "unknown",
+    "secondaryTypes": ["library"],
+    "confidence": "high",
+    "signals": [
+      "package.json has bin-like src/bin/rapid-tools.cjs",
+      "No frontend dependencies",
+      "CommonJS modules (.cjs extension)",
+      "src/lib/ library modules",
+      "Skills directory with SKILL.md files (Claude Code plugin)",
+      "node:test used in .test.cjs files"
+    ]
+  },
+  "scope": {
+    "changedFiles": [
+      "skills/cleanup/SKILL.md",
+      "skills/pause/SKILL.md",
+      "skills/resume/SKILL.md",
+      "skills/set-init/SKILL.md",
+      "skills/status/SKILL.md",
+      "src/bin/rapid-tools.cjs",
+      "src/lib/worktree.cjs",
+      "src/lib/worktree.test.cjs",
+      "src/modules/roles/role-set-planner.md"
+    ],
+    "dependentFiles": [
+      "src/lib/merge.cjs",
+      "src/lib/execute.cjs",
+      "src/lib/stub.cjs",
+      "src/lib/phase17-integration.test.cjs",
+      "skills/merge/SKILL.md"
+    ],
+    "totalFiles": 14,
+    "softCapExceeded": false
+  },
+  "gsd": {
+    "mode": "yolo",
+    "currentPhase": 19,
+    "hasPlanning": true
+  }
+}

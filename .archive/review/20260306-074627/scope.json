@@ -1,0 +1,58 @@
+{
+  "timestamp": "2026-03-06T07:46:27Z",
+  "phase": {
+    "number": 16,
+    "name": "State Machine Foundation",
+    "requirements": ["STATE-01", "STATE-02", "STATE-03", "STATE-05", "UX-03"],
+    "successCriteria": [
+      "Project state persists as hierarchical JSON (project > milestone > set > wave > job) with lock-protected atomic writes",
+      "State transitions are validated -- attempting to skip states (e.g., pending to complete without executing) produces a clear error",
+      "Sets, Waves, and Jobs have a data model with DAG computation for dependency ordering, extending the existing dag.cjs",
+      "All inter-agent outputs use structured format (JSON or structured markdown) with schema validation at every handoff point",
+      "State is updated at every workflow step so a developer can /clear context and resume from the correct position"
+    ]
+  },
+  "project": {
+    "type": "cli",
+    "language": "javascript",
+    "framework": "none",
+    "testFramework": "node:test",
+    "linter": "unknown",
+    "secondaryTypes": ["library"],
+    "confidence": "high",
+    "signals": [
+      "package.json has bin-like CLI entry in src/bin/rapid-tools.cjs",
+      "No frontend framework dependencies",
+      "Uses CommonJS modules (.cjs extension)",
+      "Has lib/ directory with reusable modules",
+      "Test files use .test.cjs extension with node:test built-in"
+    ]
+  },
+  "scope": {
+    "changedFiles": [
+      "package.json",
+      "src/lib/dag.cjs",
+      "src/lib/dag.test.cjs",
+      "src/lib/returns.cjs",
+      "src/lib/returns.test.cjs",
+      "src/lib/state-machine.cjs",
+      "src/lib/state-machine.test.cjs",
+      "src/lib/state-schemas.cjs",
+      "src/lib/state-schemas.test.cjs",
+      "src/lib/state-transitions.cjs",
+      "src/lib/state-transitions.test.cjs"
+    ],
+    "dependentFiles": [
+      "src/lib/plan.cjs",
+      "src/lib/merge.cjs",
+      "src/bin/rapid-tools.cjs"
+    ],
+    "totalFiles": 14,
+    "softCapExceeded": false
+  },
+  "gsd": {
+    "mode": "yolo",
+    "currentPhase": 16,
+    "hasPlanning": true
+  }
+}

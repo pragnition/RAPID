@@ -95,6 +95,25 @@ Options:
   --help, -h             Show this help message
 `;
 
+/**
+ * Silently migrate gsd_state_version -> rapid_state_version in STATE.md.
+ * Preserves the version number. No-op if already migrated or file missing.
+ *
+ * @param {string} cwd - Project root directory
+ */
+function migrateStateVersion(cwd) {
+  const fs = require('fs');
+  const path = require('path');
+  const stateMdPath = path.join(cwd, '.planning', 'STATE.md');
+  if (!fs.existsSync(stateMdPath)) return;
+
+  const content = fs.readFileSync(stateMdPath, 'utf-8');
+  if (!content.includes('gsd_state_version')) return;
+
+  const migrated = content.replace(/gsd_state_version/g, 'rapid_state_version');
+  fs.writeFileSync(stateMdPath, migrated);
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
@@ -129,6 +148,8 @@ async function main() {
     error(`Cannot find project root: ${err.message}`);
     process.exit(1);
   }
+
+  migrateStateVersion(cwd);
 
   switch (command) {
     case 'lock':
@@ -2419,7 +2440,11 @@ async function handleMerge(cwd, subcommand, args) {
   }
 }
 
-main().catch((err) => {
-  error(err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    error(err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { migrateStateVersion };
