@@ -10,5 +10,6 @@
 # Dependencies
 node_modules/
 
-# Generated agent assemblies
-agents/
+# Note: agents/ is NOT gitignored. Generated files are committed so the plugin
+# works immediately after clone without running setup.sh first.
+# Source of truth is src/modules/. Regenerate with: node src/bin/rapid-tools.cjs build-agents

@@ -29,7 +29,7 @@ echo "Installation method: $INSTALL_METHOD"
 echo ""
 
 # Step 1: Check prerequisites
-echo "[1/4] Checking prerequisites..."
+echo "[1/5] Checking prerequisites..."
 
 if ! command -v node &>/dev/null; then
     echo "  ERROR: Node.js is required (v18+). Install from https://nodejs.org"
@@ -49,7 +49,7 @@ fi
 echo "  OK: git $(git --version | awk '{print $3}')"
 
 # Step 2: Install npm dependencies
-echo "[2/4] Installing dependencies..."
+echo "[2/5] Installing dependencies..."
 
 if [[ -d "$SCRIPT_DIR/node_modules" ]]; then
     echo "  [skip] node_modules already exists"
@@ -62,7 +62,7 @@ else
 fi
 
 # Step 3: Validate rapid-tools.cjs
-echo "[3/4] Validating RAPID tools..."
+echo "[3/5] Validating RAPID tools..."
 
 if [[ ! -f "$RAPID_TOOLS_PATH" ]]; then
     echo "  ERROR: rapid-tools.cjs not found at $RAPID_TOOLS_PATH"
@@ -75,8 +75,16 @@ if ! node "$RAPID_TOOLS_PATH" prereqs --json &>/dev/null; then
 fi
 echo "  OK: RAPID tools functional"
 
-# Step 4: Write .env and register plugin
-echo "[4/4] Writing .env and registering plugin..."
+# Step 4: Build agent files
+echo "[4/5] Building agent files..."
+if node "$RAPID_TOOLS_PATH" build-agents 2>&1; then
+    echo "  OK: Agent files generated"
+else
+    echo "  WARNING: Agent build failed (non-fatal -- agents may be pre-committed)"
+fi
+
+# Step 5: Write .env and register plugin
+echo "[5/5] Writing .env and registering plugin..."
 
 export RAPID_TOOLS="$RAPID_TOOLS_PATH"
 
