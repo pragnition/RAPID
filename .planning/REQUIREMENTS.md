@@ -29,8 +29,8 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 - [x] **AGENT-03**: Each generated agent has per-role core module selection (not all agents get all 5 core modules)
 - [x] **AGENT-04**: All agent-spawning skills reference registered agents by name instead of reading role modules inline
 - [x] **AGENT-05**: Skills pass only task-specific context (IDs, file lists, worktree path) -- not role instructions
-- [ ] **AGENT-06**: Legacy assembler infrastructure removed (assembler.cjs, config.json agents section, assemble-agent CLI)
-- [ ] **AGENT-07**: All 17 skills normalized with zero references to old role module reading patterns
+- [x] **AGENT-06**: Legacy assembler infrastructure removed (assembler.cjs, config.json agents section, assemble-agent CLI)
+- [x] **AGENT-07**: All 17 skills normalized with zero references to old role module reading patterns
 
 ### Workflow Clarity
 
@@ -98,8 +98,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGENT-03 | Phase 27.1 | Complete |
 | AGENT-04 | Phase 27.1 | Complete |
 | AGENT-05 | Phase 27.1 | Complete |
-| AGENT-06 | Phase 27.1 | Pending |
-| AGENT-07 | Phase 27.1 | Pending |
+| AGENT-06 | Phase 27.1 | Complete |
+| AGENT-07 | Phase 27.1 | Complete |
 | FLOW-01 | Phase 28 | Pending |
 | FLOW-02 | Phase 28 | Pending |
 | FLOW-03 | Phase 28 | Pending |

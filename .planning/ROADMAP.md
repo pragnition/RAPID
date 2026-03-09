@@ -81,12 +81,12 @@ Plans:
   4. Every agent-spawning skill references agents by registered name (e.g., "Spawn the rapid-bug-hunter agent")
   5. assembler.cjs is deleted, config.json has no agents section, assemble-agent CLI is removed
   6. setup.sh calls build-agents during installation
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed (complete)
 
 Plans:
-- [ ] 27.1-01-PLAN.md -- Build-agents infrastructure: add missing role entries, create build-agents command, TDD tests, generate 26 agents
-- [ ] 27.1-02-PLAN.md -- Update 8 agent-spawning skills to reference registered agents by name
-- [ ] 27.1-03-PLAN.md -- Normalize remaining 9 skills, remove assembler.cjs, clean config.json
+- [x] 27.1-01-PLAN.md -- Build-agents infrastructure: add missing role entries, create build-agents command, TDD tests, generate 26 agents
+- [x] 27.1-02-PLAN.md -- Update 8 agent-spawning skills to reference registered agents by name
+- [x] 27.1-03-PLAN.md -- Normalize remaining 9 skills, remove assembler.cjs, clean config.json
 
 ### Phase 28: Workflow Clarity
 **Goal**: Users and agents always know what step comes next, with correct context flowing between stages
@@ -173,7 +173,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 25. GSD Decontamination | 1/1 | Complete    | 2026-03-09 | - |
 | 26. Numeric ID Infrastructure | 2/2 | Complete    | 2026-03-09 | - |
 | 27. UX Branding & Colors | 2/2 | Complete    | 2026-03-09 | - |
-| 27.1 Skill-to-Agent Overhaul | 2/3 | In Progress|  | - |
+| 27.1 Skill-to-Agent Overhaul | 3/3 | Complete | 2026-03-09 | - |
 | 28. Workflow Clarity | v2.1 | 0/? | Not started | - |
 | 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
