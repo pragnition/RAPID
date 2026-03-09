@@ -63,10 +63,11 @@ Plans:
   1. Each stage transition (init, discuss, wave-plan, execute, review, merge) displays a branded RAPID banner in terminal
   2. Planner agents display with a distinct color (e.g., blue) in their output headers
   3. Executor agents display with a distinct color (e.g., green) and reviewer agents with another (e.g., red)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 27-01: TBD
+- [ ] 27-01-PLAN.md -- Core display module + agent ROLE_COLORS map with TDD
+- [ ] 27-02-PLAN.md -- Wire display into rapid-tools CLI + add banner calls to 7 skills
 
 ### Phase 28: Workflow Clarity
 **Goal**: Users and agents always know what step comes next, with correct context flowing between stages
@@ -152,7 +153,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 |-------|-----------|----------------|--------|-----------|
 | 25. GSD Decontamination | 1/1 | Complete    | 2026-03-09 | - |
 | 26. Numeric ID Infrastructure | 2/2 | Complete    | 2026-03-09 | - |
-| 27. UX Branding & Colors | v2.1 | 0/? | Not started | - |
+| 27. UX Branding & Colors | v2.1 | 0/2 | Not started | - |
 | 28. Workflow Clarity | v2.1 | 0/? | Not started | - |
 | 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
