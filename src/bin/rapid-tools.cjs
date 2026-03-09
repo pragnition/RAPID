@@ -92,6 +92,7 @@ Commands:
   review update-issue <set-id> <wave-id> <issue-id> <status>  Update issue status
   review lean <set-id> <wave-id>                     Run lean wave-level review
   review summary <set-id>                            Generate REVIEW-SUMMARY.md
+  display banner <stage> [target]  Display branded RAPID stage banner
 
 Options:
   --help, -h             Show this help message
@@ -139,6 +140,10 @@ async function main() {
   }
   if (command === 'context') {
     handleContext(args.slice(1));
+    return;
+  }
+  if (command === 'display') {
+    handleDisplay(args[1], args.slice(2));
     return;
   }
 
@@ -2488,6 +2493,28 @@ async function handleResolve(cwd, subcommand, args) {
 
     default:
       error('Usage: rapid-tools resolve set <input> | wave <input>');
+      process.exit(1);
+  }
+}
+
+function handleDisplay(subcommand, args) {
+  const { renderBanner } = require('../lib/display.cjs');
+
+  switch (subcommand) {
+    case 'banner': {
+      const stage = args[0];
+      if (!stage) {
+        error('Usage: rapid-tools display banner <stage> [target]');
+        process.exit(1);
+      }
+      const target = args.slice(1).join(' ');
+      // Banner outputs raw formatted text, NOT JSON
+      // This is intentional -- banners are visual output, not data
+      process.stdout.write(renderBanner(stage, target) + '\n');
+      break;
+    }
+    default:
+      error(`Unknown display subcommand: ${subcommand}`);
       process.exit(1);
   }
 }
