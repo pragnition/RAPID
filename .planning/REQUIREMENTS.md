@@ -22,6 +22,16 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 - [x] **UX-06**: Stage banners display with RAPID branding and color coding in terminal output
 - [x] **UX-07**: Different agent types display with distinct colors (e.g. planner = blue, executor = green, reviewer = red)
 
+### Agent Registration
+
+- [ ] **AGENT-01**: All 26 role modules are registered as agent files in `agents/` with valid YAML frontmatter
+- [ ] **AGENT-02**: A `build-agents` CLI command generates all 26 agent files from source modules
+- [ ] **AGENT-03**: Each generated agent has per-role core module selection (not all agents get all 5 core modules)
+- [ ] **AGENT-04**: All agent-spawning skills reference registered agents by name instead of reading role modules inline
+- [ ] **AGENT-05**: Skills pass only task-specific context (IDs, file lists, worktree path) -- not role instructions
+- [ ] **AGENT-06**: Legacy assembler infrastructure removed (assembler.cjs, config.json agents section, assemble-agent CLI)
+- [ ] **AGENT-07**: All 17 skills normalized with zero references to old role module reading patterns
+
 ### Workflow Clarity
 
 - [ ] **FLOW-01**: Wave-plan accepts set+wave context (not just wave ID in isolation)
@@ -83,6 +93,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-05 | Phase 29 | Pending |
 | UX-06 | Phase 27 | Complete |
 | UX-07 | Phase 27 | Complete |
+| AGENT-01 | Phase 27.1 | Pending |
+| AGENT-02 | Phase 27.1 | Pending |
+| AGENT-03 | Phase 27.1 | Pending |
+| AGENT-04 | Phase 27.1 | Pending |
+| AGENT-05 | Phase 27.1 | Pending |
+| AGENT-06 | Phase 27.1 | Pending |
+| AGENT-07 | Phase 27.1 | Pending |
 | FLOW-01 | Phase 28 | Pending |
 | FLOW-02 | Phase 28 | Pending |
 | FLOW-03 | Phase 28 | Pending |
@@ -101,10 +118,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REV-04 | Phase 32 | Pending |
 
 **Coverage:**
-- v2.1 requirements: 25 total
-- Mapped to phases: 25
+- v2.1 requirements: 32 total
+- Mapped to phases: 32
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-09*
-*Last updated: 2026-03-09 after roadmap creation*
+*Last updated: 2026-03-09 after Phase 27.1 planning*

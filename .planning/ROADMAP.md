@@ -69,6 +69,25 @@ Plans:
 - [ ] 27-01-PLAN.md -- Core display module + agent ROLE_COLORS map with TDD
 - [ ] 27-02-PLAN.md -- Wire display into rapid-tools CLI + add banner calls to 7 skills
 
+### Phase 27.1: Skill-to-Agent Overhaul (INSERTED)
+
+**Goal:** All 26 role modules are registered as Claude Code agents in `agents/`, skills spawn agents by name instead of reading role modules inline, and legacy assembler infrastructure is removed
+**Requirements**: AGENT-01, AGENT-02, AGENT-03, AGENT-04, AGENT-05, AGENT-06, AGENT-07
+**Depends on:** Phase 27
+**Success Criteria** (what must be TRUE):
+  1. `agents/` contains 26 .md files, each with valid YAML frontmatter (name, description, tools, model, color)
+  2. `node src/bin/rapid-tools.cjs build-agents` regenerates all 26 agents from source modules
+  3. No skill file contains `cat src/modules/roles/` or inline role module content
+  4. Every agent-spawning skill references agents by registered name (e.g., "Spawn the rapid-bug-hunter agent")
+  5. assembler.cjs is deleted, config.json has no agents section, assemble-agent CLI is removed
+  6. setup.sh calls build-agents during installation
+**Plans:** 3 plans
+
+Plans:
+- [ ] 27.1-01-PLAN.md -- Build-agents infrastructure: add missing role entries, create build-agents command, TDD tests, generate 26 agents
+- [ ] 27.1-02-PLAN.md -- Update 8 agent-spawning skills to reference registered agents by name
+- [ ] 27.1-03-PLAN.md -- Normalize remaining 9 skills, remove assembler.cjs, clean config.json
+
 ### Phase 28: Workflow Clarity
 **Goal**: Users and agents always know what step comes next, with correct context flowing between stages
 **Depends on**: Phase 26 (numeric IDs used in next-step suggestions)
@@ -146,7 +165,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 25 -> 26 -> 27 -> 28 -> 29 -> 30 -> 31 -> 32
+Phases execute in numeric order: 25 -> 26 -> 27 -> 27.1 -> 28 -> 29 -> 30 -> 31 -> 32
 Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independent tracks).
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -154,6 +173,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 25. GSD Decontamination | 1/1 | Complete    | 2026-03-09 | - |
 | 26. Numeric ID Infrastructure | 2/2 | Complete    | 2026-03-09 | - |
 | 27. UX Branding & Colors | 2/2 | Complete    | 2026-03-09 | - |
+| 27.1 Skill-to-Agent Overhaul | v2.1 | 0/3 | Not started | - |
 | 28. Workflow Clarity | v2.1 | 0/? | Not started | - |
 | 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
