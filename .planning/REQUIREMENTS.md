@@ -19,8 +19,8 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 - [x] **UX-03**: Full string IDs still work (backward compatible)
 - [ ] **UX-04**: Each skill auto-suggests the next command with pre-filled numeric args on completion
 - [ ] **UX-05**: Discuss phase batches related questions into 2 interactions per gray area instead of 4
-- [ ] **UX-06**: Stage banners display with RAPID branding and color coding in terminal output
-- [ ] **UX-07**: Different agent types display with distinct colors (e.g. planner = blue, executor = green, reviewer = red)
+- [x] **UX-06**: Stage banners display with RAPID branding and color coding in terminal output
+- [x] **UX-07**: Different agent types display with distinct colors (e.g. planner = blue, executor = green, reviewer = red)
 
 ### Workflow Clarity
 
@@ -81,8 +81,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-03 | Phase 26 | Complete |
 | UX-04 | Phase 28 | Pending |
 | UX-05 | Phase 29 | Pending |
-| UX-06 | Phase 27 | Pending |
-| UX-07 | Phase 27 | Pending |
+| UX-06 | Phase 27 | Complete |
+| UX-07 | Phase 27 | Complete |
 | FLOW-01 | Phase 28 | Pending |
 | FLOW-02 | Phase 28 | Pending |
 | FLOW-03 | Phase 28 | Pending |
