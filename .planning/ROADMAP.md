@@ -150,7 +150,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 25. GSD Decontamination | 1/1 | Complete   | 2026-03-09 | - |
+| 25. GSD Decontamination | 1/1 | Complete    | 2026-03-09 | - |
 | 26. Numeric ID Infrastructure | v2.1 | 0/? | Not started | - |
 | 27. UX Branding & Colors | v2.1 | 0/? | Not started | - |
 | 28. Workflow Clarity | v2.1 | 0/? | Not started | - |

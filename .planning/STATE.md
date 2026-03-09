@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: executing
+status: completed
 stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-03-09T02:22:48.182Z"
-last_activity: 2026-03-09 -- Roadmap created for v2.1
+last_updated: "2026-03-09T02:28:17.018Z"
+last_activity: 2026-03-09 -- Completed GSD decontamination plan 01
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 1
   completed_plans: 1
-  percent: 0
+  percent: 12
 ---
 
 # Project State
