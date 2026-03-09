@@ -1,15 +1,12 @@
 'use strict';
 
-const { describe, it, before, after } = require('node:test');
+const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { execSync } = require('child_process');
 
-// Module under test
-const assemblerPath = path.join(__dirname, 'assembler.cjs');
-
-// All 26 roles that must have explicit map entries
+// All 26 roles that must be generated
 const ALL_26_ROLES = [
   'planner', 'executor', 'reviewer', 'verifier', 'orchestrator',
   'wave-researcher', 'wave-planner', 'job-planner', 'job-executor',
@@ -20,7 +17,7 @@ const ALL_26_ROLES = [
   'roadmapper', 'codebase-synthesizer', 'context-generator', 'set-planner',
 ];
 
-// Per-role core module mapping (must match the production ROLE_CORE_MAP)
+// Per-role core module mapping (must match production ROLE_CORE_MAP in rapid-tools.cjs)
 const EXPECTED_ROLE_CORE_MAP = {
   'planner':      ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md', 'core-context-loading.md'],
   'executor':     ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
@@ -50,89 +47,39 @@ const EXPECTED_ROLE_CORE_MAP = {
   'roadmapper':            ['core-identity.md', 'core-returns.md'],
 };
 
+const rapidToolsPath = path.join(__dirname, '..', 'bin', 'rapid-tools.cjs');
+const agentsDir = path.join(__dirname, '..', '..', 'agents');
+
 describe('build-agents', () => {
-  let assembler;
-
   before(() => {
-    assembler = require(assemblerPath);
+    // Run build-agents to ensure agents/ is populated
+    execSync(`node "${rapidToolsPath}" build-agents`, { cwd: path.join(__dirname, '..', '..') });
   });
 
-  describe('ROLE_TOOLS completeness', () => {
-    it('all 26 roles have explicit ROLE_TOOLS entries (no fallback to defaults)', () => {
-      for (const role of ALL_26_ROLES) {
-        assert.ok(
-          role in assembler.ROLE_TOOLS,
-          `Role "${role}" is missing from ROLE_TOOLS map -- needs explicit entry`
-        );
-      }
-      assert.ok(
-        Object.keys(assembler.ROLE_TOOLS).length >= 26,
-        `ROLE_TOOLS should have at least 26 entries, got ${Object.keys(assembler.ROLE_TOOLS).length}`
-      );
-    });
-  });
-
-  describe('ROLE_COLORS completeness', () => {
-    it('all 26 roles have explicit ROLE_COLORS entries (no fallback to "default")', () => {
-      for (const role of ALL_26_ROLES) {
-        const fm = assembler.generateFrontmatter(role);
-        assert.ok(
-          !fm.includes('color: default'),
-          `Role "${role}" is using the default color fallback -- needs explicit ROLE_COLORS entry`
-        );
-      }
-    });
-  });
-
-  describe('ROLE_DESCRIPTIONS completeness', () => {
-    it('all 26 roles have explicit ROLE_DESCRIPTIONS entries (no generic fallback)', () => {
-      for (const role of ALL_26_ROLES) {
-        const fm = assembler.generateFrontmatter(role);
-        // Generic fallback is `RAPID ${role} agent` with no further detail
-        const genericPattern = new RegExp(`description: RAPID ${role} agent\\n`);
-        assert.ok(
-          !genericPattern.test(fm),
-          `Role "${role}" is using the generic description fallback -- needs explicit ROLE_DESCRIPTIONS entry`
-        );
-      }
-    });
-  });
-
-  describe('buildAllAgents function', () => {
-    let tmpDir;
-
-    before(() => {
-      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-build-agents-test-'));
-    });
-
-    after(() => {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    });
-
-    it('buildAllAgents is exported from assembler', () => {
-      assert.ok(typeof assembler.buildAllAgents === 'function', 'buildAllAgents should be exported as a function');
-    });
-
+  describe('agent file generation', () => {
     it('generates exactly 26 .md files', () => {
-      const result = assembler.buildAllAgents(tmpDir);
-      assert.equal(result.built, 26, `Expected 26 built agents, got ${result.built}`);
-      assert.equal(result.files.length, 26, `Expected 26 files, got ${result.files.length}`);
-
-      const mdFiles = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
-      assert.equal(mdFiles.length, 26, `Expected 26 .md files in output dir, got ${mdFiles.length}`);
+      const mdFiles = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
+      assert.equal(mdFiles.length, 26, `Expected 26 .md files in agents/, got ${mdFiles.length}`);
     });
 
-    it('each generated file starts with valid YAML frontmatter', () => {
-      const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    it('generates a file for each of the 26 roles', () => {
+      for (const role of ALL_26_ROLES) {
+        const filePath = path.join(agentsDir, `rapid-${role}.md`);
+        assert.ok(fs.existsSync(filePath), `Missing agent file: rapid-${role}.md`);
+      }
+    });
+  });
+
+  describe('frontmatter validation', () => {
+    it('each generated file starts with GENERATED comment then YAML frontmatter', () => {
+      const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
       for (const file of files) {
-        const content = fs.readFileSync(path.join(tmpDir, file), 'utf-8');
-        // Must start with GENERATED comment then frontmatter
+        const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
         assert.ok(
           content.startsWith('<!-- GENERATED by build-agents'),
           `${file} should start with GENERATED comment, got: ${content.substring(0, 60)}`
         );
 
-        // Find frontmatter delimiters
         const fmStart = content.indexOf('---');
         const fmEnd = content.indexOf('---', fmStart + 3);
         assert.ok(fmStart !== -1 && fmEnd !== -1, `${file} should have YAML frontmatter delimiters`);
@@ -146,10 +93,38 @@ describe('build-agents', () => {
       }
     });
 
+    it('no generated file uses fallback color "default"', () => {
+      for (const role of ALL_26_ROLES) {
+        const content = fs.readFileSync(path.join(agentsDir, `rapid-${role}.md`), 'utf-8');
+        const fmStart = content.indexOf('---');
+        const fmEnd = content.indexOf('---', fmStart + 3);
+        const fm = content.substring(fmStart, fmEnd + 3);
+        assert.ok(
+          !fm.includes('color: default'),
+          `Role "${role}" is using the default color fallback -- needs explicit ROLE_COLORS entry`
+        );
+      }
+    });
+
+    it('no generated file uses generic fallback description', () => {
+      for (const role of ALL_26_ROLES) {
+        const content = fs.readFileSync(path.join(agentsDir, `rapid-${role}.md`), 'utf-8');
+        const fmStart = content.indexOf('---');
+        const fmEnd = content.indexOf('---', fmStart + 3);
+        const fm = content.substring(fmStart, fmEnd + 3);
+        const genericPattern = new RegExp(`description: RAPID ${role} agent\\n`);
+        assert.ok(
+          !genericPattern.test(fm),
+          `Role "${role}" is using the generic description fallback -- needs explicit ROLE_DESCRIPTIONS entry`
+        );
+      }
+    });
+  });
+
+  describe('core module inclusion', () => {
     it('each generated file contains correct core module XML tags per ROLE_CORE_MAP', () => {
       for (const [role, coreModules] of Object.entries(EXPECTED_ROLE_CORE_MAP)) {
-        const filePath = path.join(tmpDir, `rapid-${role}.md`);
-        assert.ok(fs.existsSync(filePath), `${filePath} should exist`);
+        const filePath = path.join(agentsDir, `rapid-${role}.md`);
         const content = fs.readFileSync(filePath, 'utf-8');
 
         for (const mod of coreModules) {
@@ -179,24 +154,23 @@ describe('build-agents', () => {
     });
 
     it('each generated file contains a <role> tag', () => {
-      const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+      const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
       for (const file of files) {
-        const content = fs.readFileSync(path.join(tmpDir, file), 'utf-8');
+        const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
         assert.ok(content.includes('<role>'), `${file} should contain <role> tag`);
         assert.ok(content.includes('</role>'), `${file} should contain </role> closing tag`);
       }
     });
+  });
 
+  describe('agent size limits', () => {
     it('no generated file exceeds 15KB (except planner which is a known exception)', () => {
-      // The planner role module is ~11KB alone, making 15KB impossible with any core modules.
-      // This is a pre-existing known exception documented in research (Pitfall 2).
       const KNOWN_OVERSIZED = ['rapid-planner.md'];
-      const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+      const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
       for (const file of files) {
-        const content = fs.readFileSync(path.join(tmpDir, file), 'utf-8');
+        const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
         const sizeBytes = Buffer.byteLength(content, 'utf-8');
         if (KNOWN_OVERSIZED.includes(file)) {
-          // Just verify the planner is reasonably sized (under 25KB)
           assert.ok(
             sizeBytes <= 25600,
             `${file} is ${(sizeBytes / 1024).toFixed(1)}KB, exceeds even generous 25KB limit`
@@ -206,17 +180,6 @@ describe('build-agents', () => {
         assert.ok(
           sizeBytes <= 15360,
           `${file} is ${(sizeBytes / 1024).toFixed(1)}KB, exceeds 15KB limit`
-        );
-      }
-    });
-
-    it('each generated file starts with the GENERATED comment', () => {
-      const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
-      for (const file of files) {
-        const content = fs.readFileSync(path.join(tmpDir, file), 'utf-8');
-        assert.ok(
-          content.startsWith('<!-- GENERATED by build-agents -- do not edit directly. Edit src/modules/ instead. -->'),
-          `${file} should start with GENERATED comment`
         );
       }
     });

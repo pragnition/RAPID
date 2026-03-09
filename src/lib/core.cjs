@@ -56,7 +56,6 @@ function findProjectRoot(startDir) {
  */
 function loadConfig(projectRoot) {
   const defaults = {
-    agents: {},
     lock_timeout_ms: 300000,
   };
 

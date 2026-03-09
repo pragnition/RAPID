@@ -87,7 +87,6 @@ describe('core.cjs', () => {
 
     it('returns defaults when config file does not exist', () => {
       const config = core.loadConfig(tmpDir);
-      assert.ok(config.agents !== undefined, 'Should have agents key');
       assert.ok(typeof config.lock_timeout_ms === 'number', 'Should have lock_timeout_ms');
       assert.equal(config.lock_timeout_ms, 300000, 'Default lock_timeout_ms should be 300000');
     });
@@ -95,11 +94,11 @@ describe('core.cjs', () => {
     it('reads config from config.json when it exists', () => {
       fs.writeFileSync(
         path.join(tmpDir, 'config.json'),
-        JSON.stringify({ agents: { test: true }, lock_timeout_ms: 60000 })
+        JSON.stringify({ lock_timeout_ms: 60000, agent_size_warn_kb: 15 })
       );
       const config = core.loadConfig(tmpDir);
-      assert.deepEqual(config.agents, { test: true });
       assert.equal(config.lock_timeout_ms, 60000);
+      assert.equal(config.agent_size_warn_kb, 15);
     });
   });
 

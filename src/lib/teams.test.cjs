@@ -310,21 +310,24 @@ describe('teams.cjs', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
-// Assembler registration tests for job-executor role
+// Agent registration tests for job-executor role
 // ────────────────────────────────────────────────────────────────
-describe('assembler.cjs job-executor registration', () => {
-  const assembler = require('./assembler.cjs');
+describe('job-executor agent registration', () => {
+  const fs = require('fs');
+  const path = require('path');
 
-  it('ROLE_TOOLS includes job-executor with correct tools', () => {
-    const modules = assembler.listModules();
-    assert.ok(modules.roles.includes('role-job-executor.md'), 'role-job-executor.md should be in roles list');
+  it('role-job-executor.md source module exists', () => {
+    const rolePath = path.join(__dirname, '..', 'modules', 'roles', 'role-job-executor.md');
+    assert.ok(fs.existsSync(rolePath), 'role-job-executor.md should exist in roles directory');
   });
 
-  it('assembler can generate frontmatter for job-executor role', () => {
-    const frontmatter = assembler.generateFrontmatter('job-executor');
-    assert.ok(frontmatter.includes('rapid-job-executor'), 'frontmatter should include rapid-job-executor');
-    assert.ok(frontmatter.includes('Read'), 'should include Read tool');
-    assert.ok(frontmatter.includes('Write'), 'should include Write tool');
-    assert.ok(frontmatter.includes('Bash'), 'should include Bash tool');
+  it('rapid-job-executor.md generated agent exists with correct tools', () => {
+    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-job-executor.md');
+    assert.ok(fs.existsSync(agentPath), 'rapid-job-executor.md should exist in agents directory');
+    const content = fs.readFileSync(agentPath, 'utf-8');
+    assert.ok(content.includes('rapid-job-executor'), 'agent should include rapid-job-executor name');
+    assert.ok(content.includes('Read'), 'should include Read tool');
+    assert.ok(content.includes('Write'), 'should include Write tool');
+    assert.ok(content.includes('Bash'), 'should include Bash tool');
   });
 });
