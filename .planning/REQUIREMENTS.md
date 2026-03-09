@@ -17,7 +17,7 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 - [x] **UX-01**: User can reference sets by numeric index (`/set-init 1`, `/discuss 1`)
 - [x] **UX-02**: User can reference waves by dot notation (`/wave-plan 1.1` = set 1, wave 1)
 - [x] **UX-03**: Full string IDs still work (backward compatible)
-- [ ] **UX-04**: Each skill auto-suggests the next command with pre-filled numeric args on completion
+- [x] **UX-04**: Each skill auto-suggests the next command with pre-filled numeric args on completion
 - [ ] **UX-05**: Discuss phase batches related questions into 2 interactions per gray area instead of 4
 - [x] **UX-06**: Stage banners display with RAPID branding and color coding in terminal output
 - [x] **UX-07**: Different agent types display with distinct colors (e.g. planner = blue, executor = green, reviewer = red)
@@ -89,7 +89,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-01 | Phase 26 | Complete |
 | UX-02 | Phase 26 | Complete |
 | UX-03 | Phase 26 | Complete |
-| UX-04 | Phase 28 | Pending |
+| UX-04 | Phase 28 | Complete |
 | UX-05 | Phase 29 | Pending |
 | UX-06 | Phase 27 | Complete |
 | UX-07 | Phase 27 | Complete |

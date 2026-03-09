@@ -1,17 +1,17 @@
 ---
-rapid_state_version: 1.0
+gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: in-progress
-stopped_at: Completed 28-01-PLAN.md
-last_updated: "2026-03-09T08:22:11Z"
-last_activity: 2026-03-09 -- resolveWave --set flag, workflow order in all 26 agents, 2-4 jobs/wave guidance (plan 28-01)
+stopped_at: Completed 28-02-PLAN.md
+last_updated: "2026-03-09T08:28:37Z"
+last_activity: 2026-03-09 -- next-step blocks in 7 stage skills, --set flag in wave-aware skills (plan 28-02)
 progress:
   total_phases: 9
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 10
-  completed_plans: 9
-  percent: 90
+  completed_plans: 10
+  percent: 99
 ---
 
 # Project State
@@ -25,18 +25,18 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 28 in progress (fifth of 9 in v2.1: Phases 25-32 + 27.1)
-Plan: 01 complete (1 of 2 in Phase 28)
-Status: Plan 28-01 complete -- resolveWave --set flag, workflow order, job granularity
-Last activity: 2026-03-09 -- resolveWave --set flag, workflow order in all 26 agents, 2-4 jobs/wave guidance (plan 28-01)
+Phase: 28 complete (fifth of 9 in v2.1: Phases 25-32 + 27.1)
+Plan: 02 complete (2 of 2 in Phase 28)
+Status: Phase 28 complete -- next-step blocks in all 7 stage skills, --set flag in wave-aware skills
+Last activity: 2026-03-09 -- next-step blocks in 7 stage skills, --set flag in wave-aware skills (plan 28-02)
 
-Progress: [█████████░] 90%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 4.6min
+- Total plans completed: 10
+- Average duration: 4.5min
 - Total execution time: 0.8 hours
 
 **By Phase:**
@@ -47,7 +47,7 @@ Progress: [█████████░] 90%
 | 26 | 2 | 8min | 4min |
 | 27 | 2 | 6min | 3min |
 | 27.1 | 3 | 28min | 9.3min |
-| 28 | 1 | 3min | 3min |
+| 28 | 2 | 6min | 3min |
 
 *Updated after each plan completion*
 
@@ -84,6 +84,9 @@ Recent:
 - Phase 28: resolveWave setId path uses resolveSet internally for consistent numeric/string resolution
 - Phase 28: Error messages include set name and available waves for discoverability
 - Phase 28: Workflow order section placed between Working Directory and structured return sections in core-identity
+- Phase 28: Mid-flow AskUserQuestion preserved; only end-of-skill routing removed
+- Phase 28: Linear skills show one next command; branching skills (review, merge) show 2-3 alternatives
+- Phase 28: AskUserQuestion kept in allowed-tools for all skills retaining mid-flow decision points
 
 ### Pending Todos
 
@@ -117,6 +120,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T08:22:11Z
-Stopped at: Completed 28-01-PLAN.md
-Resume file: .planning/phases/28-workflow-clarity/28-01-SUMMARY.md
+Last session: 2026-03-09T08:28:37Z
+Stopped at: Completed 28-02-PLAN.md
+Resume file: .planning/phases/28-workflow-clarity/28-02-SUMMARY.md
