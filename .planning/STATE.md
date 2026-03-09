@@ -3,15 +3,15 @@ rapid_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: in-progress
-stopped_at: Completed 27.1-01-PLAN.md
-last_updated: "2026-03-09T06:55:39Z"
-last_activity: 2026-03-09 -- Built build-agents CLI command and generated all 26 agent files (plan 27.1-01)
+stopped_at: Completed 27.1-02-PLAN.md
+last_updated: "2026-03-09T07:05:20Z"
+last_activity: 2026-03-09 -- Updated all 8 agent-spawning skills to reference registered agents by name (plan 27.1-02)
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 8
-  completed_plans: 6
-  percent: 67
+  completed_plans: 7
+  percent: 78
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 27.1 in progress (fourth of 9 in v2.1: Phases 25-32 + 27.1)
-Plan: 01 complete (1 of 3 in Phase 27.1)
-Status: Phase 27.1 plan 01 complete -- ready for plan 02
-Last activity: 2026-03-09 -- Built build-agents CLI command and generated all 26 agent files (plan 27.1-01)
+Plan: 02 complete (2 of 3 in Phase 27.1)
+Status: Phase 27.1 plan 02 complete -- ready for plan 03
+Last activity: 2026-03-09 -- Updated all 8 agent-spawning skills to reference registered agents by name (plan 27.1-02)
 
-Progress: [██████▓░░░] 67%
+Progress: [███████▓░░] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 4.5min
-- Total execution time: 0.55 hours
+- Total plans completed: 7
+- Average duration: 4.6min
+- Total execution time: 0.63 hours
 
 **By Phase:**
 
@@ -46,7 +46,7 @@ Progress: [██████▓░░░] 67%
 | 25 | 1 | 3min | 3min |
 | 26 | 2 | 8min | 4min |
 | 27 | 2 | 6min | 3min |
-| 27.1 | 1 | 16min | 16min |
+| 27.1 | 2 | 21min | 10.5min |
 
 *Updated after each plan completion*
 
@@ -75,6 +75,9 @@ Recent:
 - Phase 27.1: Removed agents/ from .gitignore so generated agents are committed for clone-and-use workflow
 - Phase 27.1: buildAllAgents() in assembler.cjs (not rapid-tools.cjs) for direct unit testability
 - Phase 27.1: Exported ROLE_TOOLS, ROLE_COLORS, ROLE_DESCRIPTIONS, ROLE_CORE_MAP from assembler for test verification
+- Phase 27.1: Skills pass file paths (not inline content) for agents to read -- keeps spawn prompts lean
+- Phase 27.1: Context generator agent spawned twice (analysis-only + write mode) using same rapid-context-generator name
+- Phase 27.1: Agent name reference pattern: "Spawn the **rapid-{role}** agent with this task:" followed by task-specific context block
 
 ### Pending Todos
 
@@ -108,6 +111,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T06:55:39Z
-Stopped at: Completed 27.1-01-PLAN.md
-Resume file: .planning/phases/27.1-skill-to-agent-overhaul/27.1-01-SUMMARY.md
+Last session: 2026-03-09T07:05:20Z
+Stopped at: Completed 27.1-02-PLAN.md
+Resume file: .planning/phases/27.1-skill-to-agent-overhaul/27.1-02-SUMMARY.md
