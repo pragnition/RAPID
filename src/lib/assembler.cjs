@@ -30,6 +30,33 @@ const ROLE_TOOLS = {
 };
 
 /**
+ * Color configuration per agent role.
+ * Maps each role to a Claude Code frontmatter color value.
+ * Valid values: red, blue, green, purple, yellow, orange, cyan, default
+ */
+const ROLE_COLORS = {
+  // PLANNING roles = blue
+  planner: 'blue',
+  'wave-planner': 'blue',
+  'job-planner': 'blue',
+  'wave-researcher': 'blue',
+  orchestrator: 'blue',
+  verifier: 'blue',
+  // EXECUTION roles = green
+  executor: 'green',
+  'job-executor': 'green',
+  bugfix: 'green',
+  merger: 'green',
+  // REVIEW roles = designated colors
+  reviewer: 'red',
+  judge: 'red',
+  'bug-hunter': 'yellow',
+  'devils-advocate': 'purple',
+  'unit-tester': 'cyan',
+  uat: 'cyan',
+};
+
+/**
  * Role descriptions for frontmatter.
  */
 const ROLE_DESCRIPTIONS = {
@@ -60,12 +87,14 @@ const ROLE_DESCRIPTIONS = {
 function generateFrontmatter(role) {
   const tools = ROLE_TOOLS[role] || 'Read, Bash, Grep, Glob';
   const description = ROLE_DESCRIPTIONS[role] || `RAPID ${role} agent`;
+  const color = ROLE_COLORS[role] || 'default';
 
   return `---
 name: rapid-${role}
 description: ${description}
 tools: ${tools}
 model: inherit
+color: ${color}
 ---`;
 }
 
