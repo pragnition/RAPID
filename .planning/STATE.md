@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: in-progress
+status: completed
 stopped_at: Completed 28-02-PLAN.md
-last_updated: "2026-03-09T08:28:37Z"
+last_updated: "2026-03-09T08:33:17.161Z"
 last_activity: 2026-03-09 -- next-step blocks in 7 stage skills, --set flag in wave-aware skills (plan 28-02)
 progress:
   total_phases: 9
