@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: completed
-stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-03-09T05:51:25.097Z"
+stopped_at: Phase 27.1 context gathered
+last_updated: "2026-03-09T06:14:49.924Z"
 last_activity: 2026-03-09 -- Wired display module into CLI and added banners to all 7 stage skills (plan 27-02)
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 3
   total_plans: 5
   completed_plans: 5
@@ -81,6 +81,7 @@ None.
 - v1.1 UI UX Improvements: Phases 10-15 (shipped)
 - v2.0 Mark II: Phases 16-24 (shipped 2026-03-09)
 - v2.1 Improvements & Fixes: Phases 25-32 (in progress)
+- Phase 27.1 inserted after Phase 27: Skill to agent overhaul (URGENT)
 
 ### Blockers/Concerns
 
@@ -102,6 +103,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T05:45:39Z
-Stopped at: Completed 27-02-PLAN.md
-Resume file: .planning/phases/27-ux-branding-colors/27-02-SUMMARY.md
+Last session: 2026-03-09T06:14:49.923Z
+Stopped at: Phase 27.1 context gathered
+Resume file: .planning/phases/27.1-skill-to-agent-overhaul/27.1-CONTEXT.md
