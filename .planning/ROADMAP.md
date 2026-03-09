@@ -111,10 +111,10 @@ Plans:
   1. Discuss phase presents related questions grouped into at most 2 interactions per gray area (down from 4)
   2. Each interaction presents a batched set of related questions with multiSelect or structured options
   3. Decision quality is preserved -- all gray areas from research are still resolved before planning begins
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 29-01: TBD
+- [ ] 29-01-PLAN.md -- Rewrite Step 4 (master delegation toggle) and Step 5 (2-round batched discussion) in discuss SKILL.md
 
 ### Phase 30: Plan Verifier
 **Goal**: Job plans are validated for coverage gaps, file conflicts, and implementability before execution begins
@@ -175,7 +175,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 27. UX Branding & Colors | 2/2 | Complete    | 2026-03-09 | - |
 | 27.1 Skill-to-Agent Overhaul | 3/3 | Complete    | 2026-03-09 | - |
 | 28. Workflow Clarity | 2/2 | Complete    | 2026-03-09 | - |
-| 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |
+| 29. Discuss Phase Optimization | v2.1 | 0/1 | Not started | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
 | 31. Wave Orchestration | v2.1 | 0/? | Not started | - |
 | 32. Review Efficiency | v2.1 | 0/? | Not started | - |
