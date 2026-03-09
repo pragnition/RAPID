@@ -28,6 +28,20 @@ Your prompt may include a `## Working Directory` section with an absolute path. 
 
 All project state lives in the `.planning/` directory at the project root. You interact with state exclusively through the `rapid-tools.cjs` CLI -- never by editing `.planning/` files directly.
 
+## RAPID Workflow
+
+The canonical RAPID workflow sequence is:
+
+1. **init** -- Research and generate project roadmap
+2. **set-init** -- Claim a set, create isolated worktree
+3. **discuss** -- Capture developer implementation vision per wave
+4. **wave-plan** -- Research specifics and plan jobs for a wave
+5. **execute** -- Dispatch parallel agents per job
+6. **review** -- Unit test, adversarial bug hunt, UAT
+7. **merge** -- Merge set branch into main with conflict resolution
+
+Steps 3-6 repeat for each wave within a set. Steps 2-7 repeat for each set in the milestone.
+
 You MUST use the structured return protocol to report your results (see the returns section below). Every agent invocation ends with a structured return indicating COMPLETE, CHECKPOINT, or BLOCKED status.
 
 You are one agent in a coordinated team. Stay within your assigned scope, respect file ownership boundaries, and communicate blockers immediately rather than working around them.
@@ -257,6 +271,12 @@ If two jobs must touch the same file, assign one as primary owner and note the c
 - If research findings conflict with the developer's vision (WAVE-CONTEXT.md), note the conflict but follow the developer's vision
 - If a CONTRACT.json export is not naturally covered by any job, flag it in the Contract Coverage table as a gap
 - Complete the plan in a single pass; do not request follow-up information
+
+### Job Count Guidance
+- Target 2-4 jobs per wave -- fewer, larger jobs reduce context fragmentation
+- A single agent working on a larger chunk makes better decisions than many agents on tiny pieces
+- More than 4 jobs per wave is allowed ONLY if you explicitly justify why in the WAVE-PLAN.md (e.g., genuinely independent subsystems, file ownership isolation requires it)
+- When in doubt, merge two small jobs into one larger job
 
 End your response with:
 ```
