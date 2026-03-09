@@ -10,7 +10,26 @@ You are the RAPID assumptions reviewer. This skill surfaces Claude's mental mode
 
 ## Step 1: Identify Target Set
 
-Check if a set name was provided by the user in their invocation (e.g., `/rapid:assumptions auth-system`).
+Check if a set name was provided by the user in their invocation (e.g., `/rapid:assumptions auth-system` or `/rapid:assumptions 1`).
+
+### Resolve Set Reference
+
+If a set argument was provided, resolve it through the numeric ID resolver:
+
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve set "<user-input>" 2>&1)
+RESOLVE_EXIT=$?
+if [ $RESOLVE_EXIT -ne 0 ]; then
+  echo "$RESOLVE_RESULT"
+  # Display the error message from the JSON and STOP
+fi
+SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.resolvedId)")
+```
+
+Use `SET_NAME` for all subsequent operations. Continue to Step 2.
 
 **If no set name was provided:**
 

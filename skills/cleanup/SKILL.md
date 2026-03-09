@@ -31,7 +31,24 @@ Print: "No active worktrees. Nothing to clean up." and end.
 
 ## Step 3: Select Worktree to Clean Up
 
-**If the user provided a set name as argument** (`/rapid:cleanup {setName}`): Use it directly and skip to Step 4.
+**If the user provided a set name as argument** (`/rapid:cleanup {setName}` or `/rapid:cleanup 1`):
+
+### Resolve Set Reference
+
+Resolve the set argument through the numeric ID resolver:
+
+```bash
+# (env preamble here)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve set "<user-input>" 2>&1)
+RESOLVE_EXIT=$?
+if [ $RESOLVE_EXIT -ne 0 ]; then
+  echo "$RESOLVE_RESULT"
+  # Display the error message from the JSON and STOP
+fi
+SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.resolvedId)")
+```
+
+Use `SET_NAME` for all subsequent operations. Skip to Step 4.
 
 **If 4 or fewer worktrees:** Use AskUserQuestion to let the developer select:
 - **question:** "Select worktree to clean up"

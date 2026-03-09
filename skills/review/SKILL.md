@@ -19,7 +19,41 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 
 ### 0b: Parse arguments
 
-The user invokes this skill with: `/rapid:review <set-id>` (all waves) or `/rapid:review <set-id> <wave-id>` (specific wave).
+The user invokes this skill with: `/rapid:review <set-id>` (all waves), `/rapid:review <set-id> <wave-id>` (specific wave), or numeric shorthand like `/rapid:review 1` or `/rapid:review 1 1.1`.
+
+#### Resolve Set Reference
+
+If `<set-id>` was provided, resolve it through the numeric ID resolver:
+
+```bash
+# (env preamble here)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve set "<set-input>" 2>&1)
+RESOLVE_EXIT=$?
+if [ $RESOLVE_EXIT -ne 0 ]; then
+  echo "$RESOLVE_RESULT"
+  # Display the error message from the JSON and STOP
+fi
+SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.resolvedId)")
+```
+
+Use `SET_NAME` for all subsequent operations.
+
+#### Resolve Wave Reference (if provided)
+
+If `<wave-id>` was also provided (e.g., `/rapid:review auth wave-1` or `/rapid:review 1 1.1`), resolve it through the numeric ID resolver:
+
+```bash
+# (env preamble here)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve wave "<wave-input>" 2>&1)
+RESOLVE_EXIT=$?
+if [ $RESOLVE_EXIT -ne 0 ]; then
+  echo "$RESOLVE_RESULT"
+  # Display the error message from the JSON and STOP
+fi
+WAVE_ID=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.waveId)")
+```
+
+Use `WAVE_ID` for all subsequent wave-specific operations.
 
 If `<set-id>` was not provided, use AskUserQuestion to ask:
 - **question:** "Which set to review?"

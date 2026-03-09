@@ -25,9 +25,26 @@ Use this environment preamble in ALL subsequent Bash commands within this skill.
 
 ## Step 1: Determine Set to Initialize
 
-Check if the user provided a set name as an argument (e.g., `/set-init auth-system`).
+Check if the user provided a set name as an argument (e.g., `/set-init auth-system` or `/set-init 1`).
 
-**If set name was provided:** Use it directly. Skip to Step 2.
+### Resolve Set Reference
+
+If the user provided a set argument, resolve it through the numeric ID resolver before any other operations:
+
+```bash
+# (env preamble here)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve set "<user-input>" 2>&1)
+RESOLVE_EXIT=$?
+if [ $RESOLVE_EXIT -ne 0 ]; then
+  echo "$RESOLVE_RESULT"
+  # Display the error message from the JSON and STOP
+fi
+SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.resolvedId)")
+```
+
+Use `SET_NAME` for all subsequent operations. The numeric input has been resolved to a string ID. For example, `/set-init 1` resolves to the first set alphabetically.
+
+**If set name was provided:** Resolve it (above), then use the resolved `SET_NAME`. Skip to Step 2.
 
 **If no set name was provided:** List available (pending) sets:
 

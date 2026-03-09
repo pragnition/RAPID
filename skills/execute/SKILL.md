@@ -19,7 +19,24 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 
 ### 0b: Parse set-id argument
 
-The user invokes this skill with a set identifier: `/rapid:execute <set-id>`.
+The user invokes this skill with a set identifier: `/rapid:execute <set-id>` (e.g., `/rapid:execute auth-system` or `/rapid:execute 1`).
+
+#### Resolve Set Reference
+
+If `<set-id>` was provided, resolve it through the numeric ID resolver before any other operations:
+
+```bash
+# (env preamble here)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve set "<user-input>" 2>&1)
+RESOLVE_EXIT=$?
+if [ $RESOLVE_EXIT -ne 0 ]; then
+  echo "$RESOLVE_RESULT"
+  # Display the error message from the JSON and STOP
+fi
+SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.resolvedId)")
+```
+
+Use `SET_NAME` for all subsequent operations. The numeric input has been resolved to a string ID.
 
 If `<set-id>` was not provided, use AskUserQuestion to ask:
 - **question:** "Which set to execute?"

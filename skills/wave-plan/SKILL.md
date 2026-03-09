@@ -26,14 +26,49 @@ Use this environment preamble in ALL subsequent Bash commands within this skill.
 ## Step 2: Resolve Wave and Validate State
 
 Accept wave ID argument. The user may invoke as:
+- `/rapid:wave-plan 1.1` (numeric dot notation -- set 1, wave 1)
 - `/rapid:wave-plan wave-1` (wave ID only -- auto-detect set)
 - `/rapid:wave-plan auth wave-1` (set ID + wave ID)
 
-Run the resolve command:
+### Resolve Wave Reference
+
+Resolve the user's input through the numeric ID resolver:
+
+**If the user provided dot notation (e.g., `1.1`) or a wave ID:**
 
 ```bash
 # (env preamble here)
-WAVE_RESULT=$(node "${RAPID_TOOLS}" wave-plan resolve-wave <waveId>)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve wave "<user-input>" 2>&1)
+RESOLVE_EXIT=$?
+if [ $RESOLVE_EXIT -ne 0 ]; then
+  echo "$RESOLVE_RESULT"
+  # Display the error message from the JSON and STOP
+fi
+```
+
+Parse the JSON result to extract `setId`, `waveId`, `setIndex`, `waveIndex`, and `wasNumeric`. Use these resolved string IDs for all subsequent operations.
+
+**If the user provided a set ID + wave ID (two arguments, e.g., `auth wave-1`):**
+
+First resolve the set:
+```bash
+# (env preamble here)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve set "<set-input>" 2>&1)
+RESOLVE_EXIT=$?
+if [ $RESOLVE_EXIT -ne 0 ]; then
+  echo "$RESOLVE_RESULT"
+  # Display the error message from the JSON and STOP
+fi
+SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.resolvedId)")
+```
+
+Then resolve the wave within that set context using the wave ID argument.
+
+**After resolution, fall back to the existing wave-plan resolve-wave for full wave data (milestoneId, jobs, etc.):**
+
+```bash
+# (env preamble here)
+WAVE_RESULT=$(node "${RAPID_TOOLS}" wave-plan resolve-wave <resolved-waveId>)
 echo "$WAVE_RESULT"
 ```
 
