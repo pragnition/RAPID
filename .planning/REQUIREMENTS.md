@@ -34,9 +34,9 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 
 ### Workflow Clarity
 
-- [ ] **FLOW-01**: Wave-plan accepts set+wave context (not just wave ID in isolation)
-- [ ] **FLOW-02**: Agents have clear internal knowledge of the correct workflow order (init -> set-init -> discuss -> wave-plan -> execute -> review -> merge)
-- [ ] **FLOW-03**: Job granularity defaults to coarser sizing (fewer, larger jobs per wave)
+- [x] **FLOW-01**: Wave-plan accepts set+wave context (not just wave ID in isolation)
+- [x] **FLOW-02**: Agents have clear internal knowledge of the correct workflow order (init -> set-init -> discuss -> wave-plan -> execute -> review -> merge)
+- [x] **FLOW-03**: Job granularity defaults to coarser sizing (fewer, larger jobs per wave)
 
 ### Planning Pipeline
 
@@ -100,9 +100,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGENT-05 | Phase 27.1 | Complete |
 | AGENT-06 | Phase 27.1 | Complete |
 | AGENT-07 | Phase 27.1 | Complete |
-| FLOW-01 | Phase 28 | Pending |
-| FLOW-02 | Phase 28 | Pending |
-| FLOW-03 | Phase 28 | Pending |
+| FLOW-01 | Phase 28 | Complete |
+| FLOW-02 | Phase 28 | Complete |
+| FLOW-03 | Phase 28 | Complete |
 | PLAN-01 | Phase 30 | Pending |
 | PLAN-02 | Phase 30 | Pending |
 | PLAN-03 | Phase 30 | Pending |

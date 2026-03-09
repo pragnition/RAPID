@@ -1,17 +1,17 @@
 ---
-gsd_state_version: 1.0
+rapid_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: completed
-stopped_at: Completed 27.1-03-PLAN.md (Phase 27.1 complete)
-last_updated: "2026-03-09T07:23:18.607Z"
-last_activity: 2026-03-09 -- Removed assembler.cjs, cleaned config.json, normalized all 17 skills (plan 27.1-03)
+status: in-progress
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-03-09T08:22:11Z"
+last_activity: 2026-03-09 -- resolveWave --set flag, workflow order in all 26 agents, 2-4 jobs/wave guidance (plan 28-01)
 progress:
   total_phases: 9
   completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
-  percent: 89
+  total_plans: 10
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 27.1 - Skill-to-Agent Overhaul
+**Current focus:** Phase 28 - Workflow Clarity
 
 ## Current Position
 
-Phase: 27.1 complete (fourth of 9 in v2.1: Phases 25-32 + 27.1)
-Plan: 03 complete (3 of 3 in Phase 27.1)
-Status: Phase 27.1 complete -- all 3 plans executed, ready for Phase 28
-Last activity: 2026-03-09 -- Removed assembler.cjs, cleaned config.json, normalized all 17 skills (plan 27.1-03)
+Phase: 28 in progress (fifth of 9 in v2.1: Phases 25-32 + 27.1)
+Plan: 01 complete (1 of 2 in Phase 28)
+Status: Plan 28-01 complete -- resolveWave --set flag, workflow order, job granularity
+Last activity: 2026-03-09 -- resolveWave --set flag, workflow order in all 26 agents, 2-4 jobs/wave guidance (plan 28-01)
 
-Progress: [████████▓░] 89%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 4.8min
-- Total execution time: 0.75 hours
+- Total plans completed: 9
+- Average duration: 4.6min
+- Total execution time: 0.8 hours
 
 **By Phase:**
 
@@ -47,6 +47,7 @@ Progress: [████████▓░] 89%
 | 26 | 2 | 8min | 4min |
 | 27 | 2 | 6min | 3min |
 | 27.1 | 3 | 28min | 9.3min |
+| 28 | 1 | 3min | 3min |
 
 *Updated after each plan completion*
 
@@ -80,6 +81,9 @@ Recent:
 - Phase 27.1: Agent name reference pattern: "Spawn the **rapid-{role}** agent with this task:" followed by task-specific context block
 - Phase 27.1: build-agents is self-contained in rapid-tools.cjs -- all role maps and assembly logic inline, no assembler module dependency
 - Phase 27.1: config.json agents section removed -- agent metadata lives solely in agent .md frontmatter
+- Phase 28: resolveWave setId path uses resolveSet internally for consistent numeric/string resolution
+- Phase 28: Error messages include set name and available waves for discoverability
+- Phase 28: Workflow order section placed between Working Directory and structured return sections in core-identity
 
 ### Pending Todos
 
@@ -113,6 +117,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T07:16:11Z
-Stopped at: Completed 27.1-03-PLAN.md (Phase 27.1 complete)
-Resume file: .planning/phases/27.1-skill-to-agent-overhaul/27.1-03-SUMMARY.md
+Last session: 2026-03-09T08:22:11Z
+Stopped at: Completed 28-01-PLAN.md
+Resume file: .planning/phases/28-workflow-clarity/28-01-SUMMARY.md

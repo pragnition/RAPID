@@ -174,7 +174,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 26. Numeric ID Infrastructure | 2/2 | Complete    | 2026-03-09 | - |
 | 27. UX Branding & Colors | 2/2 | Complete    | 2026-03-09 | - |
 | 27.1 Skill-to-Agent Overhaul | 3/3 | Complete    | 2026-03-09 | - |
-| 28. Workflow Clarity | v2.1 | 0/2 | Not started | - |
+| 28. Workflow Clarity | 1/2 | In Progress|  | - |
 | 29. Discuss Phase Optimization | v2.1 | 0/? | Not started | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
 | 31. Wave Orchestration | v2.1 | 0/? | Not started | - |
