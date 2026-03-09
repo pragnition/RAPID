@@ -9,8 +9,8 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 
 ### Cleanup
 
-- [ ] **CLEAN-01**: All GSD references removed from source code, skill files, and agent type definitions
-- [ ] **CLEAN-02**: Agent types renamed from `gsd-*` to RAPID-native names across all skill files
+- [x] **CLEAN-01**: All GSD references removed from source code, skill files, and agent type definitions
+- [x] **CLEAN-02**: Agent types renamed from `gsd-*` to RAPID-native names across all skill files
 
 ### UX Polish
 
@@ -74,8 +74,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CLEAN-01 | Phase 25 | Pending |
-| CLEAN-02 | Phase 25 | Pending |
+| CLEAN-01 | Phase 25 | Complete |
+| CLEAN-02 | Phase 25 | Complete |
 | UX-01 | Phase 26 | Pending |
 | UX-02 | Phase 26 | Pending |
 | UX-03 | Phase 26 | Pending |
