@@ -62,13 +62,48 @@ function resolveSet(input, cwd) {
  * String wave IDs are delegated to wave-planning.resolveWave() for lookup,
  * then enriched with setIndex/waveIndex.
  *
+ * When `setId` is provided (--set flag), the set is resolved first via resolveSet,
+ * then the wave is looked up within that specific set's waves array.
+ *
  * @param {string} input - Dot notation (e.g., "1.1") or wave string ID (e.g., "wave-01")
  * @param {object} state - Parsed ProjectState object
  * @param {string} cwd - Project root directory (for set resolution via listSets)
+ * @param {string} [setId] - Optional set reference (numeric index or string ID) for --set flag
  * @returns {{ setId: string, waveId: string, setIndex: number, waveIndex: number, wasNumeric: boolean }}
  * @throws {Error} On malformed input, out-of-range, or not found
  */
-function resolveWave(input, state, cwd) {
+function resolveWave(input, state, cwd, setId) {
+  // --set flag path: resolve set first, then find wave within that set
+  if (setId !== undefined) {
+    const setResult = resolveSet(setId, cwd);
+    const resolvedSetId = setResult.resolvedId;
+
+    const milestone = state.milestones.find((m) => m.id === state.currentMilestone);
+    if (!milestone) {
+      throw new Error(`Current milestone '${state.currentMilestone}' not found in state.`);
+    }
+
+    const setInState = milestone.sets.find((s) => s.id === resolvedSetId);
+    if (!setInState) {
+      throw new Error(`Set '${resolvedSetId}' not found in state for milestone '${state.currentMilestone}'.`);
+    }
+
+    const waves = setInState.waves || [];
+    const waveIdx = waves.findIndex((w) => w.id === input);
+    if (waveIdx === -1) {
+      const available = waves.map((w) => w.id).join(', ');
+      throw new Error(`Wave '${input}' not found in set '${resolvedSetId}'. Available waves: ${available}`);
+    }
+
+    return {
+      setId: resolvedSetId,
+      waveId: input,
+      setIndex: setResult.numericIndex,
+      waveIndex: waveIdx + 1,
+      wasNumeric: false,
+    };
+  }
+
   // Check for malformed dot notation patterns that don't match the strict regex
   // e.g., "1.", ".1" -- these contain dots but don't match N.N
   if (input.includes('.') && !NUMERIC_WAVE_PATTERN.test(input)) {
