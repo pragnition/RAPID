@@ -59,19 +59,18 @@ Parse the JSON result to extract `setId`, `waveId`, `setIndex`, `waveIndex`, and
 
 **If the user provided a set ID + wave ID (two arguments, e.g., `auth wave-1`):**
 
-First resolve the set:
+Use the `--set` flag for single-call two-arg resolution:
 ```bash
 # (env preamble here)
-RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve set "<set-input>" 2>&1)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve wave "<wave-input>" --set "<set-input>" 2>&1)
 RESOLVE_EXIT=$?
 if [ $RESOLVE_EXIT -ne 0 ]; then
   echo "$RESOLVE_RESULT"
   # Display the error message from the JSON and STOP
 fi
-SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.resolvedId)")
 ```
 
-Then resolve the wave within that set context using the wave ID argument.
+Parse the JSON result to extract `setId`, `waveId`, `setIndex`, `waveIndex`, and `wasNumeric`. Use these resolved string IDs for all subsequent operations.
 
 **After resolution, load full wave data (milestoneId, jobs, status) from STATE.json:**
 
@@ -343,23 +342,10 @@ git add ".planning/waves/${SET_ID}/${WAVE_ID}/WAVE-CONTEXT.md"
 git commit -m "discuss(${SET_ID}): capture wave ${WAVE_ID} implementation vision"
 ```
 
-Present next steps using AskUserQuestion:
+Display the next step using the setIndex and waveIndex already resolved in Step 2:
 
-```
-"Wave discussion complete! WAVE-CONTEXT.md written with {N} decisions locked.
-
-What would you like to do next?"
-
-Options:
-- "Run /rapid:wave-plan" -- "Start research and planning for wave {waveId}"
-- "Discuss another wave" -- "Run /rapid:discuss for a different wave in this set or another set"
-- "View /rapid:status" -- "See current project state and all wave statuses"
-```
-
-Based on selection:
-- "/rapid:wave-plan": Inform the user to run `/rapid:wave-plan {waveId}`
-- "Discuss another wave": Inform the user to run `/rapid:discuss` with another wave ID
-- "/rapid:status": Inform the user to run `/rapid:status`
+> **Next step:** `/rapid:wave-plan {setIndex}.{waveIndex}`
+> *(Plan wave {waveIndex} of {setId})*
 
 ---
 

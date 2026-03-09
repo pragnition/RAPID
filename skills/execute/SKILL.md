@@ -485,12 +485,10 @@ Wave {waveId}: {status}
   {jobId}: {status}
 ```
 
-Use AskUserQuestion for next steps:
-- **question:** "Execution complete"
-- **options:**
-  - "View status" -- description: "Run /rapid:status to review detailed state"
-  - "Start review" -- description: "Begin review pipeline for completed work"
-  - "Done" -- description: "Exit -- work committed on worktree branch"
+Display the next step. Extract the setIndex from the resolve step at Step 0b:
+
+> **Next step:** `/rapid:review {setIndex}`
+> *(Review completed work for {setId})*
 
 ## Important Notes
 

@@ -164,22 +164,14 @@ After the agent completes:
 
 ---
 
-## Step 5: Present Next Steps
+## Step 5: Next Step
 
-Use AskUserQuestion to present options:
+The set's first wave is wave 1. Display:
 
-```
-"Set '{set-name}' is ready for development. Worktree at {worktreePath} on branch {branch}. What would you like to do next?"
-Options:
-- "Run /rapid:discuss to start wave planning" -- begin the discuss phase for this set
-- "Run /rapid:status to see all sets" -- view the full project dashboard
-- "Initialize another set" -- run /rapid:set-init again for a different set
-```
+> **Next step:** `/rapid:discuss {setIndex}.1`
+> *(Discuss wave 1 of {setId})*
 
-Based on selection:
-- "/rapid:discuss": Inform the user to run `/rapid:discuss {set-name}`
-- "/rapid:status": Inform the user to run `/rapid:status`
-- "Initialize another set": Inform the user to run `/rapid:set-init`
+Where `{setIndex}` is the numeric index of the set just initialized (obtained from the resolve step earlier in this skill).
 
 ---
 

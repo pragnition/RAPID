@@ -640,10 +640,25 @@ Display a final summary:
 - .planning/research/{research files}
 - .planning/sets/{set}/CONTRACT.json (for each set)
 
-**Next Steps:**
-Run `/rapid:context` to generate project context files (CLAUDE.md, style guide, conventions).
-Then run `/rapid:help` to see all available commands and the RAPID workflow.
 ```
+
+## Step 11: Next Step
+
+Determine the first pending set by running:
+
+```bash
+SETS_JSON=$(node "${RAPID_TOOLS}" plan list-sets 2>&1)
+```
+
+Parse the JSON output. If there are sets available, display:
+
+> **Next step:** `/rapid:set-init 1`
+> *(Initialize set 1 for development)*
+
+If the project has no sets yet (e.g., roadmap deferred set creation), display:
+
+> **Next step:** `/rapid:status`
+> *(View project state)*
 
 ---
 
