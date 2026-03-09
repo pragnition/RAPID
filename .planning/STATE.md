@@ -1,17 +1,17 @@
 ---
-gsd_state_version: 1.0
+rapid_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: completed
-stopped_at: Phase 27.1 context gathered
-last_updated: "2026-03-09T06:14:49.924Z"
-last_activity: 2026-03-09 -- Wired display module into CLI and added banners to all 7 stage skills (plan 27-02)
+status: in-progress
+stopped_at: Completed 27.1-01-PLAN.md
+last_updated: "2026-03-09T06:55:39Z"
+last_activity: 2026-03-09 -- Built build-agents CLI command and generated all 26 agent files (plan 27.1-01)
 progress:
   total_phases: 9
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
-  percent: 63
+  total_plans: 8
+  completed_plans: 6
+  percent: 67
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 27 - UX Branding & Colors
+**Current focus:** Phase 27.1 - Skill-to-Agent Overhaul
 
 ## Current Position
 
-Phase: 27 complete (third of 8 in v2.1: Phases 25-32)
-Plan: 02 complete (2 of 2 in Phase 27)
-Status: Phase 27 complete -- ready for next phase
-Last activity: 2026-03-09 -- Wired display module into CLI and added banners to all 7 stage skills (plan 27-02)
+Phase: 27.1 in progress (fourth of 9 in v2.1: Phases 25-32 + 27.1)
+Plan: 01 complete (1 of 3 in Phase 27.1)
+Status: Phase 27.1 plan 01 complete -- ready for plan 02
+Last activity: 2026-03-09 -- Built build-agents CLI command and generated all 26 agent files (plan 27.1-01)
 
-Progress: [██████░░░░] 63%
+Progress: [██████▓░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 3.4min
-- Total execution time: 0.28 hours
+- Total plans completed: 6
+- Average duration: 4.5min
+- Total execution time: 0.55 hours
 
 **By Phase:**
 
@@ -46,6 +46,7 @@ Progress: [██████░░░░] 63%
 | 25 | 1 | 3min | 3min |
 | 26 | 2 | 8min | 4min |
 | 27 | 2 | 6min | 3min |
+| 27.1 | 1 | 16min | 16min |
 
 *Updated after each plan completion*
 
@@ -70,6 +71,10 @@ Recent:
 - Phase 27: Fixed 50-char padded banner width for visual consistency
 - Phase 27: Display command uses early return (no project root needed), only CLI command outputting raw ANSI text
 - Phase 27: Banner calls placed after env setup, before first functional step in each skill
+- Phase 27.1: Planner agent exceeds 15KB (21KB) -- accepted as known exception since role module alone is 11KB
+- Phase 27.1: Removed agents/ from .gitignore so generated agents are committed for clone-and-use workflow
+- Phase 27.1: buildAllAgents() in assembler.cjs (not rapid-tools.cjs) for direct unit testability
+- Phase 27.1: Exported ROLE_TOOLS, ROLE_COLORS, ROLE_DESCRIPTIONS, ROLE_CORE_MAP from assembler for test verification
 
 ### Pending Todos
 
@@ -103,6 +108,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T06:14:49.923Z
-Stopped at: Phase 27.1 context gathered
-Resume file: .planning/phases/27.1-skill-to-agent-overhaul/27.1-CONTEXT.md
+Last session: 2026-03-09T06:55:39Z
+Stopped at: Completed 27.1-01-PLAN.md
+Resume file: .planning/phases/27.1-skill-to-agent-overhaul/27.1-01-SUMMARY.md

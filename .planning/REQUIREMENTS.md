@@ -24,9 +24,9 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 
 ### Agent Registration
 
-- [ ] **AGENT-01**: All 26 role modules are registered as agent files in `agents/` with valid YAML frontmatter
-- [ ] **AGENT-02**: A `build-agents` CLI command generates all 26 agent files from source modules
-- [ ] **AGENT-03**: Each generated agent has per-role core module selection (not all agents get all 5 core modules)
+- [x] **AGENT-01**: All 26 role modules are registered as agent files in `agents/` with valid YAML frontmatter
+- [x] **AGENT-02**: A `build-agents` CLI command generates all 26 agent files from source modules
+- [x] **AGENT-03**: Each generated agent has per-role core module selection (not all agents get all 5 core modules)
 - [ ] **AGENT-04**: All agent-spawning skills reference registered agents by name instead of reading role modules inline
 - [ ] **AGENT-05**: Skills pass only task-specific context (IDs, file lists, worktree path) -- not role instructions
 - [ ] **AGENT-06**: Legacy assembler infrastructure removed (assembler.cjs, config.json agents section, assemble-agent CLI)
@@ -93,9 +93,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-05 | Phase 29 | Pending |
 | UX-06 | Phase 27 | Complete |
 | UX-07 | Phase 27 | Complete |
-| AGENT-01 | Phase 27.1 | Pending |
-| AGENT-02 | Phase 27.1 | Pending |
-| AGENT-03 | Phase 27.1 | Pending |
+| AGENT-01 | Phase 27.1 | Complete |
+| AGENT-02 | Phase 27.1 | Complete |
+| AGENT-03 | Phase 27.1 | Complete |
 | AGENT-04 | Phase 27.1 | Pending |
 | AGENT-05 | Phase 27.1 | Pending |
 | AGENT-06 | Phase 27.1 | Pending |
