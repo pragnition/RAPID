@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
-status: planning
-stopped_at: Phase 33 context gathered
-last_updated: "2026-03-10T07:59:55.225Z"
-last_activity: 2026-03-10 -- Roadmap created for v2.2 (5 phases, 11 requirements)
+status: executing
+stopped_at: Completed 33-01-PLAN.md
+last_updated: "2026-03-10T08:20:30.000Z"
+last_activity: 2026-03-10 -- Phase 33 Plan 01 complete (schema extension + 3 helper functions)
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
   percent: 0
 ---
 
@@ -26,15 +26,17 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 ## Current Position
 
 Phase: 33 of 37 (Merge State Schema & Infrastructure)
-Plan: --
-Status: Ready to plan
-Last activity: 2026-03-10 -- Roadmap created for v2.2 (5 phases, 11 requirements)
+Plan: 1 of 1 (complete)
+Status: Phase 33 complete
+Last activity: 2026-03-10 -- Phase 33 Plan 01 complete (schema extension + 3 helper functions)
 
-Progress: [..........] 0%
+Progress: [##........] 20%
 
 ## Performance Metrics
 
-*Reset for new milestone. See MILESTONES.md for v2.1 metrics.*
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 33 | 01 | 5min | 2 | 2 |
 
 ## Accumulated Context
 
@@ -43,11 +45,11 @@ Progress: [..........] 0%
 Full decision log in PROJECT.md Key Decisions table.
 
 Recent:
+- parseSetMergerReturn in merge.cjs not returns.cjs (merge-specific field knowledge)
+- compressResult uses escalatedConflicts.length for escalated count
+- Token budgets validated: ~43 tokens/set compressed, ~111 tokens/10-file launch briefing
 - v2.2 roadmap: 5 phases derived from 11 requirements at fine granularity
 - Schema+infrastructure before delegation code (prevent schema drift breaking read/write pipeline)
-- Documentation phases after all merge pipeline phases (docs reflect final behavior)
-- README and technical docs split into separate phases (different audiences, independent deliverables)
-- Research Phase 4 (detection invalidation) omitted -- no backing requirement; resume safety improvements deferred
 
 ### Pending Todos
 
@@ -65,7 +67,7 @@ None.
 
 - Claude Code subagents cannot spawn sub-subagents (hard platform constraint) -- shapes MERGE-06 design
 - Token cost for 3-agent adversarial review needs monitoring in production use
-- Compressed result protocol ~100 tokens/set budget needs empirical validation in Phase 33
+- Compressed result protocol validated: ~43 tokens/set (well under 100-token budget)
 
 ### Quick Tasks Completed
 
@@ -81,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T07:59:55.221Z
-Stopped at: Phase 33 context gathered
-Resume file: .planning/phases/33-merge-state-schema-infrastructure/33-CONTEXT.md
+Last session: 2026-03-10T08:20:30.000Z
+Stopped at: Completed 33-01-PLAN.md
+Resume file: .planning/phases/33-merge-state-schema-infrastructure/33-01-SUMMARY.md
