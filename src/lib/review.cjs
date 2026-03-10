@@ -46,8 +46,28 @@ const ReviewIssue = z.object({
   source: z.enum(['lean-review', 'unit-test', 'bug-hunt', 'uat']),
   status: z.enum(['open', 'fixed', 'deferred', 'dismissed']).default('open'),
   originatingWave: z.string().optional(),
+  concern: z.string().optional(),
   createdAt: z.string(),
   fixedAt: z.string().optional(),
+});
+
+const ConcernFile = z.object({
+  file: z.string(),
+  rationale: z.string(),
+});
+
+const ConcernGroup = z.object({
+  name: z.string(),
+  files: z.array(z.string()),
+  rationale: z.record(z.string(), z.string()),
+});
+
+const ScoperOutput = z.object({
+  concerns: z.array(ConcernGroup),
+  crossCutting: z.array(ConcernFile),
+  totalFiles: z.number(),
+  concernCount: z.number(),
+  crossCuttingCount: z.number(),
 });
 
 const ReviewIssues = z.object({
@@ -542,6 +562,115 @@ function generateReviewSummary(setId, issues) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Concern-Based Scoping
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Compute normalized Levenshtein similarity between two strings.
+ * Returns value between 0 (completely different) and 1 (identical).
+ *
+ * @param {string} a
+ * @param {string} b
+ * @returns {number} Similarity score 0-1
+ */
+function normalizedLevenshtein(a, b) {
+  if (a === b) return 1;
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1;
+
+  const matrix = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return 1 - matrix[a.length][b.length] / maxLen;
+}
+
+/**
+ * Group files by concern using scoper output, with cross-cutting files
+ * included in ALL groups. Falls back to directory chunking if cross-cutting
+ * files exceed 50% of total.
+ *
+ * @param {Object} scoperOutput - Parsed scoper RAPID:RETURN data
+ * @param {string[]} allFiles - Full file list from review scope
+ * @returns {{ concernGroups: Array<{concern: string, files: string[]}>, fallback: boolean, warning?: string }}
+ */
+function scopeByConcern(scoperOutput, allFiles) {
+  const { concerns, crossCutting } = scoperOutput;
+  const crossCuttingFiles = crossCutting.map(c => c.file);
+
+  // Fallback check: >50% cross-cutting
+  if (crossCuttingFiles.length > allFiles.length * 0.5) {
+    return {
+      concernGroups: [],
+      fallback: true,
+      warning: `Cross-cutting files (${crossCuttingFiles.length}/${allFiles.length}) exceed 50% threshold. Falling back to directory chunking.`,
+    };
+  }
+
+  // Build concern groups with cross-cutting files included in each
+  const concernGroups = concerns.map(c => ({
+    concern: c.name,
+    files: [...c.files, ...crossCuttingFiles],
+  }));
+
+  return { concernGroups, fallback: false };
+}
+
+/**
+ * Deduplicate findings from multiple concern-scoped hunters.
+ * Same file + similar description (>= 0.7 normalized Levenshtein) = duplicate.
+ * Higher severity wins; equal severity keeps more detailed evidence.
+ *
+ * @param {Array<Object>} findings - Merged findings from all hunters
+ * @returns {Array<Object>} Deduplicated findings with concern tags preserved
+ */
+function deduplicateFindings(findings) {
+  if (findings.length === 0) return [];
+
+  const severityRank = { critical: 4, high: 3, medium: 2, low: 1 };
+  const dominated = new Set();
+
+  for (let i = 0; i < findings.length; i++) {
+    if (dominated.has(i)) continue;
+    for (let j = i + 1; j < findings.length; j++) {
+      if (dominated.has(j)) continue;
+      if (findings[i].file !== findings[j].file) continue;
+
+      const sim = normalizedLevenshtein(findings[i].description, findings[j].description);
+      if (sim < 0.7) continue;
+
+      // Duplicate detected -- keep higher severity (or longer evidence)
+      const ri = severityRank[findings[i].severity] || 0;
+      const rj = severityRank[findings[j].severity] || 0;
+
+      if (ri > rj) {
+        dominated.add(j);
+      } else if (rj > ri) {
+        dominated.add(i);
+      } else {
+        // Equal severity -- keep longer evidence/codeSnippet
+        const ei = (findings[i].evidence || findings[i].codeSnippet || '').length;
+        const ej = (findings[j].evidence || findings[j].codeSnippet || '').length;
+        dominated.add(ei >= ej ? j : i);
+      }
+    }
+  }
+
+  return findings.filter((_, idx) => !dominated.has(idx));
+}
+
+// ────────────────────────────────────────────────────────────────
 // Module Exports
 // ────────────────────────────────────────────────────────────────
 
@@ -549,10 +678,16 @@ module.exports = {
   // Schemas
   ReviewIssue,
   ReviewIssues,
+  ScoperOutput,
 
   // Scoping
   scopeSetForReview,
   findDependents,
+
+  // Concern-based scoping
+  scopeByConcern,
+  deduplicateFindings,
+  normalizedLevenshtein,
 
   // Chunking
   chunkByDirectory,
