@@ -148,11 +148,11 @@ Plans:
   3. Verifier detects when two jobs in the same wave claim ownership of the same file and flags the conflict
   4. Verifier outputs a VERIFICATION-REPORT.md with a clear PASS / PASS_WITH_GAPS / FAIL verdict
   5. A FAIL verdict triggers a user decision gate offering re-plan, override, or cancel options
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 30-01: TBD
-- [ ] 30-02: TBD
+- [ ] 30-01-PLAN.md -- Create rapid-plan-verifier agent: role module, ROLE_* registration, build-agents
+- [ ] 30-02-PLAN.md -- Integrate plan verifier into wave-plan SKILL.md with FAIL gate and deferred state transition
 
 ### Phase 31: Wave Orchestration
 **Goal**: A single command plans and executes all waves in a set with automatic sequencing and no unnecessary approval gates
@@ -199,6 +199,6 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 28. Workflow Clarity | 2/2 | Complete    | 2026-03-09 | - |
 | 29. Discuss Phase Optimization | 1/1 | Complete    | 2026-03-10 | - |
 | 29.1 Set-Based Review | 4/4 | Complete    | 2026-03-10 | - |
-| 30. Plan Verifier | v2.1 | 0/? | Not started | - |
+| 30. Plan Verifier | v2.1 | 0/2 | Not started | - |
 | 31. Wave Orchestration | v2.1 | 0/? | Not started | - |
 | 32. Review Efficiency | v2.1 | 0/? | Not started | - |
