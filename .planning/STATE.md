@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: Phase 29 plan 01 executed -- 2-round discuss skill and STATE.md blocker cleanup
-stopped_at: Phase 29.1 context gathered
-last_updated: "2026-03-10T01:32:32.279Z"
-last_activity: 2026-03-10 -- Phase 29 discuss phase optimization plan 01 executed
+status: Phase 29.1 plan 01 executed -- set-level review library with TDD
+stopped_at: Completed 29.1-01-PLAN.md
+last_updated: "2026-03-10T01:57:02.947Z"
+last_activity: 2026-03-10 -- Phase 29.1 set-level review library plan 01 executed
 progress:
   total_phases: 10
   completed_phases: 6
-  total_plans: 11
-  completed_plans: 11
-  percent: 99
+  total_plans: 14
+  completed_plans: 12
+  percent: 96
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 29 - Discuss Phase Optimization
+**Current focus:** Phase 29.1 - Make the Reviewing Set-Based Instead of Wave-Based
 
 ## Current Position
 
-Phase: 29 completed (sixth of 9 in v2.1: Phases 25-32 + 27.1)
-Plan: 1 of 1 in Phase 29 (complete)
-Status: Phase 29 plan 01 executed -- 2-round discuss skill and STATE.md blocker cleanup
-Last activity: 2026-03-10 -- Phase 29 discuss phase optimization plan 01 executed
+Phase: 29.1 in progress (seventh of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
+Plan: 1 of 3 in Phase 29.1 (complete)
+Status: Phase 29.1 plan 01 executed -- set-level review library with TDD
+Last activity: 2026-03-10 -- Phase 29.1 set-level review library plan 01 executed
 
-Progress: [██████████] 99%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 4.3min
-- Total execution time: 0.85 hours
+- Total execution time: 0.92 hours
 
 **By Phase:**
 
@@ -49,6 +49,7 @@ Progress: [██████████] 99%
 | 27.1 | 3 | 28min | 9.3min |
 | 28 | 2 | 6min | 3min |
 | 29 | 1 | 2min | 2min |
+| 29.1 | 1 | 4min | 4min |
 
 *Updated after each plan completion*
 
@@ -92,6 +93,11 @@ Recent:
 - Phase 29: "Let Claude decide all" takes precedence over any other multiSelect selections
 - Phase 29: Round 2 always runs even when areas are delegated in Round 1
 - Phase 29: "Revise" in Round 2 re-presents only that single area's Interaction 1 then Interaction 2
+- Phase 29.1: CHUNK_THRESHOLD=15 files for directory-based chunking (below=single pass, above=per-directory chunks)
+- Phase 29.1: Small directory groups (<3 files) merge into last large chunk to avoid over-fragmentation
+- Phase 29.1: Last wave wins for file attribution when file appears in multiple waves' JOB-PLAN.md
+- Phase 29.1: loadSetIssues dual-read pattern: set-level first, then legacy wave subdirectories for backward compatibility
+- Phase 29.1: ReviewIssues container drops waveId; wave identity tracked per-issue via originatingWave field
 
 ### Pending Todos
 
@@ -125,6 +131,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T01:32:32.276Z
-Stopped at: Phase 29.1 context gathered
-Resume file: .planning/phases/29.1-make-the-reviewing-set-based-instead-of-wave-based/29.1-CONTEXT.md
+Last session: 2026-03-10T01:57:02.945Z
+Stopped at: Completed 29.1-01-PLAN.md
+Resume file: None
