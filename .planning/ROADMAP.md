@@ -65,7 +65,10 @@ Plans:
   3. When one set's merge subagent fails (BLOCKED, context-exhausted, malformed), the user sees recovery options and independent sets continue merging unblocked
   4. MERGE-STATE.json shows status "resolving" before subagent spawn and advances to next status after return, enabling restart to skip completed sets
   5. After collecting a set's result, the orchestrator context retains only a compressed one-line status (~100 tokens), not the full detection/resolution detail
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 34-01-PLAN.md -- Agent infrastructure: role-set-merger module, build-agents registration, CLI enhancements (--agent-phase, prepare-context)
+- [ ] 34-02-PLAN.md -- SKILL.md restructuring: replace Steps 3-5 with dispatch + fast path + retry + recovery
 
 ### Phase 35: Adaptive Conflict Resolution
 **Goal**: Mid-confidence merge escalations (0.4-0.7) are resolved by dedicated rapid-conflict-resolver agents spawned by the orchestrator, not by humans or by the merger itself
@@ -107,7 +110,7 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 33. Merge State Schema & Infrastructure | 1/1 | Complete    | 2026-03-10 | - |
-| 34. Core Merge Subagent Delegation | v2.2 | 0/TBD | Not started | - |
+| 34. Core Merge Subagent Delegation | v2.2 | 0/2 | Planning complete | - |
 | 35. Adaptive Conflict Resolution | v2.2 | 0/TBD | Not started | - |
 | 36. README Rewrite | v2.2 | 0/TBD | Not started | - |
 | 37. Technical Documentation | v2.2 | 0/TBD | Not started | - |
