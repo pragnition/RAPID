@@ -93,6 +93,20 @@ If the user invoked `/rapid:execute <set-id> --fix-issues`, enter issue fix mode
 
 6. Print summary of fixes and exit.
 
+### 0b.2: Check for --retry-wave flag
+
+If the user invoked `/rapid:execute <set-id> --retry-wave <wave-id>`, enter targeted retry mode:
+
+1. Resolve the wave reference: `node "${RAPID_TOOLS}" resolve wave "<wave-id>" --set "<set-id>"`
+2. Parse the resolved wave ID
+3. Load job statuses for all waves: `node "${RAPID_TOOLS}" execute job-status <set-id>`
+4. Verify all predecessor waves (earlier waves in STATE.json ordering) are in `complete` state
+   - If any predecessor is not complete: inform user "Cannot retry {waveId} -- predecessor wave {predWaveId} is in '{status}' state. Fix predecessor waves first." and STOP.
+5. Set execution to start from the target wave only:
+   - Skip all waves before the target wave
+   - Execute only the target wave (retrying failed/pending jobs, skipping complete)
+   - After the target wave completes, continue with subsequent waves (normal auto-advance behavior)
+
 ### 0c: Read STATE.json for set and wave information
 
 ```bash
@@ -432,38 +446,32 @@ node "${RAPID_TOOLS}" state transition wave <milestone> <set-id> <wave-id> compl
 
 If reconciliation result is FAIL, leave wave in 'reconciling' state for retry.
 
-### Step 3i: User decision after wave reconciliation
-
-Use AskUserQuestion with dynamic options based on the reconciliation result:
+### Step 3i: Auto-advance after wave reconciliation
 
 **If PASS:**
-- **question:** "Wave {waveId} reconciliation passed"
-- **options:**
-  - "Continue to next wave" -- description: "All deliverables verified. Proceed to wave {nextWaveId}."
-  - "Pause here" -- description: "Save state and exit. Resume with /rapid:execute {set-id}."
+Print inline: "Wave {waveId}: PASS. Continuing to wave {nextWaveId}..."
+Proceed directly to Step 3a for the next wave. No AskUserQuestion.
+If this is the LAST wave, proceed to Step 4 (Final Summary).
 
 **If PASS_WITH_WARNINGS:**
-- **question:** "Wave {waveId} reconciliation passed with warnings"
-- **options:**
-  - "Continue anyway" -- description: "Accept warnings and proceed to wave {nextWaveId}"
-  - "Retry failed jobs" -- description: "Re-execute only the jobs with issues in this wave"
-  - "Pause" -- description: "Save state and exit. Resume with /rapid:execute {set-id}."
+Print inline summary: "Wave {waveId}: PASS_WITH_WARNINGS ({softBlocks.length} soft blocks). Continuing..."
+Proceed directly to Step 3a for the next wave. No AskUserQuestion.
+If this is the LAST wave, proceed to Step 4 (Final Summary).
 
 **If FAIL:**
+Use AskUserQuestion:
 - **question:** "Wave {waveId} reconciliation failed"
 - **options:**
   - "Retry failed jobs" -- description: "Re-execute failed jobs in this wave"
   - "Cancel execution" -- description: "Save state and exit"
 
 **Action based on user choice:**
-- "Continue" / "Continue anyway": Proceed to the next wave (back to Step 3a for next wave)
 - "Retry failed jobs": Re-execute only failed jobs in this wave (go back to Step 3d for those jobs only, with other jobs showing as complete)
-- "Pause" / "Pause here": Commit state and print resume instructions:
-  > Execution paused after wave {waveId}. Resume with `/rapid:execute {set-id}`.
-  Exit.
 - "Cancel execution": Commit state and exit:
   > Execution cancelled. State saved. Resume with `/rapid:execute {set-id}`.
   Exit.
+
+This is the ONLY remaining per-wave gate. PASS and PASS_WITH_WARNINGS always auto-advance.
 
 ## Step 4: Final Summary
 
@@ -504,3 +512,5 @@ Display the next step. Extract the setIndex from the resolve step at Step 0b:
 - **Teams fallback:** If any agent teams operation fails mid-execution, the entire wave is re-executed using subagent mode. The fallback is generic -- do not inspect or special-case the error type. A visible warning is printed when fallback occurs.
 - **No inter-agent messaging:** Job executor subagents work in isolation. They share a branch but modify different files. There is no inter-agent communication channel. File ownership from WAVE-PLAN.md prevents conflicts.
 - **Handoff storage:** Job-level handoffs are stored at `.planning/waves/{setId}/{waveId}/{jobId}-HANDOFF.md`, separate from v1.0 set-level handoffs at `.planning/sets/{setName}/HANDOFF.md`.
+- **Auto-advance:** PASS and PASS_WITH_WARNINGS reconciliation results automatically advance to the next wave without user approval. Only FAIL retains the AskUserQuestion gate. This reduces N-1 unnecessary approval prompts for a set with N waves.
+- **--retry-wave:** Targets a specific wave for retry (e.g., `/rapid:execute 1 --retry-wave wave-2`). Verifies predecessor waves are complete before proceeding. After retrying the target wave, continues with subsequent waves.
