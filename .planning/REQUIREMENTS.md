@@ -70,6 +70,27 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 - [x] **REV-03**: Cross-cutting files (scoper uncertain) included in all review scopes
 - [x] **REV-04**: Review results merged before presentation to user
 
+## v2.2 Requirements
+
+Requirements for v2.2 Subagent Merger & Documentation. Each maps to roadmap phases.
+
+### Merge Delegation
+
+- [ ] **MERGE-01**: Orchestrator delegates per-set merge work to a rapid-set-merger subagent instead of processing inline
+- [ ] **MERGE-02**: Orchestrator collects structured RAPID:RETURN results from merge subagents with default-unsafe parsing (missing return = BLOCKED)
+- [ ] **MERGE-03**: Subagent failures (BLOCKED, malformed, context-exhausted) surface to user with recovery options without blocking independent sets
+- [ ] **MERGE-04**: MERGE-STATE updated before spawning subagent (resolving) and after return (next status) for idempotent re-entry
+- [ ] **MERGE-05**: Orchestrator retains only compressed one-line status per completed set (~100 tokens), discarding full detection/resolution context
+- [ ] **MERGE-06**: When merger returns mid-confidence escalations (0.4-0.7), orchestrator spawns rapid-conflict-resolver agents per conflict for deeper analysis
+
+### Documentation
+
+- [ ] **DOC-01**: README.md rewritten from scratch reflecting all capabilities through v2.2 with accurate command reference
+- [ ] **DOC-02**: README.md includes full lifecycle quick start (init through cleanup) and ASCII architecture diagram
+- [ ] **DOC-03**: technical_documentation.md created as power user reference with all skills, configuration, and state machine documentation
+- [ ] **DOC-04**: technical_documentation.md includes agent role reference (all 30+ agents: purpose, spawned by, inputs, outputs)
+- [ ] **DOC-05**: technical_documentation.md includes troubleshooting guide for common failure modes
+
 ## Future Requirements
 
 ### Deferred from v2.1
@@ -77,6 +98,12 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 - **EXPRESS-01**: Express mode -- auto-accept defaults at non-critical gates
 - **LEARN-01**: Review scoper learning/memory -- persistent memory per project for better scoping over time
 - **REPLAN-01**: Selective wave re-planning -- re-plan individual waves without re-planning entire set
+
+### Deferred from v2.2
+
+- **MERGE-DRY-01**: Merge dry-run mode -- run detection+resolution without performing actual git merge
+- **MERGE-PAR-01**: Parallel independent set merging within a wave when DAG proves no file overlap
+- **MERGE-HEAT-01**: Merge conflict heat map showing file-level risk distribution before merge
 
 ## Out of Scope
 
@@ -87,6 +114,9 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 | Dynamic wave/job creation during execution | RAPID's isolation model depends on sets being defined at planning time |
 | Per-file review granularity control | Manual file scoping is tedious and error-prone; scoper agent handles this automatically |
 | AI-only review scoping (no safety net) | Silent false negatives are worse than slightly higher token costs; cross-cutting files always included |
+| Subagent-to-subagent direct communication | Causes error amplification; all communication flows through orchestrator hub |
+| Auto-generated documentation from code | Misses the "why", produces reference-only material without narrative |
+| Separate documentation site | RAPID is a Claude Code plugin consumed in-terminal; in-repo Markdown is the right format |
 
 ## Traceability
 
@@ -135,10 +165,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REV-04 | Phase 32 | Complete |
 
 **Coverage:**
-- v2.1 requirements: 39 total
-- Mapped to phases: 39
-- Unmapped: 0
+- v2.1 requirements: 39 total (all complete)
+- v2.2 requirements: 11 total
+- Mapped to phases: 39 (v2.1) + TBD (v2.2)
+- Unmapped: 11 (pending roadmap)
 
 ---
 *Requirements defined: 2026-03-09*
-*Last updated: 2026-03-10 after Phase 29.1 gap closure*
+*Last updated: 2026-03-10 after v2.2 requirements defined*
