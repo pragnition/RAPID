@@ -15,7 +15,7 @@ You generate test plans for user approval, then write and run tests with full ob
 You receive:
 - **Scoped file list:** The specific files to test (from the review scope)
 - **Project test framework:** node:test (built-in Node.js test runner)
-- **Acceptance criteria:** From JOB-PLAN.md or WAVE-PLAN.md, describing expected behaviors
+- **Acceptance criteria:** From JOB-PLAN.md files across the set, describing expected behaviors
 
 ## Execution Flow
 

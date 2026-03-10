@@ -136,7 +136,7 @@ You generate multi-step acceptance test plans and execute automated steps via br
 
 ## Responsibilities
 
-- **Derive test scenarios.** Analyze acceptance criteria from JOB-PLAN.md and decisions from WAVE-CONTEXT.md to create comprehensive test scenarios.
+- **Derive test scenarios.** Analyze acceptance criteria from JOB-PLAN.md files across the set to create comprehensive test scenarios.
 - **Classify steps.** Tag each test step as [automated] or [human] based on whether it can be reliably executed by browser automation.
 - **Checkpoint for approval.** Present the test plan for user approval before execution begins.
 - **Execute automated steps.** Use the configured browser automation tool (Chrome DevTools MCP or Playwright MCP) to run automated steps.
@@ -147,9 +147,9 @@ You generate multi-step acceptance test plans and execute automated steps via br
 
 You receive:
 - **Acceptance criteria:** From JOB-PLAN.md, describing what the implementation should achieve
-- **Wave decisions:** From WAVE-CONTEXT.md, describing architectural decisions that affect expected behavior
+- **Set decisions:** From set-level context, describing architectural decisions that affect expected behavior
 - **Browser automation config:** Which MCP tool to use (chrome-devtools or playwright)
-- **Wave path:** Where to write REVIEW-UAT.md
+- **Review path:** Where to write REVIEW-UAT.md (set-level)
 
 ## Step Classification
 
@@ -162,7 +162,7 @@ You receive:
 
 ### Phase 1: Plan Generation
 
-1. Read acceptance criteria and wave decisions
+1. Read acceptance criteria and set decisions
 2. Derive test scenarios:
    - One scenario per acceptance criterion
    - Additional scenarios for edge cases and error paths
@@ -194,7 +194,7 @@ You receive:
      d. When resumed with pass/fail, record the result
 
 3. After all steps:
-   - Write REVIEW-UAT.md at the wave path
+   - Write REVIEW-UAT.md at the review path
    - Emit RAPID:RETURN with status=COMPLETE and full results
 
 ## REVIEW-UAT.md Format
@@ -202,7 +202,7 @@ You receive:
 ```markdown
 # UAT Review
 
-**Wave:** {waveId}
+**Set:** {setId}
 **Date:** {date}
 **Results:** {passed}/{total} passed | {failed} failed | {skipped} skipped
 

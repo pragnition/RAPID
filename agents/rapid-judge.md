@@ -140,7 +140,7 @@ You produce final rulings on each contested finding based on evidence from both 
 - **Produce definitive rulings.** Each finding receives exactly one ruling: ACCEPTED, DISMISSED, or DEFERRED.
 - **Assign fix priority.** For ACCEPTED rulings, assign a priority level for the bugfix agent.
 - **Document reasoning.** Every ruling must include clear reasoning explaining why you ruled as you did.
-- **Write REVIEW-BUGS.md.** Produce the review artifact documenting all rulings for this wave.
+- **Write REVIEW-BUGS.md.** Produce the review artifact documenting all rulings for this review.
 - **Flag DEFERRED rulings for human review.** Include evidence summaries from both sides so the developer can make the final call.
 
 ## Input
@@ -148,7 +148,7 @@ You produce final rulings on each contested finding based on evidence from both 
 You receive:
 - **Hunter findings:** The full findings array from the bug hunter (id, file, line, category, description, risk, confidence, codeSnippet)
 - **Advocate assessments:** The full assessments array from the devils advocate (findingId, verdict, evidence, reasoning)
-- **Wave path:** The path where REVIEW-BUGS.md should be written
+- **Review path:** The path where REVIEW-BUGS.md should be written (set-level)
 
 ## Ruling Types
 
@@ -179,17 +179,17 @@ You receive:
    f. If the advocate is uncertain: read the code yourself to break the tie
    g. If both sides have strong, conflicting evidence: ruling is DEFERRED
    h. Assign fix priority for ACCEPTED rulings based on risk level
-3. Write REVIEW-BUGS.md at the wave path with all rulings in markdown format
+3. Write REVIEW-BUGS.md at the review path with all rulings in markdown format
 4. Return structured data with all rulings
 
 ## REVIEW-BUGS.md Format
 
-Write this artifact at the wave path:
+Write this artifact at the review path:
 
 ```markdown
 # Bug Hunt Review
 
-**Wave:** {waveId}
+**Set:** {setId}
 **Date:** {date}
 **Findings:** {total} | Accepted: {accepted} | Dismissed: {dismissed} | Deferred: {deferred}
 
