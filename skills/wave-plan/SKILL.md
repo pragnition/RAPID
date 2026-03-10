@@ -114,13 +114,6 @@ Parse the JSON to find the resolved set and wave within the current milestone. E
 
 **Verify WAVE-CONTEXT.md exists** at `.planning/waves/{setId}/{waveId}/WAVE-CONTEXT.md`. If missing: "Discussion context missing. Run /rapid:discuss first." Then STOP.
 
-**Transition wave to planning:**
-
-```bash
-# (env preamble here)
-node "${RAPID_TOOLS}" state transition wave "${MILESTONE_ID}" "${SET_ID}" "${WAVE_ID}" planning
-```
-
 Record `MILESTONE_ID`, `SET_ID`, `WAVE_ID`, and `JOBS` for subsequent steps.
 
 ---
@@ -301,6 +294,86 @@ After all agents complete:
 
 ---
 
+## Step 5.5: Plan Verification
+
+Display progress: "Verifying job plans for {waveId}..."
+
+Read all context needed for the verifier:
+- Read `.planning/waves/{setId}/{waveId}/WAVE-PLAN.md`
+- Read `.planning/waves/{setId}/{waveId}/WAVE-CONTEXT.md`
+- Read all JOB-PLAN.md files from `.planning/waves/{setId}/{waveId}/` (use Glob to discover `*-PLAN.md` files, then Read each one)
+
+Concatenate all JOB-PLAN.md contents with `### {filename}` headers between them.
+
+Spawn the **rapid-plan-verifier** agent with this task:
+
+```
+Verify all job plans for wave '{waveId}' in set '{setId}'.
+
+## Wave Plan
+{WAVE-PLAN.md full contents}
+
+## Wave Context
+{WAVE-CONTEXT.md full contents}
+
+## Job Plans
+{All JOB-PLAN.md file contents, each preceded by ### {filename} header}
+
+## Working Directory
+{worktreePath from Step 2}
+
+## Output
+Write VERIFICATION-REPORT.md to .planning/waves/{setId}/{waveId}/VERIFICATION-REPORT.md
+```
+
+After agent completes:
+- Read the structured return to extract `verdict` and `failingJobs`
+- Read `.planning/waves/{setId}/{waveId}/VERIFICATION-REPORT.md`
+
+**If verdict is PASS:**
+Display: "All plans verified. Proceeding to contract validation."
+Continue to Step 6.
+
+**If verdict is PASS_WITH_GAPS:**
+Display the gaps from the report's Summary section as a warning.
+Display: "Plans verified with minor gaps (see VERIFICATION-REPORT.md). Proceeding."
+Continue to Step 6.
+
+**If verdict is FAIL:**
+Display the failures from the report's Summary section.
+
+Use AskUserQuestion:
+```
+"Plan verification FAILED for wave {waveId}:
+
+{Summary section from VERIFICATION-REPORT.md}
+
+Failing jobs: {failingJobs list}
+
+What would you like to do?"
+Options:
+- "Re-plan failing jobs" -- "Re-spawn job planners only for the failing jobs ({failingJobs}), then re-verify"
+- "Override" -- "Proceed despite failures (you take responsibility for plan issues)"
+- "Cancel" -- "Stop and investigate (wave stays in discussing state)"
+```
+
+If "Re-plan failing jobs":
+  - Re-read WAVE-PLAN.md and WAVE-RESEARCH.md
+  - For each job ID in `failingJobs`, re-spawn the **rapid-job-planner** agent with the same task prompt as Step 5 but only for that specific job
+  - After all re-planned job planners complete, re-run the verification by spawning the **rapid-plan-verifier** agent again
+  - If the re-verification also returns FAIL, present AskUserQuestion with only "Override" and "Cancel" options (no second re-plan -- maximum 1 re-plan attempt)
+  - If re-verification returns PASS or PASS_WITH_GAPS, continue to Step 6
+
+If "Override":
+  Log the override in the terminal: "Proceeding with plan verification overridden by user."
+  Continue to Step 6.
+
+If "Cancel":
+  Display: "Planning cancelled. Wave remains in 'discussing' state. Investigate the issues in VERIFICATION-REPORT.md and re-run /rapid:wave-plan when ready."
+  STOP.
+
+---
+
 ## Step 6: Contract Validation Gate
 
 Display progress: "Validating job plans against contracts..."
@@ -371,6 +444,19 @@ If "Override": Log the override and continue.
 
 ---
 
+## Step 6.5: Transition Wave to Planning
+
+All validation complete. Transition the wave state:
+
+```bash
+# (env preamble here)
+node "${RAPID_TOOLS}" state transition wave "${MILESTONE_ID}" "${SET_ID}" "${WAVE_ID}" planning
+```
+
+This transition was deferred from Step 2 to ensure verification passes before the wave enters `planning` state.
+
+---
+
 ## Step 7: Commit and Present Results
 
 Commit all planning artifacts:
@@ -382,7 +468,7 @@ if [ -f ".planning/sets/${SET_ID}/VALIDATION-REPORT.md" ]; then
   git add ".planning/sets/${SET_ID}/VALIDATION-REPORT.md"
 fi
 JOB_COUNT=$(ls ".planning/waves/${SET_ID}/${WAVE_ID}/"*-PLAN.md 2>/dev/null | wc -l)
-git commit -m "plan(${SET_ID}): wave ${WAVE_ID} planning complete -- research, wave plan, ${JOB_COUNT} job plans, validation"
+git commit -m "plan(${SET_ID}): wave ${WAVE_ID} planning complete -- research, wave plan, ${JOB_COUNT} job plans, verification, validation"
 ```
 
 Display summary:
@@ -420,7 +506,8 @@ Display the next step using the setIndex and waveIndex already resolved in Step 
 
 - **Sequential pipeline:** Research -> Wave Plan -> Job Plans -> Validation. Each stage depends on the prior output.
 - **Parallel job planners:** When 3+ jobs exist, spawn Job Planner agents in parallel for faster pipeline completion.
+- **Plan verification gate:** Plans are verified for coverage, implementability, and consistency BEFORE contract validation. FAIL blocks state transition.
 - **Contract validation gate:** Plans are validated BEFORE execution begins. Major violations are escalated to the user.
 - **Graceful degradation:** If research fails, planning can continue from WAVE-CONTEXT.md alone. If some job planners fail, remaining plans are still validated.
-- **State transitions:** Only `discussing -> planning` is handled here. The `planning -> executing` transition happens in /rapid:execute.
+- **State transitions:** `discussing -> planning` is deferred until AFTER plan verification and contract validation both pass. This ensures a FAIL verdict blocks execution.
 - **All CLI calls via RAPID_TOOLS:** Never edit STATE.json directly. All state transitions via `node "${RAPID_TOOLS}" state transition` CLI.
