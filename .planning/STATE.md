@@ -1,17 +1,17 @@
 ---
-gsd_state_version: 1.0
+rapid_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: Phase 29.1 plan 01 executed -- set-level review library with TDD
-stopped_at: Completed 29.1-01-PLAN.md
-last_updated: "2026-03-10T01:57:02.947Z"
-last_activity: 2026-03-10 -- Phase 29.1 set-level review library plan 01 executed
+status: Phase 29.1 plan 02 executed -- CLI dual-mode + role modules updated
+stopped_at: Completed 29.1-02-PLAN.md
+last_updated: "2026-03-10T02:07:01Z"
+last_activity: 2026-03-10 -- Phase 29.1 CLI dual-mode + role module update plan 02 executed
 progress:
   total_phases: 10
   completed_phases: 6
   total_plans: 14
-  completed_plans: 12
-  percent: 96
+  completed_plans: 13
+  percent: 97
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 29.1 in progress (seventh of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
-Plan: 1 of 3 in Phase 29.1 (complete)
-Status: Phase 29.1 plan 01 executed -- set-level review library with TDD
-Last activity: 2026-03-10 -- Phase 29.1 set-level review library plan 01 executed
+Plan: 2 of 3 in Phase 29.1 (complete)
+Status: Phase 29.1 plan 02 executed -- CLI dual-mode + role modules updated
+Last activity: 2026-03-10 -- Phase 29.1 CLI dual-mode + role module update plan 02 executed
 
-Progress: [██████████] 96%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 4.3min
-- Total execution time: 0.92 hours
+- Total plans completed: 13
+- Average duration: 4.5min
+- Total execution time: 1.05 hours
 
 **By Phase:**
 
@@ -49,7 +49,7 @@ Progress: [██████████] 96%
 | 27.1 | 3 | 28min | 9.3min |
 | 28 | 2 | 6min | 3min |
 | 29 | 1 | 2min | 2min |
-| 29.1 | 1 | 4min | 4min |
+| 29.1 | 2 | 12min | 6min |
 
 *Updated after each plan completion*
 
@@ -98,6 +98,9 @@ Recent:
 - Phase 29.1: Last wave wins for file attribution when file appears in multiple waves' JOB-PLAN.md
 - Phase 29.1: loadSetIssues dual-read pattern: set-level first, then legacy wave subdirectories for backward compatibility
 - Phase 29.1: ReviewIssues container drops waveId; wave identity tracked per-issue via originatingWave field
+- Phase 29.1: Dual-mode CLI by arg count (no new subcommands) preserves interface stability and backward compat
+- Phase 29.1: 4-arg update-issue accepts wave-id positionally but ignores it for file lookup (set-level path)
+- Phase 29.1: scope 1-arg enriches response with chunks + waveAttribution; 2-arg keeps lean response
 
 ### Pending Todos
 
@@ -131,6 +134,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T01:57:02.945Z
-Stopped at: Completed 29.1-01-PLAN.md
+Last session: 2026-03-10T02:07:01Z
+Stopped at: Completed 29.1-02-PLAN.md
 Resume file: None
