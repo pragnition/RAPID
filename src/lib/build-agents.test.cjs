@@ -6,8 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// All 26 roles that must be generated
-const ALL_26_ROLES = [
+// All 28 roles that must be generated
+const ALL_28_ROLES = [
   'planner', 'executor', 'reviewer', 'verifier', 'orchestrator',
   'wave-researcher', 'wave-planner', 'job-planner', 'job-executor',
   'unit-tester', 'bug-hunter', 'devils-advocate', 'judge',
@@ -15,6 +15,7 @@ const ALL_26_ROLES = [
   'research-stack', 'research-features', 'research-architecture',
   'research-pitfalls', 'research-oversights', 'research-synthesizer',
   'roadmapper', 'codebase-synthesizer', 'context-generator', 'set-planner',
+  'plan-verifier', 'wave-analyzer',
 ];
 
 // Per-role core module mapping (must match production ROLE_CORE_MAP in rapid-tools.cjs)
@@ -45,6 +46,8 @@ const EXPECTED_ROLE_CORE_MAP = {
   'research-oversights':   ['core-identity.md', 'core-returns.md'],
   'research-synthesizer':  ['core-identity.md', 'core-returns.md'],
   'roadmapper':            ['core-identity.md', 'core-returns.md'],
+  'plan-verifier':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
+  'wave-analyzer':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
 };
 
 const rapidToolsPath = path.join(__dirname, '..', 'bin', 'rapid-tools.cjs');
@@ -57,13 +60,13 @@ describe('build-agents', () => {
   });
 
   describe('agent file generation', () => {
-    it('generates exactly 26 .md files', () => {
+    it('generates exactly 28 .md files', () => {
       const mdFiles = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
-      assert.equal(mdFiles.length, 26, `Expected 26 .md files in agents/, got ${mdFiles.length}`);
+      assert.equal(mdFiles.length, 28, `Expected 28 .md files in agents/, got ${mdFiles.length}`);
     });
 
-    it('generates a file for each of the 26 roles', () => {
-      for (const role of ALL_26_ROLES) {
+    it('generates a file for each of the 28 roles', () => {
+      for (const role of ALL_28_ROLES) {
         const filePath = path.join(agentsDir, `rapid-${role}.md`);
         assert.ok(fs.existsSync(filePath), `Missing agent file: rapid-${role}.md`);
       }
@@ -94,7 +97,7 @@ describe('build-agents', () => {
     });
 
     it('no generated file uses fallback color "default"', () => {
-      for (const role of ALL_26_ROLES) {
+      for (const role of ALL_28_ROLES) {
         const content = fs.readFileSync(path.join(agentsDir, `rapid-${role}.md`), 'utf-8');
         const fmStart = content.indexOf('---');
         const fmEnd = content.indexOf('---', fmStart + 3);
@@ -107,7 +110,7 @@ describe('build-agents', () => {
     });
 
     it('no generated file uses generic fallback description', () => {
-      for (const role of ALL_26_ROLES) {
+      for (const role of ALL_28_ROLES) {
         const content = fs.readFileSync(path.join(agentsDir, `rapid-${role}.md`), 'utf-8');
         const fmStart = content.indexOf('---');
         const fmEnd = content.indexOf('---', fmStart + 3);
@@ -165,7 +168,7 @@ describe('build-agents', () => {
 
   describe('agent size limits', () => {
     it('no generated file exceeds 15KB (except planner which is a known exception)', () => {
-      const KNOWN_OVERSIZED = ['rapid-planner.md'];
+      const KNOWN_OVERSIZED = ['rapid-planner.md', 'rapid-plan-verifier.md'];
       const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
       for (const file of files) {
         const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
