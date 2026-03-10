@@ -3,7 +3,8 @@
 /**
  * review.cjs - Review library for RAPID review pipeline.
  *
- * Provides Zod-validated schemas, wave-scoped file discovery,
+ * Provides Zod-validated schemas, set-scoped file discovery,
+ * directory-based chunking, wave attribution from job plans,
  * structured issue logging, bugfix iteration tracking, and
  * review summary generation.
  *
@@ -20,10 +21,13 @@ const execute = require('./execute.cjs');
 // Constants
 // ────────────────────────────────────────────────────────────────
 
+const CHUNK_THRESHOLD = 15;
+
 const REVIEW_CONSTANTS = {
   MAX_BUGFIX_CYCLES: 3,
   ISSUE_TYPES: ['artifact', 'static', 'contract', 'test', 'bug', 'uat'],
   SEVERITY_LEVELS: ['critical', 'high', 'medium', 'low'],
+  CHUNK_THRESHOLD,
 };
 
 // ────────────────────────────────────────────────────────────────
@@ -41,12 +45,12 @@ const ReviewIssue = z.object({
   autoFixSucceeded: z.boolean().default(false),
   source: z.enum(['lean-review', 'unit-test', 'bug-hunt', 'uat']),
   status: z.enum(['open', 'fixed', 'deferred', 'dismissed']).default('open'),
+  originatingWave: z.string().optional(),
   createdAt: z.string(),
   fixedAt: z.string().optional(),
 });
 
 const ReviewIssues = z.object({
-  waveId: z.string(),
   setId: z.string(),
   issues: z.array(ReviewIssue),
   lastUpdatedAt: z.string(),
@@ -57,14 +61,14 @@ const ReviewIssues = z.object({
 // ────────────────────────────────────────────────────────────────
 
 /**
- * Compute review scope for a wave: changed files + one-hop dependents.
+ * Compute review scope for a set: changed files + one-hop dependents.
  *
  * @param {string} cwd - Project root directory
  * @param {string} worktreePath - Absolute path to the worktree
  * @param {string} baseBranch - Base branch name (e.g., 'main')
  * @returns {{ changedFiles: string[], dependentFiles: string[], totalFiles: number }}
  */
-function scopeWaveForReview(cwd, worktreePath, baseBranch) {
+function scopeSetForReview(cwd, worktreePath, baseBranch) {
   const changedFiles = execute.getChangedFiles(worktreePath, baseBranch);
   const dependentFiles = findDependents(cwd, changedFiles);
   return {
@@ -209,31 +213,137 @@ function walkDir(dir, skipDirs) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Chunking Functions
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Group files into directory-based chunks for parallel review.
+ * Files below the CHUNK_THRESHOLD are returned as a single chunk.
+ * Small directories (< 3 files) are merged into the last large chunk.
+ *
+ * @param {string[]} files - Array of file paths (relative to project root)
+ * @returns {Array<{dir: string, files: string[]}>} Array of chunks
+ */
+function chunkByDirectory(files) {
+  if (files.length <= CHUNK_THRESHOLD) {
+    return [{ dir: '.', files }];
+  }
+
+  const groups = new Map();
+  for (const file of files) {
+    const dir = path.dirname(file);
+    if (!groups.has(dir)) groups.set(dir, []);
+    groups.get(dir).push(file);
+  }
+
+  // Separate large groups (>= 3 files) from small groups (< 3 files)
+  const chunks = [];
+  let overflow = [];
+  for (const [dir, dirFiles] of groups) {
+    if (dirFiles.length < 3) {
+      overflow.push(...dirFiles);
+    } else {
+      chunks.push({ dir, files: dirFiles });
+    }
+  }
+
+  // Merge overflow into last large chunk, or create overflow chunk
+  if (overflow.length > 0) {
+    if (chunks.length > 0) {
+      chunks[chunks.length - 1].files.push(...overflow);
+    } else {
+      chunks.push({ dir: '.', files: overflow });
+    }
+  }
+
+  return chunks;
+}
+
+// ────────────────────────────────────────────────────────────────
+// Wave Attribution
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Build a file-to-wave attribution map by reading JOB-PLAN.md files.
+ * Extracts file paths from "Files to Create/Modify" tables in each
+ * wave's plan files. Last wave wins when a file appears in multiple waves.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {Object<string, string>} Map of filePath -> waveId
+ */
+function buildWaveAttribution(cwd, setId) {
+  const attribution = {};
+  const wavesDir = path.join(cwd, '.planning', 'waves', setId);
+
+  if (!fs.existsSync(wavesDir)) return attribution;
+
+  let waveEntries;
+  try {
+    waveEntries = fs.readdirSync(wavesDir, { withFileTypes: true })
+      .filter(e => e.isDirectory())
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return attribution;
+  }
+
+  for (const waveEntry of waveEntries) {
+    const waveDir = path.join(wavesDir, waveEntry.name);
+
+    let planFiles;
+    try {
+      planFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
+    } catch {
+      continue;
+    }
+
+    for (const planFile of planFiles) {
+      try {
+        const content = fs.readFileSync(path.join(waveDir, planFile), 'utf-8');
+        // Regex matches table rows: | `file/path.cjs` | Create | or | file/path.cjs | Modify |
+        const tableRegex = /\|\s*`?([^`|]+?)`?\s*\|\s*(Create|Modify)\s*\|/gi;
+        let match;
+        while ((match = tableRegex.exec(content)) !== null) {
+          const filePath = match[1].trim();
+          if (filePath && filePath !== 'File' && !filePath.startsWith('---')) {
+            // Last wave wins (sequential execution model)
+            attribution[filePath] = waveEntry.name;
+          }
+        }
+      } catch {
+        // Skip malformed plan files gracefully
+      }
+    }
+  }
+
+  return attribution;
+}
+
+// ────────────────────────────────────────────────────────────────
 // Issue Management
 // ────────────────────────────────────────────────────────────────
 
 /**
- * Log a review issue to REVIEW-ISSUES.json for a wave.
+ * Log a review issue to REVIEW-ISSUES.json at the set level.
  * Creates the file and directories if they don't exist.
  * Validates the issue with Zod before persisting.
  *
  * @param {string} cwd - Project root directory
  * @param {string} setId - Set identifier
- * @param {string} waveId - Wave identifier
- * @param {Object} issue - Issue data to log
+ * @param {Object} issue - Issue data to log (may include originatingWave)
  */
-function logIssue(cwd, setId, waveId, issue) {
-  const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
-  const issuesPath = path.join(waveDir, 'REVIEW-ISSUES.json');
+function logIssue(cwd, setId, issue) {
+  const setDir = path.join(cwd, '.planning', 'waves', setId);
+  const issuesPath = path.join(setDir, 'REVIEW-ISSUES.json');
 
   // Validate issue with Zod
   const validatedIssue = ReviewIssue.parse(issue);
 
   // Create directory if needed
-  fs.mkdirSync(waveDir, { recursive: true });
+  fs.mkdirSync(setDir, { recursive: true });
 
   // Read existing or create new container
-  let existing = { waveId, setId, issues: [], lastUpdatedAt: '' };
+  let existing = { setId, issues: [], lastUpdatedAt: '' };
   if (fs.existsSync(issuesPath)) {
     existing = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
   }
@@ -247,19 +357,36 @@ function logIssue(cwd, setId, waveId, issue) {
 }
 
 /**
- * Load all issues across waves for a set.
- * Returns a flat array with waveId attached to each issue.
+ * Load all issues for a set. Reads the set-level REVIEW-ISSUES.json first,
+ * then falls back to reading wave subdirectories for legacy compatibility
+ * (lean review writes to wave-level REVIEW-ISSUES.json).
  *
  * @param {string} cwd - Project root directory
  * @param {string} setId - Set identifier
- * @returns {Array<Object>} Flat array of issues with waveId property
+ * @returns {Array<Object>} Flat array of issues with originatingWave preserved
  */
 function loadSetIssues(cwd, setId) {
   const wavesDir = path.join(cwd, '.planning', 'waves', setId);
   const issues = [];
+  const seenIds = new Set();
 
   if (!fs.existsSync(wavesDir)) return issues;
 
+  // 1. Read set-level REVIEW-ISSUES.json
+  const setLevelPath = path.join(wavesDir, 'REVIEW-ISSUES.json');
+  if (fs.existsSync(setLevelPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(setLevelPath, 'utf-8'));
+      for (const issue of data.issues) {
+        issues.push(issue);
+        seenIds.add(issue.id);
+      }
+    } catch {
+      // Skip malformed files
+    }
+  }
+
+  // 2. Fall back to reading wave subdirectories for legacy compatibility
   let entries;
   try {
     entries = fs.readdirSync(wavesDir, { withFileTypes: true });
@@ -274,7 +401,14 @@ function loadSetIssues(cwd, setId) {
     if (fs.existsSync(issuesPath)) {
       try {
         const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
-        issues.push(...data.issues.map(i => ({ ...i, waveId: entry.name })));
+        for (const issue of data.issues) {
+          // Avoid duplicates (set-level issues take precedence)
+          if (!seenIds.has(issue.id)) {
+            // Set originatingWave from directory name for legacy issues
+            issues.push({ ...issue, originatingWave: issue.originatingWave || entry.name });
+            seenIds.add(issue.id);
+          }
+        }
       } catch {
         // Skip malformed files
       }
@@ -285,17 +419,16 @@ function loadSetIssues(cwd, setId) {
 }
 
 /**
- * Update the status of a specific issue in a wave's REVIEW-ISSUES.json.
+ * Update the status of a specific issue in the set-level REVIEW-ISSUES.json.
  * If newStatus is 'fixed', sets fixedAt to current ISO timestamp.
  *
  * @param {string} cwd - Project root directory
  * @param {string} setId - Set identifier
- * @param {string} waveId - Wave identifier
  * @param {string} issueId - Issue ID to update
  * @param {string} newStatus - New status ('open', 'fixed', 'deferred', 'dismissed')
  */
-function updateIssueStatus(cwd, setId, waveId, issueId, newStatus) {
-  const issuesPath = path.join(cwd, '.planning', 'waves', setId, waveId, 'REVIEW-ISSUES.json');
+function updateIssueStatus(cwd, setId, issueId, newStatus) {
+  const issuesPath = path.join(cwd, '.planning', 'waves', setId, 'REVIEW-ISSUES.json');
 
   if (!fs.existsSync(issuesPath)) {
     throw new Error(`REVIEW-ISSUES.json not found at ${issuesPath}`);
@@ -323,11 +456,12 @@ function updateIssueStatus(cwd, setId, waveId, issueId, newStatus) {
 
 /**
  * Generate a review summary in markdown format.
- * Includes overview with total issues by severity, per-wave breakdown,
- * issues by status, and deferred count warning if >5.
+ * Includes overview with total issues by severity, per-wave breakdown
+ * (grouped by originatingWave), issues by status, and deferred count
+ * warning if >5.
  *
  * @param {string} setId - Set identifier
- * @param {Array<Object>} issues - Flat array of issues (with waveId attached)
+ * @param {Array<Object>} issues - Flat array of issues (with originatingWave)
  * @returns {string} Markdown summary content
  */
 function generateReviewSummary(setId, issues) {
@@ -365,13 +499,13 @@ function generateReviewSummary(setId, issues) {
   }
   lines.push('');
 
-  // Per-wave breakdown
-  const waveIds = [...new Set(issues.map(i => i.waveId).filter(Boolean))].sort();
+  // Per-wave breakdown (grouped by originatingWave)
+  const waveIds = [...new Set(issues.map(i => i.originatingWave).filter(Boolean))].sort();
   if (waveIds.length > 0) {
     lines.push('## Per-Wave Breakdown');
     lines.push('');
     for (const waveId of waveIds) {
-      const waveIssues = issues.filter(i => i.waveId === waveId);
+      const waveIssues = issues.filter(i => i.originatingWave === waveId);
       lines.push(`### ${waveId}`);
       lines.push('');
       lines.push(`**Issues:** ${waveIssues.length}`);
@@ -417,8 +551,14 @@ module.exports = {
   ReviewIssues,
 
   // Scoping
-  scopeWaveForReview,
+  scopeSetForReview,
   findDependents,
+
+  // Chunking
+  chunkByDirectory,
+
+  // Wave attribution
+  buildWaveAttribution,
 
   // Issue management
   logIssue,
