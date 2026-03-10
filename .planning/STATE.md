@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: completed
-stopped_at: Completed 31-03-PLAN.md
-last_updated: "2026-03-10T05:51:11.179Z"
+stopped_at: Completed 31-01-PLAN.md
+last_updated: "2026-03-10T05:54:22.671Z"
 last_activity: 2026-03-10 -- Phase 31 plan 03 (execute auto-advance)
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 20
-  completed_plans: 18
+  completed_plans: 19
   percent: 99
 ---
 
@@ -35,9 +35,9 @@ Progress: [██████████] 99%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
-- Average duration: 3.9min
-- Total execution time: 1.18 hours
+- Total plans completed: 20
+- Average duration: 3.8min
+- Total execution time: 1.25 hours
 
 **By Phase:**
 
@@ -51,7 +51,7 @@ Progress: [██████████] 99%
 | 29 | 1 | 2min | 2min |
 | 29.1 | 4 | 17min | 4.3min |
 | 30 | 2 | 4min | 2min |
-| 31 | 1 | 1min | 1min |
+| 31 | 2 | 5min | 2.5min |
 
 *Updated after each plan completion*
 
@@ -114,8 +114,12 @@ Recent:
 - Phase 30: Step 5.5/6.5 numbering preserves backward compatibility -- no renumbering of existing steps
 - Phase 30: Maximum 1 re-plan attempt on FAIL -- second FAIL shows only override/cancel to prevent infinite loops
 - Phase 30: State transition deferred from Step 2 to Step 6.5 -- FAIL verdict blocks wave from entering planning state
-- [Phase 31]: PASS and PASS_WITH_WARNINGS auto-advance without AskUserQuestion -- only FAIL retains user gate
-- [Phase 31]: --retry-wave validates all predecessor waves are complete before allowing targeted retry
+- Phase 31: Wave analyzer uses Read/Grep/Glob tools only (read-only analysis, no state or git access)
+- Phase 31: Conservative dependency classification -- uncertain signals default to dependent to prevent merge conflicts
+- Phase 31: Plan-set stage uses bright blue background (planning group) matching wave-plan and other planning stages
+- Phase 31: plan-verifier.md added to KNOWN_OVERSIZED in build-agents tests (15.3KB, planning-family exception)
+- Phase 31: PASS and PASS_WITH_WARNINGS auto-advance without AskUserQuestion -- only FAIL retains user gate
+- Phase 31: --retry-wave validates all predecessor waves are complete before allowing targeted retry
 
 ### Pending Todos
 
@@ -149,6 +153,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T05:51:11.177Z
-Stopped at: Completed 31-03-PLAN.md
+Last session: 2026-03-10T05:54:22.669Z
+Stopped at: Completed 31-01-PLAN.md
 Resume file: None
