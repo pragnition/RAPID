@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: Phase 29 plan 01 executed -- 2-round discuss skill and STATE.md blocker cleanup
-stopped_at: Completed 29-01-PLAN.md
-last_updated: "2026-03-10T01:05:02.848Z"
+stopped_at: Phase 29.1 context gathered
+last_updated: "2026-03-10T01:32:32.279Z"
 last_activity: 2026-03-10 -- Phase 29 discuss phase optimization plan 01 executed
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 6
   total_plans: 11
   completed_plans: 11
@@ -104,6 +104,7 @@ None.
 - v2.0 Mark II: Phases 16-24 (shipped 2026-03-09)
 - v2.1 Improvements & Fixes: Phases 25-32 (in progress)
 - Phase 27.1 inserted after Phase 27: Skill to agent overhaul (URGENT)
+- Phase 29.1 inserted after Phase 29: Make the reviewing set based instead of wave based (URGENT)
 
 ### Blockers/Concerns
 
@@ -124,6 +125,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T01:00:29Z
-Stopped at: Completed 29-01-PLAN.md
-Resume file: .planning/phases/29-discuss-phase-optimization/29-01-SUMMARY.md
+Last session: 2026-03-10T01:32:32.276Z
+Stopped at: Phase 29.1 context gathered
+Resume file: .planning/phases/29.1-make-the-reviewing-set-based-instead-of-wave-based/29.1-CONTEXT.md
