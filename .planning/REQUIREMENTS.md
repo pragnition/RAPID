@@ -65,10 +65,10 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 
 ### Review Efficiency
 
-- [ ] **REV-01**: Scoper agent categorizes changed files by concern before review
-- [ ] **REV-02**: Review agents receive only files relevant to their assigned concern
-- [ ] **REV-03**: Cross-cutting files (scoper uncertain) included in all review scopes
-- [ ] **REV-04**: Review results merged before presentation to user
+- [x] **REV-01**: Scoper agent categorizes changed files by concern before review
+- [x] **REV-02**: Review agents receive only files relevant to their assigned concern
+- [x] **REV-03**: Cross-cutting files (scoper uncertain) included in all review scopes
+- [x] **REV-04**: Review results merged before presentation to user
 
 ## Future Requirements
 
@@ -129,10 +129,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WAVE-02 | Phase 31 | Complete |
 | WAVE-03 | Phase 31 | Complete |
 | WAVE-04 | Phase 31 | Complete |
-| REV-01 | Phase 32 | Pending |
-| REV-02 | Phase 32 | Pending |
-| REV-03 | Phase 32 | Pending |
-| REV-04 | Phase 32 | Pending |
+| REV-01 | Phase 32 | Complete |
+| REV-02 | Phase 32 | Complete |
+| REV-03 | Phase 32 | Complete |
+| REV-04 | Phase 32 | Complete |
 
 **Coverage:**
 - v2.1 requirements: 39 total

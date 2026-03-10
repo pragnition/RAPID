@@ -1,5 +1,5 @@
 ---
-gsd_state_version: 1.0
+rapid_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: completed
@@ -10,8 +10,8 @@ progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 20
-  completed_plans: 20
-  percent: 99
+  completed_plans: 21
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 31 (ninth of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
-Plan: 3 of 3 in Phase 31 (plan 03 complete)
-Status: Phase 31 complete -- all 3 plans done (wave-analyzer, plan-set skill, execute auto-advance)
-Last activity: 2026-03-10 -- Phase 31 plan 02 (plan-set skill)
+Phase: 32 (tenth of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
+Plan: 1 of 1 in Phase 32 (plan 01 complete)
+Status: Phase 32 plan 01 complete -- scoper agent infrastructure + concern-scoping functions
+Last activity: 2026-03-10 -- Phase 32 plan 01 (scoper agent infrastructure)
 
-Progress: [██████████] 99%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [██████████] 99%
 
 *Updated after each plan completion*
 | Phase 31 P02 | 3min | 1 tasks | 1 files |
+| Phase 32 P01 | 4min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,10 @@ Recent:
 - [Phase 31]: Interleaved parallel dispatch pattern for Claude Code sub-sub-agent constraint
 - [Phase 31]: BFS-level batching from wave-analyzer dependency edges for parallel/sequential grouping
 - [Phase 31]: Re-entry skips analyzer entirely -- remaining discussing waves treated as sequential batch
+- Phase 32: Scoper uses core-identity + core-returns only (read-only analysis, no state-access/git/context-loading)
+- Phase 32: Scoper color is blue (planning/analysis group) matching wave-analyzer
+- Phase 32: normalizedLevenshtein uses standard DP matrix -- no external dependency
+- Phase 32: 50% cross-cutting boundary uses strict greater-than (exactly 50% does NOT trigger fallback)
 
 ### Pending Todos
 
@@ -158,6 +163,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T06:36:33.030Z
-Stopped at: Phase 32 context gathered
-Resume file: .planning/phases/32-review-efficiency/32-CONTEXT.md
+Last session: 2026-03-10T06:58:56Z
+Stopped at: Completed 32-01-PLAN.md
+Resume file: .planning/phases/32-review-efficiency/32-01-SUMMARY.md
