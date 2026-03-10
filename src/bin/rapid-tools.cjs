@@ -483,6 +483,7 @@ function handleBuildAgents(cwd, args) {
     'codebase-synthesizer':  'Read, Grep, Glob, Bash',
     'context-generator':     'Read, Write, Grep, Glob, Bash',
     'set-planner':           'Read, Write, Grep, Glob',
+    'plan-verifier':         'Read, Write, Grep, Glob',
   };
 
   /**
@@ -515,6 +516,7 @@ function handleBuildAgents(cwd, args) {
     'codebase-synthesizer': 'blue',
     'context-generator': 'blue',
     'set-planner': 'blue',
+    'plan-verifier': 'blue',
   };
 
   /**
@@ -547,6 +549,7 @@ function handleBuildAgents(cwd, args) {
     'codebase-synthesizer':  'RAPID codebase synthesizer agent -- analyzes existing codebase structure and patterns',
     'context-generator':     'RAPID context generator agent -- produces project context documents for agent consumption',
     'set-planner':           'RAPID set planner agent -- decomposes milestones into parallelizable development sets',
+    'plan-verifier':         'RAPID plan verifier agent -- validates job plans for coverage, implementability, and consistency',
   };
 
   /**
@@ -579,6 +582,7 @@ function handleBuildAgents(cwd, args) {
     'research-oversights':   ['core-identity.md', 'core-returns.md'],
     'research-synthesizer':  ['core-identity.md', 'core-returns.md'],
     'roadmapper':            ['core-identity.md', 'core-returns.md'],
+    'plan-verifier':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
   };
 
   function generateFrontmatter(role) {
