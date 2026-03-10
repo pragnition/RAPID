@@ -54,7 +54,7 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 - [x] **PLAN-02**: Plan verifier checks implementability (referenced files exist or are created)
 - [x] **PLAN-03**: Plan verifier checks consistency (no file ownership overlap within a wave)
 - [x] **PLAN-04**: Plan verifier outputs VERIFICATION-REPORT.md with PASS/PASS_WITH_GAPS/FAIL verdict
-- [ ] **PLAN-05**: FAIL verdict triggers user decision gate (re-plan / override / cancel)
+- [x] **PLAN-05**: FAIL verdict triggers user decision gate (re-plan / override / cancel)
 
 ### Wave Orchestration
 
@@ -124,7 +124,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAN-02 | Phase 30 | Complete |
 | PLAN-03 | Phase 30 | Complete |
 | PLAN-04 | Phase 30 | Complete |
-| PLAN-05 | Phase 30 | Pending |
+| PLAN-05 | Phase 30 | Complete |
 | WAVE-01 | Phase 31 | Pending |
 | WAVE-02 | Phase 31 | Pending |
 | WAVE-03 | Phase 31 | Pending |
