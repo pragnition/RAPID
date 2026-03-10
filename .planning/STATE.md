@@ -1,62 +1,40 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: Improvements & Fixes
-status: completed
-stopped_at: Completed 32-02-PLAN.md
-last_updated: "2026-03-10T07:08:53.725Z"
-last_activity: 2026-03-10 -- Phase 32 plan 02 (SKILL.md concern-based scoping)
+milestone: v2.2
+milestone_name: Subagent Merger & Documentation
+status: active
+stopped_at: null
+last_updated: "2026-03-10"
+last_activity: 2026-03-10 -- Milestone v2.2 started
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 22
-  completed_plans: 22
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-09)
+See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 31 - Wave Orchestration
+**Current focus:** Defining requirements for v2.2 Subagent Merger & Documentation
 
 ## Current Position
 
-Phase: 32 (tenth of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
-Plan: 2 of 2 in Phase 32 (plan 02 complete)
-Status: Phase 32 complete -- review pipeline restructured with concern-based scoping
-Last activity: 2026-03-10 -- Phase 32 plan 02 (SKILL.md concern-based scoping)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-10 — Milestone v2.2 started
 
-Progress: [██████████] 100%
+Progress: [..........] 0%
 
 ## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 20
-- Average duration: 3.8min
-- Total execution time: 1.25 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 25 | 1 | 3min | 3min |
-| 26 | 2 | 8min | 4min |
-| 27 | 2 | 6min | 3min |
-| 27.1 | 3 | 28min | 9.3min |
-| 28 | 2 | 6min | 3min |
-| 29 | 1 | 2min | 2min |
-| 29.1 | 4 | 17min | 4.3min |
-| 30 | 2 | 4min | 2min |
-| 31 | 2 | 5min | 2.5min |
-
-*Updated after each plan completion*
-| Phase 31 P02 | 3min | 1 tasks | 1 files |
-| Phase 32 P01 | 4min | 2 tasks | 6 files |
-| Phase 32 P02 | 2min | 1 tasks | 1 files |
+*Reset for new milestone. See MILESTONES.md for v2.1 metrics.*
 
 ## Accumulated Context
 
@@ -145,9 +123,8 @@ None.
 - v1.0 Core: Phases 1-9.2 (shipped)
 - v1.1 UI UX Improvements: Phases 10-15 (shipped)
 - v2.0 Mark II: Phases 16-24 (shipped 2026-03-09)
-- v2.1 Improvements & Fixes: Phases 25-32 (in progress)
-- Phase 27.1 inserted after Phase 27: Skill to agent overhaul (URGENT)
-- Phase 29.1 inserted after Phase 29: Make the reviewing set based instead of wave based (URGENT)
+- v2.1 Improvements & Fixes: Phases 25-32 + 27.1 + 29.1 (shipped 2026-03-10)
+- v2.2 Subagent Merger & Documentation: Phases TBD (in progress)
 
 ### Blockers/Concerns
 

@@ -42,22 +42,29 @@ Multiple developers using Claude Code can work on the same project simultaneousl
 - ✓ Bisection recovery and rollback with cascade detection — v2.0
 - ✓ Orchestrator agent for command dispatch and subagent spawning — v2.0
 - ✓ Comprehensive DOCS.md and README.md for Mark II — v2.0
+- ✓ GSD agent type decontamination in skill files — v2.1
+- ✓ Numeric ID shorthand for set/wave commands — v2.1
+- ✓ UX branding banners and color-coded agent display — v2.1
+- ✓ Skill-to-agent overhaul with build-agents pipeline — v2.1
+- ✓ Streamlined workflow ordering and wave context — v2.1
+- ✓ Batched questioning during discuss phase — v2.1
+- ✓ Set-based review replacing wave-level review — v2.1
+- ✓ Plan verifier agent for coverage and implementability — v2.1
+- ✓ Wave orchestration with dependency-aware sequencing — v2.1
+- ✓ Context-efficient review with scoper delegation and concern-based scoping — v2.1
 
 ### Active
 
-#### Current Milestone: v2.1 Improvements & Fixes
+#### Current Milestone: v2.2 Subagent Merger & Documentation
 
-**Goal:** Streamline the RAPID workflow, remove GSD vestiges, reduce UX friction, and improve context efficiency through better subagent delegation.
+**Goal:** Restructure the merge pipeline to delegate per-set merge work to subagents (preventing orchestrator context overflow on large codebases), and rewrite project documentation from scratch to reflect the current state through v2.1.
 
 **Target features:**
-- GSD agent type decontamination in skill files
-- Streamlined workflow (init → auto-plan → set-init → discuss → wave-plan → execute → review → merge)
-- Parallel wave planning with dependency-aware sequencing
-- Plan verifier agent (coverage + implementability checks)
-- Numeric ID shorthand for set commands
-- Batched questioning during discuss phase
-- Context-efficient review with scoper delegation
-- Leaner review stage overall
+- Merge pipeline restructured with subagent delegation (orchestrator stays lean)
+- Adaptive nesting: merge agents can spawn per-conflict sub-agents for complex resolutions
+- Independent sets merge in parallel when DAG allows
+- Fresh README.md reflecting current RAPID capabilities
+- New technical_documentation.md for power users
 
 ### Out of Scope
 
@@ -79,6 +86,7 @@ Hosted at github.com/fishjojo1/RAPID.
 v1.0 established core plugin infrastructure (agent framework, state, worktrees, merge).
 v1.1 polished UX with structured prompts and error recovery.
 v2.0 overhauled the entire workflow around Sets/Waves/Jobs hierarchy.
+v2.1 streamlined workflow, added 29 generated agents, concern-based review scoping, wave orchestration.
 
 ## Constraints
 
@@ -112,4 +120,4 @@ v2.0 overhauled the entire workflow around Sets/Waves/Jobs hierarchy.
 | Sequential pipeline with parallel fan-out | Research → wave plan → parallel job planners, each producing validated artifacts | ✓ Good — clean handoff boundaries |
 
 ---
-*Last updated: 2026-03-09 after v2.1 milestone started*
+*Last updated: 2026-03-10 after v2.2 milestone started*
