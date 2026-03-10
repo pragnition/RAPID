@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 26: Numeric ID Infrastructure** - Enable numeric shorthand for set and wave references across all skills (completed 2026-03-09)
 - [x] **Phase 27: UX Branding & Colors** - Add RAPID branding banners and color-coded agent type display (completed 2026-03-09)
 - [x] **Phase 28: Workflow Clarity** - Streamline workflow ordering, wave context, next-step guidance, and job sizing (completed 2026-03-09)
-- [ ] **Phase 29: Discuss Phase Optimization** - Batch related questions to halve user interactions during discuss
+- [x] **Phase 29: Discuss Phase Optimization** - Batch related questions to halve user interactions during discuss (completed 2026-03-10)
 - [ ] **Phase 30: Plan Verifier** - New agent that validates job plans for coverage, implementability, and consistency
 - [ ] **Phase 31: Wave Orchestration** - Auto-chain wave planning and execution with dependency-aware sequencing
 - [ ] **Phase 32: Review Efficiency** - Scoper agent delegates focused context to review agents, reducing token waste
@@ -175,7 +175,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 27. UX Branding & Colors | 2/2 | Complete    | 2026-03-09 | - |
 | 27.1 Skill-to-Agent Overhaul | 3/3 | Complete    | 2026-03-09 | - |
 | 28. Workflow Clarity | 2/2 | Complete    | 2026-03-09 | - |
-| 29. Discuss Phase Optimization | v2.1 | 0/1 | Not started | - |
+| 29. Discuss Phase Optimization | 1/1 | Complete   | 2026-03-10 | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
 | 31. Wave Orchestration | v2.1 | 0/? | Not started | - |
 | 32. Review Efficiency | v2.1 | 0/? | Not started | - |

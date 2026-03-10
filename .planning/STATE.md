@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: completed
-stopped_at: Phase 29 context gathered
-last_updated: "2026-03-09T12:00:00.000Z"
-last_activity: 2026-03-09 -- Phase 29 discuss phase optimization context captured
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-03-10T01:01:10.752Z"
+last_activity: 2026-03-10 -- Phase 29 discuss phase optimization plan 01 executed
 progress:
   total_phases: 9
-  completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
+  completed_phases: 6
+  total_plans: 11
+  completed_plans: 11
   percent: 99
 ---
 
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 29 context gathered (sixth of 9 in v2.1: Phases 25-32 + 27.1)
-Plan: TBD (0 of ? in Phase 29)
-Status: Phase 29 context captured -- 2-round batching strategy, delegation model, no spike needed
-Last activity: 2026-03-09 -- Phase 29 discuss phase optimization context captured
+Phase: 29 completed (sixth of 9 in v2.1: Phases 25-32 + 27.1)
+Plan: 1 of 1 in Phase 29 (complete)
+Status: Phase 29 plan 01 executed -- 2-round discuss skill and STATE.md blocker cleanup
+Last activity: 2026-03-10 -- Phase 29 discuss phase optimization plan 01 executed
 
 Progress: [██████████] 99%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 4.5min
-- Total execution time: 0.8 hours
+- Total plans completed: 11
+- Average duration: 4.3min
+- Total execution time: 0.85 hours
 
 **By Phase:**
 
@@ -48,6 +48,7 @@ Progress: [██████████] 99%
 | 27 | 2 | 6min | 3min |
 | 27.1 | 3 | 28min | 9.3min |
 | 28 | 2 | 6min | 3min |
+| 29 | 1 | 2min | 2min |
 
 *Updated after each plan completion*
 
@@ -87,6 +88,10 @@ Recent:
 - Phase 28: Mid-flow AskUserQuestion preserved; only end-of-skill routing removed
 - Phase 28: Linear skills show one next command; branching skills (review, merge) show 2-3 alternatives
 - Phase 28: AskUserQuestion kept in allowed-tools for all skills retaining mid-flow decision points
+- Phase 29: 2-round structure halves interactions from 16 to 8 for 4 gray areas
+- Phase 29: "Let Claude decide all" takes precedence over any other multiSelect selections
+- Phase 29: Round 2 always runs even when areas are delegated in Round 1
+- Phase 29: "Revise" in Round 2 re-presents only that single area's Interaction 1 then Interaction 2
 
 ### Pending Todos
 
@@ -119,6 +124,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T12:00:00Z
-Stopped at: Phase 29 context gathered
-Resume file: .planning/phases/29-discuss-phase-optimization/29-CONTEXT.md
+Last session: 2026-03-10T01:00:29Z
+Stopped at: Completed 29-01-PLAN.md
+Resume file: .planning/phases/29-discuss-phase-optimization/29-01-SUMMARY.md
