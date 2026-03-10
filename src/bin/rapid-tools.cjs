@@ -1490,11 +1490,12 @@ async function handleReview(cwd, subcommand, args) {
   switch (subcommand) {
     case 'scope': {
       const setId = args[0];
-      const waveId = args[1];
-      if (!setId || !waveId) {
-        error('Usage: rapid-tools review scope <set-id> <wave-id> [--branch <branch>]');
+      if (!setId) {
+        error('Usage: rapid-tools review scope <set-id> [<wave-id>] [--branch <branch>]');
         process.exit(1);
       }
+      // Detect mode: if args[1] is missing or starts with '--', set-level mode
+      const waveId = (args[1] && !args[1].startsWith('--')) ? args[1] : null;
       // Parse --branch flag (default: main)
       let baseBranch = 'main';
       const branchIdx = args.indexOf('--branch');
@@ -1504,8 +1505,17 @@ async function handleReview(cwd, subcommand, args) {
       const entry = registry.worktrees[setId];
       const worktreePath = entry ? path.resolve(cwd, entry.path) : cwd;
       try {
-        const result = review.scopeWaveForReview(cwd, worktreePath, baseBranch);
-        output(JSON.stringify(result));
+        const result = review.scopeSetForReview(cwd, worktreePath, baseBranch);
+        if (!waveId) {
+          // Set-level mode: include chunks and wave attribution
+          const allFiles = [...result.changedFiles, ...result.dependentFiles];
+          const chunks = review.chunkByDirectory(allFiles);
+          const waveAttribution = review.buildWaveAttribution(cwd, setId);
+          output(JSON.stringify({ ...result, chunks, waveAttribution }));
+        } else {
+          // Wave-level mode (backward compat for lean review): no chunks/attribution
+          output(JSON.stringify(result));
+        }
       } catch (err) {
         output(JSON.stringify({ error: err.message }));
         process.exit(1);
@@ -1515,11 +1525,12 @@ async function handleReview(cwd, subcommand, args) {
 
     case 'log-issue': {
       const setId = args[0];
-      const waveId = args[1];
-      if (!setId || !waveId) {
-        error('Usage: rapid-tools review log-issue <set-id> <wave-id>  (reads JSON issue from stdin)');
+      if (!setId) {
+        error('Usage: rapid-tools review log-issue <set-id> [<wave-id>]  (reads JSON issue from stdin)');
         process.exit(1);
       }
+      // Detect mode: if args[1] present, it is the wave-id (lean compat)
+      const waveId = args[1] || null;
       try {
         const stdinData = fs.readFileSync(0, 'utf-8').trim();
         if (!stdinData) {
@@ -1527,7 +1538,11 @@ async function handleReview(cwd, subcommand, args) {
           process.exit(1);
         }
         const issue = JSON.parse(stdinData);
-        review.logIssue(cwd, setId, waveId, issue);
+        // If wave-id provided (lean compat), add originatingWave to issue
+        if (waveId) {
+          issue.originatingWave = waveId;
+        }
+        review.logIssue(cwd, setId, issue);
         output(JSON.stringify({ logged: true, issueId: issue.id }));
       } catch (err) {
         output(JSON.stringify({ error: err.message }));
@@ -1561,15 +1576,28 @@ async function handleReview(cwd, subcommand, args) {
 
     case 'update-issue': {
       const setId = args[0];
-      const waveId = args[1];
-      const issueId = args[2];
-      const newStatus = args[3];
-      if (!setId || !waveId || !issueId || !newStatus) {
-        error('Usage: rapid-tools review update-issue <set-id> <wave-id> <issue-id> <status>');
+      // Detect mode by arg count:
+      // 4-arg: set-id wave-id issue-id status (lean compat -- wave-id accepted but ignored)
+      // 3-arg: set-id issue-id status (set-level)
+      let issueId, newStatus;
+      if (args.length >= 4) {
+        // 4-arg mode: args[1] is wave-id (ignored for path), args[2] is issue-id, args[3] is status
+        issueId = args[2];
+        newStatus = args[3];
+      } else if (args.length >= 3) {
+        // 3-arg mode: args[1] is issue-id, args[2] is status
+        issueId = args[1];
+        newStatus = args[2];
+      } else {
+        error('Usage: rapid-tools review update-issue <set-id> [<wave-id>] <issue-id> <status>');
+        process.exit(1);
+      }
+      if (!setId || !issueId || !newStatus) {
+        error('Usage: rapid-tools review update-issue <set-id> [<wave-id>] <issue-id> <status>');
         process.exit(1);
       }
       try {
-        review.updateIssueStatus(cwd, setId, waveId, issueId, newStatus);
+        review.updateIssueStatus(cwd, setId, issueId, newStatus);
         output(JSON.stringify({ updated: true }));
       } catch (err) {
         output(JSON.stringify({ error: err.message }));
@@ -1631,8 +1659,9 @@ async function handleReview(cwd, subcommand, args) {
               status: 'open',
               createdAt: new Date().toISOString(),
             };
-            // Log the issue
-            review.logIssue(cwd, setId, waveId, issue);
+            // Log the issue (3-param: cwd, setId, issue with originatingWave)
+            issue.originatingWave = waveId;
+            review.logIssue(cwd, setId, issue);
             issues.push(issue);
             needsAttention.push(issue);
           }
