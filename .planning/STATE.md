@@ -1,17 +1,17 @@
 ---
-gsd_state_version: 1.0
+rapid_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
-status: completed
-stopped_at: Phase 34 context gathered
-last_updated: "2026-03-10T08:49:59.010Z"
-last_activity: 2026-03-10 -- Phase 33 Plan 01 complete (schema extension + 3 helper functions)
+status: in-progress
+stopped_at: Completed 34-01-PLAN.md
+last_updated: "2026-03-10T09:18:51Z"
+last_activity: 2026-03-10 -- Phase 34 Plan 01 complete (agent infrastructure + CLI enhancements)
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 20
+  total_plans: 3
+  completed_plans: 2
+  percent: 40
 ---
 
 # Project State
@@ -21,22 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 33 - Merge State Schema & Infrastructure
+**Current focus:** Phase 34 - Core Merge Subagent Delegation
 
 ## Current Position
 
-Phase: 33 of 37 (Merge State Schema & Infrastructure)
-Plan: 1 of 1 (complete)
-Status: Phase 33 complete
-Last activity: 2026-03-10 -- Phase 33 Plan 01 complete (schema extension + 3 helper functions)
+Phase: 34 of 37 (Core Merge Subagent Delegation)
+Plan: 1 of 2 (34-01 complete)
+Status: Plan 01 complete, Plan 02 pending
+Last activity: 2026-03-10 -- Phase 34 Plan 01 complete (agent infrastructure + CLI enhancements)
 
-Progress: [##........] 20%
+Progress: [####......] 40%
 
 ## Performance Metrics
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 33 | 01 | 5min | 2 | 2 |
+| 34 | 01 | 7min | 2 | 4 |
 
 ## Accumulated Context
 
@@ -45,11 +46,13 @@ Progress: [##........] 20%
 Full decision log in PROJECT.md Key Decisions table.
 
 Recent:
+- role-set-merger.md absorbs merger semantic analysis inline (self-contained subagent)
+- set-merger gets Edit tool for applying T3 resolutions to worktree files
+- --agent-phase flag on existing update-status (smaller API surface than new subcommand)
+- prepare-context uses best-effort file detection (graceful on missing branches)
 - parseSetMergerReturn in merge.cjs not returns.cjs (merge-specific field knowledge)
 - compressResult uses escalatedConflicts.length for escalated count
 - Token budgets validated: ~43 tokens/set compressed, ~111 tokens/10-file launch briefing
-- v2.2 roadmap: 5 phases derived from 11 requirements at fine granularity
-- Schema+infrastructure before delegation code (prevent schema drift breaking read/write pipeline)
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T08:49:59.009Z
-Stopped at: Phase 34 context gathered
-Resume file: .planning/phases/34-core-merge-subagent-delegation/34-CONTEXT.md
+Last session: 2026-03-10T09:18:51Z
+Stopped at: Completed 34-01-PLAN.md
+Resume file: .planning/phases/34-core-merge-subagent-delegation/34-02-PLAN.md
