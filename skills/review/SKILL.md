@@ -742,7 +742,7 @@ Write UAT results to `.planning/waves/{setId}/REVIEW-UAT.md`:
 For each failed UAT step, log it as a review issue:
 
 ```bash
-echo '{"id":"SET-{setId}-uat-{N}","type":"uat-failure","severity":"high","source":"uat","file":"N/A","description":"UAT step {N} failed: {description}","evidence":"{failure details}","originatingWave":"unattributed","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
+echo '{"id":"SET-{setId}-uat-{N}","type":"uat","severity":"high","source":"uat","file":"N/A","description":"UAT step {N} failed: {description}","evidence":"{failure details}","originatingWave":"unattributed","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
 ```
 
 ## Step 5: Generate Review Summary
