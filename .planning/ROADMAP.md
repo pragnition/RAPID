@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 29: Discuss Phase Optimization** - Batch related questions to halve user interactions during discuss (completed 2026-03-10)
 - [x] **Phase 30: Plan Verifier** - New agent that validates job plans for coverage, implementability, and consistency (completed 2026-03-10)
 - [x] **Phase 31: Wave Orchestration** - Auto-chain wave planning and execution with dependency-aware sequencing (completed 2026-03-10)
-- [ ] **Phase 32: Review Efficiency** - Scoper agent delegates focused context to review agents, reducing token waste
+- [x] **Phase 32: Review Efficiency** - Scoper agent delegates focused context to review agents, reducing token waste (completed 2026-03-10)
 
 ## Phase Details
 
@@ -202,4 +202,4 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 29.1 Set-Based Review | 4/4 | Complete    | 2026-03-10 | - |
 | 30. Plan Verifier | 2/2 | Complete    | 2026-03-10 | - |
 | 31. Wave Orchestration | 3/3 | Complete    | 2026-03-10 | - |
-| 32. Review Efficiency | 1/2 | In Progress|  | - |
+| 32. Review Efficiency | 2/2 | Complete   | 2026-03-10 | - |

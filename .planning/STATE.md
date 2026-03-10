@@ -1,16 +1,16 @@
 ---
-rapid_state_version: 1.0
+gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: completed
-stopped_at: Phase 32 context gathered
-last_updated: "2026-03-10T06:36:33.032Z"
-last_activity: 2026-03-10 -- Phase 31 plan 02 (plan-set skill)
+stopped_at: Completed 32-02-PLAN.md
+last_updated: "2026-03-10T07:05:32.619Z"
+last_activity: 2026-03-10 -- Phase 32 plan 02 (SKILL.md concern-based scoping)
 progress:
   total_phases: 10
-  completed_phases: 9
-  total_plans: 20
-  completed_plans: 21
+  completed_phases: 10
+  total_plans: 22
+  completed_plans: 22
   percent: 100
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 32 (tenth of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
-Plan: 1 of 1 in Phase 32 (plan 01 complete)
-Status: Phase 32 plan 01 complete -- scoper agent infrastructure + concern-scoping functions
-Last activity: 2026-03-10 -- Phase 32 plan 01 (scoper agent infrastructure)
+Plan: 2 of 2 in Phase 32 (plan 02 complete)
+Status: Phase 32 complete -- review pipeline restructured with concern-based scoping
+Last activity: 2026-03-10 -- Phase 32 plan 02 (SKILL.md concern-based scoping)
 
 Progress: [██████████] 100%
 
@@ -56,6 +56,7 @@ Progress: [██████████] 100%
 *Updated after each plan completion*
 | Phase 31 P02 | 3min | 1 tasks | 1 files |
 | Phase 32 P01 | 4min | 2 tasks | 6 files |
+| Phase 32 P02 | 2min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,10 @@ Recent:
 - Phase 32: Scoper color is blue (planning/analysis group) matching wave-analyzer
 - Phase 32: normalizedLevenshtein uses standard DP matrix -- no external dependency
 - Phase 32: 50% cross-cutting boundary uses strict greater-than (exactly 50% does NOT trigger fallback)
+- [Phase 32]: Step 2.5 placement preserves all existing step numbers (sub-step numbering per Phase 30 precedent)
+- [Phase 32]: Concern-scoped path comes first in Step 4a/4b with fallback path retaining original chunk logic
+- [Phase 32]: Step 4b.2.5 merges+deduplicates BEFORE adversarial pipeline (one advocate + one judge on merged set)
+- [Phase 32]: UAT (Step 4c) explicitly unchanged -- full scope, never concern-scoped
 
 ### Pending Todos
 
@@ -163,6 +168,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T06:58:56Z
-Stopped at: Completed 32-01-PLAN.md
-Resume file: .planning/phases/32-review-efficiency/32-01-SUMMARY.md
+Last session: 2026-03-10T07:05:32.616Z
+Stopped at: Completed 32-02-PLAN.md
+Resume file: None
