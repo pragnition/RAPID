@@ -1,16 +1,16 @@
 ---
-rapid_state_version: 1.0
+gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: Phase 29.1 plan 02 executed -- CLI dual-mode + role modules updated
-stopped_at: Completed 29.1-02-PLAN.md
-last_updated: "2026-03-10T02:07:01Z"
-last_activity: 2026-03-10 -- Phase 29.1 CLI dual-mode + role module update plan 02 executed
+status: Phase 29.1 complete -- set-level review orchestrator rewritten
+stopped_at: Completed 29.1-03-PLAN.md
+last_updated: "2026-03-10T02:14:55Z"
+last_activity: 2026-03-10 -- Phase 29.1 plan 03 executed, review SKILL.md rewritten for set-level orchestration
 progress:
   total_phases: 10
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
   percent: 97
 ---
 
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 29.1 in progress (seventh of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
-Plan: 2 of 3 in Phase 29.1 (complete)
-Status: Phase 29.1 plan 02 executed -- CLI dual-mode + role modules updated
-Last activity: 2026-03-10 -- Phase 29.1 CLI dual-mode + role module update plan 02 executed
+Phase: 29.1 complete (seventh of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
+Plan: 3 of 3 in Phase 29.1 (complete)
+Status: Phase 29.1 complete -- set-level review orchestrator rewritten
+Last activity: 2026-03-10 -- Phase 29.1 plan 03 executed, review SKILL.md rewritten for set-level orchestration
 
-Progress: [██████████] 97%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 4.5min
-- Total execution time: 1.05 hours
+- Total plans completed: 14
+- Average duration: 4.4min
+- Total execution time: 1.1 hours
 
 **By Phase:**
 
@@ -49,7 +49,7 @@ Progress: [██████████] 97%
 | 27.1 | 3 | 28min | 9.3min |
 | 28 | 2 | 6min | 3min |
 | 29 | 1 | 2min | 2min |
-| 29.1 | 2 | 12min | 6min |
+| 29.1 | 3 | 16min | 5.3min |
 
 *Updated after each plan completion*
 
@@ -101,6 +101,11 @@ Recent:
 - Phase 29.1: Dual-mode CLI by arg count (no new subcommands) preserves interface stability and backward compat
 - Phase 29.1: 4-arg update-issue accepts wave-id positionally but ignores it for file lookup (set-level path)
 - Phase 29.1: scope 1-arg enriches response with chunks + waveAttribution; 2-arg keeps lean response
+- Phase 29.1: Per-wave loop (Step 3) replaced with single set-level pass (Step 4) in review SKILL.md
+- Phase 29.1: Acceptance criteria aggregated from ALL waves before stage execution (dedicated Step 3)
+- Phase 29.1: Chunked unit test plan presented as single combined approval (not per-chunk)
+- Phase 29.1: UAT always runs on full set scope (never chunked) per locked user decision
+- Phase 29.1: Lean wave-level review documented as explicitly unaffected in Important Notes
 
 ### Pending Todos
 
@@ -134,6 +139,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T02:07:01Z
-Stopped at: Completed 29.1-02-PLAN.md
+Last session: 2026-03-10T02:14:55Z
+Stopped at: Completed 29.1-03-PLAN.md
 Resume file: None

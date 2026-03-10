@@ -130,7 +130,7 @@ Plans:
   6. All review artifacts (REVIEW-UNIT.md, REVIEW-BUGS.md, REVIEW-UAT.md, REVIEW-ISSUES.json) live at set level
   7. Findings are tagged with originating wave via JOB-PLAN.md file list attribution
   8. Lean review (wave-level, called from /rapid:execute) is completely unaffected
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 29.1-01-PLAN.md -- TDD: Refactor review.cjs to set-level API (scopeSetForReview, chunkByDirectory, buildWaveAttribution, set-level issue management)
@@ -197,7 +197,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 27.1 Skill-to-Agent Overhaul | 3/3 | Complete    | 2026-03-09 | - |
 | 28. Workflow Clarity | 2/2 | Complete    | 2026-03-09 | - |
 | 29. Discuss Phase Optimization | 1/1 | Complete    | 2026-03-10 | - |
-| 29.1 Set-Based Review | 2/3 | In Progress|  | - |
+| 29.1 Set-Based Review | 3/3 | Complete   | 2026-03-10 | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
 | 31. Wave Orchestration | v2.1 | 0/? | Not started | - |
 | 32. Review Efficiency | v2.1 | 0/? | Not started | - |
