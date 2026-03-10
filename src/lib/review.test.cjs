@@ -791,6 +791,392 @@ describe('generateReviewSummary', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// ScoperOutput Schema Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('ScoperOutput schema', () => {
+  it('validates correct scoper output JSON', () => {
+    const output = {
+      concerns: [
+        {
+          name: 'state-logic',
+          files: ['src/lib/state.cjs', 'src/lib/transitions.cjs'],
+          rationale: {
+            'src/lib/state.cjs': 'Core state management',
+            'src/lib/transitions.cjs': 'Transition table definitions',
+          },
+        },
+      ],
+      crossCutting: [
+        { file: 'src/lib/utils.cjs', rationale: 'Shared utilities' },
+      ],
+      totalFiles: 3,
+      concernCount: 1,
+      crossCuttingCount: 1,
+    };
+    const result = review.ScoperOutput.parse(output);
+    assert.equal(result.concerns.length, 1);
+    assert.equal(result.concerns[0].name, 'state-logic');
+    assert.equal(result.crossCutting.length, 1);
+    assert.equal(result.totalFiles, 3);
+    assert.equal(result.concernCount, 1);
+    assert.equal(result.crossCuttingCount, 1);
+  });
+
+  it('rejects missing required fields', () => {
+    assert.throws(() => {
+      review.ScoperOutput.parse({ concerns: [] });
+    });
+  });
+
+  it('validates empty concerns and crossCutting arrays', () => {
+    const output = {
+      concerns: [],
+      crossCutting: [],
+      totalFiles: 0,
+      concernCount: 0,
+      crossCuttingCount: 0,
+    };
+    const result = review.ScoperOutput.parse(output);
+    assert.deepStrictEqual(result.concerns, []);
+    assert.deepStrictEqual(result.crossCutting, []);
+  });
+
+  it('validates multiple concerns with rationale records', () => {
+    const output = {
+      concerns: [
+        {
+          name: 'cli',
+          files: ['src/bin/cli.cjs'],
+          rationale: { 'src/bin/cli.cjs': 'CLI entry point' },
+        },
+        {
+          name: 'lib',
+          files: ['src/lib/review.cjs'],
+          rationale: { 'src/lib/review.cjs': 'Review library' },
+        },
+      ],
+      crossCutting: [],
+      totalFiles: 2,
+      concernCount: 2,
+      crossCuttingCount: 0,
+    };
+    const result = review.ScoperOutput.parse(output);
+    assert.equal(result.concerns.length, 2);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// ReviewIssue concern field Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('ReviewIssue concern field', () => {
+  it('accepts optional concern field (string)', () => {
+    const issue = {
+      id: 'I-100',
+      type: 'bug',
+      severity: 'high',
+      file: 'src/auth.cjs',
+      description: 'Test with concern',
+      source: 'bug-hunt',
+      status: 'open',
+      createdAt: '2026-03-08T10:00:00Z',
+      concern: 'authentication',
+    };
+    const result = review.ReviewIssue.parse(issue);
+    assert.equal(result.concern, 'authentication');
+  });
+
+  it('succeeds without concern field (backward compat)', () => {
+    const issue = {
+      id: 'I-101',
+      type: 'bug',
+      severity: 'high',
+      file: 'src/auth.cjs',
+      description: 'No concern field',
+      source: 'bug-hunt',
+      status: 'open',
+      createdAt: '2026-03-08T10:00:00Z',
+    };
+    const result = review.ReviewIssue.parse(issue);
+    assert.equal(result.concern, undefined);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// normalizedLevenshtein Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('normalizedLevenshtein', () => {
+  it('returns 1.0 for identical strings', () => {
+    assert.equal(review.normalizedLevenshtein('hello', 'hello'), 1.0);
+  });
+
+  it('returns 0 for completely different strings of same length (one char strings)', () => {
+    assert.equal(review.normalizedLevenshtein('a', 'b'), 0);
+  });
+
+  it('returns value between 0 and 1 for similar strings', () => {
+    const sim = review.normalizedLevenshtein('kitten', 'sitting');
+    assert.ok(sim > 0, 'Should be > 0');
+    assert.ok(sim < 1, 'Should be < 1');
+  });
+
+  it('handles empty strings (both empty = identical)', () => {
+    assert.equal(review.normalizedLevenshtein('', ''), 1);
+  });
+
+  it('handles one empty string', () => {
+    assert.equal(review.normalizedLevenshtein('abc', ''), 0);
+    assert.equal(review.normalizedLevenshtein('', 'abc'), 0);
+  });
+
+  it('is symmetric', () => {
+    const sim1 = review.normalizedLevenshtein('abc', 'abd');
+    const sim2 = review.normalizedLevenshtein('abd', 'abc');
+    assert.equal(sim1, sim2);
+  });
+
+  it('returns higher similarity for more similar strings', () => {
+    const simClose = review.normalizedLevenshtein('Missing null check on auth', 'Missing null check on token');
+    const simFar = review.normalizedLevenshtein('Missing null check on auth', 'Unused variable in tests');
+    assert.ok(simClose > simFar, `Close (${simClose}) should be > far (${simFar})`);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// scopeByConcern Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('scopeByConcern', () => {
+  it('returns concern groups with cross-cutting files included in ALL groups', () => {
+    const scoperOutput = {
+      concerns: [
+        { name: 'state', files: ['src/state.cjs'], rationale: { 'src/state.cjs': 'State management' } },
+        { name: 'cli', files: ['src/cli.cjs'], rationale: { 'src/cli.cjs': 'CLI interface' } },
+      ],
+      crossCutting: [
+        { file: 'src/utils.cjs', rationale: 'Shared utilities' },
+      ],
+      totalFiles: 3,
+      concernCount: 2,
+      crossCuttingCount: 1,
+    };
+    const allFiles = ['src/state.cjs', 'src/cli.cjs', 'src/utils.cjs'];
+
+    const result = review.scopeByConcern(scoperOutput, allFiles);
+    assert.equal(result.fallback, false);
+    assert.equal(result.concernGroups.length, 2);
+
+    // Cross-cutting file should be in ALL groups
+    for (const group of result.concernGroups) {
+      assert.ok(group.files.includes('src/utils.cjs'), `${group.concern} should include cross-cutting file`);
+    }
+
+    // State group has state.cjs + utils.cjs
+    const stateGroup = result.concernGroups.find(g => g.concern === 'state');
+    assert.ok(stateGroup.files.includes('src/state.cjs'));
+    assert.ok(stateGroup.files.includes('src/utils.cjs'));
+
+    // CLI group has cli.cjs + utils.cjs
+    const cliGroup = result.concernGroups.find(g => g.concern === 'cli');
+    assert.ok(cliGroup.files.includes('src/cli.cjs'));
+    assert.ok(cliGroup.files.includes('src/utils.cjs'));
+  });
+
+  it('returns fallback=true with warning when cross-cutting >50% of total files', () => {
+    const scoperOutput = {
+      concerns: [
+        { name: 'state', files: ['src/state.cjs'], rationale: {} },
+      ],
+      crossCutting: [
+        { file: 'src/utils.cjs', rationale: 'Shared' },
+        { file: 'src/config.cjs', rationale: 'Config' },
+        { file: 'src/constants.cjs', rationale: 'Constants' },
+      ],
+      totalFiles: 4,
+      concernCount: 1,
+      crossCuttingCount: 3,
+    };
+    const allFiles = ['src/state.cjs', 'src/utils.cjs', 'src/config.cjs', 'src/constants.cjs'];
+
+    const result = review.scopeByConcern(scoperOutput, allFiles);
+    assert.equal(result.fallback, true);
+    assert.deepStrictEqual(result.concernGroups, []);
+    assert.ok(result.warning, 'Should include warning message');
+    assert.ok(result.warning.includes('50%'), 'Warning should mention 50% threshold');
+  });
+
+  it('returns fallback=false when cross-cutting <=50%', () => {
+    const scoperOutput = {
+      concerns: [
+        { name: 'state', files: ['src/a.cjs', 'src/b.cjs'], rationale: {} },
+      ],
+      crossCutting: [
+        { file: 'src/utils.cjs', rationale: 'Shared' },
+      ],
+      totalFiles: 3,
+      concernCount: 1,
+      crossCuttingCount: 1,
+    };
+    const allFiles = ['src/a.cjs', 'src/b.cjs', 'src/utils.cjs'];
+
+    const result = review.scopeByConcern(scoperOutput, allFiles);
+    assert.equal(result.fallback, false);
+    assert.equal(result.concernGroups.length, 1);
+  });
+
+  it('handles single concern (all files in one group)', () => {
+    const scoperOutput = {
+      concerns: [
+        { name: 'everything', files: ['src/a.cjs', 'src/b.cjs', 'src/c.cjs'], rationale: {} },
+      ],
+      crossCutting: [],
+      totalFiles: 3,
+      concernCount: 1,
+      crossCuttingCount: 0,
+    };
+    const allFiles = ['src/a.cjs', 'src/b.cjs', 'src/c.cjs'];
+
+    const result = review.scopeByConcern(scoperOutput, allFiles);
+    assert.equal(result.fallback, false);
+    assert.equal(result.concernGroups.length, 1);
+    assert.equal(result.concernGroups[0].concern, 'everything');
+    assert.equal(result.concernGroups[0].files.length, 3);
+  });
+
+  it('handles empty concerns array', () => {
+    const scoperOutput = {
+      concerns: [],
+      crossCutting: [],
+      totalFiles: 0,
+      concernCount: 0,
+      crossCuttingCount: 0,
+    };
+    const allFiles = [];
+
+    const result = review.scopeByConcern(scoperOutput, allFiles);
+    assert.equal(result.fallback, false);
+    assert.deepStrictEqual(result.concernGroups, []);
+  });
+
+  it('exact 50% boundary is not fallback (<=50%)', () => {
+    const scoperOutput = {
+      concerns: [
+        { name: 'code', files: ['src/a.cjs'], rationale: {} },
+      ],
+      crossCutting: [
+        { file: 'src/b.cjs', rationale: 'Shared' },
+      ],
+      totalFiles: 2,
+      concernCount: 1,
+      crossCuttingCount: 1,
+    };
+    const allFiles = ['src/a.cjs', 'src/b.cjs'];
+
+    const result = review.scopeByConcern(scoperOutput, allFiles);
+    assert.equal(result.fallback, false, 'Exactly 50% should NOT trigger fallback');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// deduplicateFindings Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('deduplicateFindings', () => {
+  it('keeps both findings when files differ', () => {
+    const findings = [
+      { file: 'src/a.cjs', description: 'Missing null check', severity: 'high', concern: 'state' },
+      { file: 'src/b.cjs', description: 'Missing null check', severity: 'high', concern: 'cli' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 2);
+  });
+
+  it('merges when same file and similar description (>0.7 similarity)', () => {
+    const findings = [
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse result', severity: 'high', concern: 'auth' },
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse output', severity: 'medium', concern: 'tokens' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 1, 'Should merge similar findings on same file');
+  });
+
+  it('keeps higher severity finding when deduplicating', () => {
+    const findings = [
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse result', severity: 'high', concern: 'auth' },
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse output', severity: 'medium', concern: 'tokens' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].severity, 'high', 'Higher severity should win');
+  });
+
+  it('keeps longer evidence when severity is equal', () => {
+    const findings = [
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse result', severity: 'high', evidence: 'short' },
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse output', severity: 'high', evidence: 'this is a much longer evidence string with more detail' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 1);
+    assert.ok(result[0].evidence.length > 10, 'Should keep the finding with longer evidence');
+  });
+
+  it('preserves concern tags on surviving findings', () => {
+    const findings = [
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse result', severity: 'critical', concern: 'authentication' },
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse output', severity: 'high', concern: 'tokens' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].concern, 'authentication', 'Winner should preserve its concern tag');
+  });
+
+  it('returns empty array for empty input', () => {
+    const result = review.deduplicateFindings([]);
+    assert.deepStrictEqual(result, []);
+  });
+
+  it('keeps findings with different descriptions on same file', () => {
+    const findings = [
+      { file: 'src/auth.cjs', description: 'Missing null check on token', severity: 'high' },
+      { file: 'src/auth.cjs', description: 'SQL injection vulnerability in query builder', severity: 'critical' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 2, 'Different descriptions should not be deduplicated');
+  });
+
+  it('handles single finding (no dedup needed)', () => {
+    const findings = [
+      { file: 'src/auth.cjs', description: 'Missing null check', severity: 'high' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 1);
+  });
+
+  it('uses codeSnippet as fallback when evidence is missing for equal severity', () => {
+    const findings = [
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse result', severity: 'high', codeSnippet: 'x' },
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse output', severity: 'high', codeSnippet: 'const token = parseToken(input); // no null check on result' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 1);
+    assert.ok(result[0].codeSnippet.length > 10, 'Should keep finding with longer codeSnippet');
+  });
+
+  it('handles three-way dedup: A beats B, A beats C', () => {
+    const findings = [
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse result', severity: 'critical', concern: 'scope-1' },
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse output', severity: 'high', concern: 'scope-2' },
+      { file: 'src/auth.cjs', description: 'Missing null check on token parse value', severity: 'medium', concern: 'scope-3' },
+    ];
+    const result = review.deduplicateFindings(findings);
+    assert.equal(result.length, 1, 'Should deduplicate all three into one');
+    assert.equal(result[0].severity, 'critical', 'Highest severity should win');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // Export Tests
 // ────────────────────────────────────────────────────────────────
 
@@ -838,5 +1224,21 @@ describe('module exports', () => {
 
   it('exports REVIEW_CONSTANTS', () => {
     assert.ok(review.REVIEW_CONSTANTS);
+  });
+
+  it('exports scopeByConcern', () => {
+    assert.equal(typeof review.scopeByConcern, 'function');
+  });
+
+  it('exports deduplicateFindings', () => {
+    assert.equal(typeof review.deduplicateFindings, 'function');
+  });
+
+  it('exports normalizedLevenshtein', () => {
+    assert.equal(typeof review.normalizedLevenshtein, 'function');
+  });
+
+  it('exports ScoperOutput schema', () => {
+    assert.ok(review.ScoperOutput);
   });
 });
