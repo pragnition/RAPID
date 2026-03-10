@@ -1,11 +1,11 @@
 ---
-description: Review completed waves/sets -- orchestrates unit test, bug hunt, and UAT pipeline
+description: Review completed sets -- orchestrates unit test, bug hunt, and UAT pipeline
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
 ---
 
 # /rapid:review -- Review Pipeline Orchestrator
 
-You are the RAPID review orchestrator. This skill runs the full review pipeline on completed waves within a set: unit testing, adversarial bug hunting (hunter/advocate/judge), and user acceptance testing. The user controls which stages to run. Follow these steps IN ORDER. Do not skip steps.
+You are the RAPID review orchestrator. This skill runs the full review pipeline on a completed set: unit testing, adversarial bug hunting (hunter/advocate/judge), and user acceptance testing. The review operates at the set level -- all changed files across all waves are scoped together and reviewed in a single pass, with directory chunking for large scopes. The user controls which stages to run. Follow these steps IN ORDER. Do not skip steps.
 
 ## Step 0: Environment + Set Resolution
 
@@ -28,7 +28,9 @@ node "${RAPID_TOOLS}" display banner review
 
 ### 0b: Parse arguments
 
-The user invokes this skill with: `/rapid:review <set-id>` (all waves), `/rapid:review <set-id> <wave-id>` (specific wave), or numeric shorthand like `/rapid:review 1` or `/rapid:review 1 1.1`.
+The user invokes this skill with: `/rapid:review <set-id>` or numeric shorthand like `/rapid:review 1`.
+
+**Wave-specific review is no longer supported.** If the user passes a wave argument (e.g., `/rapid:review 1 1.1`), ignore it with a note: "Wave-specific review is no longer supported. Reviewing entire set."
 
 #### Resolve Set Reference
 
@@ -47,23 +49,6 @@ SET_NAME=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFile
 
 Use `SET_NAME` for all subsequent operations.
 
-#### Resolve Wave Reference (if provided)
-
-If `<wave-id>` was also provided (e.g., `/rapid:review auth wave-1` or `/rapid:review 1 1.1`), use the `--set` flag for single-call two-arg resolution:
-
-```bash
-# (env preamble here)
-RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve wave "<wave-input>" --set "<set-input>" 2>&1)
-RESOLVE_EXIT=$?
-if [ $RESOLVE_EXIT -ne 0 ]; then
-  echo "$RESOLVE_RESULT"
-  # Display the error message from the JSON and STOP
-fi
-WAVE_ID=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.waveId)")
-```
-
-Parse the JSON result to extract `setId`, `waveId`, `setIndex`, `waveIndex`. Use `WAVE_ID` for all subsequent wave-specific operations.
-
 If `<set-id>` was not provided, use AskUserQuestion to ask:
 - **question:** "Which set to review?"
 - **options:** List available sets from STATE.json by running:
@@ -71,7 +56,7 @@ If `<set-id>` was not provided, use AskUserQuestion to ask:
   node "${RAPID_TOOLS}" state get --all
   ```
 
-Parse the set-id (and optional wave-id) from the user's invocation.
+Parse the set-id from the user's invocation.
 
 ### 0c: Validate set status
 
@@ -121,75 +106,68 @@ Record the selected stages as a list. The stage order is always: unit test, then
 | Unit test + Bug hunt | yes | yes | no |
 | Bug hunt + UAT | no | yes | yes |
 
-## Step 2: Resolve Waves
+## Step 2: Scope Set Files
 
-Determine which waves to review:
-
-**If the user specified a wave-id:** Review only that wave.
-
-**Otherwise:** Read STATE.json (already loaded in Step 0c) and iterate through the set's waves. Only include waves in `complete` or `reconciling` status -- skip waves that are `pending` or `executing` (they haven't finished yet).
+Scope all changed files across the entire set in a single call:
 
 ```bash
-node "${RAPID_TOOLS}" state get --all
+SCOPE_RESULT=$(node "${RAPID_TOOLS}" review scope <set-id>)
 ```
 
-Parse the set's waves and filter by status. If no reviewable waves are found:
+Parse the JSON output: `{ changedFiles, dependentFiles, totalFiles, chunks, waveAttribution }`.
 
-> No reviewable waves in set '{set-id}'. All waves must be in 'complete' or 'reconciling' status. Run `/rapid:execute {set-id}` to complete pending waves.
-
-Exit.
-
-Build the wave list for iteration. Record total wave count for progress display.
-
-## Step 3: For Each Wave (Sequential)
-
-Process waves sequentially. For each wave:
-
-### Step 3.0: Compute review scope
-
-```bash
-node "${RAPID_TOOLS}" review scope <set-id> <wave-id>
-```
-
-Parse the JSON output: `{ changedFiles, dependentFiles, totalFiles }`.
+- `changedFiles` -- array of files changed in the set branch vs main
+- `dependentFiles` -- array of files that import changed files (one-hop dependents)
+- `totalFiles` -- total count of changed + dependent files
+- `chunks` -- array of `{ dir, files }` directory groups (pre-computed by the scope command using the 15-file threshold)
+- `waveAttribution` -- map of `{ filePath: waveId }` derived from JOB-PLAN.md file lists across all waves
 
 Print a banner:
 
 ```
 --- RAPID Review ---
 Set: {setId}
-Wave: {waveId} ({index}/{total})
-Scope: {totalFiles} files ({changedFiles} changed + {dependentFiles} dependents)
+Scope: {totalFiles} files ({changedFiles.length} changed + {dependentFiles.length} dependents)
+Chunks: {chunks.length} directory group(s)
 Stages: {selected stages, comma-separated}
 --------------------
 ```
 
-### Step 3a: Unit Test Stage (if selected)
+Store `chunks` and `waveAttribution` for use in subsequent stages.
 
-Skip this step if unit testing was not selected in Step 1.
+## Step 3: Load Acceptance Criteria
 
-#### 3a.1: Extract acceptance criteria
-
-Read JOB-PLAN.md files for this wave to extract acceptance criteria:
+Read ALL JOB-PLAN.md files across ALL waves in the set to extract acceptance criteria. Iterate wave directories:
 
 ```bash
+# For each wave in the set, list job plans
 node "${RAPID_TOOLS}" wave-plan list-jobs <set-id> <wave-id>
 ```
 
-Parse the JSON output to get the list of JOB-PLAN.md file paths. Read each JOB-PLAN.md file and extract acceptance criteria sections.
+For each wave directory found under `.planning/waves/{setId}/`, call `wave-plan list-jobs` to get job plan file paths, then read each JOB-PLAN.md to extract acceptance criteria sections.
 
-#### 3a.2: Spawn unit-tester subagent (test plan phase)
+Aggregate acceptance criteria from all waves into a single list. This provides context for unit test and UAT stages. Tag each criterion with its originating wave for traceability.
 
-Spawn the **rapid-unit-tester** agent with this task:
+## Step 4: Run Selected Stages on Set Scope
+
+### Step 4a: Unit Test Stage (if selected)
+
+Skip this step if unit testing was not selected in Step 1.
+
+#### 4a.1: Plan generation
+
+**If chunks.length <= 1 (single chunk or no chunking):**
+
+Spawn ONE **rapid-unit-tester** agent with the full file list and aggregated acceptance criteria:
 
 ```
-Review wave '{waveId}' in set '{setId}' -- Phase 1: Test Plan Generation.
+Review set '{setId}' -- Phase 1: Test Plan Generation.
 
 ## Scoped Files
-{list of files from review scope}
+{list of ALL files from review scope}
 
 ## Acceptance Criteria
-{acceptance criteria from JOB-PLAN.md files}
+{aggregated acceptance criteria from all waves}
 
 ## Working Directory
 {worktreePath}
@@ -199,42 +177,65 @@ Generate a test plan listing every test case. Return it via:
 <!-- RAPID:RETURN {"status":"CHECKPOINT","data":{"testPlan":[{"file":"...","testCase":"...","description":"...","expectedBehavior":"..."}]}} -->
 ```
 
-#### 3a.3: Present test plan for approval
+**If chunks.length > 1 (multiple chunks):**
 
-Parse RAPID:RETURN from subagent output. If `status=CHECKPOINT` (test plan ready):
+Spawn one **rapid-unit-tester** agent PER CHUNK in parallel (up to 5 concurrent via Agent tool). Each agent gets its chunk's files plus acceptance criteria relevant to those files:
 
-Display the test plan to the user in a readable format:
+```
+Review set '{setId}', chunk: {chunk.dir} ({chunk.files.length} files) -- Phase 1: Test Plan Generation.
+
+## Scoped Files (this chunk only)
+{chunk.files list}
+
+## Acceptance Criteria
+{acceptance criteria relevant to this chunk's files}
+
+## Working Directory
+{worktreePath}
+
+## Phase 1: Test Plan Generation
+Generate a test plan for your chunk's files only. Return it via:
+<!-- RAPID:RETURN {"status":"CHECKPOINT","data":{"testPlan":[{"file":"...","testCase":"...","description":"...","expectedBehavior":"..."}]}} -->
+```
+
+Collect all test plans from all chunks.
+
+#### 4a.2: Present test plan for approval
+
+Present the combined test plan, grouped by directory chunk:
 
 ```
 --- Unit Test Plan ---
-{For each test case:}
+[{chunk.dir}] ({N} tests)
   [{index}] {file}: {testCase}
        {description}
        Expected: {expectedBehavior}
+
+[{chunk.dir}] ({N} tests)
+  [{index}] {file}: {testCase}
+       ...
 ----------------------
 ```
 
 Use AskUserQuestion:
-- **question:** "Approve test plan for wave {waveId}? ({N} test cases)"
+- **question:** "Approve test plan for set {setId}? ({totalN} test cases across {chunks.length} chunk(s))"
 - **options:**
   - "Approve" -- description: "Proceed with writing and running tests"
   - "Modify" -- description: "Describe changes to the test plan"
-  - "Skip unit tests" -- description: "Skip testing for this wave"
+  - "Skip unit tests" -- description: "Skip testing for this set"
 
-**If "Approve":** Proceed to Step 3a.4.
+**If "Approve":** Proceed to Step 4a.3.
 
-**If "Modify":** Use AskUserQuestion to collect the user's modifications:
-- **question:** "Describe modifications to the test plan"
-Re-invoke the unit-tester subagent with the user's feedback appended to the prompt. Repeat Step 3a.3.
+**If "Modify":** Use AskUserQuestion to collect the user's modifications. Re-invoke the unit-tester subagent(s) with the user's feedback appended to the prompt. Repeat Step 4a.2.
 
-**If "Skip":** Move to Step 3b (bug hunt) or 3c (UAT) depending on selected stages.
+**If "Skip":** Move to Step 4b (bug hunt) or 4c (UAT) depending on selected stages.
 
-#### 3a.4: Spawn unit-tester subagent (execution phase)
+#### 4a.3: Execute tests
 
-Re-invoke the **rapid-unit-tester** agent with this task:
+**If single chunk:** Re-invoke the **rapid-unit-tester** agent:
 
 ```
-Execute approved tests for wave '{waveId}' in set '{setId}' -- Phase 2: Write and Execute Tests.
+Execute approved tests for set '{setId}' -- Phase 2: Write and Execute Tests.
 
 ## Approved Test Plan
 {the approved test plan}
@@ -248,30 +249,33 @@ Return results via:
 <!-- RAPID:RETURN {"status":"COMPLETE","data":{"testsWritten":N,"testsPassed":N,"testsFailed":N,"output":"...","testFiles":["..."]}} -->
 ```
 
-#### 3a.5: Process unit test results
+**If multiple chunks:** Spawn execution agents per chunk in parallel (up to 5 concurrent). Each agent writes and runs tests for its chunk's files only.
 
-Parse RAPID:RETURN from subagent output. Extract `{ testsWritten, testsPassed, testsFailed, output, testFiles }`.
+Merge results across chunks: sum `testsWritten`, `testsPassed`, `testsFailed` across all chunks.
+
+#### 4a.4: Process unit test results
 
 Print results:
 
 ```
 --- Unit Test Results ---
-Wave: {waveId}
+Set: {setId}
 Tests written: {testsWritten}
 Tests passed: {testsPassed}
 Tests failed: {testsFailed}
 -------------------------
 ```
 
-#### 3a.6: Write REVIEW-UNIT.md
+#### 4a.5: Write REVIEW-UNIT.md
 
-Write unit test results to `.planning/waves/{setId}/{waveId}/REVIEW-UNIT.md`:
+Write unit test results to `.planning/waves/{setId}/REVIEW-UNIT.md`:
 
 ```markdown
-# Unit Test Review - Wave {waveId}
+# Unit Test Review - Set {setId}
 
 **Date:** {ISO timestamp}
-**Scope:** {totalFiles} files ({changedFiles} changed + {dependentFiles} dependents)
+**Scope:** {totalFiles} files ({changedFiles.length} changed + {dependentFiles.length} dependents)
+**Chunks:** {chunks.length} directory group(s)
 
 ## Summary
 
@@ -296,15 +300,15 @@ Write unit test results to `.planning/waves/{setId}/{waveId}/REVIEW-UNIT.md`:
 {if any failed tests, list them with failure details}
 ```
 
-#### 3a.7: Log test failures as issues
+#### 4a.6: Log test failures as issues
 
-For each failed test, log it as a review issue:
+For each failed test, log it as a review issue. Look up `originatingWave` from the `waveAttribution` map for the test's target file:
 
 ```bash
-echo '{"type":"test-failure","severity":"high","source":"unit-test","file":"<test-file>","description":"<failure description>","evidence":"<error output>"}' | node "${RAPID_TOOLS}" review log-issue <set-id> <wave-id>
+echo '{"id":"SET-{setId}-unit-{N}","type":"test","severity":"high","source":"unit-test","file":"<test-file>","description":"<failure description>","originatingWave":"<from waveAttribution>","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
 ```
 
-### Step 3b: Bug Hunt Stage (if selected)
+### Step 4b: Bug Hunt Stage (if selected)
 
 Skip this step if bug hunting was not selected in Step 1.
 
@@ -316,23 +320,51 @@ Initialize: `cycle = 1`, `modifiedFiles = []` (empty for cycle 1).
 
 **For cycle = 1 to 3:**
 
-##### 3b.1: Determine scope
+##### 4b.1: Determine scope
 
-- **Cycle 1:** Use the full review scope (all changed files + dependents from Step 3.0).
-- **Cycle 2+:** Narrow scope to ONLY the files modified by the bugfix agent in the previous cycle (`modifiedFiles` from previous iteration). If `modifiedFiles` is empty, break the loop (nothing was changed, no new bugs to find).
+- **Cycle 1:** Use the full review scope. If `chunks.length > 1`, use chunked scope. If single chunk, use flat scope.
+- **Cycle 2+:** Narrow scope to ONLY the files modified by the bugfix agent in the previous cycle (`modifiedFiles` from previous iteration). If `modifiedFiles` is empty, break the loop (nothing was changed, no new bugs to find). **No re-chunking for cycles 2-3** -- always flat scope on modified files only.
 
-##### 3b.2: Spawn bug-hunter subagent
+##### 4b.2: Spawn bug-hunter subagent(s)
 
-Spawn the **rapid-bug-hunter** agent with this task:
+**Cycle 1 with chunks.length > 1 (multiple chunks):**
+
+Spawn one **rapid-bug-hunter** agent PER CHUNK in parallel (up to 5 concurrent):
 
 ```
-Analyze wave '{waveId}' in set '{setId}' (cycle {cycle}).
+Analyze set '{setId}', chunk: {chunk.dir} ({chunk.files.length} files) (cycle {cycle}).
+
+## Scoped Files (ONLY report bugs in these files)
+{chunk.files list}
+
+## Set Context
+{set context: what changed and why}
+
+## Working Directory
+{worktreePath}
+
+## Instructions
+Analyze each scoped file for bugs, logic errors, and code quality issues.
+Return findings via:
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"findings":[{"id":"C{chunkIndex}-F-{N}","file":"...","line":N,"category":"...","description":"...","risk":"critical|high|medium|low","confidence":"high|medium|low","evidence":"..."}],"totalFindings":N}} -->
+```
+
+Prefix chunk index to finding IDs to prevent collisions: `C1-F-001`, `C2-F-001`, etc.
+
+Collect all findings from all hunters and merge into a single array.
+
+**Cycle 1 with single chunk (or cycles 2-3):**
+
+Spawn ONE **rapid-bug-hunter** agent with the full scoped file list:
+
+```
+Analyze set '{setId}' (cycle {cycle}).
 
 ## Scoped Files (ONLY report bugs in these files)
 {scoped file list for this cycle}
 
-## Wave Context
-{wave context: what changed and why}
+## Set Context
+{set context: what changed and why}
 
 ## Working Directory
 {worktreePath}
@@ -345,26 +377,26 @@ Return findings via:
 
 Parse RAPID:RETURN: `{ findings, totalFindings }`.
 
-##### 3b.3: Check for zero findings
+##### 4b.3: Check for zero findings
 
-If `totalFindings` is 0: print message and break the cycle loop.
+If `totalFindings` is 0 (across all chunks): print message and break the cycle loop.
 
 ```
 Bug hunt cycle {cycle}: no findings. Codebase clean.
 ```
 
-##### 3b.4: Spawn devils-advocate subagent
+##### 4b.4: Spawn devils-advocate subagent
 
-Spawn the **rapid-devils-advocate** agent with this task:
+Spawn ONE **rapid-devils-advocate** agent on the merged findings:
 
 ```
-Challenge findings for wave '{waveId}' in set '{setId}'.
+Challenge findings for set '{setId}' (cycle {cycle}).
 
 ## Hunter Findings
-{JSON array of findings from bug-hunter}
+{JSON array of merged findings from all hunters}
 
 ## Scoped Files
-{same scoped file list}
+{full scoped file list}
 
 ## Working Directory
 {worktreePath}
@@ -372,17 +404,17 @@ Challenge findings for wave '{waveId}' in set '{setId}'.
 ## Instructions
 Challenge each finding with counter-evidence from the code. You are read-only.
 Return assessments via:
-<!-- RAPID:RETURN {"status":"COMPLETE","data":{"assessments":[{"findingId":"F-{N}","challenge":"...","counterEvidence":"...","verdict":"agree|disagree|uncertain"}]}} -->
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"assessments":[{"findingId":"...","challenge":"...","counterEvidence":"...","verdict":"agree|disagree|uncertain"}]}} -->
 ```
 
 Parse RAPID:RETURN: `{ assessments }`.
 
-##### 3b.5: Spawn judge subagent
+##### 4b.5: Spawn judge subagent
 
-Spawn the **rapid-judge** agent with this task:
+Spawn ONE **rapid-judge** agent on merged findings + advocate assessments:
 
 ```
-Rule on findings for wave '{waveId}' in set '{setId}'.
+Rule on findings for set '{setId}' (cycle {cycle}).
 
 ## Hunter Findings
 {JSON array of findings}
@@ -400,7 +432,7 @@ For each finding, weigh hunter evidence against advocate challenge and rule:
 - DEFERRED: insufficient evidence, needs human input
 
 Return rulings via:
-<!-- RAPID:RETURN {"status":"COMPLETE","data":{"rulings":[{"findingId":"F-{N}","ruling":"ACCEPTED|DISMISSED|DEFERRED","reasoning":"..."}],"accepted":N,"dismissed":N,"deferred":N}} -->
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"rulings":[{"findingId":"...","ruling":"ACCEPTED|DISMISSED|DEFERRED","reasoning":"..."}],"accepted":N,"dismissed":N,"deferred":N}} -->
 ```
 
 Parse RAPID:RETURN: `{ rulings, accepted, dismissed, deferred }`.
@@ -411,7 +443,7 @@ Print ruling summary:
 Bug hunt cycle {cycle}: {accepted} accepted, {dismissed} dismissed, {deferred} deferred
 ```
 
-##### 3b.6: Handle DEFERRED rulings
+##### 4b.6: Handle DEFERRED rulings
 
 For each ruling where `ruling === "DEFERRED"`, present the evidence to the developer for a final call.
 
@@ -430,21 +462,21 @@ For each DEFERRED finding:
 4. Based on user response:
    - "Accept": Change ruling to ACCEPTED, add to accepted bugs list.
    - "Dismiss": Change ruling to DISMISSED.
-   - "Defer": Keep as DEFERRED, log as issue for later:
+   - "Defer": Keep as DEFERRED, log as issue for later. Look up `originatingWave` from `waveAttribution` for the finding's file:
      ```bash
-     echo '{"type":"bug","severity":"{risk}","source":"bug-hunt","file":"{file}","line":{line},"description":"{description}","evidence":"{evidence}","status":"deferred"}' | node "${RAPID_TOOLS}" review log-issue <set-id> <wave-id>
+     echo '{"id":"SET-{setId}-hunt-{N}","type":"bug","severity":"{risk}","source":"bug-hunt","file":"{file}","line":{line},"description":"{description}","evidence":"{evidence}","originatingWave":"<from waveAttribution>","status":"deferred","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
      ```
 
-##### 3b.7: Write REVIEW-BUGS.md
+##### 4b.7: Write REVIEW-BUGS.md
 
-Write bug hunt results to `.planning/waves/{setId}/{waveId}/REVIEW-BUGS.md`:
+Write bug hunt results to `.planning/waves/{setId}/REVIEW-BUGS.md`:
 
 ```markdown
-# Bug Hunt Review - Wave {waveId}
+# Bug Hunt Review - Set {setId}
 
 **Date:** {ISO timestamp}
 **Cycles completed:** {cycle}
-**Scope:** {totalFiles} files
+**Scope:** {totalFiles} files across {chunks.length} chunk(s)
 
 ## Summary
 
@@ -461,24 +493,31 @@ Write bug hunt results to `.planning/waves/{setId}/{waveId}/REVIEW-BUGS.md`:
 - **File:** {file}:{line}
 - **Risk:** {risk} | **Confidence:** {confidence}
 - **Category:** {category}
+- **Originating wave:** {originatingWave from waveAttribution}
 - **Hunter evidence:** {evidence}
 - **Advocate challenge:** {challenge}
 - **Ruling:** {ruling}
 - **Reasoning:** {reasoning}
 ```
 
-##### 3b.8: Collect ACCEPTED bugs and spawn bugfix agent
+##### 4b.8: Collect ACCEPTED bugs and spawn bugfix agent
 
-Collect all ACCEPTED bugs (including those upgraded from DEFERRED by the user in Step 3b.6).
+Collect all ACCEPTED bugs (including those upgraded from DEFERRED by the user in Step 4b.6).
 
 **If no ACCEPTED bugs:** Print "No bugs to fix." and break the cycle loop.
 
 **If ACCEPTED bugs exist:**
 
-Spawn the **rapid-bugfix** agent with this task:
+Log each accepted bug as an issue. Look up `originatingWave` from `waveAttribution`:
+
+```bash
+echo '{"id":"SET-{setId}-hunt-{N}","type":"bug","severity":"{risk}","source":"bug-hunt","file":"{file}","line":{line},"description":"{description}","evidence":"{evidence}","originatingWave":"<from waveAttribution>","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
+```
+
+Spawn the **rapid-bugfix** agent:
 
 ```
-Fix accepted bugs for wave '{waveId}' in set '{setId}'.
+Fix accepted bugs for set '{setId}' (cycle {cycle}).
 
 ## Accepted Bugs
 {JSON array of accepted bug findings with full evidence}
@@ -494,19 +533,19 @@ For each accepted bug:
 4. Commit: git add <file> && git commit -m "fix({setId}): {brief description}"
 
 Return results via:
-<!-- RAPID:RETURN {"status":"COMPLETE","data":{"fixed":[{"findingId":"F-{N}","file":"...","description":"..."}],"unfixable":[{"findingId":"F-{N}","reason":"..."}],"modifiedFiles":["..."]}} -->
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"fixed":[{"findingId":"...","file":"...","description":"..."}],"unfixable":[{"findingId":"...","reason":"..."}],"modifiedFiles":["..."]}} -->
 ```
 
 Parse RAPID:RETURN: `{ fixed, unfixable, modifiedFiles }`.
 
 **Log unfixable bugs as issues:**
 ```bash
-echo '{"type":"bug","severity":"high","source":"bug-hunt","file":"{file}","description":"Unfixable: {reason}","status":"open"}' | node "${RAPID_TOOLS}" review log-issue <set-id> <wave-id>
+echo '{"id":"SET-{setId}-hunt-{N}","type":"bug","severity":"high","source":"bug-hunt","file":"{file}","description":"Unfixable: {reason}","originatingWave":"<from waveAttribution>","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
 ```
 
 **Update issue status for fixed bugs:**
 ```bash
-node "${RAPID_TOOLS}" review update-issue <set-id> <wave-id> <issue-id> fixed
+node "${RAPID_TOOLS}" review update-issue <set-id> <issue-id> fixed
 ```
 
 **Record modifiedFiles** for scope narrowing in the next cycle.
@@ -517,9 +556,9 @@ Print cycle results:
 Bugfix cycle {cycle}: {fixed.length} fixed, {unfixable.length} unfixable
 ```
 
-**Continue to next cycle** (increment `cycle`, go back to Step 3b.1).
+**Continue to next cycle** (increment `cycle`, go back to Step 4b.1).
 
-##### 3b.9: After cycle 3 with remaining unfixed bugs
+##### 4b.9: After cycle 3 with remaining unfixed bugs
 
 After completing 3 cycles, if there are still ACCEPTED bugs that were not fixed (unfixable from any cycle):
 
@@ -535,32 +574,29 @@ For each remaining unfixed bug, use AskUserQuestion:
 Update issue statuses based on user response:
 - "Fix manually": Log as issue with status `open`:
   ```bash
-  echo '{"type":"bug","severity":"high","source":"bug-hunt","file":"{file}","description":"Manual fix needed: {description}","status":"open"}' | node "${RAPID_TOOLS}" review log-issue <set-id> <wave-id>
+  echo '{"id":"SET-{setId}-hunt-{N}","type":"bug","severity":"high","source":"bug-hunt","file":"{file}","description":"Manual fix needed: {description}","originatingWave":"<from waveAttribution>","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
   ```
 - "Defer": Log as issue with status `deferred`
 - "Dismiss": Log as issue with status `dismissed`
 
-### Step 3c: UAT Stage (if selected)
+### Step 4c: UAT Stage (if selected)
 
 Skip this step if UAT was not selected in Step 1.
 
-#### 3c.1: Load context for test scenario derivation
+UAT runs ONCE on the full set scope -- it is NOT chunked. UAT tests user workflows, not individual files.
 
-Read JOB-PLAN.md acceptance criteria (already loaded in Step 3a.1 if unit test ran, otherwise load now):
+#### 4c.1: Load context for test scenario derivation
 
-```bash
-node "${RAPID_TOOLS}" wave-plan list-jobs <set-id> <wave-id>
-```
+Read JOB-PLAN.md acceptance criteria (already loaded in Step 3 if it ran, otherwise load now using the same approach from Step 3).
 
-Read each JOB-PLAN.md file to extract acceptance criteria.
-
-Also read WAVE-CONTEXT.md for design decisions that inform test scenarios:
+Also read WAVE-CONTEXT.md files from all waves for design decisions that inform test scenarios:
 
 ```bash
+# For each wave directory
 cat .planning/waves/{setId}/{waveId}/WAVE-CONTEXT.md 2>/dev/null
 ```
 
-#### 3c.2: Determine browser automation tool
+#### 4c.2: Determine browser automation tool
 
 Check `.planning/config.json` for a `browserAutomation` field:
 
@@ -579,18 +615,21 @@ If `browserAutomation` is NOT set, use AskUserQuestion:
 
 Record the chosen tool.
 
-#### 3c.3: Spawn UAT subagent (test plan phase)
+#### 4c.3: Spawn UAT subagent (test plan phase)
 
-Spawn the **rapid-uat** agent with this task:
+Spawn the **rapid-uat** agent with the full set scope and all acceptance criteria:
 
 ```
-UAT for wave '{waveId}' in set '{setId}' -- Phase 1: Test Plan Generation.
+UAT for set '{setId}' -- Phase 1: Test Plan Generation.
 
 ## Acceptance Criteria
-{acceptance criteria from JOB-PLAN.md files}
+{ALL aggregated acceptance criteria from all waves}
 
 ## User Decisions
-{decisions from WAVE-CONTEXT.md}
+{decisions from WAVE-CONTEXT.md files across all waves}
+
+## Scoped Files
+{ALL files from review scope -- full set scope, not chunked}
 
 ## Browser Automation Tool
 {chosen tool: Chrome DevTools MCP / Playwright MCP / None}
@@ -604,7 +643,7 @@ Return via:
 <!-- RAPID:RETURN {"status":"CHECKPOINT","data":{"testPlan":[{"step":N,"description":"...","type":"automated|human","expectedResult":"...","automationDetails":"..."}]}} -->
 ```
 
-#### 3c.4: Present UAT test plan for approval
+#### 4c.4: Present UAT test plan for approval
 
 Parse RAPID:RETURN from subagent output. Display the test plan:
 
@@ -618,24 +657,24 @@ Parse RAPID:RETURN from subagent output. Display the test plan:
 ```
 
 Use AskUserQuestion:
-- **question:** "Approve UAT test plan for wave {waveId}? ({N} steps: {automated} automated, {human} human)"
+- **question:** "Approve UAT test plan for set {setId}? ({N} steps: {automated} automated, {human} human)"
 - **options:**
   - "Approve" -- description: "Run the test plan as tagged"
   - "Modify tags" -- description: "Change which steps are automated vs human"
-  - "Skip UAT" -- description: "Skip acceptance testing for this wave"
+  - "Skip UAT" -- description: "Skip acceptance testing for this set"
 
-**If "Approve":** Proceed to Step 3c.5.
+**If "Approve":** Proceed to Step 4c.5.
 
-**If "Modify tags":** Use AskUserQuestion to collect modifications. Re-invoke UAT subagent with updated tags. Repeat Step 3c.4.
+**If "Modify tags":** Use AskUserQuestion to collect modifications. Re-invoke UAT subagent with updated tags. Repeat Step 4c.4.
 
-**If "Skip":** Move to next wave or Step 4.
+**If "Skip":** Move to Step 5.
 
-#### 3c.5: Spawn UAT subagent (execution phase)
+#### 4c.5: Spawn UAT subagent (execution phase)
 
-Re-invoke the **rapid-uat** agent with this task:
+Re-invoke the **rapid-uat** agent:
 
 ```
-Execute approved UAT tests for wave '{waveId}' in set '{setId}' -- Phase 2: Execute Tests.
+Execute approved UAT tests for set '{setId}' -- Phase 2: Execute Tests.
 
 ## Approved Test Plan
 {the approved test plan with step types}
@@ -670,16 +709,16 @@ Return via:
 **If status is COMPLETE:**
 - Parse results: `{ stepsPassed, stepsFailed, stepsSkipped, results }`
 
-#### 3c.6: Write REVIEW-UAT.md
+#### 4c.6: Write REVIEW-UAT.md
 
-Write UAT results to `.planning/waves/{setId}/{waveId}/REVIEW-UAT.md`:
+Write UAT results to `.planning/waves/{setId}/REVIEW-UAT.md`:
 
 ```markdown
-# UAT Review - Wave {waveId}
+# UAT Review - Set {setId}
 
 **Date:** {ISO timestamp}
 **Browser tool:** {chosen tool}
-**Scope:** {totalFiles} files
+**Scope:** {totalFiles} files (full set scope)
 
 ## Summary
 
@@ -698,31 +737,17 @@ Write UAT results to `.planning/waves/{setId}/{waveId}/REVIEW-UAT.md`:
 - **Details:** {result details or failure description}
 ```
 
-#### 3c.7: Log failed UAT steps as issues
+#### 4c.7: Log failed UAT steps as issues
 
 For each failed UAT step, log it as a review issue:
 
 ```bash
-echo '{"type":"uat-failure","severity":"high","source":"uat","file":"N/A","description":"UAT step {N} failed: {description}","evidence":"{failure details}"}' | node "${RAPID_TOOLS}" review log-issue <set-id> <wave-id>
+echo '{"id":"SET-{setId}-uat-{N}","type":"uat-failure","severity":"high","source":"uat","file":"N/A","description":"UAT step {N} failed: {description}","evidence":"{failure details}","originatingWave":"unattributed","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
 ```
 
-### Step 3d: Wave review complete
+## Step 5: Generate Review Summary
 
-Print wave completion message:
-
-```
---- Wave {waveId} Review Complete ---
-{if unit test ran:} Unit tests: {passed} passed, {failed} failed
-{if bug hunt ran:}  Bug hunt: {accepted} accepted, {dismissed} dismissed, {deferred} deferred
-{if UAT ran:}       UAT: {passed} passed, {failed} failed, {skipped} skipped
--------------------------------------
-```
-
-Continue to next wave (back to Step 3.0).
-
-## Step 4: Generate Review Summary
-
-After all waves have been reviewed, generate a consolidated review summary:
+After all selected stages have completed, generate a consolidated review summary:
 
 ```bash
 node "${RAPID_TOOLS}" review summary <set-id>
@@ -730,35 +755,34 @@ node "${RAPID_TOOLS}" review summary <set-id>
 
 This writes `REVIEW-SUMMARY.md` to `.planning/waves/{setId}/REVIEW-SUMMARY.md`.
 
-Print the summary to the user:
+Print the completion banner:
 
 ```
 --- RAPID Review Complete ---
 Set: {setId}
-Waves reviewed: {N}
-Unit tests: {totalPassed} passed, {totalFailed} failed
-Bug hunt: {totalAccepted} accepted, {totalDismissed} dismissed, {totalDeferred} deferred
-UAT: {totalPassed} passed, {totalFailed} failed, {totalSkipped} skipped
+Scope: {totalFiles} files across {chunks.length} chunk(s)
+Unit tests: {passed} passed, {failed} failed
+Bug hunt: {accepted} accepted, {dismissed} dismissed, {deferred} deferred
+UAT: {passed} passed, {failed} failed, {skipped} skipped
 Open issues: {count}
 
 Review artifacts:
   .planning/waves/{setId}/REVIEW-SUMMARY.md
-  .planning/waves/{setId}/{waveId}/REVIEW-UNIT.md
-  .planning/waves/{setId}/{waveId}/REVIEW-BUGS.md
-  .planning/waves/{setId}/{waveId}/REVIEW-UAT.md
+  .planning/waves/{setId}/REVIEW-UNIT.md
+  .planning/waves/{setId}/REVIEW-BUGS.md
+  .planning/waves/{setId}/REVIEW-UAT.md
 -----------------------------
 ```
 
 Only list artifact paths for stages that were actually run. If a stage was skipped, omit its artifact line.
 
-## Step 5: Next Steps
+## Step 6: Next Steps
 
 Display the available next steps. Extract the setIndex from the resolve step at Step 0b:
 
 > **Next steps:**
 > - `/rapid:merge {setIndex}` -- *Set is ready, proceed to merge*
 > - `/rapid:review {setIndex}` -- *Re-run review cycle on this set*
-> - `/rapid:execute {setIndex} --fix-issues` -- *Fix remaining issues first*
 
 Where `{setIndex}` is the numeric index of the set resolved at Step 0.
 
@@ -766,14 +790,18 @@ Then exit. Do NOT prompt for selection.
 
 ## Important Notes
 
+- **Directory chunking groups files by parent directory when scope exceeds 15 files.** Each chunk is processed by a separate agent in parallel (up to 5 concurrent). Small directories (< 3 files) merge into neighboring chunks. If chunking results in only 1 chunk, a single-agent pass is used regardless of file count.
+- **Wave attribution tags findings with their originating wave.** Attribution is derived from JOB-PLAN.md file lists across all waves in the set. Files not in any job plan are tagged as `"unattributed"`. This is best-effort -- the `waveAttribution` map is built by the scope command.
 - **Agent tool isolation:** This skill uses the Agent tool to spawn subagents. Each subagent runs in its own context window. Subagents CANNOT spawn sub-subagents -- this skill (the orchestrator) is the sole dispatcher.
 - **Adversarial pipeline is the quality gate.** The hunter finds, the advocate challenges, the judge rules. This is not a rubber-stamp process. The three agents are independent and adversarial by design.
 - **DEFERRED rulings ALWAYS require human input.** The skill pauses and presents evidence from both the hunter and the advocate. The developer makes the final call -- accept, dismiss, or defer.
 - **Iteration limit is 3 bugfix cycles.** After 3 hunt-fix-re-hunt cycles, remaining bugs are presented to the user with per-bug options: fix manually, defer, or dismiss. This prevents infinite fix loops.
-- **Re-hunts narrow scope.** Cycles 2 and 3 only analyze files the bugfix agent modified in the previous cycle. This prevents scope creep and ensures the re-hunt is targeted.
+- **Re-hunts narrow scope.** Cycles 2 and 3 only analyze files the bugfix agent modified in the previous cycle. No re-chunking for re-hunts -- flat scope on modified files only. This prevents scope creep and ensures the re-hunt is targeted.
+- **UAT runs once on the full set scope.** UAT tests user workflows across the entire set, not individual files or chunks. It is never chunked.
 - **UAT browser automation depends on MCP tool availability.** If the configured browser automation tool is not available at runtime, automated steps should be converted to human steps. The UAT subagent handles this gracefully.
-- **Review state is set-level.** The set transitions `executing` -> `reviewing`. Wave states are unchanged -- waves stay in their current status (`complete` or `reconciling`). Review does not modify wave state.
-- **All review artifacts are committed at the end.** After all waves are reviewed and REVIEW-SUMMARY.md is generated, the orchestrator should commit review artifacts alongside STATE.json.
+- **Review state is set-level.** The set transitions `executing` -> `reviewing`. The review does not modify individual wave states.
+- **All review artifacts are committed at the end.** After all stages complete and REVIEW-SUMMARY.md is generated, the orchestrator should commit review artifacts alongside STATE.json.
 - **Stage ordering is fixed.** When multiple stages are selected, they always run in order: unit test, then bug hunt, then UAT. This ensures unit test failures inform the bug hunt, and both inform UAT.
 - **Idempotent re-entry.** If a previous review session was interrupted, re-invoking `/rapid:review` picks up where it left off. The set is already in `reviewing` state, and existing REVIEW-*.md artifacts are preserved (overwritten only if the stage runs again).
-- **Token cost awareness.** The 3-agent adversarial bug hunt is the most expensive stage ($15-45 per cycle). Users can control costs by selecting only the stages they need and reviewing specific waves instead of entire sets.
+- **Token cost awareness.** The 3-agent adversarial bug hunt is the most expensive stage. Chunked parallel execution multiplies cost by chunk count per cycle. Users can control costs by selecting only the stages they need.
+- **Lean review is unaffected.** The lean wave-level review (`review lean <set-id> <wave-id>`) is a separate flow called from `/rapid:execute` during reconciliation. It continues to operate at the wave level and is not impacted by this set-level review orchestrator.
