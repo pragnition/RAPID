@@ -103,7 +103,6 @@ None.
 ### Blockers/Concerns
 
 - Token cost for 3-agent adversarial review needs monitoring in production use
-- AskUserQuestion batching behavior (Phase 29): spike deemed unnecessary -- standard AskUserQuestion usage, no exotic batching
 - Claude Code 5-subagent parallelism ceiling (Phase 31) needs testing with 2 waves first
 
 ### Quick Tasks Completed
