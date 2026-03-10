@@ -50,10 +50,10 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 
 ### Planning Pipeline
 
-- [ ] **PLAN-01**: Plan verifier agent checks coverage of all wave requirements against job plans
-- [ ] **PLAN-02**: Plan verifier checks implementability (referenced files exist or are created)
-- [ ] **PLAN-03**: Plan verifier checks consistency (no file ownership overlap within a wave)
-- [ ] **PLAN-04**: Plan verifier outputs VERIFICATION-REPORT.md with PASS/PASS_WITH_GAPS/FAIL verdict
+- [x] **PLAN-01**: Plan verifier agent checks coverage of all wave requirements against job plans
+- [x] **PLAN-02**: Plan verifier checks implementability (referenced files exist or are created)
+- [x] **PLAN-03**: Plan verifier checks consistency (no file ownership overlap within a wave)
+- [x] **PLAN-04**: Plan verifier outputs VERIFICATION-REPORT.md with PASS/PASS_WITH_GAPS/FAIL verdict
 - [ ] **PLAN-05**: FAIL verdict triggers user decision gate (re-plan / override / cancel)
 
 ### Wave Orchestration
@@ -120,10 +120,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SET-REVIEW-05 | Phase 29.1 | Complete |
 | SET-REVIEW-06 | Phase 29.1 | Complete |
 | SET-REVIEW-07 | Phase 29.1 | Complete |
-| PLAN-01 | Phase 30 | Pending |
-| PLAN-02 | Phase 30 | Pending |
-| PLAN-03 | Phase 30 | Pending |
-| PLAN-04 | Phase 30 | Pending |
+| PLAN-01 | Phase 30 | Complete |
+| PLAN-02 | Phase 30 | Complete |
+| PLAN-03 | Phase 30 | Complete |
+| PLAN-04 | Phase 30 | Complete |
 | PLAN-05 | Phase 30 | Pending |
 | WAVE-01 | Phase 31 | Pending |
 | WAVE-02 | Phase 31 | Pending |
