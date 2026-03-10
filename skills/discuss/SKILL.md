@@ -5,7 +5,7 @@ allowed-tools: Bash(rapid-tools:*), Read, AskUserQuestion, Glob, Grep, Agent
 
 # /rapid:discuss -- Wave Discussion
 
-You are the RAPID wave discussion facilitator. This skill captures developer implementation vision for a wave before autonomous planning begins. It follows a structured discussion pattern: identify gray areas, let the developer select which to discuss, then deep-dive each selected area with a 4-question loop.
+You are the RAPID wave discussion facilitator. This skill captures developer implementation vision for a wave before autonomous planning begins. It follows a structured discussion pattern: identify gray areas, let the developer select which to discuss, then deep-dive each selected area with a 2-round discussion.
 
 Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion at every decision point.
 
@@ -161,31 +161,39 @@ Analyze the wave context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, target 
 Present gray areas using AskUserQuestion with `multiSelect: true`:
 
 ```
-"I've analyzed the wave context and identified these areas that would benefit from your input. Select which to discuss (select none to let me decide all):"
+"I've analyzed the wave context and identified these areas that would benefit from your input. Select which areas to discuss:"
 
 Options (each as a selectable item):
-1. "{Gray area title}" -- "{Brief 1-sentence description of why this needs input}"
-2. "{Gray area title}" -- "{Brief description}"
-3. ...up to 8 areas
+1. "Let Claude decide all" -- "Skip discussion, I'll make all decisions based on codebase patterns"
+2. "{Gray area title}" -- "{Brief 1-sentence description of why this needs input}"
+3. "{Gray area title}" -- "{Brief description}"
+...up to 8 areas
 ```
 
-If the user selects none: Document that all areas are at Claude's discretion and skip to Step 6.
-
-Record selected gray areas for the deep-dive loop.
+**Handling responses:**
+- If the user selects "Let Claude decide all" (regardless of any other selections): Document that all areas are at Claude's discretion and skip to Step 6. This takes precedence over any other selections.
+- If the user selects none: Same behavior -- document all areas at Claude's discretion and skip to Step 6. (Backward compatible with old behavior.)
+- If the user selects specific gray areas (without "Let Claude decide all"): Record selected gray areas for Step 5.
 
 ---
 
-## Step 5: Deep-Dive Selected Areas
+## Step 5: Deep-Dive Selected Areas (2-Round Discussion)
 
-For EACH selected gray area, run a 4-question discussion loop. Track all decisions made.
+Process all selected gray areas in two rounds. Track all decisions made across both rounds.
 
-### Question 1: Open-ended exploration
+### Round 1: Approach Selection (all areas)
+
+For EACH selected gray area, present Interaction 1 back-to-back. Complete ALL Interaction 1s before moving to Round 2.
+
+#### Interaction 1: Approach + Edge Case Context
 
 Use AskUserQuestion:
 ```
 "How do you want to handle '{gray area title}'?
 
 Context: {2-3 sentences explaining the tradeoffs and why this matters}
+
+Edge case to consider: {1 key edge case or tradeoff most likely to affect the approach choice}
 
 Options:
 - "{Approach A}" -- "{Brief description of approach A}"
@@ -194,62 +202,38 @@ Options:
 - "Let Claude decide" -- "I'll choose based on the codebase patterns and contracts"
 ```
 
-If "Let Claude decide": Record the rationale for the autonomous choice. Skip to next gray area.
+If "Let Claude decide": Record Claude's chosen approach and rationale. This area still appears in Round 2 with Claude's decisions shown as discretion items.
 
-### Question 2: Follow-up probing
+After completing Interaction 1 for ALL selected gray areas, proceed to Round 2.
 
-Based on their answer to Q1, probe uncovered facets or edge cases:
+### Round 2: Specifics & Confirmation (all areas)
 
+For EACH selected gray area, present Interaction 2 back-to-back.
+
+#### Interaction 2: Summary + Specifics
+
+Use AskUserQuestion:
 ```
-"You chose {approach}. A few follow-up considerations:
+"'{Gray area title}' -- decisions so far:
+- Approach: {chosen approach from Round 1}
+{If delegated: '(Claude's discretion -- chose {approach} because {rationale})'}
 
-{Describe 1-2 edge cases or implications of their choice}
-
-Options:
-- "{Specific handling for edge case}" -- "{Description}"
-- "{Alternative handling}" -- "{Description}"
-- "Let Claude decide" -- "Handle edge cases based on best practices"
-```
-
-If "Let Claude decide": Record and move on.
-
-### Question 3: Specifics clarification
-
-Drill into implementation specifics:
-
-```
-"For the implementation details of {area}:
-
-{Describe specific file structure, naming, or pattern question}
+Remaining detail: {1-2 specific implementation questions about this area}
 
 Options:
 - "{Specific choice A}" -- "{Description}"
 - "{Specific choice B}" -- "{Description}"
-- "Let Claude decide" -- "Use whatever fits the existing codebase patterns"
+- "Looks good" -- "Lock all decisions for this area"
+- "Revise" -- "Go back and change the approach"
 ```
 
-If "Let Claude decide": Record and move on.
+**Handling responses:**
+- If "Looks good": Lock all decisions for this gray area. Continue to the next area's Interaction 2.
+- If a specific choice is selected: Record the choice, then lock all decisions for this area. Continue to the next area's Interaction 2.
+- If "Revise": Re-present ONLY this area's Interaction 1 (Round 1 question). After the user re-answers, re-present ONLY this area's Interaction 2. Then continue with the remaining Round 2 areas that have not yet been confirmed. Do NOT re-ask areas already confirmed.
+- If this area was delegated in Round 1: Still show the summary with Claude's chosen approach marked as discretion. The user can still "Revise" to take control, or "Looks good" to accept Claude's choice.
 
-### Question 4: Confirmation or revision
-
-Summarize the decisions made for this area and confirm:
-
-```
-"Summary for '{gray area title}':
-- {Decision 1}
-- {Decision 2}
-- {Decision 3}
-
-Options:
-- "Looks good" -- "Lock these decisions and move to the next area"
-- "Revise" -- "I want to change something about this approach"
-- "Let Claude decide the details" -- "The high-level direction is right, fine-tune as needed"
-```
-
-If "Revise": Go back to Q1 for this area.
-If "Let Claude decide the details": Lock the high-level decision, mark details as Claude's discretion.
-
-After completing all selected gray areas, proceed to Step 6.
+After completing Interaction 2 for ALL selected gray areas, proceed to Step 6.
 
 ---
 
