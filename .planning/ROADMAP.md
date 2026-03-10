@@ -179,11 +179,11 @@ Plans:
   2. Each review agent receives only the files the scoper assigned to its concern area
   3. Files the scoper is uncertain about are included in all review scopes as cross-cutting (no silent omissions)
   4. Review results from scoped agents are merged before presentation to the user
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 32-01: TBD
-- [ ] 32-02: TBD
+- [ ] 32-01-PLAN.md -- Scoper agent infrastructure: role module, ROLE_* registration, concern-scoping functions + dedup in review.cjs, TDD tests
+- [ ] 32-02-PLAN.md -- Restructure review SKILL.md: Step 2.5 scoper, concern-scoped stages, merge+dedup before adversarial pipeline
 
 ## Progress
 
@@ -202,4 +202,4 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 29.1 Set-Based Review | 4/4 | Complete    | 2026-03-10 | - |
 | 30. Plan Verifier | 2/2 | Complete    | 2026-03-10 | - |
 | 31. Wave Orchestration | 3/3 | Complete    | 2026-03-10 | - |
-| 32. Review Efficiency | v2.1 | 0/? | Not started | - |
+| 32. Review Efficiency | v2.1 | 0/2 | Not started | - |
