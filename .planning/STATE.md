@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
-status: verifying
-stopped_at: Phase 31 context gathered
-last_updated: "2026-03-10T05:29:21.370Z"
-last_activity: 2026-03-10 -- Phase 30 plan 02 (plan verifier pipeline integration)
+status: completed
+stopped_at: Completed 31-03-PLAN.md
+last_updated: "2026-03-10T05:51:11.179Z"
+last_activity: 2026-03-10 -- Phase 31 plan 03 (execute auto-advance)
 progress:
   total_phases: 10
   completed_phases: 8
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 20
+  completed_plans: 18
   percent: 99
 ---
 
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 30 - Plan Verifier
+**Current focus:** Phase 31 - Wave Orchestration
 
 ## Current Position
 
-Phase: 30 (eighth of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
-Plan: 2 of 2 in Phase 30 (plan 02 complete -- phase complete)
-Status: Phase 30 complete -- plan verifier agent created, registered, and integrated into wave-plan pipeline
-Last activity: 2026-03-10 -- Phase 30 plan 02 (plan verifier pipeline integration)
+Phase: 31 (ninth of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
+Plan: 3 of 3 in Phase 31 (plan 03 complete)
+Status: Phase 31 plan 03 complete -- execute skill auto-advance and --retry-wave flag
+Last activity: 2026-03-10 -- Phase 31 plan 03 (execute auto-advance)
 
 Progress: [██████████] 99%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 4.0min
-- Total execution time: 1.17 hours
+- Total plans completed: 19
+- Average duration: 3.9min
+- Total execution time: 1.18 hours
 
 **By Phase:**
 
@@ -51,6 +51,7 @@ Progress: [██████████] 99%
 | 29 | 1 | 2min | 2min |
 | 29.1 | 4 | 17min | 4.3min |
 | 30 | 2 | 4min | 2min |
+| 31 | 1 | 1min | 1min |
 
 *Updated after each plan completion*
 
@@ -113,6 +114,8 @@ Recent:
 - Phase 30: Step 5.5/6.5 numbering preserves backward compatibility -- no renumbering of existing steps
 - Phase 30: Maximum 1 re-plan attempt on FAIL -- second FAIL shows only override/cancel to prevent infinite loops
 - Phase 30: State transition deferred from Step 2 to Step 6.5 -- FAIL verdict blocks wave from entering planning state
+- [Phase 31]: PASS and PASS_WITH_WARNINGS auto-advance without AskUserQuestion -- only FAIL retains user gate
+- [Phase 31]: --retry-wave validates all predecessor waves are complete before allowing targeted retry
 
 ### Pending Todos
 
@@ -146,6 +149,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T05:29:21.367Z
-Stopped at: Phase 31 context gathered
-Resume file: .planning/phases/31-wave-orchestration/31-CONTEXT.md
+Last session: 2026-03-10T05:51:11.177Z
+Stopped at: Completed 31-03-PLAN.md
+Resume file: None
