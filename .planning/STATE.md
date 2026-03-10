@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Improvements & Fixes
 status: completed
-stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-03-10T05:54:22.671Z"
+stopped_at: Completed 31-02-PLAN.md
+last_updated: "2026-03-10T05:59:50.570Z"
 last_activity: 2026-03-10 -- Phase 31 plan 03 (execute auto-advance)
 progress:
   total_phases: 10
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 20
-  completed_plans: 19
+  completed_plans: 20
   percent: 99
 ---
 
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 Phase: 31 (ninth of 10 in v2.1: Phases 25-32 + 27.1 + 29.1)
 Plan: 3 of 3 in Phase 31 (plan 03 complete)
-Status: Phase 31 plan 03 complete -- execute skill auto-advance and --retry-wave flag
-Last activity: 2026-03-10 -- Phase 31 plan 03 (execute auto-advance)
+Status: Phase 31 complete -- all 3 plans done (wave-analyzer, plan-set skill, execute auto-advance)
+Last activity: 2026-03-10 -- Phase 31 plan 02 (plan-set skill)
 
 Progress: [██████████] 99%
 
@@ -54,6 +54,7 @@ Progress: [██████████] 99%
 | 31 | 2 | 5min | 2.5min |
 
 *Updated after each plan completion*
+| Phase 31 P02 | 3min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,10 @@ Recent:
 - Phase 31: plan-verifier.md added to KNOWN_OVERSIZED in build-agents tests (15.3KB, planning-family exception)
 - Phase 31: PASS and PASS_WITH_WARNINGS auto-advance without AskUserQuestion -- only FAIL retains user gate
 - Phase 31: --retry-wave validates all predecessor waves are complete before allowing targeted retry
+- [Phase 31]: Plan-set replicates wave-plan pipeline inline (skills cannot invoke skills)
+- [Phase 31]: Interleaved parallel dispatch pattern for Claude Code sub-sub-agent constraint
+- [Phase 31]: BFS-level batching from wave-analyzer dependency edges for parallel/sequential grouping
+- [Phase 31]: Re-entry skips analyzer entirely -- remaining discussing waves treated as sequential batch
 
 ### Pending Todos
 
@@ -153,6 +158,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T05:54:22.669Z
-Stopped at: Completed 31-01-PLAN.md
+Last session: 2026-03-10T05:59:50.567Z
+Stopped at: Completed 31-02-PLAN.md
 Resume file: None

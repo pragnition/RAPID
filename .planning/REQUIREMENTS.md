@@ -58,7 +58,7 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 
 ### Wave Orchestration
 
-- [ ] **WAVE-01**: Single command plans all waves in a set sequentially (auto-chaining)
+- [x] **WAVE-01**: Single command plans all waves in a set sequentially (auto-chaining)
 - [x] **WAVE-02**: Independent waves (no file overlap or cross-references) plan in parallel
 - [x] **WAVE-03**: Dependent waves plan sequentially with predecessor artifacts available
 - [x] **WAVE-04**: Execute runs waves sequentially without per-wave user approval gates
@@ -125,7 +125,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAN-03 | Phase 30 | Complete |
 | PLAN-04 | Phase 30 | Complete |
 | PLAN-05 | Phase 30 | Complete |
-| WAVE-01 | Phase 31 | Pending |
+| WAVE-01 | Phase 31 | Complete |
 | WAVE-02 | Phase 31 | Complete |
 | WAVE-03 | Phase 31 | Complete |
 | WAVE-04 | Phase 31 | Complete |
