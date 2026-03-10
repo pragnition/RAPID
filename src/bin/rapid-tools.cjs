@@ -486,6 +486,7 @@ function handleBuildAgents(cwd, args) {
     'plan-verifier':         'Read, Write, Grep, Glob',
     'wave-analyzer':         'Read, Grep, Glob',
     'scoper':                'Read, Grep, Glob',
+    'set-merger':            'Read, Write, Edit, Bash, Grep, Glob',
   };
 
   /**
@@ -521,6 +522,7 @@ function handleBuildAgents(cwd, args) {
     'plan-verifier': 'blue',
     'wave-analyzer': 'blue',
     'scoper': 'blue',
+    'set-merger': 'green',
   };
 
   /**
@@ -556,6 +558,7 @@ function handleBuildAgents(cwd, args) {
     'plan-verifier':         'RAPID plan verifier agent -- validates job plans for coverage, implementability, and consistency',
     'wave-analyzer':         'RAPID wave analyzer agent -- determines wave dependencies via LLM analysis of wave contexts',
     'scoper':                'RAPID scoper agent -- categorizes files by concern area for focused review scoping',
+    'set-merger':            'RAPID set merger agent -- runs detection, resolution, and gate for a single set merge',
   };
 
   /**
@@ -591,6 +594,7 @@ function handleBuildAgents(cwd, args) {
     'plan-verifier':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
     'wave-analyzer':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
     'scoper':                ['core-identity.md', 'core-returns.md'],
+    'set-merger':            ['core-identity.md', 'core-returns.md', 'core-git.md'],
   };
 
   function generateFrontmatter(role) {
