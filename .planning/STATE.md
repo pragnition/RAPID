@@ -3,15 +3,15 @@ rapid_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
 status: in-progress
-stopped_at: Completed 34-01-PLAN.md
-last_updated: "2026-03-10T09:18:51Z"
-last_activity: 2026-03-10 -- Phase 34 Plan 01 complete (agent infrastructure + CLI enhancements)
+stopped_at: Completed 34-02-PLAN.md
+last_updated: "2026-03-10T13:37:00Z"
+last_activity: 2026-03-10 -- Phase 34 complete (SKILL.md restructured with subagent dispatch)
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
-  percent: 40
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Current Position
 
-Phase: 34 of 37 (Core Merge Subagent Delegation)
-Plan: 1 of 2 (34-01 complete)
-Status: Plan 01 complete, Plan 02 pending
-Last activity: 2026-03-10 -- Phase 34 Plan 01 complete (agent infrastructure + CLI enhancements)
+Phase: 34 of 37 (Core Merge Subagent Delegation) -- COMPLETE
+Plan: 2 of 2 (34-02 complete)
+Status: Phase 34 complete, Phase 35 next
+Last activity: 2026-03-10 -- Phase 34 complete (SKILL.md restructured with subagent dispatch)
 
-Progress: [####......] 40%
+Progress: [######....] 60%
 
 ## Performance Metrics
 
@@ -38,6 +38,7 @@ Progress: [####......] 40%
 |-------|------|----------|-------|-------|
 | 33 | 01 | 5min | 2 | 2 |
 | 34 | 01 | 7min | 2 | 4 |
+| 34 | 02 | 5min | 2 | 1 |
 
 ## Accumulated Context
 
@@ -46,13 +47,15 @@ Progress: [####......] 40%
 Full decision log in PROJECT.md Key Decisions table.
 
 Recent:
+- Steps 3+4+5 collapsed into single Step 3 with 5 substeps (3a-3e) for dispatch-collect pattern
+- git merge-tree --write-tree as fast-path check before subagent dispatch (exit 0 = skip subagent)
+- CHECKPOINT auto-retried once with checkpoint handoff data before adding to blockedSets
+- Post-wave recovery uses Retry/Skip/Abort only (no "Resolve manually" per locked decision)
+- compressedResults accumulated in-memory during Step 3d, used for Step 8 summary (no MERGE-STATE re-read)
+- Max 2 total attempts per set (initial + 1 retry), counter is in-memory (fresh per invocation)
 - role-set-merger.md absorbs merger semantic analysis inline (self-contained subagent)
-- set-merger gets Edit tool for applying T3 resolutions to worktree files
 - --agent-phase flag on existing update-status (smaller API surface than new subcommand)
 - prepare-context uses best-effort file detection (graceful on missing branches)
-- parseSetMergerReturn in merge.cjs not returns.cjs (merge-specific field knowledge)
-- compressResult uses escalatedConflicts.length for escalated count
-- Token budgets validated: ~43 tokens/set compressed, ~111 tokens/10-file launch briefing
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T09:18:51Z
-Stopped at: Completed 34-01-PLAN.md
-Resume file: .planning/phases/34-core-merge-subagent-delegation/34-02-PLAN.md
+Last session: 2026-03-10T13:37:00Z
+Stopped at: Completed 34-02-PLAN.md (Phase 34 complete)
+Resume file: .planning/phases/35-adaptive-conflict-resolution/ (Phase 35 next)
