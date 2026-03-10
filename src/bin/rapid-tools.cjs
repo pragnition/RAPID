@@ -484,6 +484,7 @@ function handleBuildAgents(cwd, args) {
     'context-generator':     'Read, Write, Grep, Glob, Bash',
     'set-planner':           'Read, Write, Grep, Glob',
     'plan-verifier':         'Read, Write, Grep, Glob',
+    'wave-analyzer':         'Read, Grep, Glob',
   };
 
   /**
@@ -517,6 +518,7 @@ function handleBuildAgents(cwd, args) {
     'context-generator': 'blue',
     'set-planner': 'blue',
     'plan-verifier': 'blue',
+    'wave-analyzer': 'blue',
   };
 
   /**
@@ -550,6 +552,7 @@ function handleBuildAgents(cwd, args) {
     'context-generator':     'RAPID context generator agent -- produces project context documents for agent consumption',
     'set-planner':           'RAPID set planner agent -- decomposes milestones into parallelizable development sets',
     'plan-verifier':         'RAPID plan verifier agent -- validates job plans for coverage, implementability, and consistency',
+    'wave-analyzer':         'RAPID wave analyzer agent -- determines wave dependencies via LLM analysis of wave contexts',
   };
 
   /**
@@ -583,6 +586,7 @@ function handleBuildAgents(cwd, args) {
     'research-synthesizer':  ['core-identity.md', 'core-returns.md'],
     'roadmapper':            ['core-identity.md', 'core-returns.md'],
     'plan-verifier':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
+    'wave-analyzer':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
   };
 
   function generateFrontmatter(role) {
