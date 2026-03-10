@@ -5,7 +5,7 @@ allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
 
 # /rapid:review -- Review Pipeline Orchestrator
 
-You are the RAPID review orchestrator. This skill runs the full review pipeline on a completed set: unit testing, adversarial bug hunting (hunter/advocate/judge), and user acceptance testing. The review operates at the set level -- all changed files across all waves are scoped together and reviewed in a single pass, with directory chunking for large scopes. The user controls which stages to run. Follow these steps IN ORDER. Do not skip steps.
+You are the RAPID review orchestrator. This skill runs the full review pipeline on a completed set: unit testing, adversarial bug hunting (hunter/advocate/judge), and user acceptance testing. The review operates at the set level -- all changed files across all waves are scoped together. A scoper agent categorizes files by concern area before unit test and bug hunt stages, so each review agent receives only relevant files. Directory chunking applies within each concern group if it exceeds 15 files. The user controls which stages to run. Follow these steps IN ORDER. Do not skip steps.
 
 ## Step 0: Environment + Set Resolution
 
@@ -135,6 +135,52 @@ Stages: {selected stages, comma-separated}
 
 Store `chunks` and `waveAttribution` for use in subsequent stages.
 
+## Step 2.5: Concern-Based Scoping (Bug Hunt + Unit Test only)
+
+Skip this step entirely if NEITHER bug hunt NOR unit test was selected in Step 1. UAT always uses full scope and is never concern-scoped.
+
+Spawn the **rapid-scoper** agent with the full scoped file list from Step 2:
+
+```
+Review set '{setId}' -- categorize {totalFiles} files by concern area.
+
+## Scoped Files
+{list of ALL files from review scope (changedFiles + dependentFiles)}
+
+## Working Directory
+{worktreePath}
+
+## Instructions
+Read the scoped files and categorize each by concern area.
+Return via:
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{...ScoperOutput...}} -->
+```
+
+Parse the scoper's RAPID:RETURN output.
+
+### Cross-Cutting Fallback Check
+
+If `crossCuttingCount > totalFiles * 0.5`:
+- Log warning: "Cross-cutting files ({crossCuttingCount}/{totalFiles}) exceed 50% threshold. Falling back to directory chunking."
+- Set `useConcernScoping = false` -- Steps 4a and 4b will use the directory chunks from Step 2 (existing behavior)
+
+If `crossCuttingCount <= totalFiles * 0.5`:
+- Set `useConcernScoping = true`
+- Build concern groups: for each concern, the file list is the concern's own files PLUS all cross-cutting files
+- Within each concern group, if the group exceeds 15 files (CHUNK_THRESHOLD), apply `chunkByDirectory` to split it further
+- Store the concern groups for Steps 4a and 4b
+
+Print concern scope banner:
+
+```
+--- Concern Scoping ---
+Set: {setId}
+Concerns: {concernCount} ({concern names, comma-separated})
+Cross-cutting: {crossCuttingCount} file(s)
+Scoping: {'concern-based' if useConcernScoping else 'directory chunking (fallback)'}
+-----------------------
+```
+
 ## Step 3: Load Acceptance Criteria
 
 Read ALL JOB-PLAN.md files across ALL waves in the set to extract acceptance criteria. Iterate wave directories:
@@ -155,6 +201,36 @@ Aggregate acceptance criteria from all waves into a single list. This provides c
 Skip this step if unit testing was not selected in Step 1.
 
 #### 4a.1: Plan generation
+
+**If `useConcernScoping` is true:**
+
+Instead of using directory chunks from Step 2, use concern groups from Step 2.5. Spawn one **rapid-unit-tester** agent PER CONCERN GROUP in parallel (up to 5 concurrent). Each agent gets its concern group's files (concern files + cross-cutting files). If a concern group exceeds 15 files, it was already sub-chunked by directory in Step 2.5 -- spawn one agent per sub-chunk.
+
+```
+Review set '{setId}', concern: {concernName} ({files.length} files) -- Phase 1: Test Plan Generation.
+
+## Scoped Files (this concern only)
+{concern group's file list}
+
+## Concern Area
+{concernName}
+
+## Acceptance Criteria
+{acceptance criteria relevant to this concern's files}
+
+## Working Directory
+{worktreePath}
+
+## Phase 1: Test Plan Generation
+Generate a test plan for your concern's files only. Return it via:
+<!-- RAPID:RETURN {"status":"CHECKPOINT","data":{"testPlan":[{"file":"...","testCase":"...","description":"...","expectedBehavior":"..."}]}} -->
+```
+
+Collect all test plans from all concern groups.
+
+**If `useConcernScoping` is false (fallback):**
+
+Use existing directory chunking behavior (no change to fallback logic):
 
 **If chunks.length <= 1 (single chunk or no chunking):**
 
@@ -327,7 +403,41 @@ Initialize: `cycle = 1`, `modifiedFiles = []` (empty for cycle 1).
 
 ##### 4b.2: Spawn bug-hunter subagent(s)
 
-**Cycle 1 with chunks.length > 1 (multiple chunks):**
+**Cycle 1 with `useConcernScoping = true`:**
+
+Spawn one **rapid-bug-hunter** agent PER CONCERN GROUP in parallel (up to 5 concurrent). Each hunter gets ONLY its concern group's files (concern files + cross-cutting files):
+
+```
+Analyze set '{setId}', concern: {concernName} ({files.length} files) (cycle {cycle}).
+
+## Scoped Files (ONLY report bugs in these files)
+{concern group's file list}
+
+## Concern Area
+{concernName}
+
+## Set Context
+{set context: what changed and why}
+
+## Working Directory
+{worktreePath}
+
+## Instructions
+Analyze each scoped file for bugs, logic errors, and code quality issues.
+Tag each finding with concern: "{concernName}".
+Return findings via:
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"findings":[{"id":"CON-{concernIndex}-F-{N}","file":"...","line":N,"category":"...","description":"...","risk":"critical|high|medium|low","confidence":"high|medium|low","evidence":"...","concern":"{concernName}"}],"totalFindings":N}} -->
+```
+
+Use concern index prefix for finding IDs to prevent collisions: `CON-1-F-001`, `CON-2-F-001`, etc.
+
+If more than 5 concern groups exist, batch them (first 5, then remaining) -- same pattern as existing directory chunk batching.
+
+**Cycle 1 with `useConcernScoping = false` (fallback):**
+
+Use existing per-directory-chunk behavior:
+
+**If chunks.length > 1 (multiple chunks):**
 
 Spawn one **rapid-bug-hunter** agent PER CHUNK in parallel (up to 5 concurrent):
 
@@ -351,9 +461,7 @@ Return findings via:
 
 Prefix chunk index to finding IDs to prevent collisions: `C1-F-001`, `C2-F-001`, etc.
 
-Collect all findings from all hunters and merge into a single array.
-
-**Cycle 1 with single chunk (or cycles 2-3):**
+**If single chunk:**
 
 Spawn ONE **rapid-bug-hunter** agent with the full scoped file list:
 
@@ -375,7 +483,21 @@ Return findings via:
 <!-- RAPID:RETURN {"status":"COMPLETE","data":{"findings":[{"id":"F-{N}","file":"...","line":N,"category":"...","description":"...","risk":"critical|high|medium|low","confidence":"high|medium|low","evidence":"..."}],"totalFindings":N}} -->
 ```
 
-Parse RAPID:RETURN: `{ findings, totalFindings }`.
+**Cycles 2-3:** No concern scoping. Narrow scope to modified files from previous cycle only. Single flat-scope hunter. (No change to existing cycle 2-3 behavior.)
+
+Collect all findings from all hunters and merge into a single array.
+
+##### 4b.2.5: Merge and Deduplicate Findings
+
+After collecting all findings from all hunters (whether concern-scoped or chunk-scoped):
+
+1. Merge all findings into a single array
+2. Deduplicate: findings with the same file AND description similarity >0.7 (normalized Levenshtein) are duplicates
+3. When deduplicating: higher severity wins. Equal severity: keep the finding with longer evidence/codeSnippet
+4. Preserve the `concern` tag on the surviving finding
+5. Log the deduplication count: "Merged {totalRaw} findings from {groupCount} {concerns|chunks}. After deduplication: {dedupCount} unique findings."
+
+The deduplicated findings set is used for ALL subsequent steps (4b.3 through 4b.9).
 
 ##### 4b.3: Check for zero findings
 
@@ -493,6 +615,7 @@ Write bug hunt results to `.planning/waves/{setId}/REVIEW-BUGS.md`:
 - **File:** {file}:{line}
 - **Risk:** {risk} | **Confidence:** {confidence}
 - **Category:** {category}
+- **Concern:** {concern or "N/A"}
 - **Originating wave:** {originatingWave from waveAttribution}
 - **Hunter evidence:** {evidence}
 - **Advocate challenge:** {challenge}
@@ -511,7 +634,7 @@ Collect all ACCEPTED bugs (including those upgraded from DEFERRED by the user in
 Log each accepted bug as an issue. Look up `originatingWave` from `waveAttribution`:
 
 ```bash
-echo '{"id":"SET-{setId}-hunt-{N}","type":"bug","severity":"{risk}","source":"bug-hunt","file":"{file}","line":{line},"description":"{description}","evidence":"{evidence}","originatingWave":"<from waveAttribution>","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
+echo '{"id":"SET-{setId}-hunt-{N}","type":"bug","severity":"{risk}","source":"bug-hunt","file":"{file}","line":{line},"description":"{description}","evidence":"{evidence}","originatingWave":"<from waveAttribution>","concern":"{concern}","status":"open","createdAt":"<ISO timestamp>"}' | node "${RAPID_TOOLS}" review log-issue <set-id>
 ```
 
 Spawn the **rapid-bugfix** agent:
@@ -805,3 +928,6 @@ Then exit. Do NOT prompt for selection.
 - **Idempotent re-entry.** If a previous review session was interrupted, re-invoking `/rapid:review` picks up where it left off. The set is already in `reviewing` state, and existing REVIEW-*.md artifacts are preserved (overwritten only if the stage runs again).
 - **Token cost awareness.** The 3-agent adversarial bug hunt is the most expensive stage. Chunked parallel execution multiplies cost by chunk count per cycle. Users can control costs by selecting only the stages they need.
 - **Lean review is unaffected.** The lean wave-level review (`review lean <set-id> <wave-id>`) is a separate flow called from `/rapid:execute` during reconciliation. It continues to operate at the wave level and is not impacted by this set-level review orchestrator.
+- **Concern-based scoping runs for unit test and bug hunt stages only.** A scoper agent categorizes files by concern area as Step 2.5. Each concern group includes cross-cutting files. If cross-cutting files exceed 50% of total, concern scoping falls back to directory chunking with a warning.
+- **Deduplication runs before the adversarial pipeline.** After concern-scoped (or chunk-scoped) hunters complete, findings are merged and deduplicated. Same file + similar description (>0.7 Levenshtein similarity) = duplicate. Higher severity wins. This saves tokens by running ONE advocate and ONE judge on the deduplicated set.
+- **Concern tags trace code health by area.** Each finding includes a `concern` field from the scoper. This appears in REVIEW-BUGS.md and in logged issues for understanding which concern areas surface the most bugs.
