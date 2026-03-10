@@ -2331,6 +2331,164 @@ describe('build-agents set-merger registration', () => {
   });
 });
 
+// ────────────────────────────────────────────────────────────────
+// v2.2 Task 2: --agent-phase flag on update-status + prepare-context CLI (MERGE-01)
+// ────────────────────────────────────────────────────────────────
+
+describe('update-status --agent-phase CLI flag', () => {
+  let tmpDir;
+  const RAPID_TOOLS = path.join(__dirname, '..', 'bin', 'rapid-tools.cjs');
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-agent-phase-'));
+    // Create minimal .planning structure
+    const setsDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setsDir, { recursive: true });
+    fs.writeFileSync(path.join(setsDir, 'DEFINITION.md'), '# Set: auth-core\n## Scope\nAuth\n## File Ownership\n- src/auth.cjs\n## Tasks\n1. Auth\n## Wave Assignment\nWave: 1\n## Acceptance Criteria\n- works\n');
+    fs.writeFileSync(path.join(setsDir, 'CONTRACT.json'), '{"exports":{"functions":[],"types":[]}}');
+    // Create worktrees dir and registry
+    const wtDir = path.join(tmpDir, '.planning', 'worktrees');
+    fs.mkdirSync(wtDir, { recursive: true });
+    fs.writeFileSync(path.join(wtDir, 'registry.json'), JSON.stringify({
+      worktrees: {
+        'auth-core': { path: 'worktrees/auth-core', branch: 'rapid/auth-core', mergeStatus: 'pending' },
+      },
+    }));
+    // Create config.json
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), JSON.stringify({ mode: 'yolo' }));
+    // Initialize MERGE-STATE
+    const merge = require('./merge.cjs');
+    merge.writeMergeState(tmpDir, 'auth-core', {
+      setId: 'auth-core',
+      status: 'pending',
+      startedAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+    });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('--agent-phase spawned writes agentPhase1=spawned to MERGE-STATE', () => {
+    execSync(`node "${RAPID_TOOLS}" merge update-status auth-core resolving --agent-phase spawned`, {
+      cwd: tmpDir, stdio: 'pipe',
+    });
+    const merge = require('./merge.cjs');
+    const state = merge.readMergeState(tmpDir, 'auth-core');
+    assert.equal(state.agentPhase1, 'spawned');
+    assert.equal(state.status, 'resolving');
+  });
+
+  it('--agent-phase done writes agentPhase1=done to MERGE-STATE', () => {
+    execSync(`node "${RAPID_TOOLS}" merge update-status auth-core resolving --agent-phase done`, {
+      cwd: tmpDir, stdio: 'pipe',
+    });
+    const merge = require('./merge.cjs');
+    const state = merge.readMergeState(tmpDir, 'auth-core');
+    assert.equal(state.agentPhase1, 'done');
+  });
+
+  it('--agent-phase failed writes agentPhase1=failed to MERGE-STATE', () => {
+    execSync(`node "${RAPID_TOOLS}" merge update-status auth-core resolving --agent-phase failed`, {
+      cwd: tmpDir, stdio: 'pipe',
+    });
+    const merge = require('./merge.cjs');
+    const state = merge.readMergeState(tmpDir, 'auth-core');
+    assert.equal(state.agentPhase1, 'failed');
+  });
+
+  it('without --agent-phase does NOT modify agentPhase1 (backward compatible)', () => {
+    execSync(`node "${RAPID_TOOLS}" merge update-status auth-core detecting`, {
+      cwd: tmpDir, stdio: 'pipe',
+    });
+    const merge = require('./merge.cjs');
+    const state = merge.readMergeState(tmpDir, 'auth-core');
+    assert.equal(state.agentPhase1, undefined);
+    assert.equal(state.status, 'detecting');
+  });
+
+  it('invalid --agent-phase value (bogus) returns error', () => {
+    assert.throws(() => {
+      execSync(`node "${RAPID_TOOLS}" merge update-status auth-core resolving --agent-phase bogus`, {
+        cwd: tmpDir, stdio: 'pipe',
+      });
+    }, /Invalid agent-phase|invalid|error/i);
+  });
+});
+
+describe('merge prepare-context CLI subcommand', () => {
+  let tmpDir;
+  const RAPID_TOOLS = path.join(__dirname, '..', 'bin', 'rapid-tools.cjs');
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-prepare-ctx-'));
+    // Create minimal .planning structure
+    const setsDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setsDir, { recursive: true });
+    fs.writeFileSync(path.join(setsDir, 'DEFINITION.md'), '# Set: auth-core\n## Scope\nAuth\n## File Ownership\n- src/auth.cjs\n## Tasks\n1. Auth\n## Wave Assignment\nWave: 1\n## Acceptance Criteria\n- works\n');
+    fs.writeFileSync(path.join(setsDir, 'CONTRACT.json'), '{"exports":{"functions":[],"types":[]}}');
+    // Create worktrees dir and registry
+    const wtDir = path.join(tmpDir, '.planning', 'worktrees');
+    fs.mkdirSync(wtDir, { recursive: true });
+    fs.writeFileSync(path.join(wtDir, 'registry.json'), JSON.stringify({
+      worktrees: {
+        'auth-core': { path: 'worktrees/auth-core', branch: 'rapid/auth-core', mergeStatus: 'pending' },
+      },
+    }));
+    // Create config.json
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), JSON.stringify({ mode: 'yolo' }));
+    // Initialize MERGE-STATE with some detection results
+    const merge = require('./merge.cjs');
+    merge.writeMergeState(tmpDir, 'auth-core', {
+      setId: 'auth-core',
+      status: 'detecting',
+      startedAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+      detection: {
+        textual: { ran: true, conflicts: [{ file: 'src/auth.cjs', type: 'merge', detail: 'conflict in auth module' }] },
+        structural: { ran: true, conflicts: [] },
+        dependency: { ran: true, conflicts: [] },
+        api: { ran: true, conflicts: [] },
+      },
+    });
+    // Initialize git repo (needed for getChangedFiles)
+    execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'pipe' });
+    fs.writeFileSync(path.join(tmpDir, 'README.md'), '# test');
+    execSync('git add README.md', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit -m "initial"', { cwd: tmpDir, stdio: 'pipe' });
+    try { execSync('git branch -m main', { cwd: tmpDir, stdio: 'pipe' }); } catch { /* ok */ }
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('outputs JSON with briefing string for valid set name', () => {
+    const out = execSync(`node "${RAPID_TOOLS}" merge prepare-context auth-core`, {
+      cwd: tmpDir, encoding: 'utf-8',
+    });
+    // Parse last line (skip any [RAPID] prefix lines)
+    const lines = out.trim().split('\n');
+    const jsonLine = lines[lines.length - 1];
+    const result = JSON.parse(jsonLine);
+    assert.equal(result.setName, 'auth-core');
+    assert.ok(typeof result.briefing === 'string', 'briefing should be a string');
+    assert.ok(result.briefing.includes('auth-core'), 'briefing should mention set name');
+    assert.ok(typeof result.tokenEstimate === 'number', 'should have tokenEstimate');
+  });
+
+  it('exits with error for missing set name', () => {
+    assert.throws(() => {
+      execSync(`node "${RAPID_TOOLS}" merge prepare-context`, {
+        cwd: tmpDir, stdio: 'pipe',
+      });
+    }, /error|Usage/i);
+  });
+});
+
 describe('merge.cjs module exports', () => {
   it('exports all v2.0 and preserved v1.0 functions', () => {
     const merge = require('./merge.cjs');
