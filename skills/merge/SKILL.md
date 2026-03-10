@@ -1,11 +1,11 @@
 ---
-description: Merge completed sets into main -- 5-level conflict detection, 4-tier resolution, DAG-ordered merging, bisection recovery, rollback
+description: Merge completed sets into main -- subagent delegation per set, fast-path merge-tree, 5-level conflict detection, 4-tier resolution, DAG-ordered merging, bisection recovery, rollback
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
 ---
 
-# /rapid:merge -- Merge Pipeline Orchestrator (v2.0)
+# /rapid:merge -- Merge Pipeline Orchestrator (v2.2)
 
-You are the RAPID merge orchestrator. This skill merges completed set branches into main via 5-level conflict detection, 4-tier resolution cascade, merger agent for semantic analysis, DAG-ordered merging with integration gates, automatic bisection recovery, and single-set rollback. You spawn the merger subagent using the Agent tool. Follow these steps IN ORDER. Do not skip steps.
+You are the RAPID merge orchestrator. This skill merges completed set branches into main via subagent delegation per set. Each set is dispatched to an isolated rapid-set-merger subagent for 5-level conflict detection, 4-tier resolution cascade, and programmatic gate validation. Clean merges skip subagent dispatch entirely via git merge-tree fast path. You spawn subagents using the Agent tool and collect structured RAPID:RETURN results. Follow these steps IN ORDER. Do not skip steps.
 
 ## Step 1: Load Merge Plan
 
@@ -98,9 +98,13 @@ PRE_WAVE_COMMIT=$(git rev-parse HEAD)
 
 Track merged sets per wave for integration gate and bisection.
 
-## Step 3: Detection Pipeline
+Initialize two in-memory tracking structures at the start of each wave:
+- **compressedResults** -- map: setName -> compressResult output (for Step 8 summary)
+- **blockedSets** -- list: [{setName, reason, attempts}] (for post-wave recovery)
 
-For each set in the current wave:
+## Step 3: Dispatch Per-Set Merge
+
+For each set in the current wave (sequential processing):
 
 ### 3a: Check idempotent re-entry
 
@@ -108,204 +112,154 @@ For each set in the current wave:
 node "${RAPID_TOOLS}" merge merge-state {setName}
 ```
 
-If the set's MERGE-STATE shows status='complete', skip to the next set. Display:
-> [{waveNum}/{totalWaves}] {setName}: already merged (skipping)
+- If status='complete', skip this set. Display:
+  > [{waveNum}/{totalWaves}] {setName}: already merged (skipping)
 
-### 3b: Update status and run detection
+- If agentPhase1='done', skip to Step 6 (merge execute). Display:
+  > [{waveNum}/{totalWaves}] {setName}: detection/resolution done, proceeding to merge
 
-```bash
-node "${RAPID_TOOLS}" merge update-status {setName} detecting
-```
-
-Run 5-level conflict detection:
+### 3b: Fast-path check
 
 ```bash
-node "${RAPID_TOOLS}" merge detect {setName}
+git merge-tree --write-tree HEAD rapid/{setName}
 ```
 
-Parse the JSON result. Display the detection summary:
+Check the exit code:
+- **Exit code 0:** No conflicts. Skip subagent entirely. Display:
+  > [{waveNum}/{totalWaves}] {setName}: clean merge (fast path)
 
-> **Detection Report for {setName}:**
-> - L1 Textual: {count} conflicts
-> - L2 Structural: {count} conflicts
-> - L3 Dependency: {count} conflicts
-> - L4 API: {count} conflicts
-> - L5 Semantic: pending (requires merger agent)
+  Go directly to Step 6 (merge execute).
 
-### 3c: Route based on detection results
+- **Exit code 1:** Conflicts detected. Continue to 3c (dispatch subagent).
 
-- If zero conflicts across all levels (L1-L4 all empty), skip directly to Step 6 (merge). Display:
-  > [{waveNum}/{totalWaves}] {setName}: no conflicts detected -- proceeding to merge
+- **Exit code >1:** Error. Continue to 3c (let subagent diagnose).
 
-- If any conflicts found at any level, proceed to Step 4 (resolution cascade)
+### 3c: Update status and dispatch subagent
 
-## Step 4: Resolution Cascade
-
-### 4a: Run resolution
+Update merge status and agent phase:
 
 ```bash
-node "${RAPID_TOOLS}" merge update-status {setName} resolving
+node "${RAPID_TOOLS}" merge update-status {setName} resolving --agent-phase spawned
 ```
+
+Get launch briefing:
 
 ```bash
-node "${RAPID_TOOLS}" merge resolve {setName}
+node "${RAPID_TOOLS}" merge prepare-context {setName}
 ```
 
-Parse the JSON result. Display the resolution summary:
+Parse the JSON output to get the `briefing` string.
 
-> **Resolution Summary for {setName}:**
-> - Tier 1 (deterministic): {count} resolved
-> - Tier 2 (heuristic): {count} resolved
-> - Remaining for AI: {count}
+Display progress:
+> [{waveNum}/{totalWaves}] {setName}: dispatching rapid-set-merger subagent...
 
-### 4b: Route based on resolution results
-
-- If all conflicts resolved by T1/T2 (unresolvedForAgent = 0), proceed to Step 5 (programmatic gate)
-- If unresolved conflicts remain (unresolvedForAgent > 0), proceed to Step 4c (merger agent)
-
-### 4c: Merger Agent
-
-Spawn the merger agent via the Agent tool. First, prepare context.
-
-Read the set's context and contracts:
-
-```bash
-node "${RAPID_TOOLS}" execute prepare-context {setName}
-```
-
-Read the set's detection report from MERGE-STATE:
-
-```bash
-node "${RAPID_TOOLS}" merge merge-state {setName}
-```
-
-Read the set's contracts:
-
-```bash
-cat .planning/sets/{setName}/CONTRACT.json 2>/dev/null || echo '{}'
-```
-
-Collect contexts of other sets already merged in this wave by reading their CONTEXT.md files.
-
-Get the unresolved conflicts from the resolution result (filter results where `resolved: false`).
-
-Print progress banner before spawning:
-> Spawning merger agent for {setName}...
-
-Spawn the **rapid-merger** agent with this task:
+Spawn the **rapid-set-merger** agent with this task:
 
 ```
-Resolve conflicts for set '{setName}' merging into '{baseBranch}'.
+Merge set '{setName}' branch 'rapid/{setName}' into '{baseBranch}'.
 
-## Set Context
-{the set's CONTEXT.md content}
+## Launch Briefing
+{briefing from prepare-context}
 
-## Other Set Contexts
-{contexts of sets already merged in this wave}
-
-## Detection Report
-{the full detection report JSON from MERGE-STATE}
-
-## Contracts
-{the set's CONTRACT.json content}
-
-## Unresolved Conflicts
-{JSON array of unresolved conflicts from resolution cascade}
+## Instructions
+1. Run L1-L4 detection: `node "${RAPID_TOOLS}" merge detect {setName}`
+2. If conflicts found, run T1-T2 resolution: `node "${RAPID_TOOLS}" merge resolve {setName}`
+3. If unresolved conflicts remain, perform L5 semantic analysis and T3/T4 resolution inline (per your role instructions)
+4. Run programmatic gate: `node "${RAPID_TOOLS}" merge review {setName}`
+5. Return structured RAPID:RETURN with results
 
 ## Working Directory
 {worktreePath}
 
 ## Return Format
-Return via:
-<!-- RAPID:RETURN {"status":"COMPLETE","data":{"semantic_conflicts":[...],"resolutions":[...],"escalations":[...]}} -->
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"semantic_conflicts":[...],"resolutions":[...],"escalations":[...],"gate_passed":<boolean>,"all_resolved":<boolean>}} -->
 ```
 
-### 4d: Process merger agent results
+### 3d: Collect and route return
 
-Parse the RAPID:RETURN from the agent. Extract:
-- `semantic_conflicts`: Display any L5 findings
-- `resolutions`: Show how many resolved and with what confidence
-- `escalations`: Show conflicts needing human input
+Parse the agent's output using parseSetMergerReturn logic:
 
-Display merger agent results:
+**COMPLETE:**
+- Update status and agent phase:
+  ```bash
+  node "${RAPID_TOOLS}" merge update-status {setName} resolved --agent-phase done
+  ```
+- Read MERGE-STATE to get data for compression:
+  ```bash
+  node "${RAPID_TOOLS}" merge merge-state {setName}
+  ```
+- Store the compressResult output in the in-memory `compressedResults` map.
+- Check the `gate_passed` field from the return data:
+  - If `gate_passed` is false: add to `blockedSets` with reason "programmatic gate failed". Continue to next set.
+  - If `gate_passed` is true: continue to Step 3e.
 
-> **Merger Agent Results for {setName}:**
-> - Semantic conflicts found: {count}
-> - Resolutions applied (T3): {count}
-> - Escalations to human (T4): {count}
+**CHECKPOINT (attempt 1):**
+- Auto-retry once with checkpoint data included in re-dispatch prompt:
 
-### 4e: Handle escalations
+  ```
+  Merge set '{setName}' branch 'rapid/{setName}' into '{baseBranch}'.
 
-For each escalation (confidence below threshold):
+  ## Checkpoint (continuing from previous attempt)
+  - Done: {handoff.done}
+  - Remaining: {handoff.remaining}
+  - Resume from: {handoff.resume}
 
-> **Conflict in {file}:** {description}
-> **Confidence:** {score} (below threshold 0.7)
-> **Proposed resolution:** {proposed_resolution}
-> **Reason for escalation:** {reason}
+  ## Launch Briefing
+  {briefing from prepare-context}
 
-Use AskUserQuestion:
+  ## Instructions
+  1. Run L1-L4 detection: `node "${RAPID_TOOLS}" merge detect {setName}`
+  2. If conflicts found, run T1-T2 resolution: `node "${RAPID_TOOLS}" merge resolve {setName}`
+  3. If unresolved conflicts remain, perform L5 semantic analysis and T3/T4 resolution inline (per your role instructions)
+  4. Run programmatic gate: `node "${RAPID_TOOLS}" merge review {setName}`
+  5. Return structured RAPID:RETURN with results
+
+  ## Working Directory
+  {worktreePath}
+
+  ## Return Format
+  <!-- RAPID:RETURN {"status":"COMPLETE","data":{"semantic_conflicts":[...],"resolutions":[...],"escalations":[...],"gate_passed":<boolean>,"all_resolved":<boolean>}} -->
+  ```
+
+- Parse the retry's return:
+  - If COMPLETE: handle as above (update status, store compressedResult, check gate_passed).
+  - If CHECKPOINT again or BLOCKED: set agentPhase1='failed', add to blockedSets.
+    ```bash
+    node "${RAPID_TOOLS}" merge update-status {setName} failed --agent-phase failed
+    ```
+
+**BLOCKED or malformed:**
+- Update status:
+  ```bash
+  node "${RAPID_TOOLS}" merge update-status {setName} failed --agent-phase failed
+  ```
+- Add to `blockedSets` with reason from parseSetMergerReturn (or "malformed return" if parsing failed).
+- Continue to next set in the wave.
+
+### 3e: Handle escalations from return data
+
+If return data contains escalations (T4 items with confidence < 0.7):
+
+For each escalation, present to user via AskUserQuestion:
 - **question:** "Conflict escalation for {file}"
 - **options:**
-  - "Accept AI resolution" -- description: "Apply the AI's proposed resolution despite low confidence"
-  - "Resolve manually" -- description: "Open the file and resolve this conflict yourself. Pipeline will pause."
-  - "Skip conflict" -- description: "Leave conflict unresolved and continue to merge"
+  - "Accept AI resolution" -- description: "Apply the AI's proposed resolution despite low confidence ({confidence})"
+  - "Skip conflict" -- description: "Leave conflict unresolved and continue"
 
-If the developer selects "Accept AI resolution":
-- Apply the proposed resolution (write the file in the worktree)
-- Continue to next escalation (or Step 5 if done)
+NOTE: No "Resolve manually" option per locked decision (recovery options are Retry/Skip/Abort only).
 
-If the developer selects "Resolve manually":
-- Print "Pausing for manual resolution of {file}. Re-run `/rapid:merge {setName}` when done." and exit.
+If user selects "Accept AI resolution":
+- Apply the proposed resolution to the file in the worktree using Edit or Write tool.
+- Continue to next escalation (or Step 6 if done).
 
-If the developer selects "Skip conflict":
-- Log the skipped conflict and continue
+If user selects "Skip conflict":
+- Log the skipped conflict and continue.
 
-## Step 5: Programmatic Gate
-
-After detection and resolution are complete:
-
-```bash
-node "${RAPID_TOOLS}" merge review {setName}
-```
-
-Parse the JSON result:
-
-- If `passed` is true: proceed to Step 6 (merge). Display:
-  > [{waveNum}/{totalWaves}] {setName}: programmatic gate PASS
-
-- If `passed` is false:
-  - If ownership violations exist:
-    > **BLOCKED:** Set '{setName}' has ownership violations:
-    > {list violations}
-
-  - If contract/test failure:
-    > **BLOCKED:** Set '{setName}' failed contract/test validation:
-    > {failure details}
-
-  Use AskUserQuestion:
-  - **question:** "Set blocked by programmatic gate"
-  - **options:**
-    - "View details" -- description: "Show full validation results for {setName}"
-    - "Skip set, continue pipeline" -- description: "Skip {setName} and continue with remaining sets"
-    - "Abort pipeline" -- description: "Exit merge pipeline entirely"
-
-  If the developer selects "View details":
-  - Display the full validation output
-  - Then use a second AskUserQuestion:
-    - **question:** "After reviewing validation results"
-    - **options:**
-      - "Skip set" -- description: "Skip {setName} and continue with remaining sets"
-      - "Abort pipeline" -- description: "Exit merge pipeline entirely"
-
-  If the developer selects "Skip set, continue pipeline" (or "Skip set"):
-  - Continue to the next set in the wave
-
-  If the developer selects "Abort pipeline":
-  - Print "Merge pipeline cancelled." and exit
+After escalations handled, proceed to Step 6 (merge execute).
 
 ## Step 6: Merge Set
 
-After a set passes the programmatic gate (or had zero conflicts):
+After a set passes dispatch (COMPLETE with gate_passed=true, or fast path, or re-entry from agentPhase1=done):
 
 ```bash
 node "${RAPID_TOOLS}" merge execute {setName}
@@ -366,9 +320,40 @@ Parse the JSON result:
   If "Skip set": continue to next set.
   If "Abort pipeline": exit.
 
+## Post-Wave: Blocked Set Recovery
+
+After all sets in the wave have been processed (dispatched + collected OR fast-pathed + merged):
+
+If `blockedSets` is not empty, display the blocked summary:
+
+> **Blocked sets in Wave {waveNum}:**
+> {for each blocked set: "- {setName}: {reason} ({attempts} attempt(s))"}
+
+For each blocked set (max 2 total attempts per set across initial dispatch + retries):
+
+Use AskUserQuestion:
+- **question:** "Set '{setName}' blocked: {reason}"
+- **options:**
+  - "Retry" -- description: "Re-dispatch subagent for {setName} (attempt {attempts+1}/2)"
+  - "Skip" -- description: "Skip {setName}, continue pipeline"
+  - "Abort" -- description: "Exit merge pipeline"
+
+If "Retry":
+- Re-run Step 3c-3d for this set (reset agentPhase1 to spawned, re-dispatch with fresh launch briefing).
+- If retry returns COMPLETE with gate_passed=true: proceed to Step 6 for this set. Remove from blockedSets.
+- If retry also fails (BLOCKED/CHECKPOINT/gate_passed=false): present skip/abort only (max retries exceeded).
+  Use AskUserQuestion:
+  - **question:** "Set '{setName}' retry failed: {reason}"
+  - **options:**
+    - "Skip" -- description: "Skip {setName}, continue pipeline"
+    - "Abort" -- description: "Exit merge pipeline"
+
+If "Skip": continue to next blocked set or integration gate.
+If "Abort": print "Merge pipeline cancelled." and exit.
+
 ## Step 7: Post-Wave Integration Gate
 
-After ALL sets in the current wave have been merged (or skipped):
+After ALL sets in the current wave have been merged (or skipped), and blocked set recovery is complete:
 
 ### 7a: Run integration tests
 
@@ -483,21 +468,22 @@ After all waves complete:
 node "${RAPID_TOOLS}" merge status
 ```
 
-Collect MERGE-STATE data for all sets to build final summary with detection/resolution stats:
-
-```bash
-for set in {all sets}; do node "${RAPID_TOOLS}" merge merge-state $set; done
-```
+Build the final summary from the in-memory `compressedResults` collected during Step 3d. For each set, the compressedResult contains: `setId`, `status`, `conflictCounts` (L1-L5), `resolutionCounts` (T1-T3, escalated), and `commitSha`.
 
 Present final summary:
 
 > **Merge Pipeline Complete**
+>
+> | Set | Status | L1 | L2 | L3 | L4 | L5 | T1 | T2 | T3 | Escalated | Commit |
+> |-----|--------|----|----|----|----|----|----|----|----|-----------|----|
+> | {setId} | {status} | {L1} | {L2} | {L3} | {L4} | {L5} | {T1} | {T2} | {T3} | {escalated} | {commitSha} |
 >
 > **Summary:**
 > - Total sets merged: {count}
 > - Total waves: {count}
 > - Sets skipped (blocked): {list or "none"}
 > - Sets rolled back: {list or "none"}
+> - Sets fast-pathed (no conflicts): {count}
 > - Conflicts detected: {total across all sets}
 > - Conflicts auto-resolved (T1/T2): {count}
 > - Conflicts AI-resolved (T3): {count}
@@ -513,14 +499,19 @@ Display the available next steps:
 
 ## Important Notes
 
-- **Agent tool usage:** This skill spawns only the merger subagent. The reviewer subagent from v1.0 is REMOVED -- review is now handled by Phase 22's review module (`/rapid:review`).
-- **Sequential within waves:** Sets in the same wave merge one at a time. Each merge sees the result of the previous.
+- **Subagent dispatch:** This skill spawns **rapid-set-merger** subagents (one per set) for detection, resolution, and gate validation. The Agent tool is the only mechanism for subagent dispatch.
+- **Fast path via git merge-tree:** Before dispatching a subagent, `git merge-tree --write-tree HEAD rapid/{setName}` checks for conflicts without touching the index or working tree. Exit code 0 means clean merge -- skip subagent entirely. This is the common case for well-isolated sets.
+- **Sequential within waves:** Sets in the same wave merge one at a time. Each merge sees the result of the previous. HEAD advances after each Step 6, so merge-tree fast-path checks are always against current HEAD.
+- **agentPhase1 tracking:** Agent lifecycle is tracked via `update-status --agent-phase` CLI calls. Transitions: idle -> spawned (before dispatch) -> done/failed (after return). No path should leave a set as 'spawned' after dispatch completes.
+- **Retry logic:** CHECKPOINT returns are auto-retried ONCE with checkpoint data in the re-dispatch prompt. Max 2 total attempts per set (initial + 1 retry). Retry counter is in-memory (not persisted) -- each `/rapid:merge` invocation starts fresh.
+- **compressedResult in memory:** Step 3d stores compressResult output (~100 tokens per set) for use in Step 8 summary. Full detection/resolution details remain only in MERGE-STATE.json on disk.
 - **Bisection auto-triggers:** On integration gate failure, bisection runs AUTOMATICALLY without a pre-bisection user prompt. The user locked this decision.
 - **Post-bisection control:** After bisection identifies the breaking set, the user chooses: rollback, investigate, or abort.
 - **Cascade detection on rollback:** Before rolling back, cascade impact is checked. If dependent sets would be affected, the user is warned.
-- **Conflict handling:** If a merge has conflicts, the developer is prompted with structured recovery options. Already-merged sets stay merged.
+- **Conflict handling:** If a merge has conflicts at Step 6, the developer is prompted with structured recovery options. Already-merged sets stay merged.
 - **Worktrees preserved:** Merged worktrees are NOT auto-removed. Developer runs /rapid:cleanup explicitly.
 - **Registry updates:** Merge status is always updated in both the registry and MERGE-STATE.json via CLI after each step. This ensures /rapid:status reflects current progress.
-- **Idempotent re-entry:** If the pipeline is restarted, check MERGE-STATE.json to skip already-merged sets (status='complete'). Only process sets with status pending, detecting, resolving, or failed.
+- **Idempotent re-entry:** If the pipeline is restarted, check MERGE-STATE.json to skip already-merged sets (status='complete') and already-resolved sets (agentPhase1='done'). Only process sets with status pending, detecting, resolving, or failed.
 - **Never use `git add -A` or `git add .`** -- stage only specific files.
 - **AskUserQuestion at every decision gate** -- all decisions are blocking until the user responds.
+- **No "Resolve manually" in post-wave recovery** -- blocked set recovery options are Retry, Skip, and Abort only (per user locked decision).
