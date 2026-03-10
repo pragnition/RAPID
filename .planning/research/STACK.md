@@ -1,361 +1,259 @@
-# Stack Research: v2.1 Improvements & Fixes
+# Stack Research: v2.2 Subagent Merger & Documentation
 
-**Domain:** Claude Code plugin -- workflow streamlining, subagent delegation, plan verification
-**Researched:** 2026-03-09
-**Confidence:** HIGH (all features use existing stack; no new dependencies needed)
+**Domain:** Claude Code plugin -- merge pipeline restructuring with subagent delegation, documentation rewrite
+**Researched:** 2026-03-10
+**Confidence:** HIGH (no new npm dependencies; architectural changes only)
 
 ## Executive Summary
 
-v2.1 requires NO new npm dependencies. Every feature can be built with the existing stack (Node.js + Zod 3.25.76 + CommonJS + git) plus better use of Claude Code's built-in capabilities (subagent system, AskUserQuestion multiSelect, Agent tool parallel spawning). The stack changes are architectural, not technological: new library modules, new agent definitions, and skill rewrites.
+v2.2 requires NO new npm dependencies. The subagent merge delegation and documentation rewrite are achievable entirely with the existing stack (Node.js >=18, Zod 3.25.76, CommonJS, git) plus prompt engineering changes to the merge skill and new agent role definitions. The critical constraint shaping the entire design is that **Claude Code subagents cannot spawn other subagents** -- this is a hard platform limitation confirmed in official documentation as of March 2026.
 
-The key insight is that RAPID's token cost and workflow friction problems are **prompt engineering and orchestration problems**, not library problems. Adding dependencies would add complexity without solving the actual issues.
+This means the v2.2 "adaptive nesting" goal (merge agents spawning per-conflict sub-agents) is **not achievable via nested Agent tool calls**. The architecture must instead use the proven pattern from the review pipeline: the skill SKILL.md acts as the sole orchestrator, dispatching all subagents directly. "Adaptive nesting" is achieved by the skill dispatching additional per-conflict agents when the merger agent's return indicates unresolved complex conflicts -- not by merger agents spawning their own children.
+
+For documentation, no tooling is needed. README.md and technical_documentation.md are plain Markdown files written manually (or by agent) with no build step, no static site generator, and no separate documentation framework. This matches the existing codebase convention (DOCS.md, README.md are hand-maintained Markdown).
+
+---
+
+## Critical Constraint: No Nested Subagent Spawning
+
+**Confidence:** HIGH (verified via official docs + GitHub issue tracker)
+
+Claude Code subagents **cannot** use the Agent tool. The Agent tool is only available to:
+1. The main conversation thread (the human's Claude Code session)
+2. Skills running in the main thread (SKILL.md files with `allowed-tools: Agent`)
+
+When a subagent (defined in `agents/` directory) is spawned, it receives a subset of tools. The Agent tool is explicitly excluded from subagent tool lists. This is confirmed in:
+
+- [Official Claude Code subagent documentation](https://code.claude.com/docs/en/sub-agents): "Subagents cannot spawn other subagents. If your workflow requires nested delegation, use Skills or chain subagents from the main conversation."
+- [GitHub issue #4182](https://github.com/anthropics/claude-code/issues/4182): Closed as duplicate. Confirms Agent tool is not exposed to subagents. The only workaround (`claude -p` via Bash) loses context, observability, and structured returns.
+- The existing RAPID codebase already documents this constraint in multiple skills:
+  - `skills/review/SKILL.md`: "Subagents CANNOT spawn sub-subagents -- this skill (the orchestrator) is the sole dispatcher."
+  - `skills/plan-set/SKILL.md`: "Do NOT attempt sub-sub-agent spawning."
+  - `skills/execute/SKILL.md`: Same constraint documented.
+
+**Implication for v2.2 merge delegation:** The merge SKILL.md must remain the sole dispatcher. It spawns per-set merger agents in sequence (within a wave). If a merger agent returns escalations/unresolved conflicts that need further AI resolution, the SKILL.md spawns additional per-conflict agents directly -- the merger never spawns them itself.
+
+This is the same pattern review/SKILL.md uses: skill spawns hunter -> skill spawns advocate -> skill spawns judge. Not: skill spawns orchestrator -> orchestrator spawns hunter.
 
 ---
 
 ## Existing Stack (Retained As-Is)
 
-These are the validated technologies from v2.0. Do NOT change or upgrade them.
+| Technology | Version | Purpose | Status for v2.2 |
+|------------|---------|---------|-----------------|
+| Node.js | >=18 | Runtime | Unchanged |
+| Zod | 3.25.76 | Schema validation | Unchanged; may add fields to MergeStateSchema |
+| proper-lockfile | 4.1.2 | File locking | Unchanged |
+| ajv + ajv-formats | 8.17.1 / 3.0.1 | JSON Schema for contracts | Unchanged |
+| git worktrees | (system) | Set isolation | Unchanged |
+| CommonJS | (format) | Module system | Unchanged |
+| node:test | (built-in) | Test framework | Unchanged |
 
-| Technology | Version | Purpose | Why Retained |
-|------------|---------|---------|--------------|
-| Node.js | >=18 | Runtime | CommonJS require() used everywhere; stable |
-| Zod | 3.25.76 | Schema validation | Works with CommonJS require(); powers state machine, returns, review schemas |
-| proper-lockfile | 4.1.2 | File locking | Atomic state writes; proven in v2.0 |
-| ajv + ajv-formats | 8.17.1 / 3.0.1 | JSON Schema validation | Used for CONTRACT.json validation |
-| git worktrees | (system) | Set isolation | Core architectural decision; unchanged |
-
-**Important:** package.json lists `"zod": "^3.25.76"`. Despite PROJECT.md mentioning 3.24.4, the installed version is 3.25.76 and works correctly with CommonJS `require('zod')`. Do not downgrade.
+**Zod version note:** package.json specifies `"zod": "^3.25.76"`. Despite PROJECT.md mentioning 3.24.4, the installed version is 3.25.76 and works correctly with CommonJS require(). Do not downgrade. Do not upgrade to Zod 4.x (breaks CommonJS require).
 
 ---
 
 ## What's Needed Per Feature
 
-### 1. Workflow Streamlining (Auto-Plan After Init)
+### 1. Subagent Merge Delegation (Orchestrator Stays Lean)
 
-**Stack additions:** None.
+**Stack additions:** None. Architectural change to SKILL.md + new agent role.
 
-**What changes:**
-- `skills/init/SKILL.md` -- Add a step after roadmap acceptance (after current Step 9) that automatically transitions into planning. Instead of telling the user "Run `/rapid:plan`", the init skill should directly invoke the planning logic.
-- The plan command (`commands/plan.md`) already exists. The init skill's allowed-tools include `Agent`, so it can spawn a planning subagent inline after roadmap files are written.
+**Current state:** The merge SKILL.md (`skills/merge/SKILL.md`) runs the entire pipeline inline -- it calls CLI commands for L1-L4 detection, L1-L2 resolution, then spawns exactly ONE `rapid-merger` agent for L5 semantic detection + T3 resolution. The orchestrator (SKILL.md running in the main thread) holds all merge context for all sets in its context window.
 
-**Integration approach:** After the user accepts the roadmap and STATE.json/ROADMAP.md/CONTRACT.json files are written, the skill should:
-1. Display "Auto-running planning phase..."
-2. For each set in the roadmap, register it in STATE.json (already done in Step 9)
-3. Transition directly to the "Next Steps" display with `/rapid:set-init` as the recommended action
+**Problem:** For large codebases with many sets, the orchestrator's context fills up because it accumulates detection reports, context files, and resolution results for every set before the pipeline completes.
 
-The current flow (init -> tell user to run plan -> user runs plan -> plan creates sets) has a redundant step. The roadmapper already produces the full set/wave/job structure. STATE.json already gets populated in Step 9. There is nothing the separate `/rapid:plan` command does that init does not already do. The streamlined flow simply removes the "go run plan" redirect.
+**Solution architecture:**
 
-**Why no new library:** This is a prompt-level change to one skill file. The existing roadmapper agent already produces all the data that plan would generate.
+The merge SKILL.md dispatches per-set merge work to `rapid-merger` agents, each handling one set's full pipeline (detect + resolve + semantic analysis). The SKILL.md only holds:
+- The merge plan (DAG order, which sets are ready)
+- Per-set summaries returned via RAPID:RETURN
+- Escalation handling (when merger returns low-confidence conflicts)
 
-### 2. Parallel Wave Planning
-
-**Stack additions:** None.
+This mirrors how `review/SKILL.md` works: the skill dispatches scoper, hunter, advocate, judge, and bugfix agents sequentially, collecting only their RAPID:RETURN summaries rather than holding all file contents.
 
 **What changes:**
-- `skills/wave-plan/SKILL.md` -- Rewrite to accept set ID as primary argument (instead of wave ID), plan ALL waves within the set
-- `src/lib/wave-planning.cjs` -- Add `listWavesForSet(state, milestoneId, setId)` helper to extract ordered wave list
-- `src/lib/dag.cjs` -- Already has `assignWaves()` and `toposort()` for dependency ordering; reuse these
 
-**Integration approach:** Instead of planning one wave at a time, `/rapid:wave-plan <set-id>` plans all waves in the set:
-1. Read all waves from STATE.json for the given set
-2. Group waves by dependency (waves with no inter-wave deps can run in parallel)
-3. For independent waves: spawn wave research + wave planner agents in parallel (multiple Agent tool calls in one response)
-4. For dependent waves: plan sequentially after prerequisites complete
-5. After all wave plans exist, spawn all job planners in parallel across all waves
-6. Run plan verifier as final gate
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `skills/merge/SKILL.md` | Major rewrite | Restructure to delegate per-set work to merger agents. Skill handles: merge plan loading, DAG ordering, per-set agent dispatch, escalation handling, integration gates, bisection recovery. No longer runs detection/resolution inline. |
+| `src/modules/roles/role-merger.md` | Rewrite | Expand scope: merger agent now runs L1-L4 detection + T1-T2 resolution + L5 semantic + T3 AI resolution for its assigned set. Currently only does L5+T3. Remove "Never spawn sub-agents" rule (irrelevant -- subagents cannot spawn anyway). Add CLI command invocations for detection/resolution. |
+| `agents/rapid-merger.md` | Regenerated | Auto-generated from role-merger.md by build-agents pipeline. |
+| `src/lib/merge.cjs` | Minor extend | Add helper functions for pre-packaging merge context (detection report + set context + contracts) into a compact format the merger agent can receive. May add a `prepareMergerContext()` function. |
+| `src/lib/merge.test.cjs` | Extend | Tests for any new helper functions. |
 
-This mirrors the existing parallel job planner pattern already in wave-plan Step 5 but lifts it to the wave level.
+**Agent tool usage in SKILL.md:**
 
-**Why no new library:** DAG traversal (`dag.cjs`) and parallel Agent spawning are already built and proven.
+```
+# Per-wave processing (sequential within wave, as before)
+For each set in wave:
+  1. SKILL checks MERGE-STATE.json for idempotent re-entry
+  2. SKILL spawns rapid-merger agent with compact context:
+     - Set name, base branch, worktree path
+     - Set's CONTEXT.md content
+     - Other sets' contexts (already merged in this wave)
+     - CONTRACT.json content
+  3. Merger agent runs internally:
+     a. CLI: node "${RAPID_TOOLS}" merge detect {setName}
+     b. CLI: node "${RAPID_TOOLS}" merge resolve {setName}
+     c. Reads detection results, performs L5 semantic analysis
+     d. Writes T3 resolutions to files
+     e. Returns RAPID:RETURN with results
+  4. SKILL parses RAPID:RETURN
+  5. If escalations exist: SKILL handles them (AskUserQuestion)
+  6. If additional per-conflict resolution needed: SKILL spawns another agent
+  7. SKILL runs programmatic gate and merge execution
+```
 
-### 3. Plan Verifier Agent
+**Context efficiency gain:** Instead of the SKILL.md holding N sets' worth of detection reports, it holds only the current set's RAPID:RETURN summary (~500 tokens) plus the merge plan. Each merger agent holds one set's context in its own isolated window.
 
-**Stack additions:** None. New module file + Zod schema only.
+**Why no new library:** All detection and resolution logic already exists in merge.cjs and is exposed via rapid-tools.cjs CLI. The merger agent calls these same CLI commands. No new code paths are needed for the core merge logic -- only the orchestration layer changes.
+
+### 2. Adaptive Nesting (Per-Conflict Sub-Agents)
+
+**Stack additions:** None. New agent role definition only.
+
+**The constraint-respecting design:** Since subagents cannot spawn subagents, "adaptive nesting" means the SKILL.md spawns additional targeted agents when the merger agent's return indicates complex unresolved conflicts.
+
+**How it works:**
+
+1. Merger agent returns RAPID:RETURN with `escalations` array (conflicts below 0.7 confidence)
+2. For each escalation, SKILL.md decides whether to:
+   a. Present to user (current behavior, always valid)
+   b. Spawn a focused `rapid-conflict-resolver` agent with ONLY that conflict's context
+3. The conflict-resolver agent gets: the one conflicting file's content from both branches, the diff, the two sets' intents, and the contract. It produces a focused resolution.
+4. SKILL.md applies or escalates the result.
 
 **What changes:**
-- `src/modules/roles/role-plan-verifier.md` -- New agent role definition
-- `src/lib/verify.cjs` -- Add plan verification schemas and helper functions
-- `skills/wave-plan/SKILL.md` -- Add verification step after job plans are generated
 
-**Plan verifier responsibilities:**
-1. **Coverage check:** Every file in CONTRACT.json exports is covered by at least one job plan's file list
-2. **Implementability check:** Each job plan's steps are concrete (no vague "implement the feature" steps)
-3. **Overlap detection:** No two job plans in the same wave claim the same file
-4. **Dependency coherence:** If job-B depends on job-A's output, job-A is in an earlier or same wave
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `src/modules/roles/role-conflict-resolver.md` | New | Focused single-conflict resolution agent. Receives one file, two branch versions, intent context. Returns resolution + confidence. |
+| `agents/rapid-conflict-resolver.md` | New (generated) | Built by build-agents from role-conflict-resolver.md |
+| `skills/merge/SKILL.md` | Extend (part of rewrite above) | Add Step 4f: for escalations where auto-resolution is feasible, spawn conflict-resolver before escalating to user |
 
-**Integration approach:** The verifier runs as a read-only subagent after all job plans are generated. It reads all JOB-PLAN.md files and CONTRACT.json, then returns a structured JSON verdict via RAPID:RETURN. The wave-plan orchestrator decides whether to proceed or re-plan.
+**Why a separate agent instead of re-invoking the merger:** Context efficiency. The merger agent may have consumed significant context analyzing all conflicts for a set. A fresh conflict-resolver agent starts with minimal context (one file, one conflict) and can reason more deeply about that single resolution.
 
-The existing `validateJobPlans()` in wave-planning.cjs already does coverage + cross-set import validation. The plan verifier extends this with implementability and overlap checks.
+**Why no new library:** The conflict-resolver is a prompt + tool restriction, same as all other RAPID agents. It uses Read, Write, Bash, Grep, Glob -- standard agent tools.
 
-**Zod schema (added to verify.cjs):**
+### 3. Parallel Independent Set Merging
 
-```javascript
-const PlanVerification = z.object({
-  coverageGaps: z.array(z.object({
-    file: z.string(),
-    exportName: z.string(),
-    severity: z.enum(['critical', 'warning']),
-  })),
-  implementabilityIssues: z.array(z.object({
-    jobId: z.string(),
-    stepIndex: z.number(),
-    issue: z.string(),
-    severity: z.enum(['critical', 'warning']),
-  })),
-  fileConflicts: z.array(z.object({
-    file: z.string(),
-    claimingJobs: z.array(z.string()),
-  })),
-  dependencyIssues: z.array(z.object({
-    jobId: z.string(),
-    dependsOn: z.string(),
-    issue: z.string(),
-  })),
-  verdict: z.enum(['PASS', 'WARN', 'FAIL']),
-});
-```
+**Stack additions:** None. Orchestration change in SKILL.md only.
 
-**Why no new library:** Zod (already in use) handles the schema. The verification logic is file reading + string analysis -- pure Node.js.
+**Current state:** Sets within a wave merge SEQUENTIALLY. This is because each merge sees the result of the previous one -- if set A and set B both modify shared infrastructure, set B's merge must see set A's changes.
 
-### 4. Numeric ID Resolution
+**Opportunity:** When the DAG shows sets in the same wave are truly independent (no shared files, no dependency edges between them), they could merge in parallel.
 
-**Stack additions:** None. New utility module only.
+**Design:**
+
+1. Before starting a wave, analyze which sets in the wave share files or have dependency edges
+2. Group sets into parallelizable batches (sets that share zero files and have no edges)
+3. Within each batch, spawn merger agents in parallel (multiple Agent tool calls in one response)
+4. After each batch, run integration tests before proceeding to next batch
 
 **What changes:**
-- `src/lib/resolve.cjs` -- New module with `resolveSetId()` and `resolveWaveId()` functions
-- `src/bin/rapid-tools.cjs` -- Update `set-init`, `wave-plan`, `discuss`, and `execute` subcommands to pass inputs through resolution first
-- All skills that accept set/wave/job IDs -- Update argument parsing to use resolution
 
-**Implementation approach:**
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `src/lib/merge.cjs` | Extend | Add `partitionParallelMergeable(sets, detectionResults)` function. Checks file overlap + dependency edges to determine which sets can merge simultaneously. |
+| `src/lib/merge.test.cjs` | Extend | Tests for partition function |
+| `skills/merge/SKILL.md` | Part of rewrite | Step 2 parallelizes where safe |
 
-```javascript
-/**
- * Resolve user input to a set ID. Supports:
- * - Full ID: "set-01-foundation" -> "set-01-foundation"
- * - Numeric shorthand: "1" -> first set in milestone
- * - Substring match: "foundation" -> "set-01-foundation" (if unique)
- *
- * @param {object} state - Parsed STATE.json
- * @param {string} milestoneId - Current milestone ID
- * @param {string} input - User input
- * @returns {string} Resolved set ID
- * @throws {Error} If not found or ambiguous
- */
-function resolveSetId(state, milestoneId, input) {
-  const milestone = findMilestone(state, milestoneId);
+**Caveat:** Parallel merging within a wave is an optimization, not a requirement. If implementation proves complex (e.g., concurrent git operations on main branch), it can be deferred without blocking the v2.2 milestone. Sequential merging is always safe.
 
-  // Direct match
-  const direct = milestone.sets.find(s => s.id === input);
-  if (direct) return input;
+**Why no new library:** File overlap detection is set intersection on arrays already returned by `getChangedFiles()`. DAG edge analysis uses existing `dag.cjs`.
 
-  // Numeric shorthand (1-indexed)
-  const num = parseInt(input, 10);
-  if (!isNaN(num) && num >= 1 && num <= milestone.sets.length) {
-    return milestone.sets[num - 1].id;
-  }
+### 4. Documentation Rewrite (README.md + technical_documentation.md)
 
-  // Substring/prefix match
-  const matches = milestone.sets.filter(s =>
-    s.id.toLowerCase().includes(input.toLowerCase())
-  );
-  if (matches.length === 1) return matches[0].id;
-  if (matches.length > 1) {
-    throw new Error(
-      `Ambiguous: "${input}" matches ${matches.map(s => s.id).join(', ')}`
-    );
-  }
+**Stack additions:** None. Plain Markdown, no tooling.
 
-  throw new Error(
-    `Not found: "${input}". Available: ${milestone.sets.map((s, i) => `${i + 1}=${s.id}`).join(', ')}`
-  );
-}
-```
-
-The same pattern applies to wave resolution within a set: `/discuss 1 2` means set 1, wave 2.
-
-**Why no new library:** This is 30 lines of parseInt + string matching + array indexing. The state machine already has all the data structures.
-
-### 5. Batched AskUserQuestion
-
-**Stack additions:** None. Prompt engineering change only.
+**Current state:**
+- `README.md` -- 50 lines, basic overview, references v2.0 features. Accurate but sparse.
+- `DOCS.md` -- 560+ lines, detailed v2.0 documentation. Does not cover v2.1 features (concern-based review, wave orchestration, plan verifier, numeric IDs, batched questioning). Does not cover v2.2 features.
 
 **What changes:**
-- `skills/discuss/SKILL.md` -- Restructure gray area deep-dive to batch related questions
 
-**Current problem:** The discuss phase asks 4 sequential questions per gray area (Q1: approach, Q2: edge cases, Q3: specifics, Q4: confirmation). With 5 gray areas selected, that's up to 20 individual AskUserQuestion calls, each requiring agent processing time between.
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `README.md` | Full rewrite | Comprehensive project overview: what RAPID is, installation, quick start, hierarchy diagram, feature list, prerequisites, links to technical docs. Target: 150-250 lines. |
+| `technical_documentation.md` | New | Deep technical reference: architecture overview, state machine, CLI reference, agent catalog, skill reference, merge pipeline details, review pipeline details, configuration options, troubleshooting. Target: 800-1200 lines. Replaces DOCS.md as the canonical reference. |
+| `DOCS.md` | Deprecate or remove | After technical_documentation.md is complete, DOCS.md becomes redundant. Either remove or add a redirect note. |
 
-**Solution approaches (in preference order):**
+**Documentation format:** Plain Markdown. No static site generator (Jekyll, Docusaurus, MkDocs). No API doc generator (JSDoc, TypeDoc). Reasons:
+- RAPID is a Claude Code plugin, not a library. Users interact through slash commands, not API imports.
+- Plugin docs live in the repo root as Markdown. GitHub renders them natively.
+- Adding a build step for docs violates the zero-infrastructure constraint.
+- The audience (Claude Code users) reads Markdown in GitHub or their editor.
 
-**Approach A: Consolidated prompt with numbered options (recommended).**
-Present all selected gray areas with proposed defaults in a single freeform AskUserQuestion. The user types which items to override:
+**Why no documentation tooling:**
 
-```
-Gray areas identified. Here are my proposed approaches:
+| Considered | Why Not |
+|-----------|---------|
+| Docusaurus / MkDocs | Build step, hosting needed, overkill for plugin docs |
+| JSDoc / TypeDoc | RAPID exposes CLI commands, not a JS API. Users never `require('rapid')`. |
+| GitHub Wiki | Separate from repo, harder to keep in sync, no PR review process |
+| Notion / Confluence | External service, violates zero-infrastructure constraint |
 
-1. Error handling strategy -> Return typed errors with error codes
-2. Cache invalidation -> TTL-based with 5min default
-3. Auth token storage -> httpOnly cookies
-4. API versioning -> URL path prefix (/v1/)
-5. Rate limiting -> Token bucket per user
-
-Type the numbers you want to discuss (e.g., "1,3,5"), or "ok" to accept all defaults.
-```
-
-This reduces 20 questions to 2-3: one to present defaults, one for the user's overrides, and optionally one confirmation.
-
-**Approach B: multiSelect with grouped options.**
-Use AskUserQuestion with `multiSelect: true` to batch approach decisions:
-
-```
-Select approaches for each gray area (multiple selection):
-- "Error handling: typed errors" -- "Return objects with error code, message, context"
-- "Error handling: throw exceptions" -- "Standard throw with Error subclasses"
-- "Cache: TTL-based" -- "5-minute TTL with manual invalidation"
-- "Cache: event-driven" -- "Invalidate on mutation events"
-...
-```
-
-This is more structured but may hit AskUserQuestion's practical option limit.
-
-**AskUserQuestion constraints (from research):**
-- ~60 second timeout per invocation
-- `multiSelect: true` is supported and already used in discuss Step 4
-- Freeform text input is supported when no options are provided
-
-**Why no new library:** AskUserQuestion is a built-in Claude Code tool. The change is how the discuss skill structures its prompts.
-
-### 6. Context-Efficient Review with Scoper Delegation
-
-**Stack additions:** New Claude Code subagent definition only.
-
-**What changes:**
-- `agents/rapid-scoper.md` -- New subagent definition (Claude Code agent file format)
-- `skills/review/SKILL.md` -- Restructure to use scoper before spawning review agents
-- `src/lib/review.cjs` -- Add `buildScopedContext()` helper
-
-**The context problem:** The review skill spawns bug-hunter, devils-advocate, and judge agents, each receiving full file contents in their prompt. For large sets, this eats the parent's context window. The 3-agent adversarial pipeline costs $15-45 per cycle (documented in review skill).
-
-**Solution: Scoper subagent.**
-
-```yaml
-# agents/rapid-scoper.md
----
-name: rapid-scoper
-description: Scope and summarize code for review agents. Use before spawning review subagents to compress context.
-tools: Read, Grep, Glob
-model: haiku
-permissionMode: dontAsk
----
-
-You are a code scoping agent. Given a list of changed files and their
-dependents, produce a compact JSON summary:
-
-For each file:
-1. Purpose (1 sentence)
-2. What changed (diff summary, NOT full diff)
-3. Key exports/imports
-4. Potential risk areas
-
-Return ONLY the JSON summary. Do not include full file contents.
-```
-
-**Why a native subagent (agents/ dir) instead of inline Agent tool:**
-- The `model: haiku` field runs the scoper on the cheapest/fastest model
-- `permissionMode: dontAsk` avoids prompting the user for read permissions
-- The scoper is reusable across review invocations without re-specifying its config
-- Claude Code's subagent system handles context isolation automatically
-
-**How it integrates with the review pipeline:**
-1. Review skill spawns scoper (haiku, fast, cheap) with the changed file list
-2. Scoper reads all files, returns a compressed JSON summary
-3. Review skill passes the summary (not raw files) to hunter/advocate/judge agents
-4. Each review agent operates on the summary, reducing context consumption by ~60-80%
-
-**Cost impact estimate:**
-- Current: ~$15-45 per bug hunt cycle (3 agents, each reading full files in parent context)
-- With scoper: ~$5-15 per cycle (scoper on Haiku ~$0.50, then 3 agents with summaries)
-
-**Why no new library:** This uses Claude Code's built-in subagent system (agents/ directory with YAML frontmatter). The scoper is a prompt + tool restriction, not code.
-
-### 7. Leaner Review Stage
-
-**Stack additions:** None.
-
-**What changes:**
-- `skills/review/SKILL.md` -- Add "lean review" as default for low-complexity waves
-- `src/lib/review.cjs` -- Already has `lean-review` as a valid source in ReviewIssue schema
-- `src/bin/rapid-tools.cjs` -- Already has `review lean <set-id> <wave-id>` command
-
-**Lean review pattern:**
-- Single-pass code review (no hunter/advocate/judge pipeline)
-- Scoper produces summary, single reviewer agent checks it
-- Default for waves with <5 changed files or jobs marked as "simple" complexity
-- Full adversarial pipeline reserved for waves marked as "complex" or "high-risk"
-
-The `review lean` command and schema support already exist. The skill just needs to:
-1. Auto-select lean review when wave complexity is low
-2. Offer lean vs full as an AskUserQuestion option (add to Step 1 stage selection)
-
-### 8. GSD Decontamination
-
-**Stack additions:** None.
-
-**What changes:** Find and replace all `gsd` references in role modules and skill files with `rapid` equivalents. Per todo.md, agents are spawning as `gsd-phase-researcher`, `gsd-wave planner`, `gsd-review` -- these are string references in markdown files.
-
-This is a mechanical find-and-replace operation across `src/modules/roles/*.md` and `skills/*/SKILL.md`.
+**What IS recommended for documentation quality:**
+- Use Markdown heading hierarchy (H1 for title, H2 for sections, H3 for subsections)
+- Include a table of contents for technical_documentation.md (manual, using `[section](#anchor)` links)
+- Use code blocks with language hints (```bash, ```javascript, ```yaml)
+- Include Mermaid diagrams for architecture (GitHub renders Mermaid natively)
+- Cross-reference between README.md and technical_documentation.md
 
 ---
 
-## Recommended Stack (Complete Picture)
+## Recommended Stack (Complete v2.2 Picture)
 
 ### Core Technologies (No Changes)
 
-| Technology | Version | Purpose | Why No Change Needed |
-|------------|---------|---------|---------------------|
-| Node.js | >=18 | Runtime | All features are prompt/orchestration changes |
-| Zod | 3.25.76 | Schema validation | Add schemas to existing files (verify.cjs) |
-| proper-lockfile | 4.1.2 | File locking | State machine unchanged |
-| CommonJS | (format) | Module system | All existing code is .cjs; no ESM migration |
-| git | (system) | VCS + worktrees | Core isolation mechanism unchanged |
-| node:test | (built-in) | Test framework | All new .test.cjs files use this |
+| Technology | Version | Purpose | v2.2 Impact |
+|------------|---------|---------|-------------|
+| Node.js | >=18 | Runtime | No change |
+| Zod | 3.25.76 | Schema validation | Minor: may add fields to MergeStateSchema for delegation tracking |
+| proper-lockfile | 4.1.2 | File locking | No change |
+| CommonJS | (format) | Module system | No change |
+| git | >=2.30 | VCS + worktrees | No change |
+| node:test | (built-in) | Tests | New tests for merge helpers |
 
-### New Modules (No New Dependencies)
+### New/Modified Modules
 
 | Module | Type | Purpose | Depends On |
 |--------|------|---------|------------|
-| `src/lib/resolve.cjs` | Library | Numeric ID + substring resolution | state-machine.cjs (findMilestone) |
-| `src/lib/resolve.test.cjs` | Test | Tests for numeric ID resolution | node:test |
-| `src/lib/verify.cjs` (extend) | Library | PlanVerification schema + helpers | zod, wave-planning.cjs |
-| `src/modules/roles/role-plan-verifier.md` | Agent role | Plan coverage + implementability | (reads JOB-PLAN.md files) |
-| `agents/rapid-scoper.md` | Subagent | Context compression for review | (Claude Code agent format) |
+| `src/modules/roles/role-merger.md` | Agent role (rewrite) | Expanded: runs full L1-L5 detection + T1-T3 resolution per set | merge.cjs CLI commands |
+| `src/modules/roles/role-conflict-resolver.md` | Agent role (new) | Single-conflict focused resolution agent | Read/Write/Bash/Grep/Glob |
+| `agents/rapid-merger.md` | Subagent (regenerated) | Built from role-merger.md | build-agents pipeline |
+| `agents/rapid-conflict-resolver.md` | Subagent (new) | Built from role-conflict-resolver.md | build-agents pipeline |
+| `src/lib/merge.cjs` | Library (extend) | Add `prepareMergerContext()`, `partitionParallelMergeable()` | Existing merge.cjs deps |
+| `src/lib/merge.test.cjs` | Tests (extend) | Tests for new helpers | node:test |
 
 ### Skill Modifications
 
 | Skill | Change Type | Key Change |
 |-------|-------------|------------|
-| `skills/init/SKILL.md` | Minor extend | Remove "run /rapid:plan" redirect; auto-continue to set-init guidance |
-| `skills/discuss/SKILL.md` | Rewrite | Batched questioning via consolidated prompts; accept numeric IDs |
-| `skills/wave-plan/SKILL.md` | Rewrite | Accept set ID, plan all waves, add plan verifier step |
-| `skills/review/SKILL.md` | Restructure | Add scoper delegation, lean review default, reduce context bloat |
-| `skills/set-init/SKILL.md` | Minor update | Accept numeric IDs via resolve.cjs |
-| `skills/execute/SKILL.md` | Minor update | Accept numeric IDs; remove unnecessary user confirmation before execute |
-| `skills/status/SKILL.md` | Minor update | Show numeric IDs alongside full IDs |
+| `skills/merge/SKILL.md` | Major rewrite | Delegate per-set work to merger agents; handle escalations + per-conflict agents; parallel batching for independent sets |
+
+### Documentation Files
+
+| File | Change Type | Notes |
+|------|-------------|-------|
+| `README.md` | Full rewrite | 150-250 lines, covers through v2.2 |
+| `technical_documentation.md` | New | 800-1200 lines, comprehensive reference |
+| `DOCS.md` | Deprecate | Redirect to technical_documentation.md |
 
 ---
 
 ## Claude Code Platform Features to Leverage
 
-These are built-in capabilities that v2.1 should exploit. They require NO code -- only skill/agent definition changes.
-
-| Feature | Current v2.0 Usage | v2.1 Usage |
-|---------|-------------------|------------|
-| Subagent `model` field | Not used (all inherit) | Scoper on `haiku` for cheap/fast context compression |
-| Subagent `permissionMode` | Not used | `dontAsk` for read-only agents (scoper, verifier) |
-| Subagent `background: true` | Not used | Parallel wave planning agents |
-| AskUserQuestion `multiSelect` | Used in discuss Step 4 | Extended to batch approach decisions |
-| Agent parallel spawning | Used in wave-plan Step 5 (job planners) | Extended to wave-level parallel planning |
-| Subagent `tools` allowlist | Not used | Verifier: Read+Grep+Glob only; Scoper: Read+Grep+Glob only |
-| `CLAUDE_CODE_SUBAGENT_MODEL` env var | Not exposed to users | Document for cost optimization (Opus main + Sonnet subagents) |
+| Feature | Current Usage | v2.2 Usage |
+|---------|--------------|------------|
+| Agent tool parallel spawning | Used in review, execute, init, wave-plan | Extended: parallel merger agents for independent sets within a wave |
+| Subagent `tools` field | Used across all agents | Conflict-resolver: restricted to Read, Write, Bash, Grep, Glob |
+| Subagent `model` field | Scoper uses haiku | Conflict-resolver: inherit (needs full reasoning for resolution) |
+| Subagent `permissionMode` | Scoper uses dontAsk | Merger: consider `acceptEdits` since it writes resolved files |
+| RAPID:RETURN protocol | All agents | Merger returns structured data with escalations array; conflict-resolver returns resolution + confidence |
+| Subagent context isolation | All agents | Key for v2.2: each merger agent gets its own context window, preventing orchestrator overflow |
+| Subagent `isolation: worktree` | Not used | NOT applicable for merge -- merger agents must operate on main branch, not isolated worktrees. The merge target is the shared main branch. |
 
 ---
 
@@ -363,24 +261,70 @@ These are built-in capabilities that v2.1 should exploit. They require NO code -
 
 | Recommendation | Alternative | Why Not |
 |----------------|-------------|---------|
-| Hand-rolled resolve.cjs (~30 lines) | minimist/yargs CLI arg parsing library | Overkill; need parseInt + string matching, not a CLI framework |
-| Zod schemas in verify.cjs | JSON Schema via ajv for plan verification | Zod is the codebase standard; mixing schema systems creates confusion |
-| Claude Code native subagent (agents/ dir) | Inline Agent tool spawning for scoper | Native def enables model=haiku and permissionMode=dontAsk declaratively |
-| Consolidated freeform prompt for batched Qs | Custom MCP server for batched user input | Massive overengineering; freeform + multiSelect handle this |
-| Remove /rapid:plan as separate command | Keep plan as separate user step | Plan is redundant -- init already produces the full roadmap + state |
-| Auto-lean-review for simple waves | Always full adversarial pipeline | Adversarial pipeline at $15-45/cycle is wasteful for 3-file changes |
+| SKILL.md as sole dispatcher | Merger agent spawns sub-agents | **Impossible** -- Claude Code subagents cannot spawn other subagents. Hard platform constraint. |
+| Separate conflict-resolver agent | Re-invoke merger for single conflicts | Fresh context is more efficient for focused single-conflict resolution |
+| Sequential set merging (default) | Always parallel within wave | Parallel merging requires proven file-independence; sequential is always safe as fallback |
+| Plain Markdown docs | Docusaurus/MkDocs static site | Zero-infrastructure constraint; plugin users read Markdown in repo |
+| Plain Markdown docs | JSDoc/TypeDoc | RAPID exposes CLI + slash commands, not a JS API |
+| Extend existing merge.cjs | New merge-delegation.cjs module | Keep merge logic consolidated; only 2-3 new helper functions needed |
+| `prepareMergerContext()` in merge.cjs | Inline context preparation in SKILL.md | Reusable function is testable; inline prompts are not |
+
+---
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| New npm dependencies | Every feature is achievable with existing stack | Lean on prompt engineering and orchestration |
-| XState / Robot / any FSM lib | State machine is 50 lines, proven, and sufficient | Existing state-machine.cjs + state-transitions.cjs |
-| External task queue (Bull, BullMQ) | Violates zero-infrastructure constraint | Agent tool parallel spawning |
-| TypeScript migration | 26,800+ LOC CommonJS; migration is a separate milestone | .cjs + Zod for runtime validation |
-| LangChain / LangGraph | RAPID agents are Claude Code subagents, not LLM-chain agents | Existing subagent framework |
-| Any database | Violates git-native constraint | JSON + Markdown in .planning/ |
-| Custom MCP server for batching | Overengineering for a prompt restructuring problem | AskUserQuestion freeform + multiSelect |
+| New npm dependencies | Every feature uses existing stack | Prompt engineering + orchestration |
+| `claude -p` for nested spawning | Loses context, observability, structured returns | SKILL.md dispatches all agents directly |
+| Subagent `isolation: worktree` for merger | Merger must operate on main branch for git merge | Standard subagent (no isolation) operating in project root |
+| EXPERIMENTAL_AGENT_TEAMS for merge | Agent teams are for independent parallel work, not sequential-within-wave merge | Sequential Agent tool calls from SKILL.md |
+| Documentation generators | Adds build step, hosting need, violates zero-infrastructure | Plain Markdown with GitHub rendering |
+| Mermaid-to-image build tools | GitHub renders Mermaid natively in Markdown | Inline Mermaid code blocks |
+
+---
+
+## Integration Points
+
+### How the Merger Agent Calls CLI Commands
+
+The merger agent runs as a subagent with `tools: Read, Write, Bash, Grep, Glob`. It invokes merge.cjs functions via the rapid-tools CLI, the same way SKILL.md currently does:
+
+```bash
+# Detection (merger agent runs these via Bash tool)
+node "${RAPID_TOOLS}" merge detect {setName}
+node "${RAPID_TOOLS}" merge resolve {setName}
+
+# State updates
+node "${RAPID_TOOLS}" merge update-status {setName} detecting
+node "${RAPID_TOOLS}" merge merge-state {setName}
+
+# Context loading
+node "${RAPID_TOOLS}" execute prepare-context {setName}
+```
+
+The `RAPID_TOOLS` environment variable is available to subagents because it is set in the main shell environment (configured by `/rapid:install`). Subagents inherit the parent's environment.
+
+### How build-agents Generates Agent Files
+
+The existing `build-agents` pipeline assembles agent files in `agents/` from modular components in `src/modules/`. Adding `role-conflict-resolver.md` in `src/modules/roles/` automatically generates `agents/rapid-conflict-resolver.md` via the build pipeline. No changes to the build pipeline are needed.
+
+### MERGE-STATE.json Schema Updates
+
+The existing MergeStateSchema may need minor extensions to track delegation:
+
+```javascript
+// Potential additions (evaluate during implementation)
+delegatedAt: z.string().optional(),    // When the merger agent was spawned
+delegatedTo: z.string().optional(),    // Agent instance identifier
+conflictResolvers: z.array(z.object({
+  conflictFile: z.string(),
+  confidence: z.number(),
+  resolved: z.boolean(),
+})).optional(),
+```
+
+These are minor Zod schema field additions to the existing file. No new modules needed.
 
 ---
 
@@ -388,39 +332,48 @@ These are built-in capabilities that v2.1 should exploit. They require NO code -
 
 | Package | Version | Compatible With | Notes |
 |---------|---------|-----------------|-------|
-| zod@3.25.76 | Current | Node.js >=18, CommonJS require() | Provides CJS shim despite being ESM-native |
-| proper-lockfile@4.1.2 | Current | Node.js >=18 | Stable, no known issues |
-| ajv@8.17.1 | Current | ajv-formats@3.0.1 | Used for CONTRACT.json; don't upgrade independently |
-| Claude Code subagent API | Current (2026-03) | agents/ dir with YAML frontmatter | Supports model, permissionMode, tools, hooks, background, isolation |
+| zod@3.25.76 | Current | Node.js >=18, CommonJS require() | Do not upgrade to Zod 4.x |
+| proper-lockfile@4.1.2 | Current | Node.js >=18 | Stable |
+| ajv@8.17.1 | Current | ajv-formats@3.0.1 | Used for CONTRACT.json |
+| Claude Code subagent API | Current (2026-03) | agents/ dir with YAML frontmatter | Supports: model, permissionMode, tools, hooks, background, isolation, memory, maxTurns, skills |
 
 ---
 
 ## Installation
 
-No new packages to install. v2.1 is entirely:
-- New .cjs library files (resolve.cjs + extend verify.cjs)
-- New/modified .md skill and agent role files
-- One new agents/ subagent definition (rapid-scoper.md)
+No new packages to install. v2.2 is entirely:
+- Rewritten SKILL.md for merge (prompt engineering)
+- New agent role definition (role-conflict-resolver.md)
+- Extended agent role definition (role-merger.md rewrite)
+- Minor merge.cjs helper additions (2-3 functions)
+- New documentation files (README.md rewrite + technical_documentation.md)
 
 ```bash
 # Verify existing stack is intact
 cd ~/Projects/RAPID
 node -e "require('zod'); require('proper-lockfile'); console.log('Stack OK')"
 
-# No npm install needed for v2.1
+# No npm install needed for v2.2
+
+# After implementation, regenerate agents
+node ~/Projects/RAPID/src/bin/rapid-tools.cjs build-agents
 ```
 
 ---
 
 ## Sources
 
-- [Claude Code Subagent Documentation](https://code.claude.com/docs/en/sub-agents) -- Subagent architecture, model selection, permissionMode, background tasks, tool restrictions, agents/ directory format (HIGH confidence, official docs)
-- [Claude Code AskUserQuestion Guide](https://smartscope.blog/en/generative-ai/claude/claude-code-askuserquestion-tool-guide/) -- multiSelect support, question limits, timeout behavior (MEDIUM confidence, third-party analysis)
-- [Claude Code Sub-Agent Best Practices](https://claudefa.st/blog/guide/agents/sub-agent-best-practices) -- Parallel vs sequential patterns, context window management (MEDIUM confidence, community resource)
-- Existing codebase analysis: state-machine.cjs, state-schemas.cjs, state-transitions.cjs, wave-planning.cjs, dag.cjs, review.cjs, returns.cjs, teams.cjs, verify.cjs -- All reviewed directly (HIGH confidence)
-- todo.md user feedback -- Direct requirements for numeric IDs, batched questioning, workflow simplification, GSD decontamination, review context efficiency (HIGH confidence, first-party)
-- package.json + node_modules/zod/package.json -- Verified Zod 3.25.76 works with CommonJS require (HIGH confidence, tested locally)
+### PRIMARY (HIGH confidence)
+- [Claude Code Subagent Documentation](https://code.claude.com/docs/en/sub-agents) -- Official docs confirming: subagents cannot spawn other subagents, Agent tool only available to main thread and skills, full frontmatter field reference (name, description, tools, disallowedTools, model, permissionMode, maxTurns, skills, hooks, memory, background, isolation). Verified 2026-03-10.
+- [GitHub Issue #4182: Sub-Agent Task Tool Not Exposed](https://github.com/anthropics/claude-code/issues/4182) -- Confirms Agent tool is excluded from subagent tool lists. Closed as duplicate. Workarounds (claude -p via Bash) lose context and observability. Verified 2026-03-10.
+- Existing codebase analysis: `skills/merge/SKILL.md`, `skills/review/SKILL.md`, `src/lib/merge.cjs`, `agents/rapid-merger.md`, `src/modules/roles/role-merger.md` -- All read directly. Confirm current merge pipeline architecture and agent spawning patterns. (HIGH confidence)
+- `package.json` -- Verified current dependencies: zod@^3.25.76, proper-lockfile@^4.1.2, ajv@^8.17.1, ajv-formats@^3.0.1. (HIGH confidence)
+
+### SECONDARY (MEDIUM confidence)
+- [Claude Code Agent Teams Guide](https://claudefa.st/blog/guide/agents/agent-teams) -- Confirms Agent Teams is for independent parallel work, not suitable for sequential merge pipeline. (MEDIUM confidence, community resource)
+- [Claude Code Worktree Subagent Isolation](https://www.threads.com/@boris_cherny/post/DVAAnexgRUj) -- Confirms `isolation: worktree` frontmatter field for subagent git worktree isolation. (MEDIUM confidence, official Anthropic staff post)
+- v2.1 stack research (`.planning/research/STACK.md` prior version) -- Validated that no new dependencies were needed for v2.1. Same conclusion applies to v2.2. (HIGH confidence, internal)
 
 ---
-*Stack research for: RAPID v2.1 Improvements & Fixes*
-*Researched: 2026-03-09*
+*Stack research for: RAPID v2.2 Subagent Merger & Documentation*
+*Researched: 2026-03-10*

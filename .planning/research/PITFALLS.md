@@ -1,375 +1,420 @@
-# Pitfalls Research
+# Domain Pitfalls
 
-**Domain:** Adding workflow simplification, parallel planning, plan verification, and context optimization to an existing Claude Code plugin system (RAPID v2.1)
-**Researched:** 2026-03-09
-**Confidence:** HIGH (based on direct codebase analysis of 17 skills, 21 libraries, 14 agent role modules, plus operational user feedback in todo.md)
+**Domain:** Restructuring monolithic merge orchestrator into delegated subagents + comprehensive documentation rewrite for RAPID v2.2
+**Researched:** 2026-03-10
+**Confidence:** HIGH (based on direct codebase analysis of merge.cjs 1200+ LOC, merge SKILL.md 527 lines, dag.cjs 467 lines, orchestrator/merger agent definitions, review SKILL.md 934 lines as precedent, plus Claude Code subagent constraint verification via official docs)
 
-Note: This supersedes the 2026-03-06 v2.0 research. Previous pitfalls about state machine design, merge adaptation, and Playwright UAT were addressed in v2.0 implementation. This document focuses specifically on pitfalls when ADDING v2.1 features (workflow streamlining, GSD decontamination, parallel wave planning, plan verifier, numeric ID shorthand, batched questioning, context-efficient review) to the existing v2.0 system.
+Note: This supersedes the 2026-03-09 v2.1 pitfalls. Previous pitfalls about GSD decontamination, state machine gaps, numeric IDs, and batched questioning were addressed in v2.1 implementation. This document focuses specifically on pitfalls when ADDING v2.2 features (subagent merge delegation, DAG-ordered parallel merging, adaptive nesting for complex resolutions, and documentation rewrite) to the existing v2.0/v2.1 system.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Incomplete GSD Decontamination Causing Runtime Agent Identity Confusion
+Mistakes that cause rewrites, data loss, or broken merge state.
+
+### Pitfall 1: Orchestrator Context Overflow Despite Delegation -- The "Summary Accumulation" Trap
 
 **What goes wrong:**
-GSD references exist at three distinct layers and missing any one layer causes agents to spawn with wrong identity prefixes. The user's todo.md documents this exact failure: agents spawning as `gsd-phase-researcher`, `gsd-wave planner`, and `gsd-review` at runtime. The codebase currently has:
-1. **Source code:** `gsd_state_version: 1.0` in `src/lib/init.cjs:53` and its test assertion in `init.test.cjs:90-92`
-2. **Planning artifacts:** 60+ GSD references across `.planning/research/` files, `.planning/phases/` context and research documents -- these get loaded into agent context during research synthesis and wave planning, leaking the GSD identity into agent prompts
-3. **Runtime environment:** The user's Claude Code installation at `~/.claude/` has the GSD framework installed (get-shit-done plugin) which defines agent types like `gsd-phase-researcher`. When RAPID skills spawn agents using the Agent tool, Claude Code may resolve agent type names from the GSD registry if RAPID's own naming is ambiguous or if the prompt lacks strong identity anchoring
+The entire point of v2.2 is to prevent the merge orchestrator from overflowing its context by delegating per-set merge work to subagents. But the orchestrator must still COLLECT results from each merge subagent to: (a) track which sets merged successfully, (b) pass "already merged set contexts" to later merge agents, (c) build the final merge summary, and (d) decide whether to trigger bisection. If the orchestrator naively accumulates full RAPID:RETURN payloads from each merge subagent, it replaces one context problem (doing all merge work) with another (holding all merge results).
 
-The `assembler.cjs` generates frontmatter with `name: rapid-{role}` (line 65), but this only applies to agents assembled through the formal assembler pipeline. The wave-plan, discuss, review, execute, and init skills all construct agent prompts INLINE within their SKILL.md files -- they read role modules from `src/modules/roles/` and paste them into Agent tool calls. These inline prompts do not go through the assembler and therefore miss the `name: rapid-{role}` frontmatter entirely. Claude Code then falls back to its own agent type resolution, which may match GSD agent types from the user's installed plugins.
+The current merge SKILL.md Step 4d already processes merger agent RAPID:RETURN results inline. When this pattern is extended to per-set merge subagents (instead of a single merger agent per set), the orchestrator receives:
+- Per-set detection reports (L1-L4 conflict counts + details)
+- Per-set resolution summaries (T1-T4 counts + file-level details)
+- Per-set merger agent semantic conflict findings (L5)
+- Per-set merge commit hashes
+- Per-set escalation details with proposed resolutions
+
+For a project with 8 sets across 3 waves, this is 8 full result payloads accumulating in the orchestrator context. Each payload is 2K-5K tokens (detection report + resolution details + escalations). That is 16K-40K tokens of accumulated results PLUS the 20K overhead of the skill prompt itself PLUS state tracking. The orchestrator hits 80K+ tokens before even reaching the integration gate.
 
 **Why it happens:**
-The decontamination is treated as a simple find-and-replace when it is actually a three-layer problem (source, planning artifacts, runtime environment). Developers fix the obvious layer (source code) and miss the less obvious layers (archived planning documents that get loaded as agent context, and the runtime agent name resolution in Claude Code).
+The Anthropic multi-agent research system identified this exact pattern: "token usage by itself explains 80% of the variance in quality." Delegating work to subagents only solves context overflow if the orchestrator ALSO practices result compression. Developers implement the delegation (spawn subagents) but forget to implement the compression (extract only actionable summary from returns).
 
-**How to avoid:**
-1. **Source code sweep:** grep the entire `src/` tree for `gsd`, `GSD`, `get-shit-done`, `get.shit.done` (case-insensitive). Fix `init.cjs:53` (rename `gsd_state_version` to `rapid_state_version`) and update `init.test.cjs:90-92` to match. Run all tests afterward.
-2. **Planning artifact sweep:** Search `.planning/` for GSD references. For historical/research files in `.planning/phases/` and `.planning/research/`, these can stay as-is since they document v2.0 development history. But ensure no active SKILL.md or role module loads these files as context for new agents.
-3. **Agent identity anchoring in skills:** Ensure every Agent tool invocation in every SKILL.md includes explicit identity: "You are a RAPID agent named rapid-{role}." The role modules already say "RAPID agent" but the skill-level prompt construction should reinforce this with a consistent preamble.
-4. **Integration test:** After decontamination, run a smoke test of each skill that spawns agents (init, wave-plan, execute, review) and verify the agent type names displayed in the Claude Code UI start with "rapid-" not "gsd-".
+**Consequences:**
+- Orchestrator context degrades in later waves, producing shallow analysis of integration gate failures
+- Bisection recovery logic (Step 7) receives confused context about which sets merged in which order
+- The orchestrator may lose track of merge state mid-pipeline, leading to double-merge attempts or skipped sets
 
-**Warning signs:**
-- Agent spawn messages in Claude Code UI showing "gsd-" prefixed names
-- Agents referring to "GSD workflow" or "phases" instead of "sets/waves/jobs"
-- Subagents attempting to use `gsd-tools.cjs` instead of `rapid-tools.cjs` via RAPID_TOOLS
-- Test assertions still referencing `gsd_state_version`
+**Prevention:**
+1. **Compressed result protocol:** Define a "merge summary" schema that is strictly smaller than the full RAPID:RETURN. Each merge subagent returns full details, but the orchestrator extracts and stores only: `{ setId, status, mergeCommit, conflictCount, escalationCount, allResolved }` (~100 tokens per set vs ~3K tokens). Full details are written to MERGE-STATE.json (on disk, not in context).
+2. **Disk-based state, not context-based state:** The orchestrator should read MERGE-STATE.json from disk when it needs details about a previously-merged set, rather than holding all results in conversational context. This is exactly how the review scoper pattern works -- subagents write to disk, orchestrator reads summaries.
+3. **Progressive context shedding:** After each wave completes its integration gate, the orchestrator should NOT carry forward the per-set details from that wave. Only the wave-level summary (N sets merged, M escalations, integration tests pass/fail) needs to persist.
+4. **Budget test:** Before implementing, estimate: `(skill prompt tokens) + (per-set summary * max sets) + (state tracking overhead) < 50K tokens`. If not, the summary schema is too verbose.
+
+**Detection:**
+- Orchestrator producing increasingly vague merge summaries in later waves
+- Orchestrator "forgetting" that a set was already merged and attempting re-merge
+- Step 8 (Pipeline Complete) final summary missing data from early waves
 
 **Phase to address:**
-First phase -- GSD decontamination must happen before any other workflow changes, because agents with confused identity will mis-execute all subsequent features.
+First phase of merge restructuring. Design the compressed result protocol BEFORE building the subagent spawn logic.
 
 ---
 
-### Pitfall 2: State Transition Table Gaps When Adding Plan Verification Stage
+### Pitfall 2: Result Loss From Subagent RAPID:RETURN Parsing Failures
 
 **What goes wrong:**
-The current wave state machine in `state-transitions.cjs` defines a linear progression: `pending -> discussing -> planning -> executing -> reconciling -> complete`. Adding a plan verification stage as a new state (e.g., `verified` or `validated`) between `planning` and `executing` requires coordinated updates across four tightly coupled files:
+The RAPID structured return protocol uses an HTML comment marker `<!-- RAPID:RETURN {...} -->` embedded in the subagent's natural language output. The orchestrator must parse this JSON from the subagent's free-form text response. Three failure modes:
 
-1. `state-transitions.cjs` -- the `WAVE_TRANSITIONS` map (lines 12-20) must include the new state and its allowed transitions
-2. `state-schemas.cjs` -- the `WaveStatus` Zod enum must include the new status string, or writes will fail Zod validation
-3. `state-machine.cjs` -- the `WAVE_STATUS_ORDER` ordinal map (lines 141-144) must assign the correct ordinal, and `deriveWaveStatus()` (lines 182-197) must handle the new status in its derivation logic
-4. `rapid-tools.cjs` -- CLI commands that check wave status must recognize the new state
+1. **Malformed JSON:** The merge subagent generates a RAPID:RETURN with a JSON syntax error (unclosed brace, unescaped quote in a conflict description, trailing comma). The orchestrator fails to parse, treats the subagent as having returned no results, and proceeds as if the merge had zero conflicts. The set merges into main without resolution -- SILENTLY.
 
-If any of these four files is missed, the system enters an inconsistent state. A wave stuck in `validated` with no valid transition out will block the entire set's execution. Zod will reject STATE.json writes containing the unrecognized status. The ordinal map will return `undefined` for the new status, causing `isDerivedStatusValid()` (lines 161-168) to return `false` and silently skip set status updates.
+2. **Missing RAPID:RETURN:** The merge subagent runs out of context or hits its `maxTurns` limit before emitting the RAPID:RETURN. The orchestrator receives the subagent's partial output (which may include partial conflict analysis) but no structured return. Current merge SKILL.md Step 4d has no fallback for missing returns.
+
+3. **Truncated return:** The subagent's context compacts mid-response, truncating the RAPID:RETURN JSON. The orchestrator receives `<!-- RAPID:RETURN {"status":"COMPLETE","data":{"semantic_co` -- a valid start that fails JSON parse. If the orchestrator retries parsing with progressively looser strategies, it may extract partial data and proceed with incomplete conflict information.
 
 **Why it happens:**
-The state machine is distributed across four files for separation of concerns (schemas, transitions, derivation, CLI). This is good design for maintenance but dangerous for additive changes -- adding a state is a cross-cutting concern that must touch all four files atomically.
+The review SKILL.md already handles multi-subagent returns (bug-hunter, advocate, judge) and has encountered this pattern. The current handling is implicit -- the skill instructions say "Parse the RAPID:RETURN from the agent" without specifying fallback behavior. For review, a missed finding is unfortunate but survivable. For merge, a missed conflict means corrupted main branch.
 
-**How to avoid:**
-1. **Strong recommendation: Do NOT add a new state.** Implement the plan verifier as a sub-step within the `planning` state. The wave stays in `planning` until verification passes, then transitions to `executing`. The verification result is an artifact (VERIFICATION-REPORT.md), not a state. This approach requires zero changes to the state machine.
-2. **If a new state IS required:** Create a checklist that must be followed:
-   - Add to `WAVE_TRANSITIONS` in `state-transitions.cjs`
-   - Add to `WaveStatus` Zod enum in `state-schemas.cjs`
-   - Add ordinal to `WAVE_STATUS_ORDER` in `state-machine.cjs`
-   - Update `deriveWaveStatus()` if the new status should be derivable from child statuses
-   - Update any status-checking logic in `rapid-tools.cjs` CLI
-   - Update SKILL.md files that hardcode status checks (wave-plan Step 2, discuss Step 2, execute Step 0c, review Step 0c all check wave/set status)
-   - Write transition tests FIRST, run them, watch them fail, then add the state
-3. **Run the full state machine test suite:** `node --test src/lib/state-machine.test.cjs && node --test src/lib/state-transitions.test.cjs && node --test src/lib/state-schemas.test.cjs` after any state change.
+Claude Code subagents each start with ~20K tokens of overhead. A merge subagent for a set with many conflicts could consume most of its context on conflict analysis, leaving insufficient room for the structured return.
 
-**Warning signs:**
-- Zod validation errors when writing STATE.json with a new status
-- `isDerivedStatusValid()` returning false for what should be valid progressions
-- Skills checking for the old status list and missing the new one (e.g., execute skill rejects a wave in `validated` because it only accepts `planning`)
-- Tests in `state-machine.test.cjs` or `state-transitions.test.cjs` failing after changes
+**Consequences:**
+- Main branch receives unresolved conflicts (merge markers in code)
+- MERGE-STATE.json shows "complete" for a set that was not actually cleanly merged
+- Integration tests fail in Step 7, triggering bisection, but bisection cannot isolate the issue because the "breaking set" appears to have merged cleanly
+- Worst case: merge proceeds to next wave on a corrupted base, causing cascading failures
+
+**Prevention:**
+1. **Validate RAPID:RETURN parse with fallback:** After parsing the subagent return, the orchestrator must check: (a) JSON parsed successfully, (b) `status` field exists, (c) `data` field exists with expected schema. If any check fails, treat the merge as BLOCKED, not as successful.
+2. **Default-unsafe, not default-safe:** If the RAPID:RETURN is missing or malformed, the orchestrator must NOT proceed with the merge. The default assumption is "something went wrong" not "everything is fine."
+3. **Git state verification:** After the merge subagent returns, the orchestrator independently verifies the git state: `git diff --check` for conflict markers, `git status` for uncommitted changes. This is a safety net independent of the RAPID:RETURN.
+4. **Retry once on parse failure:** If the RAPID:RETURN fails to parse, re-spawn the merge subagent with a smaller scope (e.g., only the unresolved conflicts from L1-L4 detection, skip L5 semantic). If the retry also fails, BLOCK with a clear error.
+5. **Write-before-return pattern for subagents:** Instruct merge subagents to write their results to MERGE-STATE.json on disk BEFORE emitting the RAPID:RETURN. If the return is lost, the orchestrator can recover from disk.
+
+**Detection:**
+- MERGE-STATE.json showing status "complete" but `detection.semantic.ran: false`
+- Git log showing merge commits with conflict markers present in committed files
+- Integration test failures in Step 7 that bisection attributes to a set with zero detected conflicts
 
 **Phase to address:**
-Plan verification phase -- but strongly recommend the sub-step approach (no new state) as the lower-risk path.
+Core merge subagent phase. The write-before-return pattern and parse validation must be in the subagent role definition and the skill instructions simultaneously.
 
 ---
 
-### Pitfall 3: Parallel Wave Planning Creating Race Conditions on Shared Artifacts
+### Pitfall 3: DAG Ordering Bugs When Parallelizing Independent Sets
 
 **What goes wrong:**
-The v2.1 goal of parallel wave planning means multiple wave-plan invocations running simultaneously for different waves within the same set. The state machine itself is lock-protected (via proper-lockfile in `transitionWave()`, state-machine.cjs line 275), so STATUS transitions are race-safe. However, the planning ARTIFACTS that wave-plan produces have a collision risk:
+The current merge SKILL.md Step 2 states: "Sets within a wave merge SEQUENTIALLY -- each merge sees the result of the previous one." v2.2 changes this: independent sets (same wave, no cross-dependencies) should merge in PARALLEL, while dependent sets (later waves) wait.
 
-1. **VALIDATION-REPORT.md** -- Currently written to `.planning/sets/{setId}/VALIDATION-REPORT.md` (wave-plan SKILL.md Step 6, line 255). Two parallel wave-plan runs for different waves both write to this same path, causing last-write-wins data loss.
-2. **Git commits** -- Wave-plan SKILL.md Step 7 runs `git add ".planning/waves/${SET_ID}/${WAVE_ID}/"` then `git commit`. Two concurrent git commits can fail with `error: cannot lock ref 'HEAD'` race. Git serializes commits via the HEAD lockfile, but the second commit may fail rather than retry.
-3. **OWNERSHIP.json** -- If wave planning produces ownership updates (from contract validation), concurrent writes to `.planning/sets/OWNERSHIP.json` could corrupt the file.
+The DAG module (`dag.cjs`) correctly computes wave assignment via `assignWaves()` and execution order via `getExecutionOrder()`. The bug surface is NOT in the DAG computation -- it is in the merge orchestrator's application of DAG results to git operations:
+
+1. **Base branch mutation during parallel merge:** Two independent sets (A and B, both in wave 1) merge into main simultaneously. Set A's merge commit changes main. Set B was computed against the OLD main (before A merged). If B's branch has changes to a file that A also changed, the parallel merge produces a textual conflict that would not exist in sequential mode. The L1 detection (Step 3b) ran BEFORE A merged, so it reported no conflicts for B. Now the actual `git merge` in Step 6 hits unexpected conflicts.
+
+2. **Pre-wave commit inconsistency:** Step 2 records `PRE_WAVE_COMMIT=$(git rev-parse HEAD)` for bisection. If two sets merge in parallel, the PRE_WAVE_COMMIT is the same for both, but after A merges, HEAD advances. The bisection logic in Step 7 uses PRE_WAVE_COMMIT to determine the rollback point. If both A and B merged, rolling back to PRE_WAVE_COMMIT reverts BOTH -- but bisection identified only B as the problem.
+
+3. **"Already merged in this wave" context for merger agents:** The current merger agent role module (role-merger.md lines 4-5) receives "Other Set Contexts (already merged in this wave)" for semantic conflict detection. In parallel mode, A and B merge simultaneously -- neither knows about the other's merge. Both merger agents receive empty "already merged" context. Semantic conflicts between A and B are invisible.
 
 **Why it happens:**
-The state machine was designed with concurrency protection (locks, atomic writes). But the SKILL.md-level orchestration was designed for sequential execution -- it writes artifacts to fixed paths without considering concurrent invocations. The artifact paths are hardcoded in the natural language instructions of SKILL.md, not in the CLI tool where locking could be added.
+The DAG correctly identifies which sets CAN run in parallel (they share no declared dependencies). But the merge operation itself creates implicit dependencies: merging changes the target branch (main). Every git merge into main creates a happens-before relationship with subsequent merges, even if the sets are DAG-independent. This is the fundamental tension between logical independence (DAG) and operational sequencing (git).
 
-**How to avoid:**
-1. **Move VALIDATION-REPORT.md to wave directory:** Change the path from `.planning/sets/{setId}/VALIDATION-REPORT.md` to `.planning/waves/{setId}/{waveId}/VALIDATION-REPORT.md`. Since each wave writes to its own subdirectory, this eliminates the collision. Update both the SKILL.md and the CLI `validate-contracts` subcommand.
-2. **Serialize git commits with retry:** Add a retry loop around the git commit in wave-plan Step 7: try `git commit`, if it fails with a lock error, wait 1-2 seconds and retry up to 3 times. Alternatively, each wave-plan run stages and commits its own wave directory independently.
-3. **Lock shared artifact writes:** If any artifact must remain at the set level, use the existing `acquireLock()` from `lock.cjs` before writing.
-4. **Test parallel scenarios:** Write an integration test that spawns two wave-plan operations on different waves in the same set and verifies both produce correct artifacts without corruption.
+**Consequences:**
+- Unexpected merge conflicts during `git merge --no-ff` in Step 6 that were not caught by detection
+- Bisection rolling back innocent sets because pre-wave commit doesn't account for partial wave progress
+- Semantic conflicts between wave-mates missed because merger agents lack cross-set context
 
-**Warning signs:**
-- VALIDATION-REPORT.md containing results for the wrong wave
-- Git commit failures with `cannot lock ref 'HEAD'` during parallel wave planning
-- OWNERSHIP.json containing partial or corrupted data
-- One wave's planning artifacts overwriting another's
+**Prevention:**
+1. **Parallel detection, sequential merge execution:** Run L1-L4 detection for all wave sets in parallel (detection is read-only and safe to parallelize). Run L5 semantic detection in parallel (each merger agent analyzes against already-merged context). But execute the actual `git merge --no-ff` SEQUENTIALLY within a wave, even for independent sets. This preserves the correctness guarantee while still gaining parallelism in the expensive detection/resolution phase.
+2. **Rebase detection before merge:** If true parallel merge execution is desired, each set must rebase its detection against the CURRENT HEAD (not the pre-wave HEAD) immediately before the `git merge` call. This means: run detection early (parallel), then at merge time, verify that the detection results are still valid against current HEAD. If HEAD changed since detection, re-run L1 detection only (fast textual check).
+3. **Per-merge commit tracking for bisection:** Instead of a single PRE_WAVE_COMMIT, track `{ preCommit, postCommit, setId }` for each merge in the wave. Bisection then has the granularity to revert individual set merges within a wave.
+4. **Lock main during merge execution:** Use a mutex (the existing `lock.cjs` acquireLock/releaseLock) around the `git merge --no-ff` + `git commit` sequence. This serializes the critical section while allowing detection/resolution to run in parallel.
+
+**Detection:**
+- Merge conflicts appearing in Step 6 for sets that had zero L1 conflicts in Step 3
+- Bisection reverting more sets than identified as breaking
+- Merger agents reporting zero semantic conflicts for sets that actually have cross-set interactions
 
 **Phase to address:**
-Parallel wave planning phase. The VALIDATION-REPORT.md path fix should be the first change when enabling parallel planning.
+DAG merge parallelization phase. The "parallel detection, sequential execution" pattern should be the default. True parallel execution is an optimization that requires the rebase-detection and per-merge tracking -- plan it for later if at all.
 
 ---
 
-### Pitfall 4: Context Window Exhaustion in Review Pipeline From Centralized File Loading
+### Pitfall 4: Error Propagation Gap -- Merge Agent Failure Mid-DAG Leaves Pipeline in Inconsistent State
 
 **What goes wrong:**
-The review SKILL.md is 790 lines. The orchestrating skill spawns up to 7 subagent types (unit-tester, bug-hunter, devils-advocate, judge, bugfix, UAT, plus potentially a scoper). For each subagent, the orchestrator currently:
-- Reads the role module via `cat src/modules/roles/role-*.md` (50-150 lines each)
-- Reads context files: WAVE-CONTEXT.md, CONTRACT.json, SET-OVERVIEW.md
-- Reads JOB-PLAN.md files (one per job, 50-100 lines each)
-- For the bug hunt pipeline: passes source file contents inline and previous stage results
+Consider 3 sets: A (wave 1), B (wave 2, depends on A), C (wave 2, depends on A). A merges successfully. B's merge subagent is spawned. B's subagent encounters a complex conflict, attempts Tier 3 resolution, and returns BLOCKED (low confidence escalation). The orchestrator prompts the user. Meanwhile, C's merge subagent was spawned in parallel with B (both are wave 2). C's subagent proceeds and merges successfully into main.
 
-For a wave with 5 jobs touching 5 files each, the orchestrator's context consumption grows to 50K+ tokens before the adversarial pipeline even starts. The 3-cycle bug hunt (hunter + advocate + judge + bugfix per cycle) multiplies this by 4 agents x 3 cycles = 12 additional agent spawns, each receiving accumulated context from previous stages.
+Now the pipeline state is:
+- A: merged (wave 1)
+- B: BLOCKED, needs human resolution (wave 2)
+- C: merged (wave 2, but depends on A, which is fine)
 
-The user's todo.md explicitly flags this: "currently the agents eat quite a lot of context, we need to find a way to make use of more subagents/agent teams" and "for the review, perhaps the review agent should spawn a scoper as well so the context length doesn't get eaten up."
+The user resolves B's conflict and wants to resume. But C already merged into main AFTER A -- and B's merge will now be against a main that includes both A and C. B's original detection ran against main+A only. B's conflict resolution was computed against main+A only. The resolution may be WRONG for main+A+C.
 
 **Why it happens:**
-The current review skill loads all source file CONTENTS into the orchestrator's context to pass inline to subagents. This was a reasonable approach at small scale but becomes the primary bottleneck at larger scale. The orchestrator becomes a context-window chokepoint because it must hold enough information to construct intelligent prompts for each subagent.
+The current merge SKILL.md handles blocked merges within a wave by letting the user choose "Skip set, continue pipeline" (Step 5 option) or "Resolve manually" (Step 4e option with "pause pipeline" exit). But there is no mechanism to mark that a skipped/paused set's detection results are INVALIDATED by subsequent merges. The review SKILL.md has this same gap but it is less severe -- a stale bug finding is annoying, a stale merge resolution corrupts main.
 
-**How to avoid:**
-1. **Scoper-first pattern:** Spawn a scoper subagent BEFORE the review pipeline. The scoper reads all source files, computes the review scope (changed files + one-hop dependents), and returns a structured summary: file paths, key function signatures, dependency map, and a brief per-file summary (3-5 lines per file). The orchestrator receives only this summary (~2K tokens for 20 files), not the full source (~30K tokens).
-2. **Subagents load their own files:** Instead of passing source file contents inline in the Agent prompt, pass FILE PATHS and let subagents use the Read tool to load them from disk. Each subagent has its own fresh 200K context window. This shifts the context cost from the orchestrator (shared, accumulating) to each subagent (fresh, independent).
-3. **Stage results compression:** After each pipeline stage, extract only the actionable structured data (findings array, test results array) and discard verbose output (full test runner logs, raw agent reasoning). Pass the compressed structured data to the next stage.
-4. **Lean default, full opt-in:** Change the review default from "All stages" to "Unit test + lean review" for wave-level review. Full adversarial bug hunt becomes opt-in for set-level or pre-merge review.
+**Consequences:**
+- Resumed merge applies a stale resolution that was valid for main+A but not for main+A+C
+- main branch receives incorrectly merged code from B that conflicts with C's already-merged changes
+- MERGE-STATE.json for B shows conflicts detected against old base, misleading the user
 
-**Warning signs:**
-- Orchestrator running into context window limits during review
-- Review subagents returning CHECKPOINT because they ran out of context mid-analysis
-- Subagent outputs becoming increasingly shallow in later pipeline stages
-- Total review cost exceeding $30 for a single wave
+**Prevention:**
+1. **Invalidation on skip/pause:** When a set is skipped or paused within a wave, and other sets in that wave continue to merge, mark the skipped set's MERGE-STATE.json with `detectionInvalidated: true` and `invalidatedBy: [list of sets that merged after detection]`. When the set resumes, the orchestrator MUST re-run detection (at minimum L1 textual) before proceeding to resolution.
+2. **Wave-level atomicity option:** Offer a "strict mode" where if any set in a wave blocks, ALL remaining sets in that wave pause. This preserves the invariant that detection results are valid for the entire wave. The user trades parallelism for safety.
+3. **Resume-aware re-detection:** When `/rapid:merge` is re-invoked for a previously-paused set, check if main has advanced since detection ran. If `git rev-parse main` differs from the merge-base used in detection, re-run detection before resolution.
+4. **Fence commits:** Before merging each set, record the current HEAD in MERGE-STATE.json as `detectionBase`. On resume, compare `detectionBase` against current HEAD. If different, stale detection is flagged.
+
+**Detection:**
+- User resumes a paused merge and sees different/new conflicts not in the original detection report
+- Integration test failures after a resumed merge that was "clean" per its MERGE-STATE
+- MERGE-STATE.json `detectionBase` commit hash does not match current main HEAD at merge time
 
 **Phase to address:**
-Context-efficient review phase. The scoper pattern and file-path delegation should be designed as a unit, not as independent changes.
+Core merge subagent phase. The detection invalidation logic must be designed alongside the subagent spawn logic, not retrofitted.
 
 ---
 
-### Pitfall 5: Numeric ID Shorthand Creating Inconsistent UX Across Skills
+### Pitfall 5: "Adaptive Nesting" Violating Claude Code's Subagent Depth Constraint
 
 **What goes wrong:**
-The v2.1 feature of numeric ID shorthand (e.g., `/set-init 1` instead of `/set-init set-01-foundation`) must work consistently across 7+ skills that accept entity IDs: set-init, discuss, wave-plan, execute, review, merge, and status. If numeric resolution is implemented per-skill in the SKILL.md natural language instructions:
-- Each skill independently interprets "1" -- some as 0-indexed, some as 1-indexed, some as prefix match
-- When a new skill is added, the developer must remember to copy the resolution logic
-- Edge cases diverge: skill A handles "1" when set names start with numbers, skill B does not
-- Claude's interpretation of natural language resolution instructions is non-deterministic -- the same instruction may produce different behaviors across invocations
+The v2.2 target includes "Adaptive nesting: merge agents can spawn per-conflict sub-agents for complex resolutions." Claude Code's official documentation states unambiguously: "Subagents cannot spawn other subagents."
 
-If numeric resolution is implemented in the CLI (`rapid-tools.cjs`) but not all skills are updated to use it, some skills accept numeric IDs and others reject them with "not found" errors.
+The merge SKILL.md (orchestrator) spawns merge subagents via the Agent tool. Those merge subagents are leaf agents -- they cannot use the Agent tool themselves. The current merger role module (role-merger.md line 127) explicitly states: "Never spawn sub-agents. You are a leaf agent in the merge pipeline."
+
+Attempting to give merge subagents the ability to spawn per-conflict resolution agents will either:
+1. **Silently fail:** The Agent tool is not available to subagents. The merge subagent's attempt to spawn a sub-subagent produces a tool error. If the subagent handles this gracefully, it falls back to resolving the conflict itself (wasting tokens on the failed spawn attempt). If it does not handle gracefully, it returns BLOCKED.
+2. **Cause infinite loops:** If a workaround (like using the `--agent` flag with Task tool) is attempted, Claude Code issue #4850 documents that "Agents spawning sub-agents causes endless loop scenario and RAM OOM errors."
 
 **Why it happens:**
-The path of least resistance is to add numeric resolution to the first skill that needs it (set-init, per the todo.md) and plan to "roll it out" to other skills later. But "later" becomes "never" because each skill works individually, and the inconsistency is only noticed when users try different commands.
+The architecture document for v2.2 describes "adaptive nesting" as a goal without accounting for Claude Code's hard constraint on subagent depth. This is the single most likely v2.2 design error because the constraint is non-obvious -- the Agent tool exists in the tool list, and the orchestrator CAN spawn subagents, so it seems natural that subagents should also be able to spawn.
 
-**How to avoid:**
-1. **Implement in rapid-tools.cjs as a library function:** Add `resolveEntityId(state, entityType, input)` to `state-machine.cjs` that handles: exact string match (highest priority), numeric 1-based index into the ordered entity list, prefix match (e.g., "auth" matches "auth-system"). Return the resolved ID or throw with a disambiguation message.
-2. **Add a CLI subcommand:** `node "${RAPID_TOOLS}" resolve-id set "1"` that returns the resolved set ID as JSON. All skills call this before processing.
-3. **Update all skills simultaneously:** When adding numeric ID support, update every SKILL.md that accepts entity IDs in the same changeset. Use a consistent pattern: "If the user provided an ID, resolve it via `node "${RAPID_TOOLS}" resolve-id {entityType} {userInput}` before proceeding."
-4. **Test edge cases explicitly:**
-   - Set named "1-auth" with numeric input "1" -- should this match by prefix or by index?
-   - 10 sets where input "1" could mean index 1 or set "10-api" by prefix
-   - Wave ID "wave-1" with just "1" as input
-   - Resolution should follow: exact match > numeric index (1-based) > prefix match
+**Consequences:**
+- Wasted implementation time building a feature that Claude Code prevents at runtime
+- If workarounds are attempted, RAM exhaustion and infinite loops per issue #4850
+- Merge subagents designed with delegation in mind but forced to do all work themselves, producing suboptimal resolution quality
 
-**Warning signs:**
-- User says "1" and gets a different entity in different commands
-- Some commands accept "1" and others give "not found" errors
-- Off-by-one errors (user says "1", gets the second entity)
-- Ambiguous match errors that only occur in specific commands
+**Prevention:**
+1. **Accept the constraint: merge subagents are leaf agents.** The "adaptive nesting" must be re-architected. The orchestrator is the ONLY entity that can spawn agents.
+2. **Orchestrator-mediated nesting:** Instead of the merge subagent spawning per-conflict agents, the merge subagent returns a CHECKPOINT with "these N conflicts need dedicated resolution" and a list of conflict descriptors. The ORCHESTRATOR then spawns N per-conflict resolution agents, collects their results, and passes them back to the merge subagent (or a new merge subagent instance that resumes with the resolution results). This preserves the flat agent hierarchy.
+3. **Conflict triage in the merge subagent:** The merge subagent analyzes all conflicts and classifies them as: SELF_RESOLVABLE (confidence >= 0.7, will resolve inline) or NEEDS_DEDICATED (confidence < 0.7, complex multi-file interaction). The subagent resolves SELF_RESOLVABLE conflicts directly and returns the NEEDS_DEDICATED list to the orchestrator.
+4. **Orchestrator-spawned resolution agents:** For NEEDS_DEDICATED conflicts, the orchestrator spawns a `rapid-conflict-resolver` agent per conflict (or per conflict cluster). This agent receives only the specific conflict context, the relevant files, and the interface contracts. It returns a resolution with confidence. The orchestrator collects these and either applies them or escalates to the user.
+
+**Detection:**
+- Agent tool errors in merge subagent logs ("Task tool not available")
+- Merge subagents returning BLOCKED with "cannot spawn sub-agent" errors
+- RAM consumption spikes during merge pipeline execution
 
 **Phase to address:**
-Numeric ID shorthand phase. Must be implemented as a library function first, then rolled out to all skills in one pass. Do NOT ship partial support.
+Architecture design phase -- must be settled BEFORE implementation begins. The orchestrator-mediated nesting pattern should be the canonical approach documented in the architecture.
 
 ---
 
-### Pitfall 6: Batched Questioning Breaking the AskUserQuestion Structured Options Pattern
+### Pitfall 6: Documentation Coupling to Implementation Details That Change Across Versions
 
 **What goes wrong:**
-The current discuss skill asks one question at a time using AskUserQuestion with structured options (SKILL.md lines 117-207). The v2.1 goal of batched questioning aims to reduce the latency of answer -> wait 30-60s -> answer -> wait cycle. But AskUserQuestion is designed for single questions with structured options. There is no native "batch question" API -- you cannot send 3 questions in one AskUserQuestion call.
+RAPID v2.2 includes "Fresh README.md reflecting current RAPID capabilities" and "New technical_documentation.md for power users." The documentation must describe the merge pipeline, agent hierarchy, DAG ordering, conflict detection levels, resolution tiers, and the new subagent delegation architecture.
 
-Two broken implementations emerge:
-1. **Concatenated freeform:** Multiple questions crammed into a single freeform AskUserQuestion. The user's response is a blob of text that the agent must parse. If the user answers only 2 of 3 questions, the agent cannot detect which was skipped. If the user's answer is ambiguous about which question it addresses, decisions are assigned incorrectly. The WAVE-CONTEXT.md then contains wrong decisions that propagate through the entire planning and execution pipeline.
-2. **Rapid-fire sequential:** Questions asked sequentially but without waiting for agent processing between them. This does not actually solve the problem because the latency is in the agent's processing, not the user's typing.
+The trap: documentation that references specific implementation details becomes stale immediately. Three failure patterns observed across v1.0->v2.0->v2.1:
+
+1. **Version-locked architecture diagrams:** The existing DOCS.md (from v2.0) describes the merge pipeline as "orchestrator spawns single merger agent." v2.2 changes this to "orchestrator spawns per-set merge subagents with orchestrator-mediated conflict resolution." If the README embeds the v2.2 architecture as fact, v2.3 changes will make it wrong. RAPID has shipped 4 versions (v1.0, v1.1, v2.0, v2.1) in rapid succession -- the documentation lifecycle is measured in weeks, not months.
+
+2. **CLI command examples with exact output:** The merge pipeline uses `rapid-tools.cjs` CLI commands (`merge order`, `merge detect`, `merge resolve`, `merge execute`). Documentation that shows exact CLI output format breaks when output format changes. The existing SKILL.md files already have this problem -- review SKILL.md references `review scope`, `review log-issue`, `review summary` CLI commands with specific JSON output schemas.
+
+3. **Agent role descriptions in docs vs agent definitions:** If the README describes the merger agent's responsibilities, and role-merger.md is later updated (e.g., adding new detection capability), the README becomes stale. There are now two sources of truth for "what does the merger agent do."
 
 **Why it happens:**
-The desire to reduce latency conflicts with the tool's single-question design. The "batching" that users actually want is not multiple simultaneous questions -- it is fewer, more substantive questions that cover more ground per interaction.
+Research on documentation maintenance (2025-2026) identifies this as the #1 cause of documentation staleness: "Treating your documentation as a static asset is a common pitfall." Living documentation approaches exist but require infrastructure (docs-as-tests, automated staleness detection). RAPID has no such infrastructure.
 
-**How to avoid:**
-1. **Group by topic, not by count:** Instead of asking 8 questions one at a time, group related gray areas into 2-3 thematic clusters. Ask one AskUserQuestion per cluster with options that bundle related decisions. Example: "For the data layer approach: A) PostgreSQL with Prisma ORM and migration tooling, B) SQLite with raw queries for simplicity, C) Let Claude decide based on project scale." This bundles 3 decisions (database, ORM, migration) into one structured question.
-2. **Use multiSelect for independent choices:** AskUserQuestion already supports `multiSelect: true` (used in discuss SKILL.md line 117 for gray area selection). Extend this pattern: present all gray areas upfront, let the user select which to discuss, then only deep-dive selected ones.
-3. **"Let Claude decide all" fast path:** If the user selects zero gray areas (SKILL.md line 127: "select none to let me decide all"), the discuss skill should still produce valid WAVE-CONTEXT.md with documented autonomous decisions. This is the ultimate "batch" -- zero questions.
-4. **Never batch decisions that depend on each other:** If the answer to question 1 changes what question 2 should be, they cannot be batched. Only batch truly independent decisions.
-5. **Structured options always:** Never use freeform responses for batched questions. Structured options ensure unambiguous parsing.
+The problem is amplified by RAPID's recursive nature: RAPID is a plugin for Claude Code agents, and its documentation is consumed by Claude Code agents. Stale docs do not just confuse human users -- they cause agents spawned by RAPID to operate with wrong information.
 
-**Warning signs:**
-- Users reporting the agent misunderstood their response
-- WAVE-CONTEXT.md containing decisions the user did not make
-- Discuss sessions taking MORE time due to misinterpretation and re-asking
-- Agent asking "which question were you answering?"
+**Consequences:**
+- Users (human or agent) follow outdated instructions that fail at runtime
+- Agents spawned with stale documentation attempt operations that no longer exist
+- Maintenance burden increases as documentation diverges from implementation over successive versions
+
+**Prevention:**
+1. **Separate "what" docs from "how" docs:** The README should describe WHAT RAPID does (capabilities, concepts, workflow stages) without embedding HOW it does it (CLI output formats, internal agent names, specific file paths). The "how" belongs in SKILL.md files and role modules which are maintained alongside implementation.
+2. **Reference, don't duplicate:** The technical_documentation.md should REFERENCE the authoritative source for implementation details rather than duplicating it. Example: "For merge pipeline details, see `skills/merge/SKILL.md`." This creates one source of truth per concept.
+3. **Version-tagged architecture overview:** Include the version number in architecture descriptions: "As of v2.2, the merge pipeline uses per-set subagent delegation." This makes staleness VISIBLE rather than silently misleading.
+4. **CLAUDE.md as the living doc:** RAPID already generates a CLAUDE.md for each project. This is the document that agents actually load. Focus accuracy efforts on CLAUDE.md content (which is regenerated per-init) rather than on static README.md.
+5. **Docs-as-code review:** Include documentation files in the review pipeline scope. When merge SKILL.md changes, `review scope` should flag README.md sections that reference merge behavior as needing review.
+
+**Detection:**
+- Users opening issues about documentation instructions that fail
+- Agent spawns failing because they follow documented CLI commands that have changed
+- README.md `Last updated` timestamp more than one version behind current version
+- Search for version-specific references ("v2.2") that should be updated to current version
 
 **Phase to address:**
-Discuss skill rework phase. Design the batching strategy DURING the discuss rework, not as a separate bolt-on.
+Documentation phase. Design the doc structure (what vs how, reference vs duplicate) BEFORE writing content. The structure decision determines how much maintenance debt each documentation page creates.
 
 ---
 
-### Pitfall 7: Plan Verifier Becoming a Rubber Stamp or an Over-Blocker
+## Moderate Pitfalls
+
+### Pitfall 7: Bisection Recovery Breaking Under Per-Set Subagent Merge Architecture
 
 **What goes wrong:**
-The plan verifier is a new agent that checks coverage and implementability. Two failure modes:
+The current bisection logic (`merge bisect {waveNum}`, merge.cjs lines 888-970) assumes sequential merge ordering within a wave. It performs binary search over the wave's merged sets by reverting to PRE_WAVE_COMMIT and re-merging subsets to find the breaking set. Under the new per-set subagent architecture:
 
-**Rubber stamp (too permissive):** The verifier duplicates checks already performed by `validateJobPlans()` in `wave-planning.cjs` (lines 160-223). That function already checks export coverage (are all contract export files covered by job plans?) and cross-set import validation (do imported functions exist in source set contracts?). The verifier that runs the same checks wastes an agent spawn ($2-5 per invocation) without adding value.
+1. The subagent-mediated merge may produce different merge commits than the original (non-deterministic AI resolution). Re-merging during bisection produces DIFFERENT code than the original merge, making the bisection unreliable.
+2. If parallel detection was used, the detection results cached in MERGE-STATE.json were computed against a different base than what bisection re-creates. Bisection re-merges set 1 then set 2 -- but set 2's detection was originally against main (without set 1), and now it is against main+set1.
+3. The orchestrator-mediated nesting (Pitfall 5's solution) means conflict resolutions came from dedicated resolution agents. During bisection re-merge, those agents are not available -- the bisection logic would need to re-spawn them.
 
-**Over-blocker (too strict):** The verifier flags implementability concerns that are actually fine -- e.g., "this job modifies 8 files which is complex" or "implementation step 3 lacks detail about error handling." Developers are forced through unnecessary re-planning cycles, increasing friction rather than reducing it. The user's todo.md already notes "there is some form of over planning/granularity" -- adding a strict verifier amplifies this problem.
+**Prevention:**
+1. **Commit-based bisection, not re-merge bisection:** Instead of re-merging sets during bisection, use `git revert` on individual merge commits and run tests after each revert. This tests the ACTUAL merged code, not a re-merge that may differ.
+2. **Record merge commit per set:** MERGE-STATE.json already has `mergeCommit` field. Ensure this is populated for every set. Bisection then reverts individual commits: `git revert --no-commit {mergeCommit}`, test, `git revert HEAD` if not the culprit.
+3. **Preserve resolution artifacts:** Write the actual resolution code (not just the RAPID:RETURN) to `.planning/sets/{setId}/RESOLUTIONS/` so bisection can re-apply resolutions without re-spawning agents.
 
-**Why it happens:**
-The verifier's purpose is underspecified. "Coverage + implementability checks" is vague enough that the implementing developer will either duplicate existing checks (path of least resistance) or build an ambitiously thorough agent that second-guesses every plan detail (overengineering).
-
-**How to avoid:**
-1. **Define the verifier's UNIQUE value -- what it checks that `validateJobPlans()` does NOT:**
-   - File conflict detection: do two jobs in the same wave plan to modify the same file? (This is not currently checked)
-   - Step ordering validation: does job A depend on job B's output but both execute in parallel? (This is not currently checked)
-   - Missing test coverage: do acceptance criteria in JOB-PLAN.md have corresponding test steps? (Not checked)
-   - Contract completeness: do new files created by jobs get exported in the contract if other sets need them? (Not checked)
-2. **Make it advisory, not blocking:** The verifier produces VERIFICATION-REPORT.md with findings. The user decides whether to re-plan. It does NOT automatically reject plans or require re-planning.
-3. **Set a cost budget:** The verifier should be a single agent invocation, not a multi-agent pipeline. Target: one agent, one pass, under $3.
-4. **Implement the deterministic checks in code, not in the agent:** File conflict detection and step ordering can be checked programmatically in `wave-planning.cjs` (no LLM needed). The agent adds natural-language assessment of implementability on top of the programmatic checks. This keeps the deterministic checks fast, reliable, and free.
-
-**Warning signs:**
-- Verifier consistently returning "PASS" with no actionable findings (rubber stamp)
-- Verifier blocking every plan with vague implementability warnings (over-blocker)
-- Users routinely skipping the verifier because it never adds value
-- Verifier costing more than the wave-plan pipeline itself
+**Detection:**
+- Bisection identifying a set as "breaking" that was not actually the cause
+- Bisection producing different merge results than the original pipeline
+- Bisection hanging because it tries to spawn merge agents during the binary search
 
 **Phase to address:**
-Plan verification phase. Define the exact check list in phase research BEFORE implementing the agent.
+Bisection refactoring sub-phase within the merge restructuring.
 
 ---
 
-### Pitfall 8: Workflow Streamlining Breaking Re-entry and Idempotency
+### Pitfall 8: Merge Subagent Receiving Excessive Context (The "Kitchen Sink Prompt" Anti-Pattern)
 
 **What goes wrong:**
-The current workflow has explicit user-triggered transitions: `/init` -> `/set-init` -> `/discuss` -> `/wave-plan` -> `/execute` -> `/review` -> `/merge`. Each skill is designed for idempotent re-entry:
-- `/execute` skips completed jobs on re-invocation (execute SKILL.md Step 2, smart re-entry)
-- `/review` picks up where it left off if the set is already in `reviewing` state (review SKILL.md Step 0d)
-- `/discuss` offers to re-discuss or view existing context (discuss SKILL.md Step 2)
-- `/wave-plan` offers to re-plan or view existing plans (wave-plan SKILL.md Step 2)
+The current merge SKILL.md Step 4c constructs the merger agent prompt with: set context, other set contexts, detection report, contracts, unresolved conflicts, and working directory. For the new per-set merge subagent pattern, the temptation is to include EVERYTHING the subagent might need: full CONTEXT.md for the merging set, full CONTEXT.md for every already-merged set, complete detection report with all L1-L4 details, all CONTRACT.json files, all unresolved conflict details with file diffs, and the full worktree path with instructions.
 
-The v2.1 goal of auto-running plan after init creates a chain: init completes -> auto-triggers plan. But if the user interrupts during auto-plan (ctrl+c) and then runs `/init` again:
-- Init Step 3 detects existing `.planning/` files and offers Reinitialize/Upgrade/Cancel
-- If user selects "Upgrade," the partial planning state from the interrupted auto-plan is preserved but may be inconsistent
-- The auto-plan resumes (or re-runs) but encounters partially-written ROADMAP.md, incomplete STATE.json structures, or orphaned research artifacts from the interrupted init
+For a set with 10 changed files and 4 already-merged sets, this prompt reaches 15K-25K tokens. Combined with the 20K overhead per subagent, the merge subagent starts with 35K-45K tokens consumed -- leaving only 150K-165K for actual conflict analysis and resolution in a 200K context window.
 
-Similarly, if wave-plan is auto-triggered after discuss, and the user interrupts during wave-plan, running `/discuss` again will re-discuss (overwriting WAVE-CONTEXT.md) but the partially-completed wave-plan artifacts (partial WAVE-PLAN.md, some JOB-PLAN.md files) remain orphaned.
+The v2.1 review pipeline already solved this problem with the scoper pattern (Step 2.5). The merge pipeline should follow the same approach.
 
-**Why it happens:**
-Each skill checks its own preconditions (entity state, artifact existence) but does NOT check for artifacts from DOWNSTREAM interrupted operations. Init checks for existing `.planning/` but not for partial ROADMAP.md. Discuss checks wave state but not for orphaned JOB-PLAN.md files from an interrupted wave-plan.
+**Prevention:**
+1. **Minimal prompt, disk-based context:** The merge subagent prompt should contain: set name, base branch, list of changed files, summary of detected conflicts (counts and affected files, not full details), and a pointer to MERGE-STATE.json for full details. The subagent reads MERGE-STATE.json, CONTEXT.md, and CONTRACT.json from disk using the Read tool.
+2. **Conflict-scoped file loading:** The subagent reads only files that have detected conflicts, not all changed files. If L1 detected conflicts in 3 of 10 changed files, the subagent reads those 3 files plus their contracts.
+3. **Incremental context for later-wave sets:** For sets in wave 2+, the "already merged context" should be a 1-2 line summary per set (name, what it changed, key contract points), not the full CONTEXT.md of each already-merged set.
 
-**How to avoid:**
-1. **Auto-chain via user suggestion, not auto-execution:** Instead of automatically running the next step, display "Recommended next step: `/rapid:wave-plan {waveId}`" and let the user trigger it. This preserves clean re-entry boundaries. This is the safer approach.
-2. **If auto-chaining IS implemented:** Limit to ONE chain link only (init -> plan is acceptable; init -> plan -> set-init -> discuss is not). Each skill must check for artifacts from downstream interrupted operations at the start. Add artifact staleness detection: if WAVE-PLAN.md exists but is older than WAVE-CONTEXT.md, the plan is stale and should be regenerated.
-3. **State machine as authoritative source:** The STATE.json wave/job status should be the ONLY determinant of next steps. Skills should not infer workflow state from artifact existence. If wave status is `discussing`, wave-plan should work regardless of what artifacts exist.
-4. **Clean up on re-entry:** When a skill detects it is re-running after an interruption (same state as last run, stale artifacts present), offer to clean up orphaned artifacts before proceeding.
-
-**Warning signs:**
-- Users running `/init` repeatedly and getting different behaviors each time
-- Orphaned planning artifacts from interrupted auto-chain runs
-- Skills failing with "unexpected state" errors after interruption
-- STATE.json showing a state that does not match the artifacts on disk (e.g., wave is `planning` but no WAVE-PLAN.md exists)
+**Detection:**
+- Merge subagents running out of context during resolution (truncated RAPID:RETURN -- see Pitfall 2)
+- Merge subagents producing shallow analysis ("conflict exists in file X" without root cause or resolution)
+- Subagent token usage consistently >80% before beginning resolution work
 
 **Phase to address:**
-Workflow streamlining phase. Auto-chaining should be the LAST feature in workflow simplification, after all individual skill re-entry paths are verified.
+Merge subagent role definition phase. The role-merger.md prompt must enforce "read from disk, not from prompt."
 
 ---
 
-## Technical Debt Patterns
+### Pitfall 9: MERGE-STATE.json Schema Drift When Adding Subagent-Specific Fields
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Implementing numeric ID resolution in each SKILL.md separately | Quick to add per-skill | 7+ copies of resolution logic diverge over time; bugs fixed in one skill but not others | Never -- implement once in `state-machine.cjs` or `rapid-tools.cjs` |
-| Adding plan verifier as a full separate state in the wave state machine | Clean state modeling | 4-file coordinated update required; all skill status checks need updating; full test suite expansion | Never for v2.1 -- use sub-step within `planning` state |
-| Passing full source file contents in Agent prompts instead of file paths | Subagent has immediate access without additional tool calls | Orchestrator context exhaustion at scale; 5-job wave with 5 files each = 25 file contents loaded into orchestrator | Only for files under 50 lines; all others should be loaded by the subagent via Read tool |
-| Fixing GSD references one file at a time as encountered | Each fix is small and safe | Missed references cause runtime identity confusion; creates an ongoing multi-week cleanup instead of a one-time sweep | Never -- grep exhaustively, fix all at once |
-| Batching questions with freeform text instead of structured options | Fewer AskUserQuestion calls | Fragile parsing, misattributed decisions, re-asking loops that waste more time than they save | Never -- use structured options or multiSelect |
-| Auto-chaining more than one step (init -> plan -> set-init) | Smoother first-time experience | Re-entry after interruption becomes combinatorially complex; each chain link needs its own recovery path | Only for init -> plan (one link); never for deeper chains |
+**What goes wrong:**
+The current `MergeStateSchema` in merge.cjs (lines 38-111) defines the Zod schema for per-set merge state. v2.2 needs to add new fields for subagent tracking: `delegatedTo` (agent ID), `detectionBase` (commit hash when detection ran), `detectionInvalidated` (boolean), `subagentRetries` (count), `resolutionArtifacts` (paths to resolution files).
 
-## Integration Gotchas
+If these fields are added without updating: (a) the Zod schema, (b) the `writeMergeState()` function, (c) the `readMergeState()` function, and (d) the CLI `merge merge-state` command, then:
+- Writes with new fields fail Zod validation (Zod rejects unknown fields by default with `.strict()`, though the current schema does not use `.strict()` so extra fields would be silently stripped)
+- Reads return data missing the new fields (existing `readMergeState()` returns only Zod-validated data)
+- CLI displays incomplete state information
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| Plan verifier -> state machine | Adding a new wave state `verified` | Keep wave in `planning` state; verifier produces VERIFICATION-REPORT.md artifact; transition to `executing` only after verification passes (handled by wave-plan or execute skill) |
-| Numeric ID resolution -> existing CLI | Implementing resolution in SKILL.md natural language instructions | Add `resolveEntityId()` to `state-machine.cjs`; add `resolve-id` CLI subcommand; all SKILL.md files call the CLI before processing |
-| Scoper subagent -> review pipeline | Scoper returns full file contents to orchestrator | Scoper returns file paths + brief per-file summary (function signatures, key types); review subagents use Read tool to load files from paths |
-| Batched questions -> discuss skill | Concatenating multiple questions into one freeform AskUserQuestion | Group related decisions into single AskUserQuestion with structured options; use multiSelect for independent choices |
-| Auto-plan after init -> roadmap generation | Spawning a separate plan agent after init | Init already runs the roadmapper (init SKILL.md Step 9). Auto-plan means: init writes STATE.json and ROADMAP.md, then displays "next step: /set-init" without a separate invocation |
-| Parallel wave planning -> git commits | Two wave-plan runs both `git add .planning/` then `git commit` | Each wave-plan commits only its own wave directory: `git add .planning/waves/{setId}/{waveId}/`; separate commits prevent conflicts |
-| GSD decontamination -> test suite | Renaming `gsd_state_version` in init.cjs but forgetting tests | Must also update `init.test.cjs:90-92` assertion; run `node --test src/lib/init.test.cjs` to verify |
-| VALIDATION-REPORT.md -> parallel planning | Writing set-level report from concurrent wave-plan runs | Move VALIDATION-REPORT.md to `.planning/waves/{setId}/{waveId}/VALIDATION-REPORT.md` so each wave gets its own report |
+**Prevention:**
+1. **Add fields to the schema FIRST, with sensible defaults:** All new fields should be `.optional()` with `.default()` values so existing MERGE-STATE.json files remain valid after schema update.
+2. **Backward compatibility test:** Write a test that loads a v2.1-era MERGE-STATE.json through the new schema and verifies it parses without error.
+3. **Schema version field:** Add `schemaVersion: z.number().default(1)` to the schema. New fields go into `schemaVersion: 2`. This makes migrations explicit.
+4. **Update read/write/CLI atomically:** All four touchpoints (schema, read function, write function, CLI command) must be updated in the same commit.
 
-## Performance Traps
+**Detection:**
+- MERGE-STATE.json files missing expected fields after pipeline runs
+- Zod validation errors when writing merge state with new data
+- CLI `merge merge-state` output showing stale or incomplete information
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Review orchestrator loading all source files into its context | Slow review start, context window warnings, shallow subagent analysis | Scoper subagent pattern -- orchestrator receives summary only; subagents load files via Read | Waves with >10 changed files (~30K tokens of source code in orchestrator context) |
-| Sequential question-answer in discuss phase | User waits 30-60s between each of 8+ questions | Batch related decisions into structured multi-option questions; provide "Let Claude decide all" fast path | Sets with >5 gray areas (~8 minutes of waiting) |
-| Wave-plan spawning all agents sequentially | 5+ agent spawns = 5+ minutes for a 3-job wave | Parallel job planner spawning (already in wave-plan SKILL.md Step 5); verify parallel dispatching actually occurs by issuing all Agent tool calls in one response | Waves with >3 jobs |
-| Bug hunt 3-cycle iteration loading full scope each time | Each cycle re-reads all source files; 12 agent spawns for 3 full cycles | Narrow scope on cycles 2+ to only files modified by bugfix agent (already specified in review SKILL.md Step 3b.1); verify scope actually narrows | Review scope >15 files with >5 accepted bugs |
-| Plan verifier running as a multi-agent pipeline | $10+ per verification, taking longer than the planning itself | Single agent, single pass, under $3; deterministic checks in code, LLM for judgment only | Any project -- this is a design trap, not a scale issue |
+**Phase to address:**
+First implementation phase. Schema changes must happen before any subagent delegation code.
 
-## UX Pitfalls
+---
 
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Inconsistent numeric ID support across commands | User learns `/set-init 1` works, tries `/discuss 1`, gets "not found" | Implement in rapid-tools.cjs; roll out to ALL skills simultaneously; never ship partial support |
-| Auto-planning without user confirmation | User wanted to customize the plan but it already auto-ran | Display "Plan generated" and offer "Accept / Modify / Regenerate" (already in init SKILL.md Step 9); do not bypass this gate |
-| Verifier blocking plans with vague warnings | User forced to re-plan for non-issues; loses trust in the tool | Verifier is advisory only; findings require explicit user "Block this plan" action; default is to proceed |
-| Discuss phase asking 8+ individual questions with 30s+ waits | User fatigue and disengagement | Group into 2-3 thematic clusters; provide "Let Claude decide all" to skip entire discussion |
-| Review pipeline defaulting to "All stages" | First review costs $30-45 (hunter+advocate+judge x3 + unit test + UAT) | Default to "Unit test only" or "Unit test + lean review" for first pass; full bug hunt is opt-in |
-| Wave-plan requiring exact wave ID when set has only one wave | User must type "wave-1" when the choice is obvious | Auto-select the only available wave/set; only prompt for disambiguation when multiple options exist |
-| Workflow confusion about which command comes next | User runs wrong command, gets unhelpful error | Every skill's exit message should include the recommended next command with exact invocation syntax (most skills already do this; verify all do) |
+### Pitfall 10: Sequential-to-Parallel Merge Transition Breaking Integration Test Isolation
+
+**What goes wrong:**
+The current integration test runner (`merge integration-test`, merge.cjs `runIntegrationTests()` lines 791-870) runs tests on the CURRENT state of main after merges. In sequential mode, each set merges, then the integration gate runs once per wave. In parallel detection mode, multiple merge subagents may be analyzing and modifying the worktree simultaneously.
+
+The L1 textual conflict detection (`detectTextualConflicts()`, lines 362-383) performs an actual `git merge --no-commit --no-ff` then `git merge --abort`. If two detection operations run in parallel on the same repository, they both attempt `git merge` on main -- the second will fail because a merge is already in progress.
+
+**Prevention:**
+1. **Detection runs in worktree, not main:** L1-L4 detection should run in the SET's worktree (where the set branch lives), not in the main repo. Detection compares the set branch against main using `git merge-base` and `git diff`, which are read-only and safe to parallelize.
+2. **The actual `git merge --no-commit` dry run must be serialized:** If L1 detection requires a merge dry run (which it currently does), use the lock from `lock.cjs` to serialize L1 detection calls. Or, replace the merge dry run with `git merge-tree` (plumbing command) which does the three-way merge computation without touching the working tree.
+3. **Integration tests must run AFTER all merges in the wave complete:** Never run integration tests while merges are still in progress. This was already the case in sequential mode but must be explicitly enforced in parallel mode.
+
+**Detection:**
+- `git merge --abort` errors during parallel detection runs
+- "fatal: You have not concluded your merge" errors in detection output
+- Intermittent L1 detection failures that succeed on retry
+
+**Phase to address:**
+Parallel merge detection phase. The `git merge-tree` replacement for L1 detection should be investigated as the first change.
+
+---
+
+## Minor Pitfalls
+
+### Pitfall 11: Documentation Table of Contents Getting Out of Sync
+
+**What goes wrong:** The technical_documentation.md will have a table of contents or cross-references between sections. As sections are added, removed, or renamed during the documentation rewrite, the TOC and internal links break. Markdown has no built-in link validation.
+
+**Prevention:** Use section headers as the single source of truth. Do not manually maintain a TOC -- generate it with a script or omit it in favor of a flat structure. If internal links are needed, use relative markdown links (`[section](#section-name)`) and add a CI check or pre-commit hook that validates them.
+
+### Pitfall 12: Merge Subagent Working Directory Confusion
+
+**What goes wrong:** The merger agent role module (role-merger.md) operates on the set's worktree. The new merge subagent must receive the correct worktree path AND the main repo path (for detection against main). If the subagent receives only the worktree path, it cannot run L1-L4 detection against main. If it receives only the main path, it cannot read the set's branch-specific code.
+
+**Prevention:** Pass BOTH paths explicitly in the subagent prompt: `mainRepoPath` for detection operations and `worktreePath` for resolution operations. The subagent's instructions must specify which path to use for which operation.
+
+### Pitfall 13: README.md Targeting Wrong Audience Level
+
+**What goes wrong:** RAPID has two audiences: (1) human developers who install and configure the plugin, and (2) Claude Code agents that read CLAUDE.md and skill files. Documentation that mixes these audiences confuses both. Developers want quick start and configuration; agents want exact command syntax and structured protocols.
+
+**Prevention:** README.md targets humans only (installation, configuration, workflow overview). CLAUDE.md targets agents (loaded per-init, contains exact conventions). technical_documentation.md targets power users (architecture, extension points, debugging). Never mix audiences in a single document.
+
+---
+
+## Phase-Specific Warnings
+
+| Phase Topic | Likely Pitfall | Mitigation |
+|-------------|---------------|------------|
+| Merge subagent spawn architecture | Adaptive nesting violates Claude Code depth constraint (Pitfall 5) | Orchestrator-mediated nesting: merge subagents return CHECKPOINT with conflict list, orchestrator spawns per-conflict resolution agents |
+| DAG parallel detection | L1 detection uses `git merge --no-commit` which cannot parallelize (Pitfall 10) | Replace with `git merge-tree` plumbing command or serialize L1 with lock |
+| DAG parallel merge execution | Independent sets mutate main simultaneously (Pitfall 3) | Parallel detection + sequential execution; OR lock main during `git merge --no-ff` |
+| Result collection from subagents | RAPID:RETURN parse failures go undetected (Pitfall 2) | Default-unsafe parsing + git state verification + write-before-return |
+| Orchestrator context management | Accumulated results overflow context (Pitfall 1) | Compressed result protocol (~100 tokens/set) + disk-based state + progressive shedding |
+| Error propagation in DAG | Skipped set resumes with stale detection (Pitfall 4) | Detection invalidation tracking + resume-aware re-detection |
+| Bisection under new architecture | Re-merge during bisection produces different code (Pitfall 7) | Commit-based bisection using `git revert`, not re-merge |
+| MERGE-STATE.json schema | New fields break read/write pipeline (Pitfall 9) | Schema version field + backward compatibility test + atomic update |
+| README.md rewrite | Implementation details embedded in docs go stale (Pitfall 6) | Separate what/how; reference SKILL.md for implementation; version-tag architecture |
+| technical_documentation.md | Wrong audience level mixing (Pitfall 13) | Strict audience separation: README=humans, CLAUDE.md=agents, technical_docs=power users |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **GSD decontamination:** Often missing runtime agent name verification -- verify by actually running each skill that spawns agents and checking the displayed agent names in Claude Code UI, not just grepping source code
-- [ ] **GSD decontamination:** Often missing test assertion updates -- verify `init.test.cjs:90-92` passes after renaming `gsd_state_version`
-- [ ] **Numeric ID shorthand:** Often missing edge case for sets whose names start with numbers -- verify resolution logic with set named "1-auth" and numeric input "1"
-- [ ] **Numeric ID shorthand:** Often missing rollout to all skills -- verify numeric IDs work in set-init, discuss, wave-plan, execute, review, merge, and status
-- [ ] **Parallel wave planning:** Often missing VALIDATION-REPORT.md write path fix -- verify that two parallel wave-plan runs for different waves produce separate reports in their respective wave directories
-- [ ] **Parallel wave planning:** Often missing git commit serialization -- verify two concurrent `git commit` calls do not produce errors
-- [ ] **Batched questioning:** Often missing the "Let Claude decide all" fast path -- verify that selecting zero gray areas produces valid WAVE-CONTEXT.md with documented autonomous decisions
-- [ ] **Plan verifier:** Often missing uniqueness check -- verify the verifier adds checks BEYOND what `validateJobPlans()` already does (file conflicts, step ordering, test coverage)
-- [ ] **Context-efficient review:** Often missing subagent file loading delegation -- verify review subagents actually use Read tool to load files from paths, not receive file contents inline in their prompt
-- [ ] **Workflow streamlining:** Often missing re-entry after interruption testing -- verify by running `/init`, interrupting at Step 7 (research agents), then running `/init` again; verify clean recovery
-- [ ] **Leaner review stage:** Often missing cost measurement -- track agent spawn count and token usage before and after changes to verify measurable improvement
+- [ ] **Compressed result protocol:** Verify orchestrator context usage stays under 50K tokens for an 8-set project by calculating `(skill prompt) + (100 tokens * N sets) + (overhead)`
+- [ ] **RAPID:RETURN parse validation:** Verify orchestrator treats missing/malformed returns as BLOCKED, not as success; test with a subagent that returns no RAPID:RETURN
+- [ ] **DAG parallel detection + sequential execution:** Verify two independent sets' detections run in parallel but their `git merge --no-ff` calls are serialized
+- [ ] **Detection invalidation on skip:** Verify that skipping a set within a wave marks its MERGE-STATE with `detectionInvalidated: true` and that resume re-runs detection
+- [ ] **Subagent depth constraint:** Verify merge subagents do NOT have Agent tool in their tool list; verify orchestrator-mediated nesting works end-to-end
+- [ ] **Bisection uses git revert, not re-merge:** Verify bisection operates on committed merge history, not by re-running the merge pipeline
+- [ ] **MERGE-STATE.json backward compatibility:** Verify a v2.1-era MERGE-STATE.json parses through the v2.2 schema without errors
+- [ ] **Documentation audience separation:** Verify README.md contains zero CLI exact-output examples and zero agent role descriptions (those belong in SKILL.md and role modules)
+- [ ] **Write-before-return in merge subagents:** Verify merge subagents write results to MERGE-STATE.json on disk before emitting RAPID:RETURN
+- [ ] **Merge subagent prompt size:** Verify per-set merge subagent prompts stay under 5K tokens (excluding the role module overhead), with disk-based context loading for details
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| GSD agent names at runtime | LOW | Update the inline prompt in the offending SKILL.md to include explicit "You are rapid-{role}" identity; no state or artifact corruption; re-test the skill |
-| State machine gap from new verification state | MEDIUM | Revert `state-transitions.cjs`; manually fix any waves stuck in the invalid state by editing STATE.json (set their status to `planning`); validate with `node "${RAPID_TOOLS}" state detect-corruption` |
-| Race condition on VALIDATION-REPORT.md | LOW | Delete the corrupted report; re-run wave-plan for the affected wave; no state machine impact since artifacts are not state |
-| Context exhaustion in review | LOW | Split review into per-wave runs with smaller scope; for the exhausted run, check which stages completed (REVIEW-UNIT.md, REVIEW-BUGS.md exist?) and re-run only incomplete stages |
-| Wrong entity selected by numeric ID | LOW | No state change if caught before execution proceeds; if set-init ran on the wrong set, `git worktree remove` the wrong worktree and re-run on the correct set |
-| Misinterpreted batched question | MEDIUM | Re-run `/rapid:discuss` with "Re-discuss" to overwrite WAVE-CONTEXT.md; if wave-plan already ran, also re-run wave-plan (plans depend on context decisions) |
-| Plan verifier over-blocking | LOW | User can override or skip the verifier; no state impact since verifier is advisory only |
-| Auto-chain interruption leaving orphaned artifacts | MEDIUM | Check STATE.json for current entity statuses; delete orphaned planning artifacts (partial WAVE-PLAN.md, incomplete JOB-PLAN.md); re-run the interrupted step from its clean entry point |
-
-## Pitfall-to-Phase Mapping
-
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Incomplete GSD decontamination | Phase 1: GSD Decontamination | Run each skill that spawns agents; verify "rapid-" prefix in UI; grep for zero "gsd" matches in `src/` active code (excluding tests that test legacy migration) |
-| State transition table gaps | Phase: Plan Verification | Verify wave transitions `planning -> executing` still works; run full state machine test suite; verify no Zod validation errors (recommend sub-step approach that requires zero state changes) |
-| Parallel wave planning races | Phase: Parallel Wave Planning | Run two wave-plan processes on different waves in same set; verify both produce correct artifacts; verify VALIDATION-REPORT.md writes to wave-level directories |
-| Context window exhaustion in review | Phase: Context-Efficient Review | Measure orchestrator context usage before and after scoper pattern; verify review completes for a 5-job wave without context warnings |
-| Numeric ID resolution inconsistency | Phase: Numeric ID Shorthand | Try numeric IDs in every skill accepting entity IDs (7+ skills); verify consistent behavior; test edge cases |
-| Batched questioning misinterpretation | Phase: Discuss Skill Rework | Run discuss with batched questions; verify WAVE-CONTEXT.md decisions match user responses; test "Let Claude decide all" path |
-| Plan verifier rubber stamp / over-block | Phase: Plan Verification | Verify verifier catches at least one issue in a test plan with known problems (file conflict, missing test coverage); verify verifier does NOT block a valid plan |
-| Workflow auto-chain breaking re-entry | Phase: Workflow Streamlining | Interrupt at each auto-chain point; verify re-running the triggering command recovers cleanly; verify no orphaned artifacts |
+| Orchestrator context overflow (Pitfall 1) | LOW | Implement compressed result protocol; no code regression, just prompt/protocol change |
+| RAPID:RETURN parse failure causing silent bad merge (Pitfall 2) | HIGH | Identify the bad merge via `git log --merges`; `git revert` the bad merge commit; re-run merge pipeline for the affected set; add parse validation to prevent recurrence |
+| DAG parallel merge causing unexpected conflicts (Pitfall 3) | MEDIUM | Abort the conflicting merge (`git merge --abort`); switch to sequential merge within the wave; re-run detection for the affected set against current HEAD |
+| Stale detection on resumed merge (Pitfall 4) | MEDIUM | Re-run `merge detect` for the resumed set; compare detection results with the stale MERGE-STATE; if new conflicts appeared, re-run resolution before proceeding |
+| Subagent depth violation attempt (Pitfall 5) | LOW | Remove Agent tool from merge subagent tools list; implement orchestrator-mediated nesting; no merge state corruption since the feature never worked |
+| Stale documentation (Pitfall 6) | LOW | Update README sections; add version tag to corrected sections; no runtime impact since docs are not executable |
+| Bisection producing wrong results (Pitfall 7) | HIGH | Manually identify the breaking set using `git log --merges` and selective `git revert`; fix bisection implementation to use commit-based approach |
+| Merge subagent context overflow (Pitfall 8) | MEDIUM | Reduce prompt size by moving context to disk; re-spawn the merge subagent with the lean prompt; no merge state corruption |
+| MERGE-STATE.json schema drift (Pitfall 9) | LOW | Add missing fields to schema with defaults; re-run `readMergeState()` to backfill; no data loss since Zod strips unknown fields rather than rejecting |
+| Parallel detection git merge race (Pitfall 10) | LOW | Serialize L1 detection with lock; or replace `git merge --no-commit` dry run with `git merge-tree`; no state corruption since detection is read-only |
 
 ## Sources
 
-- **Direct codebase analysis:** `src/lib/state-machine.cjs` (463 lines), `state-transitions.cjs` (73 lines), `state-schemas.cjs`, `wave-planning.cjs` (230 lines), `review.cjs` (433 lines), `execute.cjs` (973 lines), `assembler.cjs` (243 lines), `teams.cjs` (193 lines), `init.cjs`, `verify.cjs` (161 lines)
-- **Skill analysis:** All 17 SKILL.md files examined; 6 analyzed in depth: wave-plan (353 lines), discuss (335 lines), execute (472 lines), review (790 lines), init (556 lines), set-init (162 lines)
-- **Agent role modules:** `src/modules/roles/` (26 role modules); key modules analyzed: wave-researcher (106 lines), orchestrator (27 lines)
-- **User feedback:** `todo.md` (60 lines of operational issues including GSD naming, workflow confusion, context consumption, review bulk, numeric IDs, batched questions)
-- **Project context:** `.planning/PROJECT.md` (v2.1 milestone definition with 8 target features)
-- **Config analysis:** `config.json` (agent assembly configuration with 5 agent role mappings)
-- **State machine tests:** `src/lib/state-machine.test.cjs`, `state-transitions.test.cjs` (existing test coverage for transition validation)
+- **Direct codebase analysis:** `src/lib/merge.cjs` (~1200 lines -- 5-level detection, 4-tier resolution, MERGE-STATE CRUD, bisection, rollback, programmatic gate), `src/lib/dag.cjs` (467 lines -- toposort, wave assignment, DAG creation/validation, execution order), `src/lib/merge.test.cjs`
+- **Skill analysis:** `skills/merge/SKILL.md` (527 lines -- full merge pipeline orchestration), `skills/review/SKILL.md` (934 lines -- precedent for multi-subagent delegation with concern scoping)
+- **Agent definitions:** `agents/rapid-merger.md` (282 lines -- current merger leaf agent), `agents/rapid-orchestrator.md` (260 lines -- orchestrator with Agent tool), `src/modules/roles/role-merger.md` (128 lines), `src/modules/roles/role-orchestrator.md` (27 lines)
+- **Claude Code official docs:** [Create custom subagents](https://code.claude.com/docs/en/sub-agents) -- confirmed "Subagents cannot spawn other subagents" constraint, 20K token overhead per subagent, auto-compaction at 95% capacity
+- **Claude Code GitHub issues:** [#4182](https://github.com/anthropics/claude-code/issues/4182) (Sub-Agent Task Tool Not Exposed When Launching Nested Agents), [#4850](https://github.com/anthropics/claude-code/issues/4850) (Agents spawning sub-agents causes endless loop and RAM OOM)
+- **Anthropic engineering:** [How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) -- result collection patterns, context overflow strategies, filesystem-based artifact passing, "token usage explains 80% of variance"
+- **Azure Architecture Center:** [AI Agent Orchestration Patterns](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns) -- supervisor pattern token cost analysis
+- **AWS Prescriptive Guidance:** [Saga orchestration patterns](https://docs.aws.amazon.com/prescriptive-guidance/latest/agentic-ai-patterns/saga-orchestration-patterns.html) -- error recovery in multi-agent workflows
+- **Documentation maintenance research:** [Technical Writing Trends 2026](https://document360.com/blog/technical-writing-trends/) -- living documentation patterns; [DeepDocs Best Practices](https://deepdocs.dev/technical-documentation-best-practices/) -- docs-as-tests; [Fluidtopics 2026 Trends](https://www.fluidtopics.com/blog/industry-insights/technical-documentation-trends-2026/) -- staleness detection
+- **DAG failure handling:** [Partial Success in DAG Systems](https://medium.com/@kriyanshii/understanding-partial-success-in-dag-systems-building-resilient-workflows-977de786100f) -- partial failure recovery patterns; [Airflow Failure Handling](https://medium.com/@kopalgarg/failure-handling-in-apache-airflow-dags-6e20945859cd) -- error propagation in DAG execution
+- **Project context:** `.planning/PROJECT.md` (v2.2 milestone definition with 5 target features)
 
 ---
-*Pitfalls research for: RAPID v2.1 -- workflow simplification, parallel planning, plan verification, context optimization*
-*Researched: 2026-03-09*
+*Pitfalls research for: RAPID v2.2 -- subagent merge delegation, DAG-ordered merging, adaptive nesting, documentation rewrite*
+*Researched: 2026-03-10*

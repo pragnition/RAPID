@@ -1,301 +1,164 @@
-# Feature Research
+# Feature Landscape
 
-**Domain:** Claude Code plugin workflow orchestration (v2.1 improvements for RAPID)
-**Researched:** 2026-03-09
-**Confidence:** HIGH (features analyzed against existing codebase + official Claude Code docs)
+**Domain:** Multi-agent merge pipeline delegation + developer tool documentation (Claude Code plugin)
+**Researched:** 2026-03-10
+**Milestone:** v2.2 -- Subagent Merger & Documentation
 
-**Scope:** This research covers ONLY the v2.1 features. The v2.0 Mark II core (state machine, sets/waves/jobs, orchestrator, set-init, discuss, wave-plan, execute, review, merge) is already built and shipped.
+**Scope:** This research covers ONLY the v2.2 features. All v2.0 and v2.1 features (state machine, sets/waves/jobs, concern-based review, wave orchestration, plan verifier, batched questioning, set-based review, etc.) are already built and shipped.
 
-## Feature Landscape
+## Table Stakes
 
-This research covers 7 proposed v2.1 features. Each is evaluated as table stakes (expected by users of the existing system), differentiator (sets RAPID apart), or anti-feature (sounds good but creates problems). Dependencies on the existing v2.0 codebase are noted.
+Features users expect. Missing = the refactor fails its purpose or the product feels incomplete.
 
-### Table Stakes (Users Expect These)
+### A. Merge Pipeline Subagent Delegation
 
-Features that fix friction or gaps users already feel in the v2.0 workflow.
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| Per-set merge subagent spawning | Core v2.2 requirement. The orchestrator currently runs detection+resolution inline, consuming its own context window for every set. Every production multi-agent merge system delegates per-unit work to subagents (Anthropic's multi-agent research system, Google ADK, OpenAI Agents SDK all use orchestrator-worker). The review pipeline already proves this pattern works in RAPID (scoper, hunter, advocate, judge are all delegated). | Med | Existing merge.cjs detection/resolution functions, rapid-merger agent definition, merge SKILL.md refactoring | Orchestrator assembles context (detection report, contracts, set CONTEXT.md, other-set contexts) and passes to subagent via Agent tool. The review pipeline does this exact pattern in Step 2.5 (scoper), Step 4a (unit-tester), Step 4b (bug-hunter). Follow the same template. |
+| Structured result collection from merge subagents | Orchestrator must parse RAPID:RETURN JSON from each merge subagent to route next action (escalate, apply, proceed). Without structured results, the orchestrator cannot make routing decisions. | Low | Existing returns.cjs parseReturn(), RAPID:RETURN protocol | Already standardized across all 29 agents. The merger agent role already defines the exact return schema (semantic_conflicts, resolutions, escalations, all_resolved). No new protocol needed -- just consume the existing one from a subagent context instead of inline. |
+| Error propagation from subagent to orchestrator | If a merge subagent crashes, hits context limits, or returns BLOCKED, the orchestrator must surface this to the user with recovery options. Unhandled subagent failure means silent data loss. Research shows uncoordinated multi-agent systems experience up to 17x error amplification. | Med | RAPID:RETURN BLOCKED/CHECKPOINT status handling | Orchestrator must handle three failure modes: (1) subagent returns BLOCKED -- surface blocker to user, (2) subagent returns malformed/unparseable JSON -- retry or skip with warning, (3) subagent hits context window mid-resolution -- treat as CHECKPOINT, collect partial results. The review pipeline already handles (1). Cases (2) and (3) need explicit fallback paths in the merge SKILL.md. |
+| Partial failure handling (some sets succeed, some fail) | When merging multiple sets, some subagents may succeed while others fail. Orchestrator must continue with successful merges and present failures separately. DAG ordering means a failed dependency blocks its dependents but not independent sets. | Med | DAG ordering from dag.cjs getExecutionOrder(), existing merge pipeline wave grouping | Current pipeline already handles this via skip-set AskUserQuestion prompts. Subagent delegation adds a new failure category: subagent-level failure (agent crashed/blocked) vs merge-level failure (git conflict). Both must be distinguishable to the user so they know whether to re-run the subagent or resolve a git conflict. |
+| Idempotent re-entry after subagent failure | If pipeline crashes after 2 of 5 sets are merged, restarting must skip completed sets. MERGE-STATE.json already tracks per-set status. Subagent delegation must not break this contract. | Low | MERGE-STATE.json with status tracking (pending/detecting/resolving/merging/complete/failed) | Existing pattern. The orchestrator already checks MERGE-STATE before processing each set and skips status='complete'. The key requirement: update MERGE-STATE status BEFORE spawning the subagent (to 'resolving') and AFTER the subagent returns (to the next status). This ensures a crash between spawn and return leaves the set in 'resolving', not 'pending'. |
+| Context assembly for merge subagents | Each merge subagent needs: detection report (L1-L4 conflicts), unresolved conflicts from T1/T2 cascade, set CONTEXT.md, contracts, contexts of already-merged sets in this wave. Without complete context, the subagent cannot perform semantic analysis. | Med | merge.cjs readMergeState(), execute.cjs prepare-context, CONTRACT.json per set | Merge SKILL.md Step 4c already defines exactly what context to assemble. The change is moving this assembly from an inline operation to a per-set subagent dispatch with the same context shape. The prompt template is already written -- it just needs to be generated per-set instead of once. |
+| Sequential-within-wave ordering preserved | Sets within a DAG wave must merge sequentially. Each merge sees the result of the previous merge. This is a correctness requirement -- parallel within-wave merging on a single branch causes git conflicts. | Low | Existing wave-sequential loop in merge SKILL.md Step 2 | Subagent delegation changes WHO does the work, not WHEN. Wave ordering stays in the orchestrator; each subagent handles one set at a time within a wave. The orchestrator loop structure stays identical. |
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **GSD agent type decontamination** | v2.0 still has `gsd_state_version: 1.0` in `src/lib/init.cjs` (line 53) and potential residual GSD patterns. Users see a system referencing a framework that is not this product. Feels unpolished, erodes trust. | LOW | Grep found 1 source hit in `src/lib/init.cjs`. Skill files are already clean (grep of `skills/` returned no GSD matches). Mostly string/field replacement + schema update. |
-| **Streamlined workflow (init auto-chain)** | Currently init produces a roadmap with sets/waves/jobs but then requires the user to manually run `/rapid:set-init` for each set, then `/rapid:discuss` for each wave, then `/rapid:wave-plan`. That is 3+ manual invocations per set before any execution. Users expect the tool to guide them through the natural next step automatically. | MEDIUM | The existing skills already present "Next Steps" via AskUserQuestion at completion (Step 10 of init, Step 5 of set-init, Step 8 of discuss, Step 7 of wave-plan). The change is making the first option the natural next command with numeric shorthand, not just text guidance. Note: RAPID skills cannot invoke other skills directly (skills are markdown prompts, not executables). Streamlining is about making the next step obvious and frictionless. |
-| **Numeric ID shorthand for set commands** | Users currently type `/rapid:discuss auth wave-1` or `/rapid:set-init auth-system`. With multiple sets and waves, repeatedly typing full string IDs is tedious. Numeric shorthand like `/rapid:discuss 1` (meaning set #1) or `/rapid:wave-plan 1.1` (set 1, wave 1) is expected ergonomic polish. Claude Code skills support `$ARGUMENTS`, `$0`, `$1` positional access per official docs. | LOW | Implementation: add `resolve-shorthand` command to `rapid-tools.cjs` that maps numeric index to set/wave ID from STATE.json array ordering. Each SKILL.md's argument parsing step checks if argument matches `/^\d+(\.\d+)?$/` -- if numeric, resolve before passing to existing logic. Backward compatible: full string IDs still work. |
+### B. Documentation
 
-### Differentiators (Competitive Advantage)
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| Accurate README reflecting v2.2 capabilities | Current README references "Mark II" v2.0 terminology. v2.1 added 8 features (concern-based review, wave orchestration, plan verifier, batched questioning, set-based review, etc.) that are absent from README. v2.2 adds subagent merger. A README that does not match the product erodes trust and confuses new users. | Med | Full inventory of current skills (17), agents (29), all features through v2.2 | README is the entry point for every potential user. Must match current state exactly. Current README has correct structure (Install, Quick Start, Features, How It Works, Hierarchy, Prerequisites, Commands, License) -- content needs updating, not restructuring. |
+| Installation instructions that work | Current install section is accurate (claude plugin add fishjojo1/RAPID + /rapid:install). Must remain accurate with correct prerequisites (Node 18+, git 2.30+). | Low | setup.sh, install SKILL.md | Existing and validated. Verify current accuracy, keep or polish. |
+| Command reference table with accurate descriptions | README must list all commands with current one-line descriptions. Current table lists 17 commands. Descriptions must reflect v2.1/v2.2 behavior, not v2.0 behavior (e.g., /rapid:review now does concern-based scoping, not just chunked review). | Low | Current skill directory listing, all 17 SKILL.md files | Verify each description against its SKILL.md. Several descriptions need updating to reflect v2.1 changes. |
+| Quick start that covers the full lifecycle | Users need a clear "from zero to merged code" path. Current quick start stops at step 3 (/rapid:plan) and says "RAPID orchestrates the full development lifecycle" without showing it. Must show the full workflow: init -> plan -> set-init -> discuss -> wave-plan -> execute -> review -> merge -> cleanup. | Med | Understanding of the full workflow, good example framing | Current 3-step quick start leaves users at the planning phase. The quick start should be 5-7 steps covering the core loop, with a note that steps 3-7 repeat per set. |
+| Technical documentation for power users | Current DOCS.md is exhaustive for v2.0 but outdated. Version says "2.0.0". Missing: concern-based review scoping, wave orchestration, plan verifier, batched questioning, set-based review, numeric ID shorthand, agent role reference, subagent merger delegation. PROJECT.md lists "Fresh README.md" and "New technical_documentation.md" as target features. | High | Full understanding of every skill, every agent role, every library function. Must be written AFTER merge pipeline work is done. | This is the largest documentation effort. Every command section needs verification against current SKILL.md files. The existing DOCS.md structure (Installation, Quick Start, Available Commands by category) is sound -- content needs full refresh. |
 
-Features that make RAPID meaningfully better than competing multi-agent orchestration approaches (manual skill chains, ad-hoc `/batch`, raw subagent spawning).
+## Differentiators
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **Parallel wave planning with dependency-aware sequencing** | Currently `/rapid:wave-plan` handles one wave at a time. When a set has 3+ waves, the user must manually invoke planning for each sequentially. Parallel wave planning auto-detects independent waves within a set and plans them concurrently, while sequencing dependent waves. This is a genuine orchestration advantage over manual workflows. | HIGH | Requires: (1) dependency analysis between waves (wave ordering already implicit in STATE.json array position), (2) topological sort of wave dependencies, (3) parallel Agent tool spawning for independent waves (Claude Code supports up to 5 simultaneous subagents per official docs), (4) sequential fallback for dependent chains. Realistic assessment: most sets have linearly dependent waves, so true intra-set parallelism will be rare. The bigger win is auto-chaining sequential wave planning instead of manual invocation per wave. |
-| **Plan verifier agent (coverage + implementability)** | After wave planning produces JOB-PLAN.md files, there is currently no validation that plans cover all requirements from WAVE-CONTEXT.md or that planned steps are implementable (referencing files that exist, using available APIs). The existing contract validation (Step 6 of wave-plan) only checks cross-set imports. A plan verifier fills the gap between "plans exist" and "plans are good." | MEDIUM | New agent role: `role-plan-verifier.md`. Four checks: (1) coverage -- every decision in WAVE-CONTEXT.md addressed by at least one JOB-PLAN.md, (2) implementability -- referenced files exist or are marked "to be created," (3) completeness -- acceptance criteria have corresponding implementation steps, (4) consistency -- intra-wave file ownership does not overlap. Output: VERIFICATION-REPORT.md with PASS/PASS_WITH_GAPS/FAIL verdict. |
-| **Context-efficient review with scoper delegation** | The current review pipeline loads ALL changed files + dependents into each subagent's context. For large waves, this burns through context windows fast -- review SKILL.md documents that the 3-agent adversarial bug hunt costs $15-45 per cycle. A scoper agent first analyzes the changeset, categorizes files by concern, then delegates focused sub-reviews with minimal context. | HIGH | Architecture: (1) new `role-review-scoper.md` agent categorizes changes (logic, API, tests, infra, docs), (2) review SKILL.md spawns scoper first, then spawns focused hunter/tester agents with only their relevant file subset, (3) cross-cutting files (scoper uncertain) included in all scopes. Token savings estimate: 20-file wave splitting into 3 concerns of ~7 files each = ~65% context reduction per agent. Key constraint: Claude Code has no scoped context passing (GitHub issue #4908) -- scoping is prompt-level advisory ("Focus ONLY on these files"), not tool-level enforcement. |
-| **Batched questioning during discuss phase** | The current `/rapid:discuss` asks questions one at a time in a 4-question deep-dive loop per gray area. For a wave with 5 selected gray areas, that is 20 sequential AskUserQuestion calls. Batched questioning presents related questions together to reduce round trips while preserving structured decision capture. | MEDIUM | AskUserQuestion already supports `multiSelect: true` (used in Step 4 of discuss). Batch approach: compress 4-question loop into 2 interactions per gray area: (1) combined approach + edge case implications in rich option descriptions, (2) confirmation. Result: 5 gray areas x 2 = 10 round-trips (50% reduction). Constraint: do NOT batch across different gray areas -- keep per-area structure. |
+Features that set the product apart. Not expected by default, but create significant value.
 
-### Anti-Features (Commonly Requested, Often Problematic)
+### A. Merge Pipeline Subagent Delegation
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Fully automatic workflow (zero user gates)** | "Just run init and have it plan+execute+review+merge everything" | Removes the human judgment gates that catch AI mistakes early. RAPID's own design philosophy (PROJECT.md Out of Scope) explicitly rejects "fully automated review (no HITL)." Fully automated runs produce work that passes automated checks but may not match developer intent. | Keep the streamlined workflow but preserve decision gates. The improvement is fewer manual skill invocations, not fewer decisions. Offer "express mode" in future that auto-accepts defaults but still pauses at critical gates (roadmap approval, wave discussion, review results). |
-| **Real-time cross-wave coordination during planning** | "Wave 2 planner should be able to ask Wave 1 planner questions" | Destroys isolation guarantees. Subagents cannot spawn sub-subagents (Claude Code hard constraint per official docs). Inter-agent communication would require a message bus that does not exist in Claude Code's plugin model. | Dependency-aware sequential planning: plan dependent waves in order, each receiving predecessor's artifacts. Independent waves plan in parallel. |
-| **Per-file review granularity control** | "Let me choose exactly which files each review agent sees" | Manual file scoping is tedious, error-prone (miss a dependency), and defeats the purpose of automated scoping. Users think they want this control but actually want the AI to scope correctly. | The review scoper agent handles this automatically. If the scoper gets it wrong, the user can override by adding files to the "include-all" list. |
-| **Dynamic wave/job creation during execution** | "If execution reveals we need another job, add it on the fly" | RAPID's isolation model depends on sets being defined at planning time. Dynamic job creation during execution means WAVE-PLAN.md file ownership assignments become stale, other jobs may be modifying overlapping files, and the state machine has no transition for mid-execution additions. PROJECT.md explicitly lists "Dynamic set creation during execution" as out of scope. | Log the discovered need in the job's HANDOFF.md or as a review issue. The next wave or a follow-up milestone handles it. |
-| **AI-only review scoping (no safety net)** | "Trust the scoper completely, no cross-cutting files" | If the scoper misses a cross-file dependency, the bug hunter will miss the bug. Silent false negatives are worse than slightly higher token costs. | Conservative scoping: the scoper flags uncertain files as cross-cutting (included in all scopes). Start wide, narrow over time as confidence builds. |
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| Adaptive nesting: merge subagents spawn per-conflict sub-subagents | For sets with many complex conflicts (10+ unresolved after T1/T2), a single merger agent may exhaust its context window analyzing all of them. Allowing the merge subagent to spawn its own sub-agents for individual conflict clusters mirrors the review pipeline's concern-based dispatch. PROJECT.md explicitly lists this as a target feature ("Adaptive nesting: merge agents can spawn per-conflict sub-agents for complex resolutions"). | High | Merger agent role must be updated to allow spawning (Agent tool), new conflict-resolver agent role needed, conflict partitioning logic | Current merger role says "Never spawn sub-agents" because v2.0 designed it as a leaf agent. v2.2 explicitly wants to change this. Requires: (1) new conflict-resolver agent role (leaf agent handling 1-3 related conflicts), (2) updated merger role (add Agent tool to allowed-tools, add delegation logic), (3) partitioning: group conflicts by file proximity or concern area before delegation. The merger becomes a mini-orchestrator. |
+| Parallel independent set merging when DAG allows | If Wave 1 has sets A, B, C with no file overlap or transitive dependencies, they could merge in parallel on separate temporary branches, then fast-forward sequentially. PROJECT.md lists "Independent sets merge in parallel when DAG allows." | High | DAG analysis for true independence (no shared files, no transitive deps), temporary branch strategy, parallel git operations | Requires rethinking within-wave merge model. Current model is strictly sequential. Parallel would require: (1) fork temp branches from pre-wave HEAD, (2) merge each set independently on its temp branch, (3) sequential fast-forward of temp branches to main, (4) integration test only once after all fast-forwards. Risk: merge conflicts between "independent" sets sharing transitive dependencies. This is an optimization -- sequential merging is correct, parallel is faster. |
+| Merge dry-run mode | Run the full detection + resolution pipeline without performing the actual git merge. Preview conflicts and resolution confidence before committing. Useful for teams wanting to assess merge risk before proceeding. | Low-Med | Separate detect+resolve path from git merge execution path | Detection and resolution already produce reports stored in MERGE-STATE.json. A dry-run flag stops after Step 5 (programmatic gate). Add a "Dry run" option to the Step 1 AskUserQuestion. Implementation: skip Steps 6-8 and present the full detection+resolution report as the final output. |
+| Merge conflict heat map | After detection, display a summary showing which files concentrate the most conflicts across all sets. Helps users understand risk distribution before merge begins. | Low | Detection results from all sets in the current wave | Pure display feature. Parse detection reports, sort files by total conflict count across sets, print as a ranked table in the merge plan confirmation step. Zero risk, small effort, useful signal. |
+
+### B. Documentation
+
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| Architecture diagram in README | Visual diagram showing Sets/Waves/Jobs hierarchy, worktree isolation, data flow through the pipeline, and merge flow. Developer tools with visual architecture in README get meaningfully higher engagement. The current "How It Works" section is text-only. | Low | ASCII art (works in terminals and GitHub) or Mermaid (renders on GitHub only) | Recommend ASCII art for maximum compatibility since Claude Code users frequently view README in terminal via Read tool. Include the hierarchy (already in README as text), the pipeline flow (init->plan->...->merge), and the isolation model (main branch + worktree branches). |
+| Agent role reference section in technical docs | Document all 29 agents with their purpose, inputs, outputs, and which skill spawns them. No other Claude Code plugin has this level of agent architecture -- documenting it is a genuine differentiator. | Med | All 29 agent .md files in agents/ directory | Power users want to understand the system. The agent reference also serves as onboarding material for contributors. Structure: table with agent name, spawned by (skill), purpose, input context, output format, and whether it spawns sub-agents. |
+| Troubleshooting guide | Common issues with diagnosis and fix: RAPID_TOOLS not set, worktree conflicts, merge failures, subagent crashes, state machine stuck, review scoper miscategorization. | Med | User experience and known failure modes from v2.0/v2.1 | Reduces support burden. Most Claude Code plugin docs lack troubleshooting entirely. Each entry: symptom, cause, fix command. |
+| Interactive walkthrough / annotated example | Step-by-step annotated example of a real RAPID session showing what the user types, what RAPID responds, and what happens under the hood. Like a session transcript. | Med | Requires running through a real workflow and capturing output | Extremely valuable for onboarding. Shows users exactly what to expect at each stage. Include in technical docs or a separate section of DOCS.md. |
+| Version changelog | User-facing changelog documenting what changed in each version (v1.0, v1.1, v2.0, v2.1, v2.2). PROJECT.md already has this information in the requirements list but in internal format. | Low | PROJECT.md validated requirements by version | Extract from PROJECT.md, reformat as user-facing changelog with categories (Added, Changed, Fixed). Include at the end of technical docs or as a separate CHANGELOG.md. |
+
+## Anti-Features
+
+Features to explicitly NOT build.
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Fully parallel within-wave merging (fire-and-forget) | Git merge is inherently sequential on a single branch. True parallelism requires temporary branch strategies with enormous complexity and risk (merge conflicts between "parallel" merges, octopus merge failures, non-deterministic ordering). Microsoft's orchestration guidance explicitly warns against this for cases with "well-defined steps and strong hierarchical dependencies." | Keep sequential within-wave merging as the default. Parallel is a differentiator only when DAG proves sets are truly independent. Even then, implement as opt-in with conservative independence checks. |
+| Subagent-to-subagent direct communication | Merge subagents talking to each other (set A's merger telling set B's merger about a resolution) creates the "bag of agents" topology that causes 17x error amplification. All communication must flow through the orchestrator hub. | Hub-and-spoke only: orchestrator is the sole communication point. Merger agents report back to orchestrator, which passes relevant context (accumulated merged-set contexts) to the next merger. This is exactly how the review pipeline works (hunters do not talk to each other -- advocate sees all findings via the orchestrator). |
+| AI-only merge resolution (removing human escalation) | PROJECT.md explicitly lists this as out of scope ("AI-only merge conflict resolution -- multi-file conflicts need human judgment"). Removing the T4 human escalation tier creates false confidence. The research is clear: confidence below 0.7 should always escalate. | Keep the 4-tier cascade. T1/T2 automated, T3 AI with confidence scoring, T4 human for low-confidence cases. The subagent delegation does not change the resolution tiers -- it changes where T3 runs (subagent context instead of orchestrator context). |
+| Auto-generated documentation from code | Auto-generated docs miss the "why", produce reference-only material without narrative, and create maintenance burden when the generator outputs incorrect content. Draft.dev explicitly identifies this as a documentation anti-pattern: "autogenerated reference material indexed by search engines without review." | Write docs manually with full understanding of the product. Use code as the source of truth for accuracy, but write the narrative by hand. Verify each command description against its SKILL.md. |
+| Separate documentation site | RAPID is a Claude Code plugin installed via `claude plugin add`. Users interact with it inside Claude Code, not in a browser. A separate docs site (Docusaurus, GitBook, Mintlify) adds infrastructure, deployment complexity, and a second source of truth that will inevitably diverge. | README.md for entry point + technical_documentation.md for comprehensive reference. Both in-repo, both accessible via GitHub and local filesystem. This matches how Claude Code plugin users actually consume documentation. |
+| Merge subagent persistent memory | Giving merger agents persistent memory across merge runs sounds useful but creates stale state bugs. Merge context changes every run (different conflicts, different set code). A merger "remembering" a previous resolution strategy may apply it incorrectly to a new codebase state. | Fresh context per merge run. Each merger subagent gets exactly the context it needs for THIS merge. Proven pattern: the review pipeline creates fresh subagent contexts every review run. |
+| Complex merge visualization UI | Building a TUI or web dashboard for merge progress visualization is scope creep. RAPID runs inside Claude Code's terminal -- the output channel is text. | Simple text-based progress banners (already implemented: "[1/3] auth-set: MERGED"). Add the conflict heat map table for richer text-based visualization. |
 
 ## Feature Dependencies
 
 ```
-[GSD Decontamination]
-    (no dependencies -- standalone cleanup)
+Per-set merge subagent spawning
+  -> Structured result collection (must parse RAPID:RETURN from subagent)
+  -> Error propagation (must handle BLOCKED/CHECKPOINT/malformed returns)
+  -> Context assembly (must build prompt with detection report + contracts + contexts)
+  -> Idempotent re-entry (MERGE-STATE updated before/after subagent spawn)
+  -> Sequential-within-wave preserved (orchestrator loop unchanged)
 
-[Numeric ID Shorthand]
-    (no dependencies -- standalone UX, adds resolve-shorthand to rapid-tools.cjs)
+Adaptive nesting (per-conflict sub-subagents)
+  -> Per-set merge subagent spawning (parent pattern must work first)
+  -> New conflict-resolver agent role (leaf agent for 1-3 conflicts)
+  -> Updated merger role (add Agent tool, remove "never spawn" rule)
+  -> Conflict partitioning logic (group by file proximity or concern)
 
-[Streamlined Workflow]
-    +-depends-on-> [Numeric ID Shorthand] (shorthand makes auto-suggestions useful)
-    +-depends-on-> [GSD Decontamination] (clean skill files before adding orchestration)
+Parallel independent set merging
+  -> Per-set merge subagent spawning (prerequisite)
+  -> DAG independence analysis (verify no shared files or transitive deps)
+  -> Temporary branch strategy (fork/merge/fast-forward)
 
-[Batched Questioning]
-    (no dependencies -- modifies discuss SKILL.md only)
+README rewrite
+  -> Full feature inventory through v2.2
 
-[Plan Verifier Agent]
-    +-depends-on-> [Batched Questioning] (optional: verifier references WAVE-CONTEXT.md)
-    +-enhances-> wave-plan pipeline (inserted between job planning and contract validation)
-
-[Parallel Wave Planning]
-    +-depends-on-> [Plan Verifier Agent] (each parallel-planned wave should be verified)
-    +-depends-on-> [Streamlined Workflow] (parallel planning triggered by streamlined flow)
-    +-requires-> STATE.json wave dependency metadata (already exists: array ordering)
-
-[Context-Efficient Review]
-    +-depends-on-> [Plan Verifier Agent] (scoper uses verified plans for intent)
-    +-modifies-> review SKILL.md, role-bug-hunter.md, role-unit-tester.md
-    +-requires-> new role-review-scoper.md agent
+Technical documentation rewrite
+  -> README rewrite (establishes terminology and structure)
+  -> Merge pipeline delegation complete (must document new behavior)
+  -> Agent role reference (documents all 29+ agents)
+  -> Full command verification against current SKILL.md files
 ```
 
-### Dependency Notes
+## MVP Recommendation
 
-- **Streamlined Workflow depends on Numeric ID Shorthand:** When the streamlined flow auto-suggests "Run `/rapid:discuss 1`" after set-init, numeric shorthand must work or the suggestion is useless. Build shorthand first.
-- **Streamlined Workflow depends on GSD Decontamination:** Modifying skill files for workflow streamlining while GSD vestiges remain means touching the same files twice. Clean first, then enhance.
-- **Plan Verifier enhances wave-plan pipeline:** Inserted as a new step between "Spawn Job Planner Agents" (Step 5) and "Contract Validation Gate" (Step 6). Does not replace contract validation -- complements it with coverage and implementability checks.
-- **Parallel Wave Planning depends on Plan Verifier:** If you plan 3 waves in parallel, each needs independent verification. Without the verifier, plan problems are discovered only at execution time, wasting the parallelism benefit.
-- **Context-Efficient Review depends on Plan Verifier:** The review scoper uses WAVE-PLAN.md and JOB-PLAN.md to understand which changes serve which purpose. Verified plans are more reliable scoping input.
-- **Batched Questioning is independent:** Modifies only the discuss SKILL.md. Can be done at any time, but doing it early means all subsequent features benefit from more efficient discuss sessions.
+### Phase 1: Merge Pipeline Delegation (build first)
 
-## MVP Definition
+Prioritize in this order:
 
-### Phase 1: Foundation Cleanup (do first)
+1. **Per-set merge subagent spawning with context assembly** -- Core v2.2 feature. Refactor merge SKILL.md Steps 3-4 to spawn rapid-merger per set instead of inline orchestration. The review pipeline's delegation pattern (Steps 2.5, 4a, 4b) is the template to follow. Key changes: (a) assemble per-set context into a prompt, (b) spawn Agent with rapid-merger, (c) parse RAPID:RETURN, (d) route based on results (apply resolutions, handle escalations, continue).
+2. **Structured result collection + error propagation** -- Parse RAPID:RETURN from merger subagents. Handle all three failure modes: BLOCKED returns, malformed JSON, context window exhaustion. Surface failures via AskUserQuestion with existing recovery options (retry, skip, abort).
+3. **Partial failure handling with idempotent re-entry** -- When one set's merger subagent fails, continue with remaining sets. Update MERGE-STATE.json before spawning (status -> 'resolving') and after return (status -> next). Ensure restart skips completed sets.
+4. **Adaptive nesting (per-conflict sub-subagents)** -- Update merger role: add Agent tool, remove "Never spawn sub-agents" rule, add conflict partitioning logic. Create conflict-resolver agent role. This handles the context overflow case for sets with 10+ complex conflicts.
 
-- [x] **GSD decontamination** -- Remove `gsd_state_version` from init.cjs, audit all files for residual GSD references. Essential: no product should ship referencing another product's internals.
-- [x] **Numeric ID shorthand** -- Add `resolve-shorthand` to rapid-tools.cjs CLI, update skill SKILL.md files to detect numeric arguments and resolve before processing. Essential: every subsequent feature benefits from this UX improvement.
-- [x] **Batched questioning** -- Restructure discuss SKILL.md 4-question loop into 2 interactions per gray area. Essential: reduces discuss session time by ~50%, all downstream features consume WAVE-CONTEXT.md produced here.
+**Defer:** Parallel independent set merging -- high risk, high complexity, marginal benefit (most DAG waves have 2-3 sets). Implement later as opt-in behind a config flag if profiling shows within-wave sequential merging is a bottleneck.
 
-### Phase 2: Workflow + Verification (do second)
+**Defer:** Merge dry-run mode and conflict heat map -- nice-to-have display features that can be added incrementally after core delegation works.
 
-- [x] **Streamlined workflow** -- Add auto-chaining logic between init -> set-init -> discuss -> wave-plan. Connect the dots so users flow naturally through the pipeline without memorizing command sequences.
-- [x] **Plan verifier agent** -- Create `role-plan-verifier.md`, add verification step to wave-plan SKILL.md between job planning and contract validation.
+### Phase 2: Documentation (build second, after merge pipeline is stable)
 
-### Phase 3: Advanced Orchestration (do third)
+Prioritize in this order:
 
-- [x] **Parallel wave planning** -- Add multi-wave orchestration to wave-plan SKILL.md with dependency-aware sequencing. Implement topological sort of wave dependencies, parallel Agent spawning for independent waves.
-- [x] **Context-efficient review with scoper delegation** -- Create `role-review-scoper.md`, refactor review SKILL.md to scope-then-delegate rather than broadcast-all.
+1. **README.md rewrite** -- Entry point for all users. Must reflect v2.2 capabilities including the new subagent merger. Include architecture diagram (ASCII art), updated feature descriptions, expanded quick start (full lifecycle, not just first 3 steps), verified command table.
+2. **technical_documentation.md** -- Full rewrite replacing DOCS.md. Every command section verified against current SKILL.md files. Version updated. Add agent role reference (all 29 agents). Add troubleshooting section. Add version changelog.
 
-### Future Consideration
+**Defer:** Interactive walkthrough (valuable but time-intensive; produce after docs are stable). Dedicated troubleshooting guide (build incrementally from real user issues).
 
-- [ ] Express mode (auto-accept defaults at non-critical gates) -- defer until workflow streamlining proves the gate pattern works
-- [ ] Cross-milestone plan comparison -- defer until multiple milestones are common in practice
-- [ ] Selective wave re-planning -- defer until parallel wave planning reveals which re-plan patterns emerge
-- [ ] Review scoper learning/memory -- defer until scoper proves useful, then add persistent memory per official subagent docs
+### Ordering Rationale
+
+Documentation MUST come AFTER merge pipeline delegation because:
+- README and docs must document the NEW merge behavior, not the old inline behavior
+- Writing docs against a moving target wastes effort (docs written before merge changes will need immediate rewriting)
+- Merge pipeline is higher-risk, higher-complexity work that should be validated first
+- Documentation is lower-risk and can be written confidently once all features are stable
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority | Depends On |
 |---------|------------|---------------------|----------|------------|
-| GSD decontamination | MEDIUM | LOW | P1 | Nothing |
-| Numeric ID shorthand | HIGH | LOW | P1 | Nothing |
-| Batched questioning | HIGH | MEDIUM | P1 | Nothing |
-| Streamlined workflow | HIGH | MEDIUM | P2 | GSD decontam, Numeric ID |
-| Plan verifier agent | HIGH | MEDIUM | P2 | (Batched questioning optional) |
-| Parallel wave planning | MEDIUM | HIGH | P3 | Plan verifier, Streamlined workflow |
-| Context-efficient review | HIGH | HIGH | P3 | Plan verifier |
-
-**Priority key:**
-- P1: Foundation -- must land first because other features build on it
-- P2: Core value -- the workflow improvements that justify v2.1
-- P3: Advanced -- highest complexity, highest long-term value, requires P1+P2 foundation
-
-## Detailed Feature Specifications
-
-### 1. GSD Agent Type Decontamination
-
-**Scope:** Find and replace all references to the GSD framework carried over during RAPID's evolution.
-
-**Known locations:**
-- `src/lib/init.cjs` line 53: `gsd_state_version: 1.0` -- rename to `rapid_state_version`
-- Full audit of all `src/` and `skills/` files (skills/ already clean per grep)
-
-**Implementation:** Single grep-and-replace pass. Update any schema validators that reference old field names. Run existing tests to catch breakage.
-
-**Risk:** LOW. String replacements with no behavioral impact beyond field naming.
-
-### 2. Numeric ID Shorthand
-
-**Scope:** Allow users to reference sets and waves by numeric index instead of full string ID.
-
-**UX Design:**
-- `/rapid:discuss 1` -- resolves to first set in STATE.json ordering
-- `/rapid:wave-plan 1.1` -- resolves to first set, first wave
-- `/rapid:execute 2` -- resolves to second set
-- Full string IDs still work (backward compatible)
-
-**Implementation:**
-1. Add `resolve-shorthand` command to `rapid-tools.cjs`:
-   - Input: numeric string like "1" or "1.1"
-   - Output: JSON `{ setId: "auth-system", waveId: "wave-1" }` (or just setId for set-level commands)
-   - Source: reads STATE.json, indexes sets by array position (1-based), waves by array position within set
-2. Update each SKILL.md's argument parsing step:
-   - After receiving argument, check if it matches `/^\d+(\.\d+)?$/`
-   - If numeric: call `resolve-shorthand`, use resolved IDs
-   - If string: use existing logic (unchanged)
-3. Update `/rapid:status` to display numeric indices alongside set/wave names
-
-**Affected skills:** discuss, wave-plan, execute, review, merge, set-init (6 skills)
-
-### 3. Batched Questioning During Discuss
-
-**Scope:** Reduce AskUserQuestion round-trips in the discuss phase by batching related questions.
-
-**Current flow (per gray area):** 4 sequential questions (Q1: approach, Q2: edge cases, Q3: specifics, Q4: confirmation) = 4 round-trips. 5 gray areas = 20 round-trips.
-
-**Proposed flow (per gray area):** 2 interactions:
-1. **Batch 1 -- Combined approach + specifics:** Present gray area with approach options where each option description includes edge case implications. Example:
-   ```
-   "How do you want to handle error recovery?
-   Options:
-   - 'Retry with backoff' -- Automatic retry with exponential backoff.
-     Edge cases: max retry count (default 3), idempotency required, backoff ceiling 30s.
-   - 'Fail fast with manual recovery' -- Return error immediately.
-     Edge cases: error messages must be actionable, recovery state preserved.
-   - 'Let Claude decide' -- Choose based on codebase patterns."
-   ```
-2. **Batch 2 -- Confirmation:** Summary of all decisions for this gray area.
-
-**Result:** 5 gray areas x 2 = 10 round-trips (50% reduction).
-
-**Constraint:** Do NOT batch across different gray areas. Each gray area is a distinct concern; mixing creates cognitive overload.
-
-### 4. Streamlined Workflow
-
-**Scope:** After each RAPID command completes, auto-suggest the natural next command with pre-filled arguments.
-
-**Current flow:** init -> (user reads text) -> set-init -> (user reads text) -> discuss -> (user reads text) -> wave-plan -> execute -> review -> merge
-
-**Proposed flow:** init completes -> AskUserQuestion "Initialize first set? [Yes: `/rapid:set-init 1`/Choose set/Skip]" -> set-init completes -> "Discuss first wave? [Yes: `/rapid:discuss 1.1`/Choose wave/Skip]" -> etc.
-
-**Implementation:** Each SKILL.md's final step already presents next steps. Changes:
-1. Make the first option the natural next command (not just text guidance)
-2. Use numeric shorthand in suggested commands
-3. Show the exact invocation string so user can copy-paste or type it
-
-**Important constraint:** RAPID skills cannot invoke other skills directly (skills are markdown prompts, not executables). The user still types the command, but it is short and pre-suggested. This is UX polish, not architectural change.
-
-### 5. Plan Verifier Agent
-
-**Scope:** New agent role that validates job plans before execution.
-
-**Agent: `role-plan-verifier.md`**
-
-**Checks:**
-1. **Coverage:** Every decision in WAVE-CONTEXT.md has at least one corresponding implementation step in a JOB-PLAN.md. Reports uncovered decisions as gaps.
-2. **Implementability:** Files referenced in JOB-PLAN.md either exist in worktree or are explicitly created in an earlier step. Nonexistent file references without creation steps are flagged.
-3. **Completeness:** Every acceptance criterion in JOB-PLAN.md has at least one implementation step.
-4. **Consistency:** File ownership across JOB-PLANs within the same wave does not overlap (complements contract validation's cross-set checks).
-
-**Output:** `VERIFICATION-REPORT.md` at `.planning/waves/{setId}/{waveId}/`:
-- PASS / PASS_WITH_GAPS / FAIL verdict
-- Per-check results with evidence
-- Suggested fixes for gaps
-
-**Integration:** New step in wave-plan SKILL.md between Step 5 (Job Planner Agents) and Step 6 (Contract Validation Gate).
-
-**Gate behavior:**
-- PASS or PASS_WITH_GAPS: continue to contract validation
-- FAIL: AskUserQuestion with "Re-plan affected jobs" / "Override and continue" / "Cancel"
-
-### 6. Parallel Wave Planning
-
-**Scope:** When a set has multiple waves, plan independent waves concurrently.
-
-**Dependency analysis:** Two waves are independent if they have no file ownership overlap and do not reference each other's jobs.
-
-**Implementation approach:**
-1. Lightweight dependency scan of all waves before planning any
-2. Build dependency graph (likely linear: wave-1 -> wave-2 -> wave-3)
-3. Independent waves plan in parallel (up to 5 per Claude Code limit)
-4. Dependent waves plan sequentially with predecessor artifacts available
-
-**Realistic assessment:** Most sets have linearly dependent waves. True intra-set parallelism will be rare. The bigger practical win is auto-chaining sequential wave planning (plan wave-1, then auto-plan wave-2) instead of requiring manual invocation per wave. Parallel dispatch is an optimization on top.
-
-**Recommendation:** Start with sequential multi-wave auto-chaining. Add parallel dispatch as an optimization after sequential flow works.
-
-### 7. Context-Efficient Review with Scoper Delegation
-
-**Scope:** Reduce review token costs by scoping what each review agent sees.
-
-**Current cost:** Review SKILL.md documents $15-45 per bug hunt cycle. 20 changed files all sent to hunter, advocate, and judge.
-
-**Scoper agent design:**
-1. **Input:** Git diff + dependents from `scopeWaveForReview` (already in `src/lib/review.cjs`)
-2. **Analysis:** Categorize files by concern (logic, API, tests, infra, docs)
-3. **Output:** `{ concerns: [{ name, files, reviewFocus }], crossCutting: [files] }`
-4. **Cross-cutting:** Files the scoper cannot confidently categorize go into every scope
-
-**Modified review flow:**
-1. Scoper runs first (low cost -- read-only, small model)
-2. For each concern with logic/API changes: spawn focused hunter with ONLY those files
-3. Advocate and judge receive only relevant files + their concern's findings
-4. Cross-cutting files included in all scopes (safety net)
-5. Final results merged before presentation to user
-
-**Token savings:** ~65% context reduction per agent for typical 20-file waves.
-
-**Key constraint:** Claude Code has no scoped context passing (confirmed: [GitHub issue #4908](https://github.com/anthropics/claude-code/issues/4908)). Scoping is prompt-level advisory ("Focus ONLY on these files: [list]"), not tool-level enforcement. Agents can still Read any file. The scoping is a strong suggestion, not a hard boundary.
-
-**Risk:** Scoper may miss cross-file dependencies. Mitigation: conservative initial implementation with more cross-cutting, fewer isolated scopes.
-
-## Ecosystem Context
-
-### Claude Code Platform Capabilities (verified 2026-03-09)
-
-| Capability | Status | Source | Confidence |
-|------------|--------|--------|------------|
-| Subagent spawning via Agent tool | Stable | [Official docs](https://code.claude.com/docs/en/sub-agents) | HIGH |
-| Up to 5 simultaneous subagents | Confirmed | Official docs | HIGH |
-| `$ARGUMENTS`, `$0`, `$1` in skills | Supported | [Skills docs](https://code.claude.com/docs/en/skills) | HIGH |
-| `context: fork` for subagent skills | Supported | Skills docs | HIGH |
-| `multiSelect: true` in AskUserQuestion | Supported | Already used in discuss SKILL.md | HIGH |
-| Subagents cannot spawn sub-subagents | Hard constraint | Official docs | HIGH |
-| Background subagents via Ctrl+B | Supported | Official docs | HIGH |
-| Scoped context passing (parent -> subagent) | NOT available | [GitHub #4908](https://github.com/anthropics/claude-code/issues/4908) | HIGH |
-| PreCompact hooks | Available (Jan 2026) | Changelog | HIGH |
-| Subagent persistent memory | Available | Official docs (`memory` frontmatter field) | HIGH |
-| `isolation: worktree` for subagents | Available | Official docs | HIGH |
-| `/batch` bundled skill for parallel work | Available | Official docs | HIGH |
-
-### Key Constraint: No Scoped Context Passing
-
-The biggest technical constraint for context-efficient review is that Claude Code has no mechanism for passing scoped context from parent to subagent. The only channel is the prompt string (confirmed by official docs: "The only channel from parent to subagent is the Task prompt string"). This means the review scoper must encode its scoping decisions into explicit instructions in each downstream agent's prompt. Agents can still read any file via the Read tool -- scoping is advisory, not enforced.
+| Per-set merge subagent spawning | HIGH | MEDIUM | P1 | Existing merge pipeline |
+| Structured result collection | HIGH | LOW | P1 | Subagent spawning |
+| Error propagation | HIGH | MEDIUM | P1 | Subagent spawning |
+| Partial failure + idempotent re-entry | HIGH | MEDIUM | P1 | Subagent spawning |
+| Context assembly for subagents | HIGH | MEDIUM | P1 | Subagent spawning |
+| Adaptive nesting (sub-subagents) | MEDIUM | HIGH | P2 | P1 complete |
+| README.md rewrite | HIGH | MEDIUM | P3 | P1 + P2 complete |
+| technical_documentation.md | HIGH | HIGH | P3 | README complete |
+| Parallel set merging | LOW | HIGH | DEFER | P1 complete |
+| Merge dry-run mode | MEDIUM | LOW | DEFER | P1 complete |
+| Conflict heat map | LOW | LOW | DEFER | P1 complete |
 
 ## Sources
 
-- [Claude Code Subagent Documentation](https://code.claude.com/docs/en/sub-agents) -- subagent architecture, context isolation, tool restrictions, parallel spawning, persistent memory, worktree isolation (HIGH confidence)
-- [Claude Code Skills Documentation](https://code.claude.com/docs/en/skills) -- skill argument parsing, `$ARGUMENTS`, `context: fork`, frontmatter fields, string substitutions (HIGH confidence)
-- [GitHub Issue #4908: Scoped Context Passing](https://github.com/anthropics/claude-code/issues/4908) -- confirms scoped context is requested but unimplemented (HIGH confidence)
-- [GitHub Issue #27645: Subagent Token Waste](https://github.com/anthropics/claude-code/issues/27645) -- confirms community recognizes token waste in subagent delegation (MEDIUM confidence)
-- [Claude Code Best Practices](https://code.claude.com/docs/en/best-practices) -- context window optimization (HIGH confidence)
-- [Claude Code Changelog](https://code.claude.com/docs/en/changelog) -- PreCompact hooks, version history (HIGH confidence)
-- [AskUserQuestion Tool Guide](https://smartscope.blog/en/generative-ai/claude/claude-code-askuserquestion-tool-guide/) -- structured question patterns (MEDIUM confidence)
-- RAPID v2.0 codebase: `skills/discuss/SKILL.md`, `skills/wave-plan/SKILL.md`, `skills/review/SKILL.md`, `skills/execute/SKILL.md`, `skills/init/SKILL.md`, `skills/set-init/SKILL.md`, `src/lib/review.cjs`, `src/lib/init.cjs` (HIGH confidence -- primary source)
+- [Anthropic Engineering: Multi-Agent Research System](https://www.anthropic.com/engineering/multi-agent-research-system) -- Orchestrator-worker pattern, subagent spawning, result collection, failure handling, context management
+- [Microsoft: Orchestrator and Subagent Multi-Agent Patterns](https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/architecture/multi-agent-orchestrator-sub-agent) -- When to use orchestrator-subagent, anti-patterns, "Russian doll" pattern
+- [Claude Code Sub-Agent Best Practices](https://claudefa.st/blog/guide/agents/sub-agent-best-practices) -- Parallel vs sequential dispatch, invocation quality, error handling, model configuration
+- [Towards Data Science: 17x Error Trap in Multi-Agent Systems](https://towardsdatascience.com/why-your-multi-agent-system-is-failing-escaping-the-17x-error-trap-of-the-bag-of-agents/) -- Error amplification, centralized coordination benefits, functional planes
+- [Draft.dev: Documentation Best Practices for Developer Tools](https://draft.dev/learn/documentation-best-practices-for-developer-tools) -- Essential sections, README vs technical docs, accuracy, anti-patterns
+- [Google ADK Multi-Agent Patterns](https://developers.googleblog.com/developers-guide-to-multi-agent-patterns-in-adk/) -- SequentialAgent, shared state management
+- [OpenAI Agents SDK: Agent Orchestration](https://openai.github.io/openai-agents-python/multi_agent/) -- Agents-as-tools vs handoff patterns
+- RAPID codebase: `skills/review/SKILL.md` (proven subagent delegation pattern with scoper+hunter+advocate+judge), `skills/merge/SKILL.md` (current inline pattern to refactor), `agents/rapid-merger.md` (current leaf agent role to update), `src/lib/merge.cjs` (detection+resolution library), `src/lib/review.cjs` (concern scoping functions)
 
 ---
-*Feature research for: RAPID v2.1 workflow improvements*
-*Researched: 2026-03-09*
+*Feature research for: RAPID v2.2 -- Subagent Merger & Documentation*
+*Researched: 2026-03-10*
