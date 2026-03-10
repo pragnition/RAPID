@@ -2268,6 +2268,69 @@ describe('prepareMergerContext', () => {
 // ────────────────────────────────────────────────────────────────
 // Module exports check
 // ────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────
+// v2.2 Task 1: Build-agents registration for set-merger (MERGE-01)
+// ────────────────────────────────────────────────────────────────
+
+describe('build-agents set-merger registration', () => {
+  // These tests validate that rapid-tools.cjs has correct set-merger entries
+  // in all four build-agents maps, and that the generated agent is well-formed.
+
+  it('ROLE_CORE_MAP has set-merger with correct core modules', () => {
+    // We test by running build-agents and checking the generated file
+    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-set-merger.md');
+    assert.ok(fs.existsSync(agentPath), 'rapid-set-merger.md should exist after build-agents');
+
+    const content = fs.readFileSync(agentPath, 'utf-8');
+    // Core modules: identity, returns, git
+    assert.ok(content.includes('<identity>'), 'should contain identity core module');
+    assert.ok(content.includes('<returns>'), 'should contain returns core module');
+    assert.ok(content.includes('<git>'), 'should contain git core module');
+    // Should NOT contain state-access or context-loading
+    assert.ok(!content.includes('<state-access>'), 'should NOT contain state-access core module');
+    assert.ok(!content.includes('<context-loading>'), 'should NOT contain context-loading core module');
+  });
+
+  it('ROLE_TOOLS has set-merger with Read, Write, Edit, Bash, Grep, Glob', () => {
+    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-set-merger.md');
+    const content = fs.readFileSync(agentPath, 'utf-8');
+    // YAML frontmatter should have tools line
+    assert.ok(content.includes('tools: Read, Write, Edit, Bash, Grep, Glob'), 'should have correct tools in frontmatter');
+  });
+
+  it('ROLE_COLORS has set-merger with green', () => {
+    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-set-merger.md');
+    const content = fs.readFileSync(agentPath, 'utf-8');
+    assert.ok(content.includes('color: green'), 'should have green color in frontmatter');
+  });
+
+  it('ROLE_DESCRIPTIONS has set-merger containing "set merger"', () => {
+    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-set-merger.md');
+    const content = fs.readFileSync(agentPath, 'utf-8');
+    assert.ok(content.includes('set merger'), 'description should contain "set merger"');
+  });
+
+  it('generated agent contains "Do NOT execute git merge" rule', () => {
+    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-set-merger.md');
+    const content = fs.readFileSync(agentPath, 'utf-8');
+    assert.ok(content.includes('Do NOT execute git merge'), 'should contain git merge prohibition');
+  });
+
+  it('generated agent contains "Do NOT use AskUserQuestion" rule', () => {
+    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-set-merger.md');
+    const content = fs.readFileSync(agentPath, 'utf-8');
+    assert.ok(content.includes('Do NOT use AskUserQuestion'), 'should contain AskUserQuestion prohibition');
+  });
+
+  it('generated agent has valid YAML frontmatter', () => {
+    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-set-merger.md');
+    const content = fs.readFileSync(agentPath, 'utf-8');
+    // Should start with GENERATED comment then ---
+    assert.ok(content.includes('---\nname: rapid-set-merger'), 'should have name in frontmatter');
+    assert.ok(content.includes('model: inherit'), 'should have model: inherit');
+  });
+});
+
 describe('merge.cjs module exports', () => {
   it('exports all v2.0 and preserved v1.0 functions', () => {
     const merge = require('./merge.cjs');
