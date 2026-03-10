@@ -69,7 +69,7 @@ Commands:
   merge status                    Show merge pipeline status (per-set verdicts + MERGE-STATE)
   merge integration-test          Run post-wave integration test suite on main
   merge order                     Show merge order from DAG (wave-grouped)
-  merge update-status <set> <status>  Update merge status in registry + MERGE-STATE
+  merge update-status <set> <status> [--agent-phase <phase>]  Update merge status + optional agentPhase1
   resolve set <input>                Resolve set reference (numeric index or string ID) to JSON
   resolve wave <input>               Resolve wave reference (N.N dot notation or string ID) to JSON
   merge detect <set>              Run 5-level conflict detection (returns JSON)
@@ -77,6 +77,7 @@ Commands:
   merge bisect <waveNum>          Run bisection recovery for a failed wave
   merge rollback <set> [--force]  Revert a merged set's merge commit (cascade check)
   merge merge-state <set>         Show MERGE-STATE.json for a set
+  merge prepare-context <set>    Assemble launch briefing for set-merger subagent
   set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
   set-init list-available        List pending sets without worktrees
   wave-plan resolve-wave <waveId>              Find wave in state, output milestone/set/wave JSON
@@ -2349,8 +2350,20 @@ async function handleMerge(cwd, subcommand, args) {
       const setName = args[0];
       const status = args[1];
       if (!setName || !status) {
-        error('Usage: rapid-tools merge update-status <set> <status>');
+        error('Usage: rapid-tools merge update-status <set> <status> [--agent-phase <idle|spawned|done|failed>]');
         process.exit(1);
+      }
+      // Parse optional --agent-phase flag
+      const agentPhaseIdx = args.indexOf('--agent-phase');
+      let agentPhase1 = undefined;
+      if (agentPhaseIdx !== -1) {
+        const agentPhaseValue = args[agentPhaseIdx + 1];
+        const validPhases = ['idle', 'spawned', 'done', 'failed'];
+        if (!agentPhaseValue || !validPhases.includes(agentPhaseValue)) {
+          error(`Invalid agent-phase value: "${agentPhaseValue || ''}". Must be one of: ${validPhases.join(', ')}`);
+          process.exit(1);
+        }
+        agentPhase1 = agentPhaseValue;
       }
       await wt.registryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
@@ -2358,18 +2371,32 @@ async function handleMerge(cwd, subcommand, args) {
         }
         return reg;
       });
-      // Also update MERGE-STATE.json status
+      // Build updates object
+      const stateUpdates = { status };
+      if (agentPhase1 !== undefined) {
+        stateUpdates.agentPhase1 = agentPhase1;
+      }
+      // Also update MERGE-STATE.json status (and optionally agentPhase1)
       try {
-        merge.updateMergeState(cwd, setName, { status });
+        merge.updateMergeState(cwd, setName, stateUpdates);
       } catch {
         // MERGE-STATE may not exist yet -- create minimal state
-        merge.writeMergeState(cwd, setName, {
+        const newState = {
           setId: setName,
           status,
           startedAt: new Date().toISOString(),
-        });
+          lastUpdatedAt: new Date().toISOString(),
+        };
+        if (agentPhase1 !== undefined) {
+          newState.agentPhase1 = agentPhase1;
+        }
+        merge.writeMergeState(cwd, setName, newState);
       }
-      output(JSON.stringify({ updated: true, set: setName, mergeStatus: status }));
+      const result = { updated: true, set: setName, mergeStatus: status };
+      if (agentPhase1 !== undefined) {
+        result.agentPhase1 = agentPhase1;
+      }
+      output(JSON.stringify(result));
       break;
     }
 
@@ -2628,8 +2655,63 @@ async function handleMerge(cwd, subcommand, args) {
       break;
     }
 
+    case 'prepare-context': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools merge prepare-context <set-name>');
+        process.exit(1);
+      }
+      // Read MERGE-STATE for conflicts
+      const mergeState = merge.readMergeState(cwd, setName);
+      // Get worktree path from registry
+      const reg = wt.loadRegistry(cwd);
+      const worktreeInfo = reg.worktrees[setName];
+      const worktreePath = worktreeInfo ? worktreeInfo.path : '';
+      // Get changed files (best effort -- may fail if branch doesn't exist in test envs)
+      let changedFiles = [];
+      try {
+        const baseBranch = wt.detectMainBranch(cwd);
+        changedFiles = merge.getChangedFiles(cwd, `rapid/${setName}`, baseBranch);
+      } catch {
+        // Branch may not exist yet -- proceed with empty file list
+      }
+      // Flatten conflicts from detection
+      const conflicts = [];
+      if (mergeState && mergeState.detection) {
+        for (const [level, data] of Object.entries(mergeState.detection)) {
+          if (data && data.conflicts) {
+            for (const c of data.conflicts) {
+              conflicts.push({
+                type: level.toUpperCase(),
+                file: c.file || c.path || '',
+                detail: c.description || c.detail || '',
+              });
+            }
+          }
+        }
+      }
+      // Build file entries
+      const files = changedFiles.map(f => ({ path: f, summary: '' }));
+      // Contract path
+      const contractPath = path.join(cwd, '.planning', 'sets', setName, 'CONTRACT.json');
+      // Call prepareMergerContext
+      const briefing = merge.prepareMergerContext({
+        setId: setName,
+        worktreePath,
+        files,
+        conflicts,
+        contractPath,
+      });
+      output(JSON.stringify({
+        setName,
+        briefing,
+        tokenEstimate: Math.ceil(briefing.length / 4),
+      }));
+      break;
+    }
+
     default:
-      error(`Unknown merge subcommand: ${subcommand}. Use: review, execute, status, integration-test, order, update-status, detect, resolve, bisect, rollback, merge-state`);
+      error(`Unknown merge subcommand: ${subcommand}. Use: review, execute, status, integration-test, order, update-status, detect, resolve, bisect, rollback, merge-state, prepare-context`);
       process.stdout.write(USAGE);
       process.exit(1);
   }

@@ -2470,10 +2470,11 @@ describe('merge prepare-context CLI subcommand', () => {
     const out = execSync(`node "${RAPID_TOOLS}" merge prepare-context auth-core`, {
       cwd: tmpDir, encoding: 'utf-8',
     });
-    // Parse last line (skip any [RAPID] prefix lines)
+    // Parse last line -- strip [RAPID] prefix if present
     const lines = out.trim().split('\n');
-    const jsonLine = lines[lines.length - 1];
-    const result = JSON.parse(jsonLine);
+    const lastLine = lines[lines.length - 1];
+    const jsonStr = lastLine.replace(/^\[RAPID\]\s*/, '');
+    const result = JSON.parse(jsonStr);
     assert.equal(result.setName, 'auth-core');
     assert.ok(typeof result.briefing === 'string', 'briefing should be a string');
     assert.ok(result.briefing.includes('auth-core'), 'briefing should mention set name');
