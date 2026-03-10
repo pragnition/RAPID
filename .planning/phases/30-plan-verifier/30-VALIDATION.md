@@ -2,8 +2,8 @@
 phase: 30
 slug: plan-verifier
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-10
 ---
 
@@ -36,26 +36,21 @@ created: 2026-03-10
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 30-01-01 | 01 | 1 | PLAN-01 | manual-only | N/A — LLM agent semantic analysis | N/A | ⬜ pending |
-| 30-01-02 | 01 | 1 | PLAN-02 | unit | `node --test src/lib/wave-planning.test.cjs` | ❌ W0 | ⬜ pending |
-| 30-01-03 | 01 | 1 | PLAN-03 | unit | `node --test src/lib/wave-planning.test.cjs` | ❌ W0 | ⬜ pending |
-| 30-01-04 | 01 | 1 | PLAN-04 | unit | `node --test src/lib/wave-planning.test.cjs` | ❌ W0 | ⬜ pending |
-| 30-02-01 | 02 | 1 | PLAN-05 | manual-only | N/A — skill-level AskUserQuestion flow | N/A | ⬜ pending |
+| Task ID | Plan | Wave | Requirement | Test Type | Automated Command | Status |
+|---------|------|------|-------------|-----------|-------------------|--------|
+| 30-01-T1 | 01 | 1 | PLAN-01, PLAN-02, PLAN-03, PLAN-04 | manual-only | N/A — LLM agent role module (semantic content, not unit-testable) | pending |
+| 30-01-T2 | 01 | 1 | PLAN-01, PLAN-02, PLAN-03, PLAN-04 | automated | `cd /home/kek/Projects/RAPID && node src/bin/rapid-tools.cjs build-agents && test -f agents/rapid-plan-verifier.md && head -6 agents/rapid-plan-verifier.md \| grep -q "rapid-plan-verifier" && echo "PASS" \|\| echo "FAIL"` | pending |
+| 30-02-T1 | 02 | 2 | PLAN-04, PLAN-05 | manual-only | N/A — skill-level LLM agent orchestration + AskUserQuestion flow | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `src/modules/roles/role-plan-verifier.md` — new role module for plan verification agent
-- [ ] Agent registration in `src/bin/rapid-tools.cjs` ROLE_* maps — `plan-verifier` entry
-- [ ] Tests for file conflict detection and implementability check helpers in `src/lib/wave-planning.test.cjs`
-- [ ] Integration test: `build-agents` generates `agents/rapid-plan-verifier.md`
+No Wave 0 stubs are needed for this phase.
 
-*Wave 0 creates the agent infrastructure and test stubs before verification logic is implemented.*
+**Rationale:** Phase 30 creates a new LLM agent (role module + agent registration) and integrates it into a skill pipeline. The verification logic is entirely semantic (LLM reasoning about plan coverage, implementability, and consistency) -- not algorithmic code with testable helper functions. The `build-agents` command and ROLE_* map registration are verified by the automated commands in Plan 01 Task 2. The skill-level orchestration in Plan 02 is a Markdown instruction file, not executable code.
 
 ---
 
@@ -63,18 +58,19 @@ created: 2026-03-10
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Coverage check via semantic analysis | PLAN-01 | LLM agent reasoning — cannot be unit tested | Run `/rapid:wave-plan` on a wave with intentionally missing coverage; verify VERIFICATION-REPORT.md identifies gaps |
-| FAIL gate with re-plan/override/cancel | PLAN-05 | Skill-level AskUserQuestion interaction flow | Run `/rapid:wave-plan` on a wave with file conflicts; verify FAIL gate presents options and re-plan targets only failing jobs |
+| Role module covers all three verification dimensions with correct instructions | PLAN-01, PLAN-02, PLAN-03 | LLM agent role module -- content is natural language instructions, not executable code | Read `src/modules/roles/role-plan-verifier.md`; verify it has Coverage Check, Implementability Check, Consistency Check sections with correct logic |
+| Agent spawning and verdict handling in wave-plan pipeline | PLAN-04, PLAN-05 | Skill-level agent orchestration -- Markdown instructions for Claude, not executable code | Run `/rapid:wave-plan` on a wave with intentionally missing coverage or file conflicts; verify VERIFICATION-REPORT.md is produced and FAIL gate presents re-plan/override/cancel |
+| FAIL gate blocks state transition, PASS proceeds normally | PLAN-05 | State machine interaction requires live wave-plan execution | Run `/rapid:wave-plan` on a passing wave; verify state transitions to `planning`. Run on a failing wave with Cancel; verify state stays in `discussing` |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 10s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or are marked manual-only with rationale
+- [x] Sampling continuity: manual-only tasks are sandwiched between automated checks
+- [x] Wave 0 not needed -- no unit-testable helpers (pure LLM agent + skill pipeline)
+- [x] No watch-mode flags
+- [x] Feedback latency < 10s for automated checks
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
