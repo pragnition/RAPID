@@ -1,5 +1,28 @@
 # Milestones
 
+## v2.1 Improvements & Fixes (Shipped: 2026-03-10)
+
+**Phases:** 25-32 + 27.1, 29.1 (10 phases, 22 plans)
+**Requirements:** 39/39 complete
+**Timeline:** 1 day (2026-03-09 → 2026-03-10)
+**Git range:** feat(25-01) → docs(phase-32)
+
+**Delivered:** Streamlined workflow with agent registration pipeline, numeric ID shortcuts, concern-based review scoping, wave orchestration, and plan verification.
+
+**Key accomplishments:**
+1. GSD decontamination -- all agent types renamed to RAPID-native
+2. Numeric ID infrastructure for set/wave references across all skills
+3. UX branding banners and color-coded agent type display
+4. Skill-to-agent overhaul with build-agents pipeline (26 generated agents)
+5. Workflow clarity with next-step guidance and coarser job sizing
+6. Batched questioning during discuss phase (halved interactions)
+7. Set-based review replacing wave-level review with directory chunking
+8. Plan verifier agent for coverage, implementability, and consistency validation
+9. Wave orchestration with dependency-aware sequencing and auto-chaining
+10. Context-efficient review with scoper delegation and concern-based scoping
+
+---
+
 ## v2.0 Mark II (Shipped: 2026-03-09)
 
 **Phases:** 16-24 (9 phases, 29 plans)
@@ -21,4 +44,3 @@
 8. Full Mark II documentation: DOCS.md (17 commands, architecture) + README.md landing page
 
 ---
-

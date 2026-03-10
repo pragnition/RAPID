@@ -163,13 +163,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REV-02 | Phase 32 | Complete |
 | REV-03 | Phase 32 | Complete |
 | REV-04 | Phase 32 | Complete |
+| MERGE-01 | Phase 34 | Pending |
+| MERGE-02 | Phase 34 | Pending |
+| MERGE-03 | Phase 34 | Pending |
+| MERGE-04 | Phase 33 | Pending |
+| MERGE-05 | Phase 33 | Pending |
+| MERGE-06 | Phase 35 | Pending |
+| DOC-01 | Phase 36 | Pending |
+| DOC-02 | Phase 36 | Pending |
+| DOC-03 | Phase 37 | Pending |
+| DOC-04 | Phase 37 | Pending |
+| DOC-05 | Phase 37 | Pending |
 
 **Coverage:**
 - v2.1 requirements: 39 total (all complete)
-- v2.2 requirements: 11 total
-- Mapped to phases: 39 (v2.1) + TBD (v2.2)
-- Unmapped: 11 (pending roadmap)
+- v2.2 requirements: 11 total (all mapped)
+- Mapped to phases: 39 (v2.1) + 11 (v2.2) = 50 total
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-09*
-*Last updated: 2026-03-10 after v2.2 requirements defined*
+*Last updated: 2026-03-10 after v2.2 roadmap created*

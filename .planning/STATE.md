@@ -5,9 +5,9 @@ milestone_name: Subagent Merger & Documentation
 status: active
 stopped_at: null
 last_updated: "2026-03-10"
-last_activity: 2026-03-10 -- Milestone v2.2 started
+last_activity: 2026-03-10 -- Roadmap created for v2.2
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Defining requirements for v2.2 Subagent Merger & Documentation
+**Current focus:** Phase 33 - Merge State Schema & Infrastructure
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-10 — Milestone v2.2 started
+Phase: 33 of 37 (Merge State Schema & Infrastructure)
+Plan: --
+Status: Ready to plan
+Last activity: 2026-03-10 -- Roadmap created for v2.2 (5 phases, 11 requirements)
 
 Progress: [..........] 0%
 
@@ -43,76 +43,11 @@ Progress: [..........] 0%
 Full decision log in PROJECT.md Key Decisions table.
 
 Recent:
-- v2.1 roadmap: 8 phases derived from 25 requirements at fine granularity
-- Phase 27 (branding) and Phase 32 (review) can run as independent tracks
-- Phase 25: Used require.main guard pattern to export CLI functions for testing
-- Phase 25: Migration-on-boot pattern for silent state version upgrades
-- Phase 26: resolveWave accepts pre-read state parameter (sync, testable) rather than reading STATE.json internally
-- Phase 26: Requires hoisted to module level in resolve.cjs -- no circular dependency risk
-- Phase 26: String wave IDs delegate to existing wave-planning.resolveWave for lookup, then enrich with indices
-- Phase 26: Resolver called ONCE at skill argument boundary -- all downstream operations use resolved string IDs
-- Phase 26: discuss/wave-plan replaced old wave-plan resolve-wave with resolve wave + state get --all
-- Phase 27: Used bright ANSI background variants (10Xm) for better readability with white text
-- Phase 27: ROLE_COLORS parallel map pattern, consistent with ROLE_TOOLS/ROLE_DESCRIPTIONS
-- Phase 27: Fixed 50-char padded banner width for visual consistency
-- Phase 27: Display command uses early return (no project root needed), only CLI command outputting raw ANSI text
-- Phase 27: Banner calls placed after env setup, before first functional step in each skill
-- Phase 27.1: Planner agent exceeds 15KB (21KB) -- accepted as known exception since role module alone is 11KB
-- Phase 27.1: Removed agents/ from .gitignore so generated agents are committed for clone-and-use workflow
-- Phase 27.1: buildAllAgents() in assembler.cjs (not rapid-tools.cjs) for direct unit testability
-- Phase 27.1: Exported ROLE_TOOLS, ROLE_COLORS, ROLE_DESCRIPTIONS, ROLE_CORE_MAP from assembler for test verification
-- Phase 27.1: Skills pass file paths (not inline content) for agents to read -- keeps spawn prompts lean
-- Phase 27.1: Context generator agent spawned twice (analysis-only + write mode) using same rapid-context-generator name
-- Phase 27.1: Agent name reference pattern: "Spawn the **rapid-{role}** agent with this task:" followed by task-specific context block
-- Phase 27.1: build-agents is self-contained in rapid-tools.cjs -- all role maps and assembly logic inline, no assembler module dependency
-- Phase 27.1: config.json agents section removed -- agent metadata lives solely in agent .md frontmatter
-- Phase 28: resolveWave setId path uses resolveSet internally for consistent numeric/string resolution
-- Phase 28: Error messages include set name and available waves for discoverability
-- Phase 28: Workflow order section placed between Working Directory and structured return sections in core-identity
-- Phase 28: Mid-flow AskUserQuestion preserved; only end-of-skill routing removed
-- Phase 28: Linear skills show one next command; branching skills (review, merge) show 2-3 alternatives
-- Phase 28: AskUserQuestion kept in allowed-tools for all skills retaining mid-flow decision points
-- Phase 29: 2-round structure halves interactions from 16 to 8 for 4 gray areas
-- Phase 29: "Let Claude decide all" takes precedence over any other multiSelect selections
-- Phase 29: Round 2 always runs even when areas are delegated in Round 1
-- Phase 29: "Revise" in Round 2 re-presents only that single area's Interaction 1 then Interaction 2
-- Phase 29.1: CHUNK_THRESHOLD=15 files for directory-based chunking (below=single pass, above=per-directory chunks)
-- Phase 29.1: Small directory groups (<3 files) merge into last large chunk to avoid over-fragmentation
-- Phase 29.1: Last wave wins for file attribution when file appears in multiple waves' JOB-PLAN.md
-- Phase 29.1: loadSetIssues dual-read pattern: set-level first, then legacy wave subdirectories for backward compatibility
-- Phase 29.1: ReviewIssues container drops waveId; wave identity tracked per-issue via originatingWave field
-- Phase 29.1: Dual-mode CLI by arg count (no new subcommands) preserves interface stability and backward compat
-- Phase 29.1: 4-arg update-issue accepts wave-id positionally but ignores it for file lookup (set-level path)
-- Phase 29.1: scope 1-arg enriches response with chunks + waveAttribution; 2-arg keeps lean response
-- Phase 29.1: Per-wave loop (Step 3) replaced with single set-level pass (Step 4) in review SKILL.md
-- Phase 29.1: Acceptance criteria aggregated from ALL waves before stage execution (dedicated Step 3)
-- Phase 29.1: Chunked unit test plan presented as single combined approval (not per-chunk)
-- Phase 29.1: UAT always runs on full set scope (never chunked) per locked user decision
-- Phase 29.1: Lean wave-level review documented as explicitly unaffected in Important Notes
-- Phase 30: Plan verifier uses Read/Write/Grep/Glob tools (no Bash or Edit) -- file checks via Glob, auto-fixes via Write
-- Phase 30: Core modules: identity + returns + context-loading (no state-access or git -- verifier reads plans, does not modify state)
-- Phase 30: Agent size 15.2KB slightly over 15KB warning -- accepted as planning-family agents are content-heavy
-- Phase 30: Step 5.5/6.5 numbering preserves backward compatibility -- no renumbering of existing steps
-- Phase 30: Maximum 1 re-plan attempt on FAIL -- second FAIL shows only override/cancel to prevent infinite loops
-- Phase 30: State transition deferred from Step 2 to Step 6.5 -- FAIL verdict blocks wave from entering planning state
-- Phase 31: Wave analyzer uses Read/Grep/Glob tools only (read-only analysis, no state or git access)
-- Phase 31: Conservative dependency classification -- uncertain signals default to dependent to prevent merge conflicts
-- Phase 31: Plan-set stage uses bright blue background (planning group) matching wave-plan and other planning stages
-- Phase 31: plan-verifier.md added to KNOWN_OVERSIZED in build-agents tests (15.3KB, planning-family exception)
-- Phase 31: PASS and PASS_WITH_WARNINGS auto-advance without AskUserQuestion -- only FAIL retains user gate
-- Phase 31: --retry-wave validates all predecessor waves are complete before allowing targeted retry
-- [Phase 31]: Plan-set replicates wave-plan pipeline inline (skills cannot invoke skills)
-- [Phase 31]: Interleaved parallel dispatch pattern for Claude Code sub-sub-agent constraint
-- [Phase 31]: BFS-level batching from wave-analyzer dependency edges for parallel/sequential grouping
-- [Phase 31]: Re-entry skips analyzer entirely -- remaining discussing waves treated as sequential batch
-- Phase 32: Scoper uses core-identity + core-returns only (read-only analysis, no state-access/git/context-loading)
-- Phase 32: Scoper color is blue (planning/analysis group) matching wave-analyzer
-- Phase 32: normalizedLevenshtein uses standard DP matrix -- no external dependency
-- Phase 32: 50% cross-cutting boundary uses strict greater-than (exactly 50% does NOT trigger fallback)
-- [Phase 32]: Step 2.5 placement preserves all existing step numbers (sub-step numbering per Phase 30 precedent)
-- [Phase 32]: Concern-scoped path comes first in Step 4a/4b with fallback path retaining original chunk logic
-- [Phase 32]: Step 4b.2.5 merges+deduplicates BEFORE adversarial pipeline (one advocate + one judge on merged set)
-- [Phase 32]: UAT (Step 4c) explicitly unchanged -- full scope, never concern-scoped
+- v2.2 roadmap: 5 phases derived from 11 requirements at fine granularity
+- Schema+infrastructure before delegation code (prevent schema drift breaking read/write pipeline)
+- Documentation phases after all merge pipeline phases (docs reflect final behavior)
+- README and technical docs split into separate phases (different audiences, independent deliverables)
+- Research Phase 4 (detection invalidation) omitted -- no backing requirement; resume safety improvements deferred
 
 ### Pending Todos
 
@@ -124,12 +59,13 @@ None.
 - v1.1 UI UX Improvements: Phases 10-15 (shipped)
 - v2.0 Mark II: Phases 16-24 (shipped 2026-03-09)
 - v2.1 Improvements & Fixes: Phases 25-32 + 27.1 + 29.1 (shipped 2026-03-10)
-- v2.2 Subagent Merger & Documentation: Phases TBD (in progress)
+- v2.2 Subagent Merger & Documentation: Phases 33-37 (in progress)
 
 ### Blockers/Concerns
 
+- Claude Code subagents cannot spawn sub-subagents (hard platform constraint) -- shapes MERGE-06 design
 - Token cost for 3-agent adversarial review needs monitoring in production use
-- Claude Code 5-subagent parallelism ceiling (Phase 31) needs testing with 2 waves first
+- Compressed result protocol ~100 tokens/set budget needs empirical validation in Phase 33
 
 ### Quick Tasks Completed
 
@@ -145,6 +81,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10T07:05:32.616Z
-Stopped at: Completed 32-02-PLAN.md
+Last session: 2026-03-10
+Stopped at: Roadmap created for v2.2 milestone
 Resume file: None
