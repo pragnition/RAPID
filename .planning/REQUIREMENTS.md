@@ -38,6 +38,16 @@ Requirements for v2.1 Improvements & Fixes. Each maps to roadmap phases.
 - [x] **FLOW-02**: Agents have clear internal knowledge of the correct workflow order (init -> set-init -> discuss -> wave-plan -> execute -> review -> merge)
 - [x] **FLOW-03**: Job granularity defaults to coarser sizing (fewer, larger jobs per wave)
 
+### Set-Based Review
+
+- [x] **SET-REVIEW-01**: Review runs a single pass across all changed files at the set level (no per-wave iteration)
+- [x] **SET-REVIEW-02**: Wave argument removed from `/rapid:review` -- review accepts set-id only
+- [x] **SET-REVIEW-03**: Review scope includes changed files plus one-hop dependents across all waves
+- [x] **SET-REVIEW-04**: Unit test and bug hunt stages chunk by directory when scope exceeds 15 files, with parallel agents per chunk
+- [x] **SET-REVIEW-05**: UAT runs once on full set scope (not chunked)
+- [x] **SET-REVIEW-06**: All review artifacts (REVIEW-UNIT.md, REVIEW-BUGS.md, REVIEW-UAT.md, REVIEW-ISSUES.json) live at set level
+- [x] **SET-REVIEW-07**: Findings tagged with originating wave via JOB-PLAN.md file list attribution
+
 ### Planning Pipeline
 
 - [ ] **PLAN-01**: Plan verifier agent checks coverage of all wave requirements against job plans
@@ -103,6 +113,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FLOW-01 | Phase 28 | Complete |
 | FLOW-02 | Phase 28 | Complete |
 | FLOW-03 | Phase 28 | Complete |
+| SET-REVIEW-01 | Phase 29.1 | Complete |
+| SET-REVIEW-02 | Phase 29.1 | Complete |
+| SET-REVIEW-03 | Phase 29.1 | Complete |
+| SET-REVIEW-04 | Phase 29.1 | Complete |
+| SET-REVIEW-05 | Phase 29.1 | Complete |
+| SET-REVIEW-06 | Phase 29.1 | Complete |
+| SET-REVIEW-07 | Phase 29.1 | Complete |
 | PLAN-01 | Phase 30 | Pending |
 | PLAN-02 | Phase 30 | Pending |
 | PLAN-03 | Phase 30 | Pending |
@@ -118,10 +135,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REV-04 | Phase 32 | Pending |
 
 **Coverage:**
-- v2.1 requirements: 32 total
-- Mapped to phases: 32
+- v2.1 requirements: 39 total
+- Mapped to phases: 39
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-09*
-*Last updated: 2026-03-09 after Phase 27.1 planning*
+*Last updated: 2026-03-10 after Phase 29.1 gap closure*
