@@ -163,11 +163,12 @@ Plans:
   2. Waves with no file overlap or cross-references are detected and planned in parallel
   3. Dependent waves plan sequentially, with predecessor planning artifacts available to the next wave's planner
   4. Execute stage runs waves in order without requiring per-wave user approval between waves
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 31-01: TBD
-- [ ] 31-02: TBD
+- [ ] 31-01-PLAN.md -- Wave-analyzer agent infrastructure: role module, ROLE_* registration, display.cjs plan-set stage, tests
+- [ ] 31-02-PLAN.md -- Create /rapid:plan-set skill: set-level wave planning orchestrator with dependency-aware batching
+- [ ] 31-03-PLAN.md -- Execute auto-advance: remove per-wave approval gates for PASS/PASS_WITH_WARNINGS, add --retry-wave flag
 
 ### Phase 32: Review Efficiency
 **Goal**: Review agents receive only the files relevant to their concern, reducing context waste by 60-80%
@@ -200,5 +201,5 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 29. Discuss Phase Optimization | 1/1 | Complete    | 2026-03-10 | - |
 | 29.1 Set-Based Review | 4/4 | Complete    | 2026-03-10 | - |
 | 30. Plan Verifier | 2/2 | Complete    | 2026-03-10 | - |
-| 31. Wave Orchestration | v2.1 | 0/? | Not started | - |
+| 31. Wave Orchestration | v2.1 | 0/3 | Not started | - |
 | 32. Review Efficiency | v2.1 | 0/? | Not started | - |
