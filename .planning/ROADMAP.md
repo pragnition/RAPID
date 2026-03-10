@@ -48,10 +48,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: MERGE-04, MERGE-05
 **Success Criteria** (what must be TRUE):
   1. MERGE-STATE.json includes agentPhase tracking fields (agentPhase1, agentPhase2) and the schema validates against a v2.1-era file without errors
-  2. `prepareMergerContext()` in merge.cjs assembles a minimal payload (set name, unresolved conflicts, file paths) under 500 tokens for a typical set
+  2. `prepareMergerContext()` in merge.cjs assembles a minimal payload (set name, unresolved conflicts, file paths) under 1000 tokens for a typical set
   3. `parseSetMergerReturn()` in merge.cjs validates RAPID:RETURN against a Zod schema and defaults to BLOCKED when the return is missing or malformed
   4. Compressed result protocol produces one-line status entries at roughly 100 tokens per set, verified against an 8-set budget calculation
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 33-01-PLAN.md -- Schema extension + three helper functions (prepareMergerContext, parseSetMergerReturn, compressResult)
 
 ### Phase 34: Core Merge Subagent Delegation
 **Goal**: The merge orchestrator dispatches isolated rapid-set-merger subagents per set, collects structured results, handles partial failures, and discards per-set context after collection
@@ -104,7 +106,7 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 33. Merge State Schema & Infrastructure | v2.2 | 0/TBD | Not started | - |
+| 33. Merge State Schema & Infrastructure | v2.2 | 0/1 | Planning | - |
 | 34. Core Merge Subagent Delegation | v2.2 | 0/TBD | Not started | - |
 | 35. Adaptive Conflict Resolution | v2.2 | 0/TBD | Not started | - |
 | 36. README Rewrite | v2.2 | 0/TBD | Not started | - |
