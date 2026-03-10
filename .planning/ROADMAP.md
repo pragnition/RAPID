@@ -116,6 +116,27 @@ Plans:
 Plans:
 - [ ] 29-01-PLAN.md -- Rewrite Step 4 (master delegation toggle) and Step 5 (2-round batched discussion) in discuss SKILL.md
 
+### Phase 29.1: Make the Reviewing Set-Based Instead of Wave-Based (INSERTED)
+
+**Goal:** Review pipeline runs once across all changed files at the set level instead of iterating per-wave, with directory chunking for parallel agent execution on large scopes
+**Requirements**: SET-REVIEW-01, SET-REVIEW-02, SET-REVIEW-03, SET-REVIEW-04, SET-REVIEW-05, SET-REVIEW-06, SET-REVIEW-07
+**Depends on:** Phase 29
+**Success Criteria** (what must be TRUE):
+  1. `/rapid:review <set-id>` runs a single review pass across all changed files in the set branch (no per-wave iteration)
+  2. Wave argument is removed from `/rapid:review` -- review is set-only
+  3. Review scope includes changed files plus one-hop dependents across all waves
+  4. Unit test and bug hunt stages chunk by directory when scope exceeds 15 files, with parallel agents per chunk
+  5. UAT runs once on full set scope (not chunked)
+  6. All review artifacts (REVIEW-UNIT.md, REVIEW-BUGS.md, REVIEW-UAT.md, REVIEW-ISSUES.json) live at set level
+  7. Findings are tagged with originating wave via JOB-PLAN.md file list attribution
+  8. Lean review (wave-level, called from /rapid:execute) is completely unaffected
+**Plans:** 3 plans
+
+Plans:
+- [ ] 29.1-01-PLAN.md -- TDD: Refactor review.cjs to set-level API (scopeSetForReview, chunkByDirectory, buildWaveAttribution, set-level issue management)
+- [ ] 29.1-02-PLAN.md -- Update CLI review commands for dual-mode (set-level + lean compat), update 6 review role modules, rebuild agents
+- [ ] 29.1-03-PLAN.md -- Rewrite review SKILL.md from per-wave loop to set-level orchestration with directory chunking
+
 ### Phase 30: Plan Verifier
 **Goal**: Job plans are validated for coverage gaps, file conflicts, and implementability before execution begins
 **Depends on**: Phase 28 (workflow clarity defines where verification fits in pipeline)
@@ -165,7 +186,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 25 -> 26 -> 27 -> 27.1 -> 28 -> 29 -> 30 -> 31 -> 32
+Phases execute in numeric order: 25 -> 26 -> 27 -> 27.1 -> 28 -> 29 -> 29.1 -> 30 -> 31 -> 32
 Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independent tracks).
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -176,6 +197,7 @@ Note: Phase 27 and Phase 32 can run in parallel with their neighbors (independen
 | 27.1 Skill-to-Agent Overhaul | 3/3 | Complete    | 2026-03-09 | - |
 | 28. Workflow Clarity | 2/2 | Complete    | 2026-03-09 | - |
 | 29. Discuss Phase Optimization | 1/1 | Complete    | 2026-03-10 | - |
+| 29.1 Set-Based Review | v2.1 | 0/3 | Not started | - |
 | 30. Plan Verifier | v2.1 | 0/? | Not started | - |
 | 31. Wave Orchestration | v2.1 | 0/? | Not started | - |
 | 32. Review Efficiency | v2.1 | 0/? | Not started | - |
