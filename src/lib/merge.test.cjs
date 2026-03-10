@@ -2104,6 +2104,168 @@ describe('parseSetMergerReturn', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// v2.2 Subagent Infrastructure: prepareMergerContext (MERGE-04)
+// ────────────────────────────────────────────────────────────────
+
+describe('prepareMergerContext', () => {
+  it('produces string containing set name and file paths for typical set', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      setId: 'auth-core',
+      worktreePath: '/tmp/worktrees/auth-core',
+      files: [
+        { path: 'src/auth/token.cjs', summary: 'Token generation and verification' },
+        { path: 'src/auth/verify.cjs', summary: 'Middleware for route protection' },
+        { path: 'src/auth/refresh.cjs', summary: 'Refresh token rotation' },
+        { path: 'src/types/user.ts', summary: 'User type definitions' },
+        { path: 'CONTRACT.json', summary: '3 interfaces, 2 with changes' },
+      ],
+      conflicts: [
+        { file: 'src/auth/token.cjs', type: 'textual', detail: 'Merge conflict in lines 20-35' },
+        { file: 'src/auth/verify.cjs', type: 'structural', detail: 'Function signature mismatch' },
+        { file: 'src/types/user.ts', type: 'api', detail: 'Export type changed' },
+      ],
+      contractPath: '.planning/sets/auth-core/CONTRACT.json',
+    };
+
+    const result = merge.prepareMergerContext(contextData);
+    assert.equal(typeof result, 'string');
+    assert.ok(result.includes('auth-core'), 'should contain set name');
+    assert.ok(result.includes('src/auth/token.cjs'), 'should contain file path');
+    assert.ok(result.includes('Token generation'), 'should contain file summary');
+    assert.ok(result.includes('[textual]'), 'should contain conflict type');
+    assert.ok(result.includes('CONTRACT.json'), 'should reference contract');
+  });
+
+  it('token estimate under 1000 for typical set (5 files, 3 conflicts)', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      setId: 'auth-core',
+      worktreePath: '/tmp/worktrees/auth-core',
+      files: [
+        { path: 'src/auth/token.cjs', summary: 'Token generation and verification' },
+        { path: 'src/auth/verify.cjs', summary: 'Middleware for route protection' },
+        { path: 'src/auth/refresh.cjs', summary: 'Refresh token rotation' },
+        { path: 'src/types/user.ts', summary: 'User type definitions' },
+        { path: 'CONTRACT.json', summary: '3 interfaces, 2 with changes' },
+      ],
+      conflicts: [
+        { file: 'src/auth/token.cjs', type: 'textual', detail: 'Merge conflict in lines 20-35' },
+        { file: 'src/auth/verify.cjs', type: 'structural', detail: 'Function signature mismatch' },
+        { file: 'src/types/user.ts', type: 'api', detail: 'Export type changed' },
+      ],
+      contractPath: '.planning/sets/auth-core/CONTRACT.json',
+    };
+
+    const result = merge.prepareMergerContext(contextData);
+    const tokenEstimate = Math.ceil(result.length / 4);
+    assert.ok(tokenEstimate < 1000, `Token estimate ${tokenEstimate} should be under 1000`);
+  });
+
+  it('produces valid string with "Conflicts (0 total)" for empty conflicts', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      setId: 'clean-set',
+      worktreePath: '/tmp/worktrees/clean-set',
+      files: [
+        { path: 'src/clean/main.cjs', summary: 'Main entry point' },
+      ],
+      conflicts: [],
+    };
+
+    const result = merge.prepareMergerContext(contextData);
+    assert.ok(result.includes('Conflicts (0 total)'), 'should show zero conflicts');
+    assert.ok(result.includes('clean-set'), 'should contain set name');
+  });
+
+  it('truncates at 15 files with overflow note for large file list', () => {
+    const merge = require('./merge.cjs');
+    const files = [];
+    for (let i = 0; i < 20; i++) {
+      files.push({ path: `src/mod${i}/file.cjs`, summary: `Module ${i} code` });
+    }
+    const contextData = {
+      setId: 'large-set',
+      worktreePath: '/tmp/worktrees/large-set',
+      files,
+      conflicts: [{ file: 'src/mod0/file.cjs', type: 'textual' }],
+    };
+
+    const result = merge.prepareMergerContext(contextData);
+    assert.ok(result.includes('Files (20 total)'), 'should show total file count');
+    assert.ok(result.includes('and 5 more files'), 'should show overflow note');
+    assert.ok(!result.includes('src/mod15/file.cjs'), 'should not contain file 16');
+    assert.ok(result.includes('src/mod14/file.cjs'), 'should contain file 15');
+  });
+
+  it('falls back to "(no summary)" when file summaries are missing', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      setId: 'no-summary-set',
+      worktreePath: '/tmp/worktrees/no-summary-set',
+      files: [
+        { path: 'src/a.cjs' },
+        { path: 'src/b.cjs' },
+      ],
+      conflicts: [],
+    };
+
+    const result = merge.prepareMergerContext(contextData);
+    assert.ok(result.includes('(no summary)'), 'should show no summary fallback');
+  });
+
+  it('token estimate under 1000 for set with 10 files', () => {
+    const merge = require('./merge.cjs');
+    const files = [];
+    for (let i = 0; i < 10; i++) {
+      files.push({ path: `src/component${i}/index.cjs`, summary: `Component ${i} with standard implementation` });
+    }
+    const contextData = {
+      setId: 'medium-set',
+      worktreePath: '/tmp/worktrees/medium-set',
+      files,
+      conflicts: [
+        { file: 'src/component0/index.cjs', type: 'textual', detail: 'Line conflict at 45' },
+        { file: 'src/component3/index.cjs', type: 'structural', detail: 'Function changed' },
+      ],
+      contractPath: '.planning/sets/medium-set/CONTRACT.json',
+    };
+
+    const result = merge.prepareMergerContext(contextData);
+    const tokenEstimate = Math.ceil(result.length / 4);
+    assert.ok(tokenEstimate < 1000, `Token estimate ${tokenEstimate} for 10-file set should be under 1000`);
+  });
+
+  it('shows "none" for contract reference when contractPath is not provided', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      setId: 'no-contract-set',
+      worktreePath: '/tmp/worktrees/no-contract-set',
+      files: [{ path: 'src/a.cjs', summary: 'File A' }],
+      conflicts: [],
+    };
+
+    const result = merge.prepareMergerContext(contextData);
+    assert.ok(result.includes('Contract: none'), 'should show none for missing contract');
+  });
+
+  it('shows conflict detail fallback when detail is missing', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      setId: 'fallback-set',
+      worktreePath: '/tmp/worktrees/fallback-set',
+      files: [{ path: 'src/a.cjs', summary: 'File A' }],
+      conflicts: [
+        { file: 'src/a.cjs', type: 'textual' },
+      ],
+    };
+
+    const result = merge.prepareMergerContext(contextData);
+    assert.ok(result.includes('(details in worktree)'), 'should show fallback for missing detail');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // Module exports check
 // ────────────────────────────────────────────────────────────────
 describe('merge.cjs module exports', () => {
