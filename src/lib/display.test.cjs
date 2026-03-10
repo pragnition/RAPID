@@ -14,9 +14,9 @@ describe('display', () => {
   });
 
   describe('STAGE_VERBS', () => {
-    it('maps all 7 stages to uppercase verb strings', () => {
+    it('maps all 8 stages to uppercase verb strings', () => {
       const display = require(displayPath);
-      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'execute', 'review', 'merge'];
+      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
       for (const stage of expectedStages) {
         assert.ok(
           typeof display.STAGE_VERBS[stage] === 'string',
@@ -38,13 +38,14 @@ describe('display', () => {
       assert.equal(display.STAGE_VERBS['execute'], 'EXECUTING');
       assert.equal(display.STAGE_VERBS['review'], 'REVIEWING');
       assert.equal(display.STAGE_VERBS['merge'], 'MERGING');
+      assert.equal(display.STAGE_VERBS['plan-set'], 'PLANNING SET');
     });
   });
 
   describe('STAGE_BG', () => {
-    it('maps all 7 stages to ANSI background escape codes', () => {
+    it('maps all 8 stages to ANSI background escape codes', () => {
       const display = require(displayPath);
-      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'execute', 'review', 'merge'];
+      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
       for (const stage of expectedStages) {
         assert.ok(
           typeof display.STAGE_BG[stage] === 'string',
@@ -57,9 +58,9 @@ describe('display', () => {
       }
     });
 
-    it('planning stages (init, set-init, discuss, wave-plan) use blue background ANSI code', () => {
+    it('planning stages (init, set-init, discuss, wave-plan, plan-set) use blue background ANSI code', () => {
       const display = require(displayPath);
-      const planningStages = ['init', 'set-init', 'discuss', 'wave-plan'];
+      const planningStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set'];
       for (const stage of planningStages) {
         assert.equal(
           display.STAGE_BG[stage],
@@ -129,9 +130,24 @@ describe('display', () => {
       assert.ok(result.includes('MERGING'), 'Banner should contain "MERGING"');
     });
 
-    it('all 7 stages produce valid banner strings', () => {
+    it('renderBanner("plan-set") returns string containing "RAPID", "PLANNING SET", and ANSI codes', () => {
       const display = require(displayPath);
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'execute', 'review', 'merge'];
+      const result = display.renderBanner('plan-set');
+      assert.ok(result.includes('RAPID'), 'Banner should contain "RAPID"');
+      assert.ok(result.includes('PLANNING SET'), 'Banner should contain "PLANNING SET"');
+      assert.ok(result.includes('\x1b['), 'Banner should contain ANSI escape codes');
+    });
+
+    it('renderBanner("plan-set", "Set: auth-system") contains "auth-system"', () => {
+      const display = require(displayPath);
+      const result = display.renderBanner('plan-set', 'Set: auth-system');
+      assert.ok(result.includes('PLANNING SET'), 'Banner should contain "PLANNING SET"');
+      assert.ok(result.includes('auth-system'), 'Banner should contain "auth-system"');
+    });
+
+    it('all 8 stages produce valid banner strings', () => {
+      const display = require(displayPath);
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
       for (const stage of stages) {
         const result = display.renderBanner(stage);
         assert.ok(typeof result === 'string', `renderBanner("${stage}") should return a string`);
@@ -151,7 +167,7 @@ describe('display', () => {
 
     it('renderBanner output ends with ANSI reset code', () => {
       const display = require(displayPath);
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'execute', 'review', 'merge'];
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
       for (const stage of stages) {
         const result = display.renderBanner(stage);
         assert.ok(
@@ -165,7 +181,7 @@ describe('display', () => {
       const display = require(displayPath);
       // Strip ANSI codes to measure visible width
       const stripAnsi = (str) => str.replace(/\x1b\[[0-9;]*m/g, '');
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'execute', 'review', 'merge'];
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
       const widths = stages.map(stage => stripAnsi(display.renderBanner(stage)).length);
       // All widths should be the same (50 chars padded)
       const targetWidth = widths[0];
@@ -181,7 +197,7 @@ describe('display', () => {
 
     it('planning stages use blue background ANSI code in banner', () => {
       const display = require(displayPath);
-      const planningStages = ['init', 'set-init', 'discuss', 'wave-plan'];
+      const planningStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set'];
       for (const stage of planningStages) {
         const result = display.renderBanner(stage);
         assert.ok(
