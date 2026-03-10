@@ -1686,6 +1686,424 @@ describe('applyAgentResolutions', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// v2.2 Subagent Infrastructure: Schema Extension (MERGE-04)
+// ────────────────────────────────────────────────────────────────
+
+describe('MergeStateSchema v2.2 extensions', () => {
+  it('backward compat: validates v2.1-era state without agentPhase fields', () => {
+    const merge = require('./merge.cjs');
+    const v21State = {
+      setId: 'auth-core',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    // Should not throw
+    const result = merge.MergeStateSchema.parse(v21State);
+    assert.equal(result.setId, 'auth-core');
+    assert.equal(result.agentPhase1, undefined);
+    assert.equal(result.agentPhase2, undefined);
+    assert.equal(result.compressedResult, undefined);
+  });
+
+  it('accepts agentPhase1 with valid enum values', () => {
+    const merge = require('./merge.cjs');
+    for (const phase of ['idle', 'spawned', 'done', 'failed']) {
+      const state = {
+        setId: 'auth-core',
+        status: 'resolving',
+        agentPhase1: phase,
+        lastUpdatedAt: new Date().toISOString(),
+      };
+      const result = merge.MergeStateSchema.parse(state);
+      assert.equal(result.agentPhase1, phase);
+    }
+  });
+
+  it('accepts agentPhase2 with valid enum values', () => {
+    const merge = require('./merge.cjs');
+    for (const phase of ['idle', 'spawned', 'done', 'failed']) {
+      const state = {
+        setId: 'auth-core',
+        status: 'resolving',
+        agentPhase2: phase,
+        lastUpdatedAt: new Date().toISOString(),
+      };
+      const result = merge.MergeStateSchema.parse(state);
+      assert.equal(result.agentPhase2, phase);
+    }
+  });
+
+  it('rejects invalid agentPhase1 values', () => {
+    const merge = require('./merge.cjs');
+    const state = {
+      setId: 'auth-core',
+      status: 'resolving',
+      agentPhase1: 'bogus',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    assert.throws(() => merge.MergeStateSchema.parse(state));
+  });
+
+  it('rejects invalid agentPhase2 values', () => {
+    const merge = require('./merge.cjs');
+    const state = {
+      setId: 'auth-core',
+      status: 'resolving',
+      agentPhase2: 'invalid-value',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    assert.throws(() => merge.MergeStateSchema.parse(state));
+  });
+
+  it('accepts compressedResult with full object', () => {
+    const merge = require('./merge.cjs');
+    const state = {
+      setId: 'auth-core',
+      status: 'complete',
+      compressedResult: {
+        setId: 'auth-core',
+        status: 'complete',
+        conflictCounts: { L1: 2, L2: 1, L3: 0, L4: 0, L5: 1 },
+        resolutionCounts: { T1: 1, T2: 1, T3: 0, escalated: 1 },
+        commitSha: 'abc123f',
+      },
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    const result = merge.MergeStateSchema.parse(state);
+    assert.deepEqual(result.compressedResult.conflictCounts, { L1: 2, L2: 1, L3: 0, L4: 0, L5: 1 });
+    assert.deepEqual(result.compressedResult.resolutionCounts, { T1: 1, T2: 1, T3: 0, escalated: 1 });
+  });
+
+  it('accepts compressedResult without optional commitSha', () => {
+    const merge = require('./merge.cjs');
+    const state = {
+      setId: 'auth-core',
+      status: 'resolving',
+      compressedResult: {
+        setId: 'auth-core',
+        status: 'resolving',
+        conflictCounts: { L1: 0, L2: 0, L3: 0, L4: 0, L5: 0 },
+        resolutionCounts: { T1: 0, T2: 0, T3: 0, escalated: 0 },
+      },
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    const result = merge.MergeStateSchema.parse(state);
+    assert.equal(result.compressedResult.commitSha, undefined);
+  });
+
+  it('exports AgentPhaseEnum', () => {
+    const merge = require('./merge.cjs');
+    assert.ok(merge.AgentPhaseEnum, 'should export AgentPhaseEnum');
+    // Verify it validates correctly
+    assert.equal(merge.AgentPhaseEnum.parse('idle'), 'idle');
+    assert.throws(() => merge.AgentPhaseEnum.parse('bogus'));
+  });
+});
+
+describe('updateMergeState with agentPhase fields', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-agent-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('updates agentPhase1 via updateMergeState', () => {
+    const merge = require('./merge.cjs');
+    const initial = {
+      setId: 'auth-core',
+      status: 'resolving',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    merge.writeMergeState(tmpDir, 'auth-core', initial);
+    merge.updateMergeState(tmpDir, 'auth-core', { agentPhase1: 'spawned' });
+
+    const result = merge.readMergeState(tmpDir, 'auth-core');
+    assert.equal(result.agentPhase1, 'spawned');
+    assert.equal(result.status, 'resolving');
+  });
+
+  it('updates agentPhase2 via updateMergeState', () => {
+    const merge = require('./merge.cjs');
+    const initial = {
+      setId: 'auth-core',
+      status: 'resolving',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    merge.writeMergeState(tmpDir, 'auth-core', initial);
+    merge.updateMergeState(tmpDir, 'auth-core', { agentPhase2: 'done' });
+
+    const result = merge.readMergeState(tmpDir, 'auth-core');
+    assert.equal(result.agentPhase2, 'done');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// v2.2 Subagent Infrastructure: compressResult (MERGE-05)
+// ────────────────────────────────────────────────────────────────
+
+describe('compressResult', () => {
+  it('extracts correct counts from full MERGE-STATE with detection + resolution data', () => {
+    const merge = require('./merge.cjs');
+    const fullState = {
+      setId: 'auth-core',
+      status: 'complete',
+      detection: {
+        textual: { ran: true, conflicts: [
+          { file: 'src/a.js', type: 'merge' },
+          { file: 'src/b.js', type: 'merge' },
+        ] },
+        structural: { ran: true, conflicts: [
+          { file: 'src/c.js', functions: ['foo'] },
+        ] },
+        dependency: { ran: true, conflicts: [] },
+        api: { ran: true, conflicts: [
+          { file: 'src/d.js', exports: ['bar'] },
+        ] },
+        semantic: { ran: true, conflicts: [
+          { description: 'logic conflict', sets: ['auth-core'] },
+        ] },
+      },
+      resolution: {
+        tier1Count: 1,
+        tier2Count: 1,
+        tier3Count: 0,
+        tier4Count: 0,
+        escalatedConflicts: ['semantic conflict'],
+        allResolved: false,
+      },
+      mergeCommit: 'abc123f',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    const result = merge.compressResult(fullState);
+    assert.equal(result.setId, 'auth-core');
+    assert.equal(result.status, 'complete');
+    assert.deepEqual(result.conflictCounts, { L1: 2, L2: 1, L3: 0, L4: 1, L5: 1 });
+    assert.deepEqual(result.resolutionCounts, { T1: 1, T2: 1, T3: 0, escalated: 1 });
+    assert.equal(result.commitSha, 'abc123f');
+  });
+
+  it('produces JSON under ~100 tokens (JSON.stringify().length / 4 < 120)', () => {
+    const merge = require('./merge.cjs');
+    const fullState = {
+      setId: 'auth-core',
+      status: 'complete',
+      detection: {
+        textual: { ran: true, conflicts: [
+          { file: 'src/a.js', type: 'merge' },
+          { file: 'src/b.js', type: 'merge' },
+        ] },
+        structural: { ran: true, conflicts: [
+          { file: 'src/c.js', functions: ['foo'] },
+        ] },
+        dependency: { ran: true, conflicts: [] },
+        api: { ran: true, conflicts: [] },
+        semantic: { ran: true, conflicts: [
+          { description: 'logic conflict', sets: ['a'] },
+        ] },
+      },
+      resolution: {
+        tier1Count: 2,
+        tier2Count: 1,
+        tier3Count: 0,
+        tier4Count: 0,
+        escalatedConflicts: [],
+        allResolved: true,
+      },
+      mergeCommit: 'def456g',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    const result = merge.compressResult(fullState);
+    const tokenEstimate = Math.ceil(JSON.stringify(result).length / 4);
+    assert.ok(tokenEstimate < 120, `Token estimate ${tokenEstimate} should be under 120`);
+  });
+
+  it('handles MERGE-STATE with no detection/resolution (zero counts)', () => {
+    const merge = require('./merge.cjs');
+    const minimalState = {
+      setId: 'payment-api',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+
+    const result = merge.compressResult(minimalState);
+    assert.equal(result.setId, 'payment-api');
+    assert.equal(result.status, 'pending');
+    assert.deepEqual(result.conflictCounts, { L1: 0, L2: 0, L3: 0, L4: 0, L5: 0 });
+    assert.deepEqual(result.resolutionCounts, { T1: 0, T2: 0, T3: 0, escalated: 0 });
+    assert.equal(result.commitSha, null);
+  });
+
+  it('8-set compressed result budget stays under ~800 tokens total', () => {
+    const merge = require('./merge.cjs');
+    const sets = [];
+    for (let i = 0; i < 8; i++) {
+      sets.push(merge.compressResult({
+        setId: `set-${i}-with-longer-name`,
+        status: 'complete',
+        detection: {
+          textual: { ran: true, conflicts: [
+            { file: `src/file${i}.js`, type: 'merge' },
+          ] },
+          structural: { ran: true, conflicts: [] },
+          dependency: { ran: true, conflicts: [] },
+          api: { ran: true, conflicts: [] },
+          semantic: { ran: true, conflicts: [] },
+        },
+        resolution: {
+          tier1Count: 1,
+          tier2Count: 0,
+          tier3Count: 0,
+          tier4Count: 0,
+          escalatedConflicts: [],
+          allResolved: true,
+        },
+        mergeCommit: `commit${i}`,
+        lastUpdatedAt: new Date().toISOString(),
+      }));
+    }
+
+    const totalTokens = Math.ceil(JSON.stringify(sets).length / 4);
+    assert.ok(totalTokens < 800, `Total tokens ${totalTokens} for 8 sets should be under 800`);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// v2.2 Subagent Infrastructure: parseSetMergerReturn (MERGE-04)
+// ────────────────────────────────────────────────────────────────
+
+describe('parseSetMergerReturn', () => {
+  it('returns BLOCKED with reason when no RAPID:RETURN marker found', () => {
+    const merge = require('./merge.cjs');
+    const result = merge.parseSetMergerReturn('This is just some text with no marker');
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason, 'should have a reason');
+    assert.ok(result.reason.includes('marker') || result.reason.includes('RAPID:RETURN'),
+      'reason should mention missing marker');
+  });
+
+  it('returns BLOCKED with reason when JSON is malformed', () => {
+    const merge = require('./merge.cjs');
+    const result = merge.parseSetMergerReturn('<!-- RAPID:RETURN {invalid json here -->');
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason, 'should have a reason');
+  });
+
+  it('returns BLOCKED when data.status is missing', () => {
+    const merge = require('./merge.cjs');
+    const result = merge.parseSetMergerReturn('<!-- RAPID:RETURN {"foo": "bar"} -->');
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason.includes('status'), 'reason should mention missing status');
+  });
+
+  it('returns BLOCKED with empty string input', () => {
+    const merge = require('./merge.cjs');
+    const result = merge.parseSetMergerReturn('');
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason);
+  });
+
+  it('accepts CHECKPOINT status and returns { status: CHECKPOINT, data }', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'CHECKPOINT',
+      handoff_done: 'Resolved 3 of 5 conflicts',
+      handoff_remaining: '2 conflicts pending',
+      handoff_resume: 'Continue from conflict 4',
+    };
+    const result = merge.parseSetMergerReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'CHECKPOINT');
+    assert.deepEqual(result.data, returnData);
+  });
+
+  it('accepts COMPLETE status with semantic_conflicts/resolutions/escalations arrays', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'COMPLETE',
+      semantic_conflicts: [{ description: 'logic issue', sets: ['a', 'b'], confidence: 0.9 }],
+      resolutions: [{ file: 'src/a.js', original_conflict: 'merge', resolution_summary: 'kept both', confidence: 0.8, applied: true }],
+      escalations: [{ file: 'src/b.js', conflict_description: 'semantic', reason: 'low confidence', confidence: 0.3, proposed_resolution: 'manual review' }],
+      all_resolved: true,
+    };
+    const result = merge.parseSetMergerReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'COMPLETE');
+    assert.ok(result.data);
+    assert.ok(Array.isArray(result.data.semantic_conflicts));
+    assert.ok(Array.isArray(result.data.resolutions));
+    assert.ok(Array.isArray(result.data.escalations));
+  });
+
+  it('handles loose data (missing optional arrays like escalations) without throwing', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'COMPLETE',
+      semantic_conflicts: [],
+      resolutions: [],
+      // escalations intentionally missing
+      all_resolved: true,
+    };
+    const result = merge.parseSetMergerReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'COMPLETE');
+    assert.ok(result.data);
+  });
+
+  it('returns BLOCKED when semantic_conflicts is not an array', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'COMPLETE',
+      semantic_conflicts: 'not an array',
+      resolutions: [],
+    };
+    const result = merge.parseSetMergerReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason.includes('semantic_conflicts'), 'reason should mention the invalid field');
+  });
+
+  it('returns BLOCKED when resolutions is not an array', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'COMPLETE',
+      semantic_conflicts: [],
+      resolutions: 'not an array',
+    };
+    const result = merge.parseSetMergerReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason.includes('resolutions'), 'reason should mention the invalid field');
+  });
+
+  it('returns BLOCKED when escalations is not an array (when present)', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'COMPLETE',
+      semantic_conflicts: [],
+      resolutions: [],
+      escalations: { not: 'an array' },
+    };
+    const result = merge.parseSetMergerReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason.includes('escalations'), 'reason should mention the invalid field');
+  });
+
+  it('returns BLOCKED status when merger returns BLOCKED', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'BLOCKED',
+      reason: 'Cannot access worktree',
+    };
+    const result = merge.parseSetMergerReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // Module exports check
 // ────────────────────────────────────────────────────────────────
 describe('merge.cjs module exports', () => {
@@ -1732,10 +2150,15 @@ describe('merge.cjs module exports', () => {
       // v2.0 agent integration
       'integrateSemanticResults',
       'applyAgentResolutions',
+      // v2.2 subagent infrastructure (MERGE-04, MERGE-05)
+      'prepareMergerContext',
+      'parseSetMergerReturn',
+      'compressResult',
+      'AgentPhaseEnum',
     ];
 
     for (const name of expectedExports) {
-      if (name === 'MergeStateSchema') {
+      if (name === 'MergeStateSchema' || name === 'AgentPhaseEnum') {
         assert.ok(merge[name], `should export ${name}`);
       } else {
         assert.equal(typeof merge[name], 'function', `should export ${name} as a function`);
