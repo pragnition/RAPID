@@ -30,10 +30,14 @@ const dag = require('./dag.cjs');
 const worktree = require('./worktree.cjs');
 const execute = require('./execute.cjs');
 const plan = require('./plan.cjs');
+const returns = require('./returns.cjs');
 
 // ────────────────────────────────────────────────────────────────
 // MERGE-STATE.json Schema (MERG-03)
 // ────────────────────────────────────────────────────────────────
+
+// v2.2 Subagent lifecycle enum (MERGE-04)
+const AgentPhaseEnum = z.enum(['idle', 'spawned', 'done', 'failed']);
 
 const MergeStateSchema = z.object({
   setId: z.string(),
@@ -107,6 +111,27 @@ const MergeStateSchema = z.object({
     iterations: z.number().default(0),
     completedAt: z.string().optional(),
   }).optional(),
+  // v2.2 Subagent tracking (MERGE-04) -- optional for backward compat
+  agentPhase1: AgentPhaseEnum.optional(),  // per-set merger lifecycle
+  agentPhase2: AgentPhaseEnum.optional(),  // per-conflict resolver lifecycle (Phase 35)
+  compressedResult: z.object({
+    setId: z.string(),
+    status: z.string(),
+    conflictCounts: z.object({
+      L1: z.number(),
+      L2: z.number(),
+      L3: z.number(),
+      L4: z.number(),
+      L5: z.number(),
+    }),
+    resolutionCounts: z.object({
+      T1: z.number(),
+      T2: z.number(),
+      T3: z.number(),
+      escalated: z.number(),
+    }),
+    commitSha: z.string().optional(),
+  }).optional(),
   lastUpdatedAt: z.string(),
 });
 
@@ -163,6 +188,140 @@ function updateMergeState(cwd, setId, updates) {
   }
   const merged = { ...current, ...updates, lastUpdatedAt: new Date().toISOString() };
   writeMergeState(cwd, setId, merged);
+}
+
+// ────────────────────────────────────────────────────────────────
+// v2.2 Subagent Infrastructure (MERGE-04, MERGE-05)
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Compress a full MERGE-STATE into a compact JSON object (~100 tokens).
+ * Extracts conflict counts (L1-L5) and resolution counts (T1-T3 + escalated).
+ * Used by orchestrator to retain per-set status without full state context.
+ *
+ * @param {Object} mergeState - Full merge state object (as returned by readMergeState)
+ * @returns {Object} Compressed result: { setId, status, conflictCounts, resolutionCounts, commitSha }
+ */
+function compressResult(mergeState) {
+  const detection = mergeState.detection || {};
+  const resolution = mergeState.resolution || {};
+
+  return {
+    setId: mergeState.setId,
+    status: mergeState.status,
+    conflictCounts: {
+      L1: (detection.textual && detection.textual.conflicts) ? detection.textual.conflicts.length : 0,
+      L2: (detection.structural && detection.structural.conflicts) ? detection.structural.conflicts.length : 0,
+      L3: (detection.dependency && detection.dependency.conflicts) ? detection.dependency.conflicts.length : 0,
+      L4: (detection.api && detection.api.conflicts) ? detection.api.conflicts.length : 0,
+      L5: (detection.semantic && detection.semantic.conflicts) ? detection.semantic.conflicts.length : 0,
+    },
+    resolutionCounts: {
+      T1: resolution.tier1Count || 0,
+      T2: resolution.tier2Count || 0,
+      T3: resolution.tier3Count || 0,
+      escalated: (resolution.escalatedConflicts) ? resolution.escalatedConflicts.length : 0,
+    },
+    commitSha: mergeState.mergeCommit || null,
+  };
+}
+
+/**
+ * Parse a merge subagent's RAPID:RETURN output with default-to-BLOCKED safety.
+ * Wraps returns.cjs parseReturn() with merge-specific loose checks.
+ *
+ * @param {string} agentOutput - Full agent output text
+ * @returns {{ status: string, reason?: string, data?: object }}
+ *   - BLOCKED with reason on any failure (missing marker, malformed JSON, missing status)
+ *   - CHECKPOINT with data for intermediate saves
+ *   - COMPLETE/other with data on success
+ */
+function parseSetMergerReturn(agentOutput) {
+  const result = returns.parseReturn(agentOutput);
+
+  if (!result.parsed) {
+    return { status: 'BLOCKED', reason: result.error };
+  }
+
+  if (!result.data.status) {
+    return { status: 'BLOCKED', reason: 'Missing status field in return data' };
+  }
+
+  if (result.data.status === 'CHECKPOINT') {
+    return { status: 'CHECKPOINT', data: result.data };
+  }
+
+  if (result.data.status === 'BLOCKED') {
+    return { status: 'BLOCKED', reason: result.data.reason || 'Merger returned BLOCKED' };
+  }
+
+  // Loose field checks for COMPLETE and other statuses
+  const arrayFields = ['semantic_conflicts', 'resolutions', 'escalations'];
+  for (const field of arrayFields) {
+    if (result.data[field] !== undefined && !Array.isArray(result.data[field])) {
+      return { status: 'BLOCKED', reason: `Invalid field type: ${field} must be an array` };
+    }
+  }
+
+  return { status: result.data.status, data: result.data };
+}
+
+/**
+ * Assemble a launch briefing string for a merge subagent.
+ * Pure function: takes structured data, returns assembled string.
+ * The subagent reads full file details itself from the worktree.
+ *
+ * @param {Object} contextData - Structured launch data
+ * @param {string} contextData.setId - Set identifier
+ * @param {string} contextData.worktreePath - Path to set's worktree
+ * @param {Array<{path: string, summary?: string}>} contextData.files - Files in set
+ * @param {Array<{file: string, type: string, detail?: string}>} contextData.conflicts - Detected conflicts
+ * @param {string} [contextData.contractPath] - Path to contract file
+ * @returns {string} Assembled launch briefing
+ */
+function prepareMergerContext(contextData) {
+  const { setId, worktreePath, files, conflicts, contractPath } = contextData;
+
+  const lines = [];
+  lines.push(`## Set: ${setId}`);
+  lines.push(`Worktree: ${worktreePath}`);
+  lines.push('');
+
+  // Files section
+  const fileCount = files.length;
+  lines.push(`### Files (${fileCount} total)`);
+  const maxFiles = 15;
+  const displayFiles = files.slice(0, maxFiles);
+  for (const f of displayFiles) {
+    lines.push(`- ${f.path}: ${f.summary || '(no summary)'}`);
+  }
+  if (fileCount > maxFiles) {
+    lines.push(`... and ${fileCount - maxFiles} more files (see worktree)`);
+  }
+  lines.push('');
+
+  // Conflicts section
+  const conflictCount = conflicts.length;
+  lines.push(`### Conflicts (${conflictCount} total)`);
+  for (const c of conflicts) {
+    lines.push(`- [${c.type}] ${c.file}: ${c.detail || '(details in worktree)'}`);
+  }
+  lines.push('');
+
+  // References section
+  lines.push('### References');
+  lines.push(`- Contract: ${contractPath || 'none'}`);
+
+  return lines.join('\n');
+}
+
+/**
+ * Estimate token count using chars/4 heuristic.
+ * @param {string} text - Text to estimate
+ * @returns {number} Estimated token count
+ */
+function estimateTokens(text) {
+  return Math.ceil(text.length / 4);
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -1632,4 +1791,10 @@ module.exports = {
   getMergeOrder,
   mergeSet,
   runIntegrationTests,
+
+  // v2.2 Subagent Infrastructure (MERGE-04, MERGE-05)
+  prepareMergerContext,
+  parseSetMergerReturn,
+  compressResult,
+  AgentPhaseEnum,
 };
