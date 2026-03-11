@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 33: Merge State Schema & Infrastructure** - Extend MERGE-STATE schema and build helper functions for subagent delegation (completed 2026-03-10)
 - [x] **Phase 34: Core Merge Subagent Delegation** - Restructure merge SKILL.md to dispatch per-set rapid-set-merger subagents (completed 2026-03-10)
 - [x] **Phase 35: Adaptive Conflict Resolution** - Orchestrator-mediated per-conflict agents for mid-confidence escalations (completed 2026-03-11)
-- [ ] **Phase 36: README Rewrite** - Complete README.md rewrite reflecting all capabilities through v2.2
+- [x] **Phase 36: README Rewrite** - Complete README.md rewrite reflecting all capabilities through v2.2 (completed 2026-03-11)
 - [ ] **Phase 37: Technical Documentation** - Create technical_documentation.md as power user reference
 
 ## Phase Details
@@ -92,7 +92,7 @@ Plans:
   2. README.md includes a full lifecycle quick start walkthrough covering init through cleanup with accurate command names and arguments
   3. README.md includes an ASCII architecture diagram showing the Sets/Waves/Jobs hierarchy and agent dispatch pattern
   4. Every command listed in the command reference table exists as a working skill and has correct argument syntax
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 36-01-PLAN.md -- Full README.md rewrite: problem-first opening, How It Works, architecture diagram, quick start (greenfield/brownfield), command reference, further reading
 
@@ -117,5 +117,5 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 33. Merge State Schema & Infrastructure | 1/1 | Complete    | 2026-03-10 | - |
 | 34. Core Merge Subagent Delegation | 2/2 | Complete    | 2026-03-10 | - |
 | 35. Adaptive Conflict Resolution | 2/2 | Complete    | 2026-03-11 | - |
-| 36. README Rewrite | v2.2 | 0/1 | Planned | - |
+| 36. README Rewrite | 1/1 | Complete   | 2026-03-11 | - |
 | 37. Technical Documentation | v2.2 | 0/TBD | Not started | - |
