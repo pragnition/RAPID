@@ -90,6 +90,12 @@ Commands:
   review update-issue <set-id> <wave-id> <issue-id> <status>  Update issue status
   review lean <set-id> <wave-id>                     Run lean wave-level review
   review summary <set-id>                            Generate REVIEW-SUMMARY.md
+  quick add <description>         Add a quick task to state
+  quick list                      List all quick tasks
+  quick next-id                   Get the next quick task ID
+  migrate detect                  Detect existing planning framework
+  migrate backup                  Backup .planning/ to .planning.bak/
+  migrate transform               Transform detected framework to RAPID (stdin: detection JSON)
   display banner <stage> [target]  Display branded RAPID stage banner
   build-agents              Build all agent .md files from source modules
 
@@ -216,6 +222,14 @@ async function main() {
 
     case 'build-agents':
       handleBuildAgents(cwd, args.slice(1));
+      break;
+
+    case 'quick':
+      await handleQuick(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'migrate':
+      await handleMigrate(cwd, subcommand, args.slice(2));
       break;
 
     default:
@@ -2818,6 +2832,91 @@ function handleDisplay(subcommand, args) {
     }
     default:
       error(`Unknown display subcommand: ${subcommand}`);
+      process.exit(1);
+  }
+}
+
+async function handleQuick(cwd, subcommand, args) {
+  const { addQuickTask, listQuickTasks, getNextQuickTaskId } = require('../lib/quick.cjs');
+  const path = require('path');
+  const statePath = path.join(cwd, '.planning', 'STATE.json');
+
+  switch (subcommand) {
+    case 'add': {
+      const description = args.join(' ');
+      if (!description) {
+        error('Description required. Usage: rapid-tools quick add <description>');
+        process.exit(1);
+      }
+      const task = await addQuickTask(statePath, description);
+      output(JSON.stringify(task));
+      break;
+    }
+
+    case 'list': {
+      const tasks = await listQuickTasks(statePath);
+      output(JSON.stringify(tasks));
+      break;
+    }
+
+    case 'next-id': {
+      const id = await getNextQuickTaskId(statePath);
+      output(JSON.stringify({ nextId: id }));
+      break;
+    }
+
+    default:
+      error(`Unknown quick subcommand: ${subcommand}. Use: add, list, next-id`);
+      process.exit(1);
+  }
+}
+
+async function handleMigrate(cwd, subcommand, args) {
+  const { detectFramework, backupPlanning, transformToRapid } = require('../lib/migrate.cjs');
+
+  switch (subcommand) {
+    case 'detect': {
+      const result = await detectFramework(cwd);
+      output(JSON.stringify(result));
+      break;
+    }
+
+    case 'backup': {
+      try {
+        await backupPlanning(cwd);
+        output(JSON.stringify({ success: true, message: 'Backup created at .planning.bak/' }));
+      } catch (err) {
+        error(err.message);
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'transform': {
+      // Read detection JSON from stdin
+      const chunks = [];
+      for await (const chunk of process.stdin) {
+        chunks.push(chunk);
+      }
+      const input = Buffer.concat(chunks).toString('utf-8').trim();
+      if (!input) {
+        error('Detection JSON required on stdin. Run "migrate detect" first.');
+        process.exit(1);
+      }
+      let detection;
+      try {
+        detection = JSON.parse(input);
+      } catch {
+        error('Invalid JSON on stdin');
+        process.exit(1);
+      }
+      const result = await transformToRapid(cwd, detection);
+      output(JSON.stringify(result));
+      break;
+    }
+
+    default:
+      error(`Unknown migrate subcommand: ${subcommand}. Use: detect, backup, transform`);
       process.exit(1);
   }
 }
