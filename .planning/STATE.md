@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
 status: completed
-stopped_at: Completed 37-01-PLAN.md
-last_updated: "2026-03-11T05:10:18.000Z"
-last_activity: 2026-03-11 -- Plan 37-01 complete (technical documentation index, 5 lifecycle skill docs, configuration reference)
+stopped_at: Completed 37-02-PLAN.md
+last_updated: "2026-03-11T05:09:46Z"
+last_activity: 2026-03-11 -- Plan 37-02 complete (agent reference, state machine docs, troubleshooting guide)
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 8
-  completed_plans: 7
-  percent: 99
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 ## Current Position
 
 Phase: 37 of 37 (Technical Documentation)
-Plan: 1 of 2 (37-01 complete)
-Status: Phase 37 in progress
-Last activity: 2026-03-11 -- Plan 37-01 complete (technical documentation index, 5 lifecycle skill docs, configuration reference)
+Plan: 2 of 2 (37-02 complete)
+Status: Phase 37 complete -- all plans done
+Last activity: 2026-03-11 -- Plan 37-02 complete (agent reference, state machine docs, troubleshooting guide)
 
-Progress: [##########] 99%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ Progress: [##########] 99%
 | 35 | 02 | 5min | 2 | 4 |
 | 36 | 01 | 4min | 2 | 1 |
 | 37 | 01 | 5min | 2 | 7 |
+| 37 | 02 | 4min | 2 | 3 |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent:
 - [Phase 37]: Synopsis+link pattern for skill docs (2-3 sentence synopsis + SKILL.md reference)
 - [Phase 37]: Utility commands in index file rather than separate doc (cross-cutting, not lifecycle-bound)
 - [Phase 37]: Config doc references source files for full schema rather than duplicating
+- [Phase 37]: rapid-reviewer classified as Internal (defined but not dispatched by any active skill)
+- [Phase 37]: rapid-bugfix listed under both Execution and Review (spawned by both execute and review skills)
 
 ### Pending Todos
 
@@ -104,6 +107,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T05:10:18.000Z
-Stopped at: Completed 37-01-PLAN.md
-Resume file: .planning/phases/37-technical-documentation/37-01-SUMMARY.md
+Last session: 2026-03-11T05:09:46Z
+Stopped at: Completed 37-02-PLAN.md
+Resume file: .planning/phases/37-technical-documentation/37-02-SUMMARY.md
