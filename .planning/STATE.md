@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
 status: completed
-stopped_at: Completed 37.1-03-PLAN.md
-last_updated: "2026-03-11T11:35:35Z"
-last_activity: 2026-03-11 -- Plan 37.1-03 complete (wave hiding, lifecycle banner, state commit)
+stopped_at: Completed 37.1-04-PLAN.md
+last_updated: "2026-03-11T11:43:12.756Z"
+last_activity: 2026-03-11 -- Plan 37.1-04 complete (migrate and quick skill files)
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 13
   percent: 100
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 ## Current Position
 
 Phase: 37.1 of 37.1 (Feature Changes and Fixes)
-Plan: 5 of 5 (37.1-05 complete)
-Status: Plan 37.1-03 complete -- wave hiding, lifecycle banner, state commit
-Last activity: 2026-03-11 -- Plan 37.1-03 complete (wave hiding, lifecycle banner, state commit)
+Plan: 5 of 5 (37.1-04 complete)
+Status: Plan 37.1-04 complete -- migrate and quick skill files
+Last activity: 2026-03-11 -- Plan 37.1-04 complete (migrate and quick skill files)
 
 Progress: [##########] 100%
 
@@ -48,6 +48,7 @@ Progress: [##########] 100%
 | Phase 37.1 P02 | 3min | 1 tasks | 1 files |
 | 37.1 | 01 | 5min | 3 | 7 |
 | 37.1 | 03 | 7min | 2 | 8 |
+| Phase 37.1 P04 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,8 @@ Recent:
 - [Phase 37.1-03]: Task 1 changes already applied by Plan 37.1-05 -- no duplicate commit needed
 - [Phase 37.1-03]: Internal CLI calls (wave-plan list-jobs) preserved, only user-facing /rapid:wave-plan removed
 - [Phase 37.1-03]: User-facing /rapid:plan-set renamed to /rapid:plan throughout plan-set skill
+- [Phase 37.1]: [Phase 37.1-04]: Migrate skill uses two AskUserQuestion gates: after detection and before transform
+- [Phase 37.1]: [Phase 37.1-04]: Quick skill trusts developer judgment on task scope with no size guardrails
 
 ### Pending Todos
 
@@ -121,6 +124,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T11:35:35Z
-Stopped at: Completed 37.1-03-PLAN.md
+Last session: 2026-03-11T11:43:12.753Z
+Stopped at: Completed 37.1-04-PLAN.md
 Resume file: None
