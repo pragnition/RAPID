@@ -1719,18 +1719,39 @@ describe('MergeStateSchema v2.2 extensions', () => {
     }
   });
 
-  it('accepts agentPhase2 with valid enum values', () => {
+  it('accepts agentPhase2 with per-conflict object map', () => {
     const merge = require('./merge.cjs');
-    for (const phase of ['idle', 'spawned', 'done', 'failed']) {
-      const state = {
-        setId: 'auth-core',
-        status: 'resolving',
-        agentPhase2: phase,
-        lastUpdatedAt: new Date().toISOString(),
-      };
-      const result = merge.MergeStateSchema.parse(state);
-      assert.equal(result.agentPhase2, phase);
-    }
+    const state = {
+      setId: 'auth-core',
+      status: 'resolving',
+      agentPhase2: { 'src/lib/auth.cjs': 'spawned', 'src/lib/db.cjs': 'done' },
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    const result = merge.MergeStateSchema.parse(state);
+    assert.deepEqual(result.agentPhase2, { 'src/lib/auth.cjs': 'spawned', 'src/lib/db.cjs': 'done' });
+  });
+
+  it('accepts agentPhase2 with empty object (no conflicts tracked yet)', () => {
+    const merge = require('./merge.cjs');
+    const state = {
+      setId: 'auth-core',
+      status: 'resolving',
+      agentPhase2: {},
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    const result = merge.MergeStateSchema.parse(state);
+    assert.deepEqual(result.agentPhase2, {});
+  });
+
+  it('rejects agentPhase2 with bare string (must be object map)', () => {
+    const merge = require('./merge.cjs');
+    const state = {
+      setId: 'auth-core',
+      status: 'resolving',
+      agentPhase2: 'done',
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    assert.throws(() => merge.MergeStateSchema.parse(state));
   });
 
   it('rejects invalid agentPhase1 values', () => {
@@ -1744,12 +1765,12 @@ describe('MergeStateSchema v2.2 extensions', () => {
     assert.throws(() => merge.MergeStateSchema.parse(state));
   });
 
-  it('rejects invalid agentPhase2 values', () => {
+  it('rejects agentPhase2 with invalid enum values in map', () => {
     const merge = require('./merge.cjs');
     const state = {
       setId: 'auth-core',
       status: 'resolving',
-      agentPhase2: 'invalid-value',
+      agentPhase2: { 'a.js': 'bogus' },
       lastUpdatedAt: new Date().toISOString(),
     };
     assert.throws(() => merge.MergeStateSchema.parse(state));
@@ -1827,7 +1848,7 @@ describe('updateMergeState with agentPhase fields', () => {
     assert.equal(result.status, 'resolving');
   });
 
-  it('updates agentPhase2 via updateMergeState', () => {
+  it('updates agentPhase2 object map via updateMergeState', () => {
     const merge = require('./merge.cjs');
     const initial = {
       setId: 'auth-core',
@@ -1836,10 +1857,10 @@ describe('updateMergeState with agentPhase fields', () => {
     };
 
     merge.writeMergeState(tmpDir, 'auth-core', initial);
-    merge.updateMergeState(tmpDir, 'auth-core', { agentPhase2: 'done' });
+    merge.updateMergeState(tmpDir, 'auth-core', { agentPhase2: { 'src/a.cjs': 'spawned' } });
 
     const result = merge.readMergeState(tmpDir, 'auth-core');
-    assert.equal(result.agentPhase2, 'done');
+    assert.deepEqual(result.agentPhase2, { 'src/a.cjs': 'spawned' });
   });
 });
 
@@ -2490,6 +2511,129 @@ describe('merge prepare-context CLI subcommand', () => {
   });
 });
 
+// ────────────────────────────────────────────────────────────────
+// v2.2 Phase 35: routeEscalation (MERGE-06)
+// ────────────────────────────────────────────────────────────────
+
+describe('routeEscalation', () => {
+  it('routes confidence 0.2 (no API flag) to human-direct', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/foo.cjs', confidence: 0.2 };
+    const mergeState = {};
+    assert.equal(merge.routeEscalation(escalation, mergeState), 'human-direct');
+  });
+
+  it('routes confidence 0.5 (no API flag) to resolver-agent', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/foo.cjs', confidence: 0.5 };
+    const mergeState = {};
+    assert.equal(merge.routeEscalation(escalation, mergeState), 'resolver-agent');
+  });
+
+  it('routes confidence 0.8 (no API flag) to resolver-agent (upper bound inclusive)', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/foo.cjs', confidence: 0.8 };
+    const mergeState = {};
+    assert.equal(merge.routeEscalation(escalation, mergeState), 'resolver-agent');
+  });
+
+  it('routes confidence 0.85 (no API flag) to auto-accept', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/foo.cjs', confidence: 0.85 };
+    const mergeState = {};
+    assert.equal(merge.routeEscalation(escalation, mergeState), 'auto-accept');
+  });
+
+  it('routes confidence 0.5 with API-signature conflict to human-api-gate', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/api.cjs', confidence: 0.5 };
+    const mergeState = {
+      detection: {
+        api: { ran: true, conflicts: [{ file: 'src/lib/api.cjs', exports: ['doThing'] }] },
+      },
+    };
+    assert.equal(merge.routeEscalation(escalation, mergeState), 'human-api-gate');
+  });
+
+  it('routes confidence 0.1 with API-signature conflict to human-api-gate (API rule wins over low confidence)', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/api.cjs', confidence: 0.1 };
+    const mergeState = {
+      detection: {
+        api: { ran: true, conflicts: [{ file: 'src/lib/api.cjs', exports: ['doThing'] }] },
+      },
+    };
+    assert.equal(merge.routeEscalation(escalation, mergeState), 'human-api-gate');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// v2.2 Phase 35: isApiSignatureConflict (MERGE-06)
+// ────────────────────────────────────────────────────────────────
+
+describe('isApiSignatureConflict', () => {
+  it('returns true when file is in detection.api.conflicts', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/api.cjs' };
+    const mergeState = {
+      detection: {
+        api: { ran: true, conflicts: [{ file: 'src/lib/api.cjs', exports: ['doThing'] }] },
+      },
+    };
+    assert.equal(merge.isApiSignatureConflict(escalation, mergeState), true);
+  });
+
+  it('returns false when file is NOT in detection.api.conflicts', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/other.cjs' };
+    const mergeState = {
+      detection: {
+        api: { ran: true, conflicts: [{ file: 'src/lib/api.cjs', exports: ['doThing'] }] },
+      },
+    };
+    assert.equal(merge.isApiSignatureConflict(escalation, mergeState), false);
+  });
+
+  it('returns false when mergeState has no detection data', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/api.cjs' };
+    const mergeState = {};
+    assert.equal(merge.isApiSignatureConflict(escalation, mergeState), false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// v2.2 Phase 35: generateConflictId (MERGE-06)
+// ────────────────────────────────────────────────────────────────
+
+describe('generateConflictId', () => {
+  it('returns file path as ID when escalation has file field', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/auth.cjs' };
+    const result = merge.generateConflictId(escalation, 0, new Set());
+    assert.equal(result, 'src/lib/auth.cjs');
+  });
+
+  it('returns conflict-{index} when escalation has no file field', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { reason: 'some reason' };
+    const result = merge.generateConflictId(escalation, 3, new Set());
+    assert.equal(result, 'conflict-3');
+  });
+
+  it('appends :1, :2 suffix for duplicate file paths', () => {
+    const merge = require('./merge.cjs');
+    const escalation = { file: 'src/lib/auth.cjs' };
+    const existingIds = new Set(['src/lib/auth.cjs']);
+    const result1 = merge.generateConflictId(escalation, 1, existingIds);
+    assert.equal(result1, 'src/lib/auth.cjs:1');
+
+    existingIds.add('src/lib/auth.cjs:1');
+    const result2 = merge.generateConflictId(escalation, 2, existingIds);
+    assert.equal(result2, 'src/lib/auth.cjs:2');
+  });
+});
+
 describe('merge.cjs module exports', () => {
   it('exports all v2.0 and preserved v1.0 functions', () => {
     const merge = require('./merge.cjs');
@@ -2539,6 +2683,10 @@ describe('merge.cjs module exports', () => {
       'parseSetMergerReturn',
       'compressResult',
       'AgentPhaseEnum',
+      // v2.2 Phase 35: conflict resolution helpers (MERGE-06)
+      'routeEscalation',
+      'isApiSignatureConflict',
+      'generateConflictId',
     ];
 
     for (const name of expectedExports) {
