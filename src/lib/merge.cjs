@@ -113,7 +113,7 @@ const MergeStateSchema = z.object({
   }).optional(),
   // v2.2 Subagent tracking (MERGE-04) -- optional for backward compat
   agentPhase1: AgentPhaseEnum.optional(),  // per-set merger lifecycle
-  agentPhase2: AgentPhaseEnum.optional(),  // per-conflict resolver lifecycle (Phase 35)
+  agentPhase2: z.record(z.string(), AgentPhaseEnum).optional(),  // per-conflict resolver lifecycle (Phase 35)
   compressedResult: z.object({
     setId: z.string(),
     status: z.string(),
@@ -322,6 +322,79 @@ function prepareMergerContext(contextData) {
  */
 function estimateTokens(text) {
   return Math.ceil(text.length / 4);
+}
+
+// ────────────────────────────────────────────────────────────────
+// Phase 35: Adaptive Conflict Resolution Helpers (MERGE-06)
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Check if an escalation involves an API-signature conflict.
+ * Cross-references escalation.file against L4 API detection results in MERGE-STATE.
+ *
+ * @param {Object} escalation - Escalation object from set-merger return
+ * @param {string} escalation.file - File path of the escalated conflict
+ * @param {Object} mergeState - MERGE-STATE object (or partial)
+ * @returns {boolean} True if the file appears in L4 API conflicts
+ */
+function isApiSignatureConflict(escalation, mergeState) {
+  const apiConflicts = mergeState?.detection?.api?.conflicts || [];
+  return apiConflicts.some(c => c.file === escalation.file);
+}
+
+/**
+ * Route an escalation based on confidence band and API-signature detection.
+ *
+ * Routing rules (from CONTEXT.md):
+ *   - API-signature conflict -> 'human-api-gate' (always, regardless of confidence)
+ *   - confidence < 0.3 -> 'human-direct' (too low for automated resolution)
+ *   - confidence <= 0.8 -> 'resolver-agent' (mid-confidence, dispatch to resolver)
+ *   - confidence > 0.8 -> 'auto-accept' (high confidence, accept as-is)
+ *
+ * @param {Object} escalation - Escalation object with file and confidence
+ * @param {Object} mergeState - MERGE-STATE object for API detection lookup
+ * @returns {'human-api-gate'|'human-direct'|'resolver-agent'|'auto-accept'} Route decision
+ */
+function routeEscalation(escalation, mergeState) {
+  if (isApiSignatureConflict(escalation, mergeState)) {
+    return 'human-api-gate';
+  }
+
+  if (escalation.confidence < 0.3) {
+    return 'human-direct';
+  }
+
+  if (escalation.confidence <= 0.8) {
+    return 'resolver-agent';
+  }
+
+  return 'auto-accept';
+}
+
+/**
+ * Generate a unique conflict ID for agentPhase2 tracking.
+ *
+ * Uses the escalation's file path as the base ID. If no file field,
+ * falls back to 'conflict-{index}'. Appends ':1', ':2' etc. for duplicates.
+ *
+ * @param {Object} escalation - Escalation object from set-merger return
+ * @param {number} index - Index of the escalation in the array
+ * @param {Set<string>} existingIds - Set of already-used conflict IDs
+ * @returns {string} Unique conflict ID
+ */
+function generateConflictId(escalation, index, existingIds) {
+  const baseId = escalation.file || `conflict-${index}`;
+
+  if (!existingIds.has(baseId)) {
+    return baseId;
+  }
+
+  // Find next available suffix
+  let suffix = 1;
+  while (existingIds.has(`${baseId}:${suffix}`)) {
+    suffix++;
+  }
+  return `${baseId}:${suffix}`;
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -1797,4 +1870,9 @@ module.exports = {
   parseSetMergerReturn,
   compressResult,
   AgentPhaseEnum,
+
+  // v2.2 Phase 35: Adaptive Conflict Resolution (MERGE-06)
+  routeEscalation,
+  isApiSignatureConflict,
+  generateConflictId,
 };
