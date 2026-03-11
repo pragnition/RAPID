@@ -117,5 +117,5 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 33. Merge State Schema & Infrastructure | 1/1 | Complete    | 2026-03-10 | - |
 | 34. Core Merge Subagent Delegation | 2/2 | Complete    | 2026-03-10 | - |
 | 35. Adaptive Conflict Resolution | 2/2 | Complete    | 2026-03-11 | - |
-| 36. README Rewrite | 1/1 | Complete   | 2026-03-11 | - |
+| 36. README Rewrite | 1/1 | Complete    | 2026-03-11 | - |
 | 37. Technical Documentation | v2.2 | 0/TBD | Not started | - |
