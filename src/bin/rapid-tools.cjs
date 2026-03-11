@@ -69,7 +69,7 @@ Commands:
   merge status                    Show merge pipeline status (per-set verdicts + MERGE-STATE)
   merge integration-test          Run post-wave integration test suite on main
   merge order                     Show merge order from DAG (wave-grouped)
-  merge update-status <set> <status> [--agent-phase <phase>]  Update merge status + optional agentPhase1
+  merge update-status <set> <status> [--agent-phase <phase>] [--agent-phase2 <conflictId> <phase>]  Update merge status + optional agentPhase1/agentPhase2
   resolve set <input>                Resolve set reference (numeric index or string ID) to JSON
   resolve wave <input>               Resolve wave reference (N.N dot notation or string ID) to JSON
   merge detect <set>              Run 5-level conflict detection (returns JSON)
@@ -488,6 +488,7 @@ function handleBuildAgents(cwd, args) {
     'wave-analyzer':         'Read, Grep, Glob',
     'scoper':                'Read, Grep, Glob',
     'set-merger':            'Read, Write, Edit, Bash, Grep, Glob',
+    'conflict-resolver':     'Read, Write, Edit, Bash, Grep, Glob',
   };
 
   /**
@@ -524,6 +525,7 @@ function handleBuildAgents(cwd, args) {
     'wave-analyzer': 'blue',
     'scoper': 'blue',
     'set-merger': 'green',
+    'conflict-resolver': 'yellow',
   };
 
   /**
@@ -560,6 +562,7 @@ function handleBuildAgents(cwd, args) {
     'wave-analyzer':         'RAPID wave analyzer agent -- determines wave dependencies via LLM analysis of wave contexts',
     'scoper':                'RAPID scoper agent -- categorizes files by concern area for focused review scoping',
     'set-merger':            'RAPID set merger agent -- runs detection, resolution, and gate for a single set merge',
+    'conflict-resolver':     'RAPID conflict resolver agent -- deep analysis and resolution of mid-confidence merge conflicts',
   };
 
   /**
@@ -596,6 +599,7 @@ function handleBuildAgents(cwd, args) {
     'wave-analyzer':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
     'scoper':                ['core-identity.md', 'core-returns.md'],
     'set-merger':            ['core-identity.md', 'core-returns.md', 'core-git.md'],
+    'conflict-resolver':     ['core-identity.md', 'core-returns.md', 'core-git.md'],
   };
 
   function generateFrontmatter(role) {
@@ -2350,7 +2354,7 @@ async function handleMerge(cwd, subcommand, args) {
       const setName = args[0];
       const status = args[1];
       if (!setName || !status) {
-        error('Usage: rapid-tools merge update-status <set> <status> [--agent-phase <idle|spawned|done|failed>]');
+        error('Usage: rapid-tools merge update-status <set> <status> [--agent-phase <idle|spawned|done|failed>] [--agent-phase2 <conflictId> <idle|spawned|done|failed>]');
         process.exit(1);
       }
       // Parse optional --agent-phase flag
@@ -2365,6 +2369,19 @@ async function handleMerge(cwd, subcommand, args) {
         }
         agentPhase1 = agentPhaseValue;
       }
+      // Parse optional --agent-phase2 flag (per-conflict tracking)
+      const agentPhase2Idx = args.indexOf('--agent-phase2');
+      let agentPhase2Update = undefined;
+      if (agentPhase2Idx !== -1) {
+        const conflictId = args[agentPhase2Idx + 1];
+        const phase2Value = args[agentPhase2Idx + 2];
+        const validPhases2 = ['idle', 'spawned', 'done', 'failed'];
+        if (!conflictId || !phase2Value || !validPhases2.includes(phase2Value)) {
+          error(`Invalid --agent-phase2 args: "${conflictId || ''}" "${phase2Value || ''}". Usage: --agent-phase2 <conflictId> <idle|spawned|done|failed>`);
+          process.exit(1);
+        }
+        agentPhase2Update = { conflictId, phase: phase2Value };
+      }
       await wt.registryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
           reg.worktrees[setName].mergeStatus = status;
@@ -2376,7 +2393,19 @@ async function handleMerge(cwd, subcommand, args) {
       if (agentPhase1 !== undefined) {
         stateUpdates.agentPhase1 = agentPhase1;
       }
-      // Also update MERGE-STATE.json status (and optionally agentPhase1)
+      // Handle agentPhase2 per-conflict update (merge into existing object map)
+      if (agentPhase2Update) {
+        try {
+          const currentState = merge.readMergeState(cwd, setName);
+          const existingPhase2 = (currentState && currentState.agentPhase2) || {};
+          existingPhase2[agentPhase2Update.conflictId] = agentPhase2Update.phase;
+          stateUpdates.agentPhase2 = existingPhase2;
+        } catch {
+          // No existing state -- create fresh agentPhase2 map
+          stateUpdates.agentPhase2 = { [agentPhase2Update.conflictId]: agentPhase2Update.phase };
+        }
+      }
+      // Also update MERGE-STATE.json status (and optionally agentPhase1/agentPhase2)
       try {
         merge.updateMergeState(cwd, setName, stateUpdates);
       } catch {
@@ -2390,11 +2419,17 @@ async function handleMerge(cwd, subcommand, args) {
         if (agentPhase1 !== undefined) {
           newState.agentPhase1 = agentPhase1;
         }
+        if (stateUpdates.agentPhase2) {
+          newState.agentPhase2 = stateUpdates.agentPhase2;
+        }
         merge.writeMergeState(cwd, setName, newState);
       }
       const result = { updated: true, set: setName, mergeStatus: status };
       if (agentPhase1 !== undefined) {
         result.agentPhase1 = agentPhase1;
+      }
+      if (agentPhase2Update) {
+        result.agentPhase2 = stateUpdates.agentPhase2;
       }
       output(JSON.stringify(result));
       break;
