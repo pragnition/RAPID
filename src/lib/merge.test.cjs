@@ -2634,6 +2634,212 @@ describe('generateConflictId', () => {
   });
 });
 
+// ────────────────────────────────────────────────────────────────
+// v2.2 Phase 35: prepareResolverContext (MERGE-06)
+// ────────────────────────────────────────────────────────────────
+
+describe('prepareResolverContext', () => {
+  it('produces string containing conflict file path, worktree path, and set ID', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      conflictId: 'src/lib/auth.cjs',
+      file: 'src/lib/auth.cjs',
+      worktreePath: '/tmp/worktrees/auth-core',
+      setId: 'auth-core',
+      escalation: {
+        file: 'src/lib/auth.cjs',
+        confidence: 0.5,
+        reason: 'Semantic overlap in auth logic',
+        proposed_resolution: 'Merge both auth middlewares',
+      },
+      mergerAnalysis: 'The set-merger found overlapping authentication patterns in both sets.',
+      contextPaths: {
+        setAContext: '.planning/sets/auth-core/CONTEXT.md',
+        setBContext: '.planning/sets/api-routes/CONTEXT.md',
+      },
+    };
+
+    const result = merge.prepareResolverContext(contextData);
+    assert.equal(typeof result, 'string');
+    assert.ok(result.includes('src/lib/auth.cjs'), 'should contain conflict file path');
+    assert.ok(result.includes('/tmp/worktrees/auth-core'), 'should contain worktree path');
+    assert.ok(result.includes('auth-core'), 'should contain set ID');
+    assert.ok(result.includes('Set-Merger Analysis'), 'should have Set-Merger Analysis section');
+    assert.ok(result.includes('overlapping authentication'), 'should contain merger analysis text');
+    assert.ok(result.includes('Original Escalation'), 'should have Original Escalation section');
+    assert.ok(result.includes('0.5'), 'should contain escalation confidence');
+    assert.ok(result.includes('Semantic overlap'), 'should contain escalation reason');
+    assert.ok(result.includes('Context References'), 'should have Context References section');
+    assert.ok(result.includes('CONTEXT.md'), 'should reference CONTEXT.md paths');
+    assert.ok(result.includes('git log'), 'should include git log instruction');
+  });
+
+  it('truncates long analysis text to keep under token budget', () => {
+    const merge = require('./merge.cjs');
+    // Create a very long analysis string (over 800 tokens ~ 3200 chars)
+    const longAnalysis = 'A'.repeat(4000);
+    const contextData = {
+      conflictId: 'src/lib/auth.cjs',
+      file: 'src/lib/auth.cjs',
+      worktreePath: '/tmp/worktrees/auth-core',
+      setId: 'auth-core',
+      escalation: {
+        file: 'src/lib/auth.cjs',
+        confidence: 0.5,
+        reason: 'Overlap',
+        proposed_resolution: 'Merge',
+      },
+      mergerAnalysis: longAnalysis,
+      contextPaths: {
+        setAContext: '.planning/sets/a/CONTEXT.md',
+        setBContext: '.planning/sets/b/CONTEXT.md',
+      },
+    };
+
+    const result = merge.prepareResolverContext(contextData);
+    // The full result should not contain the full 4000-char analysis
+    assert.ok(!result.includes(longAnalysis), 'should truncate long analysis');
+    assert.ok(result.includes('[truncated]'), 'should indicate truncation');
+  });
+
+  it('includes L4 API detection data when available', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      conflictId: 'src/lib/api.cjs',
+      file: 'src/lib/api.cjs',
+      worktreePath: '/tmp/worktrees/auth-core',
+      setId: 'auth-core',
+      escalation: {
+        file: 'src/lib/api.cjs',
+        confidence: 0.6,
+        reason: 'Export change',
+        proposed_resolution: 'Keep both',
+      },
+      mergerAnalysis: 'API export conflict detected.',
+      contextPaths: {
+        setAContext: '.planning/sets/a/CONTEXT.md',
+        setBContext: '.planning/sets/b/CONTEXT.md',
+      },
+      apiDetection: { file: 'src/lib/api.cjs', exports: ['doThing', 'otherThing'] },
+    };
+
+    const result = merge.prepareResolverContext(contextData);
+    assert.ok(result.includes('API Detection'), 'should have API Detection section');
+    assert.ok(result.includes('doThing'), 'should include API detection details');
+  });
+
+  it('shows "No API conflicts" when apiDetection is absent', () => {
+    const merge = require('./merge.cjs');
+    const contextData = {
+      conflictId: 'src/lib/auth.cjs',
+      file: 'src/lib/auth.cjs',
+      worktreePath: '/tmp/worktrees/auth-core',
+      setId: 'auth-core',
+      escalation: {
+        file: 'src/lib/auth.cjs',
+        confidence: 0.5,
+        reason: 'Overlap',
+        proposed_resolution: 'Merge',
+      },
+      mergerAnalysis: 'Analysis text.',
+      contextPaths: {
+        setAContext: '.planning/sets/a/CONTEXT.md',
+        setBContext: '.planning/sets/b/CONTEXT.md',
+      },
+    };
+
+    const result = merge.prepareResolverContext(contextData);
+    assert.ok(result.includes('No API conflicts for this file'), 'should indicate no API conflicts');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// v2.2 Phase 35: parseConflictResolverReturn (MERGE-06)
+// ────────────────────────────────────────────────────────────────
+
+describe('parseConflictResolverReturn', () => {
+  it('returns COMPLETE with data for valid COMPLETE return', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'COMPLETE',
+      conflict_id: 'src/lib/auth.cjs',
+      strategies_tried: [
+        { approach: 'preserve-both', confidence: 0.45, reason: 'semantic overlap' },
+        { approach: 'hybrid-merge', confidence: 0.81, reason: 'combines changes' },
+      ],
+      selected_strategy: 'hybrid-merge',
+      resolution_summary: 'Combined both sets changes',
+      confidence: 0.81,
+      files_modified: ['src/lib/auth.cjs'],
+      applied: true,
+    };
+    const result = merge.parseConflictResolverReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'COMPLETE');
+    assert.ok(result.data);
+    assert.equal(result.data.confidence, 0.81);
+    assert.equal(result.data.selected_strategy, 'hybrid-merge');
+  });
+
+  it('returns BLOCKED with reason for BLOCKED return', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'BLOCKED',
+      reason: 'Cannot resolve: both sets change return type contract',
+    };
+    const result = merge.parseConflictResolverReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason.includes('Cannot resolve') || result.reason.includes('BLOCKED'));
+  });
+
+  it('returns BLOCKED for malformed output (no RAPID:RETURN marker)', () => {
+    const merge = require('./merge.cjs');
+    const result = merge.parseConflictResolverReturn('This is just some text without a marker');
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason);
+  });
+
+  it('returns BLOCKED when status field is missing', () => {
+    const merge = require('./merge.cjs');
+    const result = merge.parseConflictResolverReturn('<!-- RAPID:RETURN {"foo": "bar"} -->');
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason.includes('status') || result.reason.includes('Missing'));
+  });
+
+  it('returns BLOCKED when COMPLETE has missing confidence field', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'COMPLETE',
+      conflict_id: 'src/lib/auth.cjs',
+      strategies_tried: [],
+      selected_strategy: 'hybrid-merge',
+      resolution_summary: 'Combined changes',
+      // confidence intentionally missing
+      files_modified: ['src/lib/auth.cjs'],
+      applied: true,
+    };
+    const result = merge.parseConflictResolverReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.reason, 'should have a reason for missing confidence');
+  });
+
+  it('returns COMPLETE with confidence value present', () => {
+    const merge = require('./merge.cjs');
+    const returnData = {
+      status: 'COMPLETE',
+      conflict_id: 'src/lib/auth.cjs',
+      strategies_tried: [{ approach: 'merge', confidence: 0.72, reason: 'works' }],
+      selected_strategy: 'merge',
+      resolution_summary: 'Merged cleanly',
+      confidence: 0.72,
+      files_modified: ['src/lib/auth.cjs'],
+      applied: true,
+    };
+    const result = merge.parseConflictResolverReturn(`<!-- RAPID:RETURN ${JSON.stringify(returnData)} -->`);
+    assert.equal(result.status, 'COMPLETE');
+    assert.equal(result.data.confidence, 0.72);
+  });
+});
+
 describe('merge.cjs module exports', () => {
   it('exports all v2.0 and preserved v1.0 functions', () => {
     const merge = require('./merge.cjs');
@@ -2687,6 +2893,8 @@ describe('merge.cjs module exports', () => {
       'routeEscalation',
       'isApiSignatureConflict',
       'generateConflictId',
+      'prepareResolverContext',
+      'parseConflictResolverReturn',
     ];
 
     for (const name of expectedExports) {
