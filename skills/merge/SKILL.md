@@ -1,5 +1,5 @@
 ---
-description: Merge completed sets into main -- subagent delegation per set, fast-path merge-tree, 5-level conflict detection, 4-tier resolution, DAG-ordered merging, bisection recovery, rollback
+description: Merge completed sets into main -- subagent delegation per set, fast-path merge-tree, 5-level conflict detection, 4-tier resolution, adaptive conflict resolution via resolver agents, DAG-ordered merging, bisection recovery, rollback
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
 ---
 
@@ -236,26 +236,117 @@ Parse the agent's output using parseSetMergerReturn logic:
 - Add to `blockedSets` with reason from parseSetMergerReturn (or "malformed return" if parsing failed).
 - Continue to next set in the wave.
 
-### 3e: Handle escalations from return data
+### 3e: Handle escalations from return data (Adaptive Conflict Resolution)
 
-If return data contains escalations (T4 items with confidence < 0.7):
+If return data contains escalations (conflicts from set-merger with confidence scores):
 
-For each escalation, present to user via AskUserQuestion:
-- **question:** "Conflict escalation for {file}"
-- **options:**
-  - "Accept AI resolution" -- description: "Apply the AI's proposed resolution despite low confidence ({confidence})"
-  - "Skip conflict" -- description: "Leave conflict unresolved and continue"
+#### 3e-i: Classify escalations
 
-NOTE: No "Resolve manually" option per locked decision (recovery options are Retry/Skip/Abort only).
+For each escalation in the return data:
+- Generate a conflict ID: use the escalation's `file` field as the ID. If multiple escalations share the same file, append `:1`, `:2` suffix.
+- Route the escalation:
+  - Check if the escalated file appears in the set's MERGE-STATE `detection.api.conflicts`. If yes -> classify as `human-api-gate` (regardless of confidence).
+  - If confidence < 0.3 -> classify as `human-direct`
+  - If confidence >= 0.3 AND confidence <= 0.8 -> classify as `resolver-agent`
+  - If confidence > 0.8 -> classify as `auto-accept`
 
-If user selects "Accept AI resolution":
-- Apply the proposed resolution to the file in the worktree using Edit or Write tool.
-- Continue to next escalation (or Step 6 if done).
+Group escalations into four buckets: `resolverBound`, `humanApiGate`, `humanDirect`, `autoAccept`.
 
-If user selects "Skip conflict":
-- Log the skipped conflict and continue.
+#### 3e-ii: Auto-accept high-confidence escalations
 
-After escalations handled, proceed to Step 6 (merge execute).
+For escalations classified as `auto-accept` (confidence > 0.8 that somehow reached escalation):
+- The set-merger already applied these. Log them and continue.
+
+#### 3e-iii: Dispatch resolver agents (parallel)
+
+For escalations classified as `resolver-agent`:
+- Group by file. If multiple escalations target the same file, combine them into a single resolver dispatch (avoids parallel write conflicts).
+- For each unique file (or group):
+  - Update agentPhase2:
+    ```bash
+    node "${RAPID_TOOLS}" merge update-status {setName} resolving --agent-phase2 {conflictId} spawned
+    ```
+  - Prepare resolver context inline from the return data: include conflict details, set-merger's analysis, worktree path, paths to both sets' CONTEXT.md, any L4 API detection data for context.
+  - Spawn `rapid-conflict-resolver` agent using the Agent tool with prompt:
+    ```
+    Resolve conflict '{conflictId}' in file '{file}' for set '{setName}'.
+
+    ## Launch Briefing
+    {resolver context assembled above}
+
+    ## Working Directory
+    {worktreePath}
+
+    ## Return Format
+    <!-- RAPID:RETURN {"status":"COMPLETE","data":{"conflict_id":"...","strategies_tried":[{"approach":"...","confidence":0.X,"reason":"..."}],"selected_strategy":"...","resolution_summary":"...","confidence":0.X,"files_modified":["..."],"applied":true}} -->
+    ```
+
+ALL resolver Agent tool calls happen in the same response for parallel dispatch. Then collect all returns.
+
+#### 3e-iv: Collect resolver results and route
+
+For each resolver return:
+- Parse the return (default-to-BLOCKED safety).
+- If COMPLETE with confidence >= 0.7:
+  - Auto-accept: resolution already applied to worktree by resolver.
+  - Update agentPhase2:
+    ```bash
+    node "${RAPID_TOOLS}" merge update-status {setName} resolving --agent-phase2 {conflictId} done
+    ```
+  - Log: "Conflict {conflictId} resolved by resolver (confidence {X})"
+- If COMPLETE with confidence < 0.7:
+  - Escalate to human with resolver's deeper analysis attached.
+  - Add to `humanEscalations` list with the resolver's analysis, proposed resolution, and diff.
+  - Update agentPhase2:
+    ```bash
+    node "${RAPID_TOOLS}" merge update-status {setName} resolving --agent-phase2 {conflictId} done
+    ```
+- If BLOCKED or malformed:
+  - Escalate to human immediately.
+  - Add to `humanEscalations` list with the failure reason.
+  - Update agentPhase2:
+    ```bash
+    node "${RAPID_TOOLS}" merge update-status {setName} resolving --agent-phase2 {conflictId} failed
+    ```
+
+#### 3e-v: Present human-bound conflicts
+
+Combine all human-bound conflicts: `humanApiGate` + `humanDirect` + resolver escalations (confidence < 0.7 or BLOCKED).
+
+For API-signature conflicts (`humanApiGate`):
+- Use AskUserQuestion:
+  - **question:** "API-signature conflict in {file} -- choose merge direction"
+  - **options:**
+    - "Keep Set A" -- description: "Use set A's API changes, discard set B's conflicting changes"
+    - "Keep Set B" -- description: "Use set B's API changes, discard set A's conflicting changes"
+    - "Merge both" -- description: "Attempt to keep both sets' API changes (may need manual review)"
+  - Execute the chosen direction automatically (apply the resolution to the worktree file).
+
+For direct human conflicts (`humanDirect` -- confidence < 0.3):
+- Use AskUserQuestion:
+  - **question:** "Low-confidence conflict in {file} (confidence: {X})"
+  - **options:**
+    - "Accept AI resolution" -- description: "Apply the proposed resolution: {proposed_resolution}"
+    - "Skip conflict" -- description: "Leave conflict unresolved and continue"
+
+For resolver-escalated conflicts (resolver confidence < 0.7):
+- Show the resolver's deeper analysis and proposed resolution diff.
+- Use AskUserQuestion:
+  - **question:** "Resolver analysis for {file} (confidence: {X})"
+  - **options:**
+    - "Accept" -- description: "Accept the resolver's proposed resolution (already applied to worktree)"
+    - "Reject" -- description: "Revert the resolver's changes and skip this conflict"
+    - "Edit manually" -- description: "Keep the resolver's changes as a starting point, edit further"
+
+#### 3e-vi: Re-run programmatic gate (post-resolver)
+
+After all resolvers complete and human decisions are made, re-run the programmatic gate to validate the combined changes:
+```bash
+node "${RAPID_TOOLS}" merge review {setName}
+```
+If the gate fails, present the failure to the user and offer to continue or abort.
+
+After all escalations handled, proceed to Step 6 (merge execute).
 
 ## Step 6: Merge Set
 
@@ -499,11 +590,13 @@ Display the available next steps:
 
 ## Important Notes
 
-- **Subagent dispatch:** This skill spawns **rapid-set-merger** subagents (one per set) for detection, resolution, and gate validation. The Agent tool is the only mechanism for subagent dispatch.
+- **Subagent dispatch:** This skill spawns **rapid-set-merger** subagents (one per set) for detection, resolution, and gate validation, and **rapid-conflict-resolver** subagents (one per conflict) for mid-confidence escalation resolution. The Agent tool is the only mechanism for subagent dispatch.
 - **Fast path via git merge-tree:** Before dispatching a subagent, `git merge-tree --write-tree HEAD rapid/{setName}` checks for conflicts without touching the index or working tree. Exit code 0 means clean merge -- skip subagent entirely. This is the common case for well-isolated sets.
 - **Sequential within waves:** Sets in the same wave merge one at a time. Each merge sees the result of the previous. HEAD advances after each Step 6, so merge-tree fast-path checks are always against current HEAD.
-- **agentPhase1 tracking:** Agent lifecycle is tracked via `update-status --agent-phase` CLI calls. Transitions: idle -> spawned (before dispatch) -> done/failed (after return). No path should leave a set as 'spawned' after dispatch completes.
-- **Retry logic:** CHECKPOINT returns are auto-retried ONCE with checkpoint data in the re-dispatch prompt. Max 2 total attempts per set (initial + 1 retry). Retry counter is in-memory (not persisted) -- each `/rapid:merge` invocation starts fresh.
+- **agentPhase1 tracking:** Set-merger agent lifecycle is tracked via `update-status --agent-phase` CLI calls. Transitions: idle -> spawned (before dispatch) -> done/failed (after return). No path should leave a set as 'spawned' after dispatch completes.
+- **agentPhase2 tracking:** Conflict-resolver agent lifecycle is tracked via `update-status --agent-phase2 <conflictId> <phase>` CLI calls. agentPhase2 is an object map `{ [conflictId]: 'idle'|'spawned'|'done'|'failed' }` tracking each conflict independently.
+- **Adaptive conflict resolution (Step 3e):** Escalations are routed by confidence band: API-signature conflicts always go to human direction gate, confidence < 0.3 goes to human directly, 0.3-0.8 dispatched to rapid-conflict-resolver agents, > 0.8 auto-accepted. Resolver results with confidence >= 0.7 are auto-accepted, < 0.7 escalated to human with deeper analysis.
+- **Retry logic:** CHECKPOINT returns are auto-retried ONCE with checkpoint data in the re-dispatch prompt. Max 2 total attempts per set (initial + 1 retry). Retry counter is in-memory (not persisted) -- each `/rapid:merge` invocation starts fresh. Resolver agents do NOT retry -- failed resolvers escalate to human immediately (they are already a second pass).
 - **compressedResult in memory:** Step 3d stores compressResult output (~100 tokens per set) for use in Step 8 summary. Full detection/resolution details remain only in MERGE-STATE.json on disk.
 - **Bisection auto-triggers:** On integration gate failure, bisection runs AUTOMATICALLY without a pre-bisection user prompt. The user locked this decision.
 - **Post-bisection control:** After bisection identifies the breaking set, the user chooses: rollback, investigate, or abort.
