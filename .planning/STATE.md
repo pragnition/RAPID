@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
 status: completed
-stopped_at: Phase 37 context gathered
-last_updated: "2026-03-11T04:49:49.991Z"
-last_activity: 2026-03-11 -- Plan 36-01 complete (full README.md rewrite with architecture diagram, quick start, command reference)
+stopped_at: Completed 37-01-PLAN.md
+last_updated: "2026-03-11T05:10:18.000Z"
+last_activity: 2026-03-11 -- Plan 37-01 complete (technical documentation index, 5 lifecycle skill docs, configuration reference)
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
   percent: 99
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 36 - README Rewrite
+**Current focus:** Phase 37 - Technical Documentation
 
 ## Current Position
 
-Phase: 36 of 37 (README Rewrite)
-Plan: 1 of 1 (36-01 complete)
-Status: Phase 36 complete
-Last activity: 2026-03-11 -- Plan 36-01 complete (full README.md rewrite with architecture diagram, quick start, command reference)
+Phase: 37 of 37 (Technical Documentation)
+Plan: 1 of 2 (37-01 complete)
+Status: Phase 37 in progress
+Last activity: 2026-03-11 -- Plan 37-01 complete (technical documentation index, 5 lifecycle skill docs, configuration reference)
 
 Progress: [##########] 99%
 
@@ -42,6 +42,7 @@ Progress: [##########] 99%
 | 35 | 01 | 4min | 2 | 2 |
 | 35 | 02 | 5min | 2 | 4 |
 | 36 | 01 | 4min | 2 | 1 |
+| 37 | 01 | 5min | 2 | 7 |
 
 ## Accumulated Context
 
@@ -67,6 +68,9 @@ Recent:
 - [Phase 36]: Concept-explanation-first layout for README (problem > how it works > diagram > quick start > reference)
 - [Phase 36]: No version callouts or changelogs -- describe current state only
 - [Phase 36]: References technical_documentation.md (not DOCS.md) as power-user deep dive
+- [Phase 37]: Synopsis+link pattern for skill docs (2-3 sentence synopsis + SKILL.md reference)
+- [Phase 37]: Utility commands in index file rather than separate doc (cross-cutting, not lifecycle-bound)
+- [Phase 37]: Config doc references source files for full schema rather than duplicating
 
 ### Pending Todos
 
@@ -100,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T04:49:49.990Z
-Stopped at: Phase 37 context gathered
-Resume file: .planning/phases/37-technical-documentation/37-CONTEXT.md
+Last session: 2026-03-11T05:10:18.000Z
+Stopped at: Completed 37-01-PLAN.md
+Resume file: .planning/phases/37-technical-documentation/37-01-SUMMARY.md
