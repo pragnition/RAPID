@@ -3,7 +3,7 @@ description: Plan all waves in a set with automatic sequencing -- spawns wave an
 allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
 ---
 
-# /rapid:plan-set -- Set-Level Wave Planning Orchestrator
+# /rapid:plan -- Set-Level Wave Planning Orchestrator
 
 You are the RAPID set-level planning orchestrator. This skill plans ALL waves in a set with a single command. It spawns a wave-analyzer agent for dependency detection, groups waves into parallel batches, then runs the full wave-plan pipeline (research -> wave-plan -> job-plans -> verify -> validate) for each wave in dependency order.
 
@@ -35,8 +35,8 @@ node "${RAPID_TOOLS}" display banner plan-set
 ## Step 2: Resolve Set and Validate Preconditions
 
 Accept set identifier. The user invokes as:
-- `/rapid:plan-set 1` (numeric index)
-- `/rapid:plan-set auth-system` (string set ID)
+- `/rapid:plan 1` (numeric index)
+- `/rapid:plan auth-system` (string set ID)
 
 ### Resolve Set Reference
 
@@ -86,7 +86,7 @@ const plannedOrLaterWaves = waves.filter(w => ['planning', 'executing', 'reviewi
   - {waveId} (status: pending)
   - {waveId} (status: pending)
 
-Run /rapid:discuss for each undiscussed wave before running /rapid:plan-set."
+Run /rapid:discuss {SET_INDEX} to discuss the set first."
 ```
 Then STOP. Do NOT skip pending waves -- all waves must be at least `discussing` before set-level planning begins.
 
@@ -454,7 +454,7 @@ If "Override":
 If "Cancel":
   **STOP the entire planning chain.** Commit any already-completed wave artifacts (for re-entry). Display:
   "Planning cancelled. Investigate issues in VERIFICATION-REPORT.md. Completed waves are saved for re-entry.
-  Re-run: /rapid:plan-set {SET_INDEX}"
+  Re-run: /rapid:plan {SET_INDEX}"
   STOP.
 
 #### Step 4i: Contract Validation Gate
@@ -578,7 +578,7 @@ Display the next step (no AskUserQuestion -- Phase 28 decision):
 ### Chain Stop Behavior (Locked Decision)
 - If any wave's planning fails and user selects "Cancel": the ENTIRE chain stops
 - No skip-and-continue -- partial planning is committed for re-entry
-- Re-run `/rapid:plan-set {SET_INDEX}` triggers smart re-entry (skips completed waves)
+- Re-run `/rapid:plan {SET_INDEX}` triggers smart re-entry (skips completed waves)
 
 ### Parallel Batch Failure Behavior
 - If one wave in a parallel batch fails: sibling waves continue to completion
@@ -587,7 +587,7 @@ Display the next step (no AskUserQuestion -- Phase 28 decision):
 
 ## Anti-Patterns to Avoid
 
-- **Do NOT invoke `/rapid:wave-plan` skill.** Skills cannot call other skills. Plan-set replicates the pipeline inline.
+- **Do NOT invoke the wave-plan skill directly.** Skills cannot call other skills. Plan-set replicates the pipeline inline.
 - **Do NOT write persistent analyzer artifacts.** RAPID:RETURN from wave-analyzer is ephemeral (user decision). No DEPENDENCY-GRAPH.json or similar.
 - **Do NOT attempt sub-sub-agent spawning.** Agents spawned by plan-set cannot spawn their own sub-agents. Plan-set dispatches all Agent tool calls directly.
 - **Do NOT skip undiscussed waves.** Fail fast if ANY wave is `pending`. All waves must be discussed before set-level planning.
@@ -595,10 +595,10 @@ Display the next step (no AskUserQuestion -- Phase 28 decision):
 
 ## Key Principles
 
-- **Single command:** User runs `/rapid:plan-set 1` and all waves in set 1 are planned without further manual wave-plan invocations.
+- **Single command:** User runs `/rapid:plan 1` and all waves in set 1 are planned without further manual wave-plan invocations.
 - **Dependency-aware sequencing:** Independent waves plan in parallel batches; dependent waves plan sequentially with predecessor artifacts available.
 - **Full pipeline per wave:** Research -> Wave Plan -> Job Plans -> Verify -> Validate -> Transition. Each stage depends on the prior output.
-- **Smart re-entry:** Re-running `/rapid:plan-set` after partial completion skips already-planned waves and plans only remaining `discussing` waves.
+- **Smart re-entry:** Re-running `/rapid:plan` after partial completion skips already-planned waves and plans only remaining `discussing` waves.
 - **Fail fast:** Pending (undiscussed) waves abort the entire command immediately.
 - **Chain-stop on cancel:** If any wave's verification fails and user cancels, the entire chain stops. Partial progress is saved.
 - **All CLI calls via RAPID_TOOLS:** Never edit STATE.json directly. All state transitions via `node "${RAPID_TOOLS}" state transition` CLI.

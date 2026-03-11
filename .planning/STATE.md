@@ -46,6 +46,7 @@ Progress: [##########] 100%
 | 37 | 02 | 4min | 2 | 3 |
 | 37.1 | 05 | 2min | 2 | 35 |
 | Phase 37.1 P02 | 3min | 1 tasks | 1 files |
+| 37.1 | 01 | 5min | 3 | 7 |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Recent:
 - [Phase 37.1-05]: Multi-fallback env preamble: env var > CLAUDE_SKILL_DIR > project root .planning/ ancestor traversal
 - [Phase 37.1-05]: Only set-merger and conflict-resolver needed core-state-access added (only roles referencing RAPID_TOOLS)
 - [Phase 37.1]: [Phase 37.1-02]: Full rewrite of discuss skill from scratch (wave-scoped architecture too deeply embedded for patching)
+- [Phase 37.1-01]: quickTasks uses optional().default([]) for zero-friction backward compatibility
+- [Phase 37.1-01]: Migration detection cascading priority: GSD > openspec > generic > none
+- [Phase 37.1-01]: backupPlanning throws on existing .planning.bak/ to prevent accidental overwrite
 
 ### Pending Todos
 
@@ -113,6 +117,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T11:32:55.468Z
-Stopped at: Completed 37.1-02-PLAN.md
+Last session: 2026-03-11T11:33:17Z
+Stopped at: Completed 37.1-01-PLAN.md
 Resume file: None

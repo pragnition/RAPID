@@ -166,10 +166,10 @@ After the agent completes:
 
 ## Step 5: Next Step
 
-The set's first wave is wave 1. Display:
+Display:
 
-> **Next step:** `/rapid:discuss {setIndex}.1`
-> *(Discuss wave 1 of {setId})*
+> **Next step:** `/rapid:discuss {setIndex}`
+> *(Discuss set {setId})*
 
 Where `{setIndex}` is the numeric index of the set just initialized (obtained from the resolve step earlier in this skill).
 

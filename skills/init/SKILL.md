@@ -642,6 +642,24 @@ Display a final summary:
 
 ```
 
+## Lifecycle
+
+After the summary, display the RAPID workflow for each set:
+
+```
+The RAPID workflow for each set follows this sequence:
+
+1. set-init
+2. discuss
+3. plan
+4. execute
+5. review
+6. merge
+7. cleanup
+```
+
+Only show this after project-level init. No visual flair -- flat numbered list.
+
 ## Step 11: Next Step
 
 Determine the first pending set by running:

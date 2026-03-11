@@ -5,7 +5,7 @@ allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
 
 # /rapid:execute -- Job Execution Orchestrator
 
-You are the RAPID execution orchestrator. This skill executes all waves in a given set sequentially. Each wave dispatches parallel subagents (one per job), tracks per-job progress, reconciles deliverables, and prompts for next action. Jobs are defined by JOB-PLAN.md files produced by `/rapid:discuss` and `/rapid:wave-plan`. Follow these steps IN ORDER. Do not skip steps.
+You are the RAPID execution orchestrator. This skill executes all waves in a given set sequentially. Each wave dispatches parallel subagents (one per job), tracks per-job progress, reconciles deliverables, and prompts for next action. Jobs are defined by JOB-PLAN.md files produced by `/rapid:discuss` and `/rapid:plan`. Follow these steps IN ORDER. Do not skip steps.
 
 ## Step 0: Environment + Precondition Check
 
@@ -125,15 +125,15 @@ node "${RAPID_TOOLS}" wave-plan list-jobs <set-id> <wave-id>
 
 Parse the JSON output. If no JOB-PLAN.md files exist for ANY wave in the set, inform the user:
 
-> No job plans found for set '{set-id}'. Run `/rapid:discuss` and `/rapid:wave-plan` first to create job plans.
+> No job plans found for set '{set-id}'. Run `/rapid:discuss` and `/rapid:plan` first to create job plans.
 
 Then use AskUserQuestion:
 - **question:** "No job plans found"
 - **options:**
-  - "Run discuss" -- description: "Exit to run /rapid:discuss and /rapid:wave-plan first"
+  - "Run discuss" -- description: "Exit to run /rapid:discuss and /rapid:plan first"
   - "Cancel" -- description: "Exit without action"
 
-Do NOT auto-trigger `/rapid:discuss` or `/rapid:wave-plan`. Exit after the user responds.
+Do NOT auto-trigger `/rapid:discuss` or `/rapid:plan`. Exit after the user responds.
 
 ## Step 1: Detect Execution Mode
 
@@ -493,6 +493,14 @@ Wave {waveId}: {status}
   {jobId}: {status}
 ```
 
+### Commit Execution State
+
+Commit the final state to ensure it reflects execution completion:
+
+```bash
+node "${RAPID_TOOLS}" execute commit-state "chore({setId}): execution complete"
+```
+
 Display the next step. Extract the setIndex from the resolve step at Step 0b:
 
 > **Next step:** `/rapid:review {setIndex}`
@@ -507,7 +515,7 @@ Display the next step. Extract the setIndex from the resolve step at Step 0b:
 - **Git commits:** Parallel job agents commit to the same branch in the same worktree. Each stages only its own files via `git add <specific files>`. If a commit fails with a HEAD race (`error: cannot lock ref 'HEAD'`), the job executor should retry once.
 - **STATE.json committed at workflow boundaries:** STATE.json is committed after each wave completes (Step 3f), not after every individual job transition. Individual job transitions write to STATE.json in-memory/on-disk but the git commit happens at the wave boundary.
 - **Backward compatibility:** The existing `rapid-executor` agent stays for v1.0 set-level execution. New job-level execution uses the `rapid-job-executor` agent. Both are registered in `agents/`.
-- **Discuss and plan are NOT part of this skill.** If JOB-PLAN.md files are missing, prompt the user to run `/rapid:discuss` and `/rapid:wave-plan` first. Do NOT auto-trigger those commands.
+- **Discuss and plan are NOT part of this skill.** If JOB-PLAN.md files are missing, prompt the user to run `/rapid:discuss` and `/rapid:plan` first. Do NOT auto-trigger those commands.
 - **Dual-mode execution:** Mode is detected once at Step 1 and locked for the entire run. Agent teams mode creates one team per wave with one teammate per job. Both modes use identical prompt templates, reconciliation, and progress output.
 - **Teams fallback:** If any agent teams operation fails mid-execution, the entire wave is re-executed using subagent mode. The fallback is generic -- do not inspect or special-case the error type. A visible warning is printed when fallback occurs.
 - **No inter-agent messaging:** Job executor subagents work in isolation. They share a branch but modify different files. There is no inter-agent communication channel. File ownership from WAVE-PLAN.md prevents conflicts.

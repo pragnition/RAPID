@@ -3,6 +3,8 @@ description: Run the wave planning pipeline -- research, wave plan, job plans, a
 allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
 ---
 
+> **Internal skill.** This is invoked programmatically by `/rapid:plan` (plan-set). Users should not call this directly. It is not listed in `/rapid:help`.
+
 # /rapid:wave-plan -- Wave Planning Pipeline
 
 You are the RAPID wave planning orchestrator. This skill runs the full research-plan-validate pipeline for a wave: spawn a research agent, then a wave planner, then per-job planners, then validate all plans against contracts.

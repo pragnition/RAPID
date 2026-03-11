@@ -128,7 +128,7 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 **Goal:** Restructure user-facing workflow to hide waves, redesign discussion flow, add /migrate and /quick commands, fix tool-calling reliability, and ensure state is updated after execute
 **Requirements**: FIX-01, FIX-02, FIX-03, FIX-04, FIX-05, FIX-06, FIX-07
 **Depends on:** Phase 37
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 - [ ] 37.1-01-PLAN.md -- Schema extension + quick/migrate library code + CLI dispatch
