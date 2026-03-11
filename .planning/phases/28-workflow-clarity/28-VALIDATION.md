@@ -17,20 +17,20 @@ created: 2026-03-09
 
 | Property | Value |
 |----------|-------|
-| **Framework** | jest 29.x (existing) |
-| **Config file** | jest.config.js |
-| **Quick run command** | `npm test -- --testPathPattern=resolve` |
-| **Full suite command** | `npm test` |
-| **Estimated runtime** | ~15 seconds |
+| **Framework** | node:test (built-in) |
+| **Config file** | none |
+| **Quick run command** | `node --test ~/Projects/RAPID/src/lib/resolve.test.cjs` |
+| **Full suite command** | `node --test ~/Projects/RAPID/src/lib/resolve.test.cjs` |
+| **Estimated runtime** | ~5 seconds |
 
 ---
 
 ## Sampling Rate
 
-- **After every task commit:** Run `npm test -- --testPathPattern=resolve`
-- **After every plan wave:** Run `npm test`
+- **After every task commit:** Run `node --test ~/Projects/RAPID/src/lib/resolve.test.cjs`
+- **After every plan wave:** Run `node --test ~/Projects/RAPID/src/lib/resolve.test.cjs`
 - **Before `/gsd:verify-work`:** Full suite must be green
-- **Max feedback latency:** 15 seconds
+- **Max feedback latency:** 5 seconds
 
 ---
 
@@ -38,8 +38,8 @@ created: 2026-03-09
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 28-01-01 | 01 | 1 | FLOW-01 | unit | `npm test -- --testPathPattern=resolve` | ❌ W0 | ⬜ pending |
-| 28-01-02 | 01 | 1 | FLOW-01 | unit | `npm test -- --testPathPattern=resolve` | ❌ W0 | ⬜ pending |
+| 28-01-01 | 01 | 1 | FLOW-01 | unit | `node --test ~/Projects/RAPID/src/lib/resolve.test.cjs` | ❌ W0 | ⬜ pending |
+| 28-01-02 | 01 | 1 | FLOW-01 | unit | `node --test ~/Projects/RAPID/src/lib/resolve.test.cjs` | ❌ W0 | ⬜ pending |
 | 28-02-01 | 02 | 1 | FLOW-02 | manual | N/A -- Markdown propagation | N/A | ⬜ pending |
 | 28-02-02 | 02 | 1 | FLOW-03 | manual | N/A -- Markdown edit | N/A | ⬜ pending |
 | 28-02-03 | 02 | 1 | UX-04 | manual | N/A -- Markdown edit | N/A | ⬜ pending |
@@ -50,7 +50,7 @@ created: 2026-03-09
 
 ## Wave 0 Requirements
 
-- [ ] `tests/resolve.test.js` — stubs for FLOW-01 (resolveWave --set flag)
+- [ ] `src/lib/resolve.test.cjs` — stubs for FLOW-01 (resolveWave --set flag)
 - [ ] Existing test infrastructure covers remaining requirements
 
 *Most changes are Markdown-only edits that don't require automated tests.*
@@ -73,7 +73,7 @@ created: 2026-03-09
 - [ ] Sampling continuity: no 3 consecutive tasks without automated verify
 - [ ] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
+- [ ] Feedback latency < 5s
 - [ ] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
