@@ -11,6 +11,7 @@ const {
   SetState,
   MilestoneState,
   ProjectState,
+  QuickTask,
 } = require('./state-schemas.cjs');
 
 describe('JobStatus', () => {
@@ -207,5 +208,64 @@ describe('ProjectState', () => {
     assert.equal(result.success, false);
     const paths = result.error.issues.map(i => i.path.join('.'));
     assert.ok(paths.some(p => p.includes('status')));
+  });
+
+  it('parses without quickTasks field (backward compat)', () => {
+    const proj = ProjectState.parse(validProject);
+    assert.deepEqual(proj.quickTasks, []);
+  });
+
+  it('parses with quickTasks as empty array', () => {
+    const proj = ProjectState.parse({ ...validProject, quickTasks: [] });
+    assert.deepEqual(proj.quickTasks, []);
+  });
+
+  it('parses with populated quickTasks array', () => {
+    const proj = ProjectState.parse({
+      ...validProject,
+      quickTasks: [
+        { id: 1, description: 'Fix the bug', date: '2026-03-11' },
+        { id: 2, description: 'Add feature', date: '2026-03-12', commitHash: 'abc123', directory: 'my-dir' },
+      ],
+    });
+    assert.equal(proj.quickTasks.length, 2);
+    assert.equal(proj.quickTasks[0].id, 1);
+    assert.equal(proj.quickTasks[0].description, 'Fix the bug');
+    assert.equal(proj.quickTasks[0].commitHash, undefined);
+    assert.equal(proj.quickTasks[1].commitHash, 'abc123');
+    assert.equal(proj.quickTasks[1].directory, 'my-dir');
+  });
+});
+
+describe('QuickTask', () => {
+  it('parses valid quick task with required fields only', () => {
+    const task = QuickTask.parse({ id: 1, description: 'Test task', date: '2026-03-11' });
+    assert.equal(task.id, 1);
+    assert.equal(task.description, 'Test task');
+    assert.equal(task.date, '2026-03-11');
+    assert.equal(task.commitHash, undefined);
+    assert.equal(task.directory, undefined);
+  });
+
+  it('parses valid quick task with all fields', () => {
+    const task = QuickTask.parse({
+      id: 3,
+      description: 'Full task',
+      date: '2026-03-11',
+      commitHash: 'def456',
+      directory: 'task-dir',
+    });
+    assert.equal(task.commitHash, 'def456');
+    assert.equal(task.directory, 'task-dir');
+  });
+
+  it('rejects missing required fields', () => {
+    const result = QuickTask.safeParse({ id: 1 });
+    assert.equal(result.success, false);
+  });
+
+  it('rejects non-numeric id', () => {
+    const result = QuickTask.safeParse({ id: 'abc', description: 'Test', date: '2026-03-11' });
+    assert.equal(result.success, false);
   });
 });

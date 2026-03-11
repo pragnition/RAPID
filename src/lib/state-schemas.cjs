@@ -39,11 +39,20 @@ const MilestoneState = z.object({
   sets: z.array(SetState).default([]),
 });
 
+const QuickTask = z.object({
+  id: z.number(),
+  description: z.string(),
+  date: z.string(),
+  commitHash: z.string().optional(),
+  directory: z.string().optional(),
+});
+
 const ProjectState = z.object({
   version: z.literal(1),
   projectName: z.string(),
   currentMilestone: z.string(),
   milestones: z.array(MilestoneState).default([]),
+  quickTasks: z.array(QuickTask).optional().default([]),
   lastUpdatedAt: z.string(),
   createdAt: z.string(),
 });
@@ -56,5 +65,6 @@ module.exports = {
   SetStatus,
   SetState,
   MilestoneState,
+  QuickTask,
   ProjectState,
 };
