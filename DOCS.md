@@ -2,7 +2,7 @@
 
 RAPID (Rapid Agentic Parallelizable and Isolatable Development) enables team-based parallel development for Claude Code. It decomposes project work into a hierarchical structure of Sets, Waves, and Jobs that execute simultaneously in isolated git worktrees, connected by machine-verifiable interface contracts and validated through an adversarial review pipeline. Multiple developers work on the same project without blocking each other, with confidence their independent work merges cleanly through 5-level conflict detection and 4-tier resolution.
 
-**Version:** 2.0.0
+**Version:** 2.2.0
 
 ## Installation
 
@@ -45,7 +45,7 @@ Then for each set (in parallel across developers):
 
 5. **`/rapid:set-init`** -- Create worktree, scoped CLAUDE.md, and set overview
 6. **`/rapid:discuss`** -- Capture implementation vision for the current wave
-7. **`/rapid:wave-plan`** -- Research, produce wave plan, per-job plans, and validate contracts
+7. **`/rapid:wave-plan`** -- Research, produce wave plan, per-job plans, and validate contracts (or **`/rapid:plan-set`** to plan all waves in one command)
 8. **`/rapid:execute`** -- Run jobs in parallel (subagents or agent teams), reconcile per wave
 9. **`/rapid:review`** -- Unit test + adversarial bug hunt + UAT pipeline
 
@@ -273,6 +273,30 @@ Usage:
 
 Subagents spawned: wave-researcher, wave-planner, job-planner (one per job). Sequential pipeline with parallel fan-out for job planners.
 
+---
+
+#### /rapid:plan-set
+
+**Plan all waves in a set with automatic dependency sequencing.**
+
+What it does:
+- Validates all waves are at least in `discussing` state (fails fast if any are `pending`)
+- Smart re-entry: skips already-planned waves, plans only remaining `discussing` waves
+- For 2+ waves, spawns a wave-analyzer agent to detect inter-wave dependencies
+- Groups waves into ordered batches using BFS level assignment
+- Runs the full wave-plan pipeline per wave (research, wave plan, job plans, plan verification, contract validation)
+- Parallel batches: independent waves plan simultaneously with interleaved agent dispatch at each pipeline step
+- Commits all planning artifacts and transitions waves to `planning` state
+
+Usage:
+```
+/rapid:plan-set <set-id>
+```
+
+Arguments: `<set-id>` supports both string IDs (e.g., `auth-system`) and numeric indices (e.g., `1`).
+
+Subagents spawned: wave-analyzer (dependency detection), wave-researcher (one per wave), wave-planner (one per wave), job-planner (one per job), plan-verifier (one per wave). Parallel dispatch within batches.
+
 ### Execution Commands
 
 #### /rapid:execute
@@ -300,7 +324,10 @@ Usage:
 ```
 /rapid:execute <set-id>
 /rapid:execute <set-id> --fix-issues
+/rapid:execute <set-id> --retry-wave <wave-id>
 ```
+
+The `--retry-wave` flag targets a specific wave, verifies predecessors are complete, re-executes failed/pending jobs, and auto-advances subsequent waves.
 
 Subagents spawned: job-executor (one per job per wave), bugfix (for --fix-issues mode). Execution mode locked for entire run.
 
@@ -375,6 +402,7 @@ No subagents spawned. After resuming, run `/rapid:execute <set-name>` to continu
 What it does:
 - Validates the set is in `executing` or `reviewing` state; transitions to `reviewing`
 - Lets the user select which stages to run: All, Unit test only, Bug hunt only, UAT only, or combinations
+- **Scoping stage:** Diffs set branch vs main, spawns a scoper agent to categorize files by concern area; falls back to directory chunking (15 files max) if cross-cutting files exceed 50%
 - Processes waves sequentially, computing review scope (changed files + dependents)
 - **Unit test stage:**
   - Spawns unit-tester subagent to generate a test plan (CHECKPOINT return)
@@ -400,7 +428,7 @@ Usage:
 /rapid:review <set-id> <wave-id>
 ```
 
-Subagents spawned: unit-tester, bug-hunter, devils-advocate, judge, bugfix, uat (depending on selected stages). Stage order is always: unit test, then bug hunt, then UAT.
+Subagents spawned: scoper (file categorization), unit-tester, bug-hunter, devils-advocate, judge, bugfix, uat (depending on selected stages). Stage order is always: scoping, then unit test, then bug hunt, then UAT.
 
 ### Integration Commands
 
@@ -411,12 +439,15 @@ Subagents spawned: unit-tester, bug-hunter, devils-advocate, judge, bugfix, uat 
 What it does:
 - Determines merge order from the dependency DAG (topological sort); presents merge plan
 - Supports single-set merge (`/rapid:merge <set-name>`) including its unmerged dependencies
-- Idempotent re-entry: checks MERGE-STATE.json, skips already-merged sets
+- Idempotent re-entry: checks MERGE-STATE.json, skips already-merged sets; max 2 total attempts per set
+- **Fast-path check:** Uses `git merge-tree --write-tree` -- exit code 0 means clean merge, skips conflict detection entirely
 - For each wave of sets (sequential within wave):
-  - **5-level conflict detection:** L1 textual, L2 structural (function-scope mapping), L3 dependency, L4 API (3-way comparison), L5 semantic (via merger agent)
-  - **4-tier resolution cascade:** T1 deterministic, T2 heuristic, T3 AI-assisted (merger agent), T4 human escalation
-  - Spawns merger subagent for unresolved conflicts with full set context and contracts
-  - Escalates low-confidence resolutions to developer: Accept AI resolution, Resolve manually, or Skip
+  - **5-level conflict detection:** L1 textual, L2 structural (function-scope mapping), L3 dependency, L4 API (3-way comparison), L5 semantic (via set-merger agent)
+  - **4-tier resolution cascade:** T1 deterministic, T2 heuristic, T3 AI-assisted (set-merger agent with confidence scoring), T4 human escalation
+  - Spawns `rapid-set-merger` subagent per set for conflict detection and resolution pipeline
+  - Mid-confidence conflicts (0.3-0.8) are escalated to dedicated `rapid-conflict-resolver` agents for deep analysis
+  - Low-confidence conflicts (<0.3) and API-signature conflicts are escalated to the developer
+  - High-confidence resolutions (>0.8) are auto-accepted
   - Runs programmatic gate: ownership validation and contract tests
   - Executes git merge with structured conflict recovery
   - Writes MERGE-STATE.json per set for tracking
@@ -432,7 +463,7 @@ Usage:
 /rapid:merge <set-name>
 ```
 
-Subagents spawned: merger (for unresolved conflicts). Sets within a wave merge sequentially; each merge sees the result of the previous.
+Subagents spawned: set-merger (one per set), conflict-resolver (for mid-confidence conflicts -- the only two-level agent nesting in the system). Sets within a wave merge sequentially; each merge sees the result of the previous.
 
 ---
 
@@ -499,6 +530,7 @@ INSTALL -> INIT -> CONTEXT -> PLAN -> [ per set: SET-INIT -> DISCUSS -> WAVE-PLA
 | **Set Init** | `/rapid:set-init` | Creates isolated worktree and branch per set, generates scoped CLAUDE.md. |
 | **Discuss** | `/rapid:discuss` | Developer captures implementation vision for a wave via structured discussion. |
 | **Wave Plan** | `/rapid:wave-plan` | Research agent investigates, wave planner produces high-level plan, job planners detail each job. |
+| **Plan Set** | `/rapid:plan-set` | Plans all waves in a set with automatic dependency sequencing -- runs the full wave-plan pipeline per wave. |
 | **Execute** | `/rapid:execute` | Parallel job execution within waves via subagents or agent teams, with per-wave reconciliation. |
 | **Review** | `/rapid:review` | Unit test + adversarial bug hunt (hunter/advocate/judge) + UAT pipeline. |
 | **Merge** | `/rapid:merge` | 5-level conflict detection, 4-tier resolution, DAG-ordered merge with integration gates. |
@@ -521,7 +553,8 @@ SET-INIT                          Create worktree + branch + scoped CLAUDE.md
 DISCUSS (per wave)                Capture implementation vision, identify gray areas
     |
     v
-WAVE-PLAN (per wave)              Research -> Wave plan -> Job plans -> Contract validation
+WAVE-PLAN (per wave)              Research -> Wave plan -> Job plans -> Verify -> Validate
+  or PLAN-SET (all waves)         Automatic dependency sequencing, parallel batch grouping
     |
     v
 EXECUTE (per wave)                Parallel job agents -> Reconciliation -> Lean review
@@ -616,6 +649,7 @@ A sequential pipeline that produces detailed implementation plans:
 ### 10. Review Pipeline
 
 A multi-stage quality assurance pipeline:
+- **Scoping:** Diffs set branch vs main, spawns a scoper agent to categorize changed files by concern area (e.g., auth, database, API routes). Falls back to directory-based chunking (15 files max per chunk) if cross-cutting files exceed 50%
 - **Unit testing:** Test plan generation with approval gate, then test writing and execution
 - **Adversarial bug hunt:** Three-agent pipeline with up to 3 iteration cycles:
   - **Bug hunter** performs broad static analysis with risk/confidence scoring
@@ -626,20 +660,20 @@ A multi-stage quality assurance pipeline:
 
 ### 11. 5-Level Conflict Detection
 
-The merge pipeline detects conflicts at five escalating levels of sophistication:
+The merge pipeline first runs a fast-path check via `git merge-tree --write-tree` -- if exit code is 0, the merge is clean and conflict detection is skipped entirely. Otherwise, conflicts are detected at five escalating levels of sophistication:
 1. **L1 Textual:** Standard git diff-based textual conflicts
 2. **L2 Structural:** Function-scope mapping via diff hunk headers -- detects when two sets modify the same function
 3. **L3 Dependency:** Analyzes import/require changes to detect broken dependency chains
 4. **L4 API:** 3-way comparison (ancestor vs branch vs base) using `git merge-base` to detect incompatible API changes
-5. **L5 Semantic:** AI-powered analysis via the merger agent for subtle behavioral conflicts that pass textual checks
+5. **L5 Semantic:** AI-powered analysis via the `rapid-set-merger` agent for subtle behavioral conflicts that pass textual checks
 
 ### 12. 4-Tier Resolution Cascade
 
 Detected conflicts are resolved through an escalating cascade:
 1. **Tier 1 (Deterministic):** Automatic resolution for trivial conflicts (whitespace, import ordering, additive-only changes)
 2. **Tier 2 (Heuristic):** Pattern-based resolution using ownership information and contract data
-3. **Tier 3 (AI-assisted):** Merger agent resolves with confidence scoring; resolutions above 0.7 threshold are applied automatically
-4. **Tier 4 (Human escalation):** Low-confidence resolutions are escalated to the developer with proposed resolution and reasoning
+3. **Tier 3 (AI-assisted):** `rapid-set-merger` agent resolves with confidence scoring; high-confidence resolutions (>0.8) are auto-accepted. Mid-confidence conflicts (0.3-0.8) are escalated to dedicated `rapid-conflict-resolver` agents for deep analysis -- the only two-level agent nesting in RAPID
+4. **Tier 4 (Human escalation):** Low-confidence resolutions (<0.3) and API-signature conflicts are escalated to the developer with proposed resolution and reasoning
 
 ### 13. Bisection Recovery
 
@@ -693,7 +727,7 @@ RAPID/
     init.md
     install.md
     plan.md
-  skills/                         17 skill orchestrators (primary command mechanism)
+  skills/                         18 skill orchestrators (primary command mechanism)
     assumptions/
     cleanup/
     context/
@@ -706,6 +740,7 @@ RAPID/
     new-milestone/
     pause/
     plan/
+    plan-set/
     resume/
     review/
     set-init/
@@ -724,8 +759,18 @@ RAPID/
         core-state-access.md
         core-git.md
         core-context-loading.md
-      roles/                      26 role-specific agent modules
+      roles/                      31 role-specific agent modules
   config.json                     Agent assembly configuration
+  docs/                           Technical reference documentation
+    setup.md                      Install, init, context commands
+    planning.md                   Plan, set-init, discuss, wave-plan, plan-set, assumptions commands
+    execution.md                  Execute command (normal, fix-issues, retry-wave modes)
+    review.md                     Review pipeline (scoping, unit test, bug hunt, UAT)
+    merge-and-cleanup.md          Merge, cleanup, new-milestone commands
+    agents.md                     All 31 agents with type badges and spawn hierarchy
+    configuration.md              Environment variables, config, STATE.json schema, directory layout
+    state-machines.md             Set, wave, and job lifecycle transitions
+    troubleshooting.md            Common failure modes with symptom, cause, and fix
   DOCS.md                         Full documentation (this file)
   README.md                       GitHub landing page
   LICENSE                         MIT license
@@ -738,11 +783,11 @@ RAPID/
 RAPID uses a composable module system to build agent prompts at runtime. The `config.json` file maps 5 named agents to their component modules:
 
 - **5 core modules** are shared across all agents (identity, returns protocol, state access, git conventions, context loading)
-- **26 role modules** define specialized behavior for each agent type
+- **31 role modules** define specialized behavior for each agent type
 - **5 named agents** in `config.json` (rapid-planner, rapid-executor, rapid-reviewer, rapid-verifier, rapid-orchestrator) are assembled from core modules + one role module + context files
-- **Skills also spawn agents inline** by loading role module content directly, enabling the 26 role modules to be used without pre-assembly
+- **Skills also spawn agents inline** by loading role module content directly, enabling the 31 role modules to be used without pre-assembly
 
-The assembler (`src/lib/assembler.cjs`) reads `config.json`, concatenates the core modules, appends the role module, and injects context files (project overview, contracts, style guide) based on the agent configuration.
+The assembler (`src/lib/assembler.cjs`) reads `config.json`, concatenates the core modules, appends the role module, and injects context files (project overview, contracts, style guide) based on the agent configuration. The assembler registers all 31 role modules.
 
 ### Core Agent Modules
 
@@ -774,16 +819,21 @@ The assembler (`src/lib/assembler.cjs`) reads `config.json`, concatenates the co
 | 14 | role-research-synthesizer.md | Combines 5 parallel research outputs into unified SUMMARY.md, deduplicates and resolves contradictions | `/rapid:init` |
 | 15 | role-roadmapper.md | Creates project roadmap with sets/waves/jobs hierarchy and interface contracts | `/rapid:init` |
 | 16 | role-set-planner.md | Produces SET-OVERVIEW.md with high-level implementation approach for a specific set | `/rapid:set-init` |
-| 17 | role-wave-researcher.md | Targeted research for a single wave's implementation specifics (uses Context7 MCP) | `/rapid:wave-plan` |
-| 18 | role-wave-planner.md | Produces WAVE-PLAN.md with per-job summaries, file assignments, and coordination notes | `/rapid:wave-plan` |
-| 19 | role-job-planner.md | Creates detailed per-job implementation plan (JOB-PLAN.md) with steps and acceptance criteria | `/rapid:wave-plan` |
-| 20 | role-unit-tester.md | Generates test plan for approval, then writes and runs tests with full observability | `/rapid:review` |
-| 21 | role-bug-hunter.md | Broad static analysis with risk/confidence scoring on scoped files | `/rapid:review` |
-| 22 | role-devils-advocate.md | Challenges hunter findings with counter-evidence from the code (strictly read-only) | `/rapid:review` |
-| 23 | role-judge.md | Final ACCEPTED/DISMISSED/DEFERRED rulings on contested findings | `/rapid:review` |
-| 24 | role-bugfix.md | Fixes accepted bugs with targeted, atomic changes | `/rapid:execute --fix-issues` |
-| 25 | role-uat.md | User acceptance testing with browser automation and human/automated step classification | `/rapid:review` |
-| 26 | role-merger.md | Level 5 semantic conflict detection and Tier 3 AI-assisted resolution with confidence scoring | `/rapid:merge` |
+| 17 | role-wave-analyzer.md | Analyzes inter-wave dependencies within a set and groups waves into parallel planning batches | `/rapid:plan-set` |
+| 18 | role-wave-researcher.md | Targeted research for a single wave's implementation specifics (uses Context7 MCP) | `/rapid:wave-plan`, `/rapid:plan-set` |
+| 19 | role-wave-planner.md | Produces WAVE-PLAN.md with per-job summaries, file assignments, and coordination notes | `/rapid:wave-plan`, `/rapid:plan-set` |
+| 20 | role-job-planner.md | Creates detailed per-job implementation plan (JOB-PLAN.md) with steps and acceptance criteria | `/rapid:wave-plan`, `/rapid:plan-set` |
+| 21 | role-plan-verifier.md | Validates job plans for coverage, implementability, and consistency with wave plan | `/rapid:wave-plan`, `/rapid:plan-set` |
+| 22 | role-scoper.md | Categorizes changed files by concern area for focused review (auth, database, API routes, etc.) | `/rapid:review` |
+| 23 | role-unit-tester.md | Generates test plan for approval, then writes and runs tests with full observability | `/rapid:review` |
+| 24 | role-bug-hunter.md | Broad static analysis with risk/confidence scoring on scoped files | `/rapid:review` |
+| 25 | role-devils-advocate.md | Challenges hunter findings with counter-evidence from the code (strictly read-only) | `/rapid:review` |
+| 26 | role-judge.md | Final ACCEPTED/DISMISSED/DEFERRED rulings on contested findings | `/rapid:review` |
+| 27 | role-bugfix.md | Fixes accepted bugs with targeted, atomic changes | `/rapid:execute --fix-issues` |
+| 28 | role-uat.md | User acceptance testing with browser automation and human/automated step classification | `/rapid:review` |
+| 29 | role-set-merger.md | Per-set merge pipeline -- runs 5-level conflict detection, 4-tier resolution cascade, gate validation | `/rapid:merge` |
+| 30 | role-conflict-resolver.md | Deep analysis of mid-confidence conflicts with full context; produces resolution with confidence scoring | `rapid-set-merger` |
+| 31 | role-merger.md | Level 5 semantic conflict detection and Tier 3 AI-assisted resolution (legacy, replaced by set-merger + conflict-resolver) | -- |
 
 ### Runtime Libraries
 
@@ -793,7 +843,7 @@ The assembler (`src/lib/assembler.cjs`) reads `config.json`, concatenates the co
 | 2 | lock.cjs | Cross-process atomic locking using mkdir strategy with proper-lockfile, 5-minute stale threshold | Core |
 | 3 | prereqs.cjs | Prerequisite validation (git 2.30+, Node.js 18+, optional jq 1.6+) with semver comparison | Core |
 | 4 | init.cjs | Project scaffolding -- PROJECT.md, STATE.md, ROADMAP.md, REQUIREMENTS.md, config.json, STATE.json | Core |
-| 5 | assembler.cjs | Agent assembly from modular components -- registers 26 role modules | Core |
+| 5 | assembler.cjs | Agent assembly from modular components -- registers 31 role modules | Core |
 | 6 | returns.cjs | Structured return protocol parsing -- extracts RAPID:RETURN JSON from agent output | Core |
 | 7 | verify.cjs | Tiered artifact verification -- lightweight (file existence) and heavyweight (tests + content) | Core |
 | 8 | context.cjs | Brownfield codebase detection, language/framework scanning, directory mapping | Core |
@@ -902,7 +952,9 @@ The `rapid-tools.cjs` CLI provides 50+ subcommands organized into command groups
 | **execute** | prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, detect-mode, reconcile-jobs, job-status, commit-state | Execution management -- context prep, wave reconciliation, job tracking |
 | **merge** | review, execute, status, integration-test, order, update-status, detect, resolve, bisect, rollback, merge-state | Merge pipeline -- 5-level detection, 4-tier resolution, bisection, rollback |
 | **set-init** | create, list-available | Set initialization -- worktree creation and pending set discovery |
+| **resolve** | set | Reference resolution -- converts numeric indices to string set IDs |
 | **wave-plan** | resolve-wave, create-wave-dir, validate-contracts, list-jobs | Wave planning -- wave resolution, directory setup, contract validation |
+| **display** | banner | Stage banners for skill progress display |
 | **review** | scope, log-issue, list-issues, update-issue, lean, summary | Review management -- file scoping, issue tracking, summary generation |
 
 ## Configuration
@@ -974,6 +1026,20 @@ Additional settings:
 | ajv-formats | ^3.0.1 | Format validation extensions for Ajv (email, uri, date-time, etc.) |
 | proper-lockfile | ^4.1.2 | File-level locking for cross-process state protection (mkdir strategy) |
 
+## Further Reading
+
+For detailed command syntax, all 31 agent roles with spawn hierarchy, configuration options, state machine transitions, and troubleshooting guides, see the [technical documentation](technical_documentation.md) and the `docs/` directory:
+
+- [Setup](docs/setup.md) -- Install, init, and context commands
+- [Planning](docs/planning.md) -- Plan, set-init, discuss, wave-plan, plan-set, and assumptions commands
+- [Execution](docs/execution.md) -- Execute command with normal, fix-issues, and retry-wave modes
+- [Review](docs/review.md) -- Scoping, unit test, bug hunt, and UAT pipeline
+- [Merge and Cleanup](docs/merge-and-cleanup.md) -- Merge, cleanup, and new-milestone commands
+- [Agent Reference](docs/agents.md) -- All 31 agents with type badges and spawn hierarchy
+- [Configuration](docs/configuration.md) -- Environment variables, config, STATE.json schema, and directory layout
+- [State Machines](docs/state-machines.md) -- Set, wave, and job lifecycle transitions
+- [Troubleshooting](docs/troubleshooting.md) -- Common failure modes with symptom, cause, and fix
+
 ---
 
-RAPID v2.0.0 -- Rapid Agentic Parallelizable and Isolatable Development for Claude Code
+RAPID v2.2.0 -- Rapid Agentic Parallelizable and Isolatable Development for Claude Code
