@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
 status: completed
-stopped_at: Phase 37.1 context gathered
-last_updated: "2026-03-11T10:40:44.509Z"
-last_activity: 2026-03-11 -- Plan 37-02 complete (agent reference, state machine docs, troubleshooting guide)
+stopped_at: Completed 37.1-02-PLAN.md
+last_updated: "2026-03-11T11:32:55.470Z"
+last_activity: 2026-03-11 -- Plan 37.1-05 complete (core-state-access preamble + ROLE_CORE_MAP fixes)
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 13
+  completed_plans: 10
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 37 - Technical Documentation
+**Current focus:** Phase 37.1 - Feature Changes and Fixes
 
 ## Current Position
 
-Phase: 37 of 37 (Technical Documentation)
-Plan: 2 of 2 (37-02 complete)
-Status: Phase 37 complete -- all plans done
-Last activity: 2026-03-11 -- Plan 37-02 complete (agent reference, state machine docs, troubleshooting guide)
+Phase: 37.1 of 37.1 (Feature Changes and Fixes)
+Plan: 5 of 5 (37.1-05 complete)
+Status: Plan 37.1-05 complete -- tool-calling reliability audit and fix
+Last activity: 2026-03-11 -- Plan 37.1-05 complete (core-state-access preamble + ROLE_CORE_MAP fixes)
 
 Progress: [##########] 100%
 
@@ -44,6 +44,8 @@ Progress: [##########] 100%
 | 36 | 01 | 4min | 2 | 1 |
 | 37 | 01 | 5min | 2 | 7 |
 | 37 | 02 | 4min | 2 | 3 |
+| 37.1 | 05 | 2min | 2 | 35 |
+| Phase 37.1 P02 | 3min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -74,6 +76,9 @@ Recent:
 - [Phase 37]: Config doc references source files for full schema rather than duplicating
 - [Phase 37]: rapid-reviewer classified as Internal (defined but not dispatched by any active skill)
 - [Phase 37]: rapid-bugfix listed under both Execution and Review (spawned by both execute and review skills)
+- [Phase 37.1-05]: Multi-fallback env preamble: env var > CLAUDE_SKILL_DIR > project root .planning/ ancestor traversal
+- [Phase 37.1-05]: Only set-merger and conflict-resolver needed core-state-access added (only roles referencing RAPID_TOOLS)
+- [Phase 37.1]: [Phase 37.1-02]: Full rewrite of discuss skill from scratch (wave-scoped architecture too deeply embedded for patching)
 
 ### Pending Todos
 
@@ -108,6 +113,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T10:40:44.506Z
-Stopped at: Phase 37.1 context gathered
-Resume file: .planning/phases/37.1-feature-changes-and-fixes/37.1-CONTEXT.md
+Last session: 2026-03-11T11:32:55.468Z
+Stopped at: Completed 37.1-02-PLAN.md
+Resume file: None
