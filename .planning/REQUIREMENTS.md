@@ -81,7 +81,7 @@ Requirements for v2.2 Subagent Merger & Documentation. Each maps to roadmap phas
 - [x] **MERGE-03**: Subagent failures (BLOCKED, malformed, context-exhausted) surface to user with recovery options without blocking independent sets
 - [x] **MERGE-04**: MERGE-STATE updated before spawning subagent (resolving) and after return (next status) for idempotent re-entry
 - [x] **MERGE-05**: Orchestrator retains only compressed one-line status per completed set (~100 tokens), discarding full detection/resolution context
-- [ ] **MERGE-06**: When merger returns mid-confidence escalations (0.4-0.7), orchestrator spawns rapid-conflict-resolver agents per conflict for deeper analysis
+- [x] **MERGE-06**: When merger returns mid-confidence escalations (0.4-0.7), orchestrator spawns rapid-conflict-resolver agents per conflict for deeper analysis
 
 ### Documentation
 
@@ -168,7 +168,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MERGE-03 | Phase 34 | Complete |
 | MERGE-04 | Phase 33 | Complete |
 | MERGE-05 | Phase 33 | Complete |
-| MERGE-06 | Phase 35 | Pending |
+| MERGE-06 | Phase 35 | Complete |
 | DOC-01 | Phase 36 | Pending |
 | DOC-02 | Phase 36 | Pending |
 | DOC-03 | Phase 37 | Pending |

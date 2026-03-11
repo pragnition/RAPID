@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
-status: completed
-stopped_at: Phase 35 context gathered
-last_updated: "2026-03-11T02:13:24.194Z"
-last_activity: 2026-03-10 -- Phase 34 complete (SKILL.md restructured with subagent dispatch)
+status: executing
+stopped_at: Completed 35-01-PLAN.md
+last_updated: "2026-03-11T02:50:24.694Z"
+last_activity: 2026-03-11 -- Plan 35-01 complete (schema change + 5 conflict resolution helpers)
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 5
+  completed_plans: 4
   percent: 60
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 34 - Core Merge Subagent Delegation
+**Current focus:** Phase 35 - Adaptive Conflict Resolution
 
 ## Current Position
 
-Phase: 34 of 37 (Core Merge Subagent Delegation) -- COMPLETE
-Plan: 2 of 2 (34-02 complete)
-Status: Phase 34 complete, Phase 35 next
-Last activity: 2026-03-10 -- Phase 34 complete (SKILL.md restructured with subagent dispatch)
+Phase: 35 of 37 (Adaptive Conflict Resolution)
+Plan: 1 of 2 (35-01 complete)
+Status: Phase 35 in progress
+Last activity: 2026-03-11 -- Plan 35-01 complete (schema change + 5 conflict resolution helpers)
 
 Progress: [######....] 60%
 
@@ -39,6 +39,7 @@ Progress: [######....] 60%
 | 33 | 01 | 5min | 2 | 2 |
 | 34 | 01 | 7min | 2 | 4 |
 | 34 | 02 | 5min | 2 | 1 |
+| 35 | 01 | 4min | 2 | 2 |
 
 ## Accumulated Context
 
@@ -56,6 +57,9 @@ Recent:
 - role-set-merger.md absorbs merger semantic analysis inline (self-contained subagent)
 - --agent-phase flag on existing update-status (smaller API surface than new subcommand)
 - prepare-context uses best-effort file detection (graceful on missing branches)
+- agentPhase2 changed from AgentPhaseEnum to z.record(string, AgentPhaseEnum) for per-conflict tracking
+- Confidence band routing: <0.3 human-direct, 0.3-0.8 resolver-agent, >0.8 auto-accept, API always human-api-gate
+- parseConflictResolverReturn requires confidence field in COMPLETE returns for routing
 
 ### Pending Todos
 
@@ -89,6 +93,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T02:13:24.193Z
-Stopped at: Phase 35 context gathered
-Resume file: .planning/phases/35-adaptive-conflict-resolution/35-CONTEXT.md
+Last session: 2026-03-11T02:48:00Z
+Stopped at: Completed 35-01-PLAN.md
+Resume file: .planning/phases/35-adaptive-conflict-resolution/35-02-PLAN.md
