@@ -1,5 +1,5 @@
 ---
-description: Show cross-set dashboard with set > wave > job hierarchy, progress, and actionable next steps
+description: Show cross-set dashboard with set progress overview, optional --detail for wave/job hierarchy, and actionable next steps
 allowed-tools: Bash, Read, AskUserQuestion
 ---
 
@@ -17,7 +17,7 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 
 ## Step 2: Load Dashboard Data
 
-Run the Mark II status command and load the set list for numeric index mapping:
+Run the Mark II status command and load the set list for numeric index mapping. Check if user passed `--detail` flag. Store as boolean `SHOW_DETAIL`.
 
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
@@ -28,6 +28,8 @@ SETS_LIST=$(node "${RAPID_TOOLS}" plan list-sets 2>/dev/null)
 ```
 
 Parse the JSON stdout for `{ table, actions, milestone }`. Also parse `SETS_LIST` as a JSON array of set directory names (alphabetically sorted). This array provides the 1-based numeric index mapping: the first entry is index 1, the second is index 2, etc.
+
+Determine `SHOW_DETAIL`: If the user's invocation includes `--detail` (e.g., `/rapid:status --detail`), set `SHOW_DETAIL = true`. Otherwise `SHOW_DETAIL = false`.
 
 **If STATE.json is missing or invalid** (exit code non-zero or empty output), fall back to legacy status:
 
@@ -48,14 +50,18 @@ If status-v2 succeeded:
 
    > ## {milestone} -- Set Dashboard
 
-3. Display the set/wave/job hierarchy with **numeric index prefixes**. Using the sorted set list from Step 2, compute the 1-based index for each set and prefix all display lines:
+3. Display the dashboard based on the `SHOW_DETAIL` flag:
 
-   **Sets** -- prefix with `{N}:` where N is the 1-based alphabetical index:
+   **DEFAULT (no --detail):** Show sets only with wave count summary. Do NOT show individual waves or jobs:
    ```
-   1: set-01-foundation [executing]
-   2: set-02-api [pending]
-   3: set-03-ui [planning]
+   1: set-01-foundation [executing]   2/3 waves complete
+   2: set-02-api [pending]             0/2 waves
+   3: set-03-ui [planning]             0/1 waves
    ```
+
+   **WITH --detail:** Show the full set > wave > job hierarchy with numeric index prefixes:
+
+   **Sets** -- prefix with `{N}:` where N is the 1-based alphabetical index.
 
    **Waves** -- prefix with `{setIndex}.{waveIndex}:` indented under their set:
    ```
@@ -85,7 +91,7 @@ If status-v2 succeeded:
 
 5. After the dashboard, display a tip line:
 
-   > **Tip:** Use numeric shorthand (e.g., `/rapid:set-init 1`, `/rapid:wave-plan 1.1`) instead of full set/wave names.
+   > **Tip:** Use numeric shorthand (e.g., `/rapid:set-init 1`, `/rapid:discuss 1`). Use `--detail` for wave-level breakdown.
 
 This is read-only -- no state modification.
 
@@ -100,11 +106,11 @@ Use the `actions` array from Step 2. Each action has `{ action, setName, descrip
 
 ### Convert actions to numeric shorthand
 
-Before presenting actions, replace set/wave references with their numeric equivalents using the sorted set list from Step 2:
+Before presenting actions, replace set references with their numeric equivalents using the sorted set list from Step 2:
 - `/rapid:set-init auth-system` becomes `/rapid:set-init 1` (where auth-system is set index 1)
-- `/rapid:wave-plan auth wave-1` becomes `/rapid:wave-plan 1.1` (where auth is set 1 and wave-1 is wave 1 within that set)
+- `/rapid:discuss auth-system` becomes `/rapid:discuss 1` (where auth-system is set index 1)
+- `/rapid:plan data-layer` becomes `/rapid:plan 2` (where data-layer is set index 2)
 - `/rapid:execute data-layer` becomes `/rapid:execute 2` (where data-layer is set index 2)
-- `/rapid:discuss auth wave-2` becomes `/rapid:discuss 1.2`
 
 Keep the description text readable (include the full set name for clarity), but use numeric shorthand in the command name itself.
 

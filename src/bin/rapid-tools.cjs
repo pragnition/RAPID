@@ -598,8 +598,8 @@ function handleBuildAgents(cwd, args) {
     'plan-verifier':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
     'wave-analyzer':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
     'scoper':                ['core-identity.md', 'core-returns.md'],
-    'set-merger':            ['core-identity.md', 'core-returns.md', 'core-git.md'],
-    'conflict-resolver':     ['core-identity.md', 'core-returns.md', 'core-git.md'],
+    'set-merger':            ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
+    'conflict-resolver':     ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
   };
 
   function generateFrontmatter(role) {
