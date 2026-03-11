@@ -122,3 +122,17 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 35. Adaptive Conflict Resolution | 2/2 | Complete    | 2026-03-11 | - |
 | 36. README Rewrite | 1/1 | Complete    | 2026-03-11 | - |
 | 37. Technical Documentation | 2/2 | Complete    | 2026-03-11 | - |
+
+### Phase 37.1: Feature changes and fixes (INSERTED)
+
+**Goal:** Restructure user-facing workflow to hide waves, redesign discussion flow, add /migrate and /quick commands, fix tool-calling reliability, and ensure state is updated after execute
+**Requirements**: FIX-01, FIX-02, FIX-03, FIX-04, FIX-05, FIX-06, FIX-07
+**Depends on:** Phase 37
+**Plans:** 5 plans
+
+Plans:
+- [ ] 37.1-01-PLAN.md -- Schema extension + quick/migrate library code + CLI dispatch
+- [ ] 37.1-02-PLAN.md -- Discussion flow full rewrite (set-level, single-round)
+- [ ] 37.1-03-PLAN.md -- Wave hiding across all skills + workflow awareness + state commit after execute
+- [ ] 37.1-04-PLAN.md -- New skill files for /rapid:migrate and /rapid:quick
+- [ ] 37.1-05-PLAN.md -- Agent tool-calling audit and fixes
