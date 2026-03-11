@@ -4,13 +4,13 @@ milestone: v2.2
 milestone_name: Subagent Merger & Documentation
 status: completed
 stopped_at: Completed 37-02-PLAN.md
-last_updated: "2026-03-11T05:09:46Z"
+last_updated: "2026-03-11T05:15:48.481Z"
 last_activity: 2026-03-11 -- Plan 37-02 complete (agent reference, state machine docs, troubleshooting guide)
 progress:
   total_phases: 5
   completed_phases: 5
   total_plans: 8
-  completed_plans: 9
+  completed_plans: 8
   percent: 100
 ---
 
