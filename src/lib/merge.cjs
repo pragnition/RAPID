@@ -397,6 +397,108 @@ function generateConflictId(escalation, index, existingIds) {
   return `${baseId}:${suffix}`;
 }
 
+/**
+ * Assemble a launch briefing for a conflict resolver agent.
+ * Pure function: takes structured data, returns assembled string.
+ *
+ * @param {Object} contextData - Structured conflict context
+ * @param {string} contextData.conflictId - Unique conflict identifier
+ * @param {string} contextData.file - File path of the conflict
+ * @param {string} contextData.worktreePath - Path to set's worktree
+ * @param {string} contextData.setId - Set identifier
+ * @param {Object} contextData.escalation - Escalation object from set-merger
+ * @param {string} contextData.mergerAnalysis - Set-merger's original analysis text
+ * @param {Object} contextData.contextPaths - Paths to both sets' CONTEXT.md
+ * @param {Object} [contextData.apiDetection] - Optional L4 API detection data for this file
+ * @returns {string} Assembled launch briefing
+ */
+function prepareResolverContext(contextData) {
+  const { conflictId, file, worktreePath, setId, escalation, mergerAnalysis, contextPaths, apiDetection } = contextData;
+
+  const lines = [];
+  lines.push(`## Conflict: ${conflictId}`);
+  lines.push(`File: ${file}`);
+  lines.push(`Worktree: ${worktreePath}`);
+  lines.push(`Set: ${setId}`);
+  lines.push('');
+
+  // Set-Merger Analysis section (with token truncation)
+  lines.push('### Set-Merger Analysis');
+  const maxAnalysisChars = 800 * 4; // ~800 tokens at 4 chars/token
+  if (mergerAnalysis && mergerAnalysis.length > maxAnalysisChars) {
+    lines.push(mergerAnalysis.substring(0, maxAnalysisChars) + '... [truncated]');
+  } else {
+    lines.push(mergerAnalysis || '(no analysis available)');
+  }
+  lines.push('');
+
+  // Original Escalation section
+  lines.push('### Original Escalation');
+  lines.push(`Confidence: ${escalation.confidence}`);
+  lines.push(`Reason: ${escalation.reason}`);
+  lines.push(`Proposed: ${escalation.proposed_resolution}`);
+  lines.push('');
+
+  // Context References section
+  lines.push('### Context References');
+  lines.push(`- Set A context: ${contextPaths.setAContext}`);
+  lines.push(`- Set B context: ${contextPaths.setBContext}`);
+  lines.push(`- File history: run \`git log --oneline -10 -- ${file}\` in worktree`);
+  lines.push('');
+
+  // API Detection section
+  lines.push('### API Detection');
+  if (apiDetection) {
+    lines.push(`File: ${apiDetection.file}`);
+    if (apiDetection.exports && apiDetection.exports.length > 0) {
+      lines.push(`Affected exports: ${apiDetection.exports.join(', ')}`);
+    }
+    if (apiDetection.detail) {
+      lines.push(`Detail: ${apiDetection.detail}`);
+    }
+  } else {
+    lines.push('No API conflicts for this file');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Parse a conflict resolver agent's RAPID:RETURN output with default-to-BLOCKED safety.
+ * Wraps returns.cjs parseReturn() with conflict-resolver-specific validation.
+ *
+ * @param {string} agentOutput - Full agent output text
+ * @returns {{ status: string, reason?: string, data?: object }}
+ *   - BLOCKED with reason on any failure (missing marker, malformed JSON, missing status/confidence)
+ *   - COMPLETE with data on success (requires confidence field for auto-accept routing)
+ */
+function parseConflictResolverReturn(agentOutput) {
+  const result = returns.parseReturn(agentOutput);
+
+  if (!result.parsed) {
+    return { status: 'BLOCKED', reason: result.error };
+  }
+
+  if (!result.data.status) {
+    return { status: 'BLOCKED', reason: 'Missing status field in return data' };
+  }
+
+  if (result.data.status === 'BLOCKED') {
+    return { status: 'BLOCKED', reason: result.data.reason || 'Resolver returned BLOCKED' };
+  }
+
+  if (result.data.status === 'COMPLETE') {
+    // Confidence is required for auto-accept routing decision
+    if (result.data.confidence == null) {
+      return { status: 'BLOCKED', reason: 'Missing confidence field in COMPLETE return (required for routing)' };
+    }
+    return { status: 'COMPLETE', data: result.data };
+  }
+
+  // Unknown status -- return as-is with data
+  return { status: result.data.status, data: result.data };
+}
+
 // ────────────────────────────────────────────────────────────────
 // Detection Helpers
 // ────────────────────────────────────────────────────────────────
@@ -1875,4 +1977,6 @@ module.exports = {
   routeEscalation,
   isApiSignatureConflict,
   generateConflictId,
+  prepareResolverContext,
+  parseConflictResolverReturn,
 };
