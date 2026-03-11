@@ -92,7 +92,9 @@ Plans:
   2. README.md includes a full lifecycle quick start walkthrough covering init through cleanup with accurate command names and arguments
   3. README.md includes an ASCII architecture diagram showing the Sets/Waves/Jobs hierarchy and agent dispatch pattern
   4. Every command listed in the command reference table exists as a working skill and has correct argument syntax
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 36-01-PLAN.md -- Full README.md rewrite: problem-first opening, How It Works, architecture diagram, quick start (greenfield/brownfield), command reference, further reading
 
 ### Phase 37: Technical Documentation
 **Goal**: Power users have a comprehensive reference document covering all skills, agents, configuration, state machines, and failure recovery
@@ -115,5 +117,5 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 33. Merge State Schema & Infrastructure | 1/1 | Complete    | 2026-03-10 | - |
 | 34. Core Merge Subagent Delegation | 2/2 | Complete    | 2026-03-10 | - |
 | 35. Adaptive Conflict Resolution | 2/2 | Complete    | 2026-03-11 | - |
-| 36. README Rewrite | v2.2 | 0/TBD | Not started | - |
+| 36. README Rewrite | v2.2 | 0/1 | Planned | - |
 | 37. Technical Documentation | v2.2 | 0/TBD | Not started | - |
