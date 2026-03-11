@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
 status: completed
-stopped_at: Completed 37.1-02-PLAN.md
-last_updated: "2026-03-11T11:32:55.470Z"
-last_activity: 2026-03-11 -- Plan 37.1-05 complete (core-state-access preamble + ROLE_CORE_MAP fixes)
+stopped_at: Completed 37.1-03-PLAN.md
+last_updated: "2026-03-11T11:35:35Z"
+last_activity: 2026-03-11 -- Plan 37.1-03 complete (wave hiding, lifecycle banner, state commit)
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 100
 ---
 
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 Phase: 37.1 of 37.1 (Feature Changes and Fixes)
 Plan: 5 of 5 (37.1-05 complete)
-Status: Plan 37.1-05 complete -- tool-calling reliability audit and fix
-Last activity: 2026-03-11 -- Plan 37.1-05 complete (core-state-access preamble + ROLE_CORE_MAP fixes)
+Status: Plan 37.1-03 complete -- wave hiding, lifecycle banner, state commit
+Last activity: 2026-03-11 -- Plan 37.1-03 complete (wave hiding, lifecycle banner, state commit)
 
 Progress: [##########] 100%
 
@@ -47,6 +47,7 @@ Progress: [##########] 100%
 | 37.1 | 05 | 2min | 2 | 35 |
 | Phase 37.1 P02 | 3min | 1 tasks | 1 files |
 | 37.1 | 01 | 5min | 3 | 7 |
+| 37.1 | 03 | 7min | 2 | 8 |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Recent:
 - [Phase 37.1-01]: quickTasks uses optional().default([]) for zero-friction backward compatibility
 - [Phase 37.1-01]: Migration detection cascading priority: GSD > openspec > generic > none
 - [Phase 37.1-01]: backupPlanning throws on existing .planning.bak/ to prevent accidental overwrite
+- [Phase 37.1-03]: Task 1 changes already applied by Plan 37.1-05 -- no duplicate commit needed
+- [Phase 37.1-03]: Internal CLI calls (wave-plan list-jobs) preserved, only user-facing /rapid:wave-plan removed
+- [Phase 37.1-03]: User-facing /rapid:plan-set renamed to /rapid:plan throughout plan-set skill
 
 ### Pending Todos
 
@@ -117,6 +121,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T11:33:17Z
-Stopped at: Completed 37.1-01-PLAN.md
+Last session: 2026-03-11T11:35:35Z
+Stopped at: Completed 37.1-03-PLAN.md
 Resume file: None
