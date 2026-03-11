@@ -71,14 +71,17 @@ Plans:
 - [x] 34-02-PLAN.md -- SKILL.md restructuring: replace Steps 3-5 with dispatch + fast path + retry + recovery
 
 ### Phase 35: Adaptive Conflict Resolution
-**Goal**: Mid-confidence merge escalations (0.4-0.7) are resolved by dedicated rapid-conflict-resolver agents spawned by the orchestrator, not by humans or by the merger itself
+**Goal**: Mid-confidence merge escalations (0.3-0.8) are resolved by dedicated rapid-conflict-resolver agents spawned by the orchestrator, not by humans or by the merger itself
 **Depends on**: Phase 34 (core delegation pattern must be proven stable)
 **Requirements**: MERGE-06
 **Success Criteria** (what must be TRUE):
-  1. When a rapid-set-merger returns escalations with confidence scores between 0.4 and 0.7, the orchestrator spawns a rapid-conflict-resolver agent per conflict
-  2. Conflicts with confidence below 0.4 or involving API signature changes go directly to a human decision gate (no automated resolution attempted)
+  1. When a rapid-set-merger returns escalations with confidence scores between 0.3 and 0.8, the orchestrator spawns a rapid-conflict-resolver agent per conflict
+  2. Conflicts with confidence below 0.3 or involving API signature changes go directly to a human decision gate (no automated resolution attempted)
   3. MERGE-STATE.json agentPhase2 field tracks which conflicts have been dispatched to resolver agents
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 35-01-PLAN.md -- Schema change (agentPhase2 to object map) + 5 helper functions (routeEscalation, isApiSignatureConflict, generateConflictId, prepareResolverContext, parseConflictResolverReturn)
+- [ ] 35-02-PLAN.md -- Role module (role-conflict-resolver.md), build-agents registration, SKILL.md Step 3e rewrite with routing + resolver dispatch
 
 ### Phase 36: README Rewrite
 **Goal**: README.md accurately describes RAPID's current capabilities through v2.2 with a working quick start and command reference
@@ -111,6 +114,6 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 |-------|-----------|----------------|--------|-----------|
 | 33. Merge State Schema & Infrastructure | 1/1 | Complete    | 2026-03-10 | - |
 | 34. Core Merge Subagent Delegation | 2/2 | Complete    | 2026-03-10 | - |
-| 35. Adaptive Conflict Resolution | v2.2 | 0/TBD | Not started | - |
+| 35. Adaptive Conflict Resolution | v2.2 | 0/2 | Planned | - |
 | 36. README Rewrite | v2.2 | 0/TBD | Not started | - |
 | 37. Technical Documentation | v2.2 | 0/TBD | Not started | - |
