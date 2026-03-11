@@ -1,11 +1,11 @@
 ---
-description: Capture developer implementation vision for a wave via structured discussion
+description: Capture developer implementation vision for a set via structured discussion
 allowed-tools: Bash(rapid-tools:*), Read, AskUserQuestion, Glob, Grep, Agent
 ---
 
-# /rapid:discuss -- Wave Discussion
+# /rapid:discuss -- Set Discussion
 
-You are the RAPID wave discussion facilitator. This skill captures developer implementation vision for a wave before autonomous planning begins. It follows a structured discussion pattern: identify gray areas, let the developer select which to discuss, then deep-dive each selected area with a 2-round discussion.
+You are the RAPID set discussion facilitator. This skill captures developer implementation vision for an entire set before autonomous planning begins. It identifies product and UX gray areas across all waves, conducts a single-round discussion per area, and splits decisions into per-wave WAVE-CONTEXT.md files.
 
 Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion at every decision point.
 
@@ -32,248 +32,252 @@ node "${RAPID_TOOLS}" display banner discuss
 
 ---
 
-## Step 2: Resolve Wave
+## Step 2: Resolve Set
 
-Accept wave ID argument. The user may invoke as:
-- `/rapid:discuss 1.1` (numeric dot notation -- set 1, wave 1)
-- `/rapid:discuss wave-1` (wave ID only -- auto-detect set)
-- `/rapid:discuss auth wave-1` (set ID + wave ID)
+Accept a set reference argument. The user invokes as:
+- `/rapid:discuss 1` (numeric index -- set 1)
+- `/rapid:discuss auth-system` (string set ID)
 
-### Resolve Wave Reference
+### Resolve Set Reference
 
-Resolve the user's input through the numeric ID resolver:
-
-**If the user provided dot notation (e.g., `1.1`) or a wave ID:**
+Resolve the user's input through the set resolver:
 
 ```bash
 # (env preamble here)
-RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve wave "<user-input>" 2>&1)
+RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve set "<user-input>" 2>&1)
 RESOLVE_EXIT=$?
 if [ $RESOLVE_EXIT -ne 0 ]; then
   echo "$RESOLVE_RESULT"
   # Display the error message from the JSON and STOP
 fi
+echo "$RESOLVE_RESULT"
 ```
 
-Parse the JSON result to extract `setId`, `waveId`, `setIndex`, `waveIndex`, and `wasNumeric`. Use these resolved string IDs for all subsequent operations.
+Parse the JSON result to extract `resolvedId` (the set ID string) and `numericIndex` (the 1-based set index). Use these for all subsequent operations.
 
-**If the user provided a set ID + wave ID (two arguments, e.g., `auth wave-1`):**
+Store:
+- `SET_ID` = `resolvedId` from the JSON
+- `SET_INDEX` = `numericIndex` from the JSON
 
-Use the `--set` flag for single-call two-arg resolution:
-```bash
-# (env preamble here)
-RESOLVE_RESULT=$(node "${RAPID_TOOLS}" resolve wave "<wave-input>" --set "<set-input>" 2>&1)
-RESOLVE_EXIT=$?
-if [ $RESOLVE_EXIT -ne 0 ]; then
-  echo "$RESOLVE_RESULT"
-  # Display the error message from the JSON and STOP
-fi
-```
-
-Parse the JSON result to extract `setId`, `waveId`, `setIndex`, `waveIndex`, and `wasNumeric`. Use these resolved string IDs for all subsequent operations.
-
-**After resolution, load full wave data (milestoneId, jobs, status) from STATE.json:**
+**After resolution, load full state data to find this set's milestone and waves:**
 
 ```bash
 # (env preamble here)
-WAVE_DATA=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null)
-echo "$WAVE_DATA"
+STATE_DATA=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null)
+echo "$STATE_DATA"
 ```
 
-Parse the JSON to find the resolved set and wave within the current milestone. Extract `milestoneId`, `setId`, `waveId`, `waveStatus`, and `jobs` from the state data.
+Parse the JSON to find:
+- `currentMilestone` at the root level -- this is the `MILESTONE_ID`
+- The set matching `SET_ID` within the current milestone's `sets` array
+- The `waves` array within that set -- these are ALL the waves to discuss
 
-- **If the resolved wave is not found in STATE.json:** Display: "Wave not found in state. Ensure the set has been initialized." and STOP.
+**If the set is not found in STATE.json:** Display: "Set not found in state. Ensure the project has been initialized with /rapid:init." and STOP.
 
-- **If `resolve wave` returned an ambiguous result** (wave ID string matches multiple sets): Present the matches using AskUserQuestion:
+Record `MILESTONE_ID`, `SET_ID`, `SET_INDEX`, and `WAVES` (the full waves array with IDs, statuses, and jobs) for subsequent steps.
+
+---
+
+## Step 3: Load Set Context
+
+Read ALL waves in the set to build a unified understanding:
+
+1. **Read set-level artifacts:**
+
+   Read `.planning/sets/${SET_ID}/CONTRACT.json` using the Read tool. If not found, note absence but continue.
+
+   Read `.planning/sets/${SET_ID}/DEFINITION.md` using the Read tool. If not found, note absence but continue.
+
+   Read `.planning/sets/${SET_ID}/SET-OVERVIEW.md` using the Read tool. If not found, note absence but continue.
+
+2. **Read per-wave artifacts:**
+
+   For EACH wave in the set's `waves` array:
+   - Read `.planning/waves/${SET_ID}/${WAVE_ID}/CONTRACT.json` using the Read tool (if exists)
+   - Read `.planning/waves/${SET_ID}/${WAVE_ID}/DEFINITION.md` using the Read tool (if exists)
+   - Read `.planning/waves/${SET_ID}/${WAVE_ID}/WAVE-PLAN.md` using the Read tool (if exists)
+
+3. **Read target source files:** Use Grep and Glob to find and read the source files referenced in CONTRACT.json files (the `file` fields in exports.functions and exports.types). These are the files the set's jobs will modify.
+
+4. **Display set summary:**
+   ```
+   "Set {SET_ID} ({SET_INDEX}): {N} waves
+   Waves: {wave-1-id}, {wave-2-id}, ...
+   Set scope: {brief summary from SET-OVERVIEW.md or DEFINITION.md}
+   Total jobs across all waves: {count}"
+   ```
+
+---
+
+## Step 4: Status Check and State Transition
+
+Check wave statuses to determine discussion readiness.
+
+### Status Assessment
+
+Categorize all waves in the set by their current status:
+- `pending` waves -- ready for discussion
+- `discussing` waves -- already in discussion (re-discuss)
+- `planning` or later waves -- already past discussion
+
+### Decision Logic
+
+- **If ALL waves are `pending`:** Proceed normally. Transition all to `discussing`.
+
+- **If some waves are `pending` and some are `planning` or later:** Use AskUserQuestion:
   ```
-  "Wave '<waveId>' exists in multiple sets. Which set did you mean?"
-  Options: one per match, e.g.:
-  - "auth" -- "Set: auth, Wave status: pending"
-  - "data-layer" -- "Set: data-layer, Wave status: pending"
-  ```
-  After selection, re-resolve with the set context.
+  "Some waves in this set are already past discussion:
+  {list waves with their statuses}
 
-- **If `error`:** Display the error and STOP.
+  The pending waves can still be discussed. Proceed?"
 
-- **If single match:** Extract `milestoneId`, `setId`, `waveId`, `waveStatus`, and `jobs`.
-
-**Status check:** Verify wave status is `pending` (ready for discussion).
-- If status is `discussing`, `planning`, or later, use AskUserQuestion:
-  ```
-  "Wave '{waveId}' is already in '{status}' state. What would you like to do?"
   Options:
-  - "Re-discuss" -- "Start a fresh discussion (will overwrite existing WAVE-CONTEXT.md)"
-  - "View existing context" -- "Read the current WAVE-CONTEXT.md"
+  - "Discuss pending waves" -- "Discuss only the waves still in pending status"
+  - "Re-discuss all" -- "Start fresh discussion for all waves (will overwrite existing WAVE-CONTEXT.md files)"
   - "Cancel" -- "Return without changes"
   ```
-  If "View existing context": Read and display `.planning/waves/{setId}/{waveId}/WAVE-CONTEXT.md`, then STOP.
   If "Cancel": STOP.
-  If "Re-discuss": Continue with the flow below.
 
-Record `MILESTONE_ID`, `SET_ID`, `WAVE_ID`, and `JOBS` for subsequent steps.
+- **If ALL waves are `planning` or later:** Use AskUserQuestion:
+  ```
+  "All waves in this set have already been discussed:
+  {list waves with their statuses}
 
----
+  Options:
+  - "Re-discuss" -- "Start a fresh discussion (will overwrite existing WAVE-CONTEXT.md files)"
+  - "Cancel" -- "Return without changes"
+  ```
+  If "Cancel": STOP.
 
-## Step 3: Gather Context
+- **If any waves are `discussing`:** Treat as re-discuss for those waves. Continue normally.
 
-Read the wave's artifacts and relevant source files to build understanding:
+### State Transition
 
-1. **Read STATE.json wave data** (already have from resolve step -- jobs list with IDs)
-
-2. **Read set-level artifacts:**
-   ```bash
-   # (env preamble here)
-   cat ".planning/sets/${SET_ID}/CONTRACT.json" 2>/dev/null || echo "{}"
-   ```
-   ```bash
-   # (env preamble here)
-   cat ".planning/sets/${SET_ID}/DEFINITION.md" 2>/dev/null || echo "No definition found"
-   ```
-   ```bash
-   # (env preamble here)
-   cat ".planning/sets/${SET_ID}/SET-OVERVIEW.md" 2>/dev/null || echo "No overview found"
-   ```
-
-3. **Read target source files:** Use Grep and Glob to find and read the source files referenced in CONTRACT.json (the `file` fields in exports.functions and exports.types). These are the files the wave's jobs will modify.
-
-4. **Display wave summary:**
-   ```
-   "Wave {waveId} in set {setId}: {N} jobs
-   Jobs: {job-1}, {job-2}, ...
-   Set scope: {brief summary from DEFINITION.md}
-   Contract exports: {count} functions, {count} types"
-   ```
-
----
-
-## Step 4: Identify Gray Areas
-
-Analyze the wave context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, target source files) and identify 5-8 gray areas that need developer input. Gray areas are implementation facets where:
-
-- Multiple valid approaches exist
-- Edge cases need clarification
-- Integration points are ambiguous
-- Performance/quality tradeoffs exist
-- User experience decisions are needed
-- Error handling strategy is unclear
-- Testing depth needs scoping
-
-Present gray areas using AskUserQuestion with `multiSelect: true`:
-
-```
-"I've analyzed the wave context and identified these areas that would benefit from your input. Select which areas to discuss:"
-
-Options (each as a selectable item):
-1. "Let Claude decide all" -- "Skip discussion, I'll make all decisions based on codebase patterns"
-2. "{Gray area title}" -- "{Brief 1-sentence description of why this needs input}"
-3. "{Gray area title}" -- "{Brief description}"
-...up to 8 areas
-```
-
-**Handling responses:**
-- If the user selects "Let Claude decide all" (regardless of any other selections): Document that all areas are at Claude's discretion and skip to Step 6. This takes precedence over any other selections.
-- If the user selects none: Same behavior -- document all areas at Claude's discretion and skip to Step 6. (Backward compatible with old behavior.)
-- If the user selects specific gray areas (without "Let Claude decide all"): Record selected gray areas for Step 5.
-
----
-
-## Step 5: Deep-Dive Selected Areas (2-Round Discussion)
-
-Process all selected gray areas in two rounds. Track all decisions made across both rounds.
-
-### Round 1: Approach Selection (all areas)
-
-For EACH selected gray area, present Interaction 1 back-to-back. Complete ALL Interaction 1s before moving to Round 2.
-
-#### Interaction 1: Approach + Edge Case Context
-
-Use AskUserQuestion:
-```
-"How do you want to handle '{gray area title}'?
-
-Context: {2-3 sentences explaining the tradeoffs and why this matters}
-
-Edge case to consider: {1 key edge case or tradeoff most likely to affect the approach choice}
-
-Options:
-- "{Approach A}" -- "{Brief description of approach A}"
-- "{Approach B}" -- "{Brief description of approach B}"
-- "{Approach C}" -- "{Brief description if applicable}"
-- "Let Claude decide" -- "I'll choose based on the codebase patterns and contracts"
-```
-
-If "Let Claude decide": Record Claude's chosen approach and rationale. This area still appears in Round 2 with Claude's decisions shown as discretion items.
-
-After completing Interaction 1 for ALL selected gray areas, proceed to Round 2.
-
-### Round 2: Specifics & Confirmation (all areas)
-
-For EACH selected gray area, present Interaction 2 back-to-back.
-
-#### Interaction 2: Summary + Specifics
-
-Use AskUserQuestion:
-```
-"'{Gray area title}' -- decisions so far:
-- Approach: {chosen approach from Round 1}
-{If delegated: '(Claude's discretion -- chose {approach} because {rationale})'}
-
-Remaining detail: {1-2 specific implementation questions about this area}
-
-Options:
-- "{Specific choice A}" -- "{Description}"
-- "{Specific choice B}" -- "{Description}"
-- "Looks good" -- "Lock all decisions for this area"
-- "Revise" -- "Go back and change the approach"
-```
-
-**Handling responses:**
-- If "Looks good": Lock all decisions for this gray area. Continue to the next area's Interaction 2.
-- If a specific choice is selected: Record the choice, then lock all decisions for this area. Continue to the next area's Interaction 2.
-- If "Revise": Re-present ONLY this area's Interaction 1 (Round 1 question). After the user re-answers, re-present ONLY this area's Interaction 2. Then continue with the remaining Round 2 areas that have not yet been confirmed. Do NOT re-ask areas already confirmed.
-- If this area was delegated in Round 1: Still show the summary with Claude's chosen approach marked as discretion. The user can still "Revise" to take control, or "Looks good" to accept Claude's choice.
-
-After completing Interaction 2 for ALL selected gray areas, proceed to Step 6.
-
----
-
-## Step 6: State Transitions
-
-After discussion is complete, transition the wave and set states:
+Transition all relevant waves (pending ones, or all if re-discussing) to `discussing` status:
 
 ```bash
 # (env preamble here)
-# Transition wave from pending to discussing
+# Repeat for each wave being discussed
 node "${RAPID_TOOLS}" state transition wave "${MILESTONE_ID}" "${SET_ID}" "${WAVE_ID}" discussing
 ```
 
-```bash
-# (env preamble here)
-# Transition set to planning (first discuss triggers this)
-# Catch error if set is already in 'planning' (another wave discussed first)
-node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" planning 2>/dev/null || true
-```
-
-If the wave transition fails (e.g., wave was not in 'pending'), display the error and use AskUserQuestion:
-```
-"Wave state transition failed: {error message}. What would you like to do?"
-Options:
-- "Force continue" -- "Write WAVE-CONTEXT.md anyway (wave state unchanged)"
-- "Cancel" -- "Abort without writing context"
-```
+Do this in a loop for each wave. If a transition fails (wave already in `discussing`), log the warning and continue.
 
 ---
 
-## Step 7: Write WAVE-CONTEXT.md
+## Step 5: Identify Gray Areas
 
-Create the wave directory and write the context file:
+Analyze the set's scope across all waves. Identify gray areas that need developer input.
+
+### Focus Areas
+
+Identify gray areas that are strictly about:
+- **Product/UX decisions** -- What should the user experience be? What should the behavior look like?
+- **High-level developer preferences** -- Coding style choices, library preferences, naming conventions
+- **Cross-wave coordination decisions** -- How should waves interact? What contracts or interfaces need agreement?
+
+### Do NOT Surface
+
+Do NOT present gray areas about:
+- Technical implementation details (which function to use, how to structure code internally)
+- Architecture decisions that follow established patterns in the codebase
+- Anything Claude can decide autonomously based on codebase conventions
+
+### Presentation
+
+Present gray areas as a numbered list with brief descriptions:
+
+```
+"I've analyzed the set scope across all {N} waves and identified these areas that would benefit from your input:
+
+1. {Gray area title} -- {1-sentence description}
+2. {Gray area title} -- {1-sentence description}
+...
+
+I'll ask one question per area."
+```
+
+**If zero gray areas found:** Inform the user that no product/UX decisions are needed -- all implementation choices follow established patterns. Skip directly to Step 7 (write empty WAVE-CONTEXT.md files with a note that no discussion was needed).
+
+---
+
+## Step 6: Single-Round Discussion
+
+Process each gray area with exactly ONE question per area.
+
+### Per-Area Question
+
+For EACH gray area (in order), use AskUserQuestion with:
+
+```
+"{Gray area title}
+
+{2-3 sentences of context explaining what this affects and why it matters}
+
+Options:
+- "{Option A}" -- "{Brief description of option A}"
+- "{Option B}" -- "{Brief description of option B}"
+- "{Option C}" -- "{Brief description if applicable}"
+- "Other" -- "Something else (describe what you'd prefer)"
+```
+
+Provide 2-4 concrete named options plus the "Other" freeform option.
+
+Record the user's choice immediately. Move to the next gray area without any follow-up.
+
+Do NOT show "Looks good" after each area.
+Do NOT do a second round for specifics.
+
+### Step 6b: Final Confirmation
+
+After ALL gray areas have been answered, use AskUserQuestion with exactly two options:
+
+```
+"All areas covered. Ready to proceed?"
+
+Options:
+- "Looks good" -- "Proceed with these decisions"
+- "Revise" -- "I want to change something"
+```
+
+Do NOT show a summary of decisions before asking. Just ask.
+
+**If "Looks good":** Proceed to Step 7.
+
+**If "Revise":** Use AskUserQuestion to ask:
+```
+"What would you like to change? Describe in your own words."
+```
+
+After the user provides freeform revision text, re-run the discussion from Step 5. Re-identify gray areas incorporating the user's revision feedback (some areas may be resolved by the feedback, new ones may emerge). Re-present the questions. When complete, return to Step 6b for another final confirmation.
+
+---
+
+## Step 7: Write Per-Wave WAVE-CONTEXT.md Files
+
+Create WAVE-CONTEXT.md files for each wave in the set, splitting decisions by wave relevance.
+
+### Create Wave Directories
+
+For each wave in the set:
 
 ```bash
 # (env preamble here)
 node "${RAPID_TOOLS}" wave-plan create-wave-dir "${SET_ID}" "${WAVE_ID}"
 ```
 
-Then write `WAVE-CONTEXT.md` to `.planning/waves/{setId}/{waveId}/WAVE-CONTEXT.md` using the Read/Write tools. The file should contain:
+### Determine Decision Relevance
+
+For each wave, determine which decisions are relevant based on:
+- The wave's scope from its CONTRACT.json and DEFINITION.md
+- Which jobs in the wave are affected by each decision
+- Cross-wave coordination decisions (relevant to all waves)
+
+Decisions that apply to ALL waves should appear in ALL WAVE-CONTEXT.md files.
+
+### Write Files
+
+For each wave, write `.planning/waves/${SET_ID}/${WAVE_ID}/WAVE-CONTEXT.md` using the Write tool:
 
 ```markdown
 # WAVE-CONTEXT: {waveId}
@@ -284,52 +288,48 @@ Then write `WAVE-CONTEXT.md` to `.planning/waves/{setId}/{waveId}/WAVE-CONTEXT.m
 
 ## Wave Boundary
 
-{Scope of what this wave covers -- derived from SET-OVERVIEW.md and job list}
+{Scope of what this wave covers -- derived from wave-level artifacts and job list}
 
 ## Decisions
 
-{All locked decisions from the discussion, organized by gray area}
+{Decisions from the discussion that are relevant to THIS wave, organized by gray area}
 
-### {Gray Area 1 Title}
+### {Gray Area Title}
 - **Decision:** {what was decided}
-- **Rationale:** {why}
+- **Rationale:** {why this was chosen}
 
-### {Gray Area 2 Title}
+### {Another Gray Area Title}
 ...
+
+## Cross-Wave Notes
+
+{Any coordination notes relevant to this wave's interaction with other waves in the set}
 
 ## Claude's Discretion
 
-{Areas where the developer selected "Let Claude decide" -- document what Claude will decide and the guiding principles}
-
-- {Area}: {What Claude will decide, guided by: {principle}}
-
-## Deferred Ideas
-
-{Anything mentioned during discussion that is out of wave scope}
-
-- {Idea} -- deferred because: {reason}
+{Areas not discussed -- implementation details Claude will decide based on codebase patterns}
 
 ## Code Context
 
-{Relevant patterns, existing code insights, and integration notes discovered during context gathering}
+{Relevant patterns, existing code insights, and integration notes from context gathering}
+```
+
+### Commit WAVE-CONTEXT.md Files
+
+```bash
+# (env preamble here)
+git add ".planning/waves/${SET_ID}/"
+git commit -m "discuss(${SET_ID}): capture set implementation vision across all waves"
 ```
 
 ---
 
-## Step 8: Commit and Next Steps
+## Step 8: Next Step
 
-Commit the WAVE-CONTEXT.md:
+Display the next step using the set index resolved in Step 2:
 
-```bash
-# (env preamble here)
-git add ".planning/waves/${SET_ID}/${WAVE_ID}/WAVE-CONTEXT.md"
-git commit -m "discuss(${SET_ID}): capture wave ${WAVE_ID} implementation vision"
-```
-
-Display the next step using the setIndex and waveIndex already resolved in Step 2:
-
-> **Next step:** `/rapid:wave-plan {setIndex}.{waveIndex}`
-> *(Plan wave {waveIndex} of {setId})*
+> **Next step:** `/rapid:plan {SET_INDEX}`
+> *(Plan all waves in set {SET_ID})*
 
 ---
 
@@ -338,13 +338,15 @@ Display the next step using the setIndex and waveIndex already resolved in Step 
 - If RAPID_TOOLS is not set: Show error and suggest running `/rapid:install`
 - If STATE.json is missing or invalid: Show error and suggest running `/rapid:init` first
 - If set CONTRACT.json is missing: Warn but continue -- discussion can proceed without contract details
-- If wave has no jobs in STATE.json: Warn the user and suggest running `/rapid:set-init` first
+- If a wave has no jobs in STATE.json: Warn the user and suggest running `/rapid:set-init` first
 - All errors should be descriptive with clear next steps for the user
 
-## Key Principles
+## Important Notes
 
-- **Wave-scoped discussion:** Jobs are context but NOT individually discussed. Vision is captured at wave level.
-- **"Claude decides" option:** Available in every deep-dive question (Step 5 only), allowing the developer to delegate per-question.
-- **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
-- **Structured output:** WAVE-CONTEXT.md follows a consistent format consumed by downstream Wave Planner and Job Planner agents.
-- **Idempotent state transitions:** Set transition to 'planning' tolerates already being in that state.
+- **Set-scoped discussion:** All waves are discussed in a single session. Decisions are split into per-wave WAVE-CONTEXT.md files based on which wave each decision affects.
+- **Product/UX focus:** Do not surface technical implementation details as gray areas. Focus on user experience decisions, developer preferences, and cross-wave coordination.
+- **Single round:** One question per gray area with concrete options and an "Other" freeform option. No follow-up rounds.
+- **Final gate only:** "Looks good / Revise" appears once at the very end, not per-area. Per-area revisions use the "Other" freeform option.
+- **Re-discuss:** If all waves are already discussed/planned, offer re-discuss option that overwrites existing WAVE-CONTEXT.md files.
+- **No wave-level invocation:** This skill accepts set references only (e.g., `/rapid:discuss 1`), not wave dot-notation (e.g., NOT `/rapid:discuss 1.1`).
+- **State transitions:** All waves in the set being discussed are transitioned to `discussing` status before the discussion begins.
