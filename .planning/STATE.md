@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
 status: completed
-stopped_at: Completed 37-02-PLAN.md
-last_updated: "2026-03-11T05:15:48.481Z"
+stopped_at: Phase 37.1 context gathered
+last_updated: "2026-03-11T10:40:44.509Z"
 last_activity: 2026-03-11 -- Plan 37-02 complete (agent reference, state machine docs, troubleshooting guide)
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
   total_plans: 8
   completed_plans: 8
@@ -86,6 +86,7 @@ None.
 - v2.0 Mark II: Phases 16-24 (shipped 2026-03-09)
 - v2.1 Improvements & Fixes: Phases 25-32 + 27.1 + 29.1 (shipped 2026-03-10)
 - v2.2 Subagent Merger & Documentation: Phases 33-37 (in progress)
+- Phase 37.1 inserted after Phase 37: Feature changes and fixes (URGENT)
 
 ### Blockers/Concerns
 
@@ -107,6 +108,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T05:09:46Z
-Stopped at: Completed 37-02-PLAN.md
-Resume file: .planning/phases/37-technical-documentation/37-02-SUMMARY.md
+Last session: 2026-03-11T10:40:44.506Z
+Stopped at: Phase 37.1 context gathered
+Resume file: .planning/phases/37.1-feature-changes-and-fixes/37.1-CONTEXT.md
