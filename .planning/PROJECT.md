@@ -55,16 +55,19 @@ Multiple developers using Claude Code can work on the same project simultaneousl
 
 ### Active
 
-#### Current Milestone: v2.2 Subagent Merger & Documentation
+#### Current Milestone: v3.0 Refresh
 
-**Goal:** Restructure the merge pipeline to delegate per-set merge work to subagents (preventing orchestrator context overflow on large codebases), and rewrite project documentation from scratch to reflect the current state through v2.1.
+**Goal:** Surgical rewrite of RAPID's orchestration layer — simplify planning, embed tool documentation in agent prompts, remove file locks and set gating, add Domain/UX researcher, while keeping proven review and merge pipelines.
 
 **Target features:**
-- Merge pipeline restructured with subagent delegation (orchestrator stays lean)
-- Adaptive nesting: merge agents can spawn per-conflict sub-agents for complex resolutions
-- Independent sets merge in parallel when DAG allows
-- Fresh README.md reflecting current RAPID capabilities
-- New technical_documentation.md for power users
+- Simplified orchestration: collapse wave-plan/job-plan into single plan-set flow
+- Embedded rapid-tools.cjs documentation (inline YAML per agent)
+- 5th researcher (Domain/UX) in init research pipeline
+- Interface contracts for set dependencies (no gating)
+- Streamlined commands: /init, /start-set, /discuss-set, /plan-set, /execute-set, /review, /merge
+- Auxiliary commands: /new-version, /add-set, /quick, /status, /install
+- XML-formatted prompts with consistent structure
+- Hybrid agent build (core hand-written, repetitive generated)
 
 ### Out of Scope
 

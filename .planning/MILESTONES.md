@@ -1,5 +1,23 @@
 # Milestones
 
+## v2.2 Subagent Merger & Documentation (Shipped: 2026-03-12)
+
+**Phases:** 33-37 (5 phases, 8 plans)
+**Requirements:** All complete
+**Timeline:** 2 days (2026-03-10 → 2026-03-12)
+**Git range:** feat(33-01) → docs(phase-37)
+
+**Delivered:** Restructured merge pipeline with subagent delegation, adaptive conflict resolution, and complete documentation rewrite.
+
+**Key accomplishments:**
+1. Merge pipeline restructured with per-set subagent delegation (orchestrator stays lean)
+2. Adaptive nesting: confidence-band routing for conflict resolution (auto/resolver/human)
+3. Independent sets merge in parallel when DAG allows
+4. Fresh README.md with concept-explanation-first layout
+5. Technical documentation with agent reference, state machine docs, troubleshooting guide
+
+---
+
 ## v2.1 Improvements & Fixes (Shipped: 2026-03-10)
 
 **Phases:** 25-32 + 27.1, 29.1 (10 phases, 22 plans)
