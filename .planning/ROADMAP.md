@@ -173,7 +173,7 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 38. State Machine Simplification | 2/2 | Complete    | 2026-03-12 | - |
-| 39. Tool Docs Registry & Core Module Refactor | v3.0 | 0/3 | Not started | - |
+| 39. Tool Docs Registry & Core Module Refactor | 1/3 | In Progress|  | - |
 | 40. CLI Surface & Utility Commands | v3.0 | 0/TBD | Not started | - |
 | 41. Build Pipeline & Generated Agents | v3.0 | 0/TBD | Not started | - |
 | 42. Core Agent Rewrites | v3.0 | 0/TBD | Not started | - |
