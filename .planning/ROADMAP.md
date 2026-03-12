@@ -68,7 +68,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. A fresh session with only STATE.json and disk artifacts present can bootstrap any command without prior conversation context
   5. Every state mutation follows the transaction pattern: read STATE.json, validate preconditions, perform work, write STATE.json atomically via temp-file-then-rename
   6. No state transition rejects based on another set's status -- sets are fully independent and can be started/executed in any order
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 38-01-PLAN.md — Rewrite schemas, transitions, and lock (wave 1)
+- [ ] 38-02-PLAN.md — Rewrite state machine, tests, and cleanup (wave 2)
 **Research flag**: Skip research-phase (well-understood refactoring with clear test coverage)
 
 ### Phase 39: Tool Docs Registry & Core Module Refactor
@@ -165,7 +168,7 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 38. State Machine Simplification | v3.0 | 0/TBD | Not started | - |
+| 38. State Machine Simplification | v3.0 | 0/2 | Planning | - |
 | 39. Tool Docs Registry & Core Module Refactor | v3.0 | 0/TBD | Not started | - |
 | 40. CLI Surface & Utility Commands | v3.0 | 0/TBD | Not started | - |
 | 41. Build Pipeline & Generated Agents | v3.0 | 0/TBD | Not started | - |
