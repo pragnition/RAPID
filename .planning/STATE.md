@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: in-progress
-stopped_at: Completed 40-02-PLAN.md
-last_updated: "2026-03-12T07:54:04.819Z"
+stopped_at: Completed 40-01-PLAN.md
+last_updated: "2026-03-12T07:59:45.745Z"
 last_activity: 2026-03-12 -- Completed 40-02 Status dashboard rewrite and install update
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 97
 ---
 
@@ -60,6 +60,8 @@ Recent:
 - [Phase 39]: assembleAgentPrompt() defers core-returns.md to after <role> (not in core loop) per PROMPT-SCHEMA.md
 - [Phase 40]: Status reads state via state get --all instead of worktree status-v2
 - [Phase 40]: Install changes minimal -- only post-install guidance and version references for v3.0
+- [Phase 40]: Deprecation stubs use disable-model-invocation: true for zero-cost direct output
+- [Phase 40]: v3.0 help shows 7 core + 4 auxiliary + migration table for deprecated v2 commands
 
 ### Pending Todos
 
@@ -95,5 +97,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T07:54:04.817Z
-Stopped at: Completed 40-02-PLAN.md
+Last session: 2026-03-12T07:59:25.038Z
+Stopped at: Completed 40-01-PLAN.md

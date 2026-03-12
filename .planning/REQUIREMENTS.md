@@ -57,8 +57,8 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 
 - [ ] **UX-01**: Error messages show progress breadcrumb (done/missing/next)
 - [ ] **UX-02**: Strong defaults with one suggested next action (minimize AskUserQuestion)
-- [ ] **UX-03**: Deprecation stubs for removed v2 commands with migration messages
-- [ ] **UX-04**: 7+4 command structure (7 core lifecycle + 4 auxiliary)
+- [x] **UX-03**: Deprecation stubs for removed v2 commands with migration messages
+- [x] **UX-04**: 7+4 command structure (7 core lifecycle + 4 auxiliary)
 
 ### Documentation
 
@@ -222,8 +222,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMD-12 | Phase 40 | Complete |
 | UX-01 | Phase 43 | Pending |
 | UX-02 | Phase 43 | Pending |
-| UX-03 | Phase 40 | Pending |
-| UX-04 | Phase 40 | Pending |
+| UX-03 | Phase 40 | Complete |
+| UX-04 | Phase 40 | Complete |
 | DOC-01 | Phase 45 | Pending |
 | DOC-02 | Phase 45 | Pending |
 | DOC-03 | Phase 45 | Pending |
