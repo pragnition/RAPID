@@ -12,7 +12,7 @@ See [skills/plan/SKILL.md](../skills/plan/SKILL.md) for full details.
 
 **With `<set-id>` argument:** Plans all waves in a set with a single command. Spawns a wave-analyzer agent to detect dependencies between waves, groups them into parallel batches, then runs the full wave-plan pipeline (research, wave plan, job plans, verify, validate) for each wave in dependency order. Independent waves plan in parallel batches; dependent waves plan sequentially with predecessor artifacts available. Supports smart re-entry -- re-running after partial completion skips already-planned waves. Fails fast if any wave has not been discussed.
 
-See [skills/plan-set/SKILL.md](../skills/plan-set/SKILL.md) for full details.
+See the [plan skill documentation](../skills/plan-set/SKILL.md) for full details.
 
 ## `/rapid:set-init <set-id>`
 
