@@ -147,4 +147,48 @@ describe('quick task operations', () => {
       assert.equal(newTask.description, 'First ever task');
     });
   });
+
+  describe('parseQuickAddArgs', () => {
+    it('extracts --commit flag from args', () => {
+      const { parseQuickAddArgs } = require('./quick.cjs');
+      const result = parseQuickAddArgs(['Fix', 'login', '--commit', 'abc123']);
+      assert.deepEqual(result, { description: 'Fix login', commitHash: 'abc123', directory: null });
+    });
+
+    it('extracts --dir flag from args', () => {
+      const { parseQuickAddArgs } = require('./quick.cjs');
+      const result = parseQuickAddArgs(['Fix', 'bug', '--dir', 'my-dir']);
+      assert.deepEqual(result, { description: 'Fix bug', commitHash: null, directory: 'my-dir' });
+    });
+
+    it('extracts both --commit and --dir flags from args', () => {
+      const { parseQuickAddArgs } = require('./quick.cjs');
+      const result = parseQuickAddArgs(['Fix', 'it', '--commit', 'abc123', '--dir', 'my-dir']);
+      assert.deepEqual(result, { description: 'Fix it', commitHash: 'abc123', directory: 'my-dir' });
+    });
+
+    it('handles flags before description words', () => {
+      const { parseQuickAddArgs } = require('./quick.cjs');
+      const result = parseQuickAddArgs(['--commit', 'abc123', 'Fix', 'it']);
+      assert.deepEqual(result, { description: 'Fix it', commitHash: 'abc123', directory: null });
+    });
+
+    it('works with no flags (description only)', () => {
+      const { parseQuickAddArgs } = require('./quick.cjs');
+      const result = parseQuickAddArgs(['Simple', 'task']);
+      assert.deepEqual(result, { description: 'Simple task', commitHash: null, directory: null });
+    });
+
+    it('returns empty description for empty args', () => {
+      const { parseQuickAddArgs } = require('./quick.cjs');
+      const result = parseQuickAddArgs([]);
+      assert.deepEqual(result, { description: '', commitHash: null, directory: null });
+    });
+
+    it('handles dangling --commit flag without value', () => {
+      const { parseQuickAddArgs } = require('./quick.cjs');
+      const result = parseQuickAddArgs(['--commit']);
+      assert.deepEqual(result, { description: '', commitHash: null, directory: null });
+    });
+  });
 });
