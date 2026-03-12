@@ -13,7 +13,7 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 - [ ] **STATE-02**: SetStatus enum updated with 'discussing' status for discuss-set flow
 - [ ] **STATE-03**: Crash recovery triad preserved (detectCorruption, recoverFromGit, atomic writes) through simplification
 - [ ] **STATE-04**: Every command bootstraps exclusively from STATE.json + disk artifacts (self-contained after /clear)
-- [ ] **STATE-05**: Each command follows transaction pattern: read state → validate → work → write state → suggest next action
+- [ ] **STATE-05**: Each command follows transaction pattern: read state -> validate -> work -> write state -> suggest next action
 
 ### Agent Infrastructure
 
@@ -155,7 +155,7 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 ### Deferred from v3.0
 
 - **AUTO-CTX-01**: Auto-context deep mode -- full codebase pattern scanning beyond roadmap/contracts
-- **CHAIN-01**: Single-command lifecycle -- /start-set auto-chains discuss → plan → execute → review
+- **CHAIN-01**: Single-command lifecycle -- /start-set auto-chains discuss -> plan -> execute -> review
 - **DYN-SET-01**: Dynamic set creation during execution (not just via /add-set between commands)
 
 ### Deferred from v2.2
@@ -189,50 +189,50 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STATE-01 | — | Pending |
-| STATE-02 | — | Pending |
-| STATE-03 | — | Pending |
-| STATE-04 | — | Pending |
-| STATE-05 | — | Pending |
-| AGENT-01 | — | Pending |
-| AGENT-02 | — | Pending |
-| AGENT-03 | — | Pending |
-| AGENT-04 | — | Pending |
-| AGENT-05 | — | Pending |
-| AGENT-06 | — | Pending |
-| PLAN-01 | — | Pending |
-| PLAN-02 | — | Pending |
-| PLAN-03 | — | Pending |
-| PLAN-04 | — | Pending |
-| PLAN-05 | — | Pending |
-| EXEC-01 | — | Pending |
-| EXEC-02 | — | Pending |
-| EXEC-03 | — | Pending |
-| CMD-01 | — | Pending |
-| CMD-02 | — | Pending |
-| CMD-03 | — | Pending |
-| CMD-04 | — | Pending |
-| CMD-05 | — | Pending |
-| CMD-06 | — | Pending |
-| CMD-07 | — | Pending |
-| CMD-08 | — | Pending |
-| CMD-09 | — | Pending |
-| CMD-10 | — | Pending |
-| CMD-11 | — | Pending |
-| CMD-12 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
-| UX-04 | — | Pending |
-| DOC-01 | — | Pending |
-| DOC-02 | — | Pending |
-| DOC-03 | — | Pending |
+| STATE-01 | Phase 38 | Pending |
+| STATE-02 | Phase 38 | Pending |
+| STATE-03 | Phase 38 | Pending |
+| STATE-04 | Phase 38 | Pending |
+| STATE-05 | Phase 38 | Pending |
+| AGENT-01 | Phase 39 | Pending |
+| AGENT-02 | Phase 39 | Pending |
+| AGENT-03 | Phase 41 | Pending |
+| AGENT-04 | Phase 42 | Pending |
+| AGENT-05 | Phase 39 | Pending |
+| AGENT-06 | Phase 41 | Pending |
+| PLAN-01 | Phase 43 | Pending |
+| PLAN-02 | Phase 43 | Pending |
+| PLAN-03 | Phase 43 | Pending |
+| PLAN-04 | Phase 43 | Pending |
+| PLAN-05 | Phase 43 | Pending |
+| EXEC-01 | Phase 44 | Pending |
+| EXEC-02 | Phase 44 | Pending |
+| EXEC-03 | Phase 44 | Pending |
+| CMD-01 | Phase 43 | Pending |
+| CMD-02 | Phase 43 | Pending |
+| CMD-03 | Phase 43 | Pending |
+| CMD-04 | Phase 43 | Pending |
+| CMD-05 | Phase 44 | Pending |
+| CMD-06 | Phase 40 | Pending |
+| CMD-07 | Phase 40 | Pending |
+| CMD-08 | Phase 40 | Pending |
+| CMD-09 | Phase 44 | Pending |
+| CMD-10 | Phase 44 | Pending |
+| CMD-11 | Phase 44 | Pending |
+| CMD-12 | Phase 40 | Pending |
+| UX-01 | Phase 43 | Pending |
+| UX-02 | Phase 43 | Pending |
+| UX-03 | Phase 40 | Pending |
+| UX-04 | Phase 40 | Pending |
+| DOC-01 | Phase 45 | Pending |
+| DOC-02 | Phase 45 | Pending |
+| DOC-03 | Phase 45 | Pending |
 
 **Coverage:**
-- v3.0 requirements: 32 total
-- Mapped to phases: 0
-- Unmapped: 32 (awaiting roadmap)
+- v3.0 requirements: 38 total
+- Mapped to phases: 38/38
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-09*
-*Last updated: 2026-03-12 after v3.0 milestone requirements defined*
+*Last updated: 2026-03-12 after v3.0 roadmap created (phases 38-45)*

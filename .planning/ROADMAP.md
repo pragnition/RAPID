@@ -6,13 +6,14 @@
 - ✅ **v1.1 Polish** - Phases 10-15 (shipped 2026-03-06)
 - ✅ **v2.0 Mark II** - Phases 16-24 (shipped 2026-03-09)
 - ✅ **v2.1 Improvements & Fixes** - Phases 25-32 (shipped 2026-03-10)
-- 🚧 **v2.2 Subagent Merger & Documentation** - Phases 33-37 (in progress)
+- ✅ **v2.2 Subagent Merger & Documentation** - Phases 33-37 (shipped 2026-03-12)
+- 🚧 **v3.0 Refresh** - Phases 38-45 (in progress)
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (33, 34, 35): Planned milestone work
-- Decimal phases (33.1, 33.2): Urgent insertions (marked with INSERTED)
+- Integer phases (38, 39, 40): Planned milestone work
+- Decimal phases (38.1, 38.2): Urgent insertions (marked with INSERTED)
 
 Decimal phases appear between their surrounding integers in numeric order.
 
@@ -32,7 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 </details>
 
-### v2.2 Subagent Merger & Documentation (In Progress)
+<details>
+<summary>v2.2 Subagent Merger & Documentation (Phases 33-37) - SHIPPED 2026-03-12</summary>
 
 - [x] **Phase 33: Merge State Schema & Infrastructure** - Extend MERGE-STATE schema and build helper functions for subagent delegation (completed 2026-03-10)
 - [x] **Phase 34: Core Merge Subagent Delegation** - Restructure merge SKILL.md to dispatch per-set rapid-set-merger subagents (completed 2026-03-10)
@@ -40,85 +42,134 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 36: README Rewrite** - Complete README.md rewrite reflecting all capabilities through v2.2 (completed 2026-03-11)
 - [x] **Phase 37: Technical Documentation** - Create technical_documentation.md as power user reference (completed 2026-03-11)
 
+</details>
+
+### v3.0 Refresh (In Progress)
+
+- [ ] **Phase 38: State Machine Simplification** - Collapse state hierarchy to set-level, add discussing status, preserve crash recovery
+- [ ] **Phase 39: Tool Docs Registry & Core Module Refactor** - Build per-agent tool documentation system and XML prompt schema
+- [ ] **Phase 40: CLI Surface & Utility Commands** - Prune rapid-tools.cjs, add deprecation stubs, implement /status and /install
+- [ ] **Phase 41: Build Pipeline & Generated Agents** - Hybrid build with SKIP_GENERATION, tool doc injection, 5th researcher
+- [ ] **Phase 42: Core Agent Rewrites** - Hand-write orchestrator, planner, executor, merger, reviewer agents
+- [ ] **Phase 43: Planning & Discussion Skills** - Rewrite init, start-set, discuss-set, plan-set with collapsed planning pipeline
+- [ ] **Phase 44: Execution & Auxiliary Skills** - Rewrite execute-set, implement quick, add-set, new-version
+- [ ] **Phase 45: Documentation, Contracts & Cleanup** - Update docs, remove dead code, simplify contracts
+
 ## Phase Details
 
-### Phase 33: Merge State Schema & Infrastructure
-**Goal**: MERGE-STATE schema supports subagent delegation tracking with backward-compatible fields, and helper functions exist for context assembly and result parsing
-**Depends on**: Phase 32 (last v2.1 phase)
-**Requirements**: MERGE-04, MERGE-05
+### Phase 38: State Machine Simplification
+**Goal**: State machine operates at set-level only -- no wave/job state tracking -- while preserving crash recovery and atomic writes
+**Depends on**: Phase 37 (last v2.2 phase)
+**Requirements**: STATE-01, STATE-02, STATE-03, STATE-04, STATE-05
 **Success Criteria** (what must be TRUE):
-  1. MERGE-STATE.json includes agentPhase tracking fields (agentPhase1, agentPhase2) and the schema validates against a v2.1-era file without errors
-  2. `prepareMergerContext()` in merge.cjs assembles a minimal payload (set name, unresolved conflicts, file paths) under 1000 tokens for a typical set
-  3. `parseSetMergerReturn()` in merge.cjs validates RAPID:RETURN against a Zod schema and defaults to BLOCKED when the return is missing or malformed
-  4. Compressed result protocol produces one-line status entries at roughly 100 tokens per set, verified against an 8-set budget calculation
-**Plans:** 1/1 plans complete
-Plans:
-- [ ] 33-01-PLAN.md -- Schema extension + three helper functions (prepareMergerContext, parseSetMergerReturn, compressResult)
+  1. WaveState and JobState schemas are removed from state-schemas.cjs, and STATE.json validates with only project > milestone > set hierarchy
+  2. SetStatus enum includes 'discussing' and the state machine accepts transitions into and out of it
+  3. After a simulated crash (process kill mid-write), detectCorruption identifies the bad state and recoverFromGit restores the last good commit
+  4. A fresh session with only STATE.json and disk artifacts present can bootstrap any command without prior conversation context
+  5. Every state mutation follows the transaction pattern: read STATE.json, validate preconditions, perform work, write STATE.json atomically via temp-file-then-rename
+  6. No state transition rejects based on another set's status -- sets are fully independent and can be started/executed in any order
+**Plans**: TBD
+**Research flag**: Skip research-phase (well-understood refactoring with clear test coverage)
 
-### Phase 34: Core Merge Subagent Delegation
-**Goal**: The merge orchestrator dispatches isolated rapid-set-merger subagents per set, collects structured results, handles partial failures, and discards per-set context after collection
-**Depends on**: Phase 33 (schema and helpers must exist before delegation code)
-**Requirements**: MERGE-01, MERGE-02, MERGE-03
+### Phase 39: Tool Docs Registry & Core Module Refactor
+**Goal**: Every agent prompt contains only the CLI commands it needs, rendered in a validated XML structure with compact YAML tool blocks
+**Depends on**: Phase 38 (state schema must be finalized before agents reference it)
+**Requirements**: AGENT-01, AGENT-02, AGENT-05
 **Success Criteria** (what must be TRUE):
-  1. Running `/rapid:merge` spawns a separate rapid-set-merger subagent for each set in the wave, visible as distinct agent instances in Claude Code UI
-  2. Each merge subagent returns a structured RAPID:RETURN that the orchestrator parses; a missing or malformed return is treated as BLOCKED (not success)
-  3. When one set's merge subagent fails (BLOCKED, context-exhausted, malformed), the user sees recovery options and independent sets continue merging unblocked
-  4. MERGE-STATE.json shows status "resolving" before subagent spawn and advances to next status after return, enabling restart to skip completed sets
-  5. After collecting a set's result, the orchestrator context retains only a compressed one-line status (~100 tokens), not the full detection/resolution detail
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 34-01-PLAN.md -- Agent infrastructure: role-set-merger module, build-agents registration, CLI enhancements (--agent-phase, prepare-context)
-- [x] 34-02-PLAN.md -- SKILL.md restructuring: replace Steps 3-5 with dispatch + fast path + retry + recovery
+  1. src/lib/tool-docs.cjs exports getToolDocsForRole() that returns a compact YAML block of CLI commands for a given role, and each block is under 1000 tokens
+  2. An XML schema document exists defining all allowed tags and nesting rules for agent prompts, and at least one agent prompt validates against it
+  3. Core modules are consolidated: core-state-access.md and core-context-loading.md are retired, their guidance absorbed into core-identity.md and a new core-conventions.md
+**Plans**: TBD
+**Research flag**: Skip research-phase (validate compact format with one real agent before scaling)
 
-### Phase 35: Adaptive Conflict Resolution
-**Goal**: Mid-confidence merge escalations (0.3-0.8) are resolved by dedicated rapid-conflict-resolver agents spawned by the orchestrator, not by humans or by the merger itself
-**Depends on**: Phase 34 (core delegation pattern must be proven stable)
-**Requirements**: MERGE-06
+### Phase 40: CLI Surface & Utility Commands
+**Goal**: rapid-tools.cjs reflects the v3.0 7+4 command structure, removed commands produce migration messages, and utility commands (/status, /install, /review, /merge) work
+**Depends on**: Phase 39 (tool docs must reflect accurate CLI surface)
+**Requirements**: CMD-06, CMD-07, CMD-08, CMD-12, UX-03, UX-04
 **Success Criteria** (what must be TRUE):
-  1. When a rapid-set-merger returns escalations with confidence scores between 0.3 and 0.8, the orchestrator spawns a rapid-conflict-resolver agent per conflict
-  2. Conflicts with confidence below 0.3 or involving API signature changes go directly to a human decision gate (no automated resolution attempted)
-  3. MERGE-STATE.json agentPhase2 field tracks which conflicts have been dispatched to resolver agents
-**Plans:** 2/2 plans complete
-Plans:
-- [ ] 35-01-PLAN.md -- Schema change (agentPhase2 to object map) + 5 helper functions (routeEscalation, isApiSignatureConflict, generateConflictId, prepareResolverContext, parseConflictResolverReturn)
-- [ ] 35-02-PLAN.md -- Role module (role-conflict-resolver.md), build-agents registration, SKILL.md Step 3e rewrite with routing + resolver dispatch
+  1. Running a removed v2 command (e.g., /rapid:wave-plan) produces a deprecation message telling the user which v3.0 command replaces it
+  2. /rapid:status displays a project dashboard showing all sets, their statuses, active worktrees, and suggests the next action
+  3. /rapid:review and /rapid:merge work with the simplified state schema (set-level status checks instead of wave/job traversal)
+  4. /rapid:install validates the plugin installation and updates plugin files
+  5. The help text and command registry in rapid-tools.cjs lists exactly 7 core + 4 auxiliary commands
+**Plans**: TBD
+**Research flag**: Skip research-phase (code removal with deprecation stubs)
 
-### Phase 36: README Rewrite
-**Goal**: README.md accurately describes RAPID's current capabilities through v2.2 with a working quick start and command reference
-**Depends on**: Phase 35 (all merge pipeline behavior must be finalized before documenting)
-**Requirements**: DOC-01, DOC-02
+### Phase 41: Build Pipeline & Generated Agents
+**Goal**: handleBuildAgents() produces generated agents with embedded tool docs and XML structure, skips hand-written core agents, and includes the 5th researcher
+**Depends on**: Phase 40 (CLI surface must be finalized so tool docs are accurate)
+**Requirements**: AGENT-03, AGENT-04, AGENT-06
 **Success Criteria** (what must be TRUE):
-  1. README.md is rewritten from scratch (not patched) and accurately describes all capabilities through v2.2 including subagent merge delegation
-  2. README.md includes a full lifecycle quick start walkthrough covering init through cleanup with accurate command names and arguments
-  3. README.md includes an ASCII architecture diagram showing the Sets/Waves/Jobs hierarchy and agent dispatch pattern
-  4. Every command listed in the command reference table exists as a working skill and has correct argument syntax
-**Plans:** 1/1 plans complete
-Plans:
-- [ ] 36-01-PLAN.md -- Full README.md rewrite: problem-first opening, How It Works, architecture diagram, quick start (greenfield/brownfield), command reference, further reading
+  1. Running build-agents skips the 5 core agents (orchestrator, planner, executor, merger, reviewer) listed in SKIP_GENERATION and does not overwrite their files
+  2. Each generated agent file contains a `<tools>` XML section with role-specific CLI commands injected from tool-docs.cjs
+  3. A 5th researcher agent (Domain/UX) exists in the init research pipeline and produces domain-specific findings during /init
+  4. Retired role modules (wave-analyzer, wave-researcher, wave-planner, job-planner, job-executor) are removed and no longer referenced
+**Plans**: TBD
+**Research flag**: Skip research-phase (extends established build-agents pipeline)
 
-### Phase 37: Technical Documentation
-**Goal**: Power users have a comprehensive reference document covering all skills, agents, configuration, state machines, and failure recovery
-**Depends on**: Phase 36 (README establishes the conceptual framework that technical docs build on)
-**Requirements**: DOC-03, DOC-04, DOC-05
+### Phase 42: Core Agent Rewrites
+**Goal**: The 5 hand-written core agents (orchestrator, planner, executor, merger, reviewer) define the v3.0 user experience with embedded tool docs, XML structure, and correct state transitions
+**Depends on**: Phase 41 (SKIP_GENERATION must be in place before hand-written files are created; build pipeline must not overwrite them)
+**Requirements**: AGENT-04
 **Success Criteria** (what must be TRUE):
-  1. technical_documentation.md exists and covers all skills (17+), configuration options, and state machine transitions
-  2. technical_documentation.md includes an agent role reference cataloging all 30+ agents with their purpose, spawner, inputs, and outputs
-  3. technical_documentation.md includes a troubleshooting guide covering common failure modes (subagent timeout, merge conflicts, state corruption, worktree cleanup)
-  4. technical_documentation.md references SKILL.md files as authoritative source for implementation details rather than duplicating their content
-**Plans:** 2/2 plans complete
-Plans:
-- [ ] 37-01-PLAN.md -- Index file + lifecycle skill docs (setup, planning, execution, review, merge-and-cleanup) + configuration reference
-- [ ] 37-02-PLAN.md -- Agent catalog with dispatch tree + state machine diagrams + troubleshooting guide
+  1. agents/rapid-orchestrator.md, rapid-planner.md, rapid-executor.md, rapid-merger.md, and rapid-reviewer.md exist as hand-written files (not build-generated) and are each under 8KB
+  2. Each core agent prompt embeds its own tool docs directly (not template-injected) and uses the XML section structure from the schema document
+  3. The orchestrator and merger agents preserve the exact state transition sequences and RAPID:RETURN parsing contracts that the review and merge pipelines depend on
+  4. Each core agent is classified as SCRIPTED, GUIDED, or AUTONOMOUS with appropriate edge-case escape hatches
+  5. All core agents explicitly treat sets as independent -- no agent refuses to work on a set because another set is incomplete or in a different state
+**Plans**: TBD
+**Research flag**: Needs research-phase (enumerate coupling points between orchestrator/merger and review/merge pipelines before authoring)
+
+### Phase 43: Planning & Discussion Skills
+**Goal**: Users can run /init, /start-set, /discuss-set, and /plan-set to go from project initialization through complete set planning in 2-4 agent spawns
+**Depends on**: Phase 42 (skills reference core agent return formats and must be written against stable agents)
+**Requirements**: CMD-01, CMD-02, CMD-03, CMD-04, PLAN-01, PLAN-02, PLAN-03, PLAN-04, PLAN-05, UX-01, UX-02
+**Success Criteria** (what must be TRUE):
+  1. /init handles greenfield and brownfield projects with a 5-researcher pipeline (including Domain/UX) and produces a roadmap
+  2. /start-set creates a worktree scaffold for a set and chains into discuss-set
+  3. /discuss-set captures user vision into CONTEXT.md, and /discuss-set --skip auto-generates CONTEXT.md from roadmap + codebase scan
+  4. /plan-set produces one PLAN.md per wave in a single pass with 2-4 agent spawns (not 15-20), and interface contracts are defined between dependent sets
+  5. Contract enforcement runs at three points: after planning, during execution, before merge
+  6. Error messages show progress breadcrumbs (what is done, what is missing, what to run next) and each command suggests exactly one next action
+**Plans**: TBD
+**Research flag**: Needs research-phase for plan-set specifically (validate single-agent planning for multi-wave scenarios)
+
+### Phase 44: Execution & Auxiliary Skills
+**Goal**: Users can execute planned sets and use auxiliary commands (/quick, /add-set, /new-version) for workflow flexibility
+**Depends on**: Phase 43 (execution depends on planning artifacts; auxiliary commands depend on the core lifecycle being stable)
+**Requirements**: CMD-05, CMD-09, CMD-10, CMD-11, EXEC-01, EXEC-02, EXEC-03
+**Success Criteria** (what must be TRUE):
+  1. /execute-set runs parallel wave execution using per-wave PLAN.md files and a lean verification agent checks objectives after all waves complete
+  2. The executor determines completion by reading planning artifacts (which PLAN.md files have implementation commits) rather than from wave/job state, enabling re-entry after crash
+  3. /quick allows ad-hoc changes without requiring set structure
+  4. /add-set adds new sets to an existing project mid-milestone with proper contract updates
+  5. /new-version completes the current milestone and starts a new version
+**Plans**: TBD
+**Research flag**: Needs research-phase for execute-set (validate artifact-based re-entry without wave/job state)
+
+### Phase 45: Documentation, Contracts & Cleanup
+**Goal**: v3.0 is the documented, clean official version with dead code removed and contracts simplified
+**Depends on**: Phase 44 (all functional work must be complete before documenting)
+**Requirements**: DOC-01, DOC-02, DOC-03
+**Success Criteria** (what must be TRUE):
+  1. README.md and DOCS.md accurately describe v3.0 commands, architecture, and workflow (no references to wave-plan, job-plan, or other removed concepts)
+  2. Unused libraries, retired agents, and wave/job artifacts are removed from the codebase (dead code elimination)
+  3. GATES.json generation is removed, CONTRACT.json is retained as the sole contract artifact, and lock.cjs retains only STATE.json mutation locks (set-gating locks removed)
+**Plans**: TBD
+**Research flag**: Skip research-phase (documentation and cleanup)
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
+Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 33. Merge State Schema & Infrastructure | 1/1 | Complete    | 2026-03-10 | - |
-| 34. Core Merge Subagent Delegation | 2/2 | Complete    | 2026-03-10 | - |
-| 35. Adaptive Conflict Resolution | 2/2 | Complete    | 2026-03-11 | - |
-| 36. README Rewrite | 1/1 | Complete    | 2026-03-11 | - |
-| 37. Technical Documentation | 2/2 | Complete    | 2026-03-11 | - |
+| 38. State Machine Simplification | v3.0 | 0/TBD | Not started | - |
+| 39. Tool Docs Registry & Core Module Refactor | v3.0 | 0/TBD | Not started | - |
+| 40. CLI Surface & Utility Commands | v3.0 | 0/TBD | Not started | - |
+| 41. Build Pipeline & Generated Agents | v3.0 | 0/TBD | Not started | - |
+| 42. Core Agent Rewrites | v3.0 | 0/TBD | Not started | - |
+| 43. Planning & Discussion Skills | v3.0 | 0/TBD | Not started | - |
+| 44. Execution & Auxiliary Skills | v3.0 | 0/TBD | Not started | - |
+| 45. Documentation, Contracts & Cleanup | v3.0 | 0/TBD | Not started | - |
