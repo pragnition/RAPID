@@ -45,8 +45,8 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 - [ ] **CMD-03**: /discuss-set as standalone command with --skip flag
 - [ ] **CMD-04**: /plan-set as standalone command
 - [ ] **CMD-05**: /execute-set as standalone command
-- [ ] **CMD-06**: /review preserved with state reference updates
-- [ ] **CMD-07**: /merge preserved with state updates and planning artifact transfer
+- [x] **CMD-06**: /review preserved with state reference updates
+- [x] **CMD-07**: /merge preserved with state updates and planning artifact transfer
 - [x] **CMD-08**: /status shows project dashboard across all worktrees with next steps
 - [ ] **CMD-09**: /quick for ad-hoc changes without set structure
 - [ ] **CMD-10**: /add-set adds sets to an existing project mid-milestone
@@ -213,8 +213,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMD-03 | Phase 43 | Pending |
 | CMD-04 | Phase 43 | Pending |
 | CMD-05 | Phase 44 | Pending |
-| CMD-06 | Phase 40 | Pending |
-| CMD-07 | Phase 40 | Pending |
+| CMD-06 | Phase 40 | Complete |
+| CMD-07 | Phase 40 | Complete |
 | CMD-08 | Phase 40 | Complete |
 | CMD-09 | Phase 44 | Pending |
 | CMD-10 | Phase 44 | Pending |

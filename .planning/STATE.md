@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: in-progress
-stopped_at: Completed 40-01-PLAN.md
-last_updated: "2026-03-12T07:59:45.745Z"
-last_activity: 2026-03-12 -- Completed 40-02 Status dashboard rewrite and install update
+stopped_at: Completed 40-03-PLAN.md
+last_updated: "2026-03-12T08:06:59.623Z"
+last_activity: 2026-03-12 -- Completed 40-03 Review and merge v3.0 state updates
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 8
-  percent: 97
+  completed_plans: 9
+  percent: 99
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 40 of 45 (CLI Surface & Utility Commands)
-Plan: 2 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: in-progress
-Last activity: 2026-03-12 -- Completed 40-02 Status dashboard rewrite and install update
+Last activity: 2026-03-12 -- Completed 40-03 Review and merge v3.0 state updates
 
-Progress: [██████████] 97% (102/105 plans)
+Progress: [██████████] 99% (104/105 plans)
 
 ## Accumulated Context
 
@@ -62,6 +62,9 @@ Recent:
 - [Phase 40]: Install changes minimal -- only post-install guidance and version references for v3.0
 - [Phase 40]: Deprecation stubs use disable-model-invocation: true for zero-cost direct output
 - [Phase 40]: v3.0 help shows 7 core + 4 auxiliary + migration table for deprecated v2 commands
+- [Phase 40]: Review gates on 'complete' (not 'executing') per v3 set lifecycle
+- [Phase 40]: Merge auto-transitions to 'merged' as terminal state after successful merge execute
+- [Phase 40]: Removed execute wave-status from merge; checks STATE.json directly via state get --all
 
 ### Pending Todos
 
@@ -97,5 +100,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T07:59:25.038Z
-Stopped at: Completed 40-01-PLAN.md
+Last session: 2026-03-12T08:06:59.622Z
+Stopped at: Completed 40-03-PLAN.md
