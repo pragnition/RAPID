@@ -27,6 +27,8 @@ const STAGE_VERBS = {
   'execute': 'EXECUTING',
   'review': 'REVIEWING',
   'merge': 'MERGING',
+  'migrate': 'MIGRATING',
+  'quick': 'QUICK TASK',
 };
 
 /**
@@ -37,6 +39,7 @@ const STAGE_VERBS = {
  *   Planning stages (init, set-init, discuss, wave-plan) = bright blue bg
  *   Execution stages (execute) = bright green bg
  *   Review stages (review, merge) = bright red bg
+ *   Utility stages (migrate, quick) = bright magenta bg
  */
 const STAGE_BG = {
   'init': '\x1b[104m',        // bright blue
@@ -47,6 +50,8 @@ const STAGE_BG = {
   'execute': '\x1b[102m',     // bright green
   'review': '\x1b[101m',      // bright red
   'merge': '\x1b[101m',       // bright red
+  'migrate': '\x1b[105m',     // bright magenta
+  'quick': '\x1b[105m',       // bright magenta
 };
 
 /**
@@ -55,7 +60,7 @@ const STAGE_BG = {
  * Produces a fixed-width, ANSI-colored banner string with the RAPID brand,
  * stage verb, and optional target. Always ends with ANSI reset code.
  *
- * @param {string} stage - Stage name (init, set-init, discuss, wave-plan, plan-set, execute, review, merge)
+ * @param {string} stage - Stage name (init, set-init, discuss, wave-plan, plan-set, execute, review, merge, migrate, quick)
  * @param {string} [target] - Optional target description (e.g., "Wave 1.1", "auth-system")
  * @returns {string} Formatted banner string with ANSI escape codes, or fallback for unknown stages
  */
