@@ -135,8 +135,12 @@ Plans:
   5. All core agents explicitly treat sets as independent -- no agent refuses to work on a set because another set is incomplete or in a different state
   6. Orchestrator agent and role module removed from all registries (SKIP_GENERATION, ROLE_CORE_MAP, ROLE_TOOLS, ROLE_COLORS, ROLE_DESCRIPTIONS, ROLE_TOOL_MAP)
   7. core-identity.md updated with v3 workflow (init > start-set > discuss > plan-set > execute-set > review > merge) and independent sets model
-**Plans**: TBD
-**Research flag**: Needs research-phase (enumerate coupling points between merger and merge pipeline before authoring)
+**Plans**: 3 plans
+Plans:
+- [ ] 42-01-PLAN.md — Orchestrator removal, test updates, and core-identity.md v3 rewrite (wave 1)
+- [ ] 42-02-PLAN.md — Hand-write planner and executor role sections (wave 2)
+- [ ] 42-03-PLAN.md — Hand-write merger and reviewer role sections (wave 2)
+**Research flag**: Research complete (coupling points between merger and merge pipeline enumerated in 42-RESEARCH.md)
 
 ### Phase 43: Planning & Discussion Skills
 **Goal**: Users can run /init, /start-set, /discuss-set, and /plan-set to go from project initialization through complete set planning in 2-4 agent spawns
@@ -187,7 +191,7 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 39. Tool Docs Registry & Core Module Refactor | 4/4 | Complete    | 2026-03-12 | - |
 | 40. CLI Surface & Utility Commands | 4/4 | Complete    | 2026-03-12 | - |
 | 41. Build Pipeline & Generated Agents | 2/2 | Complete    | 2026-03-12 | - |
-| 42. Core Agent Rewrites | v3.0 | 0/TBD | Not started | - |
+| 42. Core Agent Rewrites | v3.0 | 0/3 | Not started | - |
 | 43. Planning & Discussion Skills | v3.0 | 0/TBD | Not started | - |
 | 44. Execution & Auxiliary Skills | v3.0 | 0/TBD | Not started | - |
 | 45. Documentation, Contracts & Cleanup | v3.0 | 0/TBD | Not started | - |
