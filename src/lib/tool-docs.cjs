@@ -117,7 +117,6 @@ const ROLE_TOOL_MAP = {
                        'worktree-list', 'worktree-status', 'display-banner', 'parse-return', 'parse-return-validate',
                        'resolve-set', 'resolve-wave'],
   'executor':         ['state-get', 'state-transition-set', 'verify-light'],
-  'job-executor':     ['state-get', 'state-transition-set', 'verify-light'],
   'planner':          ['state-get', 'state-get-all', 'plan-create-set', 'plan-decompose', 'plan-write-dag',
                        'plan-list-sets', 'plan-load-set', 'resolve-set', 'resolve-wave'],
   'set-planner':      ['state-get', 'state-get-all', 'plan-create-set', 'plan-decompose', 'plan-write-dag'],
@@ -130,11 +129,7 @@ const ROLE_TOOL_MAP = {
   'bugfix':           ['state-get'],
 
   // Planner variants
-  'wave-planner':     ['state-get', 'wave-plan-resolve', 'wave-plan-create-dir',
-                       'wave-plan-validate', 'wave-plan-list-jobs'],
-  'job-planner':      ['state-get', 'wave-plan-resolve', 'wave-plan-list-jobs'],
   'plan-verifier':    ['state-get', 'plan-load-set', 'wave-plan-validate'],
-  'wave-analyzer':    ['state-get', 'plan-list-sets'],
 
   // Init/context pipeline
   'roadmapper':       ['state-get', 'init-scaffold'],
@@ -144,7 +139,7 @@ const ROLE_TOOL_MAP = {
   // These roles have NO CLI commands (omitted from map):
   // 'research-stack', 'research-features', 'research-architecture',
   // 'research-pitfalls', 'research-oversights', 'research-synthesizer',
-  // 'wave-researcher', 'unit-tester', 'bug-hunter', 'devils-advocate',
+  // 'unit-tester', 'bug-hunter', 'devils-advocate',
   // 'judge', 'uat', 'scoper'
 };
 
