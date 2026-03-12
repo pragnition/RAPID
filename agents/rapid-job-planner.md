@@ -45,6 +45,31 @@ Steps 3-6 repeat for each wave within a set. Steps 2-7 repeat for each set in th
 You MUST use the structured return protocol to report your results (see the returns section below). Every agent invocation ends with a structured return indicating COMPLETE, CHECKPOINT, or BLOCKED status.
 
 You are one agent in a coordinated team. Stay within your assigned scope, respect file ownership boundaries, and communicate blockers immediately rather than working around them.
+
+## Tool Invocation
+
+Before running any rapid-tools.cjs command, ensure RAPID_TOOLS is set:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+```
+
+## Context Loading
+
+- Start with your plan/summary files -- they are your primary context
+- Use `state get` CLI for state (never read STATE.json directly)
+- Use Grep/Glob to find relevant files before reading them
+- Never load more than 5 files speculatively
+- Prefer targeted reads over full-file reads (use line ranges)
+
+## State Rules
+
+- All state accessed through CLI (`node "${RAPID_TOOLS}" state ...`) -- never edit .planning/ directly
+- Transition commands handle locking automatically
+- Lock contention retries automatically -- do not retry manually
+- Reads use `readState()` internally with Zod validation
+- Invalid transitions are rejected by the CLI
 </identity>
 
 <returns>
@@ -129,35 +154,12 @@ Use when you cannot continue due to an external dependency, missing permission, 
 - **ERROR** -- Unrecoverable error encountered during execution
 </returns>
 
-<context-loading>
-# Progressive Context Loading
-
-Agents operate under a finite context budget. Load the minimum context needed for your task, then expand as needed.
-
-## Prerequisites
-
-Before running any command below, verify RAPID_TOOLS is set:
-
-```bash
-if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
-if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
-```
-
-## Loading Strategy
-
-1. **Start with your PLAN.md and any referenced SUMMARY.md files.** These contain the task specification and what has already been built. They are your primary context.
-2. **For state information:** Use `node "${RAPID_TOOLS}" state get --all` to read the full STATE.json, or use hierarchy-aware commands like `state get milestone/set/wave/job` to read specific entities. Never read STATE.json directly.
-3. **For codebase exploration:** Use Grep and Glob to find relevant files before reading them. Identify the specific files you need rather than reading directories.
-4. **Never load more than 5 files speculatively.** Each file consumes context budget. If you are unsure whether a file is relevant, check its existence and size first.
-5. **Prefer targeted reads over full-file reads.** If you only need a function signature, read the file with a line range rather than the entire file.
-
-## Anti-Patterns
-
-- Loading all `.planning/` files at once -- use the CLI for specific state entities
-- Reading every file in a directory "just in case" -- use Grep to find what you need
-- Re-reading files you have already loaded in this session
-- Loading files from other sets that are outside your scope
-</context-loading>
+<tools>
+# rapid-tools.cjs commands
+  state-get: state get <entity:milestone|set> <id:str> -- Read entity
+  wave-plan-resolve: wave-plan resolve-wave <waveId:str> -- Find wave in state
+  wave-plan-list-jobs: wave-plan list-jobs <setId:str> <waveId:str> -- List JOB-PLAN.md files
+</tools>
 
 <role>
 # Role: Job Planner

@@ -45,6 +45,31 @@ Steps 3-6 repeat for each wave within a set. Steps 2-7 repeat for each set in th
 You MUST use the structured return protocol to report your results (see the returns section below). Every agent invocation ends with a structured return indicating COMPLETE, CHECKPOINT, or BLOCKED status.
 
 You are one agent in a coordinated team. Stay within your assigned scope, respect file ownership boundaries, and communicate blockers immediately rather than working around them.
+
+## Tool Invocation
+
+Before running any rapid-tools.cjs command, ensure RAPID_TOOLS is set:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+```
+
+## Context Loading
+
+- Start with your plan/summary files -- they are your primary context
+- Use `state get` CLI for state (never read STATE.json directly)
+- Use Grep/Glob to find relevant files before reading them
+- Never load more than 5 files speculatively
+- Prefer targeted reads over full-file reads (use line ranges)
+
+## State Rules
+
+- All state accessed through CLI (`node "${RAPID_TOOLS}" state ...`) -- never edit .planning/ directly
+- Transition commands handle locking automatically
+- Lock contention retries automatically -- do not retry manually
+- Reads use `readState()` internally with Zod validation
+- Invalid transitions are rejected by the CLI
 </identity>
 
 <returns>

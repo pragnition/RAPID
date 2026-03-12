@@ -6,8 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// All 29 roles that must be generated
-const ALL_29_ROLES = [
+// All 31 roles that must be generated
+const ALL_31_ROLES = [
   'planner', 'executor', 'reviewer', 'verifier', 'orchestrator',
   'wave-researcher', 'wave-planner', 'job-planner', 'job-executor',
   'unit-tester', 'bug-hunter', 'devils-advocate', 'judge',
@@ -16,39 +16,43 @@ const ALL_29_ROLES = [
   'research-pitfalls', 'research-oversights', 'research-synthesizer',
   'roadmapper', 'codebase-synthesizer', 'context-generator', 'set-planner',
   'plan-verifier', 'wave-analyzer', 'scoper',
+  'set-merger', 'conflict-resolver',
 ];
 
 // Per-role core module mapping (must match production ROLE_CORE_MAP in rapid-tools.cjs)
+// Updated for 3-module core: identity, returns, conventions
 const EXPECTED_ROLE_CORE_MAP = {
-  'planner':      ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md', 'core-context-loading.md'],
-  'executor':     ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
-  'reviewer':     ['core-identity.md', 'core-returns.md', 'core-state-access.md'],
-  'verifier':     ['core-identity.md', 'core-returns.md', 'core-state-access.md'],
-  'orchestrator': ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md', 'core-context-loading.md'],
-  'wave-researcher': ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-  'wave-planner':    ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-  'job-planner':     ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-  'set-planner':     ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-  'job-executor': ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
-  'bugfix':       ['core-identity.md', 'core-returns.md', 'core-git.md'],
-  'merger':       ['core-identity.md', 'core-returns.md', 'core-git.md'],
-  'unit-tester':      ['core-identity.md', 'core-returns.md'],
-  'bug-hunter':       ['core-identity.md', 'core-returns.md'],
-  'devils-advocate':  ['core-identity.md', 'core-returns.md'],
-  'judge':            ['core-identity.md', 'core-returns.md'],
-  'uat':              ['core-identity.md', 'core-returns.md'],
-  'codebase-synthesizer':  ['core-identity.md', 'core-returns.md'],
-  'context-generator':     ['core-identity.md', 'core-returns.md'],
-  'research-stack':        ['core-identity.md', 'core-returns.md'],
-  'research-features':     ['core-identity.md', 'core-returns.md'],
-  'research-architecture': ['core-identity.md', 'core-returns.md'],
-  'research-pitfalls':     ['core-identity.md', 'core-returns.md'],
-  'research-oversights':   ['core-identity.md', 'core-returns.md'],
-  'research-synthesizer':  ['core-identity.md', 'core-returns.md'],
-  'roadmapper':            ['core-identity.md', 'core-returns.md'],
-  'plan-verifier':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-  'wave-analyzer':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-  'scoper':                ['core-identity.md', 'core-returns.md'],
+  'planner':              ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'executor':             ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'reviewer':             ['core-identity.md', 'core-returns.md'],
+  'verifier':             ['core-identity.md', 'core-returns.md'],
+  'orchestrator':         ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'wave-researcher':      ['core-identity.md', 'core-returns.md'],
+  'wave-planner':         ['core-identity.md', 'core-returns.md'],
+  'job-planner':          ['core-identity.md', 'core-returns.md'],
+  'set-planner':          ['core-identity.md', 'core-returns.md'],
+  'job-executor':         ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'bugfix':               ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'merger':               ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'unit-tester':          ['core-identity.md', 'core-returns.md'],
+  'bug-hunter':           ['core-identity.md', 'core-returns.md'],
+  'devils-advocate':      ['core-identity.md', 'core-returns.md'],
+  'judge':                ['core-identity.md', 'core-returns.md'],
+  'uat':                  ['core-identity.md', 'core-returns.md'],
+  'codebase-synthesizer': ['core-identity.md', 'core-returns.md'],
+  'context-generator':    ['core-identity.md', 'core-returns.md'],
+  'research-stack':       ['core-identity.md', 'core-returns.md'],
+  'research-features':    ['core-identity.md', 'core-returns.md'],
+  'research-architecture':['core-identity.md', 'core-returns.md'],
+  'research-pitfalls':    ['core-identity.md', 'core-returns.md'],
+  'research-oversights':  ['core-identity.md', 'core-returns.md'],
+  'research-synthesizer': ['core-identity.md', 'core-returns.md'],
+  'roadmapper':           ['core-identity.md', 'core-returns.md'],
+  'plan-verifier':        ['core-identity.md', 'core-returns.md'],
+  'wave-analyzer':        ['core-identity.md', 'core-returns.md'],
+  'scoper':               ['core-identity.md', 'core-returns.md'],
+  'set-merger':           ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'conflict-resolver':    ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
 };
 
 const rapidToolsPath = path.join(__dirname, '..', 'bin', 'rapid-tools.cjs');
@@ -61,13 +65,13 @@ describe('build-agents', () => {
   });
 
   describe('agent file generation', () => {
-    it('generates exactly 29 .md files', () => {
+    it('generates exactly 31 .md files', () => {
       const mdFiles = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
-      assert.equal(mdFiles.length, 29, `Expected 29 .md files in agents/, got ${mdFiles.length}`);
+      assert.equal(mdFiles.length, 31, `Expected 31 .md files in agents/, got ${mdFiles.length}`);
     });
 
-    it('generates a file for each of the 29 roles', () => {
-      for (const role of ALL_29_ROLES) {
+    it('generates a file for each of the 31 roles', () => {
+      for (const role of ALL_31_ROLES) {
         const filePath = path.join(agentsDir, `rapid-${role}.md`);
         assert.ok(fs.existsSync(filePath), `Missing agent file: rapid-${role}.md`);
       }
@@ -98,7 +102,7 @@ describe('build-agents', () => {
     });
 
     it('no generated file uses fallback color "default"', () => {
-      for (const role of ALL_29_ROLES) {
+      for (const role of ALL_31_ROLES) {
         const content = fs.readFileSync(path.join(agentsDir, `rapid-${role}.md`), 'utf-8');
         const fmStart = content.indexOf('---');
         const fmEnd = content.indexOf('---', fmStart + 3);
@@ -111,7 +115,7 @@ describe('build-agents', () => {
     });
 
     it('no generated file uses generic fallback description', () => {
-      for (const role of ALL_29_ROLES) {
+      for (const role of ALL_31_ROLES) {
         const content = fs.readFileSync(path.join(agentsDir, `rapid-${role}.md`), 'utf-8');
         const fmStart = content.indexOf('---');
         const fmEnd = content.indexOf('---', fmStart + 3);
@@ -144,7 +148,7 @@ describe('build-agents', () => {
         }
 
         // Verify it does NOT contain core modules it shouldn't
-        const allCoreTags = ['identity', 'returns', 'state-access', 'git', 'context-loading'];
+        const allCoreTags = ['identity', 'returns', 'conventions'];
         const expectedTags = coreModules.map(m => m.replace('.md', '').replace('core-', ''));
         for (const tag of allCoreTags) {
           if (!expectedTags.includes(tag)) {
@@ -167,9 +171,62 @@ describe('build-agents', () => {
     });
   });
 
+  describe('tool doc injection', () => {
+    it('rapid-executor.md contains <tools> section with expected commands', () => {
+      const content = fs.readFileSync(path.join(agentsDir, 'rapid-executor.md'), 'utf-8');
+      assert.ok(content.includes('<tools>'), 'rapid-executor.md should contain <tools> tag');
+      assert.ok(content.includes('</tools>'), 'rapid-executor.md should contain </tools> tag');
+      assert.ok(content.includes('state-get:'), 'rapid-executor.md <tools> should contain state-get command');
+      assert.ok(content.includes('state-transition-set:'), 'rapid-executor.md <tools> should contain state-transition-set command');
+    });
+
+    it('roles without CLI commands have no <tools> section', () => {
+      const content = fs.readFileSync(path.join(agentsDir, 'rapid-research-synthesizer.md'), 'utf-8');
+      assert.ok(
+        !content.includes('<tools>'),
+        'rapid-research-synthesizer.md should NOT contain <tools> tag (no CLI commands)'
+      );
+    });
+
+    it('<tools> section appears between core modules and <role> tag', () => {
+      const content = fs.readFileSync(path.join(agentsDir, 'rapid-executor.md'), 'utf-8');
+      const identityEnd = content.indexOf('</identity>');
+      const toolsStart = content.indexOf('<tools>');
+      const roleStart = content.indexOf('<role>');
+
+      assert.ok(identityEnd !== -1, 'rapid-executor.md should have </identity>');
+      assert.ok(toolsStart !== -1, 'rapid-executor.md should have <tools>');
+      assert.ok(roleStart !== -1, 'rapid-executor.md should have <role>');
+
+      assert.ok(
+        toolsStart > identityEnd,
+        '<tools> should appear after </identity>'
+      );
+      assert.ok(
+        toolsStart < roleStart,
+        '<tools> should appear before <role>'
+      );
+    });
+  });
+
+  describe('XML structure per PROMPT-SCHEMA.md', () => {
+    it('required XML tags present in every generated agent (identity, role, returns)', () => {
+      const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
+      for (const file of files) {
+        const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
+        assert.ok(content.includes('<identity>'), `${file} should contain <identity> tag`);
+        assert.ok(content.includes('</identity>'), `${file} should contain </identity> tag`);
+        assert.ok(content.includes('<role>'), `${file} should contain <role> tag`);
+        assert.ok(content.includes('</role>'), `${file} should contain </role> tag`);
+        assert.ok(content.includes('<returns>'), `${file} should contain <returns> tag`);
+        assert.ok(content.includes('</returns>'), `${file} should contain </returns> tag`);
+      }
+    });
+  });
+
   describe('agent size limits', () => {
-    it('no generated file exceeds 15KB (except planner which is a known exception)', () => {
-      const KNOWN_OVERSIZED = ['rapid-planner.md', 'rapid-plan-verifier.md'];
+    it('no generated file exceeds 15KB (except known oversized agents)', () => {
+      const KNOWN_OVERSIZED = ['rapid-planner.md', 'rapid-plan-verifier.md', 'rapid-set-merger.md', 'rapid-merger.md'];
       const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
       for (const file of files) {
         const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
