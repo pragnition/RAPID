@@ -725,12 +725,18 @@ color: ${color}
     built.push(filePath);
   }
 
-  // Generate stubs for core agents
+  // Generate stubs for core agents (skip if already hand-written with CORE prefix)
   for (const role of SKIP_GENERATION) {
+    const filePath = path.join(agentsDir, `rapid-${role}.md`);
+    if (fs.existsSync(filePath)) {
+      const existing = fs.readFileSync(filePath, 'utf-8');
+      if (existing.startsWith('<!-- CORE: Hand-written agent')) {
+        continue; // Preserve hand-written core agent
+      }
+    }
     const coreModules = ROLE_CORE_MAP[role];
     const assembled = assembleStubPrompt(role, coreModules);
     const content = STUB_COMMENT + assembled;
-    const filePath = path.join(agentsDir, `rapid-${role}.md`);
     fs.writeFileSync(filePath, content, 'utf-8');
   }
 
