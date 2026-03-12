@@ -12,7 +12,7 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 - [x] **STATE-01**: State machine simplified to set-level hierarchy (remove WaveState, JobState, derived status propagation)
 - [x] **STATE-02**: SetStatus enum updated with 'discussing' status for discuss-set flow
 - [x] **STATE-03**: Crash recovery triad preserved (detectCorruption, recoverFromGit, atomic writes) through simplification
-- [ ] **STATE-04**: Every command bootstraps exclusively from STATE.json + disk artifacts (self-contained after /clear)
+- [x] **STATE-04**: Every command bootstraps exclusively from STATE.json + disk artifacts (self-contained after /clear)
 - [x] **STATE-05**: Each command follows transaction pattern: read state -> validate -> work -> write state -> suggest next action
 
 ### Agent Infrastructure
@@ -192,7 +192,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-01 | Phase 38 | Complete |
 | STATE-02 | Phase 38 | Complete |
 | STATE-03 | Phase 38 | Complete |
-| STATE-04 | Phase 38 | Pending |
+| STATE-04 | Phase 38 | Complete |
 | STATE-05 | Phase 38 | Complete |
 | AGENT-01 | Phase 39 | Pending |
 | AGENT-02 | Phase 39 | Pending |

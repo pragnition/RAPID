@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: executing
-stopped_at: Completed 38-01-PLAN.md
-last_updated: "2026-03-12T05:35:24.931Z"
-last_activity: 2026-03-12 -- Completed 38-01 foundation schemas plan
+stopped_at: Completed 38-02-PLAN.md
+last_updated: "2026-03-12T05:41:38Z"
+last_activity: 2026-03-12 -- Completed 38-02 state machine rewrite plan
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 80
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 38 of 45 (State Machine Simplification)
-Plan: 1 of 2 in current phase
+Plan: 2 of 2 in current phase
 Status: executing
-Last activity: 2026-03-12 -- Completed 38-01 foundation schemas plan
+Last activity: 2026-03-12 -- Completed 38-02 state machine rewrite plan
 
 Progress: [########################################..........] 80% (37/45 phases)
 
@@ -49,6 +49,9 @@ Recent:
 - Done = full workflow works end-to-end (init through merge)
 - [Phase 38]: SetStatus has exactly 6 values: pending, discussing, planning, executing, complete, merged
 - [Phase 38]: validateTransition signature changed from 3 args to 2 args (removed entityType)
+- [Phase 38]: withStateTransaction acquires lock once, writes inline -- transitionSet uses it to avoid double-lock
+- [Phase 38]: validateDiskArtifacts returns advisory warnings only, never modifies STATE.json
+- [Phase 38]: Lock name changed from 'state-machine' to 'state'
 
 ### Pending Todos
 
@@ -84,5 +87,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T05:35:24.930Z
-Stopped at: Completed 38-01-PLAN.md
+Last session: 2026-03-12T05:41:38Z
+Stopped at: Completed 38-02-PLAN.md
