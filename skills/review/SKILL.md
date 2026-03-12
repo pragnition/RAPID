@@ -66,15 +66,15 @@ Read STATE.json to verify the target set exists and is in a reviewable state:
 node "${RAPID_TOOLS}" state get --all
 ```
 
-Parse the JSON output and find the target set. The set status MUST be `executing` or `reviewing`. If the set is in any other status (e.g., `pending`, `planning`, `discussing`):
+Parse the JSON output and find the target set. The set status MUST be `complete` or `reviewing`. If the set is in any other status (e.g., `pending`, `planning`, `executing`):
 
-> Cannot review set '{set-id}' -- current status is '{status}'. Set must be in 'executing' or 'reviewing' state. Run `/rapid:execute {set-id}` first.
+> Cannot review set '{set-id}' -- current status is '{status}'. Set must be in 'complete' or 'reviewing' state. Run `/rapid:execute-set {set-id}` first.
 
 Exit.
 
 ### 0d: Transition set to 'reviewing'
 
-If the set is currently in `executing` state, transition it to `reviewing`:
+If the set is currently in `complete` state, transition it to `reviewing`:
 
 ```bash
 node "${RAPID_TOOLS}" state transition set <milestone> <set-id> reviewing
@@ -183,7 +183,7 @@ Scoping: {'concern-based' if useConcernScoping else 'directory chunking (fallbac
 
 ## Step 3: Load Acceptance Criteria
 
-Read ALL JOB-PLAN.md files across ALL waves in the set to extract acceptance criteria. Iterate wave directories:
+Read ALL JOB-PLAN.md files from the set's planning directory to extract acceptance criteria. Iterate wave directories:
 
 ```bash
 # For each wave in the set, list job plans
@@ -922,12 +922,11 @@ Then exit. Do NOT prompt for selection.
 - **Re-hunts narrow scope.** Cycles 2 and 3 only analyze files the bugfix agent modified in the previous cycle. No re-chunking for re-hunts -- flat scope on modified files only. This prevents scope creep and ensures the re-hunt is targeted.
 - **UAT runs once on the full set scope.** UAT tests user workflows across the entire set, not individual files or chunks. It is never chunked.
 - **UAT browser automation depends on MCP tool availability.** If the configured browser automation tool is not available at runtime, automated steps should be converted to human steps. The UAT subagent handles this gracefully.
-- **Review state is set-level.** The set transitions `executing` -> `reviewing`. The review does not modify individual wave states.
+- **Review state is set-level.** The set transitions `complete` -> `reviewing`. The review does not modify individual wave states.
 - **All review artifacts are committed at the end.** After all stages complete and REVIEW-SUMMARY.md is generated, the orchestrator should commit review artifacts alongside STATE.json.
 - **Stage ordering is fixed.** When multiple stages are selected, they always run in order: unit test, then bug hunt, then UAT. This ensures unit test failures inform the bug hunt, and both inform UAT.
 - **Idempotent re-entry.** If a previous review session was interrupted, re-invoking `/rapid:review` picks up where it left off. The set is already in `reviewing` state, and existing REVIEW-*.md artifacts are preserved (overwritten only if the stage runs again).
 - **Token cost awareness.** The 3-agent adversarial bug hunt is the most expensive stage. Chunked parallel execution multiplies cost by chunk count per cycle. Users can control costs by selecting only the stages they need.
-- **Lean review is unaffected.** The lean wave-level review (`review lean <set-id> <wave-id>`) is a separate flow called from `/rapid:execute` during reconciliation. It continues to operate at the wave level and is not impacted by this set-level review orchestrator.
 - **Concern-based scoping runs for unit test and bug hunt stages only.** A scoper agent categorizes files by concern area as Step 2.5. Each concern group includes cross-cutting files. If cross-cutting files exceed 50% of total, concern scoping falls back to directory chunking with a warning.
 - **Deduplication runs before the adversarial pipeline.** After concern-scoped (or chunk-scoped) hunters complete, findings are merged and deduplicated. Same file + similar description (>0.7 Levenshtein similarity) = duplicate. Higher severity wins. This saves tokens by running ONE advocate and ONE judge on the deduplicated set.
 - **Concern tags trace code health by area.** Each finding includes a `concern` field from the scoper. This appears in REVIEW-BUGS.md and in logged issues for understanding which concern areas surface the most bugs.
