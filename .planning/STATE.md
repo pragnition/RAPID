@@ -1,17 +1,17 @@
 ---
-rapid_state_version: 1.0
+gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
-status: executing
-stopped_at: Completed 39-03-PLAN.md (phase 39 complete)
-last_updated: "2026-03-12T06:39:52.310Z"
-last_activity: 2026-03-12 -- Completed phase 39 (tool docs registry & core module refactor)
+status: completed
+stopped_at: Completed 39-04-PLAN.md (phase 39 gap closure complete)
+last_updated: "2026-03-12T07:06:48.959Z"
+last_activity: 2026-03-12 -- Completed 39-04 XML tag assembly order fix (gap closure)
 progress:
   total_phases: 8
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  completed_phases: 2
+  total_plans: 6
+  completed_plans: 6
+  percent: 80
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 39 of 45 (Tool Docs Registry & Core Module Refactor)
-Plan: 3 of 3 in current phase (complete)
+Plan: 4 of 4 in current phase (complete)
 Status: phase-complete
-Last activity: 2026-03-12 -- Completed 39-03 build pipeline integration
+Last activity: 2026-03-12 -- Completed 39-04 XML tag assembly order fix (gap closure)
 
 Progress: [########################################..........] 80% (37/45 phases)
 
@@ -57,6 +57,7 @@ Recent:
 - [Phase 39]: 59 commands in TOOL_REGISTRY, 18 roles in ROLE_TOOL_MAP with curated CLI command sets
 - [Phase 39]: Build pipeline wired: ROLE_CORE_MAP uses 3 modules, assembleAgentPrompt injects <tools> from getToolDocsForRole()
 - [Phase 39]: All 31 agents rebuilt with XML structure: identity, conventions, tools, role, returns
+- [Phase 39]: assembleAgentPrompt() defers core-returns.md to after <role> (not in core loop) per PROMPT-SCHEMA.md
 
 ### Pending Todos
 
@@ -92,5 +93,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T06:44:22Z
-Stopped at: Completed 39-03-PLAN.md (phase 39 complete)
+Last session: 2026-03-12T07:06:46.691Z
+Stopped at: Completed 39-04-PLAN.md (phase 39 gap closure complete)
