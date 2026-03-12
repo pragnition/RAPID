@@ -1,36 +1,11 @@
 'use strict';
-
 const { z } = require('zod');
 
-// --- Status enums ---
-
-const JobStatus = z.enum(['pending', 'executing', 'complete', 'failed']);
-
-const WaveStatus = z.enum(['pending', 'discussing', 'planning', 'executing', 'reconciling', 'complete', 'failed']);
-
-const SetStatus = z.enum(['pending', 'planning', 'executing', 'reviewing', 'merging', 'complete']);
-
-// --- State schemas (bottom-up) ---
-
-const JobState = z.object({
-  id: z.string(),
-  status: JobStatus.default('pending'),
-  startedAt: z.string().optional(),
-  completedAt: z.string().optional(),
-  commitSha: z.string().optional(),
-  artifacts: z.array(z.string()).default([]),
-});
-
-const WaveState = z.object({
-  id: z.string(),
-  status: WaveStatus.default('pending'),
-  jobs: z.array(JobState).default([]),
-});
+const SetStatus = z.enum(['pending', 'discussing', 'planning', 'executing', 'complete', 'merged']);
 
 const SetState = z.object({
   id: z.string(),
   status: SetStatus.default('pending'),
-  waves: z.array(WaveState).default([]),
 });
 
 const MilestoneState = z.object({
@@ -48,13 +23,4 @@ const ProjectState = z.object({
   createdAt: z.string(),
 });
 
-module.exports = {
-  JobStatus,
-  JobState,
-  WaveStatus,
-  WaveState,
-  SetStatus,
-  SetState,
-  MilestoneState,
-  ProjectState,
-};
+module.exports = { SetStatus, SetState, MilestoneState, ProjectState };
