@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
-status: completed
-stopped_at: Completed 39-02-PLAN.md
-last_updated: "2026-03-12T02:10:20.616Z"
-last_activity: 2026-03-12 -- Plan 39-02 complete (stale-pattern link fix)
+status: shipped
+stopped_at: Milestone v2.2 complete
+last_updated: "2026-03-12T10:15:00.000Z"
+last_activity: 2026-03-12 -- Milestone v2.2 shipped
 progress:
   total_phases: 8
   completed_phases: 8
@@ -18,17 +18,15 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-10)
+See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 39 - Documentation Refresh
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 39 of 39 (Documentation Refresh)
-Plan: 2 of 2 (39-02 complete)
-Status: Plan 39-02 complete -- stale-pattern link fix
-Last activity: 2026-03-12 -- Plan 39-02 complete (stale-pattern link fix)
+Milestone: v2.2 Subagent Merger & Documentation — SHIPPED 2026-03-12
+Status: All phases complete, milestone archived
 
 Progress: [##########] 100%
 
@@ -45,13 +43,13 @@ Progress: [##########] 100%
 | 37 | 01 | 5min | 2 | 7 |
 | 37 | 02 | 4min | 2 | 3 |
 | 37.1 | 05 | 2min | 2 | 35 |
-| Phase 37.1 P02 | 3min | 1 tasks | 1 files |
+| 37.1 | 02 | 3min | 1 | 1 |
 | 37.1 | 01 | 5min | 3 | 7 |
 | 37.1 | 03 | 7min | 2 | 8 |
-| Phase 37.1 P04 | 2min | 2 tasks | 2 files |
+| 37.1 | 04 | 2min | 2 | 2 |
 | 38 | 01 | 3min | 2 | 6 |
-| Phase 39 P01 | 2min | 2 tasks | 2 files |
-| Phase 39 P02 | 1min | 1 tasks | 1 files |
+| 39 | 01 | 2min | 2 | 2 |
+| 39 | 02 | 1min | 1 | 1 |
 
 ## Accumulated Context
 
@@ -59,65 +57,22 @@ Progress: [##########] 100%
 
 Full decision log in PROJECT.md Key Decisions table.
 
-Recent:
-- Steps 3+4+5 collapsed into single Step 3 with 5 substeps (3a-3e) for dispatch-collect pattern
-- git merge-tree --write-tree as fast-path check before subagent dispatch (exit 0 = skip subagent)
-- CHECKPOINT auto-retried once with checkpoint handoff data before adding to blockedSets
-- Post-wave recovery uses Retry/Skip/Abort only (no "Resolve manually" per locked decision)
-- compressedResults accumulated in-memory during Step 3d, used for Step 8 summary (no MERGE-STATE re-read)
-- Max 2 total attempts per set (initial + 1 retry), counter is in-memory (fresh per invocation)
-- role-set-merger.md absorbs merger semantic analysis inline (self-contained subagent)
-- --agent-phase flag on existing update-status (smaller API surface than new subcommand)
-- prepare-context uses best-effort file detection (graceful on missing branches)
-- agentPhase2 changed from AgentPhaseEnum to z.record(string, AgentPhaseEnum) for per-conflict tracking
-- Confidence band routing: <0.3 human-direct, 0.3-0.8 resolver-agent, >0.8 auto-accept, API always human-api-gate
-- parseConflictResolverReturn requires confidence field in COMPLETE returns for routing
-- [Phase 35]: Resolver role follows role-set-merger.md pattern as focused leaf agent (yellow color, no sub-agents)
-- [Phase 35]: Step 3e structured as 6 substeps (3e-i through 3e-vi): classify, auto-accept, dispatch, collect, present, re-gate
-- [Phase 36]: Concept-explanation-first layout for README (problem > how it works > diagram > quick start > reference)
-- [Phase 36]: No version callouts or changelogs -- describe current state only
-- [Phase 36]: References technical_documentation.md (not DOCS.md) as power-user deep dive
-- [Phase 37]: Synopsis+link pattern for skill docs (2-3 sentence synopsis + SKILL.md reference)
-- [Phase 37]: Utility commands in index file rather than separate doc (cross-cutting, not lifecycle-bound)
-- [Phase 37]: Config doc references source files for full schema rather than duplicating
-- [Phase 37]: rapid-reviewer classified as Internal (defined but not dispatched by any active skill)
-- [Phase 37]: rapid-bugfix listed under both Execution and Review (spawned by both execute and review skills)
-- [Phase 37.1-05]: Multi-fallback env preamble: env var > CLAUDE_SKILL_DIR > project root .planning/ ancestor traversal
-- [Phase 37.1-05]: Only set-merger and conflict-resolver needed core-state-access added (only roles referencing RAPID_TOOLS)
-- [Phase 37.1]: [Phase 37.1-02]: Full rewrite of discuss skill from scratch (wave-scoped architecture too deeply embedded for patching)
-- [Phase 37.1-01]: quickTasks uses optional().default([]) for zero-friction backward compatibility
-- [Phase 37.1-01]: Migration detection cascading priority: GSD > openspec > generic > none
-- [Phase 37.1-01]: backupPlanning throws on existing .planning.bak/ to prevent accidental overwrite
-- [Phase 37.1-03]: Task 1 changes already applied by Plan 37.1-05 -- no duplicate commit needed
-- [Phase 37.1-03]: Internal CLI calls (wave-plan list-jobs) preserved, only user-facing /rapid:wave-plan removed
-- [Phase 37.1-03]: User-facing /rapid:plan-set renamed to /rapid:plan throughout plan-set skill
-- [Phase 37.1]: [Phase 37.1-04]: Migrate skill uses two AskUserQuestion gates: after detection and before transform
-- [Phase 37.1]: [Phase 37.1-04]: Quick skill trusts developer judgment on task scope with no size guardrails
-- [Phase 38-01]: parseQuickAddArgs extracted to quick.cjs as testable pure function rather than inline in rapid-tools.cjs
-- [Phase 38-01]: Utility stages (migrate, quick) use bright magenta background to distinguish from lifecycle stages
-- [Phase 39]: [Phase 39-01]: skills/plan-set/SKILL.md link kept in docs/planning.md (skill directory still exists, invoked via /rapid:plan)
-- [Phase 39]: [Phase 39-02]: Anchor text changed to 'plan skill documentation' while preserving ../skills/plan-set/SKILL.md URL
-
 ### Pending Todos
 
 None.
 
 ### Roadmap Evolution
 
-- v1.0 Core: Phases 1-9.2 (shipped)
-- v1.1 UI UX Improvements: Phases 10-15 (shipped)
+- v1.0 Core: Phases 1-9.2 (shipped 2026-03-03)
+- v1.1 UI UX Improvements: Phases 10-15 (shipped 2026-03-06)
 - v2.0 Mark II: Phases 16-24 (shipped 2026-03-09)
 - v2.1 Improvements & Fixes: Phases 25-32 + 27.1 + 29.1 (shipped 2026-03-10)
-- v2.2 Subagent Merger & Documentation: Phases 33-37 (in progress)
-- Phase 37.1 inserted after Phase 37: Feature changes and fixes (URGENT)
-- Phase 38: CLI Infrastructure Fixes (gap closure)
-- Phase 39: Documentation Refresh (DOC-01, DOC-03 closure)
+- v2.2 Subagent Merger & Documentation: Phases 33-39 + 37.1 (shipped 2026-03-12)
 
 ### Blockers/Concerns
 
-- Claude Code subagents cannot spawn sub-subagents (hard platform constraint) -- shapes MERGE-06 design
+- Claude Code subagents cannot spawn sub-subagents (hard platform constraint) — shapes adaptive conflict resolution design
 - Token cost for 3-agent adversarial review needs monitoring in production use
-- Compressed result protocol validated: ~43 tokens/set (well under 100-token budget)
 
 ### Quick Tasks Completed
 
@@ -133,6 +88,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T02:02:29.041Z
-Stopped at: Completed 39-02-PLAN.md
+Last session: 2026-03-12
+Stopped at: Milestone v2.2 shipped
 Resume file: None

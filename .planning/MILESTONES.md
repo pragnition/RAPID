@@ -1,5 +1,25 @@
 # Milestones
 
+## v2.2 Subagent Merger & Documentation (Shipped: 2026-03-12)
+
+**Phases:** 33-39 + 37.1 (8 phases, 16 plans, 31 tasks)
+**Requirements:** 11/11 complete (MERGE-01-06, DOC-01-05)
+**Timeline:** 3 days (2026-03-10 → 2026-03-12)
+**Commits:** 149 | **Files changed:** 196 (+29,166 / -2,709 lines)
+**Git range:** Phase 33 → Phase 39
+
+**Delivered:** Merge pipeline restructured with subagent delegation for context efficiency, adaptive conflict resolution with confidence-band routing, comprehensive documentation rewrite, and new /rapid:migrate and /rapid:quick commands.
+
+**Key accomplishments:**
+1. Merge pipeline restructured with per-set subagent delegation and compressed results (~43 tokens/set)
+2. Adaptive conflict resolution with confidence-band routing and per-conflict resolver agents
+3. Complete README.md rewrite with architecture diagram, quick starts, and 18-command reference
+4. Comprehensive technical documentation (6 docs) covering all 17 skills, 31 agents, state machines, and troubleshooting
+5. New /rapid:migrate and /rapid:quick commands with set-level discuss redesign and wave hiding
+6. CLI infrastructure fixes and documentation refresh ensuring all commands work end-to-end
+
+---
+
 ## v2.1 Improvements & Fixes (Shipped: 2026-03-10)
 
 **Phases:** 25-32 + 27.1, 29.1 (10 phases, 22 plans)

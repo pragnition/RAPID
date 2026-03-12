@@ -2,7 +2,7 @@
 
 ## What This Is
 
-RAPID is a Claude Code plugin (metaprompting framework) that enables team-based parallel development using a Sets/Waves/Jobs hierarchy. Multiple developers work in isolated git worktrees, go through discuss → plan → execute → review loops per wave, then merge back via an automated pipeline with 5-level conflict detection and adversarial code review.
+RAPID is a Claude Code plugin (metaprompting framework) that enables team-based parallel development using a Sets/Waves/Jobs hierarchy. Multiple developers work in isolated git worktrees, go through discuss → plan → execute → review loops per wave, then merge back via an automated pipeline with subagent delegation, 5-level conflict detection, adaptive conflict resolution, and adversarial code review.
 
 ## Core Value
 
@@ -52,19 +52,17 @@ Multiple developers using Claude Code can work on the same project simultaneousl
 - ✓ Plan verifier agent for coverage and implementability — v2.1
 - ✓ Wave orchestration with dependency-aware sequencing — v2.1
 - ✓ Context-efficient review with scoper delegation and concern-based scoping — v2.1
+- ✓ Per-set merge subagent delegation with compressed results (~43 tokens/set) — v2.2
+- ✓ Adaptive conflict resolution with confidence-band routing and per-conflict resolver agents — v2.2
+- ✓ README.md rewritten from scratch with architecture diagram and command reference — v2.2
+- ✓ Technical documentation (6 docs) covering all skills, 31 agents, state machines, troubleshooting — v2.2
+- ✓ /rapid:migrate command for framework migration with detect-confirm-backup-transform flow — v2.2
+- ✓ /rapid:quick command for freeform task execution with auto-commit and state tracking — v2.2
+- ✓ Set-level discuss redesign with single-round flow and wave hiding — v2.2
 
 ### Active
 
-#### Current Milestone: v2.2 Subagent Merger & Documentation
-
-**Goal:** Restructure the merge pipeline to delegate per-set merge work to subagents (preventing orchestrator context overflow on large codebases), and rewrite project documentation from scratch to reflect the current state through v2.1.
-
-**Target features:**
-- Merge pipeline restructured with subagent delegation (orchestrator stays lean)
-- Adaptive nesting: merge agents can spawn per-conflict sub-agents for complex resolutions
-- Independent sets merge in parallel when DAG allows
-- Fresh README.md reflecting current RAPID capabilities
-- New technical_documentation.md for power users
+(No active milestone — use `/gsd:new-milestone` to start next)
 
 ### Out of Scope
 
@@ -75,18 +73,20 @@ Multiple developers using Claude Code can work on the same project simultaneousl
 - Fully automated review (no HITL) — AI review without human judgment leads to false confidence
 - Real-time cross-set synchronization — destroys isolation guarantees
 - AI-only merge conflict resolution — multi-file conflicts need human judgment
+- Separate documentation site — RAPID is a Claude Code plugin consumed in-terminal; in-repo Markdown is the right format
 
 ## Context
 
-Shipped v2.0 Mark II with ~26,829 LOC (JavaScript/CommonJS + JSON).
+Shipped v2.2 with ~79,688 LOC (JavaScript/CommonJS + JSON).
 Tech stack: Node.js, Zod 3.24.4, git worktrees, Claude Code plugin API.
-17 skills, 21 runtime libraries, 14 agent role modules.
+19 skills, 21 runtime libraries, 31 agent role modules.
 Hosted at github.com/fishjojo1/RAPID.
 
 v1.0 established core plugin infrastructure (agent framework, state, worktrees, merge).
 v1.1 polished UX with structured prompts and error recovery.
 v2.0 overhauled the entire workflow around Sets/Waves/Jobs hierarchy.
 v2.1 streamlined workflow, added 29 generated agents, concern-based review scoping, wave orchestration.
+v2.2 restructured merge pipeline with subagent delegation, added adaptive conflict resolution, comprehensive documentation rewrite, /rapid:migrate and /rapid:quick commands.
 
 ## Constraints
 
@@ -96,6 +96,7 @@ v2.1 streamlined workflow, added 29 generated agents, concern-based review scopi
 - **Isolation**: Sets are truly independent — no shared mutable state during execution except defined sync points
 - **Shell**: Use ~ instead of $HOME in all shell commands for Node compatibility
 - **UX**: AskUserQuestion for all user interactions; batch queries to save tokens/time
+- **Subagent nesting**: Claude Code subagents cannot spawn sub-subagents (hard platform constraint) — shapes adaptive conflict resolution design
 
 ## Key Decisions
 
@@ -113,11 +114,15 @@ v2.1 streamlined workflow, added 29 generated agents, concern-based review scopi
 | Adapt gsd_merge_agent for merger | Proven 5-level detection and tiered resolution for parallel branch merging | ✓ Good — L1-L4 detection + T1-T2 resolution working |
 | Hunter/Devils-Advocate/Judge pipeline | Adversarial multi-agent approach minimizes false negatives while pruning false positives | ✓ Good — 3-cycle iteration with scope narrowing |
 | Jobs = v1.0 plans in granularity | Proven granularity — contains multiple related tasks per job | ✓ Good — natural decomposition unit |
-| Defer /quick and /insert-job to v2.1 | Focus v2.0 on core workflow overhaul | ⚠️ Revisit — /quick may not be needed if workflow is streamlined |
 | Zod 3.24.4 for schemas | CommonJS compatibility (3.25+ breaks require) | ✓ Good — type-safe validation everywhere |
 | Hand-rolled state machine (~50 lines) | Simpler than XState, sufficient for hierarchical state tracking | ✓ Good — crash recovery + validated transitions |
 | STATE.json replaces STATE.md | Clean break, machine-readable source of truth | ✓ Good — no hybrid state confusion |
 | Sequential pipeline with parallel fan-out | Research → wave plan → parallel job planners, each producing validated artifacts | ✓ Good — clean handoff boundaries |
+| Per-set subagent delegation for merge | Prevents orchestrator context overflow on large codebases (~43 tokens/set vs full detection detail) | ✓ Good — proven token-efficient |
+| Confidence-band routing for conflict resolution | <0.3 human-direct, 0.3-0.8 resolver-agent, >0.8 auto-accept, API always human-gate | ✓ Good — tiered automation with human safety net |
+| Set-level discuss replacing wave-level | Single-round flow with per-wave output splitting reduces user interactions | ✓ Good — simpler UX, same output quality |
+| /rapid:quick for freeform tasks | Developer trust on scope, no size guardrails, auto-commit with state tracking | ✓ Good — fills gap for small ad-hoc work |
+| Synopsis+link pattern for technical docs | 2-3 sentence synopsis + SKILL.md reference avoids documentation rot | ✓ Good — single source of truth preserved |
 
 ---
-*Last updated: 2026-03-10 after v2.2 milestone started*
+*Last updated: 2026-03-12 after v2.2 milestone*
