@@ -40,7 +40,7 @@ describe('Phase 17: state.cjs deletion', () => {
     assert.ok(typeof stateMachine.createInitialState === 'function');
     assert.ok(typeof stateMachine.readState === 'function');
     assert.ok(typeof stateMachine.writeState === 'function');
-    assert.ok(typeof stateMachine.transitionJob === 'function');
+    assert.ok(typeof stateMachine.transitionSet === 'function');
   });
 });
 
