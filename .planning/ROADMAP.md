@@ -39,6 +39,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 35: Adaptive Conflict Resolution** - Orchestrator-mediated per-conflict agents for mid-confidence escalations (completed 2026-03-11)
 - [x] **Phase 36: README Rewrite** - Complete README.md rewrite reflecting all capabilities through v2.2 (completed 2026-03-11)
 - [x] **Phase 37: Technical Documentation** - Create technical_documentation.md as power user reference (completed 2026-03-11)
+- [ ] **Phase 38: CLI Infrastructure Fixes** - Fix display.cjs stage maps, quick flag parsing, and migrate Step 7 invalid subcommand
+- [ ] **Phase 39: Documentation Refresh** - Update README.md and docs/planning.md to reflect post-37.1 interface changes
 
 ## Phase Details
 
@@ -122,6 +124,8 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 35. Adaptive Conflict Resolution | 2/2 | Complete    | 2026-03-11 | - |
 | 36. README Rewrite | 1/1 | Complete    | 2026-03-11 | - |
 | 37. Technical Documentation | 2/2 | Complete    | 2026-03-11 | - |
+| 38. CLI Infrastructure Fixes | 0/1 | Not Started | - | - |
+| 39. Documentation Refresh | 0/1 | Not Started | - | - |
 
 ### Phase 37.1: Feature changes and fixes (INSERTED)
 
@@ -136,3 +140,25 @@ Plans:
 - [ ] 37.1-03-PLAN.md -- Wave hiding across all skills + workflow awareness + state commit after execute
 - [ ] 37.1-04-PLAN.md -- New skill files for /rapid:migrate and /rapid:quick
 - [ ] 37.1-05-PLAN.md -- Agent tool-calling audit and fixes
+
+### Phase 38: CLI Infrastructure Fixes
+**Goal**: Fix broken CLI infrastructure in display.cjs and rapid-tools.cjs so that /rapid:migrate and /rapid:quick work end-to-end
+**Depends on**: Phase 37.1 (fixes bugs introduced in 37.1)
+**Requirements**: FIX-03, FIX-04 (gap closure)
+**Gap Closure**: Closes integration and flow gaps from v2.2 audit
+**Success Criteria** (what must be TRUE):
+  1. display.cjs STAGE_VERBS and STAGE_BG maps include entries for `migrate` and `quick` stages (no more "Unknown stage" banners)
+  2. `handleQuick` in rapid-tools.cjs parses `--commit` and `--dir` flags from `quick add` arguments instead of concatenating them into description
+  3. migrate SKILL.md Step 7 uses a valid subcommand (not `display status`) for final verification output
+Plans: 0/1 plans needed
+
+### Phase 39: Documentation Refresh
+**Goal**: README.md and docs/planning.md accurately reflect post-37.1 interfaces (set-level discuss, /rapid:plan rename)
+**Depends on**: Phase 38 (fix code before documenting)
+**Requirements**: DOC-01, DOC-03 (gap closure)
+**Gap Closure**: Closes requirement gaps from v2.2 audit
+**Success Criteria** (what must be TRUE):
+  1. README.md command reference shows `/rapid:discuss <set-id>` (not `<wave-id>`) and lists `/rapid:plan` (not `/rapid:plan-set`)
+  2. docs/planning.md describes discuss as set-level single-round flow (not wave-level 2-round)
+  3. docs/planning.md merges plan-set into plan entry
+Plans: 0/1 plans needed

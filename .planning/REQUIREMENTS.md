@@ -85,9 +85,9 @@ Requirements for v2.2 Subagent Merger & Documentation. Each maps to roadmap phas
 
 ### Documentation
 
-- [x] **DOC-01**: README.md rewritten from scratch reflecting all capabilities through v2.2 with accurate command reference
+- [ ] **DOC-01**: README.md rewritten from scratch reflecting all capabilities through v2.2 with accurate command reference
 - [x] **DOC-02**: README.md includes full lifecycle quick start (init through cleanup) and ASCII architecture diagram
-- [x] **DOC-03**: technical_documentation.md created as power user reference with all skills, configuration, and state machine documentation
+- [ ] **DOC-03**: technical_documentation.md created as power user reference with all skills, configuration, and state machine documentation
 - [x] **DOC-04**: technical_documentation.md includes agent role reference (all 30+ agents: purpose, spawned by, inputs, outputs)
 - [x] **DOC-05**: technical_documentation.md includes troubleshooting guide for common failure modes
 
@@ -169,15 +169,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MERGE-04 | Phase 33 | Complete |
 | MERGE-05 | Phase 33 | Complete |
 | MERGE-06 | Phase 35 | Complete |
-| DOC-01 | Phase 36 | Complete |
+| DOC-01 | Phase 39 | Pending |
 | DOC-02 | Phase 36 | Complete |
-| DOC-03 | Phase 37 | Complete |
+| DOC-03 | Phase 39 | Pending |
 | DOC-04 | Phase 37 | Complete |
 | DOC-05 | Phase 37 | Complete |
 
 **Coverage:**
 - v2.1 requirements: 39 total (all complete)
-- v2.2 requirements: 11 total (all mapped)
+- v2.2 requirements: 11 total (9 complete, 2 pending: DOC-01, DOC-03)
 - Mapped to phases: 39 (v2.1) + 11 (v2.2) = 50 total
 - Unmapped: 0
 
