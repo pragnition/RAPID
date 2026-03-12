@@ -138,7 +138,8 @@ const ROLE_TOOL_MAP = {
 
   // These roles have NO CLI commands (omitted from map):
   // 'research-stack', 'research-features', 'research-architecture',
-  // 'research-pitfalls', 'research-oversights', 'research-synthesizer',
+  // 'research-pitfalls', 'research-oversights', 'research-ux',
+  // 'research-synthesizer',
   // 'unit-tester', 'bug-hunter', 'devils-advocate',
   // 'judge', 'uat', 'scoper'
 };

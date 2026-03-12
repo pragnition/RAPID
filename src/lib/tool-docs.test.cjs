@@ -72,7 +72,8 @@ describe('ROLE_TOOL_MAP', () => {
   it('does NOT include roles that have no CLI commands', () => {
     const excluded = [
       'research-stack', 'research-features', 'research-architecture',
-      'research-pitfalls', 'research-oversights', 'research-synthesizer',
+      'research-pitfalls', 'research-oversights', 'research-ux',
+      'research-synthesizer',
       'unit-tester', 'bug-hunter', 'devils-advocate',
       'judge', 'uat', 'scoper',
     ];

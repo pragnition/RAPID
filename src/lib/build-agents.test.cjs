@@ -6,13 +6,13 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// All 26 roles (31 minus 5 pruned v2 roles)
-const ALL_26_ROLES = [
+// All 27 roles (31 minus 5 pruned v2 roles, plus 1 new research-ux)
+const ALL_27_ROLES = [
   'planner', 'executor', 'reviewer', 'verifier', 'orchestrator',
   'unit-tester', 'bug-hunter', 'devils-advocate', 'judge',
   'bugfix', 'uat', 'merger',
   'research-stack', 'research-features', 'research-architecture',
-  'research-pitfalls', 'research-oversights', 'research-synthesizer',
+  'research-pitfalls', 'research-oversights', 'research-ux', 'research-synthesizer',
   'roadmapper', 'codebase-synthesizer', 'context-generator', 'set-planner',
   'plan-verifier', 'scoper',
   'set-merger', 'conflict-resolver',
@@ -45,6 +45,7 @@ const EXPECTED_ROLE_CORE_MAP = {
   'research-architecture':['core-identity.md', 'core-returns.md'],
   'research-pitfalls':    ['core-identity.md', 'core-returns.md'],
   'research-oversights':  ['core-identity.md', 'core-returns.md'],
+  'research-ux':          ['core-identity.md', 'core-returns.md'],
   'research-synthesizer': ['core-identity.md', 'core-returns.md'],
   'roadmapper':           ['core-identity.md', 'core-returns.md'],
   'plan-verifier':        ['core-identity.md', 'core-returns.md'],
@@ -68,22 +69,22 @@ describe('build-agents', () => {
   });
 
   describe('agent file generation', () => {
-    it('generates exactly 26 .md files (21 generated + 5 stubs)', () => {
+    it('generates exactly 27 .md files (22 generated + 5 stubs)', () => {
       const mdFiles = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
-      assert.equal(mdFiles.length, 26, `Expected 26 .md files in agents/, got ${mdFiles.length}: ${mdFiles.join(', ')}`);
+      assert.equal(mdFiles.length, 27, `Expected 27 .md files in agents/, got ${mdFiles.length}: ${mdFiles.join(', ')}`);
     });
 
-    it('generates a file for each of the 26 roles', () => {
-      for (const role of ALL_26_ROLES) {
+    it('generates a file for each of the 27 roles', () => {
+      for (const role of ALL_27_ROLES) {
         const filePath = path.join(agentsDir, `rapid-${role}.md`);
         assert.ok(fs.existsSync(filePath), `Missing agent file: rapid-${role}.md`);
       }
     });
 
-    it('build summary shows "Built 21 agents (5 core skipped)"', () => {
+    it('build summary shows "Built 22 agents (5 core skipped)"', () => {
       assert.ok(
-        buildOutput.includes('Built 21 agents (5 core skipped)'),
-        `Build output should contain "Built 21 agents (5 core skipped)", got: ${buildOutput.trim()}`
+        buildOutput.includes('Built 22 agents (5 core skipped)'),
+        `Build output should contain "Built 22 agents (5 core skipped)", got: ${buildOutput.trim()}`
       );
     });
   });
@@ -114,7 +115,7 @@ describe('build-agents', () => {
     });
 
     it('no file uses fallback color "default"', () => {
-      for (const role of ALL_26_ROLES) {
+      for (const role of ALL_27_ROLES) {
         const content = fs.readFileSync(path.join(agentsDir, `rapid-${role}.md`), 'utf-8');
         const fmStart = content.indexOf('---');
         const fmEnd = content.indexOf('---', fmStart + 3);
@@ -127,7 +128,7 @@ describe('build-agents', () => {
     });
 
     it('no file uses generic fallback description', () => {
-      for (const role of ALL_26_ROLES) {
+      for (const role of ALL_27_ROLES) {
         const content = fs.readFileSync(path.join(agentsDir, `rapid-${role}.md`), 'utf-8');
         const fmStart = content.indexOf('---');
         const fmEnd = content.indexOf('---', fmStart + 3);
