@@ -19,8 +19,8 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 
 - [x] **AGENT-01**: Each agent prompt embeds inline YAML of only the rapid-tools.cjs commands it needs
 - [x] **AGENT-02**: XML-formatted prompt structure with defined schema document (allowed tags, nesting rules)
-- [ ] **AGENT-03**: Hybrid build pipeline: SKIP_GENERATION set for core agents, ROLE_TOOL_DOCS for per-agent tool injection
-- [ ] **AGENT-04**: 5 core agents (orchestrator, planner, executor, merger, reviewer) hand-written and never overwritten by build
+- [x] **AGENT-03**: Hybrid build pipeline: SKIP_GENERATION set for core agents, ROLE_TOOL_DOCS for per-agent tool injection
+- [x] **AGENT-04**: 5 core agents (orchestrator, planner, executor, merger, reviewer) hand-written and never overwritten by build
 - [x] **AGENT-05**: Tool docs registry (tool-docs.cjs) with per-role command specs and 1000-token budget per agent
 - [ ] **AGENT-06**: 5th researcher (Domain/UX) added to init research pipeline
 
@@ -196,8 +196,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-05 | Phase 38 | Complete |
 | AGENT-01 | Phase 39 | Complete |
 | AGENT-02 | Phase 39 | Complete |
-| AGENT-03 | Phase 41 | Pending |
-| AGENT-04 | Phase 42 | Pending |
+| AGENT-03 | Phase 41 | Complete |
+| AGENT-04 | Phase 42 | Complete |
 | AGENT-05 | Phase 39 | Complete |
 | AGENT-06 | Phase 41 | Pending |
 | PLAN-01 | Phase 43 | Pending |

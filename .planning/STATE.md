@@ -1,5 +1,5 @@
 ---
-gsd_state_version: 1.0
+rapid_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: in-progress
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 40 - CLI Surface & Utility Commands (v3.0 Refresh)
+**Current focus:** Phase 41 - Build Pipeline & Generated Agents (v3.0 Refresh)
 
 ## Current Position
 
-Phase: 40 of 45 (CLI Surface & Utility Commands)
-Plan: 4 of 4 in current phase
+Phase: 41 of 45 (Build Pipeline & Generated Agents)
+Plan: 1 of 2 in current phase
 Status: in-progress
-Last activity: 2026-03-12 -- Completed 40-04 V3 banner display registration (gap closure)
+Last activity: 2026-03-12 -- Completed 41-01 hybrid build pipeline with SKIP_GENERATION and v2 role pruning
 
 Progress: [██████████] 100% (105/105 plans)
 
@@ -66,6 +66,9 @@ Recent:
 - [Phase 40]: Merge auto-transitions to 'merged' as terminal state after successful merge execute
 - [Phase 40]: Removed execute wave-status from merge; checks STATE.json directly via state get --all
 - [Phase 40]: v3 stage color grouping: start-set/discuss-set/new-version use blue bg, execute-set uses green bg
+- [Phase 41]: SKIP_GENERATION static array for 5 core agents (orchestrator, planner, executor, merger, reviewer)
+- [Phase 41]: Hybrid build: 21 generated + 5 stubs = 26 total agents (after pruning 5 v2 roles)
+- [Phase 41]: Core stubs include frontmatter + core modules + tools + placeholder role for Phase 42 hand-writing
 
 ### Pending Todos
 
@@ -101,5 +104,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T08:51:47.380Z
-Stopped at: Phase 41 context gathered
+Last session: 2026-03-12T09:19:55Z
+Stopped at: Completed 41-01-PLAN.md
