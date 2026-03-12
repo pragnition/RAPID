@@ -22,18 +22,18 @@ const ALL_31_ROLES = [
 // Per-role core module mapping (must match production ROLE_CORE_MAP in rapid-tools.cjs)
 // Updated for 3-module core: identity, returns, conventions
 const EXPECTED_ROLE_CORE_MAP = {
-  'planner':              ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
-  'executor':             ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'planner':              ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+  'executor':             ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
   'reviewer':             ['core-identity.md', 'core-returns.md'],
   'verifier':             ['core-identity.md', 'core-returns.md'],
-  'orchestrator':         ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'orchestrator':         ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
   'wave-researcher':      ['core-identity.md', 'core-returns.md'],
   'wave-planner':         ['core-identity.md', 'core-returns.md'],
   'job-planner':          ['core-identity.md', 'core-returns.md'],
   'set-planner':          ['core-identity.md', 'core-returns.md'],
-  'job-executor':         ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
-  'bugfix':               ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
-  'merger':               ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'job-executor':         ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+  'bugfix':               ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+  'merger':               ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
   'unit-tester':          ['core-identity.md', 'core-returns.md'],
   'bug-hunter':           ['core-identity.md', 'core-returns.md'],
   'devils-advocate':      ['core-identity.md', 'core-returns.md'],
@@ -51,8 +51,8 @@ const EXPECTED_ROLE_CORE_MAP = {
   'plan-verifier':        ['core-identity.md', 'core-returns.md'],
   'wave-analyzer':        ['core-identity.md', 'core-returns.md'],
   'scoper':               ['core-identity.md', 'core-returns.md'],
-  'set-merger':           ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
-  'conflict-resolver':    ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+  'set-merger':           ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+  'conflict-resolver':    ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
 };
 
 const rapidToolsPath = path.join(__dirname, '..', 'bin', 'rapid-tools.cjs');
@@ -205,6 +205,13 @@ describe('build-agents', () => {
       assert.ok(
         toolsStart < roleStart,
         '<tools> should appear before <role>'
+      );
+
+      const returnsStart = content.indexOf('<returns>');
+      assert.ok(returnsStart !== -1, 'rapid-executor.md should have <returns>');
+      assert.ok(
+        returnsStart > roleStart,
+        '<returns> should appear after <role> (returns is the last static section per PROMPT-SCHEMA.md)'
       );
     });
   });

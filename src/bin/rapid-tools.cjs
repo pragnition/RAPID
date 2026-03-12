@@ -572,18 +572,18 @@ function handleBuildAgents(cwd, args) {
   const ROLE_CORE_MAP = {
     // All roles get identity + returns (the 2 universal modules)
     // Roles that commit code also get conventions
-    'planner':              ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
-    'executor':             ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'planner':              ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+    'executor':             ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
     'reviewer':             ['core-identity.md', 'core-returns.md'],
     'verifier':             ['core-identity.md', 'core-returns.md'],
-    'orchestrator':         ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'orchestrator':         ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
     'wave-researcher':      ['core-identity.md', 'core-returns.md'],
     'wave-planner':         ['core-identity.md', 'core-returns.md'],
     'job-planner':          ['core-identity.md', 'core-returns.md'],
     'set-planner':          ['core-identity.md', 'core-returns.md'],
-    'job-executor':         ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
-    'bugfix':               ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
-    'merger':               ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'job-executor':         ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+    'bugfix':               ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+    'merger':               ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
     'unit-tester':          ['core-identity.md', 'core-returns.md'],
     'bug-hunter':           ['core-identity.md', 'core-returns.md'],
     'devils-advocate':      ['core-identity.md', 'core-returns.md'],
@@ -601,8 +601,8 @@ function handleBuildAgents(cwd, args) {
     'plan-verifier':        ['core-identity.md', 'core-returns.md'],
     'wave-analyzer':        ['core-identity.md', 'core-returns.md'],
     'scoper':               ['core-identity.md', 'core-returns.md'],
-    'set-merger':           ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
-    'conflict-resolver':    ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'set-merger':           ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+    'conflict-resolver':    ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
   };
 
   function generateFrontmatter(role) {
@@ -625,8 +625,13 @@ color: ${color}
     // 1. YAML frontmatter
     sections.push(generateFrontmatter(role));
 
-    // 2. Core modules (in specified order)
+    // 2. Core modules (in specified order, but defer core-returns.md to after <role>)
+    let returnsModule = null;
     for (const mod of coreModules) {
+      if (mod === 'core-returns.md') {
+        returnsModule = mod;
+        continue;
+      }
       const modPath = path.join(MODULES_DIR, 'core', mod);
       const content = fs.readFileSync(modPath, 'utf-8').trim();
       const tag = mod.replace('.md', '').replace('core-', '');
@@ -648,6 +653,13 @@ color: ${color}
     const rolePath = path.join(MODULES_DIR, 'roles', `role-${role}.md`);
     const roleContent = fs.readFileSync(rolePath, 'utf-8').trim();
     sections.push(`<role>\n${roleContent}\n</role>`);
+
+    // 5. Returns (last static section per PROMPT-SCHEMA.md)
+    if (returnsModule) {
+      const modPath = path.join(MODULES_DIR, 'core', returnsModule);
+      const content = fs.readFileSync(modPath, 'utf-8').trim();
+      sections.push(`<returns>\n${content}\n</returns>`);
+    }
 
     const assembled = sections.join('\n\n');
 
