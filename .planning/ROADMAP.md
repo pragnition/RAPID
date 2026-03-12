@@ -163,4 +163,6 @@ Plans:
   1. README.md command reference shows `/rapid:discuss <set-id>` (not `<wave-id>`) and lists `/rapid:plan` (not `/rapid:plan-set`)
   2. docs/planning.md describes discuss as set-level single-round flow (not wave-level 2-round)
   3. docs/planning.md merges plan-set into plan entry
-Plans: 0/1 plans needed
+**Plans:** 1/1 plans
+Plans:
+- [ ] 39-01-PLAN.md -- Update README.md and docs/planning.md for post-37.1 interfaces (discuss set-level, plan/plan-set merge, wave-plan internal)
