@@ -124,7 +124,7 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 35. Adaptive Conflict Resolution | 2/2 | Complete    | 2026-03-11 | - |
 | 36. README Rewrite | 1/1 | Complete    | 2026-03-11 | - |
 | 37. Technical Documentation | 2/2 | Complete    | 2026-03-11 | - |
-| 38. CLI Infrastructure Fixes | 0/1 | Not Started | - | - |
+| 38. CLI Infrastructure Fixes | 0/1 | Planned | - | - |
 | 39. Documentation Refresh | 0/1 | Not Started | - | - |
 
 ### Phase 37.1: Feature changes and fixes (INSERTED)
@@ -150,7 +150,9 @@ Plans:
   1. display.cjs STAGE_VERBS and STAGE_BG maps include entries for `migrate` and `quick` stages (no more "Unknown stage" banners)
   2. `handleQuick` in rapid-tools.cjs parses `--commit` and `--dir` flags from `quick add` arguments instead of concatenating them into description
   3. migrate SKILL.md Step 7 uses a valid subcommand (not `display status`) for final verification output
-Plans: 0/1 plans needed
+**Plans:** 1 plan
+Plans:
+- [ ] 38-01-PLAN.md -- Fix display stage maps (migrate/quick), handleQuick flag parsing, migrate SKILL.md Step 7
 
 ### Phase 39: Documentation Refresh
 **Goal**: README.md and docs/planning.md accurately reflect post-37.1 interfaces (set-level discuss, /rapid:plan rename)
