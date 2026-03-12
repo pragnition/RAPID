@@ -131,18 +131,16 @@ both running these steps in their own worktree at the same time.
    the set. Generates a scoped `CLAUDE.md` with set-specific context and runs a set
    planner to produce a high-level implementation overview.
 
-2. **`/rapid:discuss <wave-id>`** -- Structured discussion about a wave's
-   implementation approach. Surfaces gray areas and assumptions, lets you make design
-   decisions before autonomous planning begins. Run once per wave.
+2. **`/rapid:discuss <set-id>`** -- Structured discussion about a set's
+   implementation approach. Identifies product and UX gray areas across all waves,
+   conducts a single-round discussion (one question per area), and splits decisions
+   into per-wave WAVE-CONTEXT.md files. Run once per set.
 
-3. **`/rapid:wave-plan <wave-id>`** -- Full planning pipeline for a wave: spawns a
-   research agent for implementation specifics, a wave planner for job decomposition,
-   per-job planners for detailed implementation steps, and a verifier for plan
-   consistency and contract compliance.
-
-   Alternatively, use **`/rapid:plan-set <set-id>`** to plan all waves in one command
-   with automatic dependency sequencing -- it runs the full wave-plan pipeline for
-   each wave in dependency order.
+3. **`/rapid:plan <set-id>`** -- Plans all waves in a set with a single command.
+   Detects dependencies between waves, groups them into parallel batches, then runs
+   the full planning pipeline (research, wave plan, job plans, verification) for each
+   wave in dependency order. Supports smart re-entry -- re-running skips already-planned
+   waves.
 
 4. **`/rapid:execute <set-id>`** -- Dispatches parallel subagents (one per job) across
    all waves sequentially. Each job-executor implements its assigned files, commits
@@ -196,12 +194,10 @@ These can be used at any point during development:
 | `/rapid:install` | _(none)_ | One-time setup: configure shell and environment |
 | `/rapid:init` | _(none)_ | Research project, generate roadmap, scaffold `.planning/` |
 | `/rapid:context` | _(none)_ | Analyze existing codebase and generate context files |
-| `/rapid:plan` | _(none)_ | Decompose work into parallelizable sets with contracts |
-| `/rapid:plan-set` | `<set-id>` | Plan all waves in a set with automatic sequencing |
+| `/rapid:plan` | _(none)_ or `<set-id>` | Decompose into sets (no args) or plan all waves in a set |
 | `/rapid:assumptions` | `<set-id>` | Surface assumptions about a set before execution |
 | `/rapid:set-init` | `<set-id>` | Create worktree and branch for a set |
-| `/rapid:discuss` | `<wave-id>` or `<set-id> <wave-id>` | Capture implementation vision for a wave |
-| `/rapid:wave-plan` | `<wave-id>` or `<set-id> <wave-id>` | Research, plan waves, plan jobs |
+| `/rapid:discuss` | `<set-id>` | Capture implementation vision for a set |
 | `/rapid:execute` | `<set-id>` or `<set-id> --fix-issues` | Run jobs in parallel per wave |
 | `/rapid:review` | `<set-id>` | Unit test + bug hunt + UAT pipeline |
 | `/rapid:merge` | _(none)_ or `<set-id>` | Merge completed sets into main |
@@ -214,7 +210,6 @@ These can be used at any point during development:
 
 **Notes:**
 - Commands accepting `<set-id>` support both string IDs (e.g., `auth-system`) and numeric indices (e.g., `1`).
-- Commands accepting `<wave-id>` support dot notation (e.g., `1.1` for set 1, wave 1), string IDs, or the two-argument `<set-id> <wave-id>` form.
 
 ## Further Reading
 
