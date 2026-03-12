@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: in-progress
-stopped_at: Phase 42 context gathered
-last_updated: "2026-03-12T13:20:04.798Z"
-last_activity: 2026-03-12 -- Completed 41-02 research-ux role and 6-researcher pipeline
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-03-12T13:49:16.875Z"
+last_activity: 2026-03-12 -- Completed 42-01 orchestrator removal and v3 identity rewrite
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 15
+  completed_plans: 13
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 41 - Build Pipeline & Generated Agents (v3.0 Refresh)
+**Current focus:** Phase 42 - Core Agent Rewrites (v3.0 Refresh)
 
 ## Current Position
 
-Phase: 41 of 45 (Build Pipeline & Generated Agents)
-Plan: 2 of 2 in current phase (phase complete)
+Phase: 42 of 45 (Core Agent Rewrites)
+Plan: 1 of 3 in current phase
 Status: in-progress
-Last activity: 2026-03-12 -- Completed 41-02 research-ux role and 6-researcher pipeline
+Last activity: 2026-03-12 -- Completed 42-01 orchestrator removal and v3 identity rewrite
 
 Progress: [██████████] 100% (105/105 plans)
 
@@ -72,6 +72,8 @@ Recent:
 - [Phase 41]: research-ux role added with same tool set as other researchers (27 total roles, 22 generated + 5 stubs)
 - [Phase 41]: Init pipeline spawns 6 researchers in parallel; synthesizer reads 6 files including UX.md
 - [Phase 41]: research-ux follows same tool/core module pattern as other researchers; synthesizer gains User Experience Direction section
+- [Phase 42]: Test assertions accept both STUB and CORE comment prefixes for transition compatibility
+- [Phase 42]: Orchestrator fully removed from all registries -- skills are sole dispatchers
 
 ### Pending Todos
 
@@ -107,5 +109,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T13:20:04.797Z
-Stopped at: Phase 42 context gathered
+Last session: 2026-03-12T13:49:16.874Z
+Stopped at: Completed 42-01-PLAN.md
