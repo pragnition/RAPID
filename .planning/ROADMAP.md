@@ -125,7 +125,7 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 36. README Rewrite | 1/1 | Complete    | 2026-03-11 | - |
 | 37. Technical Documentation | 2/2 | Complete    | 2026-03-11 | - |
 | 38. CLI Infrastructure Fixes | 1/1 | Complete    | 2026-03-12 | - |
-| 39. Documentation Refresh | 1/2 | In Progress | 2026-03-12 | - |
+| 39. Documentation Refresh | 2/2 | Complete   | 2026-03-12 | - |
 
 ### Phase 37.1: Feature changes and fixes (INSERTED)
 
@@ -163,7 +163,7 @@ Plans:
   1. README.md command reference shows `/rapid:discuss <set-id>` (not `<wave-id>`) and lists `/rapid:plan` (not `/rapid:plan-set`)
   2. docs/planning.md describes discuss as set-level single-round flow (not wave-level 2-round)
   3. docs/planning.md merges plan-set into plan entry
-**Plans:** 2 plans (1 complete, 1 gap closure)
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 39-01-PLAN.md -- Update README.md and docs/planning.md for post-37.1 interfaces (discuss set-level, plan/plan-set merge, wave-plan internal)
 - [ ] 39-02-PLAN.md -- Gap closure: fix skill link anchor text in docs/planning.md to satisfy stale-pattern grep criterion
