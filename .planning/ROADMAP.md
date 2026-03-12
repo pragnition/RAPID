@@ -100,7 +100,11 @@ Plans:
   3. /rapid:review and /rapid:merge work with the simplified state schema (set-level status checks instead of wave/job traversal)
   4. /rapid:install validates the plugin installation and updates plugin files
   5. The help text and command registry in rapid-tools.cjs lists exactly 7 core + 4 auxiliary commands
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 40-01-PLAN.md — Skill directory restructuring, deprecation stubs, and help rewrite (wave 1)
+- [ ] 40-02-PLAN.md — Status dashboard rewrite and install update (wave 1)
+- [ ] 40-03-PLAN.md — Review and merge state handling updates (wave 2)
 **Research flag**: Skip research-phase (code removal with deprecation stubs)
 
 ### Phase 41: Build Pipeline & Generated Agents
@@ -175,7 +179,7 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 |-------|-----------|----------------|--------|-----------|
 | 38. State Machine Simplification | 2/2 | Complete    | 2026-03-12 | - |
 | 39. Tool Docs Registry & Core Module Refactor | 4/4 | Complete    | 2026-03-12 | - |
-| 40. CLI Surface & Utility Commands | v3.0 | 0/TBD | Not started | - |
+| 40. CLI Surface & Utility Commands | v3.0 | 0/3 | Not started | - |
 | 41. Build Pipeline & Generated Agents | v3.0 | 0/TBD | Not started | - |
 | 42. Core Agent Rewrites | v3.0 | 0/TBD | Not started | - |
 | 43. Planning & Discussion Skills | v3.0 | 0/TBD | Not started | - |
