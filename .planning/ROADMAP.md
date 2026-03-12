@@ -117,7 +117,10 @@ Plans:
   2. Each generated agent file contains a `<tools>` XML section with role-specific CLI commands injected from tool-docs.cjs
   3. A 5th researcher agent (Domain/UX) exists in the init research pipeline and produces domain-specific findings during /init
   4. Retired role modules (wave-analyzer, wave-researcher, wave-planner, job-planner, job-executor) are removed and no longer referenced
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 41-01-PLAN.md — SKIP_GENERATION build pipeline, v2 role pruning, and test updates (wave 1)
+- [ ] 41-02-PLAN.md — Research-ux role, init pipeline update, synthesizer update (wave 2)
 **Research flag**: Skip research-phase (extends established build-agents pipeline)
 
 ### Phase 42: Core Agent Rewrites
@@ -181,7 +184,7 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 38. State Machine Simplification | 2/2 | Complete    | 2026-03-12 | - |
 | 39. Tool Docs Registry & Core Module Refactor | 4/4 | Complete    | 2026-03-12 | - |
 | 40. CLI Surface & Utility Commands | 4/4 | Complete    | 2026-03-12 | - |
-| 41. Build Pipeline & Generated Agents | v3.0 | 0/TBD | Not started | - |
+| 41. Build Pipeline & Generated Agents | v3.0 | 0/2 | Not started | - |
 | 42. Core Agent Rewrites | v3.0 | 0/TBD | Not started | - |
 | 43. Planning & Discussion Skills | v3.0 | 0/TBD | Not started | - |
 | 44. Execution & Auxiliary Skills | v3.0 | 0/TBD | Not started | - |
