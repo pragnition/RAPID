@@ -110,12 +110,6 @@ const TOOL_REGISTRY = {
 // ---------------------------------------------------------------------------
 const ROLE_TOOL_MAP = {
   // Core roles that use CLI heavily
-  'orchestrator':     ['state-get', 'state-get-all', 'state-transition-set', 'state-detect', 'state-recover',
-                       'lock-acquire', 'lock-status', 'plan-list-sets', 'plan-load-set',
-                       'execute-prepare', 'execute-verify', 'execute-wave-status', 'execute-commit-state',
-                       'merge-execute', 'merge-status', 'merge-order', 'merge-prepare-context',
-                       'worktree-list', 'worktree-status', 'display-banner', 'parse-return', 'parse-return-validate',
-                       'resolve-set', 'resolve-wave'],
   'executor':         ['state-get', 'state-transition-set', 'verify-light'],
   'planner':          ['state-get', 'state-get-all', 'plan-create-set', 'plan-decompose', 'plan-write-dag',
                        'plan-list-sets', 'plan-load-set', 'resolve-set', 'resolve-wave'],

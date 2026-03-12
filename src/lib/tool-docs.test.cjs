@@ -59,7 +59,7 @@ describe('ROLE_TOOL_MAP', () => {
   it('is a static explicit object (not derived from external data)', () => {
     // Verify it has expected roles that use CLI
     const expectedRoles = [
-      'orchestrator', 'executor', 'planner', 'set-planner',
+      'executor', 'planner', 'set-planner',
       'reviewer', 'verifier', 'merger', 'set-merger', 'conflict-resolver',
       'bugfix', 'plan-verifier',
       'roadmapper', 'codebase-synthesizer', 'context-generator',
