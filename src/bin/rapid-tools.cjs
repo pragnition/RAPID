@@ -451,6 +451,7 @@ function handleBuildAgents(cwd, args) {
   const fs = require('fs');
   const path = require('path');
   const { resolveRapidDir, loadConfig } = require('../lib/core.cjs');
+  const { getToolDocsForRole, estimateTokens } = require('../lib/tool-docs.cjs');
 
   const MODULES_DIR = path.join(__dirname, '..', 'modules');
 
@@ -569,37 +570,39 @@ function handleBuildAgents(cwd, args) {
    * Per-role core module mapping.
    */
   const ROLE_CORE_MAP = {
-    'planner':      ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md', 'core-context-loading.md'],
-    'executor':     ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
-    'reviewer':     ['core-identity.md', 'core-returns.md', 'core-state-access.md'],
-    'verifier':     ['core-identity.md', 'core-returns.md', 'core-state-access.md'],
-    'orchestrator': ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md', 'core-context-loading.md'],
-    'wave-researcher': ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-    'wave-planner':    ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-    'job-planner':     ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-    'set-planner':     ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-    'job-executor': ['core-identity.md', 'core-returns.md', 'core-state-access.md', 'core-git.md'],
-    'bugfix':       ['core-identity.md', 'core-returns.md', 'core-git.md'],
-    'merger':       ['core-identity.md', 'core-returns.md', 'core-git.md'],
-    'unit-tester':      ['core-identity.md', 'core-returns.md'],
-    'bug-hunter':       ['core-identity.md', 'core-returns.md'],
-    'devils-advocate':  ['core-identity.md', 'core-returns.md'],
-    'judge':            ['core-identity.md', 'core-returns.md'],
-    'uat':              ['core-identity.md', 'core-returns.md'],
-    'codebase-synthesizer':  ['core-identity.md', 'core-returns.md'],
-    'context-generator':     ['core-identity.md', 'core-returns.md'],
-    'research-stack':        ['core-identity.md', 'core-returns.md'],
-    'research-features':     ['core-identity.md', 'core-returns.md'],
-    'research-architecture': ['core-identity.md', 'core-returns.md'],
-    'research-pitfalls':     ['core-identity.md', 'core-returns.md'],
-    'research-oversights':   ['core-identity.md', 'core-returns.md'],
-    'research-synthesizer':  ['core-identity.md', 'core-returns.md'],
-    'roadmapper':            ['core-identity.md', 'core-returns.md'],
-    'plan-verifier':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-    'wave-analyzer':         ['core-identity.md', 'core-returns.md', 'core-context-loading.md'],
-    'scoper':                ['core-identity.md', 'core-returns.md'],
-    'set-merger':            ['core-identity.md', 'core-returns.md', 'core-git.md'],
-    'conflict-resolver':     ['core-identity.md', 'core-returns.md', 'core-git.md'],
+    // All roles get identity + returns (the 2 universal modules)
+    // Roles that commit code also get conventions
+    'planner':              ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'executor':             ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'reviewer':             ['core-identity.md', 'core-returns.md'],
+    'verifier':             ['core-identity.md', 'core-returns.md'],
+    'orchestrator':         ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'wave-researcher':      ['core-identity.md', 'core-returns.md'],
+    'wave-planner':         ['core-identity.md', 'core-returns.md'],
+    'job-planner':          ['core-identity.md', 'core-returns.md'],
+    'set-planner':          ['core-identity.md', 'core-returns.md'],
+    'job-executor':         ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'bugfix':               ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'merger':               ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'unit-tester':          ['core-identity.md', 'core-returns.md'],
+    'bug-hunter':           ['core-identity.md', 'core-returns.md'],
+    'devils-advocate':      ['core-identity.md', 'core-returns.md'],
+    'judge':                ['core-identity.md', 'core-returns.md'],
+    'uat':                  ['core-identity.md', 'core-returns.md'],
+    'codebase-synthesizer': ['core-identity.md', 'core-returns.md'],
+    'context-generator':    ['core-identity.md', 'core-returns.md'],
+    'research-stack':       ['core-identity.md', 'core-returns.md'],
+    'research-features':    ['core-identity.md', 'core-returns.md'],
+    'research-architecture':['core-identity.md', 'core-returns.md'],
+    'research-pitfalls':    ['core-identity.md', 'core-returns.md'],
+    'research-oversights':  ['core-identity.md', 'core-returns.md'],
+    'research-synthesizer': ['core-identity.md', 'core-returns.md'],
+    'roadmapper':           ['core-identity.md', 'core-returns.md'],
+    'plan-verifier':        ['core-identity.md', 'core-returns.md'],
+    'wave-analyzer':        ['core-identity.md', 'core-returns.md'],
+    'scoper':               ['core-identity.md', 'core-returns.md'],
+    'set-merger':           ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
+    'conflict-resolver':    ['core-identity.md', 'core-returns.md', 'core-conventions.md'],
   };
 
   function generateFrontmatter(role) {
@@ -630,7 +633,18 @@ color: ${color}
       sections.push(`<${tag}>\n${content}\n</${tag}>`);
     }
 
-    // 3. Role-specific module
+    // 3. Tool docs (injected between core and role)
+    const toolDocs = getToolDocsForRole(role);
+    if (toolDocs) {
+      sections.push(`<tools>\n${toolDocs}\n</tools>`);
+      // Token budget warning
+      const tokenEstimate = estimateTokens(toolDocs);
+      if (tokenEstimate > 1000) {
+        output(`WARNING: Tool docs for rapid-${role} are ~${tokenEstimate} tokens (budget: 1000)`);
+      }
+    }
+
+    // 4. Role-specific module
     const rolePath = path.join(MODULES_DIR, 'roles', `role-${role}.md`);
     const roleContent = fs.readFileSync(rolePath, 'utf-8').trim();
     sections.push(`<role>\n${roleContent}\n</role>`);
