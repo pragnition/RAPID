@@ -378,7 +378,7 @@ Set a flag noting this is greenfield -- research agents will receive a note that
 
 Ensure `.planning/research/` exists (already created in Step 5).
 
-Spawn ALL 5 research agents in parallel using the Agent tool. Each agent operates independently -- no agent reads another research agent's output.
+Spawn ALL 6 research agents in parallel using the Agent tool. Each agent operates independently -- no agent reads another research agent's output.
 
 For each agent, provide ONLY task-specific context (the agent already knows its role from its system prompt):
 
@@ -487,11 +487,32 @@ Use Context7 MCP for documentation lookups when available. If Context7 is not ac
 Write output to .planning/research/OVERSIGHTS.md
 ```
 
-**Parallel spawning:** Spawn all 5 agents in a single response using 5 Agent tool calls.
+**6. Spawn the **rapid-research-ux** agent with this task:**
+```
+Research domain conventions and UX patterns for this project.
+
+## Project Brief
+{full project brief from Step 4B}
+
+## Model Selection
+{opus or sonnet from Step 4A}
+
+## Brownfield Context
+{if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/UX.md
+```
+
+**Parallel spawning:** Spawn all 6 agents in a single response using 6 Agent tool calls.
 
 **Sequential fallback:** If parallel spawning fails (Claude Code limitation), fall back to sequential execution. Inform the user: "Running research agents sequentially (parallel spawning unavailable)."
 
-Wait for ALL 5 agents to complete. If any agent fails, use AskUserQuestion:
+Wait for ALL 6 agents to complete. If any agent fails, use AskUserQuestion:
 - question: "{agent name} research agent encountered an error: {error details}"
 - Options:
   - "Retry" -- "Re-run this research agent"
@@ -513,6 +534,7 @@ Synthesize all research outputs into a unified research summary.
 - .planning/research/ARCHITECTURE.md
 - .planning/research/PITFALLS.md
 - .planning/research/OVERSIGHTS.md
+- .planning/research/UX.md
 {if brownfield: "- .planning/research/CODEBASE-ANALYSIS.md"}
 
 ## Working Directory
