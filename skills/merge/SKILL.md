@@ -39,10 +39,10 @@ node "${RAPID_TOOLS}" merge status
 ```
 
 ```bash
-node "${RAPID_TOOLS}" execute wave-status
+node "${RAPID_TOOLS}" state get --all
 ```
 
-Parse the merge order (wave-grouped arrays) and status. Identify which sets are ready to merge (phase=Done, mergeStatus=pending). Check MERGE-STATE.json for each set to enable idempotent re-entry -- skip sets that are already status='complete'.
+Parse the merge order (wave-grouped arrays) and status. Identify which sets are ready to merge (status='complete' in STATE.json, mergeStatus=pending in MERGE-STATE). Check MERGE-STATE.json for each set to enable idempotent re-entry -- skip sets that are already status='complete' in MERGE-STATE.
 
 If a specific set name was provided (e.g., `/rapid:merge auth-set` or `/rapid:merge 1`):
 
@@ -359,7 +359,11 @@ node "${RAPID_TOOLS}" merge execute {setName}
 Parse the JSON result:
 
 - If `merged: true`:
-  > [{waveNum}/{totalWaves}] {setName}: MERGED (commit {commitHash})
+  Auto-transition the set status to 'merged':
+  ```bash
+  node "${RAPID_TOOLS}" state transition set <milestone> <setName> merged
+  ```
+  > [{waveNum}/{totalWaves}] {setName}: MERGED and status updated to 'merged' (commit {commitHash})
 
   Add this set to the wave's merged-sets list for integration gate tracking.
 
@@ -586,7 +590,7 @@ Display the available next steps:
 > **Next steps:**
 > - `/rapid:cleanup` -- *Remove completed worktrees*
 > - `/rapid:status` -- *View project state*
-> - `/rapid:new-milestone` -- *Start planning next milestone (if all sets merged)*
+> - `/rapid:new-version` -- *Start planning next version (if all sets merged)*
 
 ## Important Notes
 
@@ -608,3 +612,4 @@ Display the available next steps:
 - **Never use `git add -A` or `git add .`** -- stage only specific files.
 - **AskUserQuestion at every decision gate** -- all decisions are blocking until the user responds.
 - **No "Resolve manually" in post-wave recovery** -- blocked set recovery options are Retry, Skip, and Abort only (per user locked decision).
+- **Set status auto-transitions to 'merged' after successful merge.** This is the terminal set lifecycle state. After `merge execute` returns `merged: true`, the orchestrator runs `state transition set` to move the set to 'merged' status in STATE.json.
