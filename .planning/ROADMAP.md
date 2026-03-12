@@ -82,11 +82,12 @@ Plans:
   1. src/lib/tool-docs.cjs exports getToolDocsForRole() that returns a compact YAML block of CLI commands for a given role, and each block is under 1000 tokens
   2. An XML schema document exists defining all allowed tags and nesting rules for agent prompts, and at least one agent prompt validates against it
   3. Core modules are consolidated: core-state-access.md and core-context-loading.md are retired, their guidance absorbed into core-identity.md and a new core-conventions.md
-**Plans**: 3 plans
+**Plans**: 4 plans
 Plans:
 - [ ] 39-01-PLAN.md — Tool docs registry module with TDD (wave 1)
 - [ ] 39-02-PLAN.md — Core module consolidation and XML schema (wave 1)
 - [ ] 39-03-PLAN.md — Build pipeline integration and executor proof-of-concept (wave 2)
+- [ ] 39-04-PLAN.md — Gap closure: fix XML tag assembly order (wave 1)
 **Research flag**: Skip research-phase (validate compact format with one real agent before scaling)
 
 ### Phase 40: CLI Surface & Utility Commands
@@ -173,7 +174,7 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 38. State Machine Simplification | 2/2 | Complete    | 2026-03-12 | - |
-| 39. Tool Docs Registry & Core Module Refactor | 3/3 | Complete   | 2026-03-12 | - |
+| 39. Tool Docs Registry & Core Module Refactor | 3/4 | Gap closure   | 2026-03-12 | - |
 | 40. CLI Surface & Utility Commands | v3.0 | 0/TBD | Not started | - |
 | 41. Build Pipeline & Generated Agents | v3.0 | 0/TBD | Not started | - |
 | 42. Core Agent Rewrites | v3.0 | 0/TBD | Not started | - |
