@@ -40,7 +40,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 36: README Rewrite** - Complete README.md rewrite reflecting all capabilities through v2.2 (completed 2026-03-11)
 - [x] **Phase 37: Technical Documentation** - Create technical_documentation.md as power user reference (completed 2026-03-11)
 - [x] **Phase 38: CLI Infrastructure Fixes** - Fix display.cjs stage maps, quick flag parsing, and migrate Step 7 invalid subcommand (completed 2026-03-12)
-- [ ] **Phase 39: Documentation Refresh** - Update README.md and docs/planning.md to reflect post-37.1 interface changes
+- [x] **Phase 39: Documentation Refresh** - Update README.md and docs/planning.md to reflect post-37.1 interface changes (completed 2026-03-12)
 
 ## Phase Details
 
@@ -125,7 +125,7 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 36. README Rewrite | 1/1 | Complete    | 2026-03-11 | - |
 | 37. Technical Documentation | 2/2 | Complete    | 2026-03-11 | - |
 | 38. CLI Infrastructure Fixes | 1/1 | Complete    | 2026-03-12 | - |
-| 39. Documentation Refresh | 0/1 | Not Started | - | - |
+| 39. Documentation Refresh | 1/1 | Complete   | 2026-03-12 | - |
 
 ### Phase 37.1: Feature changes and fixes (INSERTED)
 
@@ -163,6 +163,6 @@ Plans:
   1. README.md command reference shows `/rapid:discuss <set-id>` (not `<wave-id>`) and lists `/rapid:plan` (not `/rapid:plan-set`)
   2. docs/planning.md describes discuss as set-level single-round flow (not wave-level 2-round)
   3. docs/planning.md merges plan-set into plan entry
-**Plans:** 1/1 plans
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 39-01-PLAN.md -- Update README.md and docs/planning.md for post-37.1 interfaces (discuss set-level, plan/plan-set merge, wave-plan internal)
