@@ -2,142 +2,101 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
+
+// Import only the expected exports
+const schemas = require('./state-schemas.cjs');
 const {
-  JobStatus,
-  JobState,
-  WaveStatus,
-  WaveState,
   SetStatus,
   SetState,
   MilestoneState,
   ProjectState,
-} = require('./state-schemas.cjs');
-
-describe('JobStatus', () => {
-  it('allows valid statuses', () => {
-    for (const s of ['pending', 'executing', 'complete', 'failed']) {
-      assert.equal(JobStatus.parse(s), s);
-    }
-  });
-
-  it('rejects invalid status', () => {
-    assert.throws(() => JobStatus.parse('running'), { name: 'ZodError' });
-  });
-});
-
-describe('JobState', () => {
-  it('requires id and defaults status to pending', () => {
-    const job = JobState.parse({ id: 'job-1' });
-    assert.equal(job.id, 'job-1');
-    assert.equal(job.status, 'pending');
-    assert.deepEqual(job.artifacts, []);
-  });
-
-  it('accepts all optional fields', () => {
-    const job = JobState.parse({
-      id: 'job-2',
-      status: 'executing',
-      startedAt: '2026-01-01T00:00:00Z',
-      completedAt: '2026-01-01T01:00:00Z',
-      commitSha: 'abc123',
-      artifacts: ['file.js'],
-    });
-    assert.equal(job.status, 'executing');
-    assert.equal(job.startedAt, '2026-01-01T00:00:00Z');
-    assert.equal(job.completedAt, '2026-01-01T01:00:00Z');
-    assert.equal(job.commitSha, 'abc123');
-    assert.deepEqual(job.artifacts, ['file.js']);
-  });
-
-  it('rejects missing id', () => {
-    const result = JobState.safeParse({ status: 'pending' });
-    assert.equal(result.success, false);
-    assert.ok(result.error.issues.some(i => i.path.includes('id')));
-  });
-
-  it('rejects invalid status value', () => {
-    const result = JobState.safeParse({ id: 'j1', status: 'bogus' });
-    assert.equal(result.success, false);
-    assert.ok(result.error.issues.some(i => i.path.includes('status')));
-  });
-});
-
-describe('WaveStatus', () => {
-  it('allows valid statuses', () => {
-    for (const s of ['pending', 'discussing', 'planning', 'executing', 'reconciling', 'complete']) {
-      assert.equal(WaveStatus.parse(s), s);
-    }
-  });
-
-  it('rejects invalid status', () => {
-    assert.throws(() => WaveStatus.parse('waiting'), { name: 'ZodError' });
-  });
-});
-
-describe('WaveState', () => {
-  it('requires id and defaults status/jobs', () => {
-    const wave = WaveState.parse({ id: 'wave-1' });
-    assert.equal(wave.id, 'wave-1');
-    assert.equal(wave.status, 'pending');
-    assert.deepEqual(wave.jobs, []);
-  });
-
-  it('accepts nested jobs', () => {
-    const wave = WaveState.parse({
-      id: 'wave-1',
-      status: 'executing',
-      jobs: [{ id: 'job-1' }, { id: 'job-2', status: 'complete' }],
-    });
-    assert.equal(wave.jobs.length, 2);
-    assert.equal(wave.jobs[0].status, 'pending');
-    assert.equal(wave.jobs[1].status, 'complete');
-  });
-});
+} = schemas;
 
 describe('SetStatus', () => {
-  it('allows valid statuses', () => {
-    for (const s of ['pending', 'planning', 'executing', 'reviewing', 'merging', 'complete']) {
+  it('accepts "discussing"', () => {
+    assert.equal(SetStatus.parse('discussing'), 'discussing');
+  });
+
+  it('accepts "merged"', () => {
+    assert.equal(SetStatus.parse('merged'), 'merged');
+  });
+
+  it('accepts all 6 valid statuses', () => {
+    const validStatuses = ['pending', 'discussing', 'planning', 'executing', 'complete', 'merged'];
+    for (const s of validStatuses) {
       assert.equal(SetStatus.parse(s), s);
     }
   });
 
-  it('rejects invalid status', () => {
-    assert.throws(() => SetStatus.parse('done'), { name: 'ZodError' });
+  it('rejects "reviewing" (removed in v3)', () => {
+    assert.throws(() => SetStatus.parse('reviewing'), { name: 'ZodError' });
+  });
+
+  it('rejects "merging" (removed in v3)', () => {
+    assert.throws(() => SetStatus.parse('merging'), { name: 'ZodError' });
+  });
+
+  it('rejects "failed" (no failed state)', () => {
+    assert.throws(() => SetStatus.parse('failed'), { name: 'ZodError' });
   });
 });
 
 describe('SetState', () => {
-  it('requires id and defaults status/waves', () => {
-    const set = SetState.parse({ id: 'set-1' });
-    assert.equal(set.id, 'set-1');
+  it('parses { id, status } successfully', () => {
+    const set = SetState.parse({ id: 'auth', status: 'pending' });
+    assert.equal(set.id, 'auth');
     assert.equal(set.status, 'pending');
-    assert.deepEqual(set.waves, []);
   });
 
-  it('accepts nested waves with jobs', () => {
-    const set = SetState.parse({
-      id: 'set-1',
-      status: 'executing',
-      waves: [{
-        id: 'wave-1',
-        jobs: [{ id: 'job-1', status: 'complete' }],
-      }],
-    });
-    assert.equal(set.waves.length, 1);
-    assert.equal(set.waves[0].jobs[0].status, 'complete');
+  it('has no extra fields on parsed result', () => {
+    const set = SetState.parse({ id: 'auth', status: 'pending' });
+    assert.deepEqual(Object.keys(set).sort(), ['id', 'status']);
+  });
+
+  it('strips unknown "waves" key silently', () => {
+    const set = SetState.parse({ id: 'auth', status: 'pending', waves: [{ id: 'w1' }] });
+    assert.equal(set.id, 'auth');
+    assert.equal(set.status, 'pending');
+    assert.equal(set.waves, undefined);
+  });
+
+  it('defaults status to "pending" when omitted', () => {
+    const set = SetState.parse({ id: 'auth' });
+    assert.equal(set.status, 'pending');
+  });
+
+  it('rejects missing id', () => {
+    const result = SetState.safeParse({ status: 'pending' });
+    assert.equal(result.success, false);
+    assert.ok(result.error.issues.some(i => i.path.includes('id')));
+  });
+
+  it('rejects invalid status', () => {
+    const result = SetState.safeParse({ id: 'auth', status: 'bogus' });
+    assert.equal(result.success, false);
   });
 });
 
 describe('MilestoneState', () => {
-  it('requires id and name, defaults sets', () => {
-    const ms = MilestoneState.parse({ id: 'ms-1', name: 'Alpha' });
-    assert.equal(ms.id, 'ms-1');
-    assert.equal(ms.name, 'Alpha');
+  it('parses valid milestone with sets', () => {
+    const ms = MilestoneState.parse({
+      id: 'm1',
+      name: 'M1',
+      sets: [{ id: 's1', status: 'discussing' }],
+    });
+    assert.equal(ms.id, 'm1');
+    assert.equal(ms.name, 'M1');
+    assert.equal(ms.sets.length, 1);
+    assert.equal(ms.sets[0].status, 'discussing');
+  });
+
+  it('defaults sets to empty array', () => {
+    const ms = MilestoneState.parse({ id: 'm1', name: 'M1' });
     assert.deepEqual(ms.sets, []);
   });
 
   it('rejects missing name', () => {
-    const result = MilestoneState.safeParse({ id: 'ms-1' });
+    const result = MilestoneState.safeParse({ id: 'm1' });
     assert.equal(result.success, false);
     assert.ok(result.error.issues.some(i => i.path.includes('name')));
   });
@@ -159,22 +118,18 @@ describe('ProjectState', () => {
     assert.deepEqual(proj.milestones, []);
   });
 
-  it('parses full nested hierarchy', () => {
-    const full = ProjectState.parse({
+  it('round-trip: parse(stringify(parse(input))) equals parse(input)', () => {
+    const input = {
       ...validProject,
       milestones: [{
         id: 'ms-1',
         name: 'Alpha',
-        sets: [{
-          id: 'set-1',
-          waves: [{
-            id: 'wave-1',
-            jobs: [{ id: 'job-1', status: 'complete' }],
-          }],
-        }],
+        sets: [{ id: 's1', status: 'discussing' }],
       }],
-    });
-    assert.equal(full.milestones[0].sets[0].waves[0].jobs[0].status, 'complete');
+    };
+    const first = ProjectState.parse(input);
+    const roundTripped = ProjectState.parse(JSON.parse(JSON.stringify(first)));
+    assert.deepEqual(roundTripped, first);
   });
 
   it('rejects version !== 1', () => {
@@ -188,24 +143,40 @@ describe('ProjectState', () => {
     assert.ok(result.error.issues.length > 0);
   });
 
-  it('safeParse returns success:false with meaningful paths for invalid data', () => {
+  it('safeParse returns meaningful error for invalid set status', () => {
     const result = ProjectState.safeParse({
-      version: 1,
-      projectName: 'P',
-      currentMilestone: 'm',
-      lastUpdatedAt: 'x',
-      createdAt: 'x',
+      ...validProject,
       milestones: [{
         id: 'ms-1',
         name: 'A',
-        sets: [{
-          id: 's1',
-          status: 'INVALID_STATUS',
-        }],
+        sets: [{ id: 's1', status: 'INVALID_STATUS' }],
       }],
     });
     assert.equal(result.success, false);
     const paths = result.error.issues.map(i => i.path.join('.'));
     assert.ok(paths.some(p => p.includes('status')));
+  });
+});
+
+describe('Removed exports', () => {
+  it('JobStatus is NOT exported', () => {
+    assert.equal(schemas.JobStatus, undefined);
+  });
+
+  it('JobState is NOT exported', () => {
+    assert.equal(schemas.JobState, undefined);
+  });
+
+  it('WaveStatus is NOT exported', () => {
+    assert.equal(schemas.WaveStatus, undefined);
+  });
+
+  it('WaveState is NOT exported', () => {
+    assert.equal(schemas.WaveState, undefined);
+  });
+
+  it('module exports exactly 4 keys', () => {
+    const keys = Object.keys(schemas).sort();
+    assert.deepEqual(keys, ['MilestoneState', 'ProjectState', 'SetState', 'SetStatus']);
   });
 });
