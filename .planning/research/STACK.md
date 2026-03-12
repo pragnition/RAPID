@@ -1,259 +1,270 @@
-# Stack Research: v2.2 Subagent Merger & Documentation
+# Stack Research: v3.0 Refresh
 
-**Domain:** Claude Code plugin -- merge pipeline restructuring with subagent delegation, documentation rewrite
-**Researched:** 2026-03-10
-**Confidence:** HIGH (no new npm dependencies; architectural changes only)
+**Domain:** Claude Code plugin -- orchestration layer rewrite with inline tool docs, XML prompt templates, hybrid agent build
+**Researched:** 2026-03-12
+**Confidence:** HIGH (no new npm dependencies; architectural + build pipeline changes only)
 
 ## Executive Summary
 
-v2.2 requires NO new npm dependencies. The subagent merge delegation and documentation rewrite are achievable entirely with the existing stack (Node.js >=18, Zod 3.25.76, CommonJS, git) plus prompt engineering changes to the merge skill and new agent role definitions. The critical constraint shaping the entire design is that **Claude Code subagents cannot spawn other subagents** -- this is a hard platform limitation confirmed in official documentation as of March 2026.
+v3.0 requires ZERO new npm dependencies. The three headline features -- inline YAML tool documentation, XML-formatted prompt templates, and a hybrid agent build pipeline -- are all achievable with the existing stack (Node.js >=18, Zod 3.25.76, CommonJS, git) plus changes to the build-agents pipeline in rapid-tools.cjs and new source modules.
 
-This means the v2.2 "adaptive nesting" goal (merge agents spawning per-conflict sub-agents) is **not achievable via nested Agent tool calls**. The architecture must instead use the proven pattern from the review pipeline: the skill SKILL.md acts as the sole orchestrator, dispatching all subagents directly. "Adaptive nesting" is achieved by the skill dispatching additional per-conflict agents when the merger agent's return indicates unresolved complex conflicts -- not by merger agents spawning their own children.
+The critical insight: "inline YAML tool docs" means embedding YAML-formatted text describing rapid-tools.cjs CLI commands **inside agent prompts as content Claude reads**, not YAML that needs machine parsing. The build pipeline generates this text at build time using string interpolation from structured JavaScript objects or YAML source files. Similarly, "XML-formatted prompts" means the prompt assembly system already uses XML tags (`<role>`, `<identity>`, `<returns>`, etc.) -- v3.0 formalizes this into a consistent template structure. Both are build-time string operations requiring no parser libraries.
 
-For documentation, no tooling is needed. README.md and technical_documentation.md are plain Markdown files written manually (or by agent) with no build step, no static site generator, and no separate documentation framework. This matches the existing codebase convention (DOCS.md, README.md are hand-maintained Markdown).
-
----
-
-## Critical Constraint: No Nested Subagent Spawning
-
-**Confidence:** HIGH (verified via official docs + GitHub issue tracker)
-
-Claude Code subagents **cannot** use the Agent tool. The Agent tool is only available to:
-1. The main conversation thread (the human's Claude Code session)
-2. Skills running in the main thread (SKILL.md files with `allowed-tools: Agent`)
-
-When a subagent (defined in `agents/` directory) is spawned, it receives a subset of tools. The Agent tool is explicitly excluded from subagent tool lists. This is confirmed in:
-
-- [Official Claude Code subagent documentation](https://code.claude.com/docs/en/sub-agents): "Subagents cannot spawn other subagents. If your workflow requires nested delegation, use Skills or chain subagents from the main conversation."
-- [GitHub issue #4182](https://github.com/anthropics/claude-code/issues/4182): Closed as duplicate. Confirms Agent tool is not exposed to subagents. The only workaround (`claude -p` via Bash) loses context, observability, and structured returns.
-- The existing RAPID codebase already documents this constraint in multiple skills:
-  - `skills/review/SKILL.md`: "Subagents CANNOT spawn sub-subagents -- this skill (the orchestrator) is the sole dispatcher."
-  - `skills/plan-set/SKILL.md`: "Do NOT attempt sub-sub-agent spawning."
-  - `skills/execute/SKILL.md`: Same constraint documented.
-
-**Implication for v2.2 merge delegation:** The merge SKILL.md must remain the sole dispatcher. It spawns per-set merger agents in sequence (within a wave). If a merger agent returns escalations/unresolved conflicts that need further AI resolution, the SKILL.md spawns additional per-conflict agents directly -- the merger never spawns them itself.
-
-This is the same pattern review/SKILL.md uses: skill spawns hunter -> skill spawns advocate -> skill spawns judge. Not: skill spawns orchestrator -> orchestrator spawns hunter.
+The simplified orchestration (collapsing wave-plan/job-plan into plan-set) removes code rather than adding it. The 5th researcher (Domain/UX) is a new role module added to the existing build pipeline. Interface contracts without gating means removing lock acquisition logic, not adding new libraries.
 
 ---
 
 ## Existing Stack (Retained As-Is)
 
-| Technology | Version | Purpose | Status for v2.2 |
-|------------|---------|---------|-----------------|
-| Node.js | >=18 | Runtime | Unchanged |
-| Zod | 3.25.76 | Schema validation | Unchanged; may add fields to MergeStateSchema |
-| proper-lockfile | 4.1.2 | File locking | Unchanged |
-| ajv + ajv-formats | 8.17.1 / 3.0.1 | JSON Schema for contracts | Unchanged |
-| git worktrees | (system) | Set isolation | Unchanged |
-| CommonJS | (format) | Module system | Unchanged |
-| node:test | (built-in) | Test framework | Unchanged |
+| Technology | Version | Purpose | v3.0 Impact |
+|------------|---------|---------|-------------|
+| Node.js | >=18 | Runtime | No change |
+| Zod | 3.25.76 | Schema validation | Minor: simplify state schemas (remove wave-plan/job-plan states) |
+| proper-lockfile | 4.1.2 | File locking | REDUCED usage: remove set gating locks, keep state mutation locks only |
+| ajv + ajv-formats | 8.17.1 / 3.0.1 | JSON Schema for contracts | No change (contracts remain) |
+| CommonJS | (format) | Module system | No change |
+| git worktrees | (system) | Set isolation | No change |
+| node:test | (built-in) | Test framework | New tests for refactored build pipeline |
 
-**Zod version note:** package.json specifies `"zod": "^3.25.76"`. Despite PROJECT.md mentioning 3.24.4, the installed version is 3.25.76 and works correctly with CommonJS require(). Do not downgrade. Do not upgrade to Zod 4.x (breaks CommonJS require).
+**Zod version note:** package.json specifies `"zod": "^3.25.76"`. The installed version is 3.25.76 and works correctly with CommonJS `const { z } = require('zod')`. Do NOT upgrade to Zod 4.x (breaks CommonJS require). Do NOT downgrade.
 
 ---
 
 ## What's Needed Per Feature
 
-### 1. Subagent Merge Delegation (Orchestrator Stays Lean)
+### 1. Inline YAML Tool Documentation Per Agent
 
-**Stack additions:** None. Architectural change to SKILL.md + new agent role.
+**Stack additions:** None. Build pipeline enhancement only.
 
-**Current state:** The merge SKILL.md (`skills/merge/SKILL.md`) runs the entire pipeline inline -- it calls CLI commands for L1-L4 detection, L1-L2 resolution, then spawns exactly ONE `rapid-merger` agent for L5 semantic detection + T3 resolution. The orchestrator (SKILL.md running in the main thread) holds all merge context for all sets in its context window.
+**What "inline YAML tool docs" means:** Instead of shared core modules like `core-state-access.md` and `core-context-loading.md` that list all CLI commands regardless of which agent needs them, each agent's prompt will contain only the rapid-tools.cjs commands relevant to that specific role, formatted as YAML for readability.
 
-**Problem:** For large codebases with many sets, the orchestrator's context fills up because it accumulates detection reports, context files, and resolution results for every set before the pipeline completes.
+**Current state:** The `core-state-access.md` module lists ALL state/lock commands. It gets included in every agent that has `core-state-access.md` in its ROLE_CORE_MAP entry. Agents that only read state still see write commands. Agents that never touch locks see lock commands.
 
-**Solution architecture:**
+**v3.0 approach:** Define per-role tool manifests as structured data (JavaScript objects in the build pipeline), then render them as YAML-formatted text blocks within each agent's prompt at build time.
 
-The merge SKILL.md dispatches per-set merge work to `rapid-merger` agents, each handling one set's full pipeline (detect + resolve + semantic analysis). The SKILL.md only holds:
-- The merge plan (DAG order, which sets are ready)
-- Per-set summaries returned via RAPID:RETURN
-- Escalation handling (when merger returns low-confidence conflicts)
+**Example of what gets embedded in an agent prompt:**
 
-This mirrors how `review/SKILL.md` works: the skill dispatches scoper, hunter, advocate, judge, and bugfix agents sequentially, collecting only their RAPID:RETURN summaries rather than holding all file contents.
+```yaml
+<tools>
+# rapid-tools.cjs commands available to this agent
 
-**What changes:**
+state-read:
+  - command: state get --all
+    purpose: Read full STATE.json
+  - command: state get set <milestoneId> <setId>
+    purpose: Read a specific set's state
 
-| File | Change Type | Description |
-|------|-------------|-------------|
-| `skills/merge/SKILL.md` | Major rewrite | Restructure to delegate per-set work to merger agents. Skill handles: merge plan loading, DAG ordering, per-set agent dispatch, escalation handling, integration gates, bisection recovery. No longer runs detection/resolution inline. |
-| `src/modules/roles/role-merger.md` | Rewrite | Expand scope: merger agent now runs L1-L4 detection + T1-T2 resolution + L5 semantic + T3 AI resolution for its assigned set. Currently only does L5+T3. Remove "Never spawn sub-agents" rule (irrelevant -- subagents cannot spawn anyway). Add CLI command invocations for detection/resolution. |
-| `agents/rapid-merger.md` | Regenerated | Auto-generated from role-merger.md by build-agents pipeline. |
-| `src/lib/merge.cjs` | Minor extend | Add helper functions for pre-packaging merge context (detection report + set context + contracts) into a compact format the merger agent can receive. May add a `prepareMergerContext()` function. |
-| `src/lib/merge.test.cjs` | Extend | Tests for any new helper functions. |
-
-**Agent tool usage in SKILL.md:**
-
-```
-# Per-wave processing (sequential within wave, as before)
-For each set in wave:
-  1. SKILL checks MERGE-STATE.json for idempotent re-entry
-  2. SKILL spawns rapid-merger agent with compact context:
-     - Set name, base branch, worktree path
-     - Set's CONTEXT.md content
-     - Other sets' contexts (already merged in this wave)
-     - CONTRACT.json content
-  3. Merger agent runs internally:
-     a. CLI: node "${RAPID_TOOLS}" merge detect {setName}
-     b. CLI: node "${RAPID_TOOLS}" merge resolve {setName}
-     c. Reads detection results, performs L5 semantic analysis
-     d. Writes T3 resolutions to files
-     e. Returns RAPID:RETURN with results
-  4. SKILL parses RAPID:RETURN
-  5. If escalations exist: SKILL handles them (AskUserQuestion)
-  6. If additional per-conflict resolution needed: SKILL spawns another agent
-  7. SKILL runs programmatic gate and merge execution
+worktree:
+  - command: worktree status --json
+    purpose: Check worktree status for a set
+</tools>
 ```
 
-**Context efficiency gain:** Instead of the SKILL.md holding N sets' worth of detection reports, it holds only the current set's RAPID:RETURN summary (~500 tokens) plus the merge plan. Each merger agent holds one set's context in its own isolated window.
+This YAML text is read by Claude as documentation -- it does not need machine parsing. The build pipeline generates it from a per-role tool manifest defined in JavaScript:
 
-**Why no new library:** All detection and resolution logic already exists in merge.cjs and is exposed via rapid-tools.cjs CLI. The merger agent calls these same CLI commands. No new code paths are needed for the core merge logic -- only the orchestration layer changes.
+```javascript
+const ROLE_TOOL_DOCS = {
+  'executor': {
+    'state-read': [
+      { command: 'state get set <milestoneId> <setId>', purpose: 'Read set state' },
+    ],
+    'git': [
+      { command: 'execute commit-state [message]', purpose: 'Commit STATE.json changes' },
+    ],
+  },
+  // ...
+};
+```
 
-### 2. Adaptive Nesting (Per-Conflict Sub-Agents)
+**Why no YAML parser library:**
+- The YAML text is generated at build time using string templates, not parsed
+- The existing regex-based frontmatter parser (see `parseHandoff()` in execute.cjs, lines 366-378) handles all YAML parsing RAPID ever does
+- Claude reads the YAML as documentation; no machine needs to parse it
+- Adding js-yaml (21KB) for string formatting that `JSON.stringify` + string templates handle is unnecessary overhead
+- The RAPID project constraint is zero-infrastructure; every npm dependency is a maintenance burden
 
-**Stack additions:** None. New agent role definition only.
+**When a YAML parser WOULD be needed (and why it's not):**
+- If tool manifests were defined in `.yml` source files instead of JavaScript objects -- but JS objects are more natural in a CommonJS codebase and don't require a build step to validate
+- If agents needed to parse YAML at runtime -- but agents read documentation, they don't parse structured data from it
 
-**The constraint-respecting design:** Since subagents cannot spawn subagents, "adaptive nesting" means the SKILL.md spawns additional targeted agents when the merger agent's return indicates complex unresolved conflicts.
+### 2. XML-Formatted Prompt Templates
 
-**How it works:**
+**Stack additions:** None. Build pipeline formalization only.
 
-1. Merger agent returns RAPID:RETURN with `escalations` array (conflicts below 0.7 confidence)
-2. For each escalation, SKILL.md decides whether to:
-   a. Present to user (current behavior, always valid)
-   b. Spawn a focused `rapid-conflict-resolver` agent with ONLY that conflict's context
-3. The conflict-resolver agent gets: the one conflicting file's content from both branches, the diff, the two sets' intents, and the contract. It produces a focused resolution.
-4. SKILL.md applies or escalates the result.
+**Current state:** The build pipeline already uses XML tags. `assembleAgentPrompt()` wraps core modules in `<identity>`, `<returns>`, `<state-access>`, `<git>`, `<context-loading>` tags and wraps role modules in `<role>` tags. This has been working since v2.1 (build-agents.test.cjs validates XML tag presence).
+
+**v3.0 approach:** Formalize and extend the XML tag structure with consistent semantics:
+
+```xml
+<!-- Current v2.x structure -->
+<identity>...</identity>
+<returns>...</returns>
+<state-access>...</state-access>
+<git>...</git>
+<context-loading>...</context-loading>
+<role>...</role>
+
+<!-- v3.0 extended structure -->
+<identity>...</identity>
+<returns>...</returns>
+<tools>...</tools>          <!-- replaces state-access + context-loading -->
+<git>...</git>
+<role>...</role>
+<workflow>...</workflow>     <!-- new: agent's position in simplified flow -->
+```
+
+**Why no XML parser library:**
+- XML tags are generated by string concatenation: `` `<${tag}>\n${content}\n</${tag}>` `` (rapid-tools.cjs line 630)
+- They are never parsed at runtime -- they're structural markers in agent prompts that help Claude understand section boundaries
+- The build-agents tests validate tag presence with `content.includes('<tag>')` -- no DOM parsing needed
+- An XML library (fast-xml-parser, xmldom) would add complexity for string concatenation that template literals already handle
+
+**What changes in the build pipeline:**
+- `assembleAgentPrompt()` adds a `<tools>` section generated from ROLE_TOOL_DOCS
+- `assembleAgentPrompt()` adds a `<workflow>` section with the agent's position in the simplified flow
+- Core modules are reorganized: `core-state-access.md` and `core-context-loading.md` are retired, replaced by per-role `<tools>` sections
+- The ROLE_CORE_MAP entries shrink because tool docs are now generated from ROLE_TOOL_DOCS, not loaded from shared files
+
+### 3. Hybrid Agent Build Pipeline (Core Hand-Written, Repetitive Generated)
+
+**Stack additions:** None. Build pipeline restructuring only.
+
+**Current state:** ALL 29+ agents are generated by `build-agents` from `src/modules/` (core modules + role modules). Every agent goes through `assembleAgentPrompt()` which concatenates frontmatter + core modules + role module.
+
+**v3.0 approach:** Split agents into two categories:
+
+| Category | Source | Build Process | Examples |
+|----------|--------|---------------|----------|
+| **Core (hand-written)** | `agents/` directory, `.md` files maintained by hand | Copied as-is by build pipeline, or skipped entirely (already in place) | orchestrator, planner, executor, merger |
+| **Repetitive (generated)** | `src/modules/roles/` + ROLE_TOOL_DOCS + core modules | Assembled by `assembleAgentPrompt()` as today | researchers (5x), bug-hunter, devils-advocate, judge, scoper, etc. |
+
+**Why this split:**
+- Core agents (orchestrator, planner, executor, merger) have complex, nuanced prompts that benefit from direct human editing
+- Repetitive agents (researchers, review pipeline agents) follow a consistent pattern where generation from modules is more maintainable
+- The current all-generated approach means changing an orchestrator's behavior requires editing a role module, rebuilding, and verifying -- when direct editing of the agent file would be faster and more precise
+
+**What changes in the build pipeline:**
+- `handleBuildAgents()` gains a `CORE_AGENTS` list of roles that are hand-written
+- For core agents: build pipeline validates frontmatter and size limits but does NOT overwrite the file
+- For generated agents: build pipeline works as today (assemble from modules, write to agents/)
+- build-agents test updated: core agent files are validated for structure but not regenerated
+
+**Implementation detail:** The simplest approach is a `SKIP_GENERATION` set in the build pipeline:
+
+```javascript
+const SKIP_GENERATION = new Set([
+  'orchestrator', 'planner', 'executor', 'set-planner', 'merger', 'set-merger'
+]);
+
+for (const [role, coreModules] of Object.entries(ROLE_CORE_MAP)) {
+  if (SKIP_GENERATION.has(role)) {
+    // Validate but don't overwrite
+    validateAgentFile(role);
+    continue;
+  }
+  // Generate as before
+  const assembled = assembleAgentPrompt(role, coreModules);
+  // ...
+}
+```
+
+### 4. Simplified Orchestration (Collapse Wave-Plan/Job-Plan into Plan-Set)
+
+**Stack additions:** None. Code removal + simplification.
+
+**Current state:** The planning pipeline has multiple layers:
+1. `/plan-set` or `/discuss-set` --> wave-planner agent per wave
+2. Wave planner produces per-job plans
+3. Job planner agent produces detailed JOB-PLAN.md per job
+4. Then execution proceeds
+
+**v3.0 approach:** Collapse into a single `plan-set` flow:
+1. `/plan-set` --> produces one PLAN.md per wave with all jobs specified
+2. Execution proceeds directly from PLAN.md
+
+**What changes in the stack:**
+- State schemas: Remove wave-level planning states (WaveStatus may drop `discussing`, `planning` states)
+- State transitions: Simplify valid transition map
+- ROLE_CORE_MAP: Remove or repurpose wave-planner, job-planner, wave-researcher roles
+- wave-planning.cjs: Simplify or remove wave-plan-specific helpers
+- rapid-tools.cjs: Remove `wave-plan` command group (resolve-wave, create-wave-dir, validate-contracts, list-jobs may be consolidated)
+
+**No new libraries needed.** This is a subtraction, not an addition.
+
+### 5. 5th Researcher (Domain/UX) Integration
+
+**Stack additions:** None. New role module only.
+
+**What's needed:**
+- New file: `src/modules/roles/role-research-domain.md` -- Domain/UX researcher role
+- ROLE_CORE_MAP entry: `'research-domain': ['core-identity.md', 'core-returns.md']`
+- ROLE_TOOLS entry: `'research-domain': 'Read, Grep, Glob, WebFetch, WebSearch'`
+- ROLE_DESCRIPTIONS entry
+- ROLE_COLORS entry
+
+This follows the exact pattern of the existing 5 researchers. The build pipeline handles it automatically once the role module exists and the maps are updated.
+
+### 6. Interface Contracts Without Gating
+
+**Stack additions:** None. Behavior change only.
+
+**Current state:** Contracts are enforced as gates -- wave planning validates job plans against CONTRACT.json, and planning cannot proceed if contracts are violated.
+
+**v3.0 approach:** Contracts remain as documentation and dependency declarations, but they don't block workflow progression. Sets declare what they depend on via contracts; other sets can see these declarations. But execution isn't gated on contract validation.
 
 **What changes:**
+- Remove gating logic from `wave-plan validate-contracts`
+- Keep CONTRACT.json generation and reading
+- Contracts become advisory (logged warnings, not blocking errors)
+- `plan.cjs`: Remove or soften `check-gate` enforcement
 
-| File | Change Type | Description |
-|------|-------------|-------------|
-| `src/modules/roles/role-conflict-resolver.md` | New | Focused single-conflict resolution agent. Receives one file, two branch versions, intent context. Returns resolution + confidence. |
-| `agents/rapid-conflict-resolver.md` | New (generated) | Built by build-agents from role-conflict-resolver.md |
-| `skills/merge/SKILL.md` | Extend (part of rewrite above) | Add Step 4f: for escalations where auto-resolution is feasible, spawn conflict-resolver before escalating to user |
-
-**Why a separate agent instead of re-invoking the merger:** Context efficiency. The merger agent may have consumed significant context analyzing all conflicts for a set. A fresh conflict-resolver agent starts with minimal context (one file, one conflict) and can reason more deeply about that single resolution.
-
-**Why no new library:** The conflict-resolver is a prompt + tool restriction, same as all other RAPID agents. It uses Read, Write, Bash, Grep, Glob -- standard agent tools.
-
-### 3. Parallel Independent Set Merging
-
-**Stack additions:** None. Orchestration change in SKILL.md only.
-
-**Current state:** Sets within a wave merge SEQUENTIALLY. This is because each merge sees the result of the previous one -- if set A and set B both modify shared infrastructure, set B's merge must see set A's changes.
-
-**Opportunity:** When the DAG shows sets in the same wave are truly independent (no shared files, no dependency edges between them), they could merge in parallel.
-
-**Design:**
-
-1. Before starting a wave, analyze which sets in the wave share files or have dependency edges
-2. Group sets into parallelizable batches (sets that share zero files and have no edges)
-3. Within each batch, spawn merger agents in parallel (multiple Agent tool calls in one response)
-4. After each batch, run integration tests before proceeding to next batch
-
-**What changes:**
-
-| File | Change Type | Description |
-|------|-------------|-------------|
-| `src/lib/merge.cjs` | Extend | Add `partitionParallelMergeable(sets, detectionResults)` function. Checks file overlap + dependency edges to determine which sets can merge simultaneously. |
-| `src/lib/merge.test.cjs` | Extend | Tests for partition function |
-| `skills/merge/SKILL.md` | Part of rewrite | Step 2 parallelizes where safe |
-
-**Caveat:** Parallel merging within a wave is an optimization, not a requirement. If implementation proves complex (e.g., concurrent git operations on main branch), it can be deferred without blocking the v2.2 milestone. Sequential merging is always safe.
-
-**Why no new library:** File overlap detection is set intersection on arrays already returned by `getChangedFiles()`. DAG edge analysis uses existing `dag.cjs`.
-
-### 4. Documentation Rewrite (README.md + technical_documentation.md)
-
-**Stack additions:** None. Plain Markdown, no tooling.
-
-**Current state:**
-- `README.md` -- 50 lines, basic overview, references v2.0 features. Accurate but sparse.
-- `DOCS.md` -- 560+ lines, detailed v2.0 documentation. Does not cover v2.1 features (concern-based review, wave orchestration, plan verifier, numeric IDs, batched questioning). Does not cover v2.2 features.
-
-**What changes:**
-
-| File | Change Type | Description |
-|------|-------------|-------------|
-| `README.md` | Full rewrite | Comprehensive project overview: what RAPID is, installation, quick start, hierarchy diagram, feature list, prerequisites, links to technical docs. Target: 150-250 lines. |
-| `technical_documentation.md` | New | Deep technical reference: architecture overview, state machine, CLI reference, agent catalog, skill reference, merge pipeline details, review pipeline details, configuration options, troubleshooting. Target: 800-1200 lines. Replaces DOCS.md as the canonical reference. |
-| `DOCS.md` | Deprecate or remove | After technical_documentation.md is complete, DOCS.md becomes redundant. Either remove or add a redirect note. |
-
-**Documentation format:** Plain Markdown. No static site generator (Jekyll, Docusaurus, MkDocs). No API doc generator (JSDoc, TypeDoc). Reasons:
-- RAPID is a Claude Code plugin, not a library. Users interact through slash commands, not API imports.
-- Plugin docs live in the repo root as Markdown. GitHub renders them natively.
-- Adding a build step for docs violates the zero-infrastructure constraint.
-- The audience (Claude Code users) reads Markdown in GitHub or their editor.
-
-**Why no documentation tooling:**
-
-| Considered | Why Not |
-|-----------|---------|
-| Docusaurus / MkDocs | Build step, hosting needed, overkill for plugin docs |
-| JSDoc / TypeDoc | RAPID exposes CLI commands, not a JS API. Users never `require('rapid')`. |
-| GitHub Wiki | Separate from repo, harder to keep in sync, no PR review process |
-| Notion / Confluence | External service, violates zero-infrastructure constraint |
-
-**What IS recommended for documentation quality:**
-- Use Markdown heading hierarchy (H1 for title, H2 for sections, H3 for subsections)
-- Include a table of contents for technical_documentation.md (manual, using `[section](#anchor)` links)
-- Use code blocks with language hints (```bash, ```javascript, ```yaml)
-- Include Mermaid diagrams for architecture (GitHub renders Mermaid natively)
-- Cross-reference between README.md and technical_documentation.md
+**No new libraries needed.** This removes validation enforcement, keeping the same contract schema.
 
 ---
 
-## Recommended Stack (Complete v2.2 Picture)
+## Recommended Stack (Complete v3.0 Picture)
 
 ### Core Technologies (No Changes)
 
-| Technology | Version | Purpose | v2.2 Impact |
+| Technology | Version | Purpose | v3.0 Impact |
 |------------|---------|---------|-------------|
 | Node.js | >=18 | Runtime | No change |
-| Zod | 3.25.76 | Schema validation | Minor: may add fields to MergeStateSchema for delegation tracking |
-| proper-lockfile | 4.1.2 | File locking | No change |
+| Zod | 3.25.76 | Schema validation | Simplify schemas (fewer states), keep existing validation |
+| proper-lockfile | 4.1.2 | File locking | Reduced: remove set gating locks |
+| ajv + ajv-formats | 8.17.1 / 3.0.1 | JSON Schema for contracts | No change |
 | CommonJS | (format) | Module system | No change |
 | git | >=2.30 | VCS + worktrees | No change |
-| node:test | (built-in) | Tests | New tests for merge helpers |
+| node:test | (built-in) | Tests | New/updated tests for build pipeline |
 
 ### New/Modified Modules
 
 | Module | Type | Purpose | Depends On |
 |--------|------|---------|------------|
-| `src/modules/roles/role-merger.md` | Agent role (rewrite) | Expanded: runs full L1-L5 detection + T1-T3 resolution per set | merge.cjs CLI commands |
-| `src/modules/roles/role-conflict-resolver.md` | Agent role (new) | Single-conflict focused resolution agent | Read/Write/Bash/Grep/Glob |
-| `agents/rapid-merger.md` | Subagent (regenerated) | Built from role-merger.md | build-agents pipeline |
-| `agents/rapid-conflict-resolver.md` | Subagent (new) | Built from role-conflict-resolver.md | build-agents pipeline |
-| `src/lib/merge.cjs` | Library (extend) | Add `prepareMergerContext()`, `partitionParallelMergeable()` | Existing merge.cjs deps |
-| `src/lib/merge.test.cjs` | Tests (extend) | Tests for new helpers | node:test |
+| `src/modules/roles/role-research-domain.md` | Agent role (new) | Domain/UX researcher for init pipeline | core-identity.md, core-returns.md |
+| `src/modules/core/core-state-access.md` | Core module (retire) | Replaced by per-role `<tools>` sections | N/A |
+| `src/modules/core/core-context-loading.md` | Core module (retire) | Replaced by per-role `<tools>` sections | N/A |
+| `agents/rapid-orchestrator.md` | Subagent (hand-written) | Core agent maintained directly | N/A |
+| `agents/rapid-planner.md` | Subagent (hand-written) | Core agent maintained directly | N/A |
+| `agents/rapid-executor.md` | Subagent (hand-written) | Core agent maintained directly | N/A |
+| `agents/rapid-research-domain.md` | Subagent (generated) | Built from role-research-domain.md | build-agents pipeline |
 
-### Skill Modifications
+### Build Pipeline Changes
 
-| Skill | Change Type | Key Change |
-|-------|-------------|------------|
-| `skills/merge/SKILL.md` | Major rewrite | Delegate per-set work to merger agents; handle escalations + per-conflict agents; parallel batching for independent sets |
+| Component | Change | Description |
+|-----------|--------|-------------|
+| `handleBuildAgents()` | Major refactor | Add SKIP_GENERATION set, ROLE_TOOL_DOCS map, `<tools>` section generation, `<workflow>` section generation |
+| `assembleAgentPrompt()` | Extend | Accept ROLE_TOOL_DOCS for per-role tool rendering; add workflow section |
+| `generateFrontmatter()` | No change | Already correct for all agent types |
+| `ROLE_CORE_MAP` | Simplify | Remove core-state-access.md and core-context-loading.md entries (replaced by `<tools>`) |
+| `ROLE_TOOL_DOCS` | New | Per-role structured object mapping agent -> CLI commands |
 
-### Documentation Files
+### State Schema Changes
 
-| File | Change Type | Notes |
-|------|-------------|-------|
-| `README.md` | Full rewrite | 150-250 lines, covers through v2.2 |
-| `technical_documentation.md` | New | 800-1200 lines, comprehensive reference |
-| `DOCS.md` | Deprecate | Redirect to technical_documentation.md |
-
----
-
-## Claude Code Platform Features to Leverage
-
-| Feature | Current Usage | v2.2 Usage |
-|---------|--------------|------------|
-| Agent tool parallel spawning | Used in review, execute, init, wave-plan | Extended: parallel merger agents for independent sets within a wave |
-| Subagent `tools` field | Used across all agents | Conflict-resolver: restricted to Read, Write, Bash, Grep, Glob |
-| Subagent `model` field | Scoper uses haiku | Conflict-resolver: inherit (needs full reasoning for resolution) |
-| Subagent `permissionMode` | Scoper uses dontAsk | Merger: consider `acceptEdits` since it writes resolved files |
-| RAPID:RETURN protocol | All agents | Merger returns structured data with escalations array; conflict-resolver returns resolution + confidence |
-| Subagent context isolation | All agents | Key for v2.2: each merger agent gets its own context window, preventing orchestrator overflow |
-| Subagent `isolation: worktree` | Not used | NOT applicable for merge -- merger agents must operate on main branch, not isolated worktrees. The merge target is the shared main branch. |
+| Schema | Change | Description |
+|--------|--------|-------------|
+| `WaveStatus` | Simplify | Remove `discussing`, `planning` if those states are collapsed |
+| `SetStatus` | Possibly simplify | Review whether `planning` encompasses old wave-plan/job-plan |
+| `state-transitions.cjs` | Simplify | Fewer valid transitions |
 
 ---
 
@@ -261,13 +272,13 @@ For each set in wave:
 
 | Recommendation | Alternative | Why Not |
 |----------------|-------------|---------|
-| SKILL.md as sole dispatcher | Merger agent spawns sub-agents | **Impossible** -- Claude Code subagents cannot spawn other subagents. Hard platform constraint. |
-| Separate conflict-resolver agent | Re-invoke merger for single conflicts | Fresh context is more efficient for focused single-conflict resolution |
-| Sequential set merging (default) | Always parallel within wave | Parallel merging requires proven file-independence; sequential is always safe as fallback |
-| Plain Markdown docs | Docusaurus/MkDocs static site | Zero-infrastructure constraint; plugin users read Markdown in repo |
-| Plain Markdown docs | JSDoc/TypeDoc | RAPID exposes CLI + slash commands, not a JS API |
-| Extend existing merge.cjs | New merge-delegation.cjs module | Keep merge logic consolidated; only 2-3 new helper functions needed |
-| `prepareMergerContext()` in merge.cjs | Inline context preparation in SKILL.md | Reusable function is testable; inline prompts are not |
+| JS objects for tool manifests (ROLE_TOOL_DOCS) | YAML source files + js-yaml parser | Adding a dependency (js-yaml@4.1.1) for data that naturally lives as JS objects in a CommonJS codebase adds build complexity and an npm dependency for no gain. JS objects are type-checkable, require no parsing step, and are directly consumable by the build pipeline. |
+| String template XML generation | fast-xml-parser or xmldom library | XML tags in agent prompts are structural markers, not a DOM. String concatenation (`` `<tag>\n${content}\n</tag>` ``) is the correct abstraction. An XML library adds complexity for a problem that doesn't exist. |
+| Inline YAML as documentation text | Structured JSON tool reference | YAML is more readable for AI agents than JSON. Agents consume this as natural language documentation, and YAML's indentation-based format reads more naturally than JSON's braces/brackets. This is a prompt engineering choice, not a data format choice. |
+| SKIP_GENERATION set for hybrid build | Separate build pipelines for core vs generated | One pipeline with a skip list is simpler than two pipelines. The validation logic (frontmatter check, size check) is shared. Two pipelines means duplicated validation code. |
+| Remove core-state-access.md + core-context-loading.md | Keep shared modules alongside per-role tool docs | Shared modules create prompt bloat -- agents receive commands they don't use. Per-role tool docs are surgically scoped. The shared module pattern was right for v2.0 when the agent count was small and tool docs were being iterated. Now that tool docs are stable, per-role scoping is the right optimization. |
+| Simplify state schemas by removing states | Keep all states for backward compatibility | v3.0 is a breaking change milestone. The old wave-plan/job-plan states serve the old orchestration pattern. Keeping them creates dead code paths and confuses agents reading state. Clean removal is correct. |
+| Keep proper-lockfile for all locking | Remove proper-lockfile entirely | Set-gating locks are removed, but STATE.json mutation locks are still needed when multiple agents may update state concurrently. Reducing lock scope is correct; eliminating locking entirely would introduce race conditions. |
 
 ---
 
@@ -275,56 +286,97 @@ For each set in wave:
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| New npm dependencies | Every feature uses existing stack | Prompt engineering + orchestration |
-| `claude -p` for nested spawning | Loses context, observability, structured returns | SKILL.md dispatches all agents directly |
-| Subagent `isolation: worktree` for merger | Merger must operate on main branch for git merge | Standard subagent (no isolation) operating in project root |
-| EXPERIMENTAL_AGENT_TEAMS for merge | Agent teams are for independent parallel work, not sequential-within-wave merge | Sequential Agent tool calls from SKILL.md |
-| Documentation generators | Adds build step, hosting need, violates zero-infrastructure | Plain Markdown with GitHub rendering |
-| Mermaid-to-image build tools | GitHub renders Mermaid natively in Markdown | Inline Mermaid code blocks |
+| js-yaml / yaml npm package | Tool manifests are JS objects rendered as text. No YAML parsing needed at build or runtime. Adding a dependency for string formatting is unnecessary. | JavaScript objects in ROLE_TOOL_DOCS + template literal rendering |
+| fast-xml-parser / xmldom / cheerio | XML tags in prompts are string concatenation, not DOM manipulation. No parsing or traversal needed. | Template literal string concatenation: `` `<${tag}>\n${content}\n</${tag}>` `` |
+| Handlebars / EJS / Mustache | Template engines add complexity for a build pipeline that concatenates 3-5 sections. The current approach (array of sections joined by newlines) is simpler and more debuggable. | String concatenation with `sections.push()` + `sections.join('\n\n')` |
+| Zod 4.x | Breaks CommonJS `require()`. The installed Zod 3.25.76 works correctly. | Stay on Zod 3.25.76 (`^3.25.76` in package.json) |
+| TypeScript for build pipeline | RAPID is 100% CommonJS JavaScript. Introducing TypeScript for the build pipeline only creates a split codebase with different tooling requirements. | Continue with CommonJS `.cjs` files |
+| XState or robot for state machine | The hand-rolled state machine (~50 lines in state-machine.cjs) is simpler and sufficient. v3.0 simplifies the state machine further by removing states, making XState even less justified. | Continue with hand-rolled state machine |
+| Markdown template libraries (marked, remark) | Agent prompts are Markdown but never need parsing. They are generated text consumed by Claude. | String concatenation |
 
 ---
 
 ## Integration Points
 
-### How the Merger Agent Calls CLI Commands
+### How ROLE_TOOL_DOCS Feeds Into Agent Prompts
 
-The merger agent runs as a subagent with `tools: Read, Write, Bash, Grep, Glob`. It invokes merge.cjs functions via the rapid-tools CLI, the same way SKILL.md currently does:
-
-```bash
-# Detection (merger agent runs these via Bash tool)
-node "${RAPID_TOOLS}" merge detect {setName}
-node "${RAPID_TOOLS}" merge resolve {setName}
-
-# State updates
-node "${RAPID_TOOLS}" merge update-status {setName} detecting
-node "${RAPID_TOOLS}" merge merge-state {setName}
-
-# Context loading
-node "${RAPID_TOOLS}" execute prepare-context {setName}
-```
-
-The `RAPID_TOOLS` environment variable is available to subagents because it is set in the main shell environment (configured by `/rapid:install`). Subagents inherit the parent's environment.
-
-### How build-agents Generates Agent Files
-
-The existing `build-agents` pipeline assembles agent files in `agents/` from modular components in `src/modules/`. Adding `role-conflict-resolver.md` in `src/modules/roles/` automatically generates `agents/rapid-conflict-resolver.md` via the build pipeline. No changes to the build pipeline are needed.
-
-### MERGE-STATE.json Schema Updates
-
-The existing MergeStateSchema may need minor extensions to track delegation:
+The build pipeline renders tool docs as YAML-formatted text within `<tools>` XML tags:
 
 ```javascript
-// Potential additions (evaluate during implementation)
-delegatedAt: z.string().optional(),    // When the merger agent was spawned
-delegatedTo: z.string().optional(),    // Agent instance identifier
-conflictResolvers: z.array(z.object({
-  conflictFile: z.string(),
-  confidence: z.number(),
-  resolved: z.boolean(),
-})).optional(),
+// In handleBuildAgents() -- rapid-tools.cjs
+
+const ROLE_TOOL_DOCS = {
+  'executor': {
+    'state': [
+      { cmd: 'state get set <mId> <sId>', desc: 'Read set state' },
+      { cmd: 'state transition job <mId> <sId> <wId> <jId> <status>', desc: 'Update job status' },
+    ],
+    'execute': [
+      { cmd: 'execute commit-state [message]', desc: 'Commit STATE.json' },
+    ],
+  },
+  'merger': {
+    'merge': [
+      { cmd: 'merge detect <set>', desc: 'Run 5-level conflict detection' },
+      { cmd: 'merge resolve <set>', desc: 'Run resolution cascade' },
+      { cmd: 'merge execute <set>', desc: 'Merge set branch into main' },
+      { cmd: 'merge update-status <set> <status>', desc: 'Update merge status' },
+    ],
+  },
+  // ... per role
+};
+
+function renderToolDocs(role) {
+  const docs = ROLE_TOOL_DOCS[role];
+  if (!docs) return '';
+
+  const lines = ['# rapid-tools.cjs commands for this agent', ''];
+  for (const [category, commands] of Object.entries(docs)) {
+    lines.push(`${category}:`);
+    for (const { cmd, desc } of commands) {
+      lines.push(`  - command: "${cmd}"`);
+      lines.push(`    purpose: ${desc}`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
 ```
 
-These are minor Zod schema field additions to the existing file. No new modules needed.
+### How the Hybrid Build Pipeline Works
+
+```
+src/modules/core/        --> shared XML sections (identity, returns, git)
+src/modules/roles/        --> role-specific content
+ROLE_TOOL_DOCS (JS map)   --> per-role <tools> section
+SKIP_GENERATION (JS set)  --> which roles are hand-written
+
+build-agents:
+  for each role in ROLE_CORE_MAP:
+    if SKIP_GENERATION.has(role):
+      validate agents/rapid-{role}.md exists and has valid frontmatter
+      validate size limits
+      skip generation
+    else:
+      assemble from modules + tool docs + workflow
+      write to agents/rapid-{role}.md
+```
+
+### How Simplified Orchestration Reduces State Complexity
+
+```
+v2.x state flow:
+  Set: pending -> planning -> executing -> reviewing -> merging -> complete
+  Wave: pending -> discussing -> planning -> executing -> reconciling -> complete
+  Job: pending -> executing -> complete
+
+v3.0 state flow:
+  Set: pending -> planning -> executing -> reviewing -> merging -> complete
+  Wave: pending -> executing -> complete  (no discussing/planning/reconciling)
+  Job: pending -> executing -> complete   (unchanged)
+```
+
+The `discussing` and `planning` wave states are removed because the plan-set flow handles all planning at the set level, producing per-wave PLAN.md files directly. Waves go straight from `pending` to `executing` after planning is done at the set level.
 
 ---
 
@@ -333,47 +385,69 @@ These are minor Zod schema field additions to the existing file. No new modules 
 | Package | Version | Compatible With | Notes |
 |---------|---------|-----------------|-------|
 | zod@3.25.76 | Current | Node.js >=18, CommonJS require() | Do not upgrade to Zod 4.x |
-| proper-lockfile@4.1.2 | Current | Node.js >=18 | Stable |
-| ajv@8.17.1 | Current | ajv-formats@3.0.1 | Used for CONTRACT.json |
+| proper-lockfile@4.1.2 | Current | Node.js >=18 | Reduced usage in v3.0 but still needed |
+| ajv@8.17.1 | Current | ajv-formats@3.0.1 | Used for CONTRACT.json validation |
 | Claude Code subagent API | Current (2026-03) | agents/ dir with YAML frontmatter | Supports: model, permissionMode, tools, hooks, background, isolation, memory, maxTurns, skills |
+| Claude Code skills API | Current (2026-03) | skills/ dir with SKILL.md | Supports: Agent tool dispatching, AskUserQuestion, all tool permissions |
 
 ---
 
 ## Installation
 
-No new packages to install. v2.2 is entirely:
-- Rewritten SKILL.md for merge (prompt engineering)
-- New agent role definition (role-conflict-resolver.md)
-- Extended agent role definition (role-merger.md rewrite)
-- Minor merge.cjs helper additions (2-3 functions)
-- New documentation files (README.md rewrite + technical_documentation.md)
+No new packages to install. v3.0 is entirely:
+- Refactored build-agents pipeline (ROLE_TOOL_DOCS, SKIP_GENERATION, `<tools>` rendering)
+- Simplified state schemas and transitions
+- New role module (role-research-domain.md)
+- Retired core modules (core-state-access.md, core-context-loading.md replaced by per-role tool docs)
+- Hand-written core agent files (orchestrator, planner, executor, merger)
+- Removed code (wave-planner, job-planner roles simplified; gate enforcement softened)
 
 ```bash
 # Verify existing stack is intact
 cd ~/Projects/RAPID
-node -e "require('zod'); require('proper-lockfile'); console.log('Stack OK')"
+node -e "const {z} = require('zod'); require('proper-lockfile'); console.log('Stack OK')"
 
-# No npm install needed for v2.2
+# No npm install needed for v3.0
 
-# After implementation, regenerate agents
+# After implementation, regenerate agents (generated ones only)
 node ~/Projects/RAPID/src/bin/rapid-tools.cjs build-agents
+
+# Run tests to verify
+node --test ~/Projects/RAPID/src/lib/build-agents.test.cjs
 ```
+
+---
+
+## Stack Patterns by Variant
+
+**If the tool manifest format needs to change later:**
+- ROLE_TOOL_DOCS is a plain JS object -- refactoring the shape is a code change, not a data migration
+- If YAML source files become desirable later (e.g., non-developers editing tool docs), add js-yaml@4.1.1 at that point
+- The rendered output format (YAML text in prompts) is independent of the source format
+
+**If core agent prompts grow beyond 25KB:**
+- The current 15KB warning threshold applies to generated agents
+- Hand-written core agents have a 25KB generous limit (already in build-agents.test.cjs for planner and plan-verifier)
+- If a core agent exceeds 25KB, factor out reusable sections into core modules while keeping the role-specific content hand-written
+
+**If v3.0 needs to coexist with v2.x state files:**
+- Add a state migration function in state-machine.cjs (pattern already exists: `migrateStateVersion()`)
+- Migrate old wave states (`discussing`, `planning`, `reconciling`) to their simplified equivalents
 
 ---
 
 ## Sources
 
 ### PRIMARY (HIGH confidence)
-- [Claude Code Subagent Documentation](https://code.claude.com/docs/en/sub-agents) -- Official docs confirming: subagents cannot spawn other subagents, Agent tool only available to main thread and skills, full frontmatter field reference (name, description, tools, disallowedTools, model, permissionMode, maxTurns, skills, hooks, memory, background, isolation). Verified 2026-03-10.
-- [GitHub Issue #4182: Sub-Agent Task Tool Not Exposed](https://github.com/anthropics/claude-code/issues/4182) -- Confirms Agent tool is excluded from subagent tool lists. Closed as duplicate. Workarounds (claude -p via Bash) lose context and observability. Verified 2026-03-10.
-- Existing codebase analysis: `skills/merge/SKILL.md`, `skills/review/SKILL.md`, `src/lib/merge.cjs`, `agents/rapid-merger.md`, `src/modules/roles/role-merger.md` -- All read directly. Confirm current merge pipeline architecture and agent spawning patterns. (HIGH confidence)
-- `package.json` -- Verified current dependencies: zod@^3.25.76, proper-lockfile@^4.1.2, ajv@^8.17.1, ajv-formats@^3.0.1. (HIGH confidence)
+- **Existing codebase analysis:** `src/bin/rapid-tools.cjs` (build-agents pipeline, assembleAgentPrompt, ROLE_CORE_MAP, ROLE_TOOL_DOCS concept), `src/modules/core/*.md` (current core modules), `src/modules/roles/*.md` (current role modules), `src/lib/state-schemas.cjs` (current state enums), `src/lib/execute.cjs` (regex-based YAML parsing at line 366-378), `src/lib/build-agents.test.cjs` (agent validation tests). All read directly. (HIGH confidence)
+- **package.json:** Verified current dependencies: zod@^3.25.76, proper-lockfile@^4.1.2, ajv@^8.17.1, ajv-formats@^3.0.1. No new dependencies needed. (HIGH confidence)
+- **Zod 3.25.76 CommonJS compatibility:** Verified via `node -e "const {z} = require('zod')"` -- works correctly. Package exports `require: './index.js'`. (HIGH confidence)
+- **STATE.md v3.0 decisions:** Inline YAML tool docs per agent (not shared reference file), hybrid agent build (core hand-written, repetitive generated), simplified orchestration. (HIGH confidence, internal)
 
 ### SECONDARY (MEDIUM confidence)
-- [Claude Code Agent Teams Guide](https://claudefa.st/blog/guide/agents/agent-teams) -- Confirms Agent Teams is for independent parallel work, not suitable for sequential merge pipeline. (MEDIUM confidence, community resource)
-- [Claude Code Worktree Subagent Isolation](https://www.threads.com/@boris_cherny/post/DVAAnexgRUj) -- Confirms `isolation: worktree` frontmatter field for subagent git worktree isolation. (MEDIUM confidence, official Anthropic staff post)
-- v2.1 stack research (`.planning/research/STACK.md` prior version) -- Validated that no new dependencies were needed for v2.1. Same conclusion applies to v2.2. (HIGH confidence, internal)
+- [js-yaml npm package](https://www.npmjs.com/package/js-yaml) -- js-yaml@4.1.1 supports CommonJS via `require('./index.js')` export. Confirmed dual CJS/ESM support. NOT recommended for v3.0 but viable if tool manifests move to YAML source files later. (MEDIUM confidence)
+- [yaml npm package](https://www.npmjs.com/package/yaml) -- yaml@2.8.2 is an alternative YAML parser. NOT recommended. (MEDIUM confidence)
 
 ---
-*Stack research for: RAPID v2.2 Subagent Merger & Documentation*
-*Researched: 2026-03-10*
+*Stack research for: RAPID v3.0 Refresh -- orchestration simplification, inline tool docs, XML prompt templates*
+*Researched: 2026-03-12*
