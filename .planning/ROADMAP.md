@@ -50,7 +50,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 39: Tool Docs Registry & Core Module Refactor** - Build per-agent tool documentation system and XML prompt schema (completed 2026-03-12)
 - [x] **Phase 40: CLI Surface & Utility Commands** - Prune rapid-tools.cjs, add deprecation stubs, implement /status and /install (completed 2026-03-12)
 - [x] **Phase 41: Build Pipeline & Generated Agents** - Hybrid build with SKIP_GENERATION, tool doc injection, 5th researcher (completed 2026-03-12)
-- [ ] **Phase 42: Core Agent Rewrites** - Hand-write orchestrator, planner, executor, merger, reviewer agents
+- [ ] **Phase 42: Core Agent Rewrites** - Hand-write planner, executor, merger, reviewer agents; remove orchestrator
 - [ ] **Phase 43: Planning & Discussion Skills** - Rewrite init, start-set, discuss-set, plan-set with collapsed planning pipeline
 - [ ] **Phase 44: Execution & Auxiliary Skills** - Rewrite execute-set, implement quick, add-set, new-version
 - [ ] **Phase 45: Documentation, Contracts & Cleanup** - Update docs, remove dead code, simplify contracts
@@ -124,17 +124,19 @@ Plans:
 **Research flag**: Skip research-phase (extends established build-agents pipeline)
 
 ### Phase 42: Core Agent Rewrites
-**Goal**: The 5 hand-written core agents (orchestrator, planner, executor, merger, reviewer) define the v3.0 user experience with embedded tool docs, XML structure, and correct state transitions
+**Goal**: The 4 hand-written core agents (planner, executor, merger, reviewer) define the v3.0 user experience with embedded tool docs, XML structure, and correct state transitions. Orchestrator removed -- skills are their own orchestrators.
 **Depends on**: Phase 41 (SKIP_GENERATION must be in place before hand-written files are created; build pipeline must not overwrite them)
 **Requirements**: AGENT-04
 **Success Criteria** (what must be TRUE):
-  1. agents/rapid-orchestrator.md, rapid-planner.md, rapid-executor.md, rapid-merger.md, and rapid-reviewer.md exist as hand-written files (not build-generated) and are each under 8KB
+  1. agents/rapid-planner.md, rapid-executor.md, rapid-merger.md, and rapid-reviewer.md exist as hand-written files (not build-generated) and are each under 12KB
   2. Each core agent prompt embeds its own tool docs directly (not template-injected) and uses the XML section structure from the schema document
-  3. The orchestrator and merger agents preserve the exact state transition sequences and RAPID:RETURN parsing contracts that the review and merge pipelines depend on
-  4. Each core agent is classified as SCRIPTED, GUIDED, or AUTONOMOUS with appropriate edge-case escape hatches
+  3. The merger agent preserves the semantic conflict detection protocol and RAPID:RETURN parsing contracts that the merge pipeline depends on
+  4. Each core agent is classified as GUIDED with appropriate edge-case escape hatches
   5. All core agents explicitly treat sets as independent -- no agent refuses to work on a set because another set is incomplete or in a different state
+  6. Orchestrator agent and role module removed from all registries (SKIP_GENERATION, ROLE_CORE_MAP, ROLE_TOOLS, ROLE_COLORS, ROLE_DESCRIPTIONS, ROLE_TOOL_MAP)
+  7. core-identity.md updated with v3 workflow (init > start-set > discuss > plan-set > execute-set > review > merge) and independent sets model
 **Plans**: TBD
-**Research flag**: Needs research-phase (enumerate coupling points between orchestrator/merger and review/merge pipelines before authoring)
+**Research flag**: Needs research-phase (enumerate coupling points between merger and merge pipeline before authoring)
 
 ### Phase 43: Planning & Discussion Skills
 **Goal**: Users can run /init, /start-set, /discuss-set, and /plan-set to go from project initialization through complete set planning in 2-4 agent spawns
