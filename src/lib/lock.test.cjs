@@ -125,4 +125,136 @@ describe('lock.cjs', () => {
       await release();
     });
   });
+
+  describe('cleanStaleLocks()', () => {
+    it('removes lock artifacts when owning PID is dead', () => {
+      lock.ensureLocksDir(tmpDir);
+      const locksPath = path.join(tmpDir, '.planning', '.locks');
+
+      // Create a target file with a PID that almost certainly does not exist
+      const deadPid = 99999999;
+      const targetPath = path.join(locksPath, 'dead.target');
+      fs.writeFileSync(targetPath, JSON.stringify({ pid: deadPid, timestamp: Date.now() }));
+
+      // Create matching .lock directory
+      const lockDir = targetPath + '.lock';
+      fs.mkdirSync(lockDir, { recursive: true });
+
+      // Both artifacts exist
+      assert.ok(fs.existsSync(targetPath), 'Target file should exist before cleanup');
+      assert.ok(fs.existsSync(lockDir), 'Lock dir should exist before cleanup');
+
+      // Clean stale locks
+      lock.cleanStaleLocks(tmpDir);
+
+      // Both should be removed
+      assert.ok(!fs.existsSync(targetPath), 'Target file should be removed after cleanup');
+      assert.ok(!fs.existsSync(lockDir), 'Lock dir should be removed after cleanup');
+    });
+
+    it('leaves lock artifacts alone when owning PID is alive', () => {
+      lock.ensureLocksDir(tmpDir);
+      const locksPath = path.join(tmpDir, '.planning', '.locks');
+
+      // Create a target file with the CURRENT process PID (alive)
+      const targetPath = path.join(locksPath, 'alive.target');
+      fs.writeFileSync(targetPath, JSON.stringify({ pid: process.pid, timestamp: Date.now() }));
+
+      // Create matching .lock directory
+      const lockDir = targetPath + '.lock';
+      fs.mkdirSync(lockDir, { recursive: true });
+
+      // Clean stale locks
+      lock.cleanStaleLocks(tmpDir);
+
+      // Both should still exist (process is alive)
+      assert.ok(fs.existsSync(targetPath), 'Target file should remain when PID is alive');
+      assert.ok(fs.existsSync(lockDir), 'Lock dir should remain when PID is alive');
+    });
+
+    it('handles missing locks dir gracefully (no throw)', () => {
+      // tmpDir has .planning/ but no .locks/ yet
+      assert.doesNotThrow(() => lock.cleanStaleLocks(tmpDir));
+    });
+
+    it('handles unparseable target files gracefully (skip, no throw)', () => {
+      lock.ensureLocksDir(tmpDir);
+      const locksPath = path.join(tmpDir, '.planning', '.locks');
+
+      // Create a target file with invalid JSON
+      const targetPath = path.join(locksPath, 'bad.target');
+      fs.writeFileSync(targetPath, 'NOT VALID JSON');
+
+      // Should not throw
+      assert.doesNotThrow(() => lock.cleanStaleLocks(tmpDir));
+
+      // File should still exist (skipped, not removed)
+      assert.ok(fs.existsSync(targetPath), 'Unparseable target file should remain');
+    });
+
+    it('removes target file even when .lock directory does not exist', () => {
+      lock.ensureLocksDir(tmpDir);
+      const locksPath = path.join(tmpDir, '.planning', '.locks');
+
+      // Create a target file with dead PID but NO matching .lock directory
+      const deadPid = 99999999;
+      const targetPath = path.join(locksPath, 'orphan.target');
+      fs.writeFileSync(targetPath, JSON.stringify({ pid: deadPid, timestamp: Date.now() }));
+
+      lock.cleanStaleLocks(tmpDir);
+
+      assert.ok(!fs.existsSync(targetPath), 'Orphaned target file should be removed');
+    });
+  });
+
+  describe('isProcessAlive (via cleanStaleLocks behavior)', () => {
+    it('current process PID is alive (verified via lock preservation)', () => {
+      lock.ensureLocksDir(tmpDir);
+      const locksPath = path.join(tmpDir, '.planning', '.locks');
+
+      const targetPath = path.join(locksPath, 'self.target');
+      fs.writeFileSync(targetPath, JSON.stringify({ pid: process.pid, timestamp: Date.now() }));
+
+      lock.cleanStaleLocks(tmpDir);
+
+      // Current process PID should be alive, so target remains
+      assert.ok(fs.existsSync(targetPath), 'Current PID target should survive cleanup');
+    });
+
+    it('non-existent PID is dead (verified via lock removal)', () => {
+      lock.ensureLocksDir(tmpDir);
+      const locksPath = path.join(tmpDir, '.planning', '.locks');
+
+      const targetPath = path.join(locksPath, 'nonexistent.target');
+      fs.writeFileSync(targetPath, JSON.stringify({ pid: 99999999, timestamp: Date.now() }));
+
+      lock.cleanStaleLocks(tmpDir);
+
+      // Non-existent PID should be dead, so target is removed
+      assert.ok(!fs.existsSync(targetPath), 'Dead PID target should be removed');
+    });
+  });
+
+  describe('Module exports', () => {
+    it('exports acquireLock', () => {
+      assert.equal(typeof lock.acquireLock, 'function');
+    });
+
+    it('exports isLocked', () => {
+      assert.equal(typeof lock.isLocked, 'function');
+    });
+
+    it('exports ensureLocksDir', () => {
+      assert.equal(typeof lock.ensureLocksDir, 'function');
+    });
+
+    it('exports cleanStaleLocks', () => {
+      assert.equal(typeof lock.cleanStaleLocks, 'function');
+    });
+
+    it('exports exactly 4 keys', () => {
+      const keys = Object.keys(lock).sort();
+      assert.deepEqual(keys, ['acquireLock', 'cleanStaleLocks', 'ensureLocksDir', 'isLocked']);
+    });
+  });
 });
