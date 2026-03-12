@@ -17,95 +17,94 @@ Output this content now:
 
 ---
 
-## RAPID Mark II Workflow
+## RAPID v3.0 Workflow
 
 ```
-  INIT ──> CONTEXT ──> PLAN ──> [ per set: DISCUSS ──> PLAN ──> EXECUTE ──> REVIEW ] ──> MERGE ──> CLEANUP
-   │          │          │                                          │                       │
-   │          │          │                                          └─ Test + bug hunt       └─ Integrate to main
-   │          │          └─ Set/wave/job planning with contracts
-   │          └─ Codebase analysis and context generation
-   └─ Research, roadmap, and model selection
+  INIT -> START-SET -> DISCUSS-SET -> PLAN-SET -> EXECUTE-SET -> REVIEW -> MERGE
+   |          |             |             |              |           |        |
+   |          |             |             |              |           |        +-- Integrate to main
+   |          |             |             |              |           +-- Test + bug hunt + UAT
+   |          |             |             |              +-- Parallel job execution per wave
+   |          |             |             +-- Research, wave plans, job plans, validation
+   |          |             +-- Capture implementation vision per wave
+   |          +-- Create worktree, scoped CLAUDE.md, set overview
+   +-- Research, roadmap, model selection, project decomposition
 ```
 
-## Available Commands
+## 7 Core Lifecycle Commands
 
-### Setup
+| # | Command | Description |
+|---|---------|-------------|
+| 1 | `/rapid:init` | Initialize project -- research, roadmap, model selection, set decomposition |
+| 2 | `/rapid:start-set` | Create isolated worktree, generate scoped CLAUDE.md, run set planner |
+| 3 | `/rapid:discuss-set` | Capture developer implementation vision for a wave before planning |
+| 4 | `/rapid:plan-set` | Plan all waves in a set -- research, wave plans, job plans, validation |
+| 5 | `/rapid:execute-set` | Execute jobs within waves (parallel subagents or agent teams, smart re-entry) |
+| 6 | `/rapid:review` | Run unit test > bug hunt > UAT pipeline for completed set |
+| 7 | `/rapid:merge` | Merge completed sets to main with contract validation and conflict detection |
+
+## 4 Auxiliary Commands
+
+| # | Command | Description |
+|---|---------|-------------|
+| 1 | `/rapid:status` | Project dashboard with set statuses and next-action suggestions |
+| 2 | `/rapid:install` | Plugin installation, shell configuration, .env setup |
+| 3 | `/rapid:new-version` | Start new milestone/version cycle (archive, bump, re-plan) |
+| 4 | `/rapid:add-set` | Add sets mid-milestone (Phase 44 -- not yet available) |
+
+## Meta
 
 | Command | Description |
 |---------|-------------|
-| `/rapid:init` | Initialize a new RAPID project (greenfield/brownfield detection, parallel research agents, roadmap generation) |
-| `/rapid:install` | Install RAPID plugin and configure environment (shell detection, .env setup) |
-| `/rapid:context` | Analyze codebase and generate project context files (CODEBASE.md, ARCHITECTURE.md, CONVENTIONS.md, STYLE_GUIDE.md, CLAUDE.md) |
+| `/rapid:help` | This command reference |
 
-### Planning
+## Kept Utilities
 
-| Command | Description |
-|---------|-------------|
-| `/rapid:plan` | Plan sets and waves for the current milestone with interface contracts |
-| `/rapid:discuss` | Capture implementation vision for a wave before detailed planning (Phase 20) |
-| `/rapid:assumptions` | Surface and validate Claude's assumptions about a set before execution |
-
-### Execution
+These commands are functional but not part of the primary 7+4 command set:
 
 | Command | Description |
 |---------|-------------|
-| `/rapid:execute` | Execute jobs within a wave (parallel via subagents or agent teams, supports resume) |
-| `/rapid:status` | Display cross-set progress dashboard with set > wave > job hierarchy |
+| `/rapid:assumptions` | Surface and validate Claude's assumptions about a set |
 | `/rapid:pause` | Pause current set work with handoff file for resumption |
-
-### Review
-
-| Command | Description |
-|---------|-------------|
-| `/rapid:review` | Run unit test > bug hunt > UAT pipeline for completed work |
-
-### Merge
-
-| Command | Description |
-|---------|-------------|
-| `/rapid:merge` | Merge completed sets to main with contract validation and conflict detection |
+| `/rapid:resume` | Resume paused set work from handoff |
+| `/rapid:context` | Generate codebase context files (ARCHITECTURE.md, CONVENTIONS.md, etc.) |
 | `/rapid:cleanup` | Remove completed set worktrees with safety checks |
-
-### Meta
-
-| Command | Description |
-|---------|-------------|
-| `/rapid:new-milestone` | Start a new milestone/version cycle (archive current, bump version, re-plan) |
-| `/rapid:help` | Show this command reference |
-
-### Internal / Developer
-
-| Command | Description |
-|---------|-------------|
-| `node rapid-tools.cjs build-agents` | Regenerate all agent .md files from source modules (run automatically during setup) |
-
-> Commands marked (Phase N) are planned but not yet implemented. All commands listed above are either available or in active development for Mark II.
 
 ## Typical Workflow
 
 1. **`/rapid:install`** -- One-time setup: install plugin, configure shell, create .env
-2. **`/rapid:init`** -- Project initialization: research, roadmap, contracts, model selection
-3. **`/rapid:context`** -- Generate codebase analysis and context files (especially for brownfield)
-4. **`/rapid:plan`** -- Create detailed set/wave/job plans with contracts
+2. **`/rapid:init`** -- Project initialization: research, roadmap, decomposition into sets
 
 Then for each set (in parallel across developers):
 
-5. **`/rapid:discuss`** -- Capture vision for the current wave
-6. **`/rapid:plan`** -- Detail the wave's jobs
-7. **`/rapid:execute`** -- Run jobs (parallel agents within a wave)
-8. **`/rapid:status`** -- Monitor progress across sets
-9. **`/rapid:review`** -- Run adversarial review pipeline
+3. **`/rapid:start-set`** -- Claim a set: create worktree, generate scoped CLAUDE.md
+4. **`/rapid:discuss-set`** -- Capture vision for each wave in the set
+5. **`/rapid:plan-set`** -- Plan all waves (research, wave plans, job plans, validation)
+6. **`/rapid:execute-set`** -- Run jobs (parallel agents within each wave)
+7. **`/rapid:review`** -- Run adversarial review pipeline
 
 After sets complete:
 
-10. **`/rapid:merge`** -- Integrate sets to main with contract checks
-11. **`/rapid:cleanup`** -- Remove worktrees for merged sets
+8. **`/rapid:merge`** -- Integrate sets to main with contract checks
+9. **`/rapid:cleanup`** -- Remove worktrees for merged sets
 
 Start next cycle:
 
-12. **`/rapid:new-milestone`** -- Archive completed milestone, begin next version
+10. **`/rapid:new-version`** -- Archive completed milestone, begin next version
+
+## Deprecated Commands
+
+These v2 commands have been replaced. Running them will show migration guidance:
+
+| Old Command | Replacement |
+|-------------|-------------|
+| `/rapid:set-init` | `/rapid:start-set` |
+| `/rapid:discuss` | `/rapid:discuss-set` |
+| `/rapid:execute` | `/rapid:execute-set` |
+| `/rapid:plan` | `/rapid:plan-set` (set planning) or `/rapid:init` (project planning) |
+| `/rapid:wave-plan` | `/rapid:plan-set` |
+| `/rapid:new-milestone` | `/rapid:new-version` |
 
 ---
 
-RAPID v2.0 Mark II | 15 commands | Rapid Agentic Parallelizable and Isolatable Development
+RAPID v3.0 | 7+4 commands | Rapid Agentic Parallelizable and Isolatable Development
