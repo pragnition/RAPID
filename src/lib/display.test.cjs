@@ -14,9 +14,9 @@ describe('display', () => {
   });
 
   describe('STAGE_VERBS', () => {
-    it('maps all 8 stages to uppercase verb strings', () => {
+    it('maps all 10 stages to uppercase verb strings', () => {
       const display = require(displayPath);
-      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
+      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'migrate', 'quick'];
       for (const stage of expectedStages) {
         assert.ok(
           typeof display.STAGE_VERBS[stage] === 'string',
@@ -39,13 +39,15 @@ describe('display', () => {
       assert.equal(display.STAGE_VERBS['review'], 'REVIEWING');
       assert.equal(display.STAGE_VERBS['merge'], 'MERGING');
       assert.equal(display.STAGE_VERBS['plan-set'], 'PLANNING SET');
+      assert.equal(display.STAGE_VERBS['migrate'], 'MIGRATING');
+      assert.equal(display.STAGE_VERBS['quick'], 'QUICK TASK');
     });
   });
 
   describe('STAGE_BG', () => {
-    it('maps all 8 stages to ANSI background escape codes', () => {
+    it('maps all 10 stages to ANSI background escape codes', () => {
       const display = require(displayPath);
-      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
+      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'migrate', 'quick'];
       for (const stage of expectedStages) {
         assert.ok(
           typeof display.STAGE_BG[stage] === 'string',
@@ -87,6 +89,18 @@ describe('display', () => {
           display.STAGE_BG[stage],
           '\x1b[101m',
           `Review stage "${stage}" should use bright red background (\\x1b[101m), got: "${display.STAGE_BG[stage]}"`
+        );
+      }
+    });
+
+    it('utility stages (migrate, quick) use magenta background ANSI code', () => {
+      const display = require(displayPath);
+      const utilityStages = ['migrate', 'quick'];
+      for (const stage of utilityStages) {
+        assert.equal(
+          display.STAGE_BG[stage],
+          '\x1b[105m',
+          `Utility stage "${stage}" should use bright magenta background (\\x1b[105m), got: "${display.STAGE_BG[stage]}"`
         );
       }
     });
@@ -145,9 +159,34 @@ describe('display', () => {
       assert.ok(result.includes('auth-system'), 'Banner should contain "auth-system"');
     });
 
-    it('all 8 stages produce valid banner strings', () => {
+    it('renderBanner("migrate") returns styled banner containing "MIGRATING"', () => {
       const display = require(displayPath);
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
+      const result = display.renderBanner('migrate');
+      assert.ok(result.includes('MIGRATING'), 'Banner should contain "MIGRATING"');
+      assert.ok(result.includes('\x1b['), 'Banner should contain ANSI escape codes');
+      assert.ok(result.includes('RAPID'), 'Banner should contain "RAPID"');
+      assert.ok(!result.includes('Unknown stage'), 'Banner should not contain "Unknown stage" fallback');
+    });
+
+    it('renderBanner("quick") returns styled banner containing "QUICK TASK"', () => {
+      const display = require(displayPath);
+      const result = display.renderBanner('quick');
+      assert.ok(result.includes('QUICK TASK'), 'Banner should contain "QUICK TASK"');
+      assert.ok(result.includes('\x1b['), 'Banner should contain ANSI escape codes');
+      assert.ok(result.includes('RAPID'), 'Banner should contain "RAPID"');
+      assert.ok(!result.includes('Unknown stage'), 'Banner should not contain "Unknown stage" fallback');
+    });
+
+    it('renderBanner("migrate", "Project X") includes target text', () => {
+      const display = require(displayPath);
+      const result = display.renderBanner('migrate', 'Project X');
+      assert.ok(result.includes('MIGRATING'), 'Banner should contain "MIGRATING"');
+      assert.ok(result.includes('Project X'), 'Banner should contain target text "Project X"');
+    });
+
+    it('all 10 stages produce valid banner strings', () => {
+      const display = require(displayPath);
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'migrate', 'quick'];
       for (const stage of stages) {
         const result = display.renderBanner(stage);
         assert.ok(typeof result === 'string', `renderBanner("${stage}") should return a string`);
@@ -167,7 +206,7 @@ describe('display', () => {
 
     it('renderBanner output ends with ANSI reset code', () => {
       const display = require(displayPath);
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'migrate', 'quick'];
       for (const stage of stages) {
         const result = display.renderBanner(stage);
         assert.ok(
@@ -181,7 +220,7 @@ describe('display', () => {
       const display = require(displayPath);
       // Strip ANSI codes to measure visible width
       const stripAnsi = (str) => str.replace(/\x1b\[[0-9;]*m/g, '');
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge'];
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'migrate', 'quick'];
       const widths = stages.map(stage => stripAnsi(display.renderBanner(stage)).length);
       // All widths should be the same (50 chars padded)
       const targetWidth = widths[0];
@@ -224,6 +263,18 @@ describe('display', () => {
         assert.ok(
           result.includes('\x1b[101m'),
           `Review stage "${stage}" banner should contain bright red background code (\\x1b[101m)`
+        );
+      }
+    });
+
+    it('utility stages (migrate, quick) use magenta background ANSI code in banner', () => {
+      const display = require(displayPath);
+      const utilityStages = ['migrate', 'quick'];
+      for (const stage of utilityStages) {
+        const result = display.renderBanner(stage);
+        assert.ok(
+          result.includes('\x1b[105m'),
+          `Utility stage "${stage}" banner should contain bright magenta background code (\\x1b[105m)`
         );
       }
     });
