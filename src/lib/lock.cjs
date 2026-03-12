@@ -85,4 +85,49 @@ function isLocked(cwd, lockName) {
   }
 }
 
-module.exports = { acquireLock, isLocked, ensureLocksDir };
+/**
+ * Check if a process with the given PID is alive.
+ * Uses signal 0 which performs an existence check without sending a signal.
+ *
+ * @param {number} pid - Process ID to check
+ * @returns {boolean} true if process exists, false if not
+ */
+function isProcessAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove lock artifacts (target file + .lock directory) for locks owned
+ * by processes that are no longer alive. Safe to call at startup.
+ *
+ * @param {string} cwd - Project root directory
+ */
+function cleanStaleLocks(cwd) {
+  const locksPath = path.join(cwd, LOCKS_DIR);
+  if (!fs.existsSync(locksPath)) return;
+
+  const targets = fs.readdirSync(locksPath).filter(f => f.endsWith('.target'));
+  for (const target of targets) {
+    const targetPath = path.join(locksPath, target);
+    try {
+      const data = JSON.parse(fs.readFileSync(targetPath, 'utf-8'));
+      if (data.pid && !isProcessAlive(data.pid)) {
+        // Owning process is dead -- clean up lock artifacts
+        const lockDir = targetPath + '.lock';
+        if (fs.existsSync(lockDir)) {
+          fs.rmSync(lockDir, { recursive: true, force: true });
+        }
+        fs.unlinkSync(targetPath);
+      }
+    } catch {
+      // If we can't read/parse the target file, skip it
+    }
+  }
+}
+
+module.exports = { acquireLock, isLocked, ensureLocksDir, cleanStaleLocks };
