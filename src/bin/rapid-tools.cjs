@@ -2837,18 +2837,18 @@ function handleDisplay(subcommand, args) {
 }
 
 async function handleQuick(cwd, subcommand, args) {
-  const { addQuickTask, listQuickTasks, getNextQuickTaskId } = require('../lib/quick.cjs');
+  const { addQuickTask, listQuickTasks, getNextQuickTaskId, parseQuickAddArgs } = require('../lib/quick.cjs');
   const path = require('path');
   const statePath = path.join(cwd, '.planning', 'STATE.json');
 
   switch (subcommand) {
     case 'add': {
-      const description = args.join(' ');
+      const { description, commitHash, directory } = parseQuickAddArgs(args);
       if (!description) {
-        error('Description required. Usage: rapid-tools quick add <description>');
+        error('Description required. Usage: rapid-tools quick add <description> [--commit <hash>] [--dir <dir>]');
         process.exit(1);
       }
-      const task = await addQuickTask(statePath, description);
+      const task = await addQuickTask(statePath, description, commitHash, directory);
       output(JSON.stringify(task));
       break;
     }

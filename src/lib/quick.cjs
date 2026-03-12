@@ -85,8 +85,34 @@ async function addQuickTask(statePath, description, commitHash, directory) {
   return newTask;
 }
 
+/**
+ * Parse CLI args for the quick add command, extracting --commit and --dir flags.
+ * Remaining args are joined into the description string.
+ *
+ * @param {string[]} args - Raw CLI args after "quick add"
+ * @returns {{ description: string, commitHash: string|null, directory: string|null }}
+ */
+function parseQuickAddArgs(args) {
+  let commitHash = null;
+  let directory = null;
+  const descParts = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--commit' && i + 1 < args.length) {
+      commitHash = args[++i];
+    } else if (args[i] === '--dir' && i + 1 < args.length) {
+      directory = args[++i];
+    } else if (args[i] === '--commit' || args[i] === '--dir') {
+      // Dangling flag without value -- skip it gracefully
+    } else {
+      descParts.push(args[i]);
+    }
+  }
+  return { description: descParts.join(' '), commitHash, directory };
+}
+
 module.exports = {
   addQuickTask,
   listQuickTasks,
   getNextQuickTaskId,
+  parseQuickAddArgs,
 };

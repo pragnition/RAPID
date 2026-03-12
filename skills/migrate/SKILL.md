@@ -175,7 +175,7 @@ Automatically run the status display command to show the project in RAPID format
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
-node "${RAPID_TOOLS}" display status
+node "${RAPID_TOOLS}" display banner migrate "Migration Complete"
 ```
 
 After the status output, display:
