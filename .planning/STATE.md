@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Subagent Merger & Documentation
-status: completed
-stopped_at: Completed 37.1-04-PLAN.md
-last_updated: "2026-03-11T11:50:46.392Z"
-last_activity: 2026-03-11 -- Plan 37.1-04 complete (migrate and quick skill files)
+status: in-progress
+stopped_at: Completed 38-01-PLAN.md
+last_updated: "2026-03-12T01:16:52Z"
+last_activity: 2026-03-12 -- Plan 38-01 complete (CLI infrastructure fixes)
 progress:
   total_phases: 6
   completed_phases: 6
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 37.1 - Feature Changes and Fixes
+**Current focus:** Phase 38 - CLI Infrastructure Fixes
 
 ## Current Position
 
-Phase: 37.1 of 37.1 (Feature Changes and Fixes)
-Plan: 5 of 5 (37.1-04 complete)
-Status: Plan 37.1-04 complete -- migrate and quick skill files
-Last activity: 2026-03-11 -- Plan 37.1-04 complete (migrate and quick skill files)
+Phase: 38 of 38 (CLI Infrastructure Fixes)
+Plan: 1 of 1 (38-01 complete)
+Status: Plan 38-01 complete -- CLI infrastructure fixes
+Last activity: 2026-03-12 -- Plan 38-01 complete (CLI infrastructure fixes)
 
 Progress: [##########] 100%
 
@@ -49,6 +49,7 @@ Progress: [##########] 100%
 | 37.1 | 01 | 5min | 3 | 7 |
 | 37.1 | 03 | 7min | 2 | 8 |
 | Phase 37.1 P04 | 2min | 2 tasks | 2 files |
+| 38 | 01 | 3min | 2 | 6 |
 
 ## Accumulated Context
 
@@ -90,6 +91,8 @@ Recent:
 - [Phase 37.1-03]: User-facing /rapid:plan-set renamed to /rapid:plan throughout plan-set skill
 - [Phase 37.1]: [Phase 37.1-04]: Migrate skill uses two AskUserQuestion gates: after detection and before transform
 - [Phase 37.1]: [Phase 37.1-04]: Quick skill trusts developer judgment on task scope with no size guardrails
+- [Phase 38-01]: parseQuickAddArgs extracted to quick.cjs as testable pure function rather than inline in rapid-tools.cjs
+- [Phase 38-01]: Utility stages (migrate, quick) use bright magenta background to distinguish from lifecycle stages
 
 ### Pending Todos
 
@@ -103,6 +106,7 @@ None.
 - v2.1 Improvements & Fixes: Phases 25-32 + 27.1 + 29.1 (shipped 2026-03-10)
 - v2.2 Subagent Merger & Documentation: Phases 33-37 (in progress)
 - Phase 37.1 inserted after Phase 37: Feature changes and fixes (URGENT)
+- Phase 38: CLI Infrastructure Fixes (gap closure)
 
 ### Blockers/Concerns
 
@@ -124,6 +128,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-11T11:43:12.753Z
-Stopped at: Completed 37.1-04-PLAN.md
+Last session: 2026-03-12T01:16:52Z
+Stopped at: Completed 38-01-PLAN.md
 Resume file: None

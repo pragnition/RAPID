@@ -39,7 +39,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 35: Adaptive Conflict Resolution** - Orchestrator-mediated per-conflict agents for mid-confidence escalations (completed 2026-03-11)
 - [x] **Phase 36: README Rewrite** - Complete README.md rewrite reflecting all capabilities through v2.2 (completed 2026-03-11)
 - [x] **Phase 37: Technical Documentation** - Create technical_documentation.md as power user reference (completed 2026-03-11)
-- [ ] **Phase 38: CLI Infrastructure Fixes** - Fix display.cjs stage maps, quick flag parsing, and migrate Step 7 invalid subcommand
+- [x] **Phase 38: CLI Infrastructure Fixes** - Fix display.cjs stage maps, quick flag parsing, and migrate Step 7 invalid subcommand (completed 2026-03-12)
 - [ ] **Phase 39: Documentation Refresh** - Update README.md and docs/planning.md to reflect post-37.1 interface changes
 
 ## Phase Details
@@ -124,7 +124,7 @@ Phases execute in numeric order: 33 -> 34 -> 35 -> 36 -> 37
 | 35. Adaptive Conflict Resolution | 2/2 | Complete    | 2026-03-11 | - |
 | 36. README Rewrite | 1/1 | Complete    | 2026-03-11 | - |
 | 37. Technical Documentation | 2/2 | Complete    | 2026-03-11 | - |
-| 38. CLI Infrastructure Fixes | 0/1 | Planned | - | - |
+| 38. CLI Infrastructure Fixes | 1/1 | Complete   | 2026-03-12 | - |
 | 39. Documentation Refresh | 0/1 | Not Started | - | - |
 
 ### Phase 37.1: Feature changes and fixes (INSERTED)
@@ -150,7 +150,7 @@ Plans:
   1. display.cjs STAGE_VERBS and STAGE_BG maps include entries for `migrate` and `quick` stages (no more "Unknown stage" banners)
   2. `handleQuick` in rapid-tools.cjs parses `--commit` and `--dir` flags from `quick add` arguments instead of concatenating them into description
   3. migrate SKILL.md Step 7 uses a valid subcommand (not `display status`) for final verification output
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 38-01-PLAN.md -- Fix display stage maps (migrate/quick), handleQuick flag parsing, migrate SKILL.md Step 7
 
