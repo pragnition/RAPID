@@ -308,26 +308,3 @@ describe('teams.cjs', () => {
     });
   });
 });
-
-// ────────────────────────────────────────────────────────────────
-// Agent registration tests for job-executor role
-// ────────────────────────────────────────────────────────────────
-describe('job-executor agent registration', () => {
-  const fs = require('fs');
-  const path = require('path');
-
-  it('role-job-executor.md source module exists', () => {
-    const rolePath = path.join(__dirname, '..', 'modules', 'roles', 'role-job-executor.md');
-    assert.ok(fs.existsSync(rolePath), 'role-job-executor.md should exist in roles directory');
-  });
-
-  it('rapid-job-executor.md generated agent exists with correct tools', () => {
-    const agentPath = path.join(__dirname, '..', '..', 'agents', 'rapid-job-executor.md');
-    assert.ok(fs.existsSync(agentPath), 'rapid-job-executor.md should exist in agents directory');
-    const content = fs.readFileSync(agentPath, 'utf-8');
-    assert.ok(content.includes('rapid-job-executor'), 'agent should include rapid-job-executor name');
-    assert.ok(content.includes('Read'), 'should include Read tool');
-    assert.ok(content.includes('Write'), 'should include Write tool');
-    assert.ok(content.includes('Bash'), 'should include Bash tool');
-  });
-});

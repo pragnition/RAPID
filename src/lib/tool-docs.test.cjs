@@ -59,10 +59,10 @@ describe('ROLE_TOOL_MAP', () => {
   it('is a static explicit object (not derived from external data)', () => {
     // Verify it has expected roles that use CLI
     const expectedRoles = [
-      'orchestrator', 'executor', 'job-executor', 'planner', 'set-planner',
+      'orchestrator', 'executor', 'planner', 'set-planner',
       'reviewer', 'verifier', 'merger', 'set-merger', 'conflict-resolver',
-      'bugfix', 'wave-planner', 'job-planner', 'plan-verifier',
-      'wave-analyzer', 'roadmapper', 'codebase-synthesizer', 'context-generator',
+      'bugfix', 'plan-verifier',
+      'roadmapper', 'codebase-synthesizer', 'context-generator',
     ];
     for (const role of expectedRoles) {
       assert.ok(role in ROLE_TOOL_MAP, `Missing expected role: ${role}`);
@@ -73,7 +73,7 @@ describe('ROLE_TOOL_MAP', () => {
     const excluded = [
       'research-stack', 'research-features', 'research-architecture',
       'research-pitfalls', 'research-oversights', 'research-synthesizer',
-      'wave-researcher', 'unit-tester', 'bug-hunter', 'devils-advocate',
+      'unit-tester', 'bug-hunter', 'devils-advocate',
       'judge', 'uat', 'scoper',
     ];
     for (const role of excluded) {
