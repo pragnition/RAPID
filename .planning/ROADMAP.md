@@ -50,7 +50,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 39: Tool Docs Registry & Core Module Refactor** - Build per-agent tool documentation system and XML prompt schema (completed 2026-03-12)
 - [x] **Phase 40: CLI Surface & Utility Commands** - Prune rapid-tools.cjs, add deprecation stubs, implement /status and /install (completed 2026-03-12)
 - [x] **Phase 41: Build Pipeline & Generated Agents** - Hybrid build with SKIP_GENERATION, tool doc injection, 5th researcher (completed 2026-03-12)
-- [ ] **Phase 42: Core Agent Rewrites** - Hand-write planner, executor, merger, reviewer agents; remove orchestrator
+- [x] **Phase 42: Core Agent Rewrites** - Hand-write planner, executor, merger, reviewer agents; remove orchestrator (completed 2026-03-12)
 - [ ] **Phase 43: Planning & Discussion Skills** - Rewrite init, start-set, discuss-set, plan-set with collapsed planning pipeline
 - [ ] **Phase 44: Execution & Auxiliary Skills** - Rewrite execute-set, implement quick, add-set, new-version
 - [ ] **Phase 45: Documentation, Contracts & Cleanup** - Update docs, remove dead code, simplify contracts
@@ -191,7 +191,7 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 39. Tool Docs Registry & Core Module Refactor | 4/4 | Complete    | 2026-03-12 | - |
 | 40. CLI Surface & Utility Commands | 4/4 | Complete    | 2026-03-12 | - |
 | 41. Build Pipeline & Generated Agents | 2/2 | Complete    | 2026-03-12 | - |
-| 42. Core Agent Rewrites | 1/3 | In Progress|  | - |
+| 42. Core Agent Rewrites | 3/3 | Complete   | 2026-03-12 | - |
 | 43. Planning & Discussion Skills | v3.0 | 0/TBD | Not started | - |
 | 44. Execution & Auxiliary Skills | v3.0 | 0/TBD | Not started | - |
 | 45. Documentation, Contracts & Cleanup | v3.0 | 0/TBD | Not started | - |

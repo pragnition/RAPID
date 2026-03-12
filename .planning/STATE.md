@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: in-progress
-stopped_at: Completed 42-01-PLAN.md
-last_updated: "2026-03-12T13:49:16.875Z"
-last_activity: 2026-03-12 -- Completed 42-01 orchestrator removal and v3 identity rewrite
+stopped_at: Completed 42-02-PLAN.md
+last_updated: "2026-03-12T13:59:47.879Z"
+last_activity: 2026-03-12 -- Completed 42-02 planner and executor role sections
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 100
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 42 of 45 (Core Agent Rewrites)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: in-progress
-Last activity: 2026-03-12 -- Completed 42-01 orchestrator removal and v3 identity rewrite
+Last activity: 2026-03-12 -- Completed 42-02 planner and executor role sections
 
 Progress: [██████████] 100% (105/105 plans)
 
@@ -74,6 +74,7 @@ Recent:
 - [Phase 41]: research-ux follows same tool/core module pattern as other researchers; synthesizer gains User Experience Direction section
 - [Phase 42]: Test assertions accept both STUB and CORE comment prefixes for transition compatibility
 - [Phase 42]: Orchestrator fully removed from all registries -- skills are sole dispatchers
+- [Phase 42]: build-agents must detect CORE prefix and skip overwriting hand-written agent files
 
 ### Pending Todos
 
@@ -109,5 +110,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T13:49:16.874Z
-Stopped at: Completed 42-01-PLAN.md
+Last session: 2026-03-12T13:59:47.878Z
+Stopped at: Completed 42-02-PLAN.md
