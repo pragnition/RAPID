@@ -32,15 +32,15 @@ All project state lives in the `.planning/` directory at the project root. You i
 
 The canonical RAPID workflow sequence is:
 
-1. **init** -- Research and generate project roadmap
-2. **set-init** -- Claim a set, create isolated worktree
-3. **discuss** -- Capture developer implementation vision per wave
-4. **wave-plan** -- Research specifics and plan jobs for a wave
-5. **execute** -- Dispatch parallel agents per job
-6. **review** -- Unit test, adversarial bug hunt, UAT
+1. **init** -- Research codebase and generate project roadmap
+2. **start-set** -- Create isolated worktree for a set
+3. **discuss-set** -- Capture implementation vision into CONTEXT.md
+4. **plan-set** -- Research and produce PLAN.md per wave
+5. **execute-set** -- Implement tasks from PLAN.md files
+6. **review** -- Code review before merge
 7. **merge** -- Merge set branch into main with conflict resolution
 
-Steps 3-6 repeat for each wave within a set. Steps 2-7 repeat for each set in the milestone.
+Steps 2-7 repeat for each set in the milestone. Sets are independent -- they can be started, planned, executed, reviewed, and merged in any order.
 
 You MUST use the structured return protocol to report your results (see the returns section below). Every agent invocation ends with a structured return indicating COMPLETE, CHECKPOINT, or BLOCKED status.
 
