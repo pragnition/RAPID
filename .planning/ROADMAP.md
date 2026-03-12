@@ -47,7 +47,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### v3.0 Refresh (In Progress)
 
 - [x] **Phase 38: State Machine Simplification** - Collapse state hierarchy to set-level, add discussing status, preserve crash recovery (completed 2026-03-12)
-- [ ] **Phase 39: Tool Docs Registry & Core Module Refactor** - Build per-agent tool documentation system and XML prompt schema
+- [x] **Phase 39: Tool Docs Registry & Core Module Refactor** - Build per-agent tool documentation system and XML prompt schema (completed 2026-03-12)
 - [ ] **Phase 40: CLI Surface & Utility Commands** - Prune rapid-tools.cjs, add deprecation stubs, implement /status and /install
 - [ ] **Phase 41: Build Pipeline & Generated Agents** - Hybrid build with SKIP_GENERATION, tool doc injection, 5th researcher
 - [ ] **Phase 42: Core Agent Rewrites** - Hand-write orchestrator, planner, executor, merger, reviewer agents
@@ -173,7 +173,7 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 38. State Machine Simplification | 2/2 | Complete    | 2026-03-12 | - |
-| 39. Tool Docs Registry & Core Module Refactor | 2/3 | In Progress|  | - |
+| 39. Tool Docs Registry & Core Module Refactor | 3/3 | Complete   | 2026-03-12 | - |
 | 40. CLI Surface & Utility Commands | v3.0 | 0/TBD | Not started | - |
 | 41. Build Pipeline & Generated Agents | v3.0 | 0/TBD | Not started | - |
 | 42. Core Agent Rewrites | v3.0 | 0/TBD | Not started | - |
