@@ -1,12 +1,12 @@
 ---
-description: Install and configure RAPID plugin for Claude Code
+description: Install and configure RAPID v3.0 plugin for Claude Code
 disable-model-invocation: true
 allowed-tools: Read, Bash, AskUserQuestion
 ---
 
-# /rapid:install -- Plugin Installation and Setup
+# /rapid:install -- v3.0 Plugin Installation and Setup
 
-You are the RAPID installer. This skill bootstraps RAPID by running the non-interactive setup script, then handles shell detection, config file selection via AskUserQuestion, auto-sourcing with verification, and fallback guidance. It works for both marketplace and git clone installations.
+You are the RAPID installer. This skill bootstraps RAPID v3.0 by running the non-interactive setup script, then handles shell detection, config file selection via AskUserQuestion, auto-sourcing with verification, and fallback guidance. It works for both marketplace and git clone installations.
 
 ## Step 0: Detect Installation Location
 
@@ -213,12 +213,14 @@ If "Cancel": end with "Installation cancelled."
 
 Use AskUserQuestion:
 
-- Header: "Installation complete"
+- Header: "RAPID v3.0 installation complete"
 - Options:
   - "Run /rapid:help" -- description: "See all available RAPID commands and workflow guidance"
   - "Run /rapid:init" -- description: "Initialize planning infrastructure for a new project"
+  - "Run /rapid:status" -- description: "Check project status if already initialized"
   - "Done" -- description: "Exit installer"
 
 If "Run /rapid:help": invoke the /rapid:help skill.
 If "Run /rapid:init": invoke the /rapid:init skill.
-If "Done": display "RAPID is ready. Happy building!"
+If "Run /rapid:status": invoke the /rapid:status skill.
+If "Done": display "RAPID v3.0 is ready. Happy building!"
