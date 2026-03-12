@@ -2,8 +2,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, execFileSync } = require('child_process');
-const { acquireLock } = require('./lock.cjs');
+const { execFileSync } = require('child_process');
+const { acquireLock, isLocked } = require('./lock.cjs');
 const { ProjectState } = require('./state-schemas.cjs');
 const { validateTransition } = require('./state-transitions.cjs');
 
@@ -75,7 +75,7 @@ async function writeState(cwd, state) {
   const validated = ProjectState.parse(state);
   validated.lastUpdatedAt = new Date().toISOString();
 
-  const release = await acquireLock(cwd, 'state-machine');
+  const release = await acquireLock(cwd, 'state');
   try {
     const stateFile = path.join(cwd, PLANNING_DIR, STATE_FILE);
     const tmpFile = stateFile + '.tmp';
@@ -112,227 +112,63 @@ function findSet(state, milestoneId, setId) {
   return set;
 }
 
-/**
- * Find a wave by id within a set. Throws if not found.
- */
-function findWave(state, milestoneId, setId, waveId) {
-  const set = findSet(state, milestoneId, setId);
-  const wave = set.waves.find(w => w.id === waveId);
-  if (!wave) {
-    throw new Error(`Wave '${waveId}' not found in set '${setId}'`);
-  }
-  return wave;
-}
+// ---- Transaction helper ----
 
 /**
- * Find a job by id within a wave. Throws if not found.
- */
-function findJob(state, milestoneId, setId, waveId, jobId) {
-  const wave = findWave(state, milestoneId, setId, waveId);
-  const job = wave.jobs.find(j => j.id === jobId);
-  if (!job) {
-    throw new Error(`Job '${jobId}' not found in wave '${waveId}'`);
-  }
-  return job;
-}
-
-// ---- Status ordinals for progression checks ----
-
-const WAVE_STATUS_ORDER = {
-  pending: 0, discussing: 1, planning: 2, executing: 3,
-  reconciling: 4, complete: 5, failed: 3, // failed is at executing level
-};
-
-const SET_STATUS_ORDER = {
-  pending: 0, planning: 1, executing: 2, reviewing: 3,
-  merging: 4, complete: 5,
-};
-
-/**
- * Check if applying a derived status would be a valid forward progression
- * (or lateral move to 'failed'). Prevents derived status from regressing
- * a parent entity to an earlier state (e.g., 'reviewing' -> 'executing').
+ * Execute a state mutation within a transaction.
+ * Acquires lock once, reads state, calls mutationFn(state) to mutate in-place,
+ * validates with ProjectState.parse, updates lastUpdatedAt, writes atomically
+ * via tmp+rename, and releases lock. Returns validated state.
  *
- * @param {object} orderMap - Status ordinal map
- * @param {string} currentStatus - Current status
- * @param {string} derivedStatus - Derived status to apply
- * @returns {boolean} Whether the derived status should be applied
- */
-function isDerivedStatusValid(orderMap, currentStatus, derivedStatus) {
-  if (derivedStatus === currentStatus) return false; // no change needed
-  const currentOrd = orderMap[currentStatus];
-  const derivedOrd = orderMap[derivedStatus];
-  if (currentOrd === undefined || derivedOrd === undefined) return false;
-  // Allow forward progression or lateral moves (e.g., executing -> failed)
-  return derivedOrd >= currentOrd;
-}
-
-// ---- Status derivation ----
-
-/**
- * Derive wave status from its jobs.
- * - All pending = 'pending'
- * - All complete = 'complete'
- * - Any failed + none executing = 'failed'
- * - Otherwise = 'executing'
+ * CRITICAL: Do NOT call writeState from mutationFn -- it would deadlock.
  *
- * @param {Array} jobs - Array of job objects with status field
- * @returns {string} Derived status
+ * @param {string} cwd - Project root directory
+ * @param {Function} mutationFn - Function that receives state and mutates in-place
+ * @returns {Promise<object>} The validated state after mutation
  */
-function deriveWaveStatus(jobs) {
-  if (jobs.length === 0) return 'pending';
-
-  const allPending = jobs.every(j => j.status === 'pending');
-  if (allPending) return 'pending';
-
-  const allComplete = jobs.every(j => j.status === 'complete');
-  if (allComplete) return 'complete';
-
-  const anyFailed = jobs.some(j => j.status === 'failed');
-  const anyExecuting = jobs.some(j => j.status === 'executing');
-
-  if (anyFailed && !anyExecuting) return 'failed';
-
-  return 'executing';
-}
-
-/**
- * Derive set status from its waves.
- * Maps wave statuses to semantic categories:
- * - pending/complete are terminal
- * - everything else (discussing, planning, executing, reconciling) is "active"
- *
- * @param {Array} waves - Array of wave objects with status field
- * @returns {string} Derived status: 'pending', 'complete', or 'executing'
- */
-function deriveSetStatus(waves) {
-  if (waves.length === 0) return 'pending';
-
-  const allPending = waves.every(w => w.status === 'pending');
-  if (allPending) return 'pending';
-
-  const allComplete = waves.every(w => w.status === 'complete');
-  if (allComplete) return 'complete';
-
-  // Any active wave means set is executing
-  return 'executing';
-}
-
-// ---- Transition functions ----
-
-/**
- * Transition a job to a new status. Validates the transition, updates timestamps,
- * derives wave status, and writes state atomically.
- */
-async function transitionJob(cwd, milestoneId, setId, waveId, jobId, newStatus) {
-  const release = await acquireLock(cwd, 'state-machine');
+async function withStateTransaction(cwd, mutationFn) {
+  const release = await acquireLock(cwd, 'state');
   try {
     const readResult = await readState(cwd);
     if (!readResult || !readResult.valid) {
-      throw new Error('Cannot transition: STATE.json is missing or invalid');
+      throw new Error('Cannot mutate: STATE.json is missing or invalid');
     }
     const state = readResult.state;
 
-    const job = findJob(state, milestoneId, setId, waveId, jobId);
-    validateTransition('job', job.status, newStatus);
+    // mutationFn receives state, mutates in-place, returns nothing
+    mutationFn(state);
 
-    // Update job status and timestamps
-    job.status = newStatus;
-    const now = new Date().toISOString();
-    if (newStatus === 'executing') {
-      job.startedAt = now;
-    }
-    if (newStatus === 'complete' || newStatus === 'failed') {
-      job.completedAt = now;
-    }
-
-    // Derive wave status from jobs
-    const wave = findWave(state, milestoneId, setId, waveId);
-    const derivedWaveStatus = deriveWaveStatus(wave.jobs);
-    // Only update wave status if it represents forward progression
-    // (prevents derived status from regressing e.g. 'reconciling' -> 'executing')
-    if (isDerivedStatusValid(WAVE_STATUS_ORDER, wave.status, derivedWaveStatus)) {
-      wave.status = derivedWaveStatus;
-    }
-
-    // Write state directly (skip lock since we already hold it)
+    // Validate + atomic write
     const validated = ProjectState.parse(state);
     validated.lastUpdatedAt = new Date().toISOString();
     const stateFile = path.join(cwd, PLANNING_DIR, STATE_FILE);
     const tmpFile = stateFile + '.tmp';
     fs.writeFileSync(tmpFile, JSON.stringify(validated, null, 2), 'utf-8');
     fs.renameSync(tmpFile, stateFile);
+
+    return validated;
   } finally {
     await release();
   }
 }
 
-/**
- * Transition a wave to a new status. Validates the transition,
- * derives set status, and writes state atomically.
- */
-async function transitionWave(cwd, milestoneId, setId, waveId, newStatus) {
-  const release = await acquireLock(cwd, 'state-machine');
-  try {
-    const readResult = await readState(cwd);
-    if (!readResult || !readResult.valid) {
-      throw new Error('Cannot transition: STATE.json is missing or invalid');
-    }
-    const state = readResult.state;
-
-    const wave = findWave(state, milestoneId, setId, waveId);
-    validateTransition('wave', wave.status, newStatus);
-
-    wave.status = newStatus;
-
-    // Derive set status from waves
-    const set = findSet(state, milestoneId, setId);
-    const derivedSetStatus = deriveSetStatus(set.waves);
-    // Only update set status if it represents forward progression
-    // (prevents derived status from regressing e.g. 'reviewing' -> 'executing')
-    if (isDerivedStatusValid(SET_STATUS_ORDER, set.status, derivedSetStatus)) {
-      set.status = derivedSetStatus;
-    }
-
-    // Write state directly (skip lock since we already hold it)
-    const validated = ProjectState.parse(state);
-    validated.lastUpdatedAt = new Date().toISOString();
-    const stateFile = path.join(cwd, PLANNING_DIR, STATE_FILE);
-    const tmpFile = stateFile + '.tmp';
-    fs.writeFileSync(tmpFile, JSON.stringify(validated, null, 2), 'utf-8');
-    fs.renameSync(tmpFile, stateFile);
-  } finally {
-    await release();
-  }
-}
+// ---- Transition function ----
 
 /**
  * Transition a set to a new status. Validates the transition and writes state atomically.
+ * Uses withStateTransaction to avoid double-lock.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} milestoneId - Milestone containing the set
+ * @param {string} setId - Set to transition
+ * @param {string} newStatus - Target status
  */
 async function transitionSet(cwd, milestoneId, setId, newStatus) {
-  const release = await acquireLock(cwd, 'state-machine');
-  try {
-    const readResult = await readState(cwd);
-    if (!readResult || !readResult.valid) {
-      throw new Error('Cannot transition: STATE.json is missing or invalid');
-    }
-    const state = readResult.state;
-
+  return withStateTransaction(cwd, (state) => {
     const set = findSet(state, milestoneId, setId);
-    validateTransition('set', set.status, newStatus);
-
+    validateTransition(set.status, newStatus);
     set.status = newStatus;
-
-    // Write state directly (skip lock since we already hold it)
-    const validated = ProjectState.parse(state);
-    validated.lastUpdatedAt = new Date().toISOString();
-    const stateFile = path.join(cwd, PLANNING_DIR, STATE_FILE);
-    const tmpFile = stateFile + '.tmp';
-    fs.writeFileSync(tmpFile, JSON.stringify(validated, null, 2), 'utf-8');
-    fs.renameSync(tmpFile, stateFile);
-  } finally {
-    await release();
-  }
+  });
 }
 
 // ---- Milestone management ----
@@ -371,6 +207,61 @@ async function addMilestone(cwd, milestoneId, milestoneName, carryForwardSets = 
   state.currentMilestone = milestoneId;
   await writeState(cwd, state);
   return { milestoneId, milestoneName: newMilestone.name, setsCarried: carryForwardSets.length };
+}
+
+// ---- Disk artifact validation ----
+
+/**
+ * Validate that disk artifacts match the state of a set.
+ * Returns an array of { type, message } objects. NEVER modifies STATE.json.
+ *
+ * Checks:
+ * - CONTEXT.md exists when status is planning/executing/complete/merged
+ * - Wave plans directory exists when status is executing/complete/merged
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} milestoneId - Milestone ID
+ * @param {string} setId - Set ID
+ * @returns {Promise<Array<{type: string, message: string}>>} Warnings/errors
+ */
+async function validateDiskArtifacts(cwd, milestoneId, setId) {
+  const readResult = await readState(cwd);
+  if (!readResult || !readResult.valid) {
+    return [{ type: 'error', message: 'STATE.json missing or invalid' }];
+  }
+
+  let set;
+  try {
+    set = findSet(readResult.state, milestoneId, setId);
+  } catch (err) {
+    return [{ type: 'error', message: err.message }];
+  }
+
+  const warnings = [];
+
+  // Check: if status says planning or later, CONTEXT.md should exist
+  if (['planning', 'executing', 'complete', 'merged'].includes(set.status)) {
+    const contextPath = path.join(cwd, '.planning', 'sets', setId, 'CONTEXT.md');
+    if (!fs.existsSync(contextPath)) {
+      warnings.push({
+        type: 'warning',
+        message: `Set "${setId}" is "${set.status}" but no CONTEXT.md found -- run /discuss-set or /discuss-set --skip`,
+      });
+    }
+  }
+
+  // Check: if status says executing or later, wave plans dir should exist
+  if (['executing', 'complete', 'merged'].includes(set.status)) {
+    const wavesDir = path.join(cwd, '.planning', 'waves', setId);
+    if (!fs.existsSync(wavesDir)) {
+      warnings.push({
+        type: 'warning',
+        message: `Set "${setId}" is "${set.status}" but no wave plans found -- run /plan-set`,
+      });
+    }
+  }
+
+  return warnings;
 }
 
 // ---- Corruption detection and recovery ----
@@ -446,16 +337,12 @@ module.exports = {
   createInitialState,
   readState,
   writeState,
+  withStateTransaction,
   findMilestone,
   findSet,
-  findWave,
-  findJob,
-  transitionJob,
-  transitionWave,
   transitionSet,
   addMilestone,
-  deriveWaveStatus,
-  deriveSetStatus,
+  validateDiskArtifacts,
   detectCorruption,
   recoverFromGit,
   commitState,
