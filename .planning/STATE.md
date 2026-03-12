@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
-status: completed
-stopped_at: Phase 40 context gathered
-last_updated: "2026-03-12T07:29:57.780Z"
-last_activity: 2026-03-12 -- Completed 39-04 XML tag assembly order fix (gap closure)
+status: in-progress
+stopped_at: Completed 40-02-PLAN.md
+last_updated: "2026-03-12T07:54:04.819Z"
+last_activity: 2026-03-12 -- Completed 40-02 Status dashboard rewrite and install update
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
-  percent: 80
+  total_plans: 9
+  completed_plans: 7
+  percent: 97
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 39 - Tool Docs Registry & Core Module Refactor (v3.0 Refresh)
+**Current focus:** Phase 40 - CLI Surface & Utility Commands (v3.0 Refresh)
 
 ## Current Position
 
-Phase: 39 of 45 (Tool Docs Registry & Core Module Refactor)
-Plan: 4 of 4 in current phase (complete)
-Status: phase-complete
-Last activity: 2026-03-12 -- Completed 39-04 XML tag assembly order fix (gap closure)
+Phase: 40 of 45 (CLI Surface & Utility Commands)
+Plan: 2 of 3 in current phase
+Status: in-progress
+Last activity: 2026-03-12 -- Completed 40-02 Status dashboard rewrite and install update
 
-Progress: [########################################..........] 80% (37/45 phases)
+Progress: [██████████] 97% (102/105 plans)
 
 ## Accumulated Context
 
@@ -58,6 +58,8 @@ Recent:
 - [Phase 39]: Build pipeline wired: ROLE_CORE_MAP uses 3 modules, assembleAgentPrompt injects <tools> from getToolDocsForRole()
 - [Phase 39]: All 31 agents rebuilt with XML structure: identity, conventions, tools, role, returns
 - [Phase 39]: assembleAgentPrompt() defers core-returns.md to after <role> (not in core loop) per PROMPT-SCHEMA.md
+- [Phase 40]: Status reads state via state get --all instead of worktree status-v2
+- [Phase 40]: Install changes minimal -- only post-install guidance and version references for v3.0
 
 ### Pending Todos
 
@@ -93,5 +95,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T07:29:57.778Z
-Stopped at: Phase 40 context gathered
+Last session: 2026-03-12T07:54:04.817Z
+Stopped at: Completed 40-02-PLAN.md

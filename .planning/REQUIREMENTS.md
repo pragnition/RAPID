@@ -47,11 +47,11 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 - [ ] **CMD-05**: /execute-set as standalone command
 - [ ] **CMD-06**: /review preserved with state reference updates
 - [ ] **CMD-07**: /merge preserved with state updates and planning artifact transfer
-- [ ] **CMD-08**: /status shows project dashboard across all worktrees with next steps
+- [x] **CMD-08**: /status shows project dashboard across all worktrees with next steps
 - [ ] **CMD-09**: /quick for ad-hoc changes without set structure
 - [ ] **CMD-10**: /add-set adds sets to an existing project mid-milestone
 - [ ] **CMD-11**: /new-version completes current milestone and starts new version
-- [ ] **CMD-12**: /install validates installation and updates plugin files
+- [x] **CMD-12**: /install validates installation and updates plugin files
 
 ### UX
 
@@ -215,11 +215,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMD-05 | Phase 44 | Pending |
 | CMD-06 | Phase 40 | Pending |
 | CMD-07 | Phase 40 | Pending |
-| CMD-08 | Phase 40 | Pending |
+| CMD-08 | Phase 40 | Complete |
 | CMD-09 | Phase 44 | Pending |
 | CMD-10 | Phase 44 | Pending |
 | CMD-11 | Phase 44 | Pending |
-| CMD-12 | Phase 40 | Pending |
+| CMD-12 | Phase 40 | Complete |
 | UX-01 | Phase 43 | Pending |
 | UX-02 | Phase 43 | Pending |
 | UX-03 | Phase 40 | Pending |
