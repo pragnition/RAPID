@@ -1,13 +1,10 @@
 {
-  "mode": "yolo",
-  "parallelization": true,
-  "commit_docs": true,
-  "model_profile": "quality",
-  "workflow": {
-    "research": true,
-    "plan_check": true,
-    "verifier": true,
-    "_auto_chain_active": false
+  "project": {
+    "name": "RAPID",
+    "version": "3.0.0"
   },
-  "granularity": "fine"
+  "model": "opus",
+  "planning": {
+    "max_parallel_sets": 3
+  }
 }

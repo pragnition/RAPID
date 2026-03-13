@@ -26,6 +26,8 @@ fi
 echo "RAPID_ROOT=$RAPID_ROOT"
 ```
 
+There is a caveat: if the user has previously installed RAPID via marketplace, there may be old versions in ~/.claude/plugins/cache. You are on version 3.0, so your install location should contain some sort of reference to v3.0.0! So you need to make sure to update the RAPID_TOOLS path in the shell config if it points to an old version. You can detect this by checking if RAPID_TOOLS is already configured in any shell config file and if it points to a path within ~/.claude/plugins/cache. If so, prompt the user to update their config to point to the new RAPID_ROOT path.
+
 ## Step 1: Run Non-Interactive Bootstrap
 
 Run setup.sh to handle prereqs, npm install, validation, .env writing, plugin registration, and `build-agents` (generates all agent .md files from source modules):
@@ -97,7 +99,7 @@ If RAPID_TOOLS is already configured, it might be an old version that requires u
   - "No, keep existing config" -- description: "Keep the existing RAPID_TOOLS configuration (you may need to update it manually if it's an old version)"
   - "Show config file" -- description: "Display the contents of the existing config file for review"
 
-If "Yes, update config": remember that you need to update the shell config to point to the new path. Essentially, just do a reinstall like you would if it was not configured, but make sure to overwrite the existing RAPID_TOOLS line instead of adding a new one.
+If "Yes, update config": remember that you need to update the shell config to point to the new path. Essentially, just do a reinstall like you would if it was not configured, but make sure to overwrite the existing RAPID_TOOLS line instead of adding a new one./
 
 If NOT already configured or user chooses to update, use AskUserQuestion:
 

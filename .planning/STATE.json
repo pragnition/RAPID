@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "projectName": "RAPID",
+  "currentMilestone": "v3.0",
+  "milestones": [
+    {
+      "id": "v1.0",
+      "name": "MVP",
+      "sets": [
+        { "id": "01-plugin-infrastructure", "status": "merged" },
+        { "id": "02-agent-framework", "status": "merged" },
+        { "id": "03-state-management", "status": "merged" },
+        { "id": "04-worktree-isolation", "status": "merged" },
+        { "id": "05-interface-contracts", "status": "merged" },
+        { "id": "06-execution-engine", "status": "merged" },
+        { "id": "07-merge-pipeline", "status": "merged" },
+        { "id": "08-review-system", "status": "merged" },
+        { "id": "09-documentation", "status": "merged" }
+      ]
+    },
+    {
+      "id": "v1.1",
+      "name": "Polish",
+      "sets": [
+        { "id": "10-ask-user-question-gates", "status": "merged" },
+        { "id": "11-install-skill", "status": "merged" },
+        { "id": "12-error-recovery", "status": "merged" },
+        { "id": "13-progress-indicators", "status": "merged" },
+        { "id": "14-ux-improvements", "status": "merged" },
+        { "id": "15-polish-cleanup", "status": "merged" }
+      ]
+    },
+    {
+      "id": "v2.0",
+      "name": "Mark II",
+      "sets": [
+        { "id": "16-sets-waves-jobs-hierarchy", "status": "merged" },
+        { "id": "17-hierarchical-state-machine", "status": "merged" },
+        { "id": "18-init-overhaul", "status": "merged" },
+        { "id": "19-set-init-command", "status": "merged" },
+        { "id": "20-wave-job-planning", "status": "merged" },
+        { "id": "21-executor-agent", "status": "merged" },
+        { "id": "22-review-module", "status": "merged" },
+        { "id": "23-merger-pipeline", "status": "merged" },
+        { "id": "24-mark-ii-documentation", "status": "merged" }
+      ]
+    },
+    {
+      "id": "v2.1",
+      "name": "Improvements & Fixes",
+      "sets": [
+        { "id": "25-gsd-decontamination", "status": "merged" },
+        { "id": "26-numeric-id-infrastructure", "status": "merged" },
+        { "id": "27-ux-branding-colors", "status": "merged" },
+        { "id": "28-workflow-clarity", "status": "merged" },
+        { "id": "29-discuss-optimization", "status": "merged" },
+        { "id": "30-plan-verifier", "status": "merged" },
+        { "id": "31-wave-orchestration", "status": "merged" },
+        { "id": "32-review-efficiency", "status": "merged" }
+      ]
+    },
+    {
+      "id": "v2.2",
+      "name": "Subagent Merger & Documentation",
+      "sets": [
+        { "id": "33-merge-state-schema", "status": "merged" },
+        { "id": "34-merge-subagent-delegation", "status": "merged" },
+        { "id": "35-adaptive-conflict-resolution", "status": "merged" },
+        { "id": "36-readme-rewrite", "status": "merged" },
+        { "id": "37-technical-documentation", "status": "merged" }
+      ]
+    },
+    {
+      "id": "v3.0",
+      "name": "Refresh",
+      "sets": [
+        { "id": "38-state-machine-simplification", "status": "merged" },
+        { "id": "39-tool-docs-core-module-refactor", "status": "merged" },
+        { "id": "40-cli-surface-utility-commands", "status": "merged" },
+        { "id": "41-build-pipeline-generated-agents", "status": "merged" },
+        { "id": "42-core-agent-rewrites", "status": "merged" },
+        { "id": "43-planning-discussion-skills", "status": "merged" },
+        { "id": "44-execution-auxiliary-skills", "status": "merged" },
+        { "id": "45-documentation-contracts-cleanup", "status": "merged" }
+      ]
+    }
+  ],
+  "lastUpdatedAt": "2026-03-13T12:00:00.000Z",
+  "createdAt": "2026-03-03T00:00:00.000Z"
+}
