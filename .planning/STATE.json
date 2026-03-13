@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "projectName": "RAPID",
+  "currentMilestone": "v3.1.0",
+  "milestones": [
+    {
+      "id": "v1.0",
+      "name": "MVP Core",
+      "sets": []
+    },
+    {
+      "id": "v1.1",
+      "name": "Polish & UX",
+      "sets": []
+    },
+    {
+      "id": "v2.0",
+      "name": "Mark II",
+      "sets": []
+    },
+    {
+      "id": "v2.1",
+      "name": "Improvements & Fixes",
+      "sets": []
+    },
+    {
+      "id": "v2.2",
+      "name": "Subagent Merger & Documentation",
+      "sets": []
+    },
+    {
+      "id": "v3.0",
+      "name": "Refresh",
+      "sets": []
+    },
+    {
+      "id": "v3.1.0",
+      "name": "Polish & Cleanup",
+      "sets": [
+        {
+          "id": "status-rename",
+          "status": "pending"
+        },
+        {
+          "id": "command-cleanup",
+          "status": "pending"
+        },
+        {
+          "id": "install-version",
+          "status": "discussing"
+        },
+        {
+          "id": "parallel-waves",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "lastUpdatedAt": "2026-03-13T10:03:13.800Z",
+  "createdAt": "2026-03-03T00:00:00.000Z"
+}
