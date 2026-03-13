@@ -88,6 +88,7 @@ Commands:
 
 Options:
   --help, -h             Show this help message
+  --version, -V          Show RAPID version
 `;
 
 /**
@@ -115,6 +116,12 @@ async function main() {
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     process.stdout.write(USAGE);
     if (args.length === 0) process.exit(1);
+    return;
+  }
+
+  if (args[0] === '--version' || args[0] === '-V') {
+    const { getVersion } = require('../lib/version.cjs');
+    process.stdout.write(`RAPID v${getVersion()}\n`);
     return;
   }
 
