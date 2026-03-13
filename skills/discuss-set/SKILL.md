@@ -138,7 +138,7 @@ If the `--skip` flag is set:
    [ -f ".planning/sets/${SET_ID}/CONTEXT.md" ] && echo "CONTEXT.md created" || echo "ERROR: CONTEXT.md not found"
    ```
 
-4. Skip to Step 7 (State Transition).
+4. Skip to Step 8 (State Transition and Commit) -- CONTEXT.md was already written by the agent above.
 
 If the `--skip` flag is NOT set, continue to Step 5.
 
@@ -167,7 +167,7 @@ Options:
 ```
 
 **Handling responses:**
-- If "Let Claude decide all": Record all 4 areas as Claude's discretion. Skip to Step 7.
+- If "Let Claude decide all": Record all 4 areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
 - If the user selects specific areas: Record selected areas for Step 6.
 
 ---
@@ -206,25 +206,9 @@ After ALL selected areas are discussed:
 
 ---
 
-## Step 7: State Transition
+## Step 7: Write CONTEXT.md (Interactive Mode Only)
 
-Transition set from 'pending' to 'discussing':
-
-```bash
-# (env preamble here)
-node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" discussing
-```
-
-If the set is already in 'discussing' (re-discuss scenario), catch the error and continue:
-
-```bash
-# (env preamble here)
-node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" discussing 2>/dev/null || true
-```
-
----
-
-## Step 8: Write CONTEXT.md
+**Note:** In --skip mode, CONTEXT.md was already written by the rapid-research-stack agent in Step 4. Skip this step and go directly to Step 8.
 
 Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 
@@ -271,15 +255,32 @@ Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 
 ---
 
-## Step 9: Commit and Next Steps
+## Step 8: State Transition and Commit
 
-Commit CONTEXT.md:
+This step ALWAYS runs in both interactive and --skip paths. It is the final mutation step.
+
+### Transition State
+
+Transition set from 'pending' to 'discussing'. Use `2>/dev/null || true` to handle both fresh (pending -> discussing) and re-discuss (already discussing) scenarios gracefully:
 
 ```bash
 # (env preamble here)
-git add ".planning/sets/${SET_ID}/CONTEXT.md"
+node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" discussing 2>/dev/null || true
+```
+
+### Commit Artifacts
+
+Commit BOTH CONTEXT.md AND STATE.json together to ensure the state transition is persisted alongside the artifact:
+
+```bash
+# (env preamble here)
+git add ".planning/sets/${SET_ID}/CONTEXT.md" ".planning/STATE.json"
 git commit -m "discuss-set(${SET_ID}): capture set implementation vision"
 ```
+
+---
+
+## Step 9: Next Steps
 
 Display next step:
 
@@ -321,6 +322,7 @@ Show what is done, what failed, and what to run next.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
 - **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set.
 - **Set-level state transitions:** Only use `state transition set` to move from pending to discussing. Never use wave-level transitions.
+- **State transition is the final mutation:** Happens AFTER CONTEXT.md is written, ensuring artifacts exist before status changes. STATE.json is committed alongside CONTEXT.md in the same git commit.
 - **Progress breadcrumb:** Always show the workflow breadcrumb at completion and in error messages.
 
 ## Anti-Patterns
