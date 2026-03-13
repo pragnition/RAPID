@@ -70,6 +70,7 @@ echo "Detected shell: $SHELL_NAME ($SHELL)"
 Display the detected shell to the user: "Detected shell: {SHELL_NAME} ({SHELL})"
 
 Map the shell to its config file:
+
 - bash -> `~/.bashrc` (prefer) or `~/.bash_profile`
 - zsh -> `~/.zshrc`
 - fish -> `~/.config/fish/config.fish`
@@ -87,9 +88,18 @@ for f in ~/.bashrc ~/.bash_profile ~/.zshrc ~/.config/fish/config.fish ~/.profil
 done
 ```
 
-If RAPID_TOOLS is already configured, display: "RAPID_TOOLS already configured in {file}, skipping shell config." Then jump to Step 4 (Verify Installation).
+If RAPID_TOOLS is already configured, it might be an old version that requires updating, user AskUserQuestion:
 
-If NOT already configured, use AskUserQuestion:
+- Header: "RAPID_TOOLS already configured"
+- Text: "RAPID_TOOLS is already configured in {config_file}. Do you want to update it to the new path for RAPID v3.0?"
+- Options:
+  - "Yes, update config" -- description: "Update the existing config file with the new RAPID_TOOLS path"
+  - "No, keep existing config" -- description: "Keep the existing RAPID_TOOLS configuration (you may need to update it manually if it's an old version)"
+  - "Show config file" -- description: "Display the contents of the existing config file for review"
+
+If "Yes, update config": remember that you need to update the shell config to point to the new path. Essentially, just do a reinstall like you would if it was not configured, but make sure to overwrite the existing RAPID_TOOLS line instead of adding a new one.
+
+If NOT already configured or user chooses to update, use AskUserQuestion:
 
 - Header: "Shell configuration"
 - Text: "Detected shell: {SHELL_NAME} ({SHELL}). Choose where to persist the RAPID_TOOLS environment variable:"
@@ -107,6 +117,7 @@ Otherwise proceed to Step 3 with the chosen config file.
 Write the RAPID_TOOLS export to the chosen config file, then auto-source and verify.
 
 Determine the export line based on shell type:
+
 - fish: `set -gx RAPID_TOOLS "{RAPID_ROOT}/src/bin/rapid-tools.cjs"`
 - All others (bash, zsh, posix): `export RAPID_TOOLS="{RAPID_ROOT}/src/bin/rapid-tools.cjs"`
 
@@ -130,18 +141,21 @@ Use the appropriate block for the chosen shell type. Only run the relevant lines
 Then auto-source and verify in ONE Bash tool call. The source + verify must happen in the same call because each Bash call starts a fresh shell:
 
 For fish:
+
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 fish -c "source ~/.config/fish/config.fish; echo RAPID_TOOLS=\$RAPID_TOOLS; node \$RAPID_TOOLS prereqs"
 ```
 
 For bash:
+
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 bash -c "source ~/.bashrc && echo RAPID_TOOLS=\$RAPID_TOOLS && node \"\$RAPID_TOOLS\" prereqs"
 ```
 
 For zsh:
+
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 zsh -c "source ~/.zshrc && echo RAPID_TOOLS=\$RAPID_TOOLS && node \"\$RAPID_TOOLS\" prereqs"
