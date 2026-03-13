@@ -114,7 +114,7 @@ If the `--skip` flag is set:
 
 1. Display: "Auto-generating CONTEXT.md for set '{SET_ID}' (--skip mode)..."
 
-2. Spawn a lightweight **rapid-researcher** agent with this task:
+2. Spawn a lightweight **rapid-research-stack** agent with this task:
    ```
    Generate auto-context for set '{SET_ID}' (--skip mode).
 
@@ -317,7 +317,7 @@ Show what is done, what failed, and what to run next.
 - **Exactly 4 gray areas:** Identify exactly 4 implementation facets for discussion. Not more, not fewer.
 - **Batched questions per area:** Present 2-3 questions per gray area in a single AskUserQuestion call, not one at a time.
 - **"Claude decides" option:** Available per-area and as a global "Let Claude decide all" option.
-- **--skip auto-context:** The --skip flag spawns a rapid-researcher agent to auto-generate CONTEXT.md without user interaction.
+- **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md without user interaction.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
 - **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set.
 - **Set-level state transitions:** Only use `state transition set` to move from pending to discussing. Never use wave-level transitions.
