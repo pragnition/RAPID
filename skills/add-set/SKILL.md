@@ -1,0 +1,284 @@
+---
+description: Add a new set to an existing project mid-milestone with discovery and contract generation
+allowed-tools: Bash(rapid-tools:*), AskUserQuestion, Read, Write, Glob, Grep
+---
+
+# /rapid:add-set -- Add Set Mid-Milestone
+
+You are the RAPID set adder. This skill adds a new set to the current milestone through a lightweight interactive discovery flow. It creates a set directory with DEFINITION.md and CONTRACT.json, updates STATE.json and ROADMAP.md, and suggests `/rapid:start-set` as the next action.
+
+Follow these steps IN ORDER. Do not skip steps. This is a lightweight interactive command -- no subagent spawns.
+
+## Step 0: Environment Setup + Banner
+
+Load environment variables before any CLI calls:
+
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+```
+
+Use this environment preamble in ALL subsequent Bash commands within this skill. Every `node "${RAPID_TOOLS}"` call must be preceded by the env loading block above in the same Bash invocation.
+
+Display the stage banner:
+
+```bash
+# (env preamble here)
+node "${RAPID_TOOLS}" display banner add-set
+```
+
+---
+
+## Step 1: Load State and Validate
+
+Load the full project state:
+
+```bash
+# (env preamble here)
+STATE_JSON=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null)
+echo "$STATE_JSON"
+```
+
+Parse the JSON to extract:
+- `MILESTONE_ID`: Current milestone ID
+- `MILESTONE_NAME`: Current milestone name
+- `EXISTING_SETS`: Array of existing sets with their statuses
+
+Display current milestone context:
+
+```
+Milestone: {MILESTONE_ID} ({MILESTONE_NAME})
+Existing sets:
+  1. {set-id-1} ({status})
+  2. {set-id-2} ({status})
+  ...
+```
+
+**If STATE.json is missing or invalid:** Display error and suggest `/rapid:init`. STOP.
+
+---
+
+## Step 2: Interactive Discovery (Mini Discuss-Set)
+
+Ask the user 2 focused questions to understand the new set's scope.
+
+**Question 1** -- Use AskUserQuestion (freeform):
+
+> "What should this new set accomplish? Describe the scope, goals, and key deliverables."
+
+Record the answer as `SET_SCOPE`.
+
+**Question 2** -- Use AskUserQuestion (freeform):
+
+> "What files or areas of the codebase will this set modify? Are there dependencies on existing sets?"
+
+Record the answer as `SET_FILES_AND_DEPS`.
+
+---
+
+## Step 3: Generate Set ID
+
+Derive a kebab-case set ID from the user's scope description:
+- Extract key nouns/verbs from the description
+- Convert to lowercase, hyphen-separated
+- Truncate to a reasonable length (e.g., "add payment processing" -> "payment-processing")
+
+Display the proposed set ID. Use AskUserQuestion:
+
+```
+"Use set ID '{proposed-id}'?"
+Options:
+- "Yes" -- "Use this set ID"
+- "Custom ID" -- "I'll provide a different ID"
+```
+
+- If "Yes": Use the proposed ID.
+- If "Custom ID": Use AskUserQuestion (freeform): "Enter your preferred set ID (kebab-case):" and use the user's input.
+
+### Validate Uniqueness
+
+Check that the set ID is not already in use:
+
+```bash
+# (env preamble here)
+STATE_JSON=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null)
+echo "$STATE_JSON"
+```
+
+Parse the JSON and check if any existing set has the same ID.
+
+**If duplicate:** Display: "Set ID '{SET_ID}' already exists. Please choose a different ID." Use AskUserQuestion (freeform) to get a new ID. Re-validate until unique.
+
+Record `SET_ID` for subsequent steps.
+
+---
+
+## Step 4: Create Set Directory and Artifacts
+
+Create the set directory structure:
+
+```bash
+mkdir -p ".planning/sets/${SET_ID}"
+```
+
+### Write DEFINITION.md
+
+Write `.planning/sets/${SET_ID}/DEFINITION.md` using the Write tool:
+
+```markdown
+# Set: {SET_ID}
+
+**Created:** {ISO date} (via /add-set)
+**Milestone:** {MILESTONE_ID}
+
+## Scope
+{SET_SCOPE from Step 2, Question 1}
+
+## Key Deliverables
+{Extracted key deliverables from user's scope description}
+
+## Dependencies
+{Cross-set dependencies mentioned in Step 2, Question 2, or "None" if none mentioned}
+
+## Files and Areas
+{SET_FILES_AND_DEPS from Step 2, Question 2}
+```
+
+### Write CONTRACT.json
+
+Write `.planning/sets/${SET_ID}/CONTRACT.json` using the Write tool:
+
+```json
+{
+  "setId": "{SET_ID}",
+  "milestone": "{MILESTONE_ID}",
+  "created": "{ISO date}",
+  "exports": { "functions": [], "types": [] },
+  "imports": { "functions": [], "types": [] },
+  "fileOwnership": []
+}
+```
+
+Note: CONTRACT.json starts with empty arrays. File ownership, exports, and imports are populated during `/rapid:plan-set` when the planner analyzes the set in detail.
+
+---
+
+## Step 5: Update STATE.json
+
+Read the current STATE.json:
+
+```bash
+# (env preamble here)
+STATE_JSON=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null)
+echo "$STATE_JSON"
+```
+
+Parse the JSON. Find the current milestone's `sets` array. Add a new set object:
+
+```json
+{ "id": "{SET_ID}", "status": "pending" }
+```
+
+Write the updated STATE.json using the Write tool (same pattern as /init roadmapper writes STATE.json directly).
+
+Commit the state change:
+
+```bash
+# (env preamble here)
+node "${RAPID_TOOLS}" state commit-state "add-set(${SET_ID}): add new set to milestone"
+```
+
+**If STATE.json write fails:** Display error: "Failed to update STATE.json. Your set artifacts were created at .planning/sets/${SET_ID}/ but state was not updated. Try re-running /rapid:add-set or manually add the set." STOP.
+
+---
+
+## Step 6: Update ROADMAP.md
+
+Read `.planning/ROADMAP.md` using the Read tool.
+
+Find the current milestone section in the ROADMAP.
+
+Append a new set entry with the user's description. The format should match existing set entries in the ROADMAP.
+
+Write the updated ROADMAP.md using the Write tool.
+
+---
+
+## Step 7: Commit and Next Steps
+
+### Commit Artifacts
+
+```bash
+git add ".planning/sets/${SET_ID}/"
+git add ".planning/ROADMAP.md"
+git commit -m "add-set(${SET_ID}): add set to ${MILESTONE_ID}"
+```
+
+### Display Confirmation
+
+```
+Set '{SET_ID}' added to milestone '{MILESTONE_ID}'.
+Status: pending
+```
+
+### Next Step
+
+Determine the new set's numeric index (position in the milestone's sets array).
+
+Display the next step:
+
+> **Next step:** `/rapid:start-set {SET_INDEX}`
+
+### Progress Breadcrumb
+
+```
+init [done] > start-set > discuss-set > plan-set > execute-set > review > merge
+```
+
+---
+
+## Error Handling
+
+### Critical Errors (STOP immediately)
+
+- `RAPID_TOOLS` not set: Show error and suggest `/rapid:install`
+- `STATE.json` missing or invalid: Show error and suggest `/rapid:init`
+
+### Recoverable Errors
+
+- Duplicate set ID: Suggest alternative ID
+- STATE.json write failure: Display error with manual recovery steps
+- ROADMAP.md write failure: Display error (set was already added to STATE.json -- only ROADMAP.md is missing)
+
+### Error Breadcrumb
+
+On ANY error, show the failure point:
+
+```
+[RAPID ERROR] add-set failed at: {step name}
+What's done: {what completed before failure}
+Next: {what to run to recover}
+```
+
+---
+
+## Anti-Patterns -- Do NOT Do These
+
+- Do NOT auto-start the set -- the user runs `/rapid:start-set` separately (locked decision)
+- Do NOT run a full discuss-set flow -- keep discovery to exactly 2 questions
+- Do NOT spawn subagents -- this is a lightweight interactive skill (no Agent tool calls)
+- Do NOT create a worktree -- worktree creation happens in `/rapid:start-set`
+- Do NOT write wave PLAN.md files -- wave planning happens in `/rapid:plan-set`
+- Do NOT use `state transition set` -- the new set is written directly to STATE.json as `pending`
+- Do NOT modify existing sets -- only add the new set to the milestone
+
+## Key Principles
+
+- **Mini discovery:** 2 focused questions to understand scope (not a full discuss-set flow)
+- **CONTRACT.json generated:** Initially empty -- populated during `/rapid:plan-set`
+- **STATE.json updated:** New set added with `pending` status to the current milestone's sets array
+- **ROADMAP.md updated:** Set description appended to the current milestone section
+- **Suggests `/rapid:start-set`:** Explicit next action, not auto-started (locked decision)
+- **No subagent spawns:** Lightweight interactive command -- direct file creation and state mutation
+- **Progress breadcrumb:** Shown at completion to orient the user in the workflow
