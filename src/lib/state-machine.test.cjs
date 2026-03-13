@@ -7,6 +7,7 @@ const path = require('path');
 const os = require('os');
 
 const {
+  migrateState,
   createInitialState,
   readState,
   writeState,
@@ -87,6 +88,89 @@ describe('createInitialState', () => {
     const state = createInitialState('proj', 'alpha');
     assert.ok(new Date(state.createdAt).toISOString());
     assert.ok(new Date(state.lastUpdatedAt).toISOString());
+  });
+});
+
+// ---- migrateState ----
+
+describe('migrateState', () => {
+  it('migrates discussing -> discussed in all milestones', () => {
+    const state = {
+      milestones: [
+        { sets: [{ id: 's1', status: 'discussing' }] },
+        { sets: [{ id: 's2', status: 'discussing' }] },
+      ],
+    };
+    migrateState(state);
+    assert.equal(state.milestones[0].sets[0].status, 'discussed');
+    assert.equal(state.milestones[1].sets[0].status, 'discussed');
+  });
+
+  it('migrates planning -> planned', () => {
+    const state = {
+      milestones: [
+        { sets: [{ id: 's1', status: 'planning' }] },
+      ],
+    };
+    migrateState(state);
+    assert.equal(state.milestones[0].sets[0].status, 'planned');
+  });
+
+  it('migrates executing -> executed', () => {
+    const state = {
+      milestones: [
+        { sets: [{ id: 's1', status: 'executing' }] },
+      ],
+    };
+    migrateState(state);
+    assert.equal(state.milestones[0].sets[0].status, 'executed');
+  });
+
+  it('is idempotent (safe to call twice)', () => {
+    const state = {
+      milestones: [
+        { sets: [
+          { id: 's1', status: 'discussing' },
+          { id: 's2', status: 'planning' },
+          { id: 's3', status: 'executing' },
+        ] },
+      ],
+    };
+    migrateState(state);
+    const afterFirst = JSON.parse(JSON.stringify(state));
+    migrateState(state);
+    assert.deepEqual(state, afterFirst);
+  });
+
+  it('does not change pending, complete, or merged', () => {
+    const state = {
+      milestones: [
+        { sets: [
+          { id: 's1', status: 'pending' },
+          { id: 's2', status: 'complete' },
+          { id: 's3', status: 'merged' },
+        ] },
+      ],
+    };
+    migrateState(state);
+    assert.equal(state.milestones[0].sets[0].status, 'pending');
+    assert.equal(state.milestones[0].sets[1].status, 'complete');
+    assert.equal(state.milestones[0].sets[2].status, 'merged');
+  });
+
+  it('handles null/undefined gracefully', () => {
+    assert.equal(migrateState(null), null);
+    assert.deepEqual(migrateState({}), {});
+  });
+
+  it('handles milestones with empty sets array', () => {
+    const state = {
+      milestones: [
+        { sets: [] },
+      ],
+    };
+    assert.doesNotThrow(() => migrateState(state));
+    assert.deepEqual(state.milestones[0].sets, []);
   });
 });
 

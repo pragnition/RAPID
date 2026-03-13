@@ -11,6 +11,37 @@ const PLANNING_DIR = '.planning';
 const STATE_FILE = 'STATE.json';
 
 /**
+ * Migrate old present-participle status values to past-tense equivalents.
+ * Walks ALL milestones and all sets within each milestone.
+ * Idempotent -- safe to call multiple times on the same state object.
+ * Operates in-memory only; does NOT write to disk.
+ *
+ * @param {object} stateObj - Raw parsed STATE.json (before Zod validation)
+ * @returns {object} The same object, mutated in-place with migrated status values
+ */
+function migrateState(stateObj) {
+  const STATUS_MAP = {
+    discussing: 'discussed',
+    planning: 'planned',
+    executing: 'executed',
+  };
+
+  if (stateObj && Array.isArray(stateObj.milestones)) {
+    for (const milestone of stateObj.milestones) {
+      if (Array.isArray(milestone.sets)) {
+        for (const set of milestone.sets) {
+          if (set.status && STATUS_MAP[set.status]) {
+            set.status = STATUS_MAP[set.status];
+          }
+        }
+      }
+    }
+  }
+
+  return stateObj;
+}
+
+/**
  * Create an initial ProjectState for a new project.
  *
  * @param {string} projectName - Name of the project
@@ -55,6 +86,7 @@ async function readState(cwd) {
     return { valid: false, errors: [{ message: `Invalid JSON: ${err.message}` }] };
   }
 
+  migrateState(parsed);
   const result = ProjectState.safeParse(parsed);
   if (result.success) {
     return { valid: true, state: result.data };
@@ -334,6 +366,7 @@ function commitState(cwd, message) {
 }
 
 module.exports = {
+  migrateState,
   createInitialState,
   readState,
   writeState,

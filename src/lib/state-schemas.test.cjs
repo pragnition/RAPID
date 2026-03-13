@@ -13,8 +13,8 @@ const {
 } = schemas;
 
 describe('SetStatus', () => {
-  it('accepts "discussing"', () => {
-    assert.equal(SetStatus.parse('discussing'), 'discussing');
+  it('accepts "discussed"', () => {
+    assert.equal(SetStatus.parse('discussed'), 'discussed');
   });
 
   it('accepts "merged"', () => {
@@ -22,7 +22,7 @@ describe('SetStatus', () => {
   });
 
   it('accepts all 6 valid statuses', () => {
-    const validStatuses = ['pending', 'discussing', 'planning', 'executing', 'complete', 'merged'];
+    const validStatuses = ['pending', 'discussed', 'planned', 'executed', 'complete', 'merged'];
     for (const s of validStatuses) {
       assert.equal(SetStatus.parse(s), s);
     }
@@ -34,6 +34,18 @@ describe('SetStatus', () => {
 
   it('rejects "merging" (removed in v3)', () => {
     assert.throws(() => SetStatus.parse('merging'), { name: 'ZodError' });
+  });
+
+  it('rejects "discussing" (renamed to discussed)', () => {
+    assert.throws(() => SetStatus.parse('discussing'), { name: 'ZodError' });
+  });
+
+  it('rejects "planning" (renamed to planned)', () => {
+    assert.throws(() => SetStatus.parse('planning'), { name: 'ZodError' });
+  });
+
+  it('rejects "executing" (renamed to executed)', () => {
+    assert.throws(() => SetStatus.parse('executing'), { name: 'ZodError' });
   });
 
   it('rejects "failed" (no failed state)', () => {
@@ -82,12 +94,12 @@ describe('MilestoneState', () => {
     const ms = MilestoneState.parse({
       id: 'm1',
       name: 'M1',
-      sets: [{ id: 's1', status: 'discussing' }],
+      sets: [{ id: 's1', status: 'discussed' }],
     });
     assert.equal(ms.id, 'm1');
     assert.equal(ms.name, 'M1');
     assert.equal(ms.sets.length, 1);
-    assert.equal(ms.sets[0].status, 'discussing');
+    assert.equal(ms.sets[0].status, 'discussed');
   });
 
   it('defaults sets to empty array', () => {
@@ -124,7 +136,7 @@ describe('ProjectState', () => {
       milestones: [{
         id: 'ms-1',
         name: 'Alpha',
-        sets: [{ id: 's1', status: 'discussing' }],
+        sets: [{ id: 's1', status: 'discussed' }],
       }],
     };
     const first = ProjectState.parse(input);

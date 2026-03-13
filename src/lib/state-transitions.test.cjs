@@ -9,23 +9,23 @@ const { SET_TRANSITIONS, validateTransition } = transitions;
 describe('SET_TRANSITIONS map', () => {
   it('has exactly 6 keys matching SetStatus values', () => {
     const keys = Object.keys(SET_TRANSITIONS).sort();
-    assert.deepEqual(keys, ['complete', 'discussing', 'executing', 'merged', 'pending', 'planning']);
+    assert.deepEqual(keys, ['complete', 'discussed', 'executed', 'merged', 'pending', 'planned']);
   });
 
-  it('pending has two targets: discussing and planning (branch point)', () => {
-    assert.deepEqual(SET_TRANSITIONS.pending, ['discussing', 'planning']);
+  it('pending has two targets: discussed and planned (branch point)', () => {
+    assert.deepEqual(SET_TRANSITIONS.pending, ['discussed', 'planned']);
   });
 
-  it('discussing -> planning only', () => {
-    assert.deepEqual(SET_TRANSITIONS.discussing, ['planning']);
+  it('discussed -> planned only', () => {
+    assert.deepEqual(SET_TRANSITIONS.discussed, ['planned']);
   });
 
-  it('planning -> executing only', () => {
-    assert.deepEqual(SET_TRANSITIONS.planning, ['executing']);
+  it('planned -> executed only', () => {
+    assert.deepEqual(SET_TRANSITIONS.planned, ['executed']);
   });
 
-  it('executing -> complete only', () => {
-    assert.deepEqual(SET_TRANSITIONS.executing, ['complete']);
+  it('executed -> complete only', () => {
+    assert.deepEqual(SET_TRANSITIONS.executed, ['complete']);
   });
 
   it('complete -> merged only', () => {
@@ -38,39 +38,39 @@ describe('SET_TRANSITIONS map', () => {
 });
 
 describe('validateTransition - valid transitions', () => {
-  it('pending -> discussing succeeds', () => {
-    assert.doesNotThrow(() => validateTransition('pending', 'discussing'));
+  it('pending -> discussed succeeds', () => {
+    assert.doesNotThrow(() => validateTransition('pending', 'discussed'));
   });
 
-  it('pending -> planning succeeds (branch/skip path)', () => {
-    assert.doesNotThrow(() => validateTransition('pending', 'planning'));
+  it('pending -> planned succeeds (branch/skip path)', () => {
+    assert.doesNotThrow(() => validateTransition('pending', 'planned'));
   });
 
-  it('discussing -> planning succeeds', () => {
-    assert.doesNotThrow(() => validateTransition('discussing', 'planning'));
+  it('discussed -> planned succeeds', () => {
+    assert.doesNotThrow(() => validateTransition('discussed', 'planned'));
   });
 
-  it('planning -> executing succeeds', () => {
-    assert.doesNotThrow(() => validateTransition('planning', 'executing'));
+  it('planned -> executed succeeds', () => {
+    assert.doesNotThrow(() => validateTransition('planned', 'executed'));
   });
 
-  it('executing -> complete succeeds', () => {
-    assert.doesNotThrow(() => validateTransition('executing', 'complete'));
+  it('executed -> complete succeeds', () => {
+    assert.doesNotThrow(() => validateTransition('executed', 'complete'));
   });
 
   it('complete -> merged succeeds', () => {
     assert.doesNotThrow(() => validateTransition('complete', 'merged'));
   });
 
-  it('full chain: pending -> discussing -> planning -> executing -> complete -> merged', () => {
-    const chain = ['pending', 'discussing', 'planning', 'executing', 'complete', 'merged'];
+  it('full chain: pending -> discussed -> planned -> executed -> complete -> merged', () => {
+    const chain = ['pending', 'discussed', 'planned', 'executed', 'complete', 'merged'];
     for (let i = 0; i < chain.length - 1; i++) {
       assert.doesNotThrow(() => validateTransition(chain[i], chain[i + 1]));
     }
   });
 
-  it('skip chain: pending -> planning -> executing -> complete -> merged', () => {
-    const chain = ['pending', 'planning', 'executing', 'complete', 'merged'];
+  it('skip chain: pending -> planned -> executed -> complete -> merged', () => {
+    const chain = ['pending', 'planned', 'executed', 'complete', 'merged'];
     for (let i = 0; i < chain.length - 1; i++) {
       assert.doesNotThrow(() => validateTransition(chain[i], chain[i + 1]));
     }
@@ -88,9 +88,9 @@ describe('validateTransition - invalid transitions', () => {
     );
   });
 
-  it('pending -> executing throws with "Valid" message (skip not allowed)', () => {
+  it('pending -> executed throws with "Valid" message (skip not allowed)', () => {
     assert.throws(
-      () => validateTransition('pending', 'executing'),
+      () => validateTransition('pending', 'executed'),
       (err) => {
         assert.ok(err.message.includes('Valid'), 'Should list valid transitions');
         return true;
@@ -98,35 +98,35 @@ describe('validateTransition - invalid transitions', () => {
     );
   });
 
-  it('discussing -> pending throws (no back-transitions)', () => {
-    assert.throws(() => validateTransition('discussing', 'pending'));
+  it('discussed -> pending throws (no back-transitions)', () => {
+    assert.throws(() => validateTransition('discussed', 'pending'));
   });
 
-  it('complete -> executing throws (no back-transitions)', () => {
-    assert.throws(() => validateTransition('complete', 'executing'));
+  it('complete -> executed throws (no back-transitions)', () => {
+    assert.throws(() => validateTransition('complete', 'executed'));
   });
 
-  it('planning -> pending throws (no back-transitions)', () => {
-    assert.throws(() => validateTransition('planning', 'pending'));
+  it('planned -> pending throws (no back-transitions)', () => {
+    assert.throws(() => validateTransition('planned', 'pending'));
   });
 
-  it('executing -> planning throws (no back-transitions)', () => {
-    assert.throws(() => validateTransition('executing', 'planning'));
+  it('executed -> planned throws (no back-transitions)', () => {
+    assert.throws(() => validateTransition('executed', 'planned'));
   });
 
-  it('discussing -> executing throws (cannot skip planning)', () => {
-    assert.throws(() => validateTransition('discussing', 'executing'));
+  it('discussed -> executed throws (cannot skip planned)', () => {
+    assert.throws(() => validateTransition('discussed', 'executed'));
   });
 
-  it('planning -> complete throws (cannot skip executing)', () => {
-    assert.throws(() => validateTransition('planning', 'complete'));
+  it('planned -> complete throws (cannot skip executed)', () => {
+    assert.throws(() => validateTransition('planned', 'complete'));
   });
 });
 
 describe('validateTransition - error handling', () => {
   it('unknown status throws with "Unknown status" message', () => {
     assert.throws(
-      () => validateTransition('bogus', 'planning'),
+      () => validateTransition('bogus', 'planned'),
       (err) => {
         assert.ok(err.message.includes('Unknown status'), 'Should say Unknown status');
         assert.ok(err.message.includes('bogus'), 'Should include the bad status');

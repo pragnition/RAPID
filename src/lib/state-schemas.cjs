@@ -1,7 +1,7 @@
 'use strict';
 const { z } = require('zod');
 
-const SetStatus = z.enum(['pending', 'discussing', 'planning', 'executing', 'complete', 'merged']);
+const SetStatus = z.enum(['pending', 'discussed', 'planned', 'executed', 'complete', 'merged']);
 
 const SetState = z.object({
   id: z.string(),
