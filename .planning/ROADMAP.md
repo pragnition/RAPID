@@ -172,8 +172,12 @@ Plans:
   3. /quick allows ad-hoc changes without requiring set structure
   4. /add-set adds new sets to an existing project mid-milestone with proper contract updates
   5. /new-version completes the current milestone and starts a new version
-**Plans**: TBD
-**Research flag**: Needs research-phase for execute-set (validate artifact-based re-entry without wave/job state)
+**Plans**: 3 plans
+Plans:
+- [ ] 44-01-PLAN.md — display.cjs stage entries + execute-set SKILL.md rewrite (wave 1)
+- [ ] 44-02-PLAN.md — /quick and /add-set skill creation (wave 1)
+- [ ] 44-03-PLAN.md — /new-version SKILL.md rewrite with 6-researcher pipeline (wave 1)
+**Research flag**: Research complete (artifact-based re-entry validated in 44-RESEARCH.md)
 
 ### Phase 45: Documentation, Contracts & Cleanup
 **Goal**: v3.0 is the documented, clean official version with dead code removed and contracts simplified
@@ -199,5 +203,5 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 41. Build Pipeline & Generated Agents | 2/2 | Complete    | 2026-03-12 | - |
 | 42. Core Agent Rewrites | 4/4 | Complete    | 2026-03-13 | - |
 | 43. Planning & Discussion Skills | 4/4 | Complete    | 2026-03-13 | - |
-| 44. Execution & Auxiliary Skills | v3.0 | 0/TBD | Not started | - |
+| 44. Execution & Auxiliary Skills | v3.0 | 0/3 | Not started | - |
 | 45. Documentation, Contracts & Cleanup | v3.0 | 0/TBD | Not started | - |
