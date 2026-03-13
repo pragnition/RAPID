@@ -6,6 +6,7 @@ set -euo pipefail
 # Self-location (macOS compatible -- no readlink -f)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RAPID_TOOLS_PATH="$SCRIPT_DIR/src/bin/rapid-tools.cjs"
+RAPID_VERSION=$(cd "$SCRIPT_DIR" && node -e "console.log(require('./package.json').version)" 2>/dev/null || echo "unknown")
 
 # --------------------------------------------------------------------------
 # Helpers
@@ -92,6 +93,7 @@ export RAPID_TOOLS="$RAPID_TOOLS_PATH"
 cat > "$SCRIPT_DIR/.env" << ENVEOF
 # RAPID plugin environment
 RAPID_TOOLS=$RAPID_TOOLS_PATH
+RAPID_VERSION=$RAPID_VERSION
 ENVEOF
 echo "  OK: Written to $SCRIPT_DIR/.env"
 
@@ -117,5 +119,6 @@ fi
 echo ""
 echo "=== Bootstrap Complete ==="
 echo "RAPID_TOOLS=$RAPID_TOOLS_PATH"
+echo "RAPID_VERSION=$RAPID_VERSION"
 echo ""
 echo "Shell config will be handled by /rapid:install skill."
