@@ -1,0 +1,49 @@
+{
+  "setId": "parallel-waves",
+  "version": "1.0.0",
+  "exports": {
+    "transitionWave": {
+      "type": "function",
+      "signature": "(cwd: string, milestoneId: string, setId: string, waveId: string, status: string) => Promise<void>",
+      "description": "Transition a wave's status with validation, lock protection, and atomic write"
+    },
+    "transitionJob": {
+      "type": "function",
+      "signature": "(cwd: string, milestoneId: string, setId: string, waveId: string, jobId: string, status: string) => Promise<void>",
+      "description": "Transition a job's status with validation, lock protection, and atomic write"
+    },
+    "detectIndependentWaves": {
+      "type": "function",
+      "signature": "(waves: Wave[]) => Wave[][]",
+      "description": "Groups waves into parallelizable batches using DAG BFS level analysis"
+    }
+  },
+  "imports": {
+    "SetStatus": {
+      "fromSet": "status-rename",
+      "type": "function",
+      "signature": "z.enum(['pending', 'discussed', 'planned', 'executed', 'complete', 'merged'])",
+      "description": "Updated Zod enum with past-tense status values -- needed for consistent status references in wave/job transitions"
+    },
+    "SET_TRANSITIONS": {
+      "fromSet": "status-rename",
+      "type": "function",
+      "signature": "{ pending: ['discussed', 'planned'], discussed: ['planned'], planned: ['executed'], executed: ['complete'], complete: ['merged'], merged: [] }",
+      "description": "Updated transition map -- wave/job transitions must align with the renamed set-level transitions"
+    }
+  },
+  "behavioral": {
+    "git-serialization": {
+      "description": "All git commit operations during parallel wave execution must be serialized through a lock to prevent index corruption",
+      "enforced_by": "runtime"
+    },
+    "wave-ordering-respected": {
+      "description": "Dependent waves (those with edges in the DAG) must not execute until their dependencies complete",
+      "enforced_by": "test"
+    },
+    "transition-functions-exported": {
+      "description": "transitionWave() and transitionJob() must be exported from state-machine.cjs and callable by rapid-tools.cjs CLI",
+      "enforced_by": "test"
+    }
+  }
+}

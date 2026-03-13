@@ -1,0 +1,33 @@
+{
+  "nodes": [
+    { "id": "status-rename", "wave": 0, "status": "pending" },
+    { "id": "command-cleanup", "wave": 0, "status": "pending" },
+    { "id": "install-version", "wave": 0, "status": "pending" },
+    { "id": "parallel-waves", "wave": 1, "status": "pending" }
+  ],
+  "edges": [
+    { "from": "status-rename", "to": "parallel-waves" }
+  ],
+  "waves": {
+    "0": {
+      "sets": ["status-rename", "command-cleanup", "install-version"],
+      "checkpoint": {
+        "contracts": ["rapid://contracts/status-rename", "rapid://contracts/command-cleanup", "rapid://contracts/install-version"],
+        "artifacts": [".planning/sets/status-rename/CONTRACT.json", ".planning/sets/command-cleanup/CONTRACT.json", ".planning/sets/install-version/CONTRACT.json"]
+      }
+    },
+    "1": {
+      "sets": ["parallel-waves"],
+      "checkpoint": {
+        "contracts": ["rapid://contracts/parallel-waves"],
+        "artifacts": [".planning/sets/parallel-waves/CONTRACT.json"]
+      }
+    }
+  },
+  "metadata": {
+    "created": "2026-03-14",
+    "totalSets": 4,
+    "totalWaves": 2,
+    "maxParallelism": 3
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "setId": "status-rename",
+  "version": "1.0.0",
+  "exports": {
+    "SetStatus": {
+      "type": "function",
+      "signature": "z.enum(['pending', 'discussed', 'planned', 'executed', 'complete', 'merged'])",
+      "description": "Updated Zod enum with past-tense status values replacing present-participle forms"
+    },
+    "SET_TRANSITIONS": {
+      "type": "function",
+      "signature": "{ pending: ['discussed', 'planned'], discussed: ['planned'], planned: ['executed'], executed: ['complete'], complete: ['merged'], merged: [] }",
+      "description": "Updated transition map using past-tense status keys and values"
+    },
+    "migrateState": {
+      "type": "function",
+      "signature": "(state: ProjectState) => ProjectState",
+      "description": "Idempotent migration function that renames old -ing status values to past-tense equivalents in STATE.json"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "atomic-rename": {
+      "description": "All occurrences of discussing/planning/executing must be renamed in a single atomic operation; partial rename causes Zod validation crashes",
+      "enforced_by": "test"
+    },
+    "migration-idempotent": {
+      "description": "migrateState() must be safe to call multiple times on the same state object without side effects",
+      "enforced_by": "test"
+    },
+    "backward-compatible-read": {
+      "description": "readState() must transparently migrate old status values before Zod validation so existing STATE.json files load without error",
+      "enforced_by": "test"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "setId": "command-cleanup",
+  "status": "complete",
+  "startedAt": "2026-03-13T17:15:56.049Z",
+  "detection": {
+    "textual": {
+      "ran": true,
+      "conflicts": [
+        {
+          "file": "src/lib/worktree.test.cjs",
+          "type": "content",
+          "detail": "CONFLICT (content): Merge conflict in src/lib/worktree.test.cjs"
+        }
+      ]
+    },
+    "structural": {
+      "ran": true,
+      "conflicts": [
+        {
+          "file": "src/lib/worktree.cjs",
+          "functions": [
+            "deriveNextActions"
+          ]
+        },
+        {
+          "file": "src/lib/worktree.test.cjs",
+          "functions": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "dependency": {
+      "ran": true,
+      "conflicts": []
+    },
+    "api": {
+      "ran": true,
+      "conflicts": []
+    }
+  },
+  "resolution": {
+    "tier1Count": 0,
+    "tier2Count": 0,
+    "tier3Count": 0,
+    "tier4Count": 0,
+    "escalatedConflicts": [],
+    "allResolved": false
+  },
+  "agentPhase1": "done",
+  "lastUpdatedAt": "2026-03-13T17:31:52.162Z"
+}
