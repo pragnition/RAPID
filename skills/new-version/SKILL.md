@@ -1,23 +1,36 @@
 ---
-description: Start a new milestone/version cycle, archiving current work and planning new scope
-disable-model-invocation: true
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write
+description: Complete current milestone and start a new version with 6-researcher pipeline and roadmap generation
+allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
 ---
 
 # /rapid:new-version -- New Milestone Lifecycle
 
-You are the RAPID milestone manager. This skill creates a new milestone -- archiving the current milestone context, bumping the version, gathering new goals from the user, and re-running the research > roadmapper pipeline for new scope.
+You are the RAPID milestone manager. This skill creates a new milestone -- archiving the current milestone context, bumping the version, gathering new goals from the user, and re-running the 6-researcher > synthesizer > roadmapper pipeline for new scope.
 
-## Step 0: Load Environment
+Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion at every decision point.
 
-Load RAPID_TOOLS from .env if not set:
+## Step 0: Environment Setup + Banner
+
+Load environment variables before any CLI calls:
 
 ```bash
 RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
-echo "RAPID_TOOLS=$RAPID_TOOLS"
 ```
+
+Use this environment preamble in ALL subsequent Bash commands within this skill. Every `node "${RAPID_TOOLS}"` call must be preceded by the env loading block above in the same Bash invocation.
+
+Display the stage banner:
+
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display banner new-version
+```
+
+---
 
 ## Step 1: Read Current State
 
@@ -31,7 +44,7 @@ Parse the JSON output. Display a summary to the user:
 
 - **Current milestone:** {currentMilestone}
 - **Number of sets:** {milestones[current].sets.length}
-- **Set statuses:** List each set with its id and status (pending/executing/complete)
+- **Set statuses:** List each set with its id and status (pending/discussing/planning/executing/complete/merged)
 
 If state cannot be read, display the error and use AskUserQuestion:
 
@@ -39,6 +52,8 @@ If state cannot be read, display the error and use AskUserQuestion:
 - Options:
   - "Retry" -- "Attempt to read project state again"
   - "Cancel" -- "Exit without changes"
+
+**On error:** Show progress breadcrumb: `new-version [state read failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
 
 ## Step 2: Get New Milestone Details
 
@@ -66,17 +81,17 @@ Store these values for use in subsequent steps.
 
 ## Step 3: Handle Unfinished Sets
 
-Check the current milestone for sets that are NOT in "complete" status.
+Check the current milestone for sets that are NOT in "complete" or "merged" status.
 
-If ALL sets are complete (or there are no sets):
+If ALL sets are complete/merged (or there are no sets):
 - Display: "All sets in {currentMilestone} are complete. Ready to move forward."
 - Skip to Step 4.
 
 If there are unfinished sets, display them:
 
-| Set ID | Status | Waves | Description |
-|--------|--------|-------|-------------|
-| (from state) | ... | ... | ... |
+| Set ID | Status | Description |
+|--------|--------|-------------|
+| (from state) | ... | ... |
 
 Then use AskUserQuestion with:
 - question: "Unfinished sets found"
@@ -125,60 +140,257 @@ If the command fails (e.g., duplicate milestone ID), display the error and use A
 
 If "Try different ID": Loop back to Step 2 Question A only.
 
+## Step 4.5: Archive Old Milestone (Optional)
+
+After creating the new milestone, offer the user the option to archive the old milestone's planning artifacts.
+
+Use AskUserQuestion with:
+- question: "Archive old milestone '{previousMilestone}' planning artifacts?"
+- Options:
+  - "Archive" -- "Move old planning artifacts to .planning/archive/{previousMilestone}/"
+  - "Keep" -- "Leave artifacts in place. You can archive later."
+
+**If "Archive":**
+
+1. Create the archive directory structure:
+```bash
+mkdir -p .planning/archive/{previousMilestone}/sets
+mkdir -p .planning/archive/{previousMilestone}/research
+```
+
+2. Move set artifacts from the old milestone to the archive:
+```bash
+# Move old set directories
+# For each set that belonged to the previous milestone:
+mv .planning/sets/{oldSetId} .planning/archive/{previousMilestone}/sets/
+```
+
+3. Move research files associated with the old milestone:
+```bash
+# Move milestone-prefixed research files
+mv .planning/research/{previousMilestone}-* .planning/archive/{previousMilestone}/research/ 2>/dev/null
+```
+
+4. Move quick task artifacts if any exist:
+```bash
+if [ -d ".planning/quick" ] && [ "$(ls -A .planning/quick 2>/dev/null)" ]; then
+  mkdir -p .planning/archive/{previousMilestone}/quick
+  mv .planning/quick/* .planning/archive/{previousMilestone}/quick/
+fi
+```
+
+5. Display: "Archived {N} artifacts to .planning/archive/{previousMilestone}/"
+
+**Important:** Do NOT archive STATE.json (accumulates across milestones), config.json (global), or PROJECT.md (global).
+
+**If "Keep":**
+
+Display: "Artifacts kept in place." Continue to Step 5.
+
 ## Step 5: Run Research Pipeline
 
-Spawn 5 parallel research agents to explore the new milestone's scope. Use the milestone goals from Step 2 as the research context.
+Spawn ALL 6 research agents in parallel to explore the new milestone's scope. Use the milestone goals from Step 2 as the research context.
 
-Spawn the following **rapid-research-*** agents in parallel, each with a focused research question derived from the milestone goals:
+Ensure `.planning/research/` exists:
 
-1. Spawn the **rapid-research-stack** agent with this task:
-   - Research technology stack implications for the milestone goals
-   - Write findings to `.planning/research/{milestoneId}-research-stack.md`
+```bash
+mkdir -p .planning/research
+```
 
-2. Spawn the **rapid-research-features** agent with this task:
-   - Analyze feature requirements and implementation approaches
-   - Write findings to `.planning/research/{milestoneId}-research-features.md`
+**1. Spawn the **rapid-research-stack** agent with this task:**
+```
+Research technology stack implications for this milestone.
 
-3. Spawn the **rapid-research-architecture** agent with this task:
-   - Evaluate architecture patterns and design decisions
-   - Write findings to `.planning/research/{milestoneId}-research-architecture.md`
+## Milestone Brief
+Name: {milestoneName}
+Goals: {goals from Step 2}
 
-4. Spawn the **rapid-research-pitfalls** agent with this task:
-   - Identify common pitfalls and anti-patterns to avoid
-   - Write findings to `.planning/research/{milestoneId}-research-pitfalls.md`
+## Brownfield Context
+Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
 
-5. Spawn the **rapid-research-oversights** agent with this task:
-   - Discover overlooked concerns and edge cases
-   - Write findings to `.planning/research/{milestoneId}-research-oversights.md`
+## Working Directory
+{projectRoot}
 
-After all 5 agents complete, spawn the **rapid-research-synthesizer** agent with this task:
-- Combine all research findings into coherent recommendations
-- Input: `.planning/research/{milestoneId}-research-*.md`
-- Output: `.planning/research/{milestoneId}-synthesis.md`
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/{milestoneId}-research-stack.md
+```
 
-If any research agent fails, use AskUserQuestion:
-- question: "Research agent {N} failed"
+**2. Spawn the **rapid-research-features** agent with this task:**
+```
+Research feature implementation approach for this milestone.
+
+## Milestone Brief
+Name: {milestoneName}
+Goals: {goals from Step 2}
+
+## Brownfield Context
+Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/{milestoneId}-research-features.md
+```
+
+**3. Spawn the **rapid-research-architecture** agent with this task:**
+```
+Research architecture patterns and design decisions for this milestone.
+
+## Milestone Brief
+Name: {milestoneName}
+Goals: {goals from Step 2}
+
+## Brownfield Context
+Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/{milestoneId}-research-architecture.md
+```
+
+**4. Spawn the **rapid-research-pitfalls** agent with this task:**
+```
+Research potential pitfalls and anti-patterns to avoid for this milestone.
+
+## Milestone Brief
+Name: {milestoneName}
+Goals: {goals from Step 2}
+
+## Brownfield Context
+Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/{milestoneId}-research-pitfalls.md
+```
+
+**5. Spawn the **rapid-research-oversights** agent with this task:**
+```
+Research overlooked concerns, edge cases, and blind spots for this milestone.
+
+## Milestone Brief
+Name: {milestoneName}
+Goals: {goals from Step 2}
+
+## Brownfield Context
+Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/{milestoneId}-research-oversights.md
+```
+
+**6. Spawn the **rapid-research-ux** agent with this task:**
+```
+Research domain conventions and UX patterns for this milestone.
+
+## Milestone Brief
+Name: {milestoneName}
+Goals: {goals from Step 2}
+
+## Brownfield Context
+Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Working Directory
+{projectRoot}
+
+## Instructions
+Use Context7 MCP for documentation lookups when available. If Context7 is not accessible, use WebFetch or WebSearch as fallback.
+Write output to .planning/research/{milestoneId}-research-ux.md
+```
+
+**Parallel spawning:** Spawn all 6 agents in a single response using 6 Agent tool calls.
+
+**Sequential fallback:** If parallel spawning fails (Claude Code limitation), fall back to sequential execution. Inform the user: "Running research agents sequentially (parallel spawning unavailable)."
+
+Wait for ALL 6 agents to complete. If any agent fails, use AskUserQuestion:
+- question: "{agent name} research agent encountered an error: {error details}"
 - Options:
-  - "Retry" -- "Re-run the failed research agent"
-  - "Skip" -- "Continue without this research thread"
+  - "Retry" -- "Re-run this research agent"
+  - "Skip" -- "Continue without this research output. Synthesis will have less context."
   - "Cancel" -- "Exit the milestone creation flow"
 
-## Step 6: Run Roadmapper Pipeline
+**On error:** Show progress breadcrumb: `new-version [research failed ({agent name})] > start-set > discuss-set > plan-set > execute-set > review > merge`
+
+## Step 6: Research Synthesis
+
+Spawn the **rapid-research-synthesizer** agent with this task:
+
+```
+Synthesize all research outputs into a unified research summary for milestone '{milestoneId}'.
+
+## Research Files to Read
+- .planning/research/{milestoneId}-research-stack.md
+- .planning/research/{milestoneId}-research-features.md
+- .planning/research/{milestoneId}-research-architecture.md
+- .planning/research/{milestoneId}-research-pitfalls.md
+- .planning/research/{milestoneId}-research-oversights.md
+- .planning/research/{milestoneId}-research-ux.md
+
+## Working Directory
+{projectRoot}
+
+## Output
+Write synthesized summary to .planning/research/{milestoneId}-synthesis.md
+```
+
+Wait for completion. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 5).
+
+After completion, read `.planning/research/{milestoneId}-synthesis.md` to pass its content to the roadmapper.
+
+**On error:** Show progress breadcrumb: `new-version [research done, synthesis failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
+
+## Step 7: Roadmapper Pipeline
+
+Read `.planning/research/{milestoneId}-synthesis.md` (the synthesized research output).
 
 Spawn the **rapid-roadmapper** agent with this task:
-- Create a roadmap for the new milestone using the research synthesis
-- Input: `.planning/research/{milestoneId}-synthesis.md`
-- Milestone goals: {goals}
-- Milestone name: {milestoneName}
-- Output: Proposed roadmap sets and waves
 
-The roadmapper should produce:
-- A list of proposed sets (groupings of related work)
-- Waves within each set (parallelizable units)
-- Job descriptions for each wave
-- Dependency relationships between sets
+```
+Create a roadmap for milestone '{milestoneId}'.
 
-## Step 7: Propose and Approve Roadmap
+## Research Synthesis
+{Full synthesis content from Step 6}
+
+## Milestone Goals
+{goals from Step 2}
+
+## Milestone Name
+{milestoneName}
+
+## Working Directory
+{projectRoot}
+
+## CRITICAL: Sets-Only Output
+Output sets ONLY -- do NOT include wave or job structure. Waves are determined later during /plan-set. The return JSON structure should be: { roadmap, state, contracts } where state contains project > milestone > sets (no waves key, no jobs key).
+
+## Instructions
+1. Decompose the milestone into sets (groupings of related work)
+2. Each set should be independent and parallelizable
+3. Output SETS ONLY -- do NOT decompose into waves or jobs
+4. Wave decomposition happens later in /plan-set
+5. For each set: provide id, description, success criteria, and estimated complexity
+```
+
+Wait for the agent to complete. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 5).
+
+Parse the roadmapper's JSON response.
+
+**On error:** Show progress breadcrumb: `new-version [research done, synthesis done, roadmap failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
+
+## Step 8: Propose and Approve Roadmap
 
 Display the proposed roadmap to the user in a readable format:
 
@@ -186,50 +398,110 @@ Display the proposed roadmap to the user in a readable format:
 ## Proposed Roadmap for {milestoneName}
 
 ### Set 1: {set name}
-  Wave 1: {wave description}
-    - Job: {job description}
-    - Job: {job description}
-  Wave 2: ...
+  Description: ...
+  Success Criteria: ...
 
 ### Set 2: {set name}
-  ...
+  Description: ...
+  Success Criteria: ...
+
+...
 ```
 
 Use AskUserQuestion with:
 - question: "Accept this roadmap?"
 - Options:
-  - "Accept" -- "Approve the roadmap and write it to project state. Sets and waves will be created in STATE.json."
+  - "Accept" -- "Approve the roadmap and write it to project state. Sets will be created in STATE.json."
   - "Revise" -- "Provide feedback for the roadmapper to adjust the plan"
   - "Cancel" -- "Discard the proposed roadmap. The milestone exists but has no planned work."
 
-If "Accept":
-- Write the roadmap content to ROADMAP.md (append new milestone section)
-- Update STATE.json with the sets, waves, and jobs via rapid-tools CLI
-- Confirm: "Roadmap written and state updated."
+**If "Accept":**
 
-If "Revise":
-- Ask freeform: "What changes would you like to the roadmap?"
-- Re-run the roadmapper agent with the feedback as additional context
-- Loop back to display and re-prompt
+1. Write the roadmap content to ROADMAP.md (append new milestone section):
+   Use the Write tool to update `.planning/ROADMAP.md` with the roadmapper's `roadmap` content.
 
-If "Cancel":
-- Display: "Roadmap discarded. Milestone {milestoneId} exists with no planned sets. You can run /rapid:new-version again or manually add sets."
-- Proceed to Step 8.
+2. Write CONTRACT.json files for each set:
+   For each contract in the `contracts` array:
+   ```bash
+   mkdir -p .planning/sets/{setId}
+   ```
+   Use the Write tool to write `.planning/sets/{setId}/CONTRACT.json` with the contract content.
 
-## Step 8: Completion Summary
+3. Write STATE.json with the project > milestone > sets structure:
+   Use the Write tool to update `.planning/STATE.json` with the roadmapper's `state` content.
+   Each set has only `{ id, name, status: "pending", branch }` -- no waves or jobs arrays.
+
+Confirm: "Roadmap written and state updated."
+
+**If "Revise":**
+
+Ask freeform: "What changes would you like to the roadmap?"
+
+Re-spawn the roadmapper agent with:
+- All original context (synthesis, milestone goals, milestone name)
+- The user's change request as additional feedback
+- The previous roadmap proposal for reference
+- The same CRITICAL sets-only instruction (no waves or jobs)
+
+Loop back to display and re-prompt with the revised roadmap.
+
+**If "Cancel":**
+
+Display: "Roadmap discarded. Milestone {milestoneId} exists with no planned sets. You can run /rapid:new-version again or manually add sets."
+
+Proceed to Step 9.
+
+## Step 9: Completion Summary
 
 Display the final summary:
 
 ```
-## New Milestone Created
+New Milestone Created.
 
-**Milestone:** {milestoneId} -- {milestoneName}
-**Sets planned:** {number of sets}
-**Carried forward:** {number of carried sets} from {previousMilestone}
-**Goals:** {brief goals summary}
+Milestone: {milestoneId} -- {milestoneName}
+Sets planned: {count}
+Carried forward: {count} from {previousMilestone}
 
-### Next Steps
-- Run `/rapid:status` to see the new milestone dashboard
-- Run `/rapid:start-set` to begin working on a set
-- Run `/rapid:execute-set` to begin executing planned work
+Next step: /rapid:start-set 1
 ```
+
+If no sets were planned (roadmap cancelled), display:
+
+```
+New Milestone Created.
+
+Milestone: {milestoneId} -- {milestoneName}
+Sets planned: 0
+Carried forward: {count} from {previousMilestone}
+
+Next step: /rapid:status
+```
+
+Show progress breadcrumb at the end:
+
+```
+new-version [done] > start-set > discuss-set > plan-set > execute-set > review > merge
+```
+
+---
+
+## Important Constraints
+
+- **Agents must NOT write STATE.json directly.** The SKILL.md orchestrator writes STATE.json using the Write tool with validated roadmapper output.
+- **All 6 research agents are independent.** No research agent reads another research agent's output. They only share the milestone brief and brownfield analysis as inputs.
+- **Contracts are generated by the roadmapper in a unified pass.** Individual sets do not generate their own contracts -- the roadmapper produces all contracts together to ensure cross-set consistency.
+- **Roadmapper uses propose-then-approve.** The roadmapper returns a proposal; the user must explicitly accept before any files are written.
+- **Sets only in state.** STATE.json contains project > milestone > sets hierarchy. Do NOT include waves or jobs in STATE.json -- wave decomposition happens later during /plan-set.
+- **Archive is optional.** The user chooses whether to archive. Do NOT force archiving.
+
+## Anti-Patterns -- Do NOT Do These
+
+- Do NOT reference `state transition wave` or `state transition job` -- these state commands do not exist in v3. Only set-level state transitions exist (via `state transition set`).
+- Do NOT ask the roadmapper to produce waves or jobs -- v3 defers wave decomposition to /plan-set. The roadmapper outputs sets only.
+- Do NOT reference WAVE-CONTEXT.md or wave directories -- v3 uses set-level CONTEXT.md only.
+- Do NOT reference `/rapid:set-init` -- the v3 command is `/rapid:start-set`.
+- Do NOT include "waves" or "total jobs" counts in the completion summary or roadmap presentation -- only show "N sets planned".
+- Do NOT write waves or jobs arrays into STATE.json -- each set has only `{ id, name, status: "pending", branch }`.
+- Do NOT spawn only 5 researchers -- MUST spawn all 6 (stack, features, architecture, pitfalls, oversights, ux).
+- Do NOT skip the UX researcher (rapid-research-ux) -- it is required for complete research coverage matching /init.
+- Do NOT force archiving -- user explicitly chooses via AskUserQuestion.
