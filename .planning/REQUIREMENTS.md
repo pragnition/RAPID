@@ -34,9 +34,9 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 
 ### Execution
 
-- [ ] **EXEC-01**: /execute-set runs parallel wave execution using per-wave PLAN.md files
-- [ ] **EXEC-02**: Lean verification agent runs after all waves complete to check objectives
-- [ ] **EXEC-03**: Executor determines completion by reading planning artifacts for re-entry without wave/job state
+- [x] **EXEC-01**: /execute-set runs parallel wave execution using per-wave PLAN.md files
+- [x] **EXEC-02**: Lean verification agent runs after all waves complete to check objectives
+- [x] **EXEC-03**: Executor determines completion by reading planning artifacts for re-entry without wave/job state
 
 ### Commands
 
@@ -44,7 +44,7 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 - [x] **CMD-02**: /start-set creates worktree scaffold for a set
 - [x] **CMD-03**: /discuss-set as standalone command with --skip flag
 - [x] **CMD-04**: /plan-set as standalone command
-- [ ] **CMD-05**: /execute-set as standalone command
+- [x] **CMD-05**: /execute-set as standalone command
 - [x] **CMD-06**: /review preserved with state reference updates
 - [x] **CMD-07**: /merge preserved with state updates and planning artifact transfer
 - [x] **CMD-08**: /status shows project dashboard across all worktrees with next steps
@@ -205,14 +205,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAN-03 | Phase 43 | Complete |
 | PLAN-04 | Phase 43 | Complete |
 | PLAN-05 | Phase 43 | Complete |
-| EXEC-01 | Phase 44 | Pending |
-| EXEC-02 | Phase 44 | Pending |
-| EXEC-03 | Phase 44 | Pending |
+| EXEC-01 | Phase 44 | Complete |
+| EXEC-02 | Phase 44 | Complete |
+| EXEC-03 | Phase 44 | Complete |
 | CMD-01 | Phase 43 | Complete |
 | CMD-02 | Phase 43 | Complete |
 | CMD-03 | Phase 43 | Complete |
 | CMD-04 | Phase 43 | Complete |
-| CMD-05 | Phase 44 | Pending |
+| CMD-05 | Phase 44 | Complete |
 | CMD-06 | Phase 40 | Complete |
 | CMD-07 | Phase 40 | Complete |
 | CMD-08 | Phase 40 | Complete |

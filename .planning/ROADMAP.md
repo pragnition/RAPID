@@ -52,7 +52,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 41: Build Pipeline & Generated Agents** - Hybrid build with SKIP_GENERATION, tool doc injection, 5th researcher (completed 2026-03-12)
 - [x] **Phase 42: Core Agent Rewrites** - Hand-write planner, executor, merger, reviewer agents; remove orchestrator (completed 2026-03-12)
 - [x] **Phase 43: Planning & Discussion Skills** - Rewrite init, start-set, discuss-set, plan-set with collapsed planning pipeline (completed 2026-03-13)
-- [ ] **Phase 44: Execution & Auxiliary Skills** - Rewrite execute-set, implement quick, add-set, new-version
+- [x] **Phase 44: Execution & Auxiliary Skills** - Rewrite execute-set, implement quick, add-set, new-version (completed 2026-03-13)
 - [ ] **Phase 45: Documentation, Contracts & Cleanup** - Update docs, remove dead code, simplify contracts
 
 ## Phase Details
@@ -203,5 +203,5 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 41. Build Pipeline & Generated Agents | 2/2 | Complete    | 2026-03-12 | - |
 | 42. Core Agent Rewrites | 4/4 | Complete    | 2026-03-13 | - |
 | 43. Planning & Discussion Skills | 4/4 | Complete    | 2026-03-13 | - |
-| 44. Execution & Auxiliary Skills | 2/3 | In Progress|  | - |
+| 44. Execution & Auxiliary Skills | 3/3 | Complete   | 2026-03-13 | - |
 | 45. Documentation, Contracts & Cleanup | v3.0 | 0/TBD | Not started | - |
