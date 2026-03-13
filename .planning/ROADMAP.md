@@ -203,5 +203,5 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 41. Build Pipeline & Generated Agents | 2/2 | Complete    | 2026-03-12 | - |
 | 42. Core Agent Rewrites | 4/4 | Complete    | 2026-03-13 | - |
 | 43. Planning & Discussion Skills | 4/4 | Complete    | 2026-03-13 | - |
-| 44. Execution & Auxiliary Skills | v3.0 | 0/3 | Not started | - |
+| 44. Execution & Auxiliary Skills | 2/3 | In Progress|  | - |
 | 45. Documentation, Contracts & Cleanup | v3.0 | 0/TBD | Not started | - |

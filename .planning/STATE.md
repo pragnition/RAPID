@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: in-progress
-stopped_at: Phase 44 context gathered
-last_updated: "2026-03-13T03:36:08.334Z"
-last_activity: 2026-03-13 -- Completed 43-04 discuss-set --skip agent name fix
+stopped_at: Completed 44-03-PLAN.md
+last_updated: "2026-03-13T04:04:52.634Z"
+last_activity: 2026-03-13 -- Completed 44-03 new-version v3 rewrite
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 20
-  completed_plans: 20
-  percent: 99
+  total_plans: 23
+  completed_plans: 22
+  percent: 97
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 43 - Planning & Discussion Skills (v3.0 Refresh)
+**Current focus:** Phase 44 - Execution & Auxiliary Skills (v3.0 Refresh)
 
 ## Current Position
 
-Phase: 43 of 45 (Planning & Discussion Skills)
-Plan: 4 of 4 in current phase (phase complete)
+Phase: 44 of 45 (Execution & Auxiliary Skills)
+Plan: 3 of 3 in current phase (phase complete)
 Status: in-progress
-Last activity: 2026-03-13 -- Completed 43-04 discuss-set --skip agent name fix
+Last activity: 2026-03-13 -- Completed 44-03 new-version v3 rewrite
 
-Progress: [██████████] 99% (115/116 plans)
+Progress: [██████████] 97% (116/119 plans)
 
 ## Accumulated Context
 
@@ -87,6 +87,8 @@ Recent:
 - [Phase 43]: --skip flag on discuss-set spawns rapid-research-stack for auto-CONTEXT.md without user interaction
 - [Phase 43]: plan-set uses 3-step pipeline: researcher -> planner -> verifier (2-4 total agent spawns, down from 15-20 in v2)
 - [Phase 43]: Fixed discuss-set --skip to spawn rapid-research-stack (not non-existent rapid-researcher)
+- [Phase 44]: 6-researcher pipeline in /new-version matching /init (stack, features, architecture, pitfalls, oversights, ux)
+- [Phase 44]: Archive option in /new-version is user-chosen (Archive/Keep) not forced
 
 ### Pending Todos
 
@@ -122,5 +124,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-13T03:36:08.332Z
-Stopped at: Phase 44 context gathered
+Last session: 2026-03-13T04:04:17.731Z
+Stopped at: Completed 44-03-PLAN.md
