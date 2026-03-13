@@ -679,10 +679,10 @@ function generateScopedClaudeMd(cwd, setName) {
  * @type {Object<string, number>}
  */
 const STATUS_SORT_ORDER = {
-  executing: 0,
+  executed: 0,
   reviewing: 1,
   merging: 2,
-  planning: 3,
+  planned: 3,
   pending: 4,
   complete: 5,
 };
@@ -801,7 +801,7 @@ function deriveNextActions(stateData, registryData) {
           });
         }
         break;
-      case 'executing':
+      case 'executed':
         actions.push({
           action: `/execute ${set.id}`,
           setName: set.id,
