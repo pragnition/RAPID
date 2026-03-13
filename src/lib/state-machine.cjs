@@ -5,7 +5,8 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { acquireLock, isLocked } = require('./lock.cjs');
 const { ProjectState } = require('./state-schemas.cjs');
-const { validateTransition } = require('./state-transitions.cjs');
+const { validateTransition, WAVE_TRANSITIONS, JOB_TRANSITIONS } = require('./state-transitions.cjs');
+const { assignWaves } = require('./dag.cjs');
 
 const PLANNING_DIR = '.planning';
 const STATE_FILE = 'STATE.json';
@@ -112,6 +113,30 @@ function findSet(state, milestoneId, setId) {
   return set;
 }
 
+/**
+ * Find a wave by id within a set. Throws if not found.
+ */
+function findWave(state, milestoneId, setId, waveId) {
+  const set = findSet(state, milestoneId, setId);
+  const wave = set.waves.find(w => w.id === waveId);
+  if (!wave) {
+    throw new Error(`Wave '${waveId}' not found in set '${setId}'`);
+  }
+  return wave;
+}
+
+/**
+ * Find a job by id within a wave. Throws if not found.
+ */
+function findJob(state, milestoneId, setId, waveId, jobId) {
+  const wave = findWave(state, milestoneId, setId, waveId);
+  const job = wave.jobs.find(j => j.id === jobId);
+  if (!job) {
+    throw new Error(`Job '${jobId}' not found in wave '${waveId}'`);
+  }
+  return job;
+}
+
 // ---- Transaction helper ----
 
 /**
@@ -169,6 +194,76 @@ async function transitionSet(cwd, milestoneId, setId, newStatus) {
     validateTransition(set.status, newStatus);
     set.status = newStatus;
   });
+}
+
+/**
+ * Transition a wave to a new status. Validates the transition and writes state atomically.
+ * Uses withStateTransaction to avoid double-lock.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} milestoneId - Milestone containing the set
+ * @param {string} setId - Set containing the wave
+ * @param {string} waveId - Wave to transition
+ * @param {string} newStatus - Target status
+ */
+async function transitionWave(cwd, milestoneId, setId, waveId, newStatus) {
+  return withStateTransaction(cwd, (state) => {
+    const wave = findWave(state, milestoneId, setId, waveId);
+    validateTransition(wave.status, newStatus, WAVE_TRANSITIONS);
+    wave.status = newStatus;
+  });
+}
+
+/**
+ * Transition a job to a new status. Validates the transition and writes state atomically.
+ * Uses withStateTransaction to avoid double-lock.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} milestoneId - Milestone containing the set
+ * @param {string} setId - Set containing the wave
+ * @param {string} waveId - Wave containing the job
+ * @param {string} jobId - Job to transition
+ * @param {string} newStatus - Target status
+ */
+async function transitionJob(cwd, milestoneId, setId, waveId, jobId, newStatus) {
+  return withStateTransaction(cwd, (state) => {
+    const job = findJob(state, milestoneId, setId, waveId, jobId);
+    validateTransition(job.status, newStatus, JOB_TRANSITIONS);
+    job.status = newStatus;
+  });
+}
+
+/**
+ * Groups waves into parallelizable batches using DAG BFS level analysis.
+ * Waves with no inter-wave dependencies are grouped together.
+ * If no edges are provided, all waves are considered independent (single batch).
+ *
+ * @param {Array<{id: string}>} waves - Wave objects with at least an id property
+ * @param {Array<{from: string, to: string}>} [edges=[]] - Inter-wave dependency edges
+ * @returns {Array<Array<{id: string}>>} Array of parallel batches
+ */
+function detectIndependentWaves(waves, edges = []) {
+  if (waves.length === 0) return [];
+  if (edges.length === 0) {
+    // No dependencies -- all waves are independent, single batch
+    return [waves];
+  }
+
+  const waveMap = assignWaves(waves, edges);
+
+  // Group waves by their assigned wave number
+  const groups = {};
+  for (const wave of waves) {
+    const level = waveMap[wave.id];
+    if (!groups[level]) groups[level] = [];
+    groups[level].push(wave);
+  }
+
+  // Return groups sorted by level number
+  return Object.keys(groups)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map(level => groups[level]);
 }
 
 // ---- Milestone management ----
@@ -240,7 +335,7 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
   const warnings = [];
 
   // Check: if status says planning or later, CONTEXT.md should exist
-  if (['planning', 'executing', 'complete', 'merged'].includes(set.status)) {
+  if (['planned', 'executed', 'complete', 'merged'].includes(set.status)) {
     const contextPath = path.join(cwd, '.planning', 'sets', setId, 'CONTEXT.md');
     if (!fs.existsSync(contextPath)) {
       warnings.push({
@@ -251,7 +346,7 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
   }
 
   // Check: if status says executing or later, wave plans dir should exist
-  if (['executing', 'complete', 'merged'].includes(set.status)) {
+  if (['executed', 'complete', 'merged'].includes(set.status)) {
     const wavesDir = path.join(cwd, '.planning', 'waves', setId);
     if (!fs.existsSync(wavesDir)) {
       warnings.push({
@@ -340,7 +435,12 @@ module.exports = {
   withStateTransaction,
   findMilestone,
   findSet,
+  findWave,
+  findJob,
   transitionSet,
+  transitionWave,
+  transitionJob,
+  detectIndependentWaves,
   addMilestone,
   validateDiskArtifacts,
   detectCorruption,

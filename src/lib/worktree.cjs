@@ -679,10 +679,10 @@ function generateScopedClaudeMd(cwd, setName) {
  * @type {Object<string, number>}
  */
 const STATUS_SORT_ORDER = {
-  executing: 0,
+  executed: 0,
   reviewing: 1,
   merging: 2,
-  planning: 3,
+  planned: 3,
   pending: 4,
   complete: 5,
 };
@@ -789,21 +789,21 @@ function deriveNextActions(stateData, registryData) {
       case 'pending':
         if (!hasWorktree) {
           actions.push({
-            action: `/set-init ${set.id}`,
+            action: `/rapid:start-set ${set.id}`,
             setName: set.id,
             description: `Initialize the ${set.id} set for development`,
           });
         } else {
           actions.push({
-            action: `/discuss ${set.id}`,
+            action: `/rapid:discuss-set ${set.id}`,
             setName: set.id,
             description: `Start planning discussion for ${set.id}`,
           });
         }
         break;
-      case 'executing':
+      case 'executed':
         actions.push({
-          action: `/execute ${set.id}`,
+          action: `/rapid:execute-set ${set.id}`,
           setName: set.id,
           description: `Continue executing ${set.id}`,
         });

@@ -1,0 +1,32 @@
+{
+  "setId": "install-version",
+  "version": "1.0.0",
+  "exports": {
+    "versionFlag": {
+      "type": "function",
+      "signature": "node rapid-tools.cjs --version => string",
+      "description": "CLI --version flag that prints the current RAPID version from package.json"
+    },
+    "RAPID_VERSION_ENV": {
+      "type": "file",
+      "signature": "RAPID_VERSION=<semver> in .env",
+      "description": "Version string persisted in user .env alongside RAPID_TOOLS path"
+    },
+    "versionCheck": {
+      "type": "function",
+      "signature": "(installed: string, current: string) => { needsUpdate: boolean, installed: string, current: string }",
+      "description": "Compares installed version against current package.json version using existing compareVersions()"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "version-from-package-json": {
+      "description": "The version value must always be read from package.json at runtime, never hardcoded",
+      "enforced_by": "test"
+    },
+    "env-example-updated": {
+      "description": ".env.example must document the RAPID_VERSION variable",
+      "enforced_by": "test"
+    }
+  }
+}

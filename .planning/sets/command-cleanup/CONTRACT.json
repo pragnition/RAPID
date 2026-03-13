@@ -1,0 +1,27 @@
+{
+  "setId": "command-cleanup",
+  "version": "1.0.0",
+  "exports": {
+    "TOOL_REGISTRY": {
+      "type": "function",
+      "signature": "Record<string, string>",
+      "description": "Cleaned TOOL_REGISTRY with all deprecated command keys (set-init-*, wave-plan-*) removed"
+    },
+    "ROLE_TOOL_MAP": {
+      "type": "function",
+      "signature": "Record<string, string[]>",
+      "description": "Cleaned ROLE_TOOL_MAP with no references to deprecated command keys"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "no-deprecated-references": {
+      "description": "No source file may reference set-init, discuss (as standalone command), wave-plan, or new-milestone command names",
+      "enforced_by": "test"
+    },
+    "existing-commands-preserved": {
+      "description": "All current non-deprecated commands must remain functional and present in TOOL_REGISTRY",
+      "enforced_by": "test"
+    }
+  }
+}
