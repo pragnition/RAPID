@@ -335,7 +335,7 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
   const warnings = [];
 
   // Check: if status says planning or later, CONTEXT.md should exist
-  if (['planning', 'executing', 'complete', 'merged'].includes(set.status)) {
+  if (['planned', 'executed', 'complete', 'merged'].includes(set.status)) {
     const contextPath = path.join(cwd, '.planning', 'sets', setId, 'CONTEXT.md');
     if (!fs.existsSync(contextPath)) {
       warnings.push({
@@ -346,7 +346,7 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
   }
 
   // Check: if status says executing or later, wave plans dir should exist
-  if (['executing', 'complete', 'merged'].includes(set.status)) {
+  if (['executed', 'complete', 'merged'].includes(set.status)) {
     const wavesDir = path.join(cwd, '.planning', 'waves', setId);
     if (!fs.existsSync(wavesDir)) {
       warnings.push({

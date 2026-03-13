@@ -1,10 +1,10 @@
 'use strict';
 
 const SET_TRANSITIONS = {
-  pending:     ['discussing', 'planning'],
-  discussing:  ['planning'],
-  planning:    ['executing'],
-  executing:   ['complete'],
+  pending:     ['discussed', 'planned'],
+  discussed:   ['planned'],
+  planned:     ['executed'],
+  executed:    ['complete'],
   complete:    ['merged'],
   merged:      [],
 };
