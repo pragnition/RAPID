@@ -26,11 +26,11 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 
 ### Planning
 
-- [ ] **PLAN-01**: /plan-set produces one PLAN.md per wave in a single pass (2-4 agent spawns, not 15-20)
+- [x] **PLAN-01**: /plan-set produces one PLAN.md per wave in a single pass (2-4 agent spawns, not 15-20)
 - [x] **PLAN-02**: /discuss-set captures user vision and produces CONTEXT.md for the planner
 - [x] **PLAN-03**: /discuss-set --skip auto-generates CONTEXT.md from roadmap + codebase scan
 - [x] **PLAN-04**: Interface contracts defined between sets without blocking gates
-- [ ] **PLAN-05**: Contract enforcement at three points: after planning, during execution, before merge
+- [x] **PLAN-05**: Contract enforcement at three points: after planning, during execution, before merge
 
 ### Execution
 
@@ -43,7 +43,7 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 - [x] **CMD-01**: /init handles greenfield and brownfield with 5-researcher pipeline and roadmap creation
 - [x] **CMD-02**: /start-set creates worktree scaffold for a set
 - [x] **CMD-03**: /discuss-set as standalone command with --skip flag
-- [ ] **CMD-04**: /plan-set as standalone command
+- [x] **CMD-04**: /plan-set as standalone command
 - [ ] **CMD-05**: /execute-set as standalone command
 - [x] **CMD-06**: /review preserved with state reference updates
 - [x] **CMD-07**: /merge preserved with state updates and planning artifact transfer
@@ -200,18 +200,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGENT-04 | Phase 42 | Complete |
 | AGENT-05 | Phase 39 | Complete |
 | AGENT-06 | Phase 41 | Complete |
-| PLAN-01 | Phase 43 | Pending |
+| PLAN-01 | Phase 43 | Complete |
 | PLAN-02 | Phase 43 | Complete |
 | PLAN-03 | Phase 43 | Complete |
 | PLAN-04 | Phase 43 | Complete |
-| PLAN-05 | Phase 43 | Pending |
+| PLAN-05 | Phase 43 | Complete |
 | EXEC-01 | Phase 44 | Pending |
 | EXEC-02 | Phase 44 | Pending |
 | EXEC-03 | Phase 44 | Pending |
 | CMD-01 | Phase 43 | Complete |
 | CMD-02 | Phase 43 | Complete |
 | CMD-03 | Phase 43 | Complete |
-| CMD-04 | Phase 43 | Pending |
+| CMD-04 | Phase 43 | Complete |
 | CMD-05 | Phase 44 | Pending |
 | CMD-06 | Phase 40 | Complete |
 | CMD-07 | Phase 40 | Complete |
