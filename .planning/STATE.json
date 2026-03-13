@@ -39,15 +39,15 @@
       "sets": [
         {
           "id": "status-rename",
-          "status": "complete"
+          "status": "merged"
         },
         {
           "id": "command-cleanup",
-          "status": "complete"
+          "status": "merged"
         },
         {
           "id": "install-version",
-          "status": "complete"
+          "status": "merged"
         },
         {
           "id": "parallel-waves",
@@ -56,6 +56,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-13T13:34:49.184Z",
+  "lastUpdatedAt": "2026-03-13T17:20:31.914Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
