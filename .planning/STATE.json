@@ -43,7 +43,7 @@
         },
         {
           "id": "command-cleanup",
-          "status": "pending"
+          "status": "discussing"
         },
         {
           "id": "install-version",
@@ -56,6 +56,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-13T10:03:13.800Z",
+  "lastUpdatedAt": "2026-03-13T10:05:13.091Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
