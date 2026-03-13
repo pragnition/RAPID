@@ -102,6 +102,8 @@ cat > "$SCRIPT_DIR/.env.example" << ENVEOF
 # RAPID plugin environment
 # Set by setup.sh -- path to rapid-tools.cjs CLI
 RAPID_TOOLS=/path/to/your/rapid/src/bin/rapid-tools.cjs
+# Set by setup.sh -- installed RAPID version from package.json
+RAPID_VERSION=3.0.0
 ENVEOF
 
 # Register Claude Code plugin
