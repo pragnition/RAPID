@@ -210,6 +210,75 @@ describe('readState', () => {
   });
 });
 
+// ---- readState migration ----
+
+describe('readState migration', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTempProject(); });
+  afterEach(() => { cleanTempProject(tmpDir); });
+
+  it('transparently migrates old discussing status to discussed', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'discussing' }];
+    // Write raw JSON bypassing schema validation (old format)
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    const result = await readState(tmpDir);
+    assert.equal(result.valid, true);
+    assert.equal(result.state.milestones[0].sets[0].status, 'discussed');
+  });
+
+  it('transparently migrates old planning status to planned', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'planning' }];
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    const result = await readState(tmpDir);
+    assert.equal(result.valid, true);
+    assert.equal(result.state.milestones[0].sets[0].status, 'planned');
+  });
+
+  it('transparently migrates old executing status to executed', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'executing' }];
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    const result = await readState(tmpDir);
+    assert.equal(result.valid, true);
+    assert.equal(result.state.milestones[0].sets[0].status, 'executed');
+  });
+
+  it('migration does not write to disk (in-memory only)', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'discussing' }];
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    const mtimeBefore = fs.statSync(stateFile).mtimeMs;
+    await new Promise(r => setTimeout(r, 50));
+    await readState(tmpDir);
+    const mtimeAfter = fs.statSync(stateFile).mtimeMs;
+
+    assert.equal(mtimeBefore, mtimeAfter, 'STATE.json mtime should not change after readState migration');
+  });
+
+  it('withStateTransaction persists migrated values on next write', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'discussing' }];
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    // No-op mutation -- just triggers read + write cycle
+    await withStateTransaction(tmpDir, () => {});
+
+    const onDisk = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+    assert.equal(onDisk.milestones[0].sets[0].status, 'discussed');
+  });
+});
+
 // ---- writeState ----
 
 describe('writeState', () => {
