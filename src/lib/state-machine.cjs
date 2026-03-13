@@ -248,8 +248,8 @@ async function addMilestone(cwd, milestoneId, milestoneName, carryForwardSets = 
  * Returns an array of { type, message } objects. NEVER modifies STATE.json.
  *
  * Checks:
- * - CONTEXT.md exists when status is planning/executing/complete/merged
- * - Wave plans directory exists when status is executing/complete/merged
+ * - CONTEXT.md exists when status is planned/executed/complete/merged
+ * - Wave plans directory exists when status is executed/complete/merged
  *
  * @param {string} cwd - Project root directory
  * @param {string} milestoneId - Milestone ID
@@ -271,8 +271,8 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
 
   const warnings = [];
 
-  // Check: if status says planning or later, CONTEXT.md should exist
-  if (['planning', 'executing', 'complete', 'merged'].includes(set.status)) {
+  // Check: if status says planned or later, CONTEXT.md should exist
+  if (['planned', 'executed', 'complete', 'merged'].includes(set.status)) {
     const contextPath = path.join(cwd, '.planning', 'sets', setId, 'CONTEXT.md');
     if (!fs.existsSync(contextPath)) {
       warnings.push({
@@ -282,8 +282,8 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
     }
   }
 
-  // Check: if status says executing or later, wave plans dir should exist
-  if (['executing', 'complete', 'merged'].includes(set.status)) {
+  // Check: if status says executed or later, wave plans dir should exist
+  if (['executed', 'complete', 'merged'].includes(set.status)) {
     const wavesDir = path.join(cwd, '.planning', 'waves', setId);
     if (!fs.existsSync(wavesDir)) {
       warnings.push({
