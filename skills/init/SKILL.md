@@ -7,7 +7,7 @@ allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, G
 
 You are the RAPID project initializer. This skill orchestrates the complete multi-agent pipeline: prerequisites, scaffolding, codebase analysis, parallel research, synthesis, and roadmap generation with user approval.
 
-Follow these steps IN ORDER. Do not skip steps. Ask ONE question at a time during interactive setup.
+Follow these steps IN ORDER. Do not skip steps.
 
 ## Environment Setup
 
@@ -64,6 +64,8 @@ Display the results as a formatted markdown table:
 
 - If all pass: Briefly confirm all prerequisites are met and continue to Step 2.
 
+**On error:** Show progress breadcrumb: `init [prereqs failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
+
 ---
 
 ## Step 2: Git Repository Check
@@ -87,6 +89,8 @@ Parse the JSON output containing `isRepo` (boolean) and `toplevel` (string or nu
   - If "Cancel": Print "Cancelled. No changes made." and end the skill.
 
 - If `isRepo` is true: Continue silently to Step 3.
+
+**On error:** Show progress breadcrumb: `init [git check failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
 
 ---
 
@@ -169,74 +173,69 @@ Store the selection as `opus` or `sonnet`.
 **This is a thorough requirements interview, NOT a form fill.** You must conduct an in-depth conversational discovery session to understand EVERYTHING about the project before proceeding to research and roadmapping. The quality of the entire pipeline depends on the depth of understanding gained here.
 
 **Ground rules:**
-- Ask ONE question at a time using AskUserQuestion (freeform mode).
-- LISTEN carefully to each answer. Use the user's response to determine what to ask next.
-- If ANY aspect of the user's answer is vague, ambiguous, or surface-level, press further with clarifying follow-up questions. Do NOT accept shallow answers and move on.
-- Continue asking questions until you have a comprehensive understanding of the project. This may take 8-15+ questions depending on project complexity.
+- Ask questions in TOPIC BATCHES using AskUserQuestion (freeform mode). Each batch covers 2-3 related discovery areas in a SINGLE prompt.
+- LISTEN carefully to each batch response. After each batch, analyze the response for follow-up needs. Only ask follow-up questions for genuinely ambiguous or vague responses. Do NOT re-ask areas already covered.
+- Continue asking until you have a comprehensive understanding. This should take 3-4 batch questions plus 0-2 targeted follow-ups depending on project complexity.
 - Mentally track what you know and what gaps remain. Only proceed when no significant gaps exist.
 
-**Discovery must cover these areas** (adapt the order and phrasing based on the conversation flow):
+**Discovery must cover these 10 areas, grouped into 4 topic batches:**
 
-**1. Core Vision and Purpose**
-- "Tell me about this project. What are you building and why?"
-- Probe deeper: What problem does it solve? Who currently has this problem? What happens if this project does not exist?
-- If the answer is vague (e.g., "a task management app"), ask: "What makes this different from existing solutions? What is the core insight or angle?"
+**Batch 1: Vision and Users (Areas 1-2)**
 
-**2. Target Users and Audience**
-- Who are the primary users? Secondary users?
-- What is their technical sophistication level?
-- B2B, B2C, internal tool, developer tool, open source?
-- How many users are expected initially? At scale?
+Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
 
-**3. Key Features and Scope**
-- What are the MUST-HAVE features for a first usable version?
-- What features are nice-to-have but can wait?
-- Are there features the user explicitly does NOT want?
-- Walk through the primary user journey: what does a user do from start to finish?
+> "Tell me about this project. I'd like to understand the big picture in one go:
+>
+> 1. **What are you building and why?** What problem does it solve? What makes this different from existing solutions?
+> 2. **Who are the target users?** Primary and secondary users, their technical sophistication, B2B/B2C/internal/open-source?
+> 3. **What scale are you targeting?** How many users initially and at scale?
+>
+> Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
 
-**4. Technical Constraints and Preferences**
-- Any technology stack preferences or requirements? (Languages, frameworks, databases)
-- Any hard constraints? (Must run on specific infrastructure, must integrate with specific systems, must use specific auth provider)
-- Any existing code, APIs, or services this project depends on?
-- Deployment target: cloud provider, self-hosted, desktop, mobile, serverless?
+After receiving the response, analyze it. If the user's vision or target audience is vague (e.g., "a task management app" with no differentiation), ask ONE targeted follow-up before proceeding to the next batch. Otherwise, continue.
 
-**5. Scale and Performance**
-- Expected data volume (rough order of magnitude)?
-- Expected traffic/concurrent users?
-- Latency requirements? Real-time features needed?
-- Any compliance or data residency requirements?
+**Batch 2: Features and Technical (Areas 3-4)**
 
-**6. Integration and External Dependencies**
-- What third-party services or APIs will this integrate with?
-- Any existing systems this must work alongside or replace?
-- Authentication/authorization approach? (SSO, OAuth, API keys, etc.)
+Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
 
-**7. Team Context and Experience**
-- What is the team's experience level with the chosen (or likely) tech stack?
-- Any past experience with similar projects? Lessons learned?
-- Any strong opinions on architecture patterns, coding style, or tooling?
+> "Now let's talk features and technical approach:
+>
+> 1. **Must-have features for v1?** What does a first usable version need? Walk me through the primary user journey from start to finish.
+> 2. **Nice-to-have features?** What can wait for later versions? Anything you explicitly do NOT want?
+> 3. **Tech stack preferences or constraints?** Languages, frameworks, databases, deployment target (cloud, self-hosted, serverless, mobile, desktop)?
+> 4. **Existing dependencies?** Any existing code, APIs, or services this integrates with?"
 
-**8. Similar Products and Inspiration**
-- Are there existing products that do something similar? What do they do well or poorly?
-- Any specific projects, open-source repos, or designs that inspire the approach?
+After receiving the response, analyze for gaps. If any must-have feature is unclear or the tech approach is contradictory, ask ONE targeted follow-up.
 
-**9. Non-functional Requirements**
-- Security requirements beyond basics? (Encryption at rest, audit logs, SOC2, HIPAA)
-- Accessibility requirements?
-- Internationalization/localization needs?
-- Monitoring, observability, alerting expectations?
+**Batch 3: Scale and Integrations (Areas 5-6)**
 
-**10. Success Criteria and Timeline**
-- What does "done" look like for v1?
-- Any hard deadlines or milestones?
-- How will success be measured?
+Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+
+> "A few questions about scale and external systems:
+>
+> 1. **Data and traffic expectations?** Rough order of magnitude for data volume, concurrent users, latency requirements, real-time features?
+> 2. **Compliance or data residency?** Any regulatory requirements (HIPAA, SOC2, GDPR, etc.)?
+> 3. **Third-party integrations?** What external services or APIs will this connect to?
+> 4. **Auth approach?** SSO, OAuth, API keys, or other authentication/authorization strategy?"
+
+If the user has already addressed some of these areas in previous batches, note that and skip the already-covered items in your prompt. Do NOT re-ask what's already been answered.
+
+**Batch 4: Context and Success (Areas 7-10)**
+
+Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+
+> "Last batch -- context and success criteria:
+>
+> 1. **Team experience?** What's your experience with the likely tech stack? Any lessons from similar projects?
+> 2. **Inspiration?** Are there existing products that do something similar? What do they do well or poorly?
+> 3. **Non-functional requirements?** Security beyond basics, accessibility, internationalization, monitoring/observability?
+> 4. **Success criteria?** What does 'done' look like for v1? Any hard deadlines?"
 
 **Adaptive behavior:**
-- You do NOT need to ask all of the above if the conversation naturally covers them.
-- You DO need to ensure all areas are addressed to a satisfactory depth.
-- If the user provides a very detailed initial answer that covers multiple areas, acknowledge what you learned and focus follow-ups on the gaps.
+- If a batch response thoroughly covers areas from upcoming batches, acknowledge what you learned and SKIP those items in the next batch.
 - If the user says "I don't know" or "haven't decided" for a particular area, note it as an open question and move on -- but circle back if it affects architecture decisions.
 - For brownfield projects where codebase exists, some technical questions can be deferred to the codebase analysis step. Focus discovery on intent, goals, and what needs to change.
+- You do NOT need to ask all 4 batches if earlier responses comprehensively cover everything. Proceed when no significant gaps exist.
 
 **Completion check:**
 
@@ -323,6 +322,8 @@ node "${RAPID_TOOLS}" init research-dir
 
 Confirm all three commands succeed before proceeding.
 
+**On error:** Show progress breadcrumb: `init [scaffold done, config failed] > start-set > discuss-set > plan-set > execute-set > review > merge` (adjust based on which step failed).
+
 ---
 
 ## Step 6: Brownfield Detection
@@ -371,6 +372,8 @@ Inform the user: "Existing codebase detected. Running codebase analysis before r
 Display: "No existing source code detected. Starting research for greenfield project."
 
 Set a flag noting this is greenfield -- research agents will receive a note that this is a greenfield project with no existing codebase to analyze.
+
+**On error:** Show progress breadcrumb: `init [scaffold done, brownfield detection failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
 
 ---
 
@@ -519,6 +522,8 @@ Wait for ALL 6 agents to complete. If any agent fails, use AskUserQuestion:
   - "Skip" -- "Continue without this research output. Synthesis will have less context."
   - "Cancel" -- "Exit initialization."
 
+**On error:** Show progress breadcrumb: `init [scaffold done, research failed ({agent name})] > start-set > discuss-set > plan-set > execute-set > review > merge`
+
 ---
 
 ## Step 8: Research Synthesis
@@ -548,6 +553,8 @@ Write synthesized summary to .planning/research/SUMMARY.md
 
 4. After completion, read `.planning/research/SUMMARY.md` to confirm it was written and to pass its content to the roadmapper.
 
+**On error:** Show progress breadcrumb: `init [scaffold done, research done, synthesis failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
+
 ---
 
 ## Step 9: Roadmap Generation
@@ -574,10 +581,20 @@ Generate the project roadmap from synthesized research.
 ## Working Directory
 {projectRoot}
 
+## CRITICAL: Sets-Only Output
+Output sets ONLY -- do NOT include wave or job structure. Waves are determined later during /plan-set. The return JSON structure should be: { roadmap, state, contracts } where state contains project > milestone > sets (no waves key, no jobs key).
+
+Each set should define:
+- Set name and scope
+- Set dependencies (which other sets it depends on)
+- Set branch name
+
+Do NOT decompose sets into waves or jobs. That decomposition happens later when the user runs /plan-set for each set.
+
 ## Return Format
 Return a structured JSON response with three keys:
-- roadmap -- markdown string for ROADMAP.md
-- state -- STATE.json milestone/set/wave/job structure
+- roadmap -- markdown string for ROADMAP.md (set names, scopes, dependencies -- NO wave/job tables)
+- state -- JSON structure: { milestones: [{ id, name, status: "active", sets: [{ id, name, status: "pending", branch }] }], currentMilestone }
 - contracts -- array of { setId, contract } objects for CONTRACT.json files
 ```
 
@@ -588,9 +605,9 @@ Return a structured JSON response with three keys:
 **Present the roadmap to the user:**
 
 Display a summary of the proposed roadmap:
-- Number of sets, waves, and total jobs
+- Number of sets planned
 - Set names and their high-level descriptions
-- Key contracts between sets
+- Key contracts and dependencies between sets
 
 Use AskUserQuestion with:
 - question: "Review the proposed roadmap above."
@@ -613,8 +630,10 @@ b) Write CONTRACT.json files for each set:
    ```
    Use the Write tool to write `.planning/sets/{setId}/CONTRACT.json` with the contract content.
 
-c) Update STATE.json with the milestone/set/wave/job structure:
-   Use CLI commands from `rapid-tools.cjs` to atomically update STATE.json. The state machine handles validated transitions.
+c) Write STATE.json with the project > milestone > sets structure:
+   Use the Write tool to write `.planning/STATE.json` with the roadmapper's `state` content.
+   The state structure is: `{ milestones: [{ id, name, status, sets: [{ id, status: "pending" }] }], currentMilestone }`
+   Each set has only `{ id, name, status: "pending", branch }` -- no waves or jobs arrays.
 
 **If "Request changes":**
 
@@ -624,6 +643,7 @@ Re-spawn the roadmapper agent with:
 - All original context (SUMMARY.md, full project brief, team size, model)
 - The user's change request as additional feedback
 - The previous roadmap proposal for reference
+- The same CRITICAL sets-only instruction (no waves or jobs)
 
 Present the revised roadmap and use AskUserQuestion again (same Accept/Request changes/Cancel options). This loop continues until the user accepts or cancels.
 
@@ -632,6 +652,8 @@ Present the revised roadmap and use AskUserQuestion again (same Accept/Request c
 Print: "Roadmap generation cancelled. Your scaffold and research files are preserved in .planning/. You can re-run /rapid:init to generate a roadmap later."
 
 End the skill.
+
+**On error:** Show progress breadcrumb: `init [scaffold done, research done, synthesis done, roadmap failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
 
 ---
 
@@ -649,13 +671,11 @@ Display a final summary:
 
 **Roadmap:**
 - {N} sets planned
-- {N} waves across all sets
-- {N} total jobs
 
 **Files Created:**
 - .planning/PROJECT.md
 - .planning/ROADMAP.md
-- .planning/STATE.md (or STATE.json)
+- .planning/STATE.json
 - .planning/config.json
 - .planning/REQUIREMENTS.md
 - .planning/research/SUMMARY.md
@@ -674,13 +694,23 @@ SETS_JSON=$(node "${RAPID_TOOLS}" plan list-sets 2>&1)
 
 Parse the JSON output. If there are sets available, display:
 
-> **Next step:** `/rapid:set-init 1`
-> *(Initialize set 1 for development)*
+> **Next step:** `/rapid:start-set 1`
+> *(Start set 1 for development)*
 
 If the project has no sets yet (e.g., roadmap deferred set creation), display:
 
 > **Next step:** `/rapid:status`
 > *(View project state)*
+
+## Step 12: Progress Breadcrumb
+
+Render a progress breadcrumb at the very end of the skill output to show the user where they are in the RAPID workflow:
+
+```
+init [done] > start-set > discuss-set > plan-set > execute-set > review > merge
+```
+
+This breadcrumb shows "init" as complete, and all subsequent stages as pending. The user can see at a glance what comes next and how far along the overall workflow they are.
 
 ---
 
@@ -694,12 +724,29 @@ At every agent step (Steps 6-9), if an agent fails or returns an error:
    - "Skip" -- Continue without this agent's output (downstream agents will have less context)
    - "Cancel" -- Exit initialization cleanly
 
+3. On ANY error in Steps 5-9, show a progress breadcrumb indicating what has been completed and what failed:
+   ```
+   init [scaffold done, research failed] > start-set > discuss-set > plan-set > execute-set > review > merge
+   ```
+   Adjust the breadcrumb content to reflect the actual state of progress. The user should always be able to see what succeeded and what needs attention.
+
 This ensures the user always has control over error recovery and the pipeline never silently fails.
 
 ## Important Constraints
 
-- **Agents must NOT write STATE.json directly.** The SKILL.md orchestrator uses CLI commands (`rapid-tools.cjs`) for all atomic state writes.
-- **All 5 research agents are independent.** No research agent reads another research agent's output. They only share the project description and brownfield analysis as inputs.
+- **Agents must NOT write STATE.json directly.** The SKILL.md orchestrator writes STATE.json using the Write tool with validated roadmapper output.
+- **All 6 research agents are independent.** No research agent reads another research agent's output. They only share the project description and brownfield analysis as inputs.
 - **Contracts are generated by the roadmapper in a unified pass.** Individual sets do not generate their own contracts -- the roadmapper produces all contracts together to ensure cross-set consistency.
 - **Roadmapper uses propose-then-approve.** The roadmapper returns a proposal; the user must explicitly accept before any files are written.
 - **Sequential fallback for research.** If parallel Agent tool spawning is not available, fall back to sequential execution rather than failing.
+- **Sets only in state.** STATE.json contains project > milestone > sets hierarchy. Do NOT include waves or jobs in STATE.json -- wave decomposition happens later during /plan-set.
+- **CONTRACT.json at init.** CONTRACT.json files are generated at init time per set by the roadmapper to ensure cross-set interface consistency from the start.
+
+## Anti-Patterns -- Do NOT Do These
+
+- Do NOT reference `state transition wave` or `state transition job` -- these state commands do not exist in v3. Only set-level state transitions exist (via `state transition set`).
+- Do NOT ask the roadmapper to produce waves or jobs -- v3 defers wave decomposition to /plan-set. The roadmapper outputs sets only.
+- Do NOT reference WAVE-CONTEXT.md or wave directories -- v3 uses set-level CONTEXT.md only.
+- Do NOT reference `/rapid:set-init` -- the v3 command is `/rapid:start-set`.
+- Do NOT include "waves" or "total jobs" counts in the completion summary or roadmap presentation -- only show "N sets planned".
+- Do NOT write waves or jobs arrays into STATE.json -- each set has only `{ id, name, status: "pending", branch }`.
