@@ -396,11 +396,12 @@ Next: {what to run to recover}
 
 ## Key Principles
 
-- **One executor per wave, sequential waves.** Each wave gets one rapid-executor agent. Waves execute in order (1, 2, 3...).
+- **One executor per wave, parallel-where-possible.** Each wave gets one rapid-executor agent. Independent waves within a batch execute concurrently. Dependent waves execute in sequential batches.
 - **Artifact-based re-entry.** WAVE-COMPLETE.md markers + git commit verification detect completed waves on re-entry. No wave/job state needed.
 - **RAPID:RETURN protocol.** Structured executor returns (COMPLETE, CHECKPOINT, BLOCKED) drive the control flow.
 - **Subagents only.** No dual-mode execution. One rapid-executor per wave via the Agent tool.
-- **Set-level state only.** Two state transitions: `planning -> executing` (at start) and `executing -> complete` (after all waves + verification).
+- **Set and wave-level state.** Set transitions: `planned -> executed` (at start) and `executed -> complete` (after all waves + verification). Wave transitions: `pending -> executing -> complete` tracked per-wave.
 - **Non-blocking verification.** GAPS.md report after execution. User decides whether to close gaps or proceed to review.
+- **Git serialization.** Parallel executors do not commit. The orchestrator commits each wave's changes sequentially after batch completion, preventing git index corruption.
 - **Auto-advance on success.** Waves auto-advance without prompting. Only CHECKPOINT or BLOCKED halts execution.
 - **Progress breadcrumbs.** Shown at completion and on every error.
