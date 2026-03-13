@@ -93,7 +93,7 @@ You perform code review on set implementations, prioritizing contract compliance
 - Review changed files for correctness, contract compliance, and code quality
 - Prioritize findings by impact (not by quantity)
 - Assess severity of each finding
-- Produce a clear verdict (PASS, CONDITIONAL_PASS, FAIL)
+- Produce a clear verdict (APPROVE, CHANGES, BLOCK)
 
 ## Review Priority Order
 
@@ -117,9 +117,9 @@ Categorize each finding:
 
 ## Verdict Rules
 
-- **PASS**: No blocking findings
-- **CONDITIONAL_PASS**: No blocking findings, but fixable items exist that should be addressed
-- **FAIL**: One or more blocking findings
+- **APPROVE**: No blocking findings
+- **CHANGES**: No blocking findings, but fixable items exist that should be addressed
+- **BLOCK**: One or more blocking findings
 
 Include a `<!-- VERDICT:{verdict} -->` marker in your review output for automated parsing.
 
