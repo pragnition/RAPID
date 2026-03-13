@@ -382,10 +382,10 @@ describe('transitionSet', () => {
     const state = makeStateWithSet();
     writeTestState(tmpDir, state);
 
-    await transitionSet(tmpDir, 'v1.0', 'set-1', 'discussing');
+    await transitionSet(tmpDir, 'v1.0', 'set-1', 'discussed');
 
     const updated = readTestState(tmpDir);
-    assert.equal(updated.milestones[0].sets[0].status, 'discussing');
+    assert.equal(updated.milestones[0].sets[0].status, 'discussed');
   });
 
   it('rejects invalid transitions (throws)', async () => {
@@ -402,10 +402,10 @@ describe('transitionSet', () => {
     const state = makeStateWithSet();
     writeTestState(tmpDir, state);
 
-    // pending -> planning is valid (skip discussing)
-    await transitionSet(tmpDir, 'v1.0', 'set-1', 'planning');
+    // pending -> planned is valid (skip discussed)
+    await transitionSet(tmpDir, 'v1.0', 'set-1', 'planned');
     const updated = readTestState(tmpDir);
-    assert.equal(updated.milestones[0].sets[0].status, 'planning');
+    assert.equal(updated.milestones[0].sets[0].status, 'planned');
   });
 });
 
@@ -462,9 +462,9 @@ describe('validateDiskArtifacts', () => {
     assert.deepEqual(warnings, []);
   });
 
-  it('returns warning for planning status without CONTEXT.md', async () => {
+  it('returns warning for planned status without CONTEXT.md', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'planning';
+    state.milestones[0].sets[0].status = 'planned';
     writeTestState(tmpDir, state);
 
     const warnings = await validateDiskArtifacts(tmpDir, 'v1.0', 'set-1');
@@ -473,9 +473,9 @@ describe('validateDiskArtifacts', () => {
     assert.ok(warnings[0].message.includes('CONTEXT.md'));
   });
 
-  it('returns warning for executing status without wave plans dir', async () => {
+  it('returns warning for executed status without wave plans dir', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'executing';
+    state.milestones[0].sets[0].status = 'executed';
     writeTestState(tmpDir, state);
     // Create CONTEXT.md so only the wave plans warning triggers
     fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'set-1'), { recursive: true });
@@ -493,9 +493,9 @@ describe('validateDiskArtifacts', () => {
     assert.equal(warnings[0].type, 'error');
   });
 
-  it('returns empty array when all artifacts exist for executing status', async () => {
+  it('returns empty array when all artifacts exist for executed status', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'executing';
+    state.milestones[0].sets[0].status = 'executed';
     writeTestState(tmpDir, state);
     // Create both CONTEXT.md and waves dir
     fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'set-1'), { recursive: true });
@@ -508,7 +508,7 @@ describe('validateDiskArtifacts', () => {
 
   it('does NOT write to STATE.json (check mtime before/after)', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'planning';
+    state.milestones[0].sets[0].status = 'planned';
     writeTestState(tmpDir, state);
 
     const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
@@ -571,14 +571,14 @@ describe('set independence', () => {
     const state = makeStateWithTwoSets();
     writeTestState(tmpDir, state);
 
-    // Transition set-A to discussing
-    await transitionSet(tmpDir, 'v1.0', 'set-A', 'discussing');
+    // Transition set-A to discussed
+    await transitionSet(tmpDir, 'v1.0', 'set-A', 'discussed');
 
     // Verify set-B is still pending
     const updated = readTestState(tmpDir);
     const setA = updated.milestones[0].sets.find(s => s.id === 'set-A');
     const setB = updated.milestones[0].sets.find(s => s.id === 'set-B');
-    assert.equal(setA.status, 'discussing');
+    assert.equal(setA.status, 'discussed');
     assert.equal(setB.status, 'pending');
   });
 
@@ -586,13 +586,13 @@ describe('set independence', () => {
     const state = makeStateWithTwoSets();
     writeTestState(tmpDir, state);
 
-    await transitionSet(tmpDir, 'v1.0', 'set-A', 'planning');
-    await transitionSet(tmpDir, 'v1.0', 'set-B', 'discussing');
+    await transitionSet(tmpDir, 'v1.0', 'set-A', 'planned');
+    await transitionSet(tmpDir, 'v1.0', 'set-B', 'discussed');
 
     const updated = readTestState(tmpDir);
     const setA = updated.milestones[0].sets.find(s => s.id === 'set-A');
     const setB = updated.milestones[0].sets.find(s => s.id === 'set-B');
-    assert.equal(setA.status, 'planning');
-    assert.equal(setB.status, 'discussing');
+    assert.equal(setA.status, 'planned');
+    assert.equal(setB.status, 'discussed');
   });
 });
