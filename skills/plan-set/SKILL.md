@@ -1,15 +1,15 @@
 ---
-description: Plan all waves in a set with automatic sequencing -- spawns wave analyzer for dependency detection, then runs wave-plan pipeline per wave
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
+description: Plan all waves in a set with a single command -- researcher, planner, verifier pipeline (2-4 agent spawns)
+allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
 ---
 
-# /rapid:plan-set -- Set-Level Wave Planning Orchestrator
+# /rapid:plan-set -- Set Planning
 
-You are the RAPID set-level planning orchestrator. This skill plans ALL waves in a set with a single command. It spawns a wave-analyzer agent for dependency detection, groups waves into parallel batches, then runs the full wave-plan pipeline (research -> wave-plan -> job-plans -> verify -> validate) for each wave in dependency order.
+You are the RAPID set planner orchestrator. This skill plans a set by spawning a researcher, then a planner (which decomposes into waves and produces per-wave PLAN.md files), then a verifier. Total: 2-4 agent spawns. Fully autonomous -- no user checkpoints.
 
-Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion only at FAIL decision points.
+Follow these steps IN ORDER. Do not skip steps.
 
-## Step 1: Environment Setup
+## Step 1: Environment Setup + Banner
 
 Load environment variables before any CLI calls:
 
@@ -21,12 +21,10 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 
 Use this environment preamble in ALL subsequent Bash commands within this skill. Every `node "${RAPID_TOOLS}"` call must be preceded by the env loading block above in the same Bash invocation.
 
-## Display Stage Banner
+Display the stage banner:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
-if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+# (env preamble here)
 node "${RAPID_TOOLS}" display banner plan-set
 ```
 
@@ -52,7 +50,7 @@ SET_ID=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSy
 SET_INDEX=$(echo "$RESOLVE_RESULT" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(d.setIndex)")
 ```
 
-Use `SET_ID` for all subsequent operations. The numeric input has been resolved to a string ID.
+Use `SET_ID` for all subsequent operations.
 
 ### Load Full State
 
@@ -62,543 +60,334 @@ STATE_JSON=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null)
 echo "$STATE_JSON"
 ```
 
-Parse the JSON to find all waves in the resolved set within the current milestone. Extract `MILESTONE_ID` and the wave list.
+Parse the JSON to find the resolved set within the current milestone. Extract `MILESTONE_ID`.
 
-### Validate Wave Statuses
+### Validate Set Status
 
-Classify all waves in the set:
+- **If `pending`:** Display error: "Set '{SET_ID}' has not been discussed yet. Run /rapid:discuss-set {SET_INDEX} first."
+  Show error breadcrumb:
+  ```
+  init [done] > start-set [done] > discuss-set > plan-set [FAILED: set not discussed] > execute-set > review > merge
+  ```
+  STOP.
 
-```javascript
-// Parse inline -- conceptual logic to apply when reading the state JSON
-const state = JSON.parse(stateJson);
-const milestone = state.milestones.find(m => m.id === state.currentMilestone);
-const set = milestone.sets.find(s => s.id === setId);
-const waves = set.waves || [];
+- **If `discussing`:** This is the expected state. Continue to Step 3.
 
-const pendingWaves = waves.filter(w => w.status === 'pending');
-const discussingWaves = waves.filter(w => w.status === 'discussing');
-const plannedOrLaterWaves = waves.filter(w => ['planning', 'executing', 'reviewing', 'complete'].includes(w.status));
-```
+- **If `planning` or later:** Display: "Set '{SET_ID}' is already in '{status}' state. Planning is complete."
+  Suggest: `/rapid:execute-set {SET_INDEX}`
+  Show breadcrumb:
+  ```
+  init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set > review > merge
+  ```
+  STOP.
 
-**Fail fast:** If ANY wave has status `pending`, abort immediately:
-```
-"Cannot plan set '{SET_ID}': {N} wave(s) have not been discussed yet:
-  - {waveId} (status: pending)
-  - {waveId} (status: pending)
+### Read Set Artifacts
 
-Run /rapid:discuss for each undiscussed wave before running /rapid:plan-set."
-```
-Then STOP. Do NOT skip pending waves -- all waves must be at least `discussing` before set-level planning begins.
+Read the following files to pass to downstream agents:
 
-**Smart re-entry:** If some waves are already in `planning` or later status, skip them. Only plan waves in `discussing` state.
+- `.planning/sets/${SET_ID}/CONTEXT.md` -- **REQUIRED**. If missing, display error: "CONTEXT.md not found for set '{SET_ID}'. Run /rapid:discuss-set {SET_INDEX} first." Show error breadcrumb and STOP.
+- `.planning/sets/${SET_ID}/CONTRACT.json` -- Load if exists.
+- `.planning/sets/${SET_ID}/SET-OVERVIEW.md` -- Load if exists.
+- `.planning/sets/${SET_ID}/DEFINITION.md` -- Load if exists.
 
-- If ALL waves are already planned (none in `discussing`): Display "All waves in set '{SET_ID}' are already planned. Nothing to do." and STOP.
-
-**Display summary:**
-```
-"Planning set '{SET_ID}':
-  - {N} wave(s) to plan: {wave IDs}
-  - {M} wave(s) already planned (skipped): {wave IDs}
-  - Total waves in set: {total}"
-```
-
-Record `MILESTONE_ID`, `SET_ID`, `SET_INDEX`, and the list of `WAVES_TO_PLAN` for subsequent steps.
+Record `MILESTONE_ID`, `SET_ID`, `SET_INDEX`, and all loaded artifact contents for subsequent steps.
 
 ---
 
-## Step 3: Wave Dependency Analysis
+## Step 3: Spawn Researcher Agent (Spawn 1 of 3-4)
 
-**If only 1 wave to plan:** Skip the analyzer entirely. Treat as a single sequential batch containing that one wave. Proceed to Step 4.
+Display: "Researching implementation specifics for set '{SET_ID}'..."
 
-**If re-entry (some waves already planned):** Skip the analyzer entirely. Derive batch structure from remaining `discussing` waves -- treat them all as a single sequential batch. Proceed to Step 4. Rationale: already-planned waves are fixed; re-running the analyzer could produce stale dependency info.
-
-**If 2+ waves to plan (fresh run):** Spawn the wave analyzer for dependency detection.
-
-### Read Wave Context Files
-
-For each wave in `WAVES_TO_PLAN`, read its WAVE-CONTEXT.md:
-```
-.planning/waves/{SET_ID}/{waveId}/WAVE-CONTEXT.md
-```
-
-Concatenate all WAVE-CONTEXT.md contents with clear wave ID headers.
-
-### Spawn Wave Analyzer
-
-Spawn the **rapid-wave-analyzer** agent with this task:
+Spawn the **rapid-research-stack** agent with this task:
 
 ```
-Analyze dependencies between waves in set '{SET_ID}'.
+Research implementation specifics for set '{SET_ID}'.
 
-## Wave Contexts
-
-### Wave: {waveId-1}
-{WAVE-CONTEXT.md contents for wave 1}
-
-### Wave: {waveId-2}
-{WAVE-CONTEXT.md contents for wave 2}
-
-... (all waves being planned)
+## Set Context
+- CONTEXT.md: {full CONTEXT.md contents}
+- CONTRACT.json: {full CONTRACT.json contents}
+- SET-OVERVIEW.md: {full SET-OVERVIEW.md contents}
+- DEFINITION.md: {full DEFINITION.md contents}
 
 ## Instructions
-Determine which waves depend on each other and which are independent. Return your analysis via RAPID:RETURN JSON.
+Analyze the set scope and research implementation specifics:
+1. Read the set context to understand what needs to be built
+2. Scan relevant source files for existing patterns
+3. Research any external libraries or APIs mentioned
+4. Identify technical risks and edge cases
+
+## Working Directory
+{projectRoot}
+
+## Output
+Return your research findings as structured text. Do NOT write files -- return findings in your RAPID:RETURN notes field.
 ```
 
-### Parse Analyzer Output
+Parse the agent's RAPID:RETURN for research findings.
 
-Extract the RAPID:RETURN JSON from the agent output. The return structure is:
-```json
-{
-  "status": "COMPLETE",
-  "dependencies": [
-    { "from": "wave-1", "to": "wave-2", "reason": "wave-2 modifies files created in wave-1" }
-  ],
-  "independent_groups": [["wave-2", "wave-4"], ["wave-3"]],
-  "analysis_notes": "..."
-}
-```
-
-### Convert Dependencies to Planning Batches
-
-Use BFS-level assignment to group waves into ordered batches:
-
-```bash
-# (env preamble here)
-# Inline BFS leveling (same algorithm as dag.cjs assignWaves)
-node -e "
-const deps = JSON.parse(process.argv[1]);
-const waves = JSON.parse(process.argv[2]);
-
-// Build adjacency: from -> [to] (from is dependency, to is dependent)
-const inDegree = {};
-const adj = {};
-waves.forEach(w => { inDegree[w] = 0; adj[w] = []; });
-deps.forEach(d => {
-  if (adj[d.from] && inDegree[d.to] !== undefined) {
-    adj[d.from].push(d.to);
-    inDegree[d.to]++;
-  }
-});
-
-// BFS level assignment
-const queue = waves.filter(w => inDegree[w] === 0);
-const levels = {};
-queue.forEach(w => { levels[w] = 1; });
-let idx = 0;
-while (idx < queue.length) {
-  const curr = queue[idx++];
-  for (const next of adj[curr]) {
-    inDegree[next]--;
-    levels[next] = Math.max(levels[next] || 0, levels[curr] + 1);
-    if (inDegree[next] === 0) queue.push(next);
-  }
-}
-
-// Group by level
-const batches = {};
-for (const [w, lvl] of Object.entries(levels)) {
-  if (!batches[lvl]) batches[lvl] = [];
-  batches[lvl].push(w);
-}
-
-// Output ordered batches
-const ordered = Object.keys(batches).sort((a,b) => a-b).map(k => batches[k]);
-console.log(JSON.stringify(ordered));
-" '${DEPS_JSON}' '${WAVES_JSON}'
-```
-
-This produces an array of batches: `[["wave-1"], ["wave-2", "wave-4"], ["wave-3"]]` -- batch 1 plans first, then batch 2 (waves in parallel), then batch 3.
-
-**Fallback:** If the analyzer fails, returns no RAPID:RETURN, or produces invalid JSON, fall back to sequential planning: each wave in its own batch, processed one at a time. This is the safest default.
-
-Display the batch plan:
-```
-"Wave planning order:
-  Batch 1: {wave IDs} (parallel: {yes/no})
-  Batch 2: {wave IDs} (parallel: {yes/no})
-  ..."
-```
+**If researcher fails:** Log warning: "Research agent failed. Continuing without research findings (graceful degradation)." Continue to Step 4 with `RESEARCH_FINDINGS = "No research available -- researcher agent failed."`.
 
 ---
 
-## Step 4: Plan Waves in Batches
+## Step 4: Spawn Planner Agent (Spawn 2 of 3-4)
 
-Process batches in order. Within each batch, plan waves according to the batch size:
+Display: "Planning set '{SET_ID}'..."
 
-- **Batch size = 1 (sequential):** Run the full pipeline for the single wave inline.
-- **Batch size > 1 (parallel):** Run the pipeline with interleaved parallel agent calls across waves in the batch. Specifically: spawn the same pipeline step for ALL waves in the batch in parallel, wait for all to complete, then proceed to the next pipeline step for all waves.
-
-**IMPORTANT:** Do NOT try to spawn a single orchestrator agent per wave for parallel batches. Claude Code does not allow sub-sub-agent spawning. Instead, the plan-set skill itself dispatches agents at each pipeline step, interleaving across waves.
-
-### Per-Wave Pipeline (Steps 4a-4j)
-
-For each wave (or for all waves in a parallel batch simultaneously at each step):
-
-#### Step 4a: Display Wave Transition Banner
-
-```bash
-# (env preamble here)
-node "${RAPID_TOOLS}" display banner plan-set "Wave {waveIndex}/{totalWaves}: {waveId}"
-```
-
-#### Step 4b: Read Wave Context
-
-Read the following files for each wave:
-- `.planning/waves/{SET_ID}/{waveId}/WAVE-CONTEXT.md`
-- `.planning/sets/{SET_ID}/CONTRACT.json`
-- `.planning/sets/{SET_ID}/SET-OVERVIEW.md` (if exists)
-- Targeted source files referenced in CONTRACT.json exports (the `file` field in each export function)
-
-#### Step 4c: Spawn Wave Research Agent
-
-Display progress: "Researching implementation specifics for wave {waveId}..."
-
-Spawn the **rapid-wave-researcher** agent with this task:
+Spawn the **rapid-planner** agent with this task:
 
 ```
-Research implementation specifics for wave '{waveId}' in set '{SET_ID}'.
+Decompose and plan set '{SET_ID}'.
 
-## Wave Context
-{WAVE-CONTEXT.md full contents}
+## Set Context
+- CONTEXT.md: {full CONTEXT.md contents}
+- CONTRACT.json: {full CONTRACT.json contents}
+- SET-OVERVIEW.md: {full SET-OVERVIEW.md contents}
+- DEFINITION.md: {full DEFINITION.md contents}
 
-## Contract
-{CONTRACT.json full contents}
-
-## Set Overview
-{SET-OVERVIEW.md full contents, if exists}
-
-## Source Files
-{Source file contents for each export file}
-
-## Jobs
-{Job descriptions from the state data}
-
-## Working Directory
-{worktreePath}
+## Research Findings
+{Research output from Step 3, or "No research available" if researcher failed}
 
 ## Instructions
-Use Context7 MCP for documentation lookups. Write output to .planning/waves/{SET_ID}/{waveId}/WAVE-RESEARCH.md
-```
-
-**For parallel batches:** Spawn the rapid-wave-researcher agent for ALL waves in the batch simultaneously (multiple Agent tool calls in a single response). Wait for all to complete before proceeding to Step 4d.
-
-After agent completes:
-- Verify `.planning/waves/{SET_ID}/{waveId}/WAVE-RESEARCH.md` was created
-- If agent failed: Log the failure. For parallel batches, continue with other waves. The wave can proceed to Step 4d without research (graceful degradation).
-
-#### Step 4d: Read Research and Context
-
-- Read `.planning/waves/{SET_ID}/{waveId}/WAVE-RESEARCH.md` (if created in Step 4c)
-- Read `.planning/sets/OWNERSHIP.json` (if exists)
-
-#### Step 4e: Spawn Wave Planner Agent
-
-Display progress: "Creating wave plan for {waveId}..."
-
-Spawn the **rapid-wave-planner** agent with this task:
-
-```
-Produce WAVE-PLAN.md for wave '{waveId}' with per-job summaries, file assignments, and coordination notes.
-
-## Wave Context
-{WAVE-CONTEXT.md full contents}
-
-## Wave Research
-{WAVE-RESEARCH.md full contents, if exists}
-
-## Contract
-{CONTRACT.json full contents}
-
-## Set Overview
-{SET-OVERVIEW.md full contents, if exists}
-
-## Ownership
-{OWNERSHIP.json full contents, if exists}
-
-## Wave Jobs
-{Wave jobs JSON from state}
+1. Read the set context to understand scope and boundaries
+2. Decompose the set into 1-4 waves based on natural work boundaries:
+   - Wave 1: Foundation (types, schemas, core utilities)
+   - Wave 2+: Implementation building on Wave 1 outputs
+   - Keep wave count minimal -- prefer fewer waves with more tasks per wave
+3. For each wave, produce a PLAN.md with:
+   - Objective (what and why)
+   - Tasks with specific file paths and implementation actions
+   - Verification commands (automated where possible)
+   - Success criteria
+4. Write each PLAN.md to .planning/sets/{SET_ID}/wave-{N}-PLAN.md
+5. Ensure file ownership is exclusive across waves (no file modified in two waves)
 
 ## Working Directory
-{worktreePath}
+{projectRoot}
 
-## Output
-Write output to .planning/waves/{SET_ID}/{waveId}/WAVE-PLAN.md
+## Return Format
+Return wave_count and the list of artifacts written in your RAPID:RETURN.
 ```
 
-**For parallel batches:** Spawn the rapid-wave-planner agent for ALL waves in the batch simultaneously. Wait for all to complete before proceeding to Step 4f.
+Parse RAPID:RETURN for `wave_count` and `artifacts`.
 
-After agent completes:
-- Verify `.planning/waves/{SET_ID}/{waveId}/WAVE-PLAN.md` was created
-- If agent failed: This is a critical failure for the wave. Mark the wave as failed and skip remaining pipeline steps for it.
+Verify PLAN.md files were written by globbing `.planning/sets/${SET_ID}/wave-*-PLAN.md`.
 
-#### Step 4f: Spawn Job Planner Agents
-
-Display progress: "Creating detailed plans for {N} jobs in wave {waveId}..."
-
-Read WAVE-PLAN.md to extract job IDs and their summaries from the "## Job Summaries" section.
-
-For each job in the wave, spawn the **rapid-job-planner** agent with this task:
-
+**If planner fails:** Display error with breadcrumb. This is a critical failure.
 ```
-Produce {jobId}-PLAN.md for job '{jobId}' with detailed implementation steps.
-
-## Your Job Section
-{Job section from WAVE-PLAN.md highlighted for this specific job}
-
-## Wave Plan
-{WAVE-PLAN.md full contents}
-
-## Wave Research
-{WAVE-RESEARCH.md full contents}
-
-## Wave Context
-{WAVE-CONTEXT.md full contents}
-
-## Contract
-{CONTRACT.json full contents}
-
-## Source Files
-{Source file contents for files assigned to this job in WAVE-PLAN.md}
-
-## Working Directory
-{worktreePath}
-
-## Output
-Write output to .planning/waves/{SET_ID}/{waveId}/{jobId}-PLAN.md
+init [done] > start-set [done] > discuss-set [done] > plan-set [FAILED: planner agent error] > execute-set > review > merge
+What's done: Research complete, planner failed.
+Next: Investigate error and re-run /rapid:plan-set {SET_INDEX}
 ```
+STOP.
 
-**Spawning strategy within a single wave:**
-- If 3 or more jobs: Spawn all job planner agents in parallel (multiple Agent tool calls in a single response).
-- If 1-2 jobs: Spawn them sequentially.
+---
 
-**For parallel batches:** Process job planners for each wave independently. All waves in the batch can have their job planners running simultaneously.
+## Step 5: Spawn Verifier Agent (Spawn 3 of 3-4)
 
-After all agents complete:
-- Use Glob to check `.planning/waves/{SET_ID}/{waveId}/*-PLAN.md` for created files
-- If any job planner failed, mark the specific job as failed but continue with available plans
+Display: "Verifying plans for set '{SET_ID}' ({wave_count} waves)..."
 
-#### Step 4g: Spawn Plan Verifier Agent
-
-Display progress: "Verifying job plans for {waveId}..."
-
-Read all context needed for the verifier:
-- `.planning/waves/{SET_ID}/{waveId}/WAVE-PLAN.md`
-- `.planning/waves/{SET_ID}/{waveId}/WAVE-CONTEXT.md`
-- All JOB-PLAN.md files from `.planning/waves/{SET_ID}/{waveId}/` (use Glob to discover `*-PLAN.md` files, then Read each one)
-
-Concatenate all JOB-PLAN.md contents with `### {filename}` headers between them.
+Read all wave PLAN.md files from `.planning/sets/${SET_ID}/wave-*-PLAN.md`.
 
 Spawn the **rapid-plan-verifier** agent with this task:
 
 ```
-Verify all job plans for wave '{waveId}' in set '{SET_ID}'.
+Verify all wave plans for set '{SET_ID}'.
 
-## Wave Plan
-{WAVE-PLAN.md full contents}
+## Set Context
+- CONTEXT.md: {full CONTEXT.md contents}
+- CONTRACT.json: {full CONTRACT.json contents}
 
-## Wave Context
-{WAVE-CONTEXT.md full contents}
-
-## Job Plans
-{All JOB-PLAN.md file contents, each preceded by ### {filename} header}
+## Wave Plans
+{For each wave-N-PLAN.md: ### wave-{N}-PLAN.md\n{full contents}\n}
 
 ## Working Directory
-{worktreePath}
+{projectRoot}
 
 ## Output
-Write VERIFICATION-REPORT.md to .planning/waves/{SET_ID}/{waveId}/VERIFICATION-REPORT.md
+Write VERIFICATION-REPORT.md to .planning/sets/{SET_ID}/VERIFICATION-REPORT.md
 ```
 
-**For parallel batches:** Spawn the rapid-plan-verifier agent for ALL waves in the batch simultaneously. Wait for all to complete before proceeding to Step 4h.
-
-After agent completes:
-- Read the structured return to extract `verdict` and `failingJobs`
-- Read `.planning/waves/{SET_ID}/{waveId}/VERIFICATION-REPORT.md`
-
-#### Step 4h: Handle Verification Verdict
-
-**If verdict is PASS or PASS_WITH_GAPS:**
-- PASS: Display "Wave {waveId}: All plans verified."
-- PASS_WITH_GAPS: Display gaps as a warning, then continue.
-- Proceed to Step 4i.
-
-**If verdict is FAIL:**
-Display the failures from the VERIFICATION-REPORT.md Summary section.
-
-Use AskUserQuestion:
-```
-"Plan verification FAILED for wave {waveId}:
-
-{Summary section from VERIFICATION-REPORT.md}
-
-Failing jobs: {failingJobs list}
-
-What would you like to do?"
-Options:
-- "Re-plan failing jobs" -- "Re-spawn job planners only for the failing jobs, then re-verify"
-- "Override" -- "Proceed despite failures (you take responsibility for plan issues)"
-- "Cancel" -- "Stop the entire planning chain (wave stays in discussing state)"
-```
-
-If "Re-plan failing jobs":
-  - Re-read WAVE-PLAN.md and WAVE-RESEARCH.md
-  - For each failing job, re-spawn the **rapid-job-planner** agent
-  - After re-plan completes, re-spawn the **rapid-plan-verifier** agent
-  - If re-verification also returns FAIL: present AskUserQuestion with ONLY "Override" and "Cancel" (no second re-plan -- maximum 1 re-plan attempt)
-  - If re-verification returns PASS or PASS_WITH_GAPS: continue to Step 4i
-
-If "Override":
-  Log: "Proceeding with plan verification overridden by user for wave {waveId}."
-  Continue to Step 4i.
-
-If "Cancel":
-  **STOP the entire planning chain.** Commit any already-completed wave artifacts (for re-entry). Display:
-  "Planning cancelled. Investigate issues in VERIFICATION-REPORT.md. Completed waves are saved for re-entry.
-  Re-run: /rapid:plan-set {SET_INDEX}"
-  STOP.
-
-#### Step 4i: Contract Validation Gate
-
-Display progress: "Validating job plans against contracts for wave {waveId}..."
-
-```bash
-# (env preamble here)
-VALIDATION_RESULT=$(node "${RAPID_TOOLS}" wave-plan validate-contracts "${SET_ID}" "${WAVE_ID}")
-echo "$VALIDATION_RESULT"
-```
-
-Parse the JSON output (`violations`, `autoFixes`, `jobPlansFound`).
-
-**PASS (no violations, no autoFixes):** Display "Wave {waveId}: All job plans validated against contracts."
-
-**PASS_WITH_WARNINGS (autoFixes but no major violations):** Display auto-fixes noted. Continue.
-
-**FAIL (major violations):** For each major violation, use AskUserQuestion:
-```
-"Contract violation in wave {waveId}: {violation.detail}"
-Options:
-- "Fix plan" -- "Remove the problematic import/export and find an alternative approach"
-- "Update contract" -- "Add the missing export to the source set's contract"
-- "Override" -- "Proceed anyway -- may be resolved during execution"
-```
-Handle each choice inline (same as wave-plan Step 6).
-
-#### Step 4j: Transition Wave to Planning
-
-All validation complete for this wave. Transition the wave state:
-
-```bash
-# (env preamble here)
-node "${RAPID_TOOLS}" state transition wave "${MILESTONE_ID}" "${SET_ID}" "${WAVE_ID}" planning
-```
-
-Display: "Wave {waveId}: transitioned to planning state."
-
-This transition is deferred until AFTER verification and contract validation pass. A FAIL verdict blocks the wave from entering `planning` state.
-
-### Parallel Batch Execution Pattern
-
-When a batch contains 2+ waves, interleave agent dispatches at each pipeline step:
-
-1. **Step 4a:** Display banners for all waves in batch
-2. **Step 4b:** Read context for all waves in batch
-3. **Step 4c:** Spawn rapid-wave-researcher for all waves in batch simultaneously (parallel Agent calls)
-4. Wait for all researchers to complete
-5. **Step 4d:** Read research outputs for all waves
-6. **Step 4e:** Spawn rapid-wave-planner for all waves in batch simultaneously
-7. Wait for all planners to complete
-8. **Step 4f:** Spawn rapid-job-planner agents for all waves (parallel within and across waves)
-9. Wait for all job planners to complete
-10. **Step 4g:** Spawn rapid-plan-verifier for all waves in batch simultaneously
-11. Wait for all verifiers to complete
-12. **Step 4h:** Handle verification verdicts for each wave (sequentially -- FAIL gates need user input)
-13. **Step 4i:** Run contract validation for each wave
-14. **Step 4j:** Transition each passing wave to planning state
-
-If any wave in a parallel batch fails at verification (Step 4h) and the user cancels:
-- Sibling waves that have already passed verification continue to completion (Steps 4i-4j)
-- Only subsequent dependent batches are blocked
-- The entire chain stops after the current batch finishes its passing waves
+Parse RAPID:RETURN for `verdict` (PASS, PASS_WITH_GAPS, FAIL) and `failingJobs`.
 
 ---
 
-## Step 5: Commit All Artifacts and Present Results
+## Step 6: Handle Verification Verdict
 
-After all batches complete (or after partial completion if chain was stopped):
+### PASS
+
+Display: "All plans verified." Continue to Step 7.
+
+### PASS_WITH_GAPS
+
+Display gaps as warnings. Continue to Step 7.
+
+### FAIL (first time)
+
+Display: "Verification failed. Re-planning failing waves..."
+
+Identify which wave(s) failed from the verifier's report.
+
+Re-spawn the **rapid-planner** agent (Spawn 4 of 4) with additional context:
+
+```
+Re-plan the failing waves for set '{SET_ID}'.
+
+## Verification Failures
+{VERIFICATION-REPORT.md summary section with failure details}
+
+## Original Plans
+{The failing wave PLAN.md contents}
+
+## Set Context
+- CONTEXT.md: {full CONTEXT.md contents}
+- CONTRACT.json: {full CONTRACT.json contents}
+- SET-OVERVIEW.md: {full SET-OVERVIEW.md contents}
+- DEFINITION.md: {full DEFINITION.md contents}
+
+## Instructions
+Fix the issues identified in the verification report. Rewrite ONLY the failing wave PLAN.md files.
+Write updated PLAN.md files to .planning/sets/{SET_ID}/wave-{N}-PLAN.md (overwrite).
+
+## Working Directory
+{projectRoot}
+```
+
+After re-plan, re-spawn the **rapid-plan-verifier** (same as Step 5).
+
+**If re-verification also FAILs:** Display issues to the user. Use AskUserQuestion:
+
+```
+"Plan verification failed after 1 retry for set '{SET_ID}'.
+
+Issues: {summary from VERIFICATION-REPORT.md}
+
+Options:
+- "Override" -- "Proceed despite failures"
+- "Cancel" -- "Stop planning. Investigate issues manually."
+```
+
+- If "Override": Continue to Step 7.
+- If "Cancel": Display error breadcrumb and STOP.
+
+---
+
+## Step 7: Contract Validation (PLAN-05 enforcement point 1)
+
+For each wave PLAN.md, run contract validation:
+
+```bash
+# (env preamble here)
+node "${RAPID_TOOLS}" wave-plan validate-contracts "${SET_ID}" "wave-${N}"
+```
+
+Parse results. Log violations as advisory warnings in the output (do NOT block planning).
+
+**If violations exist:** Display them but continue. Note: "Contract violations are advisory during planning. They will be enforced during execution and merge."
+
+**If no violations:** Display: "All wave plans validated against contracts."
+
+---
+
+## Step 8: State Transition
+
+Transition set from 'discussing' to 'planning':
+
+```bash
+# (env preamble here)
+node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" planning
+```
+
+---
+
+## Step 9: Commit and Present Results
 
 ### Commit Planning Artifacts
 
 ```bash
 # (env preamble here)
-git add ".planning/waves/${SET_ID}/"
-if [ -f ".planning/sets/${SET_ID}/VALIDATION-REPORT.md" ]; then
-  git add ".planning/sets/${SET_ID}/VALIDATION-REPORT.md"
-fi
-WAVES_PLANNED=$(ls -d ".planning/waves/${SET_ID}/"*/ 2>/dev/null | xargs -I{} basename {} | tr '\n' ', ' | sed 's/,$//')
-git commit -m "plan(${SET_ID}): plan-set complete -- waves planned: ${WAVES_PLANNED}"
+git add ".planning/sets/${SET_ID}/wave-*-PLAN.md"
+git add ".planning/sets/${SET_ID}/VERIFICATION-REPORT.md"
+git commit -m "plan-set(${SET_ID}): ${WAVE_COUNT} waves planned, verification ${VERDICT}"
 ```
 
-### Display Summary
+### Display Brief Confirmation
+
+Display brief confirmation (no full plan preview):
 
 ```
-"Set planning complete for '{SET_ID}'!
+Set '{SET_ID}' planning complete.
 
-Waves planned:
-  - {waveId-1}: {N} jobs, verification {PASS/PASS_WITH_GAPS/FAIL (overridden)}
-  - {waveId-2}: {N} jobs, verification {PASS/PASS_WITH_GAPS/FAIL (overridden)}
-  ...
-
-Planning batches used: {N} ({M} parallel, {K} sequential)
-Overrides: {list of overridden waves, or 'None'}
-Skipped (already planned): {list, or 'None'}"
+Waves: {wave_count}
+Verification: {PASS/PASS_WITH_GAPS/FAIL (overridden)}
+Agent spawns: {3 or 4}
 ```
 
 ### Next Step
 
-Display the next step (no AskUserQuestion -- Phase 28 decision):
+Display the next step:
 
-> **Next step:** `/rapid:execute {SET_INDEX}`
+> **Next step:** `/rapid:execute-set {SET_INDEX}`
+
+### Progress Breadcrumb
+
+Display the progress breadcrumb:
+
+```
+init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set > review > merge
+```
 
 ---
 
 ## Error Handling
 
 ### Critical Errors (STOP immediately)
+
 - `RAPID_TOOLS` not set: Show error and suggest `/rapid:install`
 - `STATE.json` missing or invalid: Show error and suggest `/rapid:init`
-- Any wave in `pending` state: Fail fast with list of undiscussed waves and suggest `/rapid:discuss`
+- Set status `pending`: Fail fast -- suggest `/rapid:discuss-set` first
+- CONTEXT.md missing: Fail fast -- suggest `/rapid:discuss-set` first
 
-### Wave Pipeline Failures
-- Research agent fails: Continue without research (graceful degradation -- planner works from WAVE-CONTEXT.md alone)
-- Wave planner agent fails: Mark wave as failed, skip remaining pipeline steps for that wave
-- Job planner agent fails: Continue with available plans, note missing plans in verification
-- Plan verifier returns FAIL: User gate -- re-plan / override / cancel (cancel stops entire chain)
-- Contract validation FAIL: User gate per violation -- fix / update contract / override
+### Pipeline Failures
 
-### Chain Stop Behavior (Locked Decision)
-- If any wave's planning fails and user selects "Cancel": the ENTIRE chain stops
-- No skip-and-continue -- partial planning is committed for re-entry
-- Re-run `/rapid:plan-set {SET_INDEX}` triggers smart re-entry (skips completed waves)
+- Researcher agent fails: Continue without research (graceful degradation -- planner works from CONTEXT.md alone)
+- Planner agent fails: Critical failure -- STOP with error breadcrumb
+- Verifier returns FAIL: Re-plan once, then offer Override/Cancel
+- Contract validation violations: Advisory only -- display but continue
 
-### Parallel Batch Failure Behavior
-- If one wave in a parallel batch fails: sibling waves continue to completion
-- Only subsequent dependent batches are blocked by the failed wave
-- Completed waves within the batch are committed and transitioned normally
+### Error Breadcrumb
 
-## Anti-Patterns to Avoid
+On ANY error, show the progress breadcrumb with the failure point and what was completed:
 
-- **Do NOT invoke `/rapid:wave-plan` skill.** Skills cannot call other skills. Plan-set replicates the pipeline inline.
-- **Do NOT write persistent analyzer artifacts.** RAPID:RETURN from wave-analyzer is ephemeral (user decision). No DEPENDENCY-GRAPH.json or similar.
-- **Do NOT attempt sub-sub-agent spawning.** Agents spawned by plan-set cannot spawn their own sub-agents. Plan-set dispatches all Agent tool calls directly.
-- **Do NOT skip undiscussed waves.** Fail fast if ANY wave is `pending`. All waves must be discussed before set-level planning.
-- **Do NOT transition wave state before verification passes.** State transition is deferred to Step 4j (after verification and contract validation).
+```
+init [done] > start-set [done] > discuss-set [done] > plan-set [FAILED: {brief error}] > execute-set > review > merge
+What's done: {what completed before failure}
+Next: {what to run to recover}
+```
+
+---
+
+## Anti-Patterns -- Do NOT Do These
+
+- Do NOT spawn per-wave researchers or per-wave planners. ONE researcher and ONE planner for the entire set. The planner handles wave decomposition internally.
+- Do NOT spawn a separate agent for wave analysis or wave decomposition. The planner agent does this as part of its planning pass.
+- Do NOT spawn separate agents for producing per-job plans. The planner produces per-wave PLAN.md files with task-level detail directly.
+- Do NOT reference retired v2 agents. The only valid agents in v3 are rapid-research-stack (researcher), rapid-planner (planner), and rapid-plan-verifier (verifier).
+- Do NOT use AskUserQuestion during the normal flow (fully autonomous). Only use it on final verification failure after retry.
+- Do NOT reference per-wave state transitions. Use `state transition set` only (discussing -> planning).
+- Do NOT write v2-style plan artifacts. The only plan output format is wave-{N}-PLAN.md in `.planning/sets/{set-id}/`.
+- Do NOT show full plan contents in the confirmation output. Brief confirmation only (per locked decision).
+- Do NOT attempt sub-sub-agent spawning. All Agent tool calls come from this SKILL.md, not from spawned agents.
+- Do NOT read or write wave-level context files. Set-level CONTEXT.md is the only input.
 
 ## Key Principles
 
-- **Single command:** User runs `/rapid:plan-set 1` and all waves in set 1 are planned without further manual wave-plan invocations.
-- **Dependency-aware sequencing:** Independent waves plan in parallel batches; dependent waves plan sequentially with predecessor artifacts available.
-- **Full pipeline per wave:** Research -> Wave Plan -> Job Plans -> Verify -> Validate -> Transition. Each stage depends on the prior output.
-- **Smart re-entry:** Re-running `/rapid:plan-set` after partial completion skips already-planned waves and plans only remaining `discussing` waves.
-- **Fail fast:** Pending (undiscussed) waves abort the entire command immediately.
-- **Chain-stop on cancel:** If any wave's verification fails and user cancels, the entire chain stops. Partial progress is saved.
+- **Single command:** User runs `/rapid:plan-set 1` and all waves in the set are planned in one pass without further manual invocations.
+- **3-step pipeline:** Researcher -> Planner -> Verifier. The planner handles wave decomposition AND per-wave PLAN.md production in a single pass.
+- **2-4 agent spawns total:** 1 researcher + 1 planner + 1 verifier = 3 spawns. If re-plan needed: +1 planner = 4 spawns max.
+- **Fully autonomous:** No user checkpoints during normal flow. The only user interaction is on final verification failure after one retry.
+- **Graceful degradation:** Researcher failure does not block planning. The planner can work from CONTEXT.md alone.
+- **Contract enforcement point 1 (PLAN-05):** Contract validation runs after planning completes, before state transition. Violations are advisory during planning -- they will be enforced during execution and merge.
+- **Brief confirmation:** Output at end shows set name, wave count, verification status, and next command. No full plan preview.
+- **Progress breadcrumb:** Shown at completion and in every error message.
+- **Set-level state only:** One state transition: discussing -> planning. No wave-level or job-level state.
 - **All CLI calls via RAPID_TOOLS:** Never edit STATE.json directly. All state transitions via `node "${RAPID_TOOLS}" state transition` CLI.
