@@ -149,13 +149,17 @@ Plans:
 **Requirements**: CMD-01, CMD-02, CMD-03, CMD-04, PLAN-01, PLAN-02, PLAN-03, PLAN-04, PLAN-05, UX-01, UX-02
 **Success Criteria** (what must be TRUE):
   1. /init handles greenfield and brownfield projects with a 5-researcher pipeline (including Domain/UX) and produces a roadmap
-  2. /start-set creates a worktree scaffold for a set and chains into discuss-set
+  2. /start-set creates a worktree scaffold for a set and suggests discuss-set as next step
   3. /discuss-set captures user vision into CONTEXT.md, and /discuss-set --skip auto-generates CONTEXT.md from roadmap + codebase scan
   4. /plan-set produces one PLAN.md per wave in a single pass with 2-4 agent spawns (not 15-20), and interface contracts are defined between dependent sets
   5. Contract enforcement runs at three points: after planning, during execution, before merge
   6. Error messages show progress breadcrumbs (what is done, what is missing, what to run next) and each command suggests exactly one next action
-**Plans**: TBD
-**Research flag**: Needs research-phase for plan-set specifically (validate single-agent planning for multi-wave scenarios)
+**Plans**: 3 plans
+Plans:
+- [ ] 43-01-PLAN.md — Rewrite init SKILL.md with batched discovery, sets-only roadmap, CONTRACT.json at init (wave 1)
+- [ ] 43-02-PLAN.md — Rewrite start-set and discuss-set SKILL.md with set-level discussion and --skip (wave 1)
+- [ ] 43-03-PLAN.md — Rewrite plan-set SKILL.md with 3-step pipeline and contract enforcement (wave 2)
+**Research flag**: Research complete (single-agent planning validated in 43-RESEARCH.md)
 
 ### Phase 44: Execution & Auxiliary Skills
 **Goal**: Users can execute planned sets and use auxiliary commands (/quick, /add-set, /new-version) for workflow flexibility
@@ -193,6 +197,6 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 40. CLI Surface & Utility Commands | 4/4 | Complete    | 2026-03-12 | - |
 | 41. Build Pipeline & Generated Agents | 2/2 | Complete    | 2026-03-12 | - |
 | 42. Core Agent Rewrites | 4/4 | Complete    | 2026-03-13 | - |
-| 43. Planning & Discussion Skills | v3.0 | 0/TBD | Not started | - |
+| 43. Planning & Discussion Skills | v3.0 | 0/3 | Not started | - |
 | 44. Execution & Auxiliary Skills | v3.0 | 0/TBD | Not started | - |
 | 45. Documentation, Contracts & Cleanup | v3.0 | 0/TBD | Not started | - |
