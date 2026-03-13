@@ -23,7 +23,7 @@ const CORE_AGENTS = ['planner', 'executor', 'merger', 'reviewer'];
 
 // Per-role core module mapping (must match production ROLE_CORE_MAP in rapid-tools.cjs)
 // Updated for 3-module core: identity, returns, conventions
-// Removed 5 v2 roles: wave-researcher, wave-planner, job-planner, job-executor, wave-analyzer
+// Removed 5 v2 roles: wave-researcher, wave-planner, job-planner, job-executor, wave-analyzer; v3.1 removed set-init/wave-plan CLI commands
 const EXPECTED_ROLE_CORE_MAP = {
   'planner':              ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
   'executor':             ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
