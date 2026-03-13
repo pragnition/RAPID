@@ -383,7 +383,8 @@ Next: {what to run to recover}
 ## Anti-Patterns -- Do NOT Do These
 
 - Do NOT reference v2 per-job plan files -- v3 uses per-wave PLAN.md only
-- Do NOT use per-wave or per-job state transitions -- v3 has set-level state only
+- Do NOT let parallel executors run git commit -- only the orchestrator commits
+- Do NOT dispatch dependent waves in the same parallel batch -- respect DAG ordering
 - Do NOT detect or prompt for dual execution modes -- v3 uses subagents only
 - Do NOT use any v2 execute or wave-plan CLI subcommands (all removed in v3)
 - Do NOT run per-wave reconciliation reports or lean review per wave
