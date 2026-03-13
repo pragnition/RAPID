@@ -1,5 +1,5 @@
 ---
-description: Initialize a set for development -- creates isolated worktree, generates scoped CLAUDE.md, and runs set planner
+description: Initialize a set for development -- creates isolated worktree and generates scoped CLAUDE.md
 allowed-tools: Bash(rapid-tools:*), Read, AskUserQuestion, Agent
 ---
 
@@ -166,12 +166,26 @@ After the agent completes:
 
 ## Step 5: Next Step
 
-The set's first wave is wave 1. Display:
+Display:
 
-> **Next step:** `/rapid:discuss-set {setIndex}.1`
-> *(Discuss wave 1 of {setId})*
+> **Next step:** `/rapid:discuss-set {setIndex}`
+> *(Discuss set {setId})*
 
 Where `{setIndex}` is the numeric index of the set just initialized (obtained from the resolve step earlier in this skill).
+
+Display the suggestion and stop. The user will invoke discuss-set when ready.
+
+---
+
+## Step 6: Progress Breadcrumb
+
+After the next-step suggestion, render the progress breadcrumb:
+
+```
+init [done] > start-set [done] > discuss-set > plan-set > execute-set > review > merge
+```
+
+"init" and "start-set" are marked as done. All others are pending (no marker).
 
 ---
 
@@ -181,3 +195,13 @@ Where `{setIndex}` is the numeric index of the set just initialized (obtained fr
 - If STATE.json is missing: Show error and suggest running `/rapid:init` first
 - If git is not available: Show error and suggest installing git
 - All errors should be descriptive with clear next steps for the user
+
+**Error breadcrumb:** On any error, show the breadcrumb with the failure point:
+
+```
+init [done] > start-set [FAILED] > discuss-set > plan-set > execute-set > review > merge
+Error: {error message}
+Next: Fix the issue and re-run /rapid:start-set {setIndex}
+```
+
+Show what is done, what failed, and what to run next.
