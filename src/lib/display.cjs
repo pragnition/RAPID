@@ -18,16 +18,11 @@ const ANSI = {
  * Stage-to-verb mapping for banner display.
  * Each stage gets an uppercase action verb.
  *
- * Legacy (8): init, set-init, discuss, wave-plan, plan-set, execute, review, merge
- * v3.0  (6): start-set, discuss-set, execute-set, new-version, add-set, quick
+ * Active stages (10): init, plan-set, review, merge, start-set, discuss-set, execute-set, new-version, add-set, quick
  */
 const STAGE_VERBS = {
   'init': 'INITIALIZING',
-  'set-init': 'PREPARING',
-  'discuss': 'DISCUSSING',
-  'wave-plan': 'PLANNING',
   'plan-set': 'PLANNING SET',
-  'execute': 'EXECUTING',
   'review': 'REVIEWING',
   'merge': 'MERGING',
   'start-set': 'STARTING SET',
@@ -43,17 +38,13 @@ const STAGE_VERBS = {
  * Uses bright background variants (10Xm) for better readability with white text.
  *
  * Groups:
- *   Planning stages (init, set-init, discuss, wave-plan, plan-set, start-set, discuss-set, new-version, add-set) = bright blue bg
- *   Execution stages (execute, execute-set, quick) = bright green bg
+ *   Planning stages (init, plan-set, start-set, discuss-set, new-version, add-set) = bright blue bg
+ *   Execution stages (execute-set, quick) = bright green bg
  *   Review stages (review, merge) = bright red bg
  */
 const STAGE_BG = {
   'init': '\x1b[104m',        // bright blue
-  'set-init': '\x1b[104m',    // bright blue
-  'discuss': '\x1b[104m',     // bright blue
-  'wave-plan': '\x1b[104m',   // bright blue
   'plan-set': '\x1b[104m',    // bright blue
-  'execute': '\x1b[102m',     // bright green
   'review': '\x1b[101m',      // bright red
   'merge': '\x1b[101m',       // bright red
   'start-set': '\x1b[104m',   // bright blue (planning stage)
@@ -70,7 +61,7 @@ const STAGE_BG = {
  * Produces a fixed-width, ANSI-colored banner string with the RAPID brand,
  * stage verb, and optional target. Always ends with ANSI reset code.
  *
- * @param {string} stage - Stage name (init, set-init, discuss, wave-plan, plan-set, execute, review, merge, start-set, discuss-set, execute-set, new-version, add-set, quick)
+ * @param {string} stage - Stage name (init, plan-set, review, merge, start-set, discuss-set, execute-set, new-version, add-set, quick)
  * @param {string} [target] - Optional target description (e.g., "Wave 1.1", "auth-system")
  * @returns {string} Formatted banner string with ANSI escape codes, or fallback for unknown stages
  */
