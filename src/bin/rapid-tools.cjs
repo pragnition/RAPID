@@ -75,6 +75,8 @@ Commands:
   merge rollback <set> [--force]  Revert a merged set's merge commit (cascade check)
   merge merge-state <set>         Show MERGE-STATE.json for a set
   merge prepare-context <set>    Assemble launch briefing for set-merger subagent
+  set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
+  set-init list-available        List pending sets without worktrees
   review scope <set-id> <wave-id> [--branch <b>]     Scope wave files for review
   review log-issue <set-id> <wave-id>                Log issue from stdin JSON
   review list-issues <set-id> [--status <s>]         List all issues for a set
@@ -86,7 +88,6 @@ Commands:
 
 Options:
   --help, -h             Show this help message
-  --version, -V          Show RAPID version
 `;
 
 /**
@@ -114,12 +115,6 @@ async function main() {
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     process.stdout.write(USAGE);
     if (args.length === 0) process.exit(1);
-    return;
-  }
-
-  if (args[0] === '--version' || args[0] === '-V') {
-    const { getVersion } = require('../lib/version.cjs');
-    process.stdout.write(`RAPID v${getVersion()}\n`);
     return;
   }
 
@@ -190,6 +185,10 @@ async function main() {
 
     case 'merge':
       await handleMerge(cwd, subcommand, args.slice(2));
+      break;
+
+    case 'set-init':
+      await handleSetInit(cwd, subcommand, args.slice(2));
       break;
 
     case 'review':
@@ -1296,6 +1295,69 @@ async function handleWorktree(cwd, subcommand, args) {
 
     default:
       error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, status-v2, generate-claude-md, delete-branch`);
+      process.stdout.write(USAGE);
+      process.exit(1);
+  }
+}
+
+async function handleSetInit(cwd, subcommand, args) {
+  const fs = require('fs');
+  const path = require('path');
+  const wt = require('../lib/worktree.cjs');
+
+  switch (subcommand) {
+    case 'create': {
+      const setName = args[0];
+      if (!setName) {
+        error('Usage: rapid-tools set-init create <set-name>');
+        process.exit(1);
+      }
+      try {
+        const result = await wt.setInit(cwd, setName);
+        process.stdout.write(JSON.stringify(result) + '\n');
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ created: false, error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'list-available': {
+      // Read STATE.json, find all sets with status 'pending' that don't have worktrees
+      try {
+        const sm = require('../lib/state-machine.cjs');
+        const stateResult = await sm.readState(cwd);
+        if (!stateResult || !stateResult.valid) {
+          process.stdout.write(JSON.stringify({ available: [], error: 'STATE.json not found or invalid' }) + '\n');
+          break;
+        }
+
+        const registry = wt.loadRegistry(cwd);
+        const registeredSets = new Set(Object.keys(registry.worktrees));
+
+        const available = [];
+        for (const milestone of stateResult.state.milestones) {
+          for (const set of (milestone.sets || [])) {
+            if (set.status === 'pending' && !registeredSets.has(set.id)) {
+              available.push({
+                id: set.id,
+                milestone: milestone.id,
+                status: set.status,
+              });
+            }
+          }
+        }
+
+        process.stdout.write(JSON.stringify({ available }) + '\n');
+      } catch (err) {
+        process.stdout.write(JSON.stringify({ available: [], error: err.message }) + '\n');
+        process.exit(1);
+      }
+      break;
+    }
+
+    default:
+      error(`Unknown set-init subcommand: ${subcommand}. Use: create, list-available`);
       process.stdout.write(USAGE);
       process.exit(1);
   }

@@ -11,37 +11,6 @@ const PLANNING_DIR = '.planning';
 const STATE_FILE = 'STATE.json';
 
 /**
- * Migrate old present-participle status values to past-tense equivalents.
- * Walks ALL milestones and all sets within each milestone.
- * Idempotent -- safe to call multiple times on the same state object.
- * Operates in-memory only; does NOT write to disk.
- *
- * @param {object} stateObj - Raw parsed STATE.json (before Zod validation)
- * @returns {object} The same object, mutated in-place with migrated status values
- */
-function migrateState(stateObj) {
-  const STATUS_MAP = {
-    discussing: 'discussed',
-    planning: 'planned',
-    executing: 'executed',
-  };
-
-  if (stateObj && Array.isArray(stateObj.milestones)) {
-    for (const milestone of stateObj.milestones) {
-      if (Array.isArray(milestone.sets)) {
-        for (const set of milestone.sets) {
-          if (set.status && STATUS_MAP[set.status]) {
-            set.status = STATUS_MAP[set.status];
-          }
-        }
-      }
-    }
-  }
-
-  return stateObj;
-}
-
-/**
  * Create an initial ProjectState for a new project.
  *
  * @param {string} projectName - Name of the project
@@ -86,7 +55,6 @@ async function readState(cwd) {
     return { valid: false, errors: [{ message: `Invalid JSON: ${err.message}` }] };
   }
 
-  migrateState(parsed);
   const result = ProjectState.safeParse(parsed);
   if (result.success) {
     return { valid: true, state: result.data };
@@ -248,8 +216,8 @@ async function addMilestone(cwd, milestoneId, milestoneName, carryForwardSets = 
  * Returns an array of { type, message } objects. NEVER modifies STATE.json.
  *
  * Checks:
- * - CONTEXT.md exists when status is planned/executed/complete/merged
- * - Wave plans directory exists when status is executed/complete/merged
+ * - CONTEXT.md exists when status is planning/executing/complete/merged
+ * - Wave plans directory exists when status is executing/complete/merged
  *
  * @param {string} cwd - Project root directory
  * @param {string} milestoneId - Milestone ID
@@ -271,8 +239,8 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
 
   const warnings = [];
 
-  // Check: if status says planned or later, CONTEXT.md should exist
-  if (['planned', 'executed', 'complete', 'merged'].includes(set.status)) {
+  // Check: if status says planning or later, CONTEXT.md should exist
+  if (['planning', 'executing', 'complete', 'merged'].includes(set.status)) {
     const contextPath = path.join(cwd, '.planning', 'sets', setId, 'CONTEXT.md');
     if (!fs.existsSync(contextPath)) {
       warnings.push({
@@ -282,8 +250,8 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
     }
   }
 
-  // Check: if status says executed or later, wave plans dir should exist
-  if (['executed', 'complete', 'merged'].includes(set.status)) {
+  // Check: if status says executing or later, wave plans dir should exist
+  if (['executing', 'complete', 'merged'].includes(set.status)) {
     const wavesDir = path.join(cwd, '.planning', 'waves', setId);
     if (!fs.existsSync(wavesDir)) {
       warnings.push({
@@ -366,7 +334,6 @@ function commitState(cwd, message) {
 }
 
 module.exports = {
-  migrateState,
   createInitialState,
   readState,
   writeState,

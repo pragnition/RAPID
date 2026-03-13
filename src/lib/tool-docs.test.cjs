@@ -44,17 +44,6 @@ describe('TOOL_REGISTRY', () => {
       assert.ok(key in TOOL_REGISTRY, `Missing required key: ${key}`);
     }
   });
-
-  it('does not contain any deprecated command keys', () => {
-    const deprecated = [
-      'set-init-create', 'set-init-list',
-      'wave-plan-resolve', 'wave-plan-create-dir',
-      'wave-plan-validate', 'wave-plan-list-jobs',
-    ];
-    for (const key of deprecated) {
-      assert.ok(!(key in TOOL_REGISTRY), `Deprecated key "${key}" should not be in TOOL_REGISTRY`);
-    }
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -109,22 +98,6 @@ describe('ROLE_TOOL_MAP', () => {
         assert.ok(
           key in TOOL_REGISTRY,
           `ROLE_TOOL_MAP["${role}"] references unknown key "${key}" not in TOOL_REGISTRY`
-        );
-      }
-    }
-  });
-
-  it('no role references deprecated tool keys', () => {
-    const deprecated = [
-      'set-init-create', 'set-init-list',
-      'wave-plan-resolve', 'wave-plan-create-dir',
-      'wave-plan-validate', 'wave-plan-list-jobs',
-    ];
-    for (const [role, keys] of Object.entries(ROLE_TOOL_MAP)) {
-      for (const key of keys) {
-        assert.ok(
-          !deprecated.includes(key),
-          `ROLE_TOOL_MAP["${role}"] references deprecated key "${key}"`
         );
       }
     }
