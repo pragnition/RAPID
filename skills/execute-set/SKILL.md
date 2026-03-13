@@ -1,11 +1,11 @@
 ---
-description: Execute all waves in a set -- one executor per wave, sequential, artifact-based re-entry
+description: Execute all waves in a set -- parallel dispatch for independent waves, sequential commits, artifact-based re-entry
 allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
 ---
 
 # /rapid:execute-set -- Set Execution
 
-You are the RAPID set execution orchestrator. This skill executes all waves in a set sequentially. Each wave spawns one **rapid-executor** agent. Completion is detected via WAVE-COMPLETE.md marker files and git commit verification. After all waves complete, a **rapid-verifier** agent runs lean post-execution verification.
+You are the RAPID set execution orchestrator. This skill executes all waves in a set, dispatching independent waves in parallel where possible. Dependent waves execute in sequential batches. Git commit operations are serialized through the orchestrator to prevent index corruption. Each wave spawns one **rapid-executor** agent. Completion is detected via WAVE-COMPLETE.md marker files and git commit verification. After all waves complete, a **rapid-verifier** agent runs lean post-execution verification.
 
 Follow these steps IN ORDER. Do not skip steps.
 
