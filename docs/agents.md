@@ -1,95 +1,136 @@
 # Agent Reference
 
-RAPID uses 31 specialized agents across the development lifecycle. Each agent has a narrow focus, receives structured inputs, and returns structured outputs. Agents fall into four types based on their role in the system.
+RAPID v3.0 uses 26 specialized agents across the development lifecycle. Each agent has a narrow focus, receives structured inputs, and returns structured outputs. Skills dispatch agents directly -- there is no central coordination agent.
 
 ## Agent Types
 
 | Type | Description |
 |------|-------------|
-| **Orchestrator** | Has the Agent tool and spawns other agents to coordinate multi-step workflows |
-| **Pipeline** | Runs multi-step pipelines and may trigger further agent dispatch through the orchestrator |
+| **Core** | Hand-written agents that define the v3.0 user experience. Never overwritten by the build pipeline. |
 | **Research** | Uses WebSearch/WebFetch to gather external knowledge before synthesis |
+| **Pipeline** | Runs multi-step pipelines and may trigger further agent dispatch |
 | **Leaf** | Terminal agent that does focused work and returns results directly |
 
-## Dispatch Tree
+## Spawn Hierarchy
 
 This tree shows the full spawn hierarchy -- which skills dispatch which agents.
 
 ```
 User
-  └── rapid-orchestrator (coordinates all phases)
-        ├── /rapid:init
-        │     ├── rapid-codebase-synthesizer
-        │     ├── rapid-research-stack ─────────┐
-        │     ├── rapid-research-features ──────┤ (5 parallel)
-        │     ├── rapid-research-architecture ──┤
-        │     ├── rapid-research-pitfalls ──────┤
-        │     ├── rapid-research-oversights ────┘
-        │     ├── rapid-research-synthesizer
-        │     └── rapid-roadmapper
-        ├── /rapid:context
-        │     └── rapid-context-generator
-        ├── /rapid:plan
-        │     └── rapid-planner
-        ├── /rapid:set-init
-        │     └── rapid-set-planner
-        ├── /rapid:plan-set
-        │     ├── rapid-wave-analyzer
-        │     ├── rapid-wave-researcher
-        │     ├── rapid-wave-planner
-        │     └── rapid-plan-verifier
-        ├── /rapid:wave-plan
-        │     ├── rapid-wave-researcher
-        │     ├── rapid-wave-planner
-        │     ├── rapid-job-planner (per job)
-        │     └── rapid-plan-verifier
-        ├── /rapid:execute
-        │     ├── rapid-job-executor (parallel per job)
-        │     └── rapid-bugfix (--fix-issues mode)
-        ├── /rapid:review
-        │     ├── rapid-scoper
-        │     ├── rapid-unit-tester
-        │     ├── rapid-bug-hunter ──> rapid-devils-advocate ──> rapid-judge
-        │     ├── rapid-uat
-        │     └── rapid-bugfix (fix accepted bugs)
-        └── /rapid:merge
-              ├── rapid-set-merger (per set)
-              └── rapid-conflict-resolver (per mid-confidence conflict)
+  |
+  +-- /rapid:init
+  |     |-- rapid-codebase-synthesizer
+  |     |-- rapid-research-stack -------+
+  |     |-- rapid-research-features ----+
+  |     |-- rapid-research-architecture-+ (6 parallel)
+  |     |-- rapid-research-pitfalls ----+
+  |     |-- rapid-research-oversights --+
+  |     |-- rapid-research-ux ----------+
+  |     |-- rapid-research-synthesizer
+  |     +-- rapid-roadmapper
+  |
+  +-- /rapid:start-set
+  |     +-- rapid-set-planner
+  |
+  +-- /rapid:discuss-set --skip
+  |     +-- rapid-research-stack
+  |
+  +-- /rapid:plan-set
+  |     |-- rapid-research-stack
+  |     |-- rapid-planner
+  |     +-- rapid-plan-verifier
+  |
+  +-- /rapid:execute-set
+  |     |-- rapid-executor (x waves, sequential)
+  |     +-- rapid-verifier
+  |
+  +-- /rapid:review
+  |     |-- rapid-scoper
+  |     |-- rapid-unit-tester (x concern groups)
+  |     |-- rapid-bug-hunter (x concern groups)
+  |     |-- rapid-devils-advocate
+  |     |-- rapid-judge
+  |     |-- rapid-bugfix
+  |     +-- rapid-uat
+  |
+  +-- /rapid:merge
+  |     |-- rapid-set-merger (per conflicting set)
+  |     +-- rapid-conflict-resolver (per mid-confidence conflict)
+  |
+  +-- /rapid:quick
+  |     |-- rapid-planner
+  |     |-- rapid-plan-verifier
+  |     +-- rapid-executor
+  |
+  +-- /rapid:new-version
+  |     |-- rapid-research-stack -------+
+  |     |-- rapid-research-features ----+
+  |     |-- rapid-research-architecture-+ (6 parallel)
+  |     |-- rapid-research-pitfalls ----+
+  |     |-- rapid-research-oversights --+
+  |     |-- rapid-research-ux ----------+
+  |     |-- rapid-research-synthesizer
+  |     +-- rapid-roadmapper
+  |
+  +-- /rapid:context
+        +-- rapid-context-generator
 ```
 
-**Legacy/internal agents** not shown in the tree: `rapid-executor` (v1.0 set-level executor, replaced by `rapid-job-executor`), `rapid-merger` (v1.0 single-agent merger, replaced by `rapid-set-merger`), `rapid-verifier` (internal verification), and `rapid-reviewer` (deep code review, not currently dispatched by any skill).
+## Agent Catalog by Category
 
-## Agent Catalog by Lifecycle Stage
+### Core (4 agents)
 
-### Cross-cutting
+Hand-written agents that define the v3.0 user experience. Marked with `SKIP_GENERATION` in the build pipeline.
 
-#### rapid-orchestrator
-**Orchestrator** | blue
+#### rapid-planner
+**Core** | blue
 
-Coordinates planning, execution, verification, and merge across all RAPID phases.
+Decomposes work into per-wave PLAN.md files with tasks, file assignments, and acceptance criteria.
 
 | | |
 |---|---|
-| Spawned by | User (top-level entry point) |
-| Inputs | User commands (`/rapid:*`), project state |
-| Outputs | Dispatches to all other agents via the Agent tool |
+| Spawned by | `/rapid:plan-set`, `/rapid:quick` |
+| Inputs | Set context, CONTEXT.md, research findings, CONTRACT.json |
+| Outputs | Per-wave PLAN.md files |
+
+#### rapid-executor
+**Core** | green
+
+Implements tasks from a wave's PLAN.md, committing atomically per task. Produces WAVE-COMPLETE.md markers.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:execute-set`, `/rapid:quick` |
+| Inputs | Wave PLAN.md content, worktree path |
+| Outputs | Implementation commits, WAVE-COMPLETE.md marker |
+
+#### rapid-merger
+**Core** | green
+
+Runs 5-level conflict detection and 4-tier resolution cascade for set merges into main.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:merge` |
+| Inputs | Set branch, main branch, merge-tree analysis |
+| Outputs | RAPID:RETURN with semantic_conflicts, resolutions, escalations, all_resolved |
+
+#### rapid-reviewer
+**Core** | red
+
+Performs prioritized 5-level code review with 3-tier severity assessment (Blocking, Fixable, Suggestion). Verdict vocabulary: APPROVE, CHANGES, BLOCK.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:review` |
+| Inputs | Changed files, review criteria |
+| Outputs | Review verdict with categorized findings |
 
 ---
 
-### Setup
+### Research (7 agents)
 
-Agents spawned during `/rapid:init` and `/rapid:context` to bootstrap a project.
-
-#### rapid-codebase-synthesizer
-**Research** | blue
-
-Analyzes existing codebase structure and patterns to inform project planning.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:init` |
-| Inputs | Project root directory, file tree |
-| Outputs | Codebase analysis document (structure, patterns, conventions) |
+Investigate the project domain during `/rapid:init` and `/rapid:new-version`. All 6 topic researchers run in parallel; the synthesizer runs after they complete.
 
 #### rapid-research-stack
 **Research** | blue
@@ -98,9 +139,9 @@ Investigates technology stack options and recommendations for the project domain
 
 | | |
 |---|---|
-| Spawned by | `/rapid:init` |
+| Spawned by | `/rapid:init`, `/rapid:new-version`, `/rapid:plan-set`, `/rapid:discuss-set --skip` |
 | Inputs | Project context, domain description |
-| Outputs | Stack research findings (libraries, frameworks, trade-offs) |
+| Outputs | STACK.md -- libraries, frameworks, trade-offs |
 
 #### rapid-research-features
 **Research** | blue
@@ -109,9 +150,9 @@ Analyzes feature requirements and implementation approaches using external sourc
 
 | | |
 |---|---|
-| Spawned by | `/rapid:init` |
+| Spawned by | `/rapid:init`, `/rapid:new-version` |
 | Inputs | Project context, feature requirements |
-| Outputs | Feature research findings (implementation patterns, prior art) |
+| Outputs | FEATURES.md -- implementation patterns, prior art |
 
 #### rapid-research-architecture
 **Research** | blue
@@ -120,9 +161,9 @@ Evaluates architecture patterns and design decisions for the project domain.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:init` |
+| Spawned by | `/rapid:init`, `/rapid:new-version` |
 | Inputs | Project context, architecture constraints |
-| Outputs | Architecture research findings (patterns, trade-offs, recommendations) |
+| Outputs | ARCHITECTURE.md -- patterns, trade-offs, recommendations |
 
 #### rapid-research-pitfalls
 **Research** | blue
@@ -131,9 +172,9 @@ Identifies common pitfalls and anti-patterns to avoid in the project domain.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:init` |
+| Spawned by | `/rapid:init`, `/rapid:new-version` |
 | Inputs | Project context, technology choices |
-| Outputs | Pitfall research findings (risks, mitigations, cautionary patterns) |
+| Outputs | PITFALLS.md -- risks, mitigations, cautionary patterns |
 
 #### rapid-research-oversights
 **Research** | blue
@@ -142,159 +183,37 @@ Discovers overlooked concerns and edge cases that other research agents may miss
 
 | | |
 |---|---|
-| Spawned by | `/rapid:init` |
+| Spawned by | `/rapid:init`, `/rapid:new-version` |
 | Inputs | Project context, existing research findings |
-| Outputs | Oversight research findings (edge cases, forgotten requirements) |
+| Outputs | OVERSIGHTS.md -- edge cases, forgotten requirements |
+
+#### rapid-research-ux
+**Research** | blue
+
+Researches user experience direction and patterns for the project domain.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:init`, `/rapid:new-version` |
+| Inputs | Project context, user requirements |
+| Outputs | UX.md -- UX direction and patterns |
 
 #### rapid-research-synthesizer
 **Pipeline** | blue
 
-Combines findings from all five parallel research agents into coherent recommendations.
+Combines findings from all 6 parallel research agents into coherent recommendations.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:init` |
-| Inputs | All research agent outputs (stack, features, architecture, pitfalls, oversights) |
-| Outputs | Synthesized RESEARCH.md with unified recommendations |
-
-#### rapid-roadmapper
-**Leaf** | blue
-
-Creates phased implementation roadmaps from requirements and research findings.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:init` |
-| Inputs | Synthesized research, project requirements, codebase analysis |
-| Outputs | ROADMAP.md with phased milestones and requirement traceability |
-
-#### rapid-context-generator
-**Leaf** | blue
-
-Produces project context documents for agent consumption during planning and execution.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:context` |
-| Inputs | Project state, user discussion notes |
-| Outputs | CONTEXT.md capturing decisions, constraints, and implementation direction |
+| Spawned by | `/rapid:init`, `/rapid:new-version` |
+| Inputs | All research outputs (STACK.md, FEATURES.md, ARCHITECTURE.md, PITFALLS.md, OVERSIGHTS.md, UX.md) |
+| Outputs | RESEARCH.md -- unified recommendations |
 
 ---
 
-### Planning
+### Review (7 agents)
 
-Agents spawned during `/rapid:plan`, `/rapid:set-init`, `/rapid:plan-set`, and `/rapid:wave-plan` to decompose work.
-
-#### rapid-planner
-**Leaf** | blue
-
-Decomposes work into parallelizable sets based on the roadmap and requirements.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:plan` |
-| Inputs | ROADMAP.md, phase requirements, existing project state |
-| Outputs | Phase plan with set definitions and dependency ordering |
-
-#### rapid-set-planner
-**Leaf** | blue
-
-Decomposes milestones into parallelizable development sets with file ownership boundaries.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:set-init` |
-| Inputs | Phase plan, milestone scope, codebase analysis |
-| Outputs | Set definitions with wave structure and file ownership |
-
-#### rapid-wave-analyzer
-**Leaf** | blue
-
-Determines wave dependencies via LLM analysis of wave contexts and file relationships.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:plan-set` |
-| Inputs | Set structure, wave contexts, file dependency graph |
-| Outputs | Wave dependency analysis with ordering recommendations |
-
-#### rapid-wave-researcher
-**Research** | blue
-
-Investigates implementation specifics for a wave using codebase analysis and external sources.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:wave-plan`, `/rapid:plan-set` |
-| Inputs | Wave context, file list, implementation questions |
-| Outputs | Wave-specific research findings (APIs, patterns, integration points) |
-
-#### rapid-wave-planner
-**Leaf** | blue
-
-Produces high-level per-job plans for a wave based on research and wave context.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:wave-plan`, `/rapid:plan-set` |
-| Inputs | Wave context, wave research findings, file ownership |
-| Outputs | WAVE-PLAN.md with job definitions and file assignments |
-
-#### rapid-job-planner
-**Leaf** | blue
-
-Creates detailed implementation plans for a single job within a wave.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:wave-plan` |
-| Inputs | Wave plan, job scope, file ownership list |
-| Outputs | JOB-PLAN.md with task-level implementation steps |
-
-#### rapid-plan-verifier
-**Leaf** | blue
-
-Validates job plans for coverage, implementability, and consistency before execution.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:wave-plan`, `/rapid:plan-set` |
-| Inputs | All JOB-PLAN.md files for a wave, wave context |
-| Outputs | Verification report (coverage gaps, conflicts, recommendations) |
-
----
-
-### Execution
-
-Agents spawned during `/rapid:execute` to implement planned work.
-
-#### rapid-job-executor
-**Leaf** | green
-
-Implements a single job within a wave per JOB-PLAN.md. Commits atomically per task within the set's worktree.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:execute` |
-| Inputs | JOB-PLAN.md content, file ownership list, worktree path |
-| Outputs | RAPID:RETURN (COMPLETE/CHECKPOINT/BLOCKED) with artifacts and commits |
-
-#### rapid-bugfix
-**Leaf** | green
-
-Fixes accepted bugs from the review pipeline with atomic commits.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:execute --fix-issues`, `/rapid:review` (fix accepted bugs) |
-| Inputs | Accepted bug findings with file paths and descriptions |
-| Outputs | RAPID:RETURN (COMPLETE/BLOCKED) with fix commits |
-
----
-
-### Review
-
-Agents spawned during `/rapid:review` to validate execution quality.
+Run the adversarial review pipeline during `/rapid:review`.
 
 #### rapid-scoper
 **Leaf** | blue
@@ -316,7 +235,7 @@ Generates test plans and writes/runs tests against the set's implementation.
 |---|---|
 | Spawned by | `/rapid:review` |
 | Inputs | Concern group files, acceptance criteria |
-| Outputs | Test plan, test files, execution results (pass/fail counts) |
+| Outputs | Test plan, test files, pass/fail results |
 
 #### rapid-bug-hunter
 **Leaf** | yellow
@@ -327,7 +246,7 @@ Performs static analysis and identifies bugs across concern groups.
 |---|---|
 | Spawned by | `/rapid:review` |
 | Inputs | Concern group files, codebase context |
-| Outputs | Bug findings with severity, file locations, and evidence |
+| Outputs | Bug findings with severity, file locations, evidence |
 
 #### rapid-devils-advocate
 **Leaf** | purple
@@ -349,7 +268,18 @@ Rules on contested findings with ACCEPTED/DISMISSED/DEFERRED verdicts.
 |---|---|
 | Spawned by | `/rapid:review` |
 | Inputs | Bug findings + advocate assessments |
-| Outputs | Final rulings (ACCEPTED/DISMISSED/DEFERRED) with rationale |
+| Outputs | Final rulings with rationale |
+
+#### rapid-bugfix
+**Leaf** | green
+
+Fixes accepted bugs from the review pipeline with atomic commits.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:review` |
+| Inputs | Accepted bug findings with file paths and descriptions |
+| Outputs | Targeted fix commits |
 
 #### rapid-uat
 **Leaf** | cyan
@@ -364,14 +294,14 @@ Generates and executes acceptance test plans to validate user-facing behavior.
 
 ---
 
-### Merge
+### Merge (2 agents)
 
-Agents spawned during `/rapid:merge` to integrate completed sets into the main branch.
+Handle conflict detection and resolution during `/rapid:merge`.
 
 #### rapid-set-merger
 **Pipeline** | green
 
-Runs detection, resolution, and gate validation for a single set merge into main.
+Runs detection, resolution, and contract validation for a single set merge into main.
 
 | | |
 |---|---|
@@ -386,56 +316,82 @@ Deep analysis and resolution of mid-confidence merge conflicts escalated by the 
 
 | | |
 |---|---|
-| Spawned by | `/rapid:merge` (via set-merger escalation, confidence 0.3-0.8) |
+| Spawned by | `/rapid:merge` (via set-merger escalation, confidence 0.3-0.7) |
 | Inputs | Conflict diff, file context, semantic analysis from set-merger |
 | Outputs | Resolution with confidence score; auto-accepted if >= 0.7, escalated if < 0.7 |
 
 ---
 
-### Internal / Legacy
+### Utility (5 agents)
 
-Agents kept for backward compatibility or internal use.
+Support planning, verification, and project setup.
 
-#### rapid-executor
-**Leaf** | green -- *Legacy*
+#### rapid-roadmapper
+**Leaf** | blue
 
-Set-level executor from v1.0. Replaced by `rapid-job-executor` which operates at the finer-grained job level.
-
-| | |
-|---|---|
-| Spawned by | `/rapid:execute` (legacy path) |
-| Inputs | Set-level plan, worktree path |
-| Outputs | RAPID:RETURN with implementation commits |
-
-#### rapid-merger
-**Leaf** | green -- *Legacy*
-
-Single-agent merger from v1.0. Replaced by `rapid-set-merger` + `rapid-conflict-resolver` pipeline.
+Creates implementation roadmaps from requirements and research findings. Proposes sets with dependency ordering.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:merge` (legacy path) |
-| Inputs | Set branch, main branch |
-| Outputs | Merge result with semantic conflict detection |
+| Spawned by | `/rapid:init`, `/rapid:new-version` |
+| Inputs | Synthesized research, project requirements, codebase analysis |
+| Outputs | ROADMAP.md with sets and dependency ordering |
+
+#### rapid-set-planner
+**Leaf** | blue
+
+Produces SET-OVERVIEW.md with the set's scope, file ownership, and approach.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:start-set` |
+| Inputs | Set definition, milestone scope, codebase analysis |
+| Outputs | SET-OVERVIEW.md with scope and file ownership |
+
+#### rapid-plan-verifier
+**Leaf** | blue
+
+Validates plans for coverage, implementability, and consistency before execution.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:plan-set`, `/rapid:quick` |
+| Inputs | All PLAN.md files for a set, set context |
+| Outputs | Verification report (coverage gaps, conflicts, recommendations) |
 
 #### rapid-verifier
-**Leaf** | blue -- *Internal*
+**Leaf** | blue
 
-Verifies task completion via filesystem checks. Used internally for post-execution validation.
-
-| | |
-|---|---|
-| Spawned by | Internal verification pipeline |
-| Inputs | Task completion criteria, file paths |
-| Outputs | Verification report (pass/fail per criterion) |
-
-#### rapid-reviewer
-**Leaf** | red -- *Internal*
-
-Performs deep code review before merge. Defined but not currently dispatched by any active skill.
+Verifies task completion via filesystem checks. Runs after all waves complete during execution.
 
 | | |
 |---|---|
-| Spawned by | Not currently dispatched |
-| Inputs | Changed files, review criteria |
-| Outputs | Review verdict with findings |
+| Spawned by | `/rapid:execute-set` |
+| Inputs | Set objectives, completion criteria |
+| Outputs | Post-execution verification report |
+
+#### rapid-codebase-synthesizer
+**Research** | blue
+
+Analyzes existing codebase structure and patterns to inform project planning.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:init`, `/rapid:context` |
+| Inputs | Project root directory, file tree |
+| Outputs | Codebase analysis document (structure, patterns, conventions) |
+
+---
+
+### Context (1 agent)
+
+#### rapid-context-generator
+**Leaf** | blue
+
+Produces project context documents for agent consumption during planning and execution.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:context` |
+| Inputs | Project state, codebase scan |
+| Outputs | CLAUDE.md + context documents (CODEBASE.md, ARCHITECTURE.md, CONVENTIONS.md, STYLE_GUIDE.md) |

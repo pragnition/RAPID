@@ -1,126 +1,73 @@
 # State Machines
 
-RAPID tracks three entity types -- sets, waves, and jobs -- each with its own lifecycle. Every state transition is validated against a strict transition map before it can take effect. The canonical source of truth is `src/lib/state-transitions.cjs`.
+RAPID v3.0 tracks one entity type -- sets -- with a single lifecycle. Every state transition is validated against a strict transition map before it can take effect. The canonical source of truth is `src/lib/state-transitions.cjs`.
 
-## Set Lifecycle
+## SetStatus Lifecycle
 
 A set progresses through six stages, advancing as skills complete their work.
 
 ```
-pending ──> planning ──> executing ──> reviewing ──> merging ──> complete
+pending --> discussing --> planning --> executing --> complete --> merged
 ```
 
-| Transition | Triggered by |
-|------------|-------------|
-| pending -> planning | `/rapid:set-init` starts decomposing the set into waves |
-| planning -> executing | `/rapid:execute` begins dispatching job agents |
-| executing -> reviewing | `/rapid:review` starts the review pipeline |
-| reviewing -> merging | `/rapid:merge` begins integration into main |
-| merging -> complete | Merge pipeline finishes successfully |
+| Transition | Triggered By | Description |
+|------------|-------------|-------------|
+| pending --> discussing | `/rapid:discuss-set` | Discussion begins to capture implementation vision |
+| discussing --> planning | `/rapid:plan-set` | Planning pipeline starts producing PLAN.md files |
+| planning --> executing | `/rapid:execute-set` | Execution begins with per-wave executor agents |
+| executing --> complete | `/rapid:execute-set` | All waves complete and verification passes |
+| complete --> merged | `/rapid:merge` | Set branch merged into main |
 
-`complete` is a terminal state -- no transitions out.
+`merged` is the terminal state -- no transitions out.
 
-## Wave Lifecycle
+### Key Properties
 
-Waves have a richer lifecycle that includes discussion, reconciliation, and a retry path from failure.
+- **Independence:** Sets are fully independent. No state transition rejects based on another set's status. Sets can be started, executed, reviewed, and merged in any order.
+- **No derived status:** In v3.0, set status is explicit -- it is set directly by the skill that advances the lifecycle. There is no status derivation from children.
+- **Validation:** Every transition is checked against the transition map. Invalid transitions (e.g., `pending` --> `executing`) are rejected with an error.
 
-```
-pending ──> discussing ──> planning ──> executing ──> reconciling ──> complete
-                                            │                          ^
-                                            v                          │
-                                         failed ──────────────────────>┘
-                                                      (retry)
-```
+## SetStatus Enum
 
-| Transition | Triggered by |
-|------------|-------------|
-| pending -> discussing | `/rapid:discuss` opens collaborative discussion on the wave |
-| discussing -> planning | `/rapid:wave-plan` begins creating job plans |
-| planning -> executing | Job dispatch starts for this wave |
-| executing -> reconciling | All jobs complete or reach terminal state |
-| reconciling -> complete | Post-wave reconciliation succeeds |
-| executing -> failed | Derived from job statuses (any failed, none executing) |
-| failed -> executing | Re-running `/rapid:execute` retries the wave |
+The valid status values for sets:
 
-The `failed -> executing` retry path allows re-dispatching failed jobs without restarting the entire set.
+**SetStatus:** `pending`, `discussing`, `planning`, `executing`, `complete`, `merged`
 
-## Job Lifecycle
+## State Persistence
 
-Jobs have the simplest lifecycle -- they either complete or fail, with a retry option.
+### Atomic Writes
 
-```
-pending ──> executing ──> complete
-                │
-                v
-             failed ──> executing (retry)
-```
+State is persisted as `.planning/STATE.json`. Every state mutation follows the transaction pattern:
 
-| Transition | Triggered by |
-|------------|-------------|
-| pending -> executing | Job agent dispatched by the execute skill |
-| executing -> complete | Job agent returns RAPID:RETURN with COMPLETE status |
-| executing -> failed | Job agent returns RAPID:RETURN with BLOCKED status or missing return marker |
-| failed -> executing | Re-running `/rapid:execute` retries the failed job |
+1. Read STATE.json
+2. Validate preconditions (current status allows the transition)
+3. Perform work
+4. Write STATE.json atomically via temp-file-then-rename
 
-## Derived Status Rules
+The temp-file-then-rename pattern prevents partial writes -- either the full new state is written or the old state remains intact.
 
-Wave and set statuses can be derived automatically from their children's statuses. This keeps parent entities in sync without requiring explicit transitions.
+### File-Level Locking
 
-### Wave status (derived from jobs)
+State writes are protected by file-level locking via `src/lib/lock.cjs`. Only one agent can hold the state lock at a time. Lock files are stored in `.planning/.locks/` (gitignored) and auto-expire after 5 minutes (configurable via `lock_timeout_ms` in config.json).
 
-The wave status is computed from its jobs using these rules, evaluated in order:
+Lock name: `state`
 
-1. **No jobs** -> `pending`
-2. **All jobs pending** -> `pending`
-3. **All jobs complete** -> `complete`
-4. **Any job failed AND no job executing** -> `failed`
-5. **Otherwise** -> `executing`
+### Crash Recovery
 
-A derived status only applies if it represents forward progression -- it never regresses a wave to an earlier state (for example, a wave in `reconciling` will not revert to `executing` from derived status).
+RAPID preserves a crash recovery triad:
 
-### Set status (derived from waves)
+1. **detectCorruption** -- Validates STATE.json against the schema. Returns diagnostic information if the state is malformed or missing.
 
-The set status is computed from its waves using simpler rules:
+2. **recoverFromGit** -- Restores the last committed version of STATE.json from git history:
+   ```bash
+   git checkout HEAD -- .planning/STATE.json
+   ```
 
-1. **No waves** -> `pending`
-2. **All waves pending** -> `pending`
-3. **All waves complete** -> `complete`
-4. **Otherwise** -> `executing`
+3. **Atomic writes** -- The temp-file-then-rename pattern ensures crashes during writes leave a valid state file (either old or new, never partial).
 
-Any active wave (discussing, planning, executing, reconciling, or failed) counts as "in progress" from the set's perspective.
+### Bootstrapping
 
-## Status Enums
+Every command bootstraps exclusively from STATE.json and disk artifacts. No conversation context is required -- the system is fully self-contained after a `/clear`. Commands read STATE.json to determine what has been done and what needs to happen next.
 
-These are the valid status values for each entity type, defined in `src/lib/state-schemas.cjs`:
+---
 
-**SetStatus:** `pending`, `planning`, `executing`, `reviewing`, `merging`, `complete`
-
-**WaveStatus:** `pending`, `discussing`, `planning`, `executing`, `reconciling`, `complete`, `failed`
-
-**JobStatus:** `pending`, `executing`, `complete`, `failed`
-
-## State Schema
-
-The full project state is a nested hierarchy validated by Zod schemas:
-
-```
-ProjectState
-  ├── version (always 1)
-  ├── projectName
-  ├── currentMilestone
-  ├── milestones[]
-  │     ├── id, name
-  │     └── sets[]
-  │           ├── id, status (SetStatus)
-  │           └── waves[]
-  │                 ├── id, status (WaveStatus)
-  │                 └── jobs[]
-  │                       ├── id, status (JobStatus)
-  │                       ├── startedAt?, completedAt?
-  │                       ├── commitSha?
-  │                       └── artifacts[]
-  ├── lastUpdatedAt
-  └── createdAt
-```
-
-State is persisted as `.planning/STATE.json` and protected by file-level locking during writes. See `src/lib/state-schemas.cjs` for the full Zod definitions.
+Next: [Troubleshooting](troubleshooting.md)

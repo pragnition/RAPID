@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common issues you may encounter while using RAPID and how to resolve them.
+Common issues you may encounter while using RAPID v3.0 and how to resolve them.
 
 ---
 
@@ -22,7 +22,7 @@ Make sure both your shell profile (e.g., `~/.bashrc`, `~/.zshrc`, `~/.config/fis
 
 ### Stale lock files
 
-**Symptom:** Commands hang indefinitely or print `[RAPID] Lock "state-machine" compromised`.
+**Symptom:** Commands hang or print `[RAPID] Lock "state" compromised`.
 
 **Cause:** An agent crashed mid-operation, leaving a lock directory in `.planning/.locks/`. This prevents other agents from acquiring the lock.
 
@@ -45,13 +45,23 @@ See [State Machines](state-machines.md) for details on how state writes are prot
 **Fix:** Diagnose the issue first, then recover from git:
 
 ```bash
-node "${RAPID_TOOLS}" state detect-corruption
-node "${RAPID_TOOLS}" state recover
+node "$(echo ~)/path/to/rapid-tools.cjs" state detect-corruption
+node "$(echo ~)/path/to/rapid-tools.cjs" state recover
 ```
 
 Recovery runs `git checkout HEAD -- .planning/STATE.json` to restore the last committed version. If you made intentional manual edits, they will be lost.
 
-See [State Machines](state-machines.md) for the full state schema and transition rules.
+---
+
+### execute-set fails mid-wave
+
+**Symptom:** `/rapid:execute-set` crashes or an executor agent fails partway through a wave.
+
+**Cause:** The executor agent hit its context window limit, the process was interrupted, or a task could not be completed.
+
+**Fix:** Re-run `/rapid:execute-set`. The skill uses artifact-based completion detection -- it scans for WAVE-COMPLETE.md markers and existing commits to determine what is already done. Completed waves are skipped, and the first incomplete wave resumes from its last committed task.
+
+No manual state recovery is needed. The system is fully re-entrant.
 
 ---
 
@@ -79,22 +89,6 @@ This is destructive and will lose any uncommitted changes in that worktree.
 
 ---
 
-### Subagent timeout or missing return marker
-
-**Symptom:** `Warning: Job '{jobId}' returned without a RAPID:RETURN marker. Marking as failed.` Jobs appear stuck in `executing` status.
-
-**Cause:** The subagent hit its context window limit, crashed, or failed to emit the structured RAPID:RETURN marker at the end of its response.
-
-**Fix:** Smart re-entry handles this automatically. Re-run the execute command:
-
-```bash
-/rapid:execute <set-id>
-```
-
-RAPID detects stale `executing` jobs and re-dispatches them. Failed jobs are retried automatically. The system tracks job state so completed work is never re-done.
-
----
-
 ### Merge conflicts during merge pipeline
 
 **Symptom:** `git merge-tree --write-tree` returns exit code 1. A subagent is dispatched for conflict resolution, or conflicts escalate to human review.
@@ -104,8 +98,45 @@ RAPID detects stale `executing` jobs and re-dispatches them. Failed jobs are ret
 **Fix:** Follow the merge pipeline prompts. RAPID routes conflicts by confidence level:
 
 - **High confidence (> 0.8):** Auto-resolved without intervention
-- **Mid confidence (0.3 - 0.8):** Dispatched to `rapid-conflict-resolver` agent for deep analysis
+- **Mid confidence (0.3 - 0.7):** Dispatched to `rapid-conflict-resolver` agent for deep analysis
 - **Low confidence (< 0.3):** Escalated directly to you for manual resolution
 - **API-signature conflicts:** Always require human direction
 
-If integration tests fail after merge, RAPID uses bisection recovery to identify the breaking set.
+---
+
+### Contract validation failures
+
+**Symptom:** `/rapid:merge` or `/rapid:plan-set` reports contract violations. The operation is blocked.
+
+**Cause:** The set's implementation does not satisfy the interface contracts defined in CONTRACT.json. This can happen when a set modifies APIs that other sets depend on, or when planned work crosses interface boundaries.
+
+**Fix:** Review the violation details in the error output. Common resolutions:
+
+- **Missing exports:** Add the required exports to satisfy the contract
+- **Type mismatches:** Update function signatures to match the contract definition
+- **Boundary violations:** Move the violating code into the correct set's scope
+
+After fixing, re-run the blocked command.
+
+---
+
+### Worktree conflicts
+
+**Symptom:** `/rapid:start-set` fails because the worktree directory or branch already exists.
+
+**Cause:** A previous attempt to start the set was interrupted, or the set was cleaned up without removing the branch.
+
+**Fix:** Check for existing worktrees and branches:
+
+```bash
+git worktree list
+git branch -a | grep rapid/
+```
+
+Remove the stale worktree and/or branch, then retry:
+
+```bash
+git worktree remove .rapid-worktrees/<set-name>
+git branch -d rapid/<set-name>
+/rapid:start-set <set-id>
+```

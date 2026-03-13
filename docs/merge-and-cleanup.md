@@ -1,32 +1,61 @@
 # Merge and Cleanup
 
-Three skills handle merging completed sets into main, removing worktrees, and advancing to the next milestone.
+Three commands handle merging completed sets into main, removing worktrees, and advancing to the next version.
 
 ## `/rapid:merge` or `/rapid:merge <set-id>`
 
-Merges completed set branches into main via subagent delegation in DAG order. Sets within a merge wave process sequentially so each merge sees the result of the previous one.
+Merges completed set branches into main in DAG order. Sets process sequentially so each merge sees the result of the previous one.
 
-**Fast-path check** runs `git merge-tree --write-tree` before dispatching any subagent. If the merge is clean (exit code 0), the subagent is skipped entirely -- the set merges directly. This is the common case for well-isolated sets with strict file ownership.
+### Clean merge fast-path
 
-**Subagent dispatch** handles conflicting merges. A `rapid-set-merger` subagent runs 5-level conflict detection (textual, structural, dependency, API, semantic) and applies a 4-tier resolution cascade. High-confidence resolutions (T1-T2) are applied automatically. Mid-confidence conflicts (0.3-0.8) are dispatched to dedicated `rapid-conflict-resolver` agents for deeper analysis. Low-confidence conflicts (below 0.3) and API-signature conflicts go directly to the developer. Resolver results with confidence above 0.7 are auto-accepted; below 0.7, they escalate to the developer with the resolver's analysis attached.
+Before dispatching any subagent, the skill runs `git merge-tree --write-tree` to test for conflicts. If the merge is clean (exit code 0), the subagent is skipped entirely -- the set merges directly. This is the common case for well-isolated sets with strict file ownership.
 
-**Integration gates** run between merge waves. If integration tests fail, bisection recovery triggers automatically to identify the breaking set. Post-bisection, you choose to rollback the breaking set (with cascade impact detection), investigate manually, or abort.
+### Conflicting merges
 
-**Idempotent re-entry** checks MERGE-STATE.json for each set -- already-merged sets are skipped, already-resolved sets proceed directly to merge execution. Max 2 total attempts per set (initial + 1 retry). If a specific set is provided, only that set and its unmerged dependencies are processed.
+When conflicts exist, a `rapid-set-merger` subagent runs 5-level conflict detection:
 
-See [skills/merge/SKILL.md](../skills/merge/SKILL.md) for full step-by-step details.
+1. **Textual** -- Line-level conflicts in the same file
+2. **Structural** -- Incompatible code structure changes
+3. **Dependency** -- Conflicting package or import changes
+4. **API** -- Breaking interface changes between sets
+5. **Semantic** -- Logically incompatible behavior changes
+
+Resolution follows a 4-tier cascade:
+
+| Tier | Confidence | Action |
+|------|-----------|--------|
+| T1 | > 0.9 | Auto-resolved, no review needed |
+| T2 | 0.7 - 0.9 | Auto-resolved, flagged for review |
+| T3 | 0.3 - 0.7 | Dispatched to `rapid-conflict-resolver` for deep analysis |
+| T4 | < 0.3 | Escalated to developer for manual resolution |
+
+API-signature conflicts always require human direction regardless of confidence score.
+
+### Adaptive conflict resolution
+
+Mid-confidence conflicts (T3) are dispatched to dedicated `rapid-conflict-resolver` agents for deep semantic analysis. Results with confidence above 0.7 are auto-accepted; below 0.7, they escalate to the developer with the resolver's analysis attached.
+
+### Contract validation
+
+Before executing the merge, the pipeline validates that interface contracts defined in CONTRACT.json are satisfied. Contract violations block the merge.
+
+### State transition
+
+The set moves to `merged` as its terminal state after successful merge.
+
+See [skills/merge/SKILL.md](../skills/merge/SKILL.md) for full details.
 
 ## `/rapid:cleanup <set-id>`
 
-Safely removes a completed set's worktree after its work is merged. The cleanup command uses `git worktree remove`, which blocks removal if uncommitted or untracked changes exist -- this is a safety feature. If blocked, structured recovery options let you commit changes, stash them, or force-remove with double confirmation. After removal, offers optional branch deletion (`git branch -d` for safe delete, `git branch -D` for force delete of unmerged branches).
+Safely removes a completed set's worktree after its work is merged. Uses `git worktree remove`, which blocks removal if uncommitted or untracked changes exist. If blocked, structured recovery options let you commit changes, stash them, or force-remove with double confirmation. After removal, offers optional branch deletion.
 
 See [skills/cleanup/SKILL.md](../skills/cleanup/SKILL.md) for full details.
 
-## `/rapid:new-milestone`
+## `/rapid:new-version`
 
-Archives the current milestone and starts a new planning cycle. Reads current state, gathers milestone details (version, name, goals) through structured prompts, and handles unfinished sets with carry-forward options. Re-runs the full research pipeline (5 parallel research agents + synthesizer) scoped to the new milestone's goals, then the roadmapper proposes a new roadmap with sets, waves, and jobs. The roadmap goes through a propose-then-approve loop before writing to state.
+Completes the current milestone and starts a new planning cycle. Reads current state, gathers new milestone details (version, name, goals) through structured prompts, and handles unfinished sets with carry-forward options (Archive or Keep -- user-chosen, not forced). Re-runs the full 6-researcher pipeline (stack, features, architecture, pitfalls, oversights, UX) scoped to the new milestone's goals, then the roadmapper proposes a new roadmap with sets. Goes through propose-then-approve before writing to state.
 
-See [skills/new-milestone/SKILL.md](../skills/new-milestone/SKILL.md) for full details.
+See [skills/new-version/SKILL.md](../skills/new-version/SKILL.md) for full details.
 
 ---
 

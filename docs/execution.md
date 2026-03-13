@@ -1,22 +1,44 @@
 # Execution
 
-One skill handles all job execution across waves in a set, with three distinct modes of operation.
+One command handles all execution for a set, with built-in crash recovery and re-entry.
 
-## `/rapid:execute <set-id> [--fix-issues] [--retry-wave <wave-id>]`
+## `/rapid:execute-set <set-id>`
 
-Dispatches parallel subagents (one `rapid-job-executor` per job) across all waves in a set. Waves process sequentially because later waves depend on earlier ones; jobs within a wave run in parallel because they touch different files.
+Runs one `rapid-executor` agent per wave, processing waves sequentially. Within each wave, the executor implements all tasks from the wave's PLAN.md file, committing atomically per task.
 
-**Normal execution** processes each wave in order: transitions the wave to executing, loads all JOB-PLAN.md files, dispatches one subagent per job that needs work, collects RAPID:RETURN results, reconciles deliverables (file delivery, commit format), runs a lean wave review for quick issue detection, and auto-advances to the next wave. PASS and PASS_WITH_WARNINGS reconciliation results advance automatically -- only FAIL retains a user prompt with retry or cancel options.
+### Execution flow
 
-**Smart re-entry** makes execution crash-safe and idempotent. On every invocation, the skill reads STATE.json to classify each job: `complete` jobs are skipped, `failed` jobs are retried, stale `executing` jobs (from a crashed previous run) are re-dispatched, and `pending` jobs execute normally. Re-running `/rapid:execute` after an interruption picks up exactly where things left off.
+1. The skill reads all PLAN.md files to determine which waves exist and their order.
+2. For each wave, one `rapid-executor` agent is spawned with the wave's PLAN.md as input.
+3. The executor implements tasks in order, committing each completed task.
+4. A WAVE-COMPLETE.md marker is created after each wave finishes.
+5. After all waves complete, a lean `rapid-verifier` agent checks that set objectives are met.
 
-**Dual-mode dispatch** supports both subagent spawning (proven stable, one Agent tool call per job) and agent teams (faster parallel execution via Claude Code agent teams, one team per wave). Mode is detected once at startup and locked for the entire run. If agent teams fail mid-wave, the entire wave automatically falls back to subagent mode with a visible warning.
+### Artifact-based completion detection
 
-**`--fix-issues` mode** loads all open review issues for the set (from the review pipeline), presents them for confirmation, then spawns `rapid-bugfix` agents to apply targeted fixes. Each fixed issue is committed atomically and its status updated.
+The executor determines what work is done by reading planning artifacts -- not from stored state. It checks which PLAN.md files have corresponding implementation commits via WAVE-COMPLETE.md markers and git log. This design makes execution fully re-entrant.
 
-**`--retry-wave <wave-id>` mode** targets a specific wave for retry. Verifies all predecessor waves are complete, then re-executes only the target wave (retrying failed/pending jobs, skipping complete ones). After the target wave completes, continues with subsequent waves using normal auto-advance behavior.
+### Re-entry after crash
 
-See [skills/execute/SKILL.md](../skills/execute/SKILL.md) for full step-by-step details.
+On every invocation, the skill scans planning artifacts to classify each wave:
+
+- **Waves with WAVE-COMPLETE.md markers** are skipped (already done)
+- **The first incomplete wave** resumes from its last committed task
+- **Subsequent waves** execute normally
+
+Re-running `/rapid:execute-set` after an interruption picks up exactly where things left off. No manual state recovery is needed.
+
+### State transitions
+
+- `planning` --> `executing` (when execution starts)
+- `executing` --> `complete` (after verification passes)
+
+### Agents spawned
+
+- 1 `rapid-executor` per wave (sequential)
+- 1 `rapid-verifier` after all waves complete
+
+See [skills/execute-set/SKILL.md](../skills/execute-set/SKILL.md) for full details.
 
 ---
 
