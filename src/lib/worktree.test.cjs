@@ -1153,8 +1153,8 @@ describe('deriveNextActions', () => {
     const registryData = { worktrees: {} };
     const actions = worktree.deriveNextActions(stateData, registryData);
     assert.ok(Array.isArray(actions), 'should return an array');
-    const initAction = actions.find(a => a.action.includes('/set-init'));
-    assert.ok(initAction, 'should suggest /set-init for pending set without worktree');
+    const initAction = actions.find(a => a.action.includes('/rapid:start-set'));
+    assert.ok(initAction, 'should suggest /rapid:start-set for pending set without worktree');
     assert.ok(initAction.setName === 'auth', 'action should reference the set name');
   });
 
@@ -1171,8 +1171,8 @@ describe('deriveNextActions', () => {
       },
     };
     const actions = worktree.deriveNextActions(stateData, registryData);
-    const discussAction = actions.find(a => a.action.includes('/discuss'));
-    assert.ok(discussAction, 'should suggest /discuss for pending set with worktree');
+    const discussAction = actions.find(a => a.action.includes('/rapid:discuss-set'));
+    assert.ok(discussAction, 'should suggest /rapid:discuss-set for pending set with worktree');
   });
 
   it('suggests "Continue executing" for sets in executed state', () => {
@@ -1184,8 +1184,8 @@ describe('deriveNextActions', () => {
     };
     const registryData = { worktrees: { 'auth': { path: '/tmp/wt/auth' } } };
     const actions = worktree.deriveNextActions(stateData, registryData);
-    const execAction = actions.find(a => a.action.includes('/execute'));
-    assert.ok(execAction, 'should suggest /execute for executed set');
+    const execAction = actions.find(a => a.action.includes('/rapid:execute-set'));
+    assert.ok(execAction, 'should suggest /rapid:execute-set for executed set');
   });
 
   it('suggests "Clean up" for complete sets with worktree', () => {

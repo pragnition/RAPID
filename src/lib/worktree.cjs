@@ -789,13 +789,13 @@ function deriveNextActions(stateData, registryData) {
       case 'pending':
         if (!hasWorktree) {
           actions.push({
-            action: `/set-init ${set.id}`,
+            action: `/rapid:start-set ${set.id}`,
             setName: set.id,
             description: `Initialize the ${set.id} set for development`,
           });
         } else {
           actions.push({
-            action: `/discuss ${set.id}`,
+            action: `/rapid:discuss-set ${set.id}`,
             setName: set.id,
             description: `Start planning discussion for ${set.id}`,
           });
@@ -803,7 +803,7 @@ function deriveNextActions(stateData, registryData) {
         break;
       case 'executed':
         actions.push({
-          action: `/execute ${set.id}`,
+          action: `/rapid:execute-set ${set.id}`,
           setName: set.id,
           description: `Continue executing ${set.id}`,
         });
