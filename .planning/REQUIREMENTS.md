@@ -62,7 +62,7 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 
 ### Documentation
 
-- [ ] **DOC-01**: Updated README.md and DOCS.md reflecting v3.0
+- [x] **DOC-01**: Updated README.md and DOCS.md reflecting v3.0
 - [ ] **DOC-02**: Dead code removal (unused libraries, retired agents, wave/job artifacts)
 - [ ] **DOC-03**: Contract simplification (remove GATES.json, retain CONTRACT.json)
 
@@ -224,7 +224,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-02 | Phase 43 | Complete |
 | UX-03 | Phase 40 | Complete |
 | UX-04 | Phase 40 | Complete |
-| DOC-01 | Phase 45 | Pending |
+| DOC-01 | Phase 45 | Complete |
 | DOC-02 | Phase 45 | Pending |
 | DOC-03 | Phase 45 | Pending |
 
