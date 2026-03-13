@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: in-progress
-stopped_at: Completed 44-03-PLAN.md
-last_updated: "2026-03-13T04:04:52.634Z"
+stopped_at: Completed 44-02-PLAN.md
+last_updated: "2026-03-13T04:05:20.651Z"
 last_activity: 2026-03-13 -- Completed 44-03 new-version v3 rewrite
 progress:
   total_phases: 8
@@ -89,6 +89,8 @@ Recent:
 - [Phase 43]: Fixed discuss-set --skip to spawn rapid-research-stack (not non-existent rapid-researcher)
 - [Phase 44]: 6-researcher pipeline in /new-version matching /init (stack, features, architecture, pitfalls, oversights, ux)
 - [Phase 44]: Archive option in /new-version is user-chosen (Archive/Keep) not forced
+- [Phase 44]: Quick tasks excluded from STATE.json sets array to avoid polluting /status dashboard
+- [Phase 44]: Add-set uses direct STATE.json Write tool (same as /init), not a new CLI command
 
 ### Pending Todos
 
@@ -124,5 +126,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-13T04:04:17.731Z
-Stopped at: Completed 44-03-PLAN.md
+Last session: 2026-03-13T04:05:20.649Z
+Stopped at: Completed 44-02-PLAN.md
