@@ -135,11 +135,12 @@ Plans:
   5. All core agents explicitly treat sets as independent -- no agent refuses to work on a set because another set is incomplete or in a different state
   6. Orchestrator agent and role module removed from all registries (SKIP_GENERATION, ROLE_CORE_MAP, ROLE_TOOLS, ROLE_COLORS, ROLE_DESCRIPTIONS, ROLE_TOOL_MAP)
   7. core-identity.md updated with v3 workflow (init > start-set > discuss > plan-set > execute-set > review > merge) and independent sets model
-**Plans**: 3 plans
+**Plans**: 4 plans
 Plans:
 - [ ] 42-01-PLAN.md — Orchestrator removal, test updates, and core-identity.md v3 rewrite (wave 1)
 - [ ] 42-02-PLAN.md — Hand-write planner and executor role sections (wave 2)
 - [ ] 42-03-PLAN.md — Hand-write merger and reviewer role sections (wave 2)
+- [ ] 42-04-PLAN.md — Gap closure: align reviewer verdict vocabulary with merge.cjs contract (wave 3)
 **Research flag**: Research complete (coupling points between merger and merge pipeline enumerated in 42-RESEARCH.md)
 
 ### Phase 43: Planning & Discussion Skills
