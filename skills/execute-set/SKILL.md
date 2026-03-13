@@ -1,11 +1,11 @@
 ---
-description: Execute all waves in a set -- one executor per wave, sequential, artifact-based re-entry
+description: Execute all waves in a set -- parallel dispatch for independent waves, sequential commits, artifact-based re-entry
 allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
 ---
 
 # /rapid:execute-set -- Set Execution
 
-You are the RAPID set execution orchestrator. This skill executes all waves in a set sequentially. Each wave spawns one **rapid-executor** agent. Completion is detected via WAVE-COMPLETE.md marker files and git commit verification. After all waves complete, a **rapid-verifier** agent runs lean post-execution verification.
+You are the RAPID set execution orchestrator. This skill executes all waves in a set, dispatching independent waves in parallel where possible. Dependent waves execute in sequential batches. Git commit operations are serialized through the orchestrator to prevent index corruption. Each wave spawns one **rapid-executor** agent. Completion is detected via WAVE-COMPLETE.md marker files and git commit verification. After all waves complete, a **rapid-verifier** agent runs lean post-execution verification.
 
 Follow these steps IN ORDER. Do not skip steps.
 
@@ -152,19 +152,35 @@ If set is already in `executing` state: skip transition (re-entry).
 
 ---
 
-## Step 4: Execute Waves Sequentially
+## Step 4: Execute Waves
 
-For each wave N that needs execution:
+### 4a: Analyze Wave Dependencies
 
-### 4a: Display Progress
+Build a wave dependency graph from the plan files. For each wave-N-PLAN.md, check if it declares dependencies on other waves (e.g., "Depends on: Wave 1" or explicit wave dependency declarations).
+
+**Default behavior:** If no explicit inter-wave dependencies are declared, treat all waves as independent (single parallel batch containing all waves). This is safe because wave plans produced by the planner already encode dependency through file ownership -- Wave 2 builds on Wave 1's outputs.
+
+**If dependencies exist:** Group waves into parallel batches using BFS level assignment:
+- Batch 1: Waves with no dependencies (level 0)
+- Batch 2: Waves depending only on Batch 1 waves (level 1)
+- etc.
+
+Display the execution plan:
 
 ```
-Executing wave {N} of {total_waves} for set '{SET_ID}'...
+Wave execution plan:
+  Batch 1 (parallel): Wave 1, Wave 3
+  Batch 2 (parallel): Wave 2, Wave 4
+  Batch 3 (sequential): Wave 5
 ```
 
-### 4b: Spawn rapid-executor Agent
+For most sets, waves have linear dependencies (Wave 2 depends on Wave 1, etc.), which produces one wave per batch -- effectively sequential execution. This is the expected degenerate case.
 
-Spawn the **rapid-executor** agent with this task:
+### 4b: Execute Wave Batches
+
+For each batch in order:
+
+**If batch contains a single wave:** Spawn one **rapid-executor** agent with the standard task prompt (including git commit instructions):
 
 ```
 Implement wave {N} for set '{SET_ID}'.
@@ -180,9 +196,34 @@ Where type is feat|fix|refactor|test|docs|chore
 {worktreePath}
 ```
 
-### 4c: Process RAPID:RETURN
+**If batch contains multiple waves:** Spawn all **rapid-executor** agents in the batch simultaneously using parallel tool calls. Each agent receives its own wave's PLAN.md content.
 
-Parse the `<!-- RAPID:RETURN {...} -->` marker from the executor output.
+CRITICAL: Executors in parallel batches must NOT commit to git. Instead, they make file changes and report what they changed in their RAPID:RETURN. The orchestrator commits sequentially after all executors in a batch complete.
+
+For each parallel executor, use this task prompt:
+
+```
+Implement wave {N} for set '{SET_ID}'.
+
+## Your PLAN
+{Full content of wave-{N}-PLAN.md}
+
+## Commit Convention
+DO NOT run git commit. Make your file changes only.
+The orchestrator will commit your changes after verification.
+Report all modified files in your RAPID:RETURN artifacts list.
+
+## Working Directory
+{worktreePath}
+```
+
+### 4c: Process Batch Results
+
+After all executors in a batch return, parse the `<!-- RAPID:RETURN {...} -->` marker from each executor output.
+
+**For single-wave batches (sequential):**
+
+Process the RAPID:RETURN exactly as follows:
 
 **If COMPLETE:**
 
@@ -202,7 +243,8 @@ Parse the `<!-- RAPID:RETURN {...} -->` marker from the executor output.
    ```
 
 4. Display: "Wave {N}: complete."
-5. Continue to next wave.
+5. Optionally transition wave state: call `node "${RAPID_TOOLS}" state transition wave "${MILESTONE}" "${SET_ID}" "wave-{N}" executing` then `complete`
+6. Continue to next batch.
 
 **If CHECKPOINT:**
 
@@ -219,6 +261,27 @@ Parse the `<!-- RAPID:RETURN {...} -->` marker from the executor output.
 
 1. Display: "Warning: Wave {N} executor returned without RAPID:RETURN marker."
 2. Check if executor made commits anyway (`git -C {worktreePath} log --oneline main..HEAD`). If commits exist, write marker and continue. If no commits, STOP with error.
+
+**For multi-wave batches (parallel):**
+
+After ALL executors in the batch return:
+
+1. **Collect results:** Parse RAPID:RETURN from each executor.
+
+2. **Handle failures:** If ANY executor in the batch returned BLOCKED or had errors:
+   - Completed waves in the batch are still committed (their work is not lost)
+   - Failed waves are reported with their blocker
+   - Execution stops after committing successful waves
+
+3. **Sequential commit:** For each COMPLETE executor in the batch, IN WAVE ORDER:
+   a. Stage the executor's modified files: `git -C {worktreePath} add {file1} {file2} ...` (using the artifacts list from RAPID:RETURN)
+   b. Commit: `git -C {worktreePath} commit -m "feat({SET_ID}): implement wave {N}"`
+   c. Write WAVE-{N}-COMPLETE.md marker to `.planning/sets/${SET_ID}/WAVE-${N}-COMPLETE.md` (same format as single-wave batch above)
+   d. Optionally transition wave state: call `node "${RAPID_TOOLS}" state transition wave "${MILESTONE}" "${SET_ID}" "wave-{N}" executing` then `complete`
+
+4. **Continue:** Move to the next batch.
+
+This sequential commit approach prevents git index corruption. Even though waves executed in parallel, their commits are serialized through the orchestrator.
 
 ---
 
@@ -320,7 +383,8 @@ Next: {what to run to recover}
 ## Anti-Patterns -- Do NOT Do These
 
 - Do NOT reference v2 per-job plan files -- v3 uses per-wave PLAN.md only
-- Do NOT use per-wave or per-job state transitions -- v3 has set-level state only
+- Do NOT let parallel executors run git commit -- only the orchestrator commits
+- Do NOT dispatch dependent waves in the same parallel batch -- respect DAG ordering
 - Do NOT detect or prompt for dual execution modes -- v3 uses subagents only
 - Do NOT use any v2 execute or wave-plan CLI subcommands (all removed in v3)
 - Do NOT run per-wave reconciliation reports or lean review per wave
@@ -332,11 +396,12 @@ Next: {what to run to recover}
 
 ## Key Principles
 
-- **One executor per wave, sequential waves.** Each wave gets one rapid-executor agent. Waves execute in order (1, 2, 3...).
+- **One executor per wave, parallel-where-possible.** Each wave gets one rapid-executor agent. Independent waves within a batch execute concurrently. Dependent waves execute in sequential batches.
 - **Artifact-based re-entry.** WAVE-COMPLETE.md markers + git commit verification detect completed waves on re-entry. No wave/job state needed.
 - **RAPID:RETURN protocol.** Structured executor returns (COMPLETE, CHECKPOINT, BLOCKED) drive the control flow.
 - **Subagents only.** No dual-mode execution. One rapid-executor per wave via the Agent tool.
-- **Set-level state only.** Two state transitions: `planning -> executing` (at start) and `executing -> complete` (after all waves + verification).
+- **Set and wave-level state.** Set transitions: `planned -> executed` (at start) and `executed -> complete` (after all waves + verification). Wave transitions: `pending -> executing -> complete` tracked per-wave.
 - **Non-blocking verification.** GAPS.md report after execution. User decides whether to close gaps or proceed to review.
+- **Git serialization.** Parallel executors do not commit. The orchestrator commits each wave's changes sequentially after batch completion, preventing git index corruption.
 - **Auto-advance on success.** Waves auto-advance without prompting. Only CHECKPOINT or BLOCKED halts execution.
 - **Progress breadcrumbs.** Shown at completion and on every error.

@@ -50,14 +50,16 @@ describe('SetState', () => {
 
   it('has no extra fields on parsed result', () => {
     const set = SetState.parse({ id: 'auth', status: 'pending' });
-    assert.deepEqual(Object.keys(set).sort(), ['id', 'status']);
+    assert.deepEqual(Object.keys(set).sort(), ['id', 'status', 'waves']);
   });
 
-  it('strips unknown "waves" key silently', () => {
+  it('parses waves array when provided', () => {
     const set = SetState.parse({ id: 'auth', status: 'pending', waves: [{ id: 'w1' }] });
     assert.equal(set.id, 'auth');
     assert.equal(set.status, 'pending');
-    assert.equal(set.waves, undefined);
+    assert.equal(set.waves.length, 1);
+    assert.equal(set.waves[0].id, 'w1');
+    assert.equal(set.waves[0].status, 'pending');
   });
 
   it('defaults status to "pending" when omitted', () => {
@@ -158,25 +160,148 @@ describe('ProjectState', () => {
   });
 });
 
-describe('Removed exports', () => {
-  it('JobStatus is NOT exported', () => {
-    assert.equal(schemas.JobStatus, undefined);
+describe('export availability', () => {
+  it('JobStatus IS exported as a Zod schema', () => {
+    assert.notEqual(schemas.JobStatus, undefined);
+    assert.equal(typeof schemas.JobStatus.parse, 'function');
   });
 
-  it('JobState is NOT exported', () => {
-    assert.equal(schemas.JobState, undefined);
+  it('JobState IS exported as a Zod schema', () => {
+    assert.notEqual(schemas.JobState, undefined);
+    assert.equal(typeof schemas.JobState.parse, 'function');
   });
 
-  it('WaveStatus is NOT exported', () => {
-    assert.equal(schemas.WaveStatus, undefined);
+  it('WaveStatus IS exported as a Zod schema', () => {
+    assert.notEqual(schemas.WaveStatus, undefined);
+    assert.equal(typeof schemas.WaveStatus.parse, 'function');
   });
 
-  it('WaveState is NOT exported', () => {
-    assert.equal(schemas.WaveState, undefined);
+  it('WaveState IS exported as a Zod schema', () => {
+    assert.notEqual(schemas.WaveState, undefined);
+    assert.equal(typeof schemas.WaveState.parse, 'function');
   });
 
-  it('module exports exactly 4 keys', () => {
+  it('module exports exactly 8 keys', () => {
     const keys = Object.keys(schemas).sort();
-    assert.deepEqual(keys, ['MilestoneState', 'ProjectState', 'SetState', 'SetStatus']);
+    assert.deepEqual(keys, ['JobState', 'JobStatus', 'MilestoneState', 'ProjectState', 'SetState', 'SetStatus', 'WaveState', 'WaveStatus']);
+  });
+});
+
+describe('WaveStatus', () => {
+  const { WaveStatus } = schemas;
+
+  it('accepts pending, executing, complete', () => {
+    for (const s of ['pending', 'executing', 'complete']) {
+      assert.equal(WaveStatus.parse(s), s);
+    }
+  });
+
+  it('rejects set-level statuses: discussed, planned, executed', () => {
+    for (const s of ['discussed', 'planned', 'executed']) {
+      assert.throws(() => WaveStatus.parse(s), { name: 'ZodError' });
+    }
+  });
+
+  it('rejects arbitrary strings', () => {
+    assert.throws(() => WaveStatus.parse('bogus'), { name: 'ZodError' });
+  });
+});
+
+describe('JobStatus', () => {
+  const { JobStatus } = schemas;
+
+  it('accepts pending, executing, complete', () => {
+    for (const s of ['pending', 'executing', 'complete']) {
+      assert.equal(JobStatus.parse(s), s);
+    }
+  });
+
+  it('rejects set-level statuses: discussed, planned, executed', () => {
+    for (const s of ['discussed', 'planned', 'executed']) {
+      assert.throws(() => JobStatus.parse(s), { name: 'ZodError' });
+    }
+  });
+
+  it('rejects arbitrary strings', () => {
+    assert.throws(() => JobStatus.parse('bogus'), { name: 'ZodError' });
+  });
+});
+
+describe('WaveState', () => {
+  const { WaveState } = schemas;
+
+  it('parses {id: "w1"} with defaults (status=pending, jobs=[])', () => {
+    const w = WaveState.parse({ id: 'w1' });
+    assert.equal(w.id, 'w1');
+    assert.equal(w.status, 'pending');
+    assert.deepEqual(w.jobs, []);
+  });
+
+  it('parses with explicit status and jobs array', () => {
+    const w = WaveState.parse({
+      id: 'w1',
+      status: 'executing',
+      jobs: [{ id: 'j1', status: 'complete' }],
+    });
+    assert.equal(w.status, 'executing');
+    assert.equal(w.jobs.length, 1);
+    assert.equal(w.jobs[0].status, 'complete');
+  });
+
+  it('rejects missing id', () => {
+    const result = WaveState.safeParse({ status: 'pending' });
+    assert.equal(result.success, false);
+    assert.ok(result.error.issues.some(i => i.path.includes('id')));
+  });
+
+  it('rejects invalid status', () => {
+    const result = WaveState.safeParse({ id: 'w1', status: 'discussed' });
+    assert.equal(result.success, false);
+  });
+});
+
+describe('JobState', () => {
+  const { JobState } = schemas;
+
+  it('parses {id: "j1"} with defaults (status=pending)', () => {
+    const j = JobState.parse({ id: 'j1' });
+    assert.equal(j.id, 'j1');
+    assert.equal(j.status, 'pending');
+  });
+
+  it('rejects missing id', () => {
+    const result = JobState.safeParse({ status: 'pending' });
+    assert.equal(result.success, false);
+    assert.ok(result.error.issues.some(i => i.path.includes('id')));
+  });
+
+  it('rejects invalid status', () => {
+    const result = JobState.safeParse({ id: 'j1', status: 'discussed' });
+    assert.equal(result.success, false);
+  });
+});
+
+describe('SetState backward compatibility with waves', () => {
+  it('SetState.parse({id, status: pending}) produces waves: []', () => {
+    const set = SetState.parse({ id: 'test', status: 'pending' });
+    assert.deepEqual(set.waves, []);
+  });
+
+  it('SetState.parse with waves array succeeds with wave parsed', () => {
+    const set = SetState.parse({ id: 'test', status: 'pending', waves: [{ id: 'w1' }] });
+    assert.equal(set.waves.length, 1);
+    assert.equal(set.waves[0].id, 'w1');
+    assert.equal(set.waves[0].status, 'pending');
+    assert.deepEqual(set.waves[0].jobs, []);
+  });
+
+  it('round-trip JSON.parse(JSON.stringify(parsed)) preserves waves', () => {
+    const original = SetState.parse({
+      id: 'test',
+      status: 'pending',
+      waves: [{ id: 'w1', status: 'executing', jobs: [{ id: 'j1', status: 'complete' }] }],
+    });
+    const roundTripped = SetState.parse(JSON.parse(JSON.stringify(original)));
+    assert.deepEqual(roundTripped, original);
   });
 });

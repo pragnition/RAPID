@@ -135,22 +135,102 @@ describe('validateTransition - error handling', () => {
     );
   });
 
-  it('takes exactly 2 args (currentStatus, nextStatus) -- no entityType', () => {
-    assert.equal(validateTransition.length, 2, 'Should have 2 parameters');
+  it('has 3 named parameters (currentStatus, nextStatus, transitionMap)', () => {
+    // Note: JS function.length counts all named params before the first default,
+    // but since transitionMap has a default that is applied inside the body (not
+    // in the signature via =), .length reports 3. The 3rd arg is optional by convention.
+    assert.equal(validateTransition.length, 3, 'Should have 3 named parameters');
   });
 });
 
-describe('Removed exports', () => {
-  it('WAVE_TRANSITIONS is NOT exported', () => {
-    assert.equal(transitions.WAVE_TRANSITIONS, undefined);
+describe('export availability', () => {
+  it('WAVE_TRANSITIONS IS exported', () => {
+    assert.notEqual(transitions.WAVE_TRANSITIONS, undefined);
+    assert.equal(typeof transitions.WAVE_TRANSITIONS, 'object');
   });
 
-  it('JOB_TRANSITIONS is NOT exported', () => {
-    assert.equal(transitions.JOB_TRANSITIONS, undefined);
+  it('JOB_TRANSITIONS IS exported', () => {
+    assert.notEqual(transitions.JOB_TRANSITIONS, undefined);
+    assert.equal(typeof transitions.JOB_TRANSITIONS, 'object');
   });
 
-  it('module exports exactly 2 keys', () => {
+  it('module exports exactly 4 keys', () => {
     const keys = Object.keys(transitions).sort();
-    assert.deepEqual(keys, ['SET_TRANSITIONS', 'validateTransition']);
+    assert.deepEqual(keys, ['JOB_TRANSITIONS', 'SET_TRANSITIONS', 'WAVE_TRANSITIONS', 'validateTransition']);
+  });
+});
+
+describe('WAVE_TRANSITIONS map', () => {
+  const { WAVE_TRANSITIONS } = transitions;
+
+  it('has exactly 3 keys: pending, executing, complete', () => {
+    const keys = Object.keys(WAVE_TRANSITIONS).sort();
+    assert.deepEqual(keys, ['complete', 'executing', 'pending']);
+  });
+
+  it('pending -> executing only', () => {
+    assert.deepEqual(WAVE_TRANSITIONS.pending, ['executing']);
+  });
+
+  it('executing -> complete only', () => {
+    assert.deepEqual(WAVE_TRANSITIONS.executing, ['complete']);
+  });
+
+  it('complete is terminal (empty array)', () => {
+    assert.deepEqual(WAVE_TRANSITIONS.complete, []);
+  });
+});
+
+describe('JOB_TRANSITIONS map', () => {
+  const { JOB_TRANSITIONS } = transitions;
+
+  it('has exactly 3 keys: pending, executing, complete', () => {
+    const keys = Object.keys(JOB_TRANSITIONS).sort();
+    assert.deepEqual(keys, ['complete', 'executing', 'pending']);
+  });
+
+  it('pending -> executing only', () => {
+    assert.deepEqual(JOB_TRANSITIONS.pending, ['executing']);
+  });
+
+  it('executing -> complete only', () => {
+    assert.deepEqual(JOB_TRANSITIONS.executing, ['complete']);
+  });
+
+  it('complete is terminal (empty array)', () => {
+    assert.deepEqual(JOB_TRANSITIONS.complete, []);
+  });
+});
+
+describe('validateTransition with custom map', () => {
+  const { WAVE_TRANSITIONS } = transitions;
+
+  it('succeeds for valid wave transition: pending -> executing', () => {
+    assert.doesNotThrow(() => validateTransition('pending', 'executing', WAVE_TRANSITIONS));
+  });
+
+  it('throws for invalid wave transition: pending -> discussed', () => {
+    assert.throws(
+      () => validateTransition('pending', 'discussed', WAVE_TRANSITIONS),
+      /Invalid transition/
+    );
+  });
+
+  it('backward compat: pending -> discussed still succeeds without 3rd arg (uses SET_TRANSITIONS)', () => {
+    assert.doesNotThrow(() => validateTransition('pending', 'discussed'));
+  });
+
+  it('3rd arg works correctly: executing -> complete with WAVE_TRANSITIONS', () => {
+    assert.doesNotThrow(() => validateTransition('executing', 'complete', WAVE_TRANSITIONS));
+  });
+
+  it('unknown status in custom map throws with "Unknown status" message', () => {
+    assert.throws(
+      () => validateTransition('discussed', 'planned', WAVE_TRANSITIONS),
+      (err) => {
+        assert.ok(err.message.includes('Unknown status'));
+        return true;
+      }
+    );
   });
 });
