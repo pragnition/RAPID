@@ -2,19 +2,19 @@
 
 **Rapid Agentic Parallelizable and Isolatable Development**
 
-A Claude Code plugin that turns a single-player AI coding experience into a coordinated multi-developer workflow with parallel execution, isolated worktrees, and intelligent merging.
+A Claude Code plugin for coordinated parallel AI-assisted development. RAPID v3.0 gives each developer an isolated worktree with strict file ownership, connects workstreams through machine-verifiable interface contracts, and merges everything back through a multi-level conflict detection and resolution pipeline. 26 specialized agents handle the automation so developers focus on decisions, not coordination.
 
 ---
 
 ## The Problem
 
-Claude Code is powerful for a solo developer, but the moment two people use it on the same project, things fall apart fast.
+Claude Code is powerful for a solo developer. But the moment two developers use it on the same project, everything breaks.
 
-Developer A's agent rewrites a utility file while Developer B's agent is importing from it. Nobody owns any file, so agents happily overwrite each other's work. Merge conflicts pile up because there's no coordination layer between independent Claude sessions. Even when the code merges cleanly at the text level, semantic conflicts slip through undetected -- incompatible API changes, duplicated abstractions, contradictory design decisions.
+Developer A's agent rewrites a utility file while Developer B's agent imports from it. Nobody owns any file, so agents overwrite each other's work. Merge conflicts pile up because there's no coordination layer between independent Claude sessions. Even when code merges cleanly at the text level, semantic conflicts slip through -- incompatible API changes, duplicated abstractions, contradictory design decisions.
 
-The core issue isn't Claude Code itself. It's that parallel AI-assisted development needs the same things parallel human development needs: isolation, ownership, contracts, and a structured merge strategy. Without those, you're not doing parallel development -- you're doing concurrent chaos.
+The core issue is not Claude Code itself. Parallel AI-assisted development needs the same things parallel human development needs: isolation, ownership, contracts, and a structured merge strategy. Without those, you are not doing parallel development -- you are doing concurrent chaos.
 
-RAPID solves this by giving each developer an isolated worktree with strict file ownership, connecting workstreams through machine-verifiable interface contracts, and merging them back through a multi-level conflict detection and resolution pipeline. The agents coordinate so the humans don't have to.
+RAPID solves this.
 
 ## Install
 
@@ -24,201 +24,172 @@ claude plugin add fishjojo1/RAPID
 
 Then run `/rapid:install` inside Claude Code to configure your environment.
 
+## 60-Second Quickstart
+
+```
+/rapid:init              # Research project, generate roadmap, decompose into sets
+/rapid:start-set 1       # Create isolated worktree for set 1
+/rapid:discuss-set 1     # Capture your implementation vision
+/rapid:plan-set 1        # Research, plan all waves, validate contracts
+/rapid:execute-set 1     # Execute all waves (parallel agents per wave)
+/rapid:review 1          # Unit tests + adversarial bug hunt + UAT
+/rapid:merge             # Integrate completed sets to main
+```
+
+That is the full lifecycle. Each command spawns specialized agents, produces artifacts, and advances the set through its lifecycle automatically.
+
 ## How It Works
 
-RAPID structures work in a hierarchy:
+RAPID structures parallel work around **sets** -- independent workstreams that each developer owns end-to-end.
 
-- A **Milestone** (e.g., v1.0, v2.0) contains **Sets** -- independent workstreams
-- Each **Set** contains **Waves** -- dependency-ordered groups
-- Each **Wave** contains **Jobs** -- atomic work units
+**Research pipeline.** Before any code is written, `/rapid:init` spawns 6 parallel researchers (stack, features, architecture, pitfalls, oversights, UX) to analyze your project. A synthesizer combines their findings, and a roadmapper decomposes work into sets with clear boundaries.
 
-Sets run in parallel across developers -- Developer A works on the auth system while Developer B builds the dashboard -- each in their own git worktree on their own branch. Waves within a set run sequentially because later waves depend on earlier ones. Jobs within a wave run in parallel via subagents because they touch different files.
+**Interface contracts.** Sets connect through `CONTRACT.json` -- machine-verifiable specifications that define exactly which functions, types, and endpoints each set exposes. If Set A needs a function from Set B, the contract enforces that Set B actually exports it with the right signature. Contracts are validated after planning, during execution, and before merge.
 
-Before any code is written, RAPID runs a research pipeline (5 parallel agents covering stack, features, architecture, pitfalls, and cross-cutting concerns), synthesizes the findings, and generates a roadmap. The planning phase then decomposes work into sets with strict file ownership and interface contracts. Contracts are JSON Schema definitions that specify exactly which functions, types, and endpoints each set exposes to others. If Set A needs a function from Set B, the contract enforces that Set B actually exports it with the right signature.
+**Planning with validation.** `/rapid:plan-set` runs a 3-step pipeline: a researcher investigates implementation specifics, a planner produces wave-level plans, and a verifier checks for coverage gaps, contract violations, and inconsistencies. Total: 2-4 agent spawns per set.
 
-After execution, each set passes through an adversarial review pipeline -- unit testing, a three-stage bug hunt (hunter, devil's advocate, judge), and UAT with browser automation. You choose which stages to run.
+**Execution with per-wave agents.** `/rapid:execute-set` runs one executor agent per wave, sequentially through the wave dependency order. Each executor implements the planned work, commits atomically, and reports results. A verification agent checks objectives after all waves complete. If interrupted, re-running detects completed work from planning artifacts and resumes where it left off.
 
-Sets then merge into main through a pipeline that detects conflicts at 5 levels (textual, structural, dependency, API, semantic) and resolves them through a 4-tier cascade. Adaptive conflict resolution routes each conflict by confidence: high-confidence resolutions are auto-accepted, mid-confidence conflicts are dispatched to dedicated resolver agents, and low-confidence conflicts go directly to the developer. Clean merges skip conflict detection entirely via a fast-path `git merge-tree` check.
+**Adversarial review.** `/rapid:review` runs a multi-stage pipeline: a scoper identifies what to test, unit tests are generated and executed, a three-stage bug hunt (hunter finds issues, devil's advocate challenges findings, judge rules) iterates up to 3 cycles, and UAT runs acceptance testing with browser automation.
+
+**Multi-level merge.** `/rapid:merge` detects conflicts at 5 levels (textual, structural, dependency, API, semantic) and resolves them through a 4-tier confidence cascade. High-confidence resolutions are auto-accepted, mid-confidence conflicts go to dedicated resolver agents, and low-confidence conflicts escalate to the developer. Clean merges skip detection entirely via a fast-path `git merge-tree` check.
 
 ## Architecture
 
 ```
-                         Milestone (v1.0, v2.0, ...)
-           ┌──────────────────┼──────────────────┐
-       Set 1 (Dev A)     Set 2 (Dev B)      Set 3 (Dev C)
-       ┌────┴────┐       ┌────┴────┐        ┌────┘
-    Wave 1    Wave 2   Wave 1    Wave 2    Wave 1
-    ┌─┴─┐    ┌─┘      ┌─┴─┐    ┌─┘        ┌─┘
-  Job A Job B Job C  Job D Job E Job F    Job G
-  ──────────────────────────────────────────────
-
-  Agent Dispatch
-  ──────────────────────────────────────────────
-  orchestrator ─┬─ job-executor  (parallel per job)
-                ├─ scoper + reviewer  (review pipeline)
-                └─ set-merger ─── conflict-resolver
-                    (per set)       (per conflict)
+Milestone (v1.0, v2.0, ...)
+├── Set 1 (Dev A)     -- isolated worktree + branch
+├── Set 2 (Dev B)     -- isolated worktree + branch
+└── Set 3 (Dev C)     -- isolated worktree + branch
 ```
 
-Sets run in full isolation (own worktree, own branch). Jobs within a wave execute as parallel subagents, each restricted to its assigned files. The merge pipeline delegates per-set work to `set-merger` subagents, which can further dispatch `conflict-resolver` agents for mid-confidence conflicts -- the only two-level agent nesting in the system.
+Each set runs in full isolation: its own git worktree, its own branch, its own CLAUDE.md with scoped context. Developers work in parallel without touching each other's files.
 
-## Quick Start
+### Agent Dispatch
 
-### Prerequisites
-
-- **Node.js 18+** -- runtime for RAPID's tooling
-- **git 2.30+** -- required for worktree support
-- **Claude Code** (latest) -- the AI coding assistant RAPID orchestrates
-
-### Installation
-
-First, add the plugin:
+Skills dispatch agents directly -- each command spawns exactly the agents it needs:
 
 ```
-claude plugin add fishjojo1/RAPID
+/rapid:init
+  ├── 6 researchers (parallel)     -- stack, features, architecture, pitfalls, oversights, UX
+  ├── synthesizer                  -- combines research findings
+  ├── codebase-synthesizer         -- analyzes existing code (brownfield)
+  └── roadmapper                   -- decomposes into sets
+
+/rapid:plan-set
+  ├── research-stack               -- implementation research
+  ├── planner                      -- wave plans with contracts
+  └── plan-verifier                -- validates coverage and consistency
+
+/rapid:execute-set
+  ├── executor (per wave)          -- implements planned work
+  └── verifier                     -- checks objectives post-execution
+
+/rapid:review
+  ├── scoper                       -- identifies review targets
+  ├── unit-tester                  -- generates and runs tests
+  ├── bug-hunter                   -- finds issues
+  ├── devils-advocate              -- challenges findings
+  ├── judge                        -- rules on disputes
+  ├── bugfix                       -- fixes confirmed bugs
+  └── uat                          -- acceptance testing
+
+/rapid:merge
+  ├── set-merger (per set)         -- 5-level conflict detection
+  └── conflict-resolver (per conflict) -- resolves mid-confidence conflicts
 ```
 
-Then inside Claude Code, run the one-time setup:
-
-```
-/rapid:install
-```
-
-This configures the `RAPID_TOOLS` environment variable for your shell and creates a `.env` file in the plugin directory.
-
-### Project Setup
-
-<details open>
-<summary><strong>Greenfield (new project)</strong></summary>
-
-1. **`/rapid:init`** -- Runs 5 parallel research agents to analyze your project domain
-   (stack, features, architecture, pitfalls, cross-cutting concerns), synthesizes
-   findings, and generates a roadmap. Scaffolds the `.planning/` directory with all
-   project state.
-
-2. **`/rapid:plan`** -- Decomposes the roadmap into parallelizable sets with strict
-   file ownership, interface contracts (JSON Schema), and a dependency DAG. Each set
-   becomes an independent workstream that one developer can own end-to-end.
-
-</details>
-
-<details open>
-<summary><strong>Brownfield (existing codebase)</strong></summary>
-
-1. **`/rapid:init`** -- Same research pipeline as greenfield. Includes a codebase
-   synthesizer agent that analyzes your existing code structure, patterns, and
-   conventions so the roadmap builds on what's already there rather than starting
-   from scratch.
-
-2. **`/rapid:context`** -- Deep analysis of your existing codebase. Generates
-   context documents that subsequent agents use to understand your project's patterns,
-   conventions, and architecture. Run this before planning so the decomposition
-   respects your existing structure.
-
-3. **`/rapid:plan`** -- Same decomposition as greenfield, but informed by the context
-   analysis. Sets are designed to integrate with your existing code rather than
-   replace it.
-
-</details>
-
-### Per-Set Development
-
-This is where parallel work happens. Each developer claims a set and works through
-it independently. Developer A works on Set 1 while Developer B works on Set 2 --
-both running these steps in their own worktree at the same time.
-
-1. **`/rapid:set-init <set-id>`** -- Creates an isolated git worktree and branch for
-   the set. Generates a scoped `CLAUDE.md` with set-specific context and runs a set
-   planner to produce a high-level implementation overview.
-
-2. **`/rapid:discuss <wave-id>`** -- Structured discussion about a wave's
-   implementation approach. Surfaces gray areas and assumptions, lets you make design
-   decisions before autonomous planning begins. Run once per wave.
-
-3. **`/rapid:wave-plan <wave-id>`** -- Full planning pipeline for a wave: spawns a
-   research agent for implementation specifics, a wave planner for job decomposition,
-   per-job planners for detailed implementation steps, and a verifier for plan
-   consistency and contract compliance.
-
-   Alternatively, use **`/rapid:plan-set <set-id>`** to plan all waves in one command
-   with automatic dependency sequencing -- it runs the full wave-plan pipeline for
-   each wave in dependency order.
-
-4. **`/rapid:execute <set-id>`** -- Dispatches parallel subagents (one per job) across
-   all waves sequentially. Each job-executor implements its assigned files, commits
-   atomically, and reports back. Waves auto-advance on success; failures pause for
-   retry. Supports smart re-entry -- if interrupted, re-running skips completed jobs
-   and retries failed ones.
-
-5. **`/rapid:review <set-id>`** -- Runs the adversarial review pipeline. You choose
-   which stages to run:
-   - **Unit testing** -- generates a test plan for approval, writes and runs tests
-   - **Bug hunt** -- hunter finds issues, devil's advocate challenges, judge rules
-     (up to 3 fix-and-rehunt cycles)
-   - **UAT** -- acceptance testing with browser automation (Chrome DevTools or
-     Playwright)
-
-### Finalization
-
-After all sets pass review:
-
-1. **`/rapid:merge`** -- Merges completed sets into main in DAG order. Clean merges
-   skip conflict detection entirely via `git merge-tree` fast path. Conflicting
-   merges dispatch per-set `set-merger` subagents for 5-level detection and 4-tier
-   resolution. Mid-confidence conflicts route to dedicated `conflict-resolver` agents.
-   Integration tests run between merge waves with automatic bisection recovery on
-   failure.
-
-2. **`/rapid:cleanup <set-id>`** -- Removes the set's worktree and optionally deletes
-   its branch. Safe to run after merge -- blocks removal if uncommitted changes exist.
-
-3. **`/rapid:new-milestone`** -- Archives the current milestone, bumps the version,
-   and starts a new planning cycle. Use when the current milestone's scope is complete
-   and you're ready for the next phase of work.
-
-### Utility Commands
-
-These can be used at any point during development:
-
-- **`/rapid:status`** -- Cross-set progress dashboard showing the full set > wave > job
-  hierarchy with completion status and actionable next steps.
-- **`/rapid:pause <set-id>`** -- Saves set state for later resumption. Use when you
-  need to context-switch to a different set or take a break.
-- **`/rapid:resume <set-id>`** -- Resumes a paused set from where it left off.
-- **`/rapid:assumptions <set-id>`** -- Surfaces Claude's mental model about how a set
-  will be implemented so you can catch misunderstandings before execution begins.
-- **`/rapid:help`** -- Quick command reference and workflow guide.
+26 agents total: 5 core hand-written agents with full control over their domain, 21 generated agents with embedded tool documentation.
 
 ## Command Reference
 
-| Command | Arguments | Description |
-|---------|-----------|-------------|
-| `/rapid:install` | _(none)_ | One-time setup: configure shell and environment |
-| `/rapid:init` | _(none)_ | Research project, generate roadmap, scaffold `.planning/` |
-| `/rapid:context` | _(none)_ | Analyze existing codebase and generate context files |
-| `/rapid:plan` | _(none)_ | Decompose work into parallelizable sets with contracts |
-| `/rapid:plan-set` | `<set-id>` | Plan all waves in a set with automatic sequencing |
-| `/rapid:assumptions` | `<set-id>` | Surface assumptions about a set before execution |
-| `/rapid:set-init` | `<set-id>` | Create worktree and branch for a set |
-| `/rapid:discuss` | `<wave-id>` or `<set-id> <wave-id>` | Capture implementation vision for a wave |
-| `/rapid:wave-plan` | `<wave-id>` or `<set-id> <wave-id>` | Research, plan waves, plan jobs |
-| `/rapid:execute` | `<set-id>` or `<set-id> --fix-issues` | Run jobs in parallel per wave |
-| `/rapid:review` | `<set-id>` | Unit test + bug hunt + UAT pipeline |
-| `/rapid:merge` | _(none)_ or `<set-id>` | Merge completed sets into main |
-| `/rapid:cleanup` | `<set-id>` | Remove worktrees and optionally delete branches |
-| `/rapid:pause` | `<set-id>` | Save set state for later resumption |
-| `/rapid:resume` | `<set-id>` | Resume a paused set |
-| `/rapid:status` | _(none)_ | Cross-set progress dashboard |
-| `/rapid:new-milestone` | _(none)_ | Archive current milestone, re-plan new scope |
-| `/rapid:help` | _(none)_ | Command reference and workflow guide |
+### 7 Core Lifecycle Commands
 
-**Notes:**
-- Commands accepting `<set-id>` support both string IDs (e.g., `auth-system`) and numeric indices (e.g., `1`).
-- Commands accepting `<wave-id>` support dot notation (e.g., `1.1` for set 1, wave 1), string IDs, or the two-argument `<set-id> <wave-id>` form.
+| Command | Description |
+|---------|-------------|
+| `/rapid:init` | Research project, generate roadmap, decompose into sets |
+| `/rapid:start-set` | Create isolated worktree, generate scoped CLAUDE.md |
+| `/rapid:discuss-set` | Capture developer implementation vision before planning |
+| `/rapid:plan-set` | Plan all waves in a set -- research, plan, validate |
+| `/rapid:execute-set` | Execute all waves with per-wave executor agents |
+| `/rapid:review` | Unit test + adversarial bug hunt + UAT pipeline |
+| `/rapid:merge` | Merge completed sets to main with conflict detection |
+
+### 4 Auxiliary Commands
+
+| Command | Description |
+|---------|-------------|
+| `/rapid:status` | Project dashboard with set statuses and next actions |
+| `/rapid:install` | Plugin installation and shell configuration |
+| `/rapid:new-version` | Start new milestone/version cycle |
+| `/rapid:add-set` | Add sets mid-milestone with contract updates |
+
+### Utilities
+
+| Command | Description |
+|---------|-------------|
+| `/rapid:assumptions` | Surface Claude's assumptions about a set before execution |
+| `/rapid:pause` | Save set state for later resumption |
+| `/rapid:resume` | Resume a paused set from where it left off |
+| `/rapid:context` | Generate codebase context files for brownfield projects |
+| `/rapid:cleanup` | Remove worktrees for merged sets |
+| `/rapid:quick` | Ad-hoc changes without requiring set structure |
+| `/rapid:help` | Command reference and workflow guide |
+
+**Note:** Commands accepting set IDs support both string names (e.g., `auth-system`) and numeric shorthand (e.g., `1`).
+
+## Real-World Example
+
+Two developers building a SaaS application. Dev A handles authentication, Dev B handles the dashboard.
+
+**Setup (once, by any developer):**
+
+```
+/rapid:init
+```
+
+RAPID researches the project, identifies two independent workstreams, and generates a roadmap with Set 1 (auth) and Set 2 (dashboard). A `CONTRACT.json` specifies that the dashboard depends on auth's `getCurrentUser()` and `requireAuth()` middleware.
+
+**Dev A (auth system):**
+
+```
+/rapid:start-set 1          # Creates worktree at worktrees/auth-system/
+/rapid:discuss-set 1         # "I want JWT with refresh token rotation"
+/rapid:plan-set 1            # Plans 2 waves: models+middleware, then routes
+/rapid:execute-set 1         # Agents implement both waves
+/rapid:review 1              # Unit tests pass, bug hunt finds no issues
+```
+
+**Dev B (dashboard), at the same time:**
+
+```
+/rapid:start-set 2           # Creates worktree at worktrees/dashboard/
+/rapid:discuss-set 2          # "React with server components, charts with Recharts"
+/rapid:plan-set 2             # Plans 3 waves: layout, data fetching, charts
+/rapid:execute-set 2          # Agents implement all waves
+/rapid:review 2               # UAT confirms pages render correctly
+```
+
+Dev A and Dev B work simultaneously in separate worktrees. The contract ensures Dev B's dashboard code calls `getCurrentUser()` with the exact signature Dev A's auth system exports.
+
+**Merge (after both sets pass review):**
+
+```
+/rapid:merge
+```
+
+RAPID merges auth first (no dependencies), then dashboard. The merge pipeline validates that the contract between the two sets is satisfied -- `getCurrentUser()` exists, returns the right type, and is exported from the right module. If there are conflicts, dedicated resolver agents handle them automatically.
+
+```
+/rapid:cleanup 1
+/rapid:cleanup 2
+```
+
+Worktrees removed. Both sets are on main.
 
 ## Further Reading
 
-For detailed configuration, all 31 agent roles, state machine documentation, and troubleshooting, see [technical_documentation.md](technical_documentation.md).
+For the full technical reference -- agent details, state machine documentation, contract format, and configuration -- see [technical_documentation.md](technical_documentation.md).
 
 ## License
 
