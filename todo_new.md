@@ -20,6 +20,8 @@ NEVER do this. Always give the user prefilled questions with an I'll answer opti
 
 Some of the agents tend to call commands that don't even exist (in rapid-tools.cjs). Go through each agent and make sure that they call the right commands.
 
+Sometimes users might not want to review after each set, but they might want to do a review after a merge. We should support this.
+
 Errors:
 - during contract and state validation
 ● Bash(RAPID_ROOT="/home/kek/.claude/plugins/cache/joey-plugins/rapid/3.0.0/skills/plan-set/../.."
