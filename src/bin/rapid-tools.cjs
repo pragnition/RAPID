@@ -37,8 +37,6 @@ Commands:
   plan create-set             Create a set from JSON on stdin
   plan decompose              Decompose sets from JSON array on stdin
   plan write-dag              Write DAG.json from JSON on stdin
-  plan check-gate <wave>      Check planning gate status for a wave (verifies artifacts on disk)
-  plan update-gate <set>      Mark a set as planned (update gate)
   plan list-sets              List all defined sets
   plan load-set <name>        Load a set's definition and contract
   assumptions [set-name]      Surface assumptions about a set (or list sets)
@@ -60,7 +58,6 @@ Commands:
   execute pause <set>             Pause execution and write HANDOFF.md (reads CHECKPOINT JSON from stdin)
   execute resume <set>            Resume execution from HANDOFF.md
   execute reconcile <wave>        Reconcile a wave and write WAVE-{N}-SUMMARY.md
-  execute detect-mode             Detect if agent teams mode is available
   execute reconcile-jobs <set> <wave> [--branch <b>] [--mode <m>]  Reconcile jobs in a wave
   execute job-status <set>        Show per-wave/per-job statuses from STATE.json
   execute commit-state [message]  Commit STATE.json with a given message
@@ -80,10 +77,6 @@ Commands:
   merge prepare-context <set>    Assemble launch briefing for set-merger subagent
   set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
   set-init list-available        List pending sets without worktrees
-  wave-plan resolve-wave <waveId>              Find wave in state, output milestone/set/wave JSON
-  wave-plan create-wave-dir <setId> <waveId>   Create .planning/waves/{setId}/{waveId}/ directory
-  wave-plan validate-contracts <setId> <waveId> Validate job plans against CONTRACT.json
-  wave-plan list-jobs <setId> <waveId>          List JOB-PLAN.md files for a wave
   review scope <set-id> <wave-id> [--branch <b>]     Scope wave files for review
   review log-issue <set-id> <wave-id>                Log issue from stdin JSON
   review list-issues <set-id> [--status <s>]         List all issues for a set
@@ -196,10 +189,6 @@ async function main() {
 
     case 'set-init':
       await handleSetInit(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'wave-plan':
-      await handleWavePlan(cwd, subcommand, args.slice(2));
       break;
 
     case 'review':
@@ -1040,39 +1029,6 @@ function handlePlan(cwd, subcommand, args) {
       break;
     }
 
-    case 'check-gate': {
-      // Usage: rapid-tools plan check-gate <wave-number>
-      const wave = parseInt(args[0], 10);
-      if (isNaN(wave)) {
-        error('Usage: rapid-tools plan check-gate <wave-number>');
-        process.exit(1);
-      }
-      const result = plan.checkPlanningGateArtifact(cwd, wave);
-      process.stdout.write(JSON.stringify(result) + '\n');
-      // Enhanced stderr output for actionable guidance
-      if (result.missingArtifacts && result.missingArtifacts.length > 0) {
-        const blockers = result.missingArtifacts.map(a => `${a.set} (missing ${a.file})`).join(', ');
-        const readySets = result.required.filter(s => !result.missingArtifacts.some(a => a.set === s));
-        const readyText = readySets.length > 0 ? ` Ready: ${readySets.join(', ')}.` : '';
-        process.stderr.write(`Gate blocked: ${blockers}.${readyText} Run /rapid:plan to continue.\n`);
-      } else if (!result.open && result.missing.length > 0) {
-        process.stderr.write(`Gate blocked: ${result.missing.join(', ')} not yet planned. Run /rapid:plan to continue.\n`);
-      }
-      break;
-    }
-
-    case 'update-gate': {
-      // Usage: rapid-tools plan update-gate <set-name>
-      const setName = args[0];
-      if (!setName) {
-        error('Usage: rapid-tools plan update-gate <set-name>');
-        process.exit(1);
-      }
-      plan.updateGate(cwd, setName);
-      process.stdout.write(JSON.stringify({ updated: true, set: setName }) + '\n');
-      break;
-    }
-
     case 'list-sets': {
       const sets = plan.listSets(cwd);
       process.stdout.write(JSON.stringify({ sets }) + '\n');
@@ -1402,168 +1358,6 @@ async function handleSetInit(cwd, subcommand, args) {
 
     default:
       error(`Unknown set-init subcommand: ${subcommand}. Use: create, list-available`);
-      process.stdout.write(USAGE);
-      process.exit(1);
-  }
-}
-
-async function handleWavePlan(cwd, subcommand, args) {
-  const fs = require('fs');
-  const path = require('path');
-  const sm = require('../lib/state-machine.cjs');
-  const wp = require('../lib/wave-planning.cjs');
-
-  switch (subcommand) {
-    case 'resolve-wave': {
-      const waveId = args[0];
-      if (!waveId) {
-        error('Usage: rapid-tools wave-plan resolve-wave <waveId>');
-        process.exit(1);
-      }
-      try {
-        const stateResult = await sm.readState(cwd);
-        if (!stateResult || !stateResult.valid) {
-          process.stdout.write(JSON.stringify({ error: 'STATE.json not found or invalid' }) + '\n');
-          process.exit(1);
-        }
-        const result = wp.resolveWave(stateResult.state, waveId);
-        if (Array.isArray(result)) {
-          // Ambiguous -- multiple matches
-          process.stdout.write(JSON.stringify({
-            ambiguous: true,
-            matches: result.map(m => ({
-              milestoneId: m.milestoneId,
-              setId: m.setId,
-              waveId: m.waveId,
-              waveStatus: m.wave.status,
-            })),
-          }) + '\n');
-        } else {
-          process.stdout.write(JSON.stringify({
-            milestoneId: result.milestoneId,
-            setId: result.setId,
-            waveId: result.waveId,
-            waveStatus: result.wave.status,
-            setStatus: result.set.status,
-            jobs: (result.wave.jobs || []).map(j => ({ id: j.id, status: j.status })),
-          }) + '\n');
-        }
-      } catch (err) {
-        process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
-        process.exit(1);
-      }
-      break;
-    }
-
-    case 'create-wave-dir': {
-      const setId = args[0];
-      const waveId = args[1];
-      if (!setId || !waveId) {
-        error('Usage: rapid-tools wave-plan create-wave-dir <setId> <waveId>');
-        process.exit(1);
-      }
-      try {
-        const wavePath = wp.createWaveDir(cwd, setId, waveId);
-        process.stdout.write(JSON.stringify({ created: true, path: wavePath }) + '\n');
-      } catch (err) {
-        process.stdout.write(JSON.stringify({ created: false, error: err.message }) + '\n');
-        process.exit(1);
-      }
-      break;
-    }
-
-    case 'validate-contracts': {
-      const setId = args[0];
-      const waveId = args[1];
-      if (!setId || !waveId) {
-        error('Usage: rapid-tools wave-plan validate-contracts <setId> <waveId>');
-        process.exit(1);
-      }
-      try {
-        // Read this set's CONTRACT.json
-        const contractPath = path.join(cwd, '.planning', 'sets', setId, 'CONTRACT.json');
-        if (!fs.existsSync(contractPath)) {
-          process.stdout.write(JSON.stringify({ error: `CONTRACT.json not found for set '${setId}' at ${contractPath}` }) + '\n');
-          process.exit(1);
-        }
-        const contractJson = JSON.parse(fs.readFileSync(contractPath, 'utf-8'));
-
-        // Read JOB-PLAN.md files from .planning/waves/{setId}/{waveId}/
-        const wavePlanDir = path.join(cwd, '.planning', 'waves', setId, waveId);
-        const jobPlans = [];
-        if (fs.existsSync(wavePlanDir)) {
-          const files = fs.readdirSync(wavePlanDir).filter(f => f.endsWith('-PLAN.md'));
-          for (const file of files) {
-            const content = fs.readFileSync(path.join(wavePlanDir, file), 'utf-8');
-            // Extract filesToModify from the "Files to Create/Modify" table
-            const filesToModify = [];
-            const tableRegex = /\|\s*([^\|]+?)\s*\|\s*(Create|Modify)\s*\|/gi;
-            let match;
-            while ((match = tableRegex.exec(content)) !== null) {
-              const filePath = match[1].trim();
-              if (filePath && filePath !== 'File' && !filePath.startsWith('---')) {
-                filesToModify.push(filePath);
-              }
-            }
-            const jobId = file.replace('-PLAN.md', '');
-            jobPlans.push({ jobId, filesToModify });
-          }
-        }
-
-        // Read other set contracts from .planning/sets/*/CONTRACT.json
-        const setsDir = path.join(cwd, '.planning', 'sets');
-        const allSetContracts = {};
-        if (fs.existsSync(setsDir)) {
-          const setDirs = fs.readdirSync(setsDir).filter(d => {
-            return d !== setId && fs.statSync(path.join(setsDir, d)).isDirectory();
-          });
-          for (const otherSet of setDirs) {
-            const otherContractPath = path.join(setsDir, otherSet, 'CONTRACT.json');
-            if (fs.existsSync(otherContractPath)) {
-              allSetContracts[otherSet] = JSON.parse(fs.readFileSync(otherContractPath, 'utf-8'));
-            }
-          }
-        }
-
-        const result = wp.validateJobPlans(contractJson, jobPlans, allSetContracts);
-        process.stdout.write(JSON.stringify({
-          setId,
-          waveId,
-          jobPlansFound: jobPlans.length,
-          ...result,
-        }) + '\n');
-      } catch (err) {
-        process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
-        process.exit(1);
-      }
-      break;
-    }
-
-    case 'list-jobs': {
-      const setId = args[0];
-      const waveId = args[1];
-      if (!setId || !waveId) {
-        error('Usage: rapid-tools wave-plan list-jobs <set-id> <wave-id>');
-        process.exit(1);
-      }
-      const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
-      let jobPlans = [];
-      try {
-        const files = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
-        jobPlans = files.map(f => ({
-          file: f,
-          jobId: f.replace('-PLAN.md', ''),
-          path: path.join(waveDir, f),
-        }));
-      } catch {
-        // Directory doesn't exist -- no job plans
-      }
-      output(JSON.stringify({ setId, waveId, jobPlans, count: jobPlans.length }));
-      break;
-    }
-
-    default:
-      error(`Unknown wave-plan subcommand: ${subcommand}. Use: resolve-wave, create-wave-dir, validate-contracts, list-jobs`);
       process.stdout.write(USAGE);
       process.exit(1);
   }
@@ -2227,13 +2021,6 @@ async function handleExecute(cwd, subcommand, args) {
       break;
     }
 
-    case 'detect-mode': {
-      const teams = require('../lib/teams.cjs');
-      const result = teams.detectAgentTeams();
-      output(JSON.stringify({ agentTeamsAvailable: result.available }));
-      break;
-    }
-
     case 'reconcile-jobs': {
       const setId = args[0];
       const waveId = args[1];
@@ -2311,7 +2098,7 @@ async function handleExecute(cwd, subcommand, args) {
     }
 
     default:
-      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, detect-mode, reconcile-jobs, job-status, commit-state`);
+      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, reconcile-jobs, job-status, commit-state`);
       process.stdout.write(USAGE);
       process.exit(1);
   }

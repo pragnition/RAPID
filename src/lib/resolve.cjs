@@ -1,7 +1,6 @@
 'use strict';
 
 const plan = require('./plan.cjs');
-const wavePlanning = require('./wave-planning.cjs');
 
 const NUMERIC_SET_PATTERN = /^\d+$/;
 const NUMERIC_WAVE_PATTERN = /^\d+\.\d+$/;
@@ -59,8 +58,8 @@ function resolveSet(input, cwd) {
  * Dot notation "N.M" resolves set N (1-based index) and wave M (1-based index
  * within the set's waves[] array in the current milestone's state).
  *
- * String wave IDs are delegated to wave-planning.resolveWave() for lookup,
- * then enriched with setIndex/waveIndex.
+ * String wave IDs are resolved by searching through all sets in the current
+ * milestone's state for a matching wave ID.
  *
  * When `setId` is provided (--set flag), the set is resolved first via resolveSet,
  * then the wave is looked up within that specific set's waves array.
@@ -153,28 +152,30 @@ function resolveWave(input, state, cwd, setId) {
     };
   }
 
-  // String wave ID -- delegate to wave-planning.resolveWave for lookup
-  const match = wavePlanning.resolveWave(state, input);
+  // String wave ID -- search through state inline (v3: no wave-planning dependency)
+  const milestone = state.milestones.find((m) => m.id === state.currentMilestone);
+  if (!milestone) {
+    throw new Error(`Current milestone '${state.currentMilestone}' not found in state.`);
+  }
 
-  // wave-planning.resolveWave returns single match or array of matches
-  const resolved = Array.isArray(match) ? match[0] : match;
+  // Search all sets in the milestone for this wave ID
+  for (const setInState of milestone.sets) {
+    const waves = setInState.waves || [];
+    const waveIdx = waves.findIndex((w) => w.id === input);
+    if (waveIdx !== -1) {
+      const sets = plan.listSets(cwd);
+      const setIndex = sets.indexOf(setInState.id) + 1;
+      return {
+        setId: setInState.id,
+        waveId: input,
+        setIndex,
+        waveIndex: waveIdx + 1,
+        wasNumeric: false,
+      };
+    }
+  }
 
-  // Compute set and wave indices
-  const sets = plan.listSets(cwd);
-  const setIndex = sets.indexOf(resolved.setId) + 1;
-
-  // Find wave index within the set's waves array
-  const milestone = state.milestones.find((m) => m.id === resolved.milestoneId);
-  const setInState = milestone.sets.find((s) => s.id === resolved.setId);
-  const waveIdx = setInState.waves.findIndex((w) => w.id === input) + 1;
-
-  return {
-    setId: resolved.setId,
-    waveId: input,
-    setIndex,
-    waveIndex: waveIdx,
-    wasNumeric: false,
-  };
+  throw new Error(`Wave '${input}' not found in any set for milestone '${state.currentMilestone}'.`);
 }
 
 module.exports = { resolveSet, resolveWave };

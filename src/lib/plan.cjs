@@ -5,8 +5,7 @@
  *
  * Ties together DAG and contract operations into set-level workflows:
  * set creation (DEFINITION.md + CONTRACT.json per set), DAG/ownership/
- * manifest/gate persistence, planning gate enforcement, and assumptions
- * surfacing.
+ * manifest persistence, and assumptions surfacing.
  *
  * Depends on:
  *   - dag.cjs: createDAG for topological sort and wave assignment
@@ -182,7 +181,7 @@ function listSets(cwd) {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Persistence: DAG, Ownership, Manifest, Gates
+// Persistence: DAG, Ownership, Manifest
 // ────────────────────────────────────────────────────────────────
 
 /**
@@ -221,174 +220,16 @@ function writeManifest(cwd, manifest) {
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
 }
 
-/**
- * Create and write GATES.json from a DAG object.
- * Each wave gets a planning gate with required sets starting as blocked.
- *
- * @param {string} cwd - Project root directory
- * @param {Object} dagObj - DAG object with waves property
- */
-function writeGates(cwd, dagObj) {
-  const gates = {};
-
-  for (const [waveNum, waveData] of Object.entries(dagObj.waves)) {
-    gates[`wave-${waveNum}`] = {
-      planning: {
-        required: [...(waveData.sets || waveData.nodes || [])],
-        completed: [],
-        status: 'blocked',
-      },
-      execution: {
-        status: 'blocked',
-      },
-    };
-  }
-
-  const gatesObj = {
-    version: 1,
-    gates,
-  };
-
-  const gatesPath = path.join(cwd, '.planning', 'sets', 'GATES.json');
-  fs.writeFileSync(gatesPath, JSON.stringify(gatesObj, null, 2), 'utf-8');
-}
-
-// ────────────────────────────────────────────────────────────────
-// Gate Checking and Updating
-// ────────────────────────────────────────────────────────────────
-
-/**
- * Check the planning gate status for a given wave.
- *
- * @param {string} cwd - Project root directory
- * @param {number} wave - Wave number to check
- * @returns {{ open: boolean, required: string[], completed: string[], missing: string[] }}
- */
-function checkPlanningGate(cwd, wave) {
-  const gatesPath = path.join(cwd, '.planning', 'sets', 'GATES.json');
-  const gatesObj = JSON.parse(fs.readFileSync(gatesPath, 'utf-8'));
-  const gateKey = `wave-${wave}`;
-  const gate = gatesObj.gates[gateKey];
-
-  if (!gate) {
-    return { open: false, required: [], completed: [], missing: [] };
-  }
-
-  const { required, completed, status } = gate.planning;
-  const missing = required.filter((s) => !completed.includes(s));
-
-  return {
-    open: status === 'open',
-    required,
-    completed,
-    missing,
-  };
-}
-
-/**
- * Check the planning gate status for a given wave, with artifact verification on disk.
- * Extends checkPlanningGate by also verifying that DEFINITION.md and CONTRACT.json
- * exist on disk for each required set in the wave.
- *
- * @param {string} cwd - Project root directory
- * @param {number} wave - Wave number to check
- * @returns {{ open: boolean, required: string[], completed: string[], missing: string[], missingArtifacts: Array<{set: string, file: string}> }}
- */
-function checkPlanningGateArtifact(cwd, wave) {
-  const baseResult = checkPlanningGate(cwd, wave);
-  const missingArtifacts = [];
-
-  for (const setName of baseResult.required) {
-    const setDir = path.join(cwd, '.planning', 'sets', setName);
-    if (!fs.existsSync(path.join(setDir, 'DEFINITION.md'))) {
-      missingArtifacts.push({ set: setName, file: 'DEFINITION.md' });
-    }
-    if (!fs.existsSync(path.join(setDir, 'CONTRACT.json'))) {
-      missingArtifacts.push({ set: setName, file: 'CONTRACT.json' });
-    }
-  }
-
-  return {
-    ...baseResult,
-    open: baseResult.open && missingArtifacts.length === 0,
-    missingArtifacts,
-  };
-}
-
-/**
- * Log a gate override event in GATES.json for audit trail.
- *
- * @param {string} cwd - Project root directory
- * @param {number} wave - Wave number that was overridden
- * @param {string[]} missingSets - Sets whose artifacts were missing but override was granted
- * @returns {Promise<void>}
- */
-async function logGateOverride(cwd, wave, missingSets) {
-  const { acquireLock } = require('./lock.cjs');
-  const release = await acquireLock(cwd, 'gates-json');
-  try {
-    const gatesPath = path.join(cwd, '.planning', 'sets', 'GATES.json');
-    const gatesObj = JSON.parse(fs.readFileSync(gatesPath, 'utf-8'));
-    if (!Array.isArray(gatesObj.overrides)) {
-      gatesObj.overrides = [];
-    }
-    gatesObj.overrides.push({
-      wave,
-      timestamp: new Date().toISOString(),
-      missingSets,
-    });
-    fs.writeFileSync(gatesPath, JSON.stringify(gatesObj, null, 2), 'utf-8');
-  } finally {
-    await release();
-  }
-}
-
-/**
- * Mark a set as planned in GATES.json.
- * Transitions the wave's planning status to "open" when all sets are complete.
- *
- * @param {string} cwd - Project root directory
- * @param {string} setName - Name of the set that has been planned
- */
-function updateGate(cwd, setName) {
-  const gatesPath = path.join(cwd, '.planning', 'sets', 'GATES.json');
-  const gatesObj = JSON.parse(fs.readFileSync(gatesPath, 'utf-8'));
-
-  // Find which wave this set belongs to
-  for (const [gateKey, gate] of Object.entries(gatesObj.gates)) {
-    if (gate.planning.required.includes(setName)) {
-      // Add to completed if not already there
-      if (!gate.planning.completed.includes(setName)) {
-        gate.planning.completed.push(setName);
-      }
-
-      // Check if all required sets are now complete
-      const allComplete = gate.planning.required.every((s) =>
-        gate.planning.completed.includes(s)
-      );
-
-      if (allComplete) {
-        gate.planning.status = 'open';
-        gate.execution.status = 'ready';
-      }
-
-      break;
-    }
-  }
-
-  fs.writeFileSync(gatesPath, JSON.stringify(gatesObj, null, 2), 'utf-8');
-}
-
 // ────────────────────────────────────────────────────────────────
 // Decomposition Orchestration
 // ────────────────────────────────────────────────────────────────
 
 /**
- * Orchestrate full decomposition: create sets, build DAG, ownership, manifest, gates.
+ * Orchestrate full decomposition: create sets, build DAG, ownership, manifest.
  *
  * @param {string} cwd - Project root directory
  * @param {Object[]} setDefs - Array of set definition objects
- * @returns {{ sets: Object[], dag: Object, ownership: Object, manifest: Object, gates: Object }}
+ * @returns {{ sets: Object[], dag: Object, ownership: Object, manifest: Object }}
  * @throws {Error} On ownership conflicts or DAG cycles (propagated from underlying libraries)
  */
 function decomposeIntoSets(cwd, setDefs) {
@@ -438,18 +279,12 @@ function decomposeIntoSets(cwd, setDefs) {
   writeDAG(cwd, dagObj);
   writeOwnership(cwd, ownershipObj);
   writeManifest(cwd, manifestObj);
-  writeGates(cwd, dagObj);
-
-  // Read back gates for return
-  const gatesPath = path.join(cwd, '.planning', 'sets', 'GATES.json');
-  const gatesObj = JSON.parse(fs.readFileSync(gatesPath, 'utf-8'));
 
   return {
     sets: setResults,
     dag: dagObj,
     ownership: ownershipObj,
     manifest: manifestObj,
-    gates: gatesObj,
   };
 }
 
@@ -594,10 +429,5 @@ module.exports = {
   writeDAG,
   writeOwnership,
   writeManifest,
-  writeGates,
-  checkPlanningGate,
-  checkPlanningGateArtifact,
-  logGateOverride,
-  updateGate,
   surfaceAssumptions,
 };
