@@ -7,6 +7,7 @@ const path = require('path');
 const os = require('os');
 
 const {
+  migrateState,
   createInitialState,
   readState,
   writeState,
@@ -90,6 +91,89 @@ describe('createInitialState', () => {
   });
 });
 
+// ---- migrateState ----
+
+describe('migrateState', () => {
+  it('migrates discussing -> discussed in all milestones', () => {
+    const state = {
+      milestones: [
+        { sets: [{ id: 's1', status: 'discussing' }] },
+        { sets: [{ id: 's2', status: 'discussing' }] },
+      ],
+    };
+    migrateState(state);
+    assert.equal(state.milestones[0].sets[0].status, 'discussed');
+    assert.equal(state.milestones[1].sets[0].status, 'discussed');
+  });
+
+  it('migrates planning -> planned', () => {
+    const state = {
+      milestones: [
+        { sets: [{ id: 's1', status: 'planning' }] },
+      ],
+    };
+    migrateState(state);
+    assert.equal(state.milestones[0].sets[0].status, 'planned');
+  });
+
+  it('migrates executing -> executed', () => {
+    const state = {
+      milestones: [
+        { sets: [{ id: 's1', status: 'executing' }] },
+      ],
+    };
+    migrateState(state);
+    assert.equal(state.milestones[0].sets[0].status, 'executed');
+  });
+
+  it('is idempotent (safe to call twice)', () => {
+    const state = {
+      milestones: [
+        { sets: [
+          { id: 's1', status: 'discussing' },
+          { id: 's2', status: 'planning' },
+          { id: 's3', status: 'executing' },
+        ] },
+      ],
+    };
+    migrateState(state);
+    const afterFirst = JSON.parse(JSON.stringify(state));
+    migrateState(state);
+    assert.deepEqual(state, afterFirst);
+  });
+
+  it('does not change pending, complete, or merged', () => {
+    const state = {
+      milestones: [
+        { sets: [
+          { id: 's1', status: 'pending' },
+          { id: 's2', status: 'complete' },
+          { id: 's3', status: 'merged' },
+        ] },
+      ],
+    };
+    migrateState(state);
+    assert.equal(state.milestones[0].sets[0].status, 'pending');
+    assert.equal(state.milestones[0].sets[1].status, 'complete');
+    assert.equal(state.milestones[0].sets[2].status, 'merged');
+  });
+
+  it('handles null/undefined gracefully', () => {
+    assert.equal(migrateState(null), null);
+    assert.deepEqual(migrateState({}), {});
+  });
+
+  it('handles milestones with empty sets array', () => {
+    const state = {
+      milestones: [
+        { sets: [] },
+      ],
+    };
+    assert.doesNotThrow(() => migrateState(state));
+    assert.deepEqual(state.milestones[0].sets, []);
+  });
+});
+
 // ---- readState ----
 
 describe('readState', () => {
@@ -123,6 +207,75 @@ describe('readState', () => {
     const result = await readState(tmpDir);
     assert.equal(result.valid, false);
     assert.ok(result.errors);
+  });
+});
+
+// ---- readState migration ----
+
+describe('readState migration', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTempProject(); });
+  afterEach(() => { cleanTempProject(tmpDir); });
+
+  it('transparently migrates old discussing status to discussed', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'discussing' }];
+    // Write raw JSON bypassing schema validation (old format)
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    const result = await readState(tmpDir);
+    assert.equal(result.valid, true);
+    assert.equal(result.state.milestones[0].sets[0].status, 'discussed');
+  });
+
+  it('transparently migrates old planning status to planned', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'planning' }];
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    const result = await readState(tmpDir);
+    assert.equal(result.valid, true);
+    assert.equal(result.state.milestones[0].sets[0].status, 'planned');
+  });
+
+  it('transparently migrates old executing status to executed', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'executing' }];
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    const result = await readState(tmpDir);
+    assert.equal(result.valid, true);
+    assert.equal(result.state.milestones[0].sets[0].status, 'executed');
+  });
+
+  it('migration does not write to disk (in-memory only)', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'discussing' }];
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    const mtimeBefore = fs.statSync(stateFile).mtimeMs;
+    await new Promise(r => setTimeout(r, 50));
+    await readState(tmpDir);
+    const mtimeAfter = fs.statSync(stateFile).mtimeMs;
+
+    assert.equal(mtimeBefore, mtimeAfter, 'STATE.json mtime should not change after readState migration');
+  });
+
+  it('withStateTransaction persists migrated values on next write', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{ id: 'set-1', status: 'discussing' }];
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+
+    // No-op mutation -- just triggers read + write cycle
+    await withStateTransaction(tmpDir, () => {});
+
+    const onDisk = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+    assert.equal(onDisk.milestones[0].sets[0].status, 'discussed');
   });
 });
 
@@ -298,10 +451,10 @@ describe('transitionSet', () => {
     const state = makeStateWithSet();
     writeTestState(tmpDir, state);
 
-    await transitionSet(tmpDir, 'v1.0', 'set-1', 'discussing');
+    await transitionSet(tmpDir, 'v1.0', 'set-1', 'discussed');
 
     const updated = readTestState(tmpDir);
-    assert.equal(updated.milestones[0].sets[0].status, 'discussing');
+    assert.equal(updated.milestones[0].sets[0].status, 'discussed');
   });
 
   it('rejects invalid transitions (throws)', async () => {
@@ -318,10 +471,10 @@ describe('transitionSet', () => {
     const state = makeStateWithSet();
     writeTestState(tmpDir, state);
 
-    // pending -> planning is valid (skip discussing)
-    await transitionSet(tmpDir, 'v1.0', 'set-1', 'planning');
+    // pending -> planned is valid (skip discussed)
+    await transitionSet(tmpDir, 'v1.0', 'set-1', 'planned');
     const updated = readTestState(tmpDir);
-    assert.equal(updated.milestones[0].sets[0].status, 'planning');
+    assert.equal(updated.milestones[0].sets[0].status, 'planned');
   });
 });
 
@@ -378,9 +531,9 @@ describe('validateDiskArtifacts', () => {
     assert.deepEqual(warnings, []);
   });
 
-  it('returns warning for planning status without CONTEXT.md', async () => {
+  it('returns warning for planned status without CONTEXT.md', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'planning';
+    state.milestones[0].sets[0].status = 'planned';
     writeTestState(tmpDir, state);
 
     const warnings = await validateDiskArtifacts(tmpDir, 'v1.0', 'set-1');
@@ -389,9 +542,9 @@ describe('validateDiskArtifacts', () => {
     assert.ok(warnings[0].message.includes('CONTEXT.md'));
   });
 
-  it('returns warning for executing status without wave plans dir', async () => {
+  it('returns warning for executed status without wave plans dir', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'executing';
+    state.milestones[0].sets[0].status = 'executed';
     writeTestState(tmpDir, state);
     // Create CONTEXT.md so only the wave plans warning triggers
     fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'set-1'), { recursive: true });
@@ -409,9 +562,9 @@ describe('validateDiskArtifacts', () => {
     assert.equal(warnings[0].type, 'error');
   });
 
-  it('returns empty array when all artifacts exist for executing status', async () => {
+  it('returns empty array when all artifacts exist for executed status', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'executing';
+    state.milestones[0].sets[0].status = 'executed';
     writeTestState(tmpDir, state);
     // Create both CONTEXT.md and waves dir
     fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'set-1'), { recursive: true });
@@ -424,7 +577,7 @@ describe('validateDiskArtifacts', () => {
 
   it('does NOT write to STATE.json (check mtime before/after)', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'planning';
+    state.milestones[0].sets[0].status = 'planned';
     writeTestState(tmpDir, state);
 
     const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
@@ -487,14 +640,14 @@ describe('set independence', () => {
     const state = makeStateWithTwoSets();
     writeTestState(tmpDir, state);
 
-    // Transition set-A to discussing
-    await transitionSet(tmpDir, 'v1.0', 'set-A', 'discussing');
+    // Transition set-A to discussed
+    await transitionSet(tmpDir, 'v1.0', 'set-A', 'discussed');
 
     // Verify set-B is still pending
     const updated = readTestState(tmpDir);
     const setA = updated.milestones[0].sets.find(s => s.id === 'set-A');
     const setB = updated.milestones[0].sets.find(s => s.id === 'set-B');
-    assert.equal(setA.status, 'discussing');
+    assert.equal(setA.status, 'discussed');
     assert.equal(setB.status, 'pending');
   });
 
@@ -502,13 +655,13 @@ describe('set independence', () => {
     const state = makeStateWithTwoSets();
     writeTestState(tmpDir, state);
 
-    await transitionSet(tmpDir, 'v1.0', 'set-A', 'planning');
-    await transitionSet(tmpDir, 'v1.0', 'set-B', 'discussing');
+    await transitionSet(tmpDir, 'v1.0', 'set-A', 'planned');
+    await transitionSet(tmpDir, 'v1.0', 'set-B', 'discussed');
 
     const updated = readTestState(tmpDir);
     const setA = updated.milestones[0].sets.find(s => s.id === 'set-A');
     const setB = updated.milestones[0].sets.find(s => s.id === 'set-B');
-    assert.equal(setA.status, 'planning');
-    assert.equal(setB.status, 'discussing');
+    assert.equal(setA.status, 'planned');
+    assert.equal(setB.status, 'discussed');
   });
 });

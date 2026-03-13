@@ -74,11 +74,11 @@ describe('Full set lifecycle', () => {
   beforeEach(() => { tmpDir = makeTempProject(); });
   afterEach(() => { cleanTempProject(tmpDir); });
 
-  it('full lifecycle: pending -> discussing -> planning -> executing -> complete -> merged', async () => {
+  it('full lifecycle: pending -> discussed -> planned -> executed -> complete -> merged', async () => {
     const state = makeStateWithSet();
     writeTestState(tmpDir, state);
 
-    const chain = ['discussing', 'planning', 'executing', 'complete', 'merged'];
+    const chain = ['discussed', 'planned', 'executed', 'complete', 'merged'];
     for (const nextStatus of chain) {
       await transitionSet(tmpDir, 'v1.0', 'set-1', nextStatus);
       const updated = readTestState(tmpDir);
@@ -90,11 +90,11 @@ describe('Full set lifecycle', () => {
     }
   });
 
-  it('skip lifecycle: pending -> planning -> executing -> complete -> merged', async () => {
+  it('skip lifecycle: pending -> planned -> executed -> complete -> merged', async () => {
     const state = makeStateWithSet();
     writeTestState(tmpDir, state);
 
-    const chain = ['planning', 'executing', 'complete', 'merged'];
+    const chain = ['planned', 'executed', 'complete', 'merged'];
     for (const nextStatus of chain) {
       await transitionSet(tmpDir, 'v1.0', 'set-1', nextStatus);
       const updated = readTestState(tmpDir);
@@ -110,16 +110,16 @@ describe('Full set lifecycle', () => {
     const state = makeStateWithSet();
     writeTestState(tmpDir, state);
 
-    // pending -> executing is invalid (must go through planning first)
+    // pending -> executed is invalid (must go through planned first)
     await assert.rejects(
-      () => transitionSet(tmpDir, 'v1.0', 'set-1', 'executing'),
+      () => transitionSet(tmpDir, 'v1.0', 'set-1', 'executed'),
       /Invalid transition/
     );
   });
 
   it('backward transition throws', async () => {
     const state = makeStateWithSet();
-    state.milestones[0].sets[0].status = 'planning';
+    state.milestones[0].sets[0].status = 'planned';
     writeTestState(tmpDir, state);
 
     await assert.rejects(
@@ -142,33 +142,33 @@ describe('Set independence in lifecycle', () => {
     const state = makeStateWithTwoSets();
     writeTestState(tmpDir, state);
 
-    // Set-A: full path with discussing
-    await transitionSet(tmpDir, 'v1.0', 'set-A', 'discussing');
-    await transitionSet(tmpDir, 'v1.0', 'set-A', 'planning');
+    // Set-A: full path with discussed
+    await transitionSet(tmpDir, 'v1.0', 'set-A', 'discussed');
+    await transitionSet(tmpDir, 'v1.0', 'set-A', 'planned');
 
-    // Set-B: skip discussing
-    await transitionSet(tmpDir, 'v1.0', 'set-B', 'planning');
-    await transitionSet(tmpDir, 'v1.0', 'set-B', 'executing');
+    // Set-B: skip discussed
+    await transitionSet(tmpDir, 'v1.0', 'set-B', 'planned');
+    await transitionSet(tmpDir, 'v1.0', 'set-B', 'executed');
 
     // Verify both are at expected states
     const updated = readTestState(tmpDir);
     const setA = updated.milestones[0].sets.find(s => s.id === 'set-A');
     const setB = updated.milestones[0].sets.find(s => s.id === 'set-B');
-    assert.equal(setA.status, 'planning');
-    assert.equal(setB.status, 'executing');
+    assert.equal(setA.status, 'planned');
+    assert.equal(setB.status, 'executed');
   });
 
-  it('transitioning set A to executing while set B stays pending', async () => {
+  it('transitioning set A to executed while set B stays pending', async () => {
     const state = makeStateWithTwoSets();
     writeTestState(tmpDir, state);
 
-    await transitionSet(tmpDir, 'v1.0', 'set-A', 'planning');
-    await transitionSet(tmpDir, 'v1.0', 'set-A', 'executing');
+    await transitionSet(tmpDir, 'v1.0', 'set-A', 'planned');
+    await transitionSet(tmpDir, 'v1.0', 'set-A', 'executed');
 
     const updated = readTestState(tmpDir);
     const setA = updated.milestones[0].sets.find(s => s.id === 'set-A');
     const setB = updated.milestones[0].sets.find(s => s.id === 'set-B');
-    assert.equal(setA.status, 'executing');
+    assert.equal(setA.status, 'executed');
     assert.equal(setB.status, 'pending');
   });
 });
@@ -259,7 +259,7 @@ describe('Atomic write guarantees', () => {
     const state = makeStateWithSet();
     writeTestState(tmpDir, state);
 
-    await transitionSet(tmpDir, 'v1.0', 'set-1', 'discussing');
+    await transitionSet(tmpDir, 'v1.0', 'set-1', 'discussed');
 
     const tmpFile = path.join(tmpDir, '.planning', 'STATE.json.tmp');
     assert.equal(fs.existsSync(tmpFile), false);

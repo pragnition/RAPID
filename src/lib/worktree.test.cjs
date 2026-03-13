@@ -1011,7 +1011,7 @@ describe('formatMarkIIStatus', () => {
     const stateData = {
       milestone: 'v2.0',
       sets: [
-        { id: 'auth-core', status: 'executing', waves: [
+        { id: 'auth-core', status: 'executed', waves: [
           { id: 'w1', status: 'executing', jobs: [
             { id: 'j1', status: 'complete' },
             { id: 'j2', status: 'executing' },
@@ -1038,7 +1038,7 @@ describe('formatMarkIIStatus', () => {
     const stateData = {
       milestone: 'v2.0',
       sets: [
-        { id: 'auth', status: 'executing', waves: [
+        { id: 'auth', status: 'executed', waves: [
           { id: 'w1', status: 'executing', jobs: [
             { id: 'j1', status: 'complete' },
             { id: 'j2', status: 'complete' },
@@ -1078,15 +1078,15 @@ describe('formatMarkIIStatus', () => {
     const stateData = {
       milestone: 'v2.0',
       sets: [
-        { id: 'auth', status: 'executing', waves: [] },
-        { id: 'ui', status: 'planning', waves: [] },
+        { id: 'auth', status: 'executed', waves: [] },
+        { id: 'ui', status: 'planned', waves: [] },
         { id: 'api', status: 'complete', waves: [] },
       ],
     };
     const registryData = { worktrees: {} };
     const table = worktree.formatMarkIIStatus(stateData, registryData);
-    assert.ok(table.includes('executing'), 'should show executing status');
-    assert.ok(table.includes('planning'), 'should show planning status');
+    assert.ok(table.includes('executed'), 'should show executed status');
+    assert.ok(table.includes('planned'), 'should show planned status');
     assert.ok(table.includes('complete'), 'should show complete status');
   });
 
@@ -1094,7 +1094,7 @@ describe('formatMarkIIStatus', () => {
     const stateData = {
       milestone: 'v2.0',
       sets: [
-        { id: 'auth', status: 'executing', waves: [] },
+        { id: 'auth', status: 'executed', waves: [] },
         { id: 'ui', status: 'pending', waves: [] },
       ],
     };
@@ -1118,22 +1118,22 @@ describe('formatMarkIIStatus', () => {
     assert.ok(result.includes('No sets found'), 'should return "No sets found" for empty sets');
   });
 
-  it('sorts sets: executing first, then planning, then pending, then complete', () => {
+  it('sorts sets: executed first, then planned, then pending, then complete', () => {
     const stateData = {
       milestone: 'v2.0',
       sets: [
         { id: 'set-complete', status: 'complete', waves: [] },
         { id: 'set-pending', status: 'pending', waves: [] },
-        { id: 'set-executing', status: 'executing', waves: [] },
-        { id: 'set-planning', status: 'planning', waves: [] },
+        { id: 'set-executed', status: 'executed', waves: [] },
+        { id: 'set-planned', status: 'planned', waves: [] },
       ],
     };
     const registryData = { worktrees: {} };
     const table = worktree.formatMarkIIStatus(stateData, registryData);
     const lines = table.split('\n');
     const dataLines = lines.slice(2);
-    assert.ok(dataLines[0].includes('set-executing'), 'first data row should be executing');
-    assert.ok(dataLines[1].includes('set-planning'), 'second data row should be planning');
+    assert.ok(dataLines[0].includes('set-executed'), 'first data row should be executed');
+    assert.ok(dataLines[1].includes('set-planned'), 'second data row should be planned');
     assert.ok(dataLines[2].includes('set-pending'), 'third data row should be pending');
     assert.ok(dataLines[3].includes('set-complete'), 'fourth data row should be complete');
   });
@@ -1175,17 +1175,17 @@ describe('deriveNextActions', () => {
     assert.ok(discussAction, 'should suggest /discuss for pending set with worktree');
   });
 
-  it('suggests "Continue executing" for sets in executing state', () => {
+  it('suggests "Continue executing" for sets in executed state', () => {
     const stateData = {
       milestone: 'v2.0',
       sets: [
-        { id: 'auth', status: 'executing', waves: [] },
+        { id: 'auth', status: 'executed', waves: [] },
       ],
     };
     const registryData = { worktrees: { 'auth': { path: '/tmp/wt/auth' } } };
     const actions = worktree.deriveNextActions(stateData, registryData);
     const execAction = actions.find(a => a.action.includes('/execute'));
-    assert.ok(execAction, 'should suggest /execute for executing set');
+    assert.ok(execAction, 'should suggest /execute for executed set');
   });
 
   it('suggests "Clean up" for complete sets with worktree', () => {
