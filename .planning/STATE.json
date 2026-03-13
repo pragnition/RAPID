@@ -43,19 +43,19 @@
         },
         {
           "id": "command-cleanup",
-          "status": "discussing"
+          "status": "executing"
         },
         {
           "id": "install-version",
-          "status": "planning"
+          "status": "complete"
         },
         {
           "id": "parallel-waves",
-          "status": "pending"
+          "status": "discussing"
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-13T10:12:02.553Z",
+  "lastUpdatedAt": "2026-03-13T10:25:58.985Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
