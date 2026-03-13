@@ -197,6 +197,6 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 40. CLI Surface & Utility Commands | 4/4 | Complete    | 2026-03-12 | - |
 | 41. Build Pipeline & Generated Agents | 2/2 | Complete    | 2026-03-12 | - |
 | 42. Core Agent Rewrites | 4/4 | Complete    | 2026-03-13 | - |
-| 43. Planning & Discussion Skills | v3.0 | 0/3 | Not started | - |
+| 43. Planning & Discussion Skills | 2/3 | In Progress|  | - |
 | 44. Execution & Auxiliary Skills | v3.0 | 0/TBD | Not started | - |
 | 45. Documentation, Contracts & Cleanup | v3.0 | 0/TBD | Not started | - |

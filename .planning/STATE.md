@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Refresh
 status: in-progress
-stopped_at: Phase 43 context gathered
-last_updated: "2026-03-13T02:26:20.087Z"
-last_activity: 2026-03-13 -- Completed 42-04 reviewer verdict vocabulary alignment
+stopped_at: Completed 43-02-PLAN.md
+last_updated: "2026-03-13T02:59:28.963Z"
+last_activity: 2026-03-13 -- Completed 43-02 start-set and discuss-set skill rewrites
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 19
+  completed_plans: 18
   percent: 99
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Multiple developers using Claude Code can work on the same project simultaneously without blocking each other, with confidence their independent work will merge cleanly.
-**Current focus:** Phase 42 - Core Agent Rewrites (v3.0 Refresh)
+**Current focus:** Phase 43 - Planning & Discussion Skills (v3.0 Refresh)
 
 ## Current Position
 
-Phase: 42 of 45 (Core Agent Rewrites)
-Plan: 4 of 4 in current phase (phase complete)
+Phase: 43 of 45 (Planning & Discussion Skills)
+Plan: 2 of 3 in current phase
 Status: in-progress
-Last activity: 2026-03-13 -- Completed 42-04 reviewer verdict vocabulary alignment
+Last activity: 2026-03-13 -- Completed 43-02 start-set and discuss-set skill rewrites
 
-Progress: [██████████] 99% (111/112 plans)
+Progress: [██████████] 99% (113/115 plans)
 
 ## Accumulated Context
 
@@ -78,6 +78,13 @@ Recent:
 - [Phase 42]: Merger role preserves exact RAPID:RETURN data contract schema (semantic_conflicts, resolutions, escalations, all_resolved) matching merge.cjs parseSetMergerReturn
 - [Phase 42]: Reviewer expanded from 27-line checklist to prioritized 5-level review with 3-tier severity assessment (Blocking, Fixable, Suggestion)
 - [Phase 42]: Reviewer verdict vocabulary aligned to merge.cjs (APPROVE/CHANGES/BLOCK) instead of modifying production merge pipeline
+- [Phase 43]: Init discovery uses 4 topic batches (Vision+Users, Features+Technical, Scale+Integrations, Context+Success) instead of 8-15 individual questions
+- [Phase 43]: Roadmapper outputs sets only -- wave/job decomposition deferred to /plan-set
+- [Phase 43]: STATE.json at init contains only project > milestone > sets (no waves/jobs arrays)
+- [Phase 43]: Progress breadcrumbs shown at completion and on every error in init pipeline
+- [Phase 43]: discuss-set operates at set level only -- resolve set, CONTEXT.md output, state transition set
+- [Phase 43]: Exactly 4 gray areas per set discussion with batched 2-3 questions per area via AskUserQuestion
+- [Phase 43]: --skip flag on discuss-set spawns rapid-researcher for auto-CONTEXT.md without user interaction
 
 ### Pending Todos
 
@@ -113,5 +120,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-13T02:26:20.085Z
-Stopped at: Phase 43 context gathered
+Last session: 2026-03-13T02:59:28.962Z
+Stopped at: Completed 43-02-PLAN.md

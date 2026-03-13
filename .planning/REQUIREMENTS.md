@@ -27,9 +27,9 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 ### Planning
 
 - [ ] **PLAN-01**: /plan-set produces one PLAN.md per wave in a single pass (2-4 agent spawns, not 15-20)
-- [ ] **PLAN-02**: /discuss-set captures user vision and produces CONTEXT.md for the planner
-- [ ] **PLAN-03**: /discuss-set --skip auto-generates CONTEXT.md from roadmap + codebase scan
-- [ ] **PLAN-04**: Interface contracts defined between sets without blocking gates
+- [x] **PLAN-02**: /discuss-set captures user vision and produces CONTEXT.md for the planner
+- [x] **PLAN-03**: /discuss-set --skip auto-generates CONTEXT.md from roadmap + codebase scan
+- [x] **PLAN-04**: Interface contracts defined between sets without blocking gates
 - [ ] **PLAN-05**: Contract enforcement at three points: after planning, during execution, before merge
 
 ### Execution
@@ -40,9 +40,9 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 
 ### Commands
 
-- [ ] **CMD-01**: /init handles greenfield and brownfield with 5-researcher pipeline and roadmap creation
-- [ ] **CMD-02**: /start-set creates worktree scaffold for a set
-- [ ] **CMD-03**: /discuss-set as standalone command with --skip flag
+- [x] **CMD-01**: /init handles greenfield and brownfield with 5-researcher pipeline and roadmap creation
+- [x] **CMD-02**: /start-set creates worktree scaffold for a set
+- [x] **CMD-03**: /discuss-set as standalone command with --skip flag
 - [ ] **CMD-04**: /plan-set as standalone command
 - [ ] **CMD-05**: /execute-set as standalone command
 - [x] **CMD-06**: /review preserved with state reference updates
@@ -55,8 +55,8 @@ Requirements for v3.0 Refresh. Surgical rewrite of orchestration layer.
 
 ### UX
 
-- [ ] **UX-01**: Error messages show progress breadcrumb (done/missing/next)
-- [ ] **UX-02**: Strong defaults with one suggested next action (minimize AskUserQuestion)
+- [x] **UX-01**: Error messages show progress breadcrumb (done/missing/next)
+- [x] **UX-02**: Strong defaults with one suggested next action (minimize AskUserQuestion)
 - [x] **UX-03**: Deprecation stubs for removed v2 commands with migration messages
 - [x] **UX-04**: 7+4 command structure (7 core lifecycle + 4 auxiliary)
 
@@ -201,16 +201,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGENT-05 | Phase 39 | Complete |
 | AGENT-06 | Phase 41 | Complete |
 | PLAN-01 | Phase 43 | Pending |
-| PLAN-02 | Phase 43 | Pending |
-| PLAN-03 | Phase 43 | Pending |
-| PLAN-04 | Phase 43 | Pending |
+| PLAN-02 | Phase 43 | Complete |
+| PLAN-03 | Phase 43 | Complete |
+| PLAN-04 | Phase 43 | Complete |
 | PLAN-05 | Phase 43 | Pending |
 | EXEC-01 | Phase 44 | Pending |
 | EXEC-02 | Phase 44 | Pending |
 | EXEC-03 | Phase 44 | Pending |
-| CMD-01 | Phase 43 | Pending |
-| CMD-02 | Phase 43 | Pending |
-| CMD-03 | Phase 43 | Pending |
+| CMD-01 | Phase 43 | Complete |
+| CMD-02 | Phase 43 | Complete |
+| CMD-03 | Phase 43 | Complete |
 | CMD-04 | Phase 43 | Pending |
 | CMD-05 | Phase 44 | Pending |
 | CMD-06 | Phase 40 | Complete |
@@ -220,8 +220,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMD-10 | Phase 44 | Pending |
 | CMD-11 | Phase 44 | Pending |
 | CMD-12 | Phase 40 | Complete |
-| UX-01 | Phase 43 | Pending |
-| UX-02 | Phase 43 | Pending |
+| UX-01 | Phase 43 | Complete |
+| UX-02 | Phase 43 | Complete |
 | UX-03 | Phase 40 | Complete |
 | UX-04 | Phase 40 | Complete |
 | DOC-01 | Phase 45 | Pending |
