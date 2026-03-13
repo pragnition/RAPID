@@ -53,7 +53,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 42: Core Agent Rewrites** - Hand-write planner, executor, merger, reviewer agents; remove orchestrator (completed 2026-03-12)
 - [x] **Phase 43: Planning & Discussion Skills** - Rewrite init, start-set, discuss-set, plan-set with collapsed planning pipeline (completed 2026-03-13)
 - [x] **Phase 44: Execution & Auxiliary Skills** - Rewrite execute-set, implement quick, add-set, new-version (completed 2026-03-13)
-- [ ] **Phase 45: Documentation, Contracts & Cleanup** - Update docs, remove dead code, simplify contracts
+- [x] **Phase 45: Documentation, Contracts & Cleanup** - Update docs, remove dead code, simplify contracts (completed 2026-03-13)
 
 ## Phase Details
 
@@ -189,9 +189,9 @@ Plans:
   3. GATES.json generation is removed, CONTRACT.json is retained as the sole contract artifact, and lock.cjs retains only STATE.json mutation locks (set-gating locks removed)
 **Plans**: 3 plans
 Plans:
-- [ ] 45-01-PLAN.md — Dead code removal + GATES.json cleanup (wave 1)
-- [ ] 45-02-PLAN.md — README.md rewrite as v3.0 landing page (wave 1)
-- [ ] 45-03-PLAN.md — technical_documentation.md + docs/ rewrite (wave 1)
+- [x] 45-01-PLAN.md — Dead code removal + GATES.json cleanup (wave 1)
+- [x] 45-02-PLAN.md — README.md rewrite as v3.0 landing page (wave 1)
+- [x] 45-03-PLAN.md — technical_documentation.md + docs/ rewrite (wave 1)
 **Research flag**: Skip research-phase (documentation and cleanup)
 
 ## Progress
@@ -208,4 +208,4 @@ Phases execute in numeric order: 38 -> 39 -> 40 -> 41 -> 42 -> 43 -> 44 -> 45
 | 42. Core Agent Rewrites | 4/4 | Complete    | 2026-03-13 | - |
 | 43. Planning & Discussion Skills | 4/4 | Complete    | 2026-03-13 | - |
 | 44. Execution & Auxiliary Skills | 3/3 | Complete    | 2026-03-13 | - |
-| 45. Documentation, Contracts & Cleanup | 1/3 | In Progress|  | - |
+| 45. Documentation, Contracts & Cleanup | 3/3 | Complete    | 2026-03-13 | - |
