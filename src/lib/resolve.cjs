@@ -1,6 +1,7 @@
 'use strict';
 
-const plan = require('./plan.cjs');
+const fs = require('fs');
+const path = require('path');
 
 const NUMERIC_SET_PATTERN = /^\d+$/;
 const NUMERIC_WAVE_PATTERN = /^\d+\.\d+$/;
