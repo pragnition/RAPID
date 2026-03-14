@@ -14,8 +14,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { z } = require('zod');
 const execute = require('./execute.cjs');
+const merge = require('./merge.cjs');
 
 // ────────────────────────────────────────────────────────────────
 // Constants
@@ -91,6 +93,81 @@ const ReviewIssues = z.object({
 function scopeSetForReview(cwd, worktreePath, baseBranch) {
   const changedFiles = execute.getChangedFiles(worktreePath, baseBranch);
   const dependentFiles = findDependents(cwd, changedFiles);
+  return {
+    changedFiles,
+    dependentFiles,
+    totalFiles: changedFiles.length + dependentFiles.length,
+  };
+}
+
+/**
+ * Compute review scope for a set from its merge commit (post-merge mode).
+ * Uses MERGE-STATE.json mergeCommit hash when available, falls back to
+ * git log grep. Validates the commit is a merge (2 parents), diffs against
+ * the first parent, and filters out .planning/ files.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {{ changedFiles: string[], dependentFiles: string[], totalFiles: number }}
+ */
+function scopeSetPostMerge(cwd, setId) {
+  let mergeCommit = null;
+
+  // 1. Try MERGE-STATE.json first
+  const mergeState = merge.readMergeState(cwd, setId);
+  if (mergeState && mergeState.mergeCommit) {
+    mergeCommit = mergeState.mergeCommit;
+  }
+
+  // 2. Fallback to git log grep
+  if (!mergeCommit) {
+    try {
+      const result = execSync(
+        `git log --oneline --grep="merge(${setId})" --format="%H" -1`,
+        { cwd, stdio: 'pipe', encoding: 'utf-8' }
+      ).trim();
+      if (result) {
+        mergeCommit = result;
+      }
+    } catch {
+      // git log failed -- will throw below
+    }
+  }
+
+  if (!mergeCommit) {
+    throw new Error(`No merge commit found for set '${setId}'. Verify the set has been merged.`);
+  }
+
+  // 3. Validate merge commit has 2 parents
+  try {
+    const catFile = execSync(
+      `git cat-file -p ${mergeCommit}`,
+      { cwd, stdio: 'pipe', encoding: 'utf-8' }
+    );
+    const parentLines = catFile.split('\n').filter(line => line.startsWith('parent '));
+    if (parentLines.length < 2) {
+      throw new Error(`Commit ${mergeCommit} is not a merge commit (expected 2 parents).`);
+    }
+  } catch (err) {
+    if (err.message.includes('is not a merge commit')) throw err;
+    throw new Error(`Failed to validate merge commit ${mergeCommit}: ${err.message}`);
+  }
+
+  // 4. Get changed files via diff against first parent
+  const diffOutput = execSync(
+    `git diff --name-only ${mergeCommit}^1..${mergeCommit}`,
+    { cwd, stdio: 'pipe', encoding: 'utf-8' }
+  ).trim();
+
+  const changedFiles = diffOutput
+    .split('\n')
+    .filter(f => f.length > 0)
+    .filter(f => !f.startsWith('.planning/'));
+
+  // 5. Find dependents
+  const dependentFiles = findDependents(cwd, changedFiles);
+
+  // 6. Return same shape as scopeSetForReview
   return {
     changedFiles,
     dependentFiles,
@@ -682,6 +759,7 @@ module.exports = {
 
   // Scoping
   scopeSetForReview,
+  scopeSetPostMerge,
   findDependents,
 
   // Concern-based scoping
