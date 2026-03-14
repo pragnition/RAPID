@@ -61,7 +61,7 @@
       "sets": [
         {
           "id": "state-consistency",
-          "status": "discussing"
+          "status": "complete"
         },
         {
           "id": "command-audit",
@@ -82,6 +82,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-14T14:56:28.757Z",
+  "lastUpdatedAt": "2026-03-14T15:29:34.826Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
