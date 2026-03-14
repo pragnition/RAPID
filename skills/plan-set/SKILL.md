@@ -71,7 +71,7 @@ Parse the JSON to find the resolved set within the current milestone. Extract `M
   ```
   STOP.
 
-- **If `discussing`:** This is the expected state. Continue to Step 3.
+- **If `discussed`:** This is the expected state. Continue to Step 3.
 
 - **If `planning` or later:** Display: "Set '{SET_ID}' is already in '{status}' state. Planning is complete."
   Suggest: `/rapid:execute-set {SET_INDEX}`
@@ -279,11 +279,11 @@ Contract validation is deferred to execution and merge time. The planner and ver
 
 ## Step 8: State Transition
 
-Transition set from 'discussing' to 'planning':
+Transition set from 'discussed' to 'planned':
 
 ```bash
 # (env preamble here)
-node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" planning
+node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" planned
 ```
 
 ---
@@ -362,7 +362,7 @@ Next: {what to run to recover}
 - Do NOT spawn separate agents for producing per-job plans. The planner produces per-wave PLAN.md files with task-level detail directly.
 - Do NOT reference retired v2 agents. The only valid agents in v3 are rapid-research-stack (researcher), rapid-planner (planner), and rapid-plan-verifier (verifier).
 - Do NOT use AskUserQuestion during the normal flow (fully autonomous). Only use it on final verification failure after retry.
-- Do NOT reference per-wave state transitions. Use `state transition set` only (discussing -> planning).
+- Do NOT reference per-wave state transitions. Use `state transition set` only (discussed -> planned).
 - Do NOT write v2-style plan artifacts. The only plan output format is wave-{N}-PLAN.md in `.planning/sets/{set-id}/`.
 - Do NOT show full plan contents in the confirmation output. Brief confirmation only (per locked decision).
 - Do NOT attempt sub-sub-agent spawning. All Agent tool calls come from this SKILL.md, not from spawned agents.
@@ -378,5 +378,5 @@ Next: {what to run to recover}
 - **Contract enforcement point 1 (PLAN-05):** Contract validation runs after planning completes, before state transition. Violations are advisory during planning -- they will be enforced during execution and merge.
 - **Brief confirmation:** Output at end shows set name, wave count, verification status, and next command. No full plan preview.
 - **Progress breadcrumb:** Shown at completion and in every error message.
-- **Set-level state only:** One state transition: discussing -> planning. No wave-level or job-level state.
+- **Set-level state only:** One state transition: discussed -> planned. No wave-level or job-level state.
 - **All CLI calls via RAPID_TOOLS:** Never edit STATE.json directly. All state transitions via `node "${RAPID_TOOLS}" state transition` CLI.
