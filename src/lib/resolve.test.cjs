@@ -28,6 +28,28 @@ function createMockSets(cwd, setNames) {
 }
 
 /**
+ * Create a .planning/STATE.json file with a valid ProjectState structure.
+ * Each set gets status: 'pending' and waves: [].
+ */
+function createMockState(cwd, setNames) {
+  const stateFile = path.join(cwd, '.planning', 'STATE.json');
+  fs.mkdirSync(path.join(cwd, '.planning'), { recursive: true });
+  const state = {
+    version: 1,
+    projectName: 'test-project',
+    currentMilestone: 'v1.0',
+    milestones: [{
+      id: 'v1.0',
+      name: 'v1.0',
+      sets: setNames.map(name => ({ id: name, status: 'pending', waves: [] })),
+    }],
+    lastUpdatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+}
+
+/**
  * Create a valid ProjectState object for wave resolution tests.
  */
 function makeState(sets) {
@@ -61,8 +83,9 @@ afterEach(() => {
 // resolveSet -- numeric happy path (UX-01)
 // ────────────────────────────────────────────────────────────────
 describe('resolveSet -- numeric resolution (UX-01)', () => {
-  it('resolves "1" to first alphabetically-sorted set', () => {
+  it('resolves "1" to first milestone-ordered set', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     const result = resolveSet('1', tmpDir);
     assert.deepStrictEqual(result, {
       resolvedId: 'set-01-api',
@@ -73,6 +96,7 @@ describe('resolveSet -- numeric resolution (UX-01)', () => {
 
   it('resolves "2" to second set', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     const result = resolveSet('2', tmpDir);
     assert.deepStrictEqual(result, {
       resolvedId: 'set-02-data',
@@ -83,6 +107,7 @@ describe('resolveSet -- numeric resolution (UX-01)', () => {
 
   it('resolves "3" to third set', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     const result = resolveSet('3', tmpDir);
     assert.deepStrictEqual(result, {
       resolvedId: 'set-03-ui',
@@ -93,6 +118,7 @@ describe('resolveSet -- numeric resolution (UX-01)', () => {
 
   it('resolves "1" with single set (boundary)', () => {
     createMockSets(tmpDir, ['only-set']);
+    createMockState(tmpDir, ['only-set']);
     const result = resolveSet('1', tmpDir);
     assert.deepStrictEqual(result, {
       resolvedId: 'only-set',
@@ -108,6 +134,7 @@ describe('resolveSet -- numeric resolution (UX-01)', () => {
 describe('resolveSet -- string ID backward compat (UX-03)', () => {
   it('resolves "set-02-data" with wasNumeric=false and correct numericIndex', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     const result = resolveSet('set-02-data', tmpDir);
     assert.deepStrictEqual(result, {
       resolvedId: 'set-02-data',
@@ -118,6 +145,7 @@ describe('resolveSet -- string ID backward compat (UX-03)', () => {
 
   it('resolves first set string ID with numericIndex=1', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     const result = resolveSet('set-01-api', tmpDir);
     assert.deepStrictEqual(result, {
       resolvedId: 'set-01-api',
@@ -128,6 +156,7 @@ describe('resolveSet -- string ID backward compat (UX-03)', () => {
 
   it('resolves last set string ID with correct numericIndex', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     const result = resolveSet('set-03-ui', tmpDir);
     assert.deepStrictEqual(result, {
       resolvedId: 'set-03-ui',
@@ -143,6 +172,7 @@ describe('resolveSet -- string ID backward compat (UX-03)', () => {
 describe('resolveSet -- error cases', () => {
   it('throws on index 0', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     assert.throws(
       () => resolveSet('0', tmpDir),
       { message: 'Invalid index: must be a positive integer.' }
@@ -151,6 +181,7 @@ describe('resolveSet -- error cases', () => {
 
   it('treats "-1" as string ID (not numeric), throws not found', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     assert.throws(
       () => resolveSet('-1', tmpDir),
       { message: /Set '-1' not found/ }
@@ -159,6 +190,7 @@ describe('resolveSet -- error cases', () => {
 
   it('throws on out-of-range index', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     assert.throws(
       () => resolveSet('99', tmpDir),
       { message: 'Set 99 not found. Valid range: 1-3. Use /rapid:status to see available sets.' }
@@ -166,27 +198,126 @@ describe('resolveSet -- error cases', () => {
   });
 
   it('throws when no sets exist', () => {
-    // Create .planning/sets/ but no set directories
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets'), { recursive: true });
+    // Create STATE.json with empty sets array
+    createMockState(tmpDir, []);
     assert.throws(
       () => resolveSet('1', tmpDir),
-      { message: 'No sets found. Run /rapid:plan first to create a project plan with sets.' }
+      { message: "No sets found in current milestone 'v1.0'. Run /rapid:init first." }
     );
   });
 
-  it('throws when .planning/sets/ directory does not exist', () => {
+  it('throws when no STATE.json exists', () => {
+    // No STATE.json on disk -- should throw a clear init message
     assert.throws(
       () => resolveSet('1', tmpDir),
-      { message: 'No sets found. Run /rapid:plan first to create a project plan with sets.' }
+      { message: 'No STATE.json found. Run /rapid:init first to initialize the project.' }
     );
   });
 
   it('throws on nonexistent string ID with available sets listed', () => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
     assert.throws(
       () => resolveSet('nonexistent', tmpDir),
       { message: "Set 'nonexistent' not found. Available sets: set-01-api, set-02-data, set-03-ui" }
     );
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// resolveSet -- explicit state parameter
+// ────────────────────────────────────────────────────────────────
+describe('resolveSet -- explicit state parameter', () => {
+  it('resolves numeric index from provided state', () => {
+    const state = makeState([
+      { id: 'alpha', status: 'pending', waves: [] },
+      { id: 'beta', status: 'pending', waves: [] },
+      { id: 'gamma', status: 'pending', waves: [] },
+    ]);
+    const result = resolveSet('2', tmpDir, state);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'beta',
+      numericIndex: 2,
+      wasNumeric: true,
+    });
+  });
+
+  it('resolves string ID from provided state', () => {
+    const state = makeState([
+      { id: 'alpha', status: 'pending', waves: [] },
+      { id: 'beta', status: 'pending', waves: [] },
+      { id: 'gamma', status: 'pending', waves: [] },
+    ]);
+    const result = resolveSet('gamma', tmpDir, state);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'gamma',
+      numericIndex: 3,
+      wasNumeric: false,
+    });
+  });
+
+  it('uses milestone ordering, not alphabetical', () => {
+    const state = makeState([
+      { id: 'zebra', status: 'pending', waves: [] },
+      { id: 'apple', status: 'pending', waves: [] },
+      { id: 'mango', status: 'pending', waves: [] },
+    ]);
+    const result = resolveSet('1', tmpDir, state);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'zebra',
+      numericIndex: 1,
+      wasNumeric: true,
+    });
+  });
+
+  it('throws on out-of-range with state-provided sets', () => {
+    const state = makeState([
+      { id: 'alpha', status: 'pending', waves: [] },
+      { id: 'beta', status: 'pending', waves: [] },
+    ]);
+    assert.throws(
+      () => resolveSet('5', tmpDir, state),
+      { message: 'Set 5 not found. Valid range: 1-2. Use /rapid:status to see available sets.' }
+    );
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// resolveSet -- archive-resilient resolution
+// ────────────────────────────────────────────────────────────────
+describe('resolveSet -- archive-resilient resolution', () => {
+  it('resolves numeric index when no .planning/sets/ directories exist', () => {
+    // Only STATE.json, no set directories on disk
+    createMockState(tmpDir, ['set-a', 'set-b', 'set-c']);
+    const result = resolveSet('2', tmpDir);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'set-b',
+      numericIndex: 2,
+      wasNumeric: true,
+    });
+  });
+
+  it('resolves string ID when no .planning/sets/ directories exist', () => {
+    createMockState(tmpDir, ['set-a', 'set-b', 'set-c']);
+    const result = resolveSet('set-c', tmpDir);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'set-c',
+      numericIndex: 3,
+      wasNumeric: false,
+    });
+  });
+
+  it('ordering matches STATE.json, not filesystem', () => {
+    // STATE.json has non-alphabetical ordering
+    createMockState(tmpDir, ['zebra', 'apple', 'mango']);
+    // Create directories on disk in alphabetical order
+    createMockSets(tmpDir, ['apple', 'mango', 'zebra']);
+    const result = resolveSet('1', tmpDir);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'zebra',
+      numericIndex: 1,
+      wasNumeric: true,
+    });
   });
 });
 
@@ -223,6 +354,7 @@ describe('resolveWave -- numeric dot notation (UX-02)', () => {
 
   beforeEach(() => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
   });
 
   it('resolves "1.1" to set 1, wave 1', () => {
@@ -294,6 +426,7 @@ describe('resolveWave -- string ID backward compat (UX-03)', () => {
 
   beforeEach(() => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data']);
   });
 
   it('resolves string wave ID "wave-02" with wasNumeric=false', () => {
@@ -323,6 +456,7 @@ describe('resolveWave -- error cases', () => {
 
   beforeEach(() => {
     createMockSets(tmpDir, ['set-01-api']);
+    createMockState(tmpDir, ['set-01-api']);
   });
 
   it('throws on malformed "1." input', () => {
@@ -381,6 +515,7 @@ describe('resolveWave -- error cases', () => {
 describe('resolveWave -- edge cases', () => {
   it('handles single set with single wave', () => {
     createMockSets(tmpDir, ['only-set']);
+    createMockState(tmpDir, ['only-set']);
     const state = makeState([
       {
         id: 'only-set',
@@ -402,11 +537,12 @@ describe('resolveWave -- edge cases', () => {
 
   it('resolveWave with set not in state throws descriptive error', () => {
     createMockSets(tmpDir, ['set-01-api']);
-    // State has no sets in milestone
+    createMockState(tmpDir, ['set-01-api']);
+    // State has no sets in milestone -- emptyState passed explicitly overrides disk
     const emptyState = makeState([]);
     assert.throws(
       () => resolveWave('1.1', emptyState, tmpDir),
-      { message: /not found in state/ }
+      { message: /No sets found in current milestone/ }
     );
   });
 });
@@ -437,6 +573,7 @@ describe('resolveWave -- with setId parameter (FLOW-01)', () => {
 
   beforeEach(() => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data']);
   });
 
   it('resolves string setId + string waveId correctly', () => {
@@ -524,5 +661,54 @@ describe('resolveWave -- with setId parameter (FLOW-01)', () => {
     assert.equal(result.waveId, 'wave-02');
     assert.equal(result.setId, 'set-01-api');
     assert.equal(result.wasNumeric, false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// resolveWave -- state-based set indexing
+// ────────────────────────────────────────────────────────────────
+describe('resolveWave -- state-based set indexing', () => {
+  it('string wave ID returns milestone-ordered setIndex', () => {
+    const state = makeState([
+      {
+        id: 'zebra-set',
+        status: 'pending',
+        waves: [{ id: 'wave-01', status: 'pending', jobs: [] }],
+      },
+      {
+        id: 'apple-set',
+        status: 'pending',
+        waves: [{ id: 'wave-01', status: 'pending', jobs: [] }],
+      },
+    ]);
+    createMockState(tmpDir, ['zebra-set', 'apple-set']);
+    const result = resolveWave('wave-01', state, tmpDir);
+    assert.equal(result.setIndex, 1);
+    assert.equal(result.setId, 'zebra-set');
+    assert.equal(result.waveId, 'wave-01');
+    assert.equal(result.wasNumeric, false);
+  });
+
+  it('dot notation resolves set index from milestone order, not filesystem', () => {
+    const state = makeState([
+      {
+        id: 'zebra-set',
+        status: 'pending',
+        waves: [{ id: 'wave-01', status: 'pending', jobs: [] }],
+      },
+      {
+        id: 'apple-set',
+        status: 'pending',
+        waves: [{ id: 'wave-01', status: 'pending', jobs: [] }],
+      },
+    ]);
+    // Create directories in alphabetical order (apple before zebra)
+    createMockSets(tmpDir, ['apple-set', 'zebra-set']);
+    createMockState(tmpDir, ['zebra-set', 'apple-set']);
+    const result = resolveWave('1.1', state, tmpDir);
+    assert.equal(result.setId, 'zebra-set');
+    assert.equal(result.setIndex, 1);
+    assert.equal(result.waveId, 'wave-01');
+    assert.equal(result.wasNumeric, true);
   });
 });

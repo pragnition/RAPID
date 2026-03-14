@@ -2617,7 +2617,12 @@ async function handleResolve(cwd, subcommand, args) {
         process.exit(1);
       }
       try {
-        const result = resolveLib.resolveSet(input, cwd);
+        const sm = require('../lib/state-machine.cjs');
+        const stateResult = await sm.readState(cwd);
+        if (!stateResult || !stateResult.valid) {
+          throw new Error('Cannot read STATE.json. Run /rapid:plan first to initialize state.');
+        }
+        const result = resolveLib.resolveSet(input, cwd, stateResult.state);
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
         process.stdout.write(JSON.stringify({ error: err.message }) + '\n');

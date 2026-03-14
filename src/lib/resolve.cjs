@@ -1,26 +1,62 @@
 'use strict';
 
-const plan = require('./plan.cjs');
+const fs = require('fs');
+const path = require('path');
 
 const NUMERIC_SET_PATTERN = /^\d+$/;
 const NUMERIC_WAVE_PATTERN = /^\d+\.\d+$/;
 
 /**
+ * Load STATE.json synchronously from disk.
+ * Internal helper -- not exported. Used as fallback when callers
+ * do not pass a pre-loaded state object.
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {object} Parsed state object
+ * @throws {Error} If STATE.json does not exist or is malformed
+ */
+function _loadStateFromDisk(cwd) {
+  const statePath = path.join(cwd, '.planning', 'STATE.json');
+  let raw;
+  try {
+    raw = fs.readFileSync(statePath, 'utf8');
+  } catch (err) {
+    throw new Error('No STATE.json found. Run /rapid:init first to initialize the project.');
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    throw new Error('STATE.json is corrupted. Re-run /rapid:init to reinitialize.');
+  }
+}
+
+/**
  * Resolve a set reference (numeric index or string ID) to full set info.
  *
- * Numeric IDs are 1-based indices into the alphabetically-sorted set list
- * from `.planning/sets/`. String IDs are matched exactly against directory names.
+ * Numeric IDs are 1-based indices into the current milestone's sets[] array
+ * in STATE.json (insertion order). String IDs are matched exactly against
+ * set IDs in the milestone.
  *
  * @param {string} input - Numeric index (e.g., "1") or string ID (e.g., "set-01-foundation")
  * @param {string} cwd - Project root directory
+ * @param {object} [state] - Optional pre-loaded ProjectState object. If omitted, STATE.json is read from disk.
  * @returns {{ resolvedId: string, numericIndex: number, wasNumeric: boolean }}
  * @throws {Error} On invalid index, out-of-range, no sets, or not found
  */
-function resolveSet(input, cwd) {
-  const sets = plan.listSets(cwd);
+function resolveSet(input, cwd, state) {
+  if (!state) {
+    state = _loadStateFromDisk(cwd);
+  }
+
+  const milestone = state.milestones.find((m) => m.id === state.currentMilestone);
+  if (!milestone) {
+    throw new Error(`Current milestone '${state.currentMilestone}' not found in state.`);
+  }
+
+  const sets = milestone.sets.map((s) => s.id);
 
   if (sets.length === 0) {
-    throw new Error('No sets found. Run /rapid:plan first to create a project plan with sets.');
+    throw new Error(`No sets found in current milestone '${state.currentMilestone}'. Run /rapid:init first.`);
   }
 
   if (NUMERIC_SET_PATTERN.test(input)) {
@@ -74,7 +110,7 @@ function resolveSet(input, cwd) {
 function resolveWave(input, state, cwd, setId) {
   // --set flag path: resolve set first, then find wave within that set
   if (setId !== undefined) {
-    const setResult = resolveSet(setId, cwd);
+    const setResult = resolveSet(setId, cwd, state);
     const resolvedSetId = setResult.resolvedId;
 
     const milestone = state.milestones.find((m) => m.id === state.currentMilestone);
@@ -122,7 +158,7 @@ function resolveWave(input, state, cwd, setId) {
     }
 
     // Resolve the set first (reuse resolveSet for the set index)
-    const setResult = resolveSet(String(setIndex), cwd);
+    const setResult = resolveSet(String(setIndex), cwd, state);
     const setId = setResult.resolvedId;
 
     // Find the set in state to get its waves
@@ -163,8 +199,7 @@ function resolveWave(input, state, cwd, setId) {
     const waves = setInState.waves || [];
     const waveIdx = waves.findIndex((w) => w.id === input);
     if (waveIdx !== -1) {
-      const sets = plan.listSets(cwd);
-      const setIndex = sets.indexOf(setInState.id) + 1;
+      const setIndex = milestone.sets.findIndex((s) => s.id === setInState.id) + 1;
       return {
         setId: setInState.id,
         waveId: input,
