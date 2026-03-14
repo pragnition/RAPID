@@ -39,23 +39,19 @@
       "sets": [
         {
           "id": "status-rename",
-          "status": "merged",
-          "waves": []
+          "status": "merged"
         },
         {
           "id": "command-cleanup",
-          "status": "merged",
-          "waves": []
+          "status": "merged"
         },
         {
           "id": "install-version",
-          "status": "merged",
-          "waves": []
+          "status": "merged"
         },
         {
           "id": "parallel-waves",
-          "status": "merged",
-          "waves": []
+          "status": "merged"
         }
       ]
     },
@@ -65,32 +61,27 @@
       "sets": [
         {
           "id": "state-consistency",
-          "status": "pending",
-          "waves": []
+          "status": "pending"
         },
         {
           "id": "command-audit",
-          "status": "discussed",
-          "waves": []
+          "status": "merged"
         },
         {
           "id": "resolve-fix",
-          "status": "planned",
-          "waves": []
+          "status": "merged"
         },
         {
           "id": "ux-improvements",
-          "status": "pending",
-          "waves": []
+          "status": "pending"
         },
         {
           "id": "review-after-merge",
-          "status": "pending",
-          "waves": []
+          "status": "discussing"
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-14T04:18:11.911Z",
+  "lastUpdatedAt": "2026-03-14T13:56:50.415Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
