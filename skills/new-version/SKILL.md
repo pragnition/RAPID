@@ -44,7 +44,7 @@ Parse the JSON output. Display a summary to the user:
 
 - **Current milestone:** {currentMilestone}
 - **Number of sets:** {milestones[current].sets.length}
-- **Set statuses:** List each set with its id and status (pending/discussing/planning/executing/complete/merged)
+- **Set statuses:** List each set with its id and status (pending/discussed/planned/executed/complete/merged)
 
 If state cannot be read, display the error and use AskUserQuestion:
 
