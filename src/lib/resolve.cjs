@@ -110,7 +110,7 @@ function resolveSet(input, cwd, state) {
 function resolveWave(input, state, cwd, setId) {
   // --set flag path: resolve set first, then find wave within that set
   if (setId !== undefined) {
-    const setResult = resolveSet(setId, cwd);
+    const setResult = resolveSet(setId, cwd, state);
     const resolvedSetId = setResult.resolvedId;
 
     const milestone = state.milestones.find((m) => m.id === state.currentMilestone);
@@ -158,7 +158,7 @@ function resolveWave(input, state, cwd, setId) {
     }
 
     // Resolve the set first (reuse resolveSet for the set index)
-    const setResult = resolveSet(String(setIndex), cwd);
+    const setResult = resolveSet(String(setIndex), cwd, state);
     const setId = setResult.resolvedId;
 
     // Find the set in state to get its waves
@@ -199,8 +199,7 @@ function resolveWave(input, state, cwd, setId) {
     const waves = setInState.waves || [];
     const waveIdx = waves.findIndex((w) => w.id === input);
     if (waveIdx !== -1) {
-      const sets = plan.listSets(cwd);
-      const setIndex = sets.indexOf(setInState.id) + 1;
+      const setIndex = milestone.sets.findIndex((s) => s.id === setInState.id) + 1;
       return {
         setId: setInState.id,
         waveId: input,
