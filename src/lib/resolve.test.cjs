@@ -283,6 +283,45 @@ describe('resolveSet -- explicit state parameter', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// resolveSet -- archive-resilient resolution
+// ────────────────────────────────────────────────────────────────
+describe('resolveSet -- archive-resilient resolution', () => {
+  it('resolves numeric index when no .planning/sets/ directories exist', () => {
+    // Only STATE.json, no set directories on disk
+    createMockState(tmpDir, ['set-a', 'set-b', 'set-c']);
+    const result = resolveSet('2', tmpDir);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'set-b',
+      numericIndex: 2,
+      wasNumeric: true,
+    });
+  });
+
+  it('resolves string ID when no .planning/sets/ directories exist', () => {
+    createMockState(tmpDir, ['set-a', 'set-b', 'set-c']);
+    const result = resolveSet('set-c', tmpDir);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'set-c',
+      numericIndex: 3,
+      wasNumeric: false,
+    });
+  });
+
+  it('ordering matches STATE.json, not filesystem', () => {
+    // STATE.json has non-alphabetical ordering
+    createMockState(tmpDir, ['zebra', 'apple', 'mango']);
+    // Create directories on disk in alphabetical order
+    createMockSets(tmpDir, ['apple', 'mango', 'zebra']);
+    const result = resolveSet('1', tmpDir);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'zebra',
+      numericIndex: 1,
+      wasNumeric: true,
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // resolveWave -- numeric dot notation happy path (UX-02)
 // ────────────────────────────────────────────────────────────────
 describe('resolveWave -- numeric dot notation (UX-02)', () => {
