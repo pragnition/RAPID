@@ -27,7 +27,7 @@ STATE_EXIT=$?
 echo "$STATE_JSON"
 ```
 
-Parse the JSON output. The state contains the current milestone with its sets. Each set has a `name` and `status` field. The set statuses are: `pending`, `discussing`, `planning`, `executing`, `complete`, `merged`.
+Parse the JSON output. The state contains the current milestone with its sets. Each set has a `name` and `status` field. The set statuses are: `pending`, `discussed`, `planned`, `executed`, `complete`, `merged`.
 
 **If STATE.json is missing or invalid** (exit code non-zero or empty output), display:
 
@@ -73,7 +73,7 @@ Using the parsed state and git activity data, display a compact set-level dashbo
 
    - **#**: 1-based numeric index (alphabetical order of set names)
    - **Set**: The set name
-   - **Status**: Set status from STATE.json (pending, discussing, planning, executing, complete, merged)
+   - **Status**: Set status from STATE.json (pending, discussed, planned, executed, complete, merged)
    - **Last Activity**: Relative time + commit message from the set's git branch, or "no branch" if no branch exists
    - **Branch**: `rapid/{setName}` if branch exists, `--` if not
 
@@ -96,9 +96,9 @@ Based on each set's status, determine the suggested v3.0 next action:
 | Set Status | Suggested Action |
 |------------|-----------------|
 | pending | `/rapid:start-set {N}` |
-| discussing | `/rapid:discuss-set {N}` |
-| planning | `/rapid:plan-set {N}` |
-| executing | `/rapid:execute-set {N}` |
+| discussed | `/rapid:discuss-set {N}` |
+| planned | `/rapid:plan-set {N}` |
+| executed | `/rapid:execute-set {N}` |
 | complete | `/rapid:review {N}` |
 | merged | (done) |
 
