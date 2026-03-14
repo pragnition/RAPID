@@ -75,9 +75,9 @@ Parse the JSON to find the resolved set within the current milestone. Extract `M
 
 ### Validate Set Status
 
-- **If `planning`:** Expected state for first execution. Continue.
-- **If `executing`:** Re-entry scenario. Continue (will pick up from last complete wave).
-- **If `pending` or `discussing`:** Error -- set is not ready for execution.
+- **If `planned`:** Expected state for first execution. Continue.
+- **If `executed`:** Re-entry scenario. Continue (will pick up from last complete wave).
+- **If `pending` or `discussed`:** Error -- set is not ready for execution.
   Display: "Set '{SET_ID}' is in '{status}' state. Run /rapid:discuss-set and /rapid:plan-set first."
   Show error breadcrumb:
   ```
@@ -142,13 +142,13 @@ If not first run (some waves complete):
 
 ## Step 3: State Transition
 
-If set is in `planning` state:
+If set is in `planned` state:
 ```bash
 # (env preamble here)
-node "${RAPID_TOOLS}" state transition set "${MILESTONE}" "${SET_ID}" executing
+node "${RAPID_TOOLS}" state transition set "${MILESTONE}" "${SET_ID}" executed
 ```
 
-If set is already in `executing` state: skip transition (re-entry).
+If set is already in `executed` state: skip transition (re-entry).
 
 ---
 
