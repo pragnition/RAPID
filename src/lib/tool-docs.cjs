@@ -62,12 +62,6 @@ const TOOL_REGISTRY = {
   'set-init-create':      'set-init create <set:str> -- Init set: worktree + CLAUDE.md + register',
   'set-init-list':        'set-init list-available -- List pending sets without worktrees',
 
-  // Wave planning
-  'wave-plan-resolve':    'wave-plan resolve-wave <waveId:str> -- Find wave in state',
-  'wave-plan-create-dir': 'wave-plan create-wave-dir <setId:str> <waveId:str> -- Create wave directory',
-  'wave-plan-validate':   'wave-plan validate-contracts <setId:str> <waveId:str> -- Validate against CONTRACT.json',
-  'wave-plan-list-jobs':  'wave-plan list-jobs <setId:str> <waveId:str> -- List JOB-PLAN.md files',
-
   // Review
   'review-scope':         'review scope <set:str> <wave:str> -- Scope wave files for review',
   'review-log-issue':     'review log-issue <set:str> <wave:str> -- Log issue from stdin JSON',
