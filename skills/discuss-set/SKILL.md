@@ -72,7 +72,7 @@ Parse the JSON to find the resolved set within the current milestone. Extract `M
 ### Status Check
 
 - **If `pending`:** Proceed normally to Step 3.
-- **If `discussing`:** Use AskUserQuestion:
+- **If `discussed`:** Use AskUserQuestion:
   ```
   "Set '{SET_ID}' already has a discussion in progress. What would you like to do?"
   Options:
@@ -261,11 +261,11 @@ This step ALWAYS runs in both interactive and --skip paths. It is the final muta
 
 ### Transition State
 
-Transition set from 'pending' to 'discussing'. Use `2>/dev/null || true` to handle both fresh (pending -> discussing) and re-discuss (already discussing) scenarios gracefully:
+Transition set from 'pending' to 'discussed'. The self-transition (discussed -> discussed) is allowed in SET_TRANSITIONS, so this call succeeds for both fresh and re-discuss scenarios:
 
 ```bash
 # (env preamble here)
-node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" discussing 2>/dev/null || true
+node "${RAPID_TOOLS}" state transition set "${MILESTONE_ID}" "${SET_ID}" discussed
 ```
 
 ### Commit Artifacts
@@ -321,7 +321,7 @@ Show what is done, what failed, and what to run next.
 - **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md without user interaction.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
 - **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set.
-- **Set-level state transitions:** Only use `state transition set` to move from pending to discussing. Never use wave-level transitions.
+- **Set-level state transitions:** Only use `state transition set` to move from pending to discussed. Never use wave-level transitions.
 - **State transition is the final mutation:** Happens AFTER CONTEXT.md is written, ensuring artifacts exist before status changes. STATE.json is committed alongside CONTEXT.md in the same git commit.
 - **Progress breadcrumb:** Always show the workflow breadcrumb at completion and in error messages.
 
