@@ -1241,4 +1241,333 @@ describe('module exports', () => {
   it('exports ScoperOutput schema', () => {
     assert.ok(review.ScoperOutput);
   });
+
+  it('exports scopeSetPostMerge', () => {
+    assert.equal(typeof review.scopeSetPostMerge, 'function');
+  });
+
+  it('exports logIssuePostMerge', () => {
+    assert.equal(typeof review.logIssuePostMerge, 'function');
+  });
+
+  it('exports loadPostMergeIssues', () => {
+    assert.equal(typeof review.loadPostMergeIssues, 'function');
+  });
+
+  it('exports generatePostMergeReviewSummary', () => {
+    assert.equal(typeof review.generatePostMergeReviewSummary, 'function');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// scopeSetPostMerge Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('scopeSetPostMerge', () => {
+  const { execSync: execSyncHelper } = require('child_process');
+  let tmpDir;
+
+  function createGitRepoWithMerge(dir, setId, extraSetup) {
+    const opts = { cwd: dir, stdio: 'pipe' };
+
+    // Init repo
+    execSyncHelper('git init -b main', opts);
+    execSyncHelper('git config user.email "test@test.com"', opts);
+    execSyncHelper('git config user.name "Test"', opts);
+
+    // Create initial file and commit on main
+    fs.writeFileSync(path.join(dir, 'base.cjs'), 'module.exports = {};');
+    execSyncHelper('git add base.cjs', opts);
+    execSyncHelper('git commit -m "initial commit"', opts);
+
+    // Create feature branch
+    execSyncHelper(`git checkout -b rapid/${setId}`, opts);
+
+    // Add files on feature branch
+    fs.writeFileSync(path.join(dir, 'feature.cjs'), 'module.exports = { feature: true };');
+    fs.writeFileSync(path.join(dir, 'helper.cjs'), 'module.exports = { help: true };');
+
+    // Run extra setup if provided (e.g., adding .planning files)
+    if (extraSetup) extraSetup(dir, opts);
+
+    execSyncHelper('git add -A', opts);
+    execSyncHelper(`git commit -m "feat(${setId}): add feature files"`, opts);
+
+    // Switch back to main and merge
+    execSyncHelper('git checkout main', opts);
+    execSyncHelper(`git merge rapid/${setId} --no-ff -m "merge(${setId}): merge set into main"`, opts);
+
+    // Get the merge commit hash
+    const mergeCommit = execSyncHelper('git rev-parse HEAD', opts).toString().trim();
+    return mergeCommit;
+  }
+
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    cleanupDir(tmpDir);
+  });
+
+  it('returns changed files from merge commit diff', () => {
+    const setId = 'test-scope';
+    createGitRepoWithMerge(tmpDir, setId);
+
+    const result = review.scopeSetPostMerge(tmpDir, setId);
+
+    assert.ok(result.changedFiles.includes('feature.cjs'), 'should include feature.cjs');
+    assert.ok(result.changedFiles.includes('helper.cjs'), 'should include helper.cjs');
+    assert.ok(result.totalFiles >= 2, 'totalFiles should be at least 2');
+  });
+
+  it('uses MERGE-STATE.json mergeCommit when available', () => {
+    const setId = 'test-merge-state';
+    const mergeCommit = createGitRepoWithMerge(tmpDir, setId);
+
+    // Write a valid MERGE-STATE.json
+    const mergeStateDir = path.join(tmpDir, '.planning', 'sets', setId);
+    fs.mkdirSync(mergeStateDir, { recursive: true });
+    fs.writeFileSync(path.join(mergeStateDir, 'MERGE-STATE.json'), JSON.stringify({
+      setId,
+      status: 'complete',
+      mergeCommit,
+      detection: { l1Conflicts: [], l2Conflicts: [], l3Conflicts: [], l4Conflicts: [] },
+      resolution: { resolvedConflicts: [] },
+      agentPhase1: 'idle',
+      createdAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+    }));
+
+    const result = review.scopeSetPostMerge(tmpDir, setId);
+    assert.ok(result.changedFiles.includes('feature.cjs'), 'should find feature.cjs via MERGE-STATE');
+    assert.ok(result.changedFiles.includes('helper.cjs'), 'should find helper.cjs via MERGE-STATE');
+  });
+
+  it('falls back to git log grep when MERGE-STATE missing', () => {
+    const setId = 'test-fallback';
+    createGitRepoWithMerge(tmpDir, setId);
+    // Do NOT write MERGE-STATE.json
+
+    const result = review.scopeSetPostMerge(tmpDir, setId);
+    assert.ok(result.changedFiles.includes('feature.cjs'), 'should find feature.cjs via git log grep');
+    assert.ok(result.changedFiles.includes('helper.cjs'), 'should find helper.cjs via git log grep');
+  });
+
+  it('filters out .planning/ files from results', () => {
+    const setId = 'test-filter-planning';
+    createGitRepoWithMerge(tmpDir, setId, (dir) => {
+      // Add a .planning file on the feature branch
+      fs.mkdirSync(path.join(dir, '.planning'), { recursive: true });
+      fs.writeFileSync(path.join(dir, '.planning', 'test.md'), '# test');
+    });
+
+    const result = review.scopeSetPostMerge(tmpDir, setId);
+    const planningFiles = result.changedFiles.filter(f => f.startsWith('.planning/'));
+    assert.equal(planningFiles.length, 0, '.planning/ files should be filtered out');
+  });
+
+  it('throws when set was never merged', () => {
+    // Create a basic repo without any merge for this set
+    const opts = { cwd: tmpDir, stdio: 'pipe' };
+    execSyncHelper('git init -b main', opts);
+    execSyncHelper('git config user.email "test@test.com"', opts);
+    execSyncHelper('git config user.name "Test"', opts);
+    fs.writeFileSync(path.join(tmpDir, 'base.cjs'), 'module.exports = {};');
+    execSyncHelper('git add base.cjs', opts);
+    execSyncHelper('git commit -m "initial commit"', opts);
+
+    assert.throws(
+      () => review.scopeSetPostMerge(tmpDir, 'nonexistent-set'),
+      (err) => {
+        assert.ok(err.message.includes('No merge commit found'), `Expected error about no merge commit, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+
+  it('does not call state transition (behavioral contract)', () => {
+    const fnSource = review.scopeSetPostMerge.toString();
+    assert.ok(!fnSource.includes('state transition'), 'scopeSetPostMerge must not call state transition');
+    assert.ok(!fnSource.includes('transition('), 'scopeSetPostMerge must not call transition()');
+
+    // Verify function signature does not accept stateMachine or sm parameter
+    const paramMatch = fnSource.match(/^function\s*\w*\s*\(([^)]*)\)/);
+    if (paramMatch) {
+      const params = paramMatch[1];
+      assert.ok(!params.includes('stateMachine'), 'should not accept stateMachine param');
+      assert.ok(!params.includes(' sm'), 'should not accept sm param');
+    }
+  });
+
+  it('finds dependents of changed files', () => {
+    const setId = 'test-dependents';
+    const opts = { cwd: tmpDir, stdio: 'pipe' };
+
+    // Init repo
+    execSyncHelper('git init -b main', opts);
+    execSyncHelper('git config user.email "test@test.com"', opts);
+    execSyncHelper('git config user.name "Test"', opts);
+
+    // Create a consumer that imports feature.cjs
+    fs.writeFileSync(path.join(tmpDir, 'consumer.cjs'), "const feature = require('./feature.cjs');\nmodule.exports = { consume: feature };");
+    fs.writeFileSync(path.join(tmpDir, 'base.cjs'), 'module.exports = {};');
+    execSyncHelper('git add consumer.cjs base.cjs', opts);
+    execSyncHelper('git commit -m "initial commit with consumer"', opts);
+
+    // Create feature branch
+    execSyncHelper(`git checkout -b rapid/${setId}`, opts);
+    fs.writeFileSync(path.join(tmpDir, 'feature.cjs'), 'module.exports = { feature: true };');
+    execSyncHelper('git add feature.cjs', opts);
+    execSyncHelper(`git commit -m "feat(${setId}): add feature"`, opts);
+
+    // Merge back
+    execSyncHelper('git checkout main', opts);
+    execSyncHelper(`git merge rapid/${setId} --no-ff -m "merge(${setId}): merge set into main"`, opts);
+
+    const result = review.scopeSetPostMerge(tmpDir, setId);
+    assert.ok(result.changedFiles.includes('feature.cjs'), 'feature.cjs should be in changedFiles');
+    assert.ok(result.dependentFiles.includes('consumer.cjs'), 'consumer.cjs should be in dependentFiles');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// logIssuePostMerge Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('logIssuePostMerge', () => {
+  let tmpDir;
+
+  function makeValidIssue(id) {
+    return {
+      id: id || 'PM-001',
+      type: 'bug',
+      severity: 'high',
+      file: 'src/auth.cjs',
+      description: 'Missing null check on token parse',
+      source: 'bug-hunt',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    cleanupDir(tmpDir);
+  });
+
+  it('writes issue to .planning/post-merge/{setId}/ directory', () => {
+    const issue = makeValidIssue('PM-001');
+    review.logIssuePostMerge(tmpDir, 'test-set', issue);
+
+    const issuesPath = path.join(tmpDir, '.planning', 'post-merge', 'test-set', 'REVIEW-ISSUES.json');
+    assert.ok(fs.existsSync(issuesPath), 'REVIEW-ISSUES.json should exist in post-merge dir');
+
+    const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
+    assert.equal(data.setId, 'test-set');
+    assert.equal(data.issues.length, 1);
+    assert.equal(data.issues[0].id, 'PM-001');
+  });
+
+  it('creates directory if it does not exist', () => {
+    const postMergeDir = path.join(tmpDir, '.planning', 'post-merge');
+    assert.ok(!fs.existsSync(postMergeDir), 'post-merge dir should not exist yet');
+
+    review.logIssuePostMerge(tmpDir, 'new-set', makeValidIssue());
+
+    assert.ok(fs.existsSync(postMergeDir), '.planning/post-merge/ should be created automatically');
+    assert.ok(fs.existsSync(path.join(postMergeDir, 'new-set')), 'set subdirectory should be created');
+  });
+
+  it('appends to existing issues', () => {
+    review.logIssuePostMerge(tmpDir, 'test-set', makeValidIssue('PM-001'));
+    review.logIssuePostMerge(tmpDir, 'test-set', makeValidIssue('PM-002'));
+
+    const issuesPath = path.join(tmpDir, '.planning', 'post-merge', 'test-set', 'REVIEW-ISSUES.json');
+    const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
+    assert.equal(data.issues.length, 2, 'should have 2 issues');
+    assert.equal(data.issues[0].id, 'PM-001');
+    assert.equal(data.issues[1].id, 'PM-002');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// loadPostMergeIssues Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('loadPostMergeIssues', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    cleanupDir(tmpDir);
+  });
+
+  it('returns empty array when no post-merge issues exist', () => {
+    const issues = review.loadPostMergeIssues(tmpDir, 'nonexistent');
+    assert.deepStrictEqual(issues, []);
+  });
+
+  it('loads issues from post-merge directory', () => {
+    const issue = {
+      id: 'PM-LOAD-001',
+      type: 'bug',
+      severity: 'medium',
+      file: 'src/test.cjs',
+      description: 'Test issue',
+      source: 'bug-hunt',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    };
+    review.logIssuePostMerge(tmpDir, 'load-test', issue);
+
+    const loaded = review.loadPostMergeIssues(tmpDir, 'load-test');
+    assert.equal(loaded.length, 1);
+    assert.equal(loaded[0].id, 'PM-LOAD-001');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// generatePostMergeReviewSummary Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('generatePostMergeReviewSummary', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    cleanupDir(tmpDir);
+  });
+
+  it('writes REVIEW-SUMMARY.md to post-merge directory', () => {
+    const issues = [
+      {
+        id: 'PM-SUM-001',
+        type: 'bug',
+        severity: 'high',
+        file: 'src/auth.cjs',
+        description: 'Missing check',
+        source: 'bug-hunt',
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    const summaryPath = review.generatePostMergeReviewSummary(tmpDir, 'summary-test', issues);
+    assert.ok(summaryPath.includes(path.join('.planning', 'post-merge', 'summary-test', 'REVIEW-SUMMARY.md')));
+    assert.ok(fs.existsSync(summaryPath), 'REVIEW-SUMMARY.md should be created');
+
+    const content = fs.readFileSync(summaryPath, 'utf-8');
+    assert.ok(content.includes('# Review Summary: summary-test'), 'should contain set id in title');
+    assert.ok(content.includes('**Total issues:** 1'), 'should report issue count');
+  });
 });

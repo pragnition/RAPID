@@ -58,7 +58,15 @@ If `<set-id>` was not provided, use AskUserQuestion to ask:
 
 Parse the set-id from the user's invocation.
 
+#### Detect `--post-merge` flag
+
+Check if the user invoked with `--post-merge` flag: `/rapid:review <set-id> --post-merge`
+
+If `--post-merge` is present, set `POST_MERGE=true`. The post-merge review path bypasses status validation and state transitions entirely. All review operations run against the project root (`cwd`) on the main branch, not a worktree.
+
 ### 0c: Validate set status
+
+**If `POST_MERGE=true`:** Skip this step entirely. Post-merge review does not require any specific set status -- it operates on already-merged sets. Proceed directly to Step 1.
 
 Read STATE.json to verify the target set exists and is in a reviewable state:
 
@@ -73,6 +81,8 @@ Parse the JSON output and find the target set. The set status MUST be `complete`
 Exit.
 
 ### 0d: Transition set to 'reviewing'
+
+**If `POST_MERGE=true`:** Skip this step entirely. Post-merge review does NOT transition set status. The `merged` status is terminal and must not be modified.
 
 If the set is currently in `complete` state, transition it to `reviewing`:
 
@@ -108,6 +118,28 @@ Record the selected stages as a list. The stage order is always: unit test, then
 
 ## Step 2: Scope Set Files
 
+**If `POST_MERGE=true`:**
+
+Scope changed files from the set's merge commit:
+
+```bash
+SCOPE_RESULT=$(node "${RAPID_TOOLS}" review scope <set-id> --post-merge)
+```
+
+Parse the JSON output: `{ changedFiles, dependentFiles, totalFiles, chunks, postMerge }`.
+
+- `changedFiles` -- files changed in the set's merge commit (from merge commit diff)
+- `dependentFiles` -- files that import changed files (one-hop dependents)
+- `totalFiles` -- total count
+- `chunks` -- directory groups (same chunking logic)
+- `postMerge` -- boolean `true` confirming post-merge mode
+
+Note: No `waveAttribution` is available in post-merge mode. Wave attribution tags in subsequent stages will be set to `"unattributed"`.
+
+Set the working directory for all subagents to `cwd` (the project root on main branch). Do NOT attempt to resolve a worktree path.
+
+**If `POST_MERGE` is not set (standard path):**
+
 Scope all changed files across the entire set in a single call:
 
 ```bash
@@ -136,6 +168,8 @@ Stages: {selected stages, comma-separated}
 Store `chunks` and `waveAttribution` for use in subsequent stages.
 
 ## Step 2.5: Concern-Based Scoping (Bug Hunt + Unit Test only)
+
+**If `POST_MERGE=true`:** The working directory for the scoper agent is `cwd` (project root), not a worktree path. All other scoper behavior is identical.
 
 Skip this step entirely if NEITHER bug hunt NOR unit test was selected in Step 1. UAT always uses full scope and is never concern-scoped.
 
@@ -182,6 +216,8 @@ Scoping: {'concern-based' if useConcernScoping else 'directory chunking (fallbac
 ```
 
 ## Step 3: Load Acceptance Criteria
+
+**If `POST_MERGE=true`:** Acceptance criteria loading uses the same approach (reading JOB-PLAN.md files from `.planning/waves/{setId}/`). These files still exist after merge -- they are planning artifacts, not code artifacts.
 
 Read ALL JOB-PLAN.md files from the set's planning directory to extract acceptance criteria. Use Glob to discover job plan files:
 
@@ -344,6 +380,8 @@ Tests failed: {testsFailed}
 
 #### 4a.5: Write REVIEW-UNIT.md
 
+**If `POST_MERGE=true`:** Write to `.planning/post-merge/{setId}/REVIEW-UNIT.md` instead of `.planning/waves/{setId}/REVIEW-UNIT.md`.
+
 Write unit test results to `.planning/waves/{setId}/REVIEW-UNIT.md`:
 
 ```markdown
@@ -377,6 +415,12 @@ Write unit test results to `.planning/waves/{setId}/REVIEW-UNIT.md`:
 ```
 
 #### 4a.6: Log test failures as issues
+
+**If `POST_MERGE=true`:** Use `--post-merge` flag when logging issues:
+```bash
+echo '{...issue JSON...}' | node "${RAPID_TOOLS}" review log-issue <set-id> --post-merge
+```
+This writes issues to `.planning/post-merge/{setId}/REVIEW-ISSUES.json`.
 
 For each failed test, log it as a review issue. Look up `originatingWave` from the `waveAttribution` map for the test's target file:
 
@@ -591,6 +635,8 @@ For each DEFERRED finding:
 
 ##### 4b.7: Write REVIEW-BUGS.md
 
+**If `POST_MERGE=true`:** Write to `.planning/post-merge/{setId}/REVIEW-BUGS.md` instead of `.planning/waves/{setId}/REVIEW-BUGS.md`.
+
 Write bug hunt results to `.planning/waves/{setId}/REVIEW-BUGS.md`:
 
 ```markdown
@@ -626,6 +672,10 @@ Write bug hunt results to `.planning/waves/{setId}/REVIEW-BUGS.md`:
 ##### 4b.8: Collect ACCEPTED bugs and spawn bugfix agent
 
 Collect all ACCEPTED bugs (including those upgraded from DEFERRED by the user in Step 4b.6).
+
+**If `POST_MERGE=true`:** Use `--post-merge` flag when logging issues (same as Step 4a.6).
+
+**If `POST_MERGE=true`:** The bugfix agent operates on `cwd` (main branch) and commits fixes directly to main. The commit message format is: `fix({setId}): {description} (post-merge review)`.
 
 **If no ACCEPTED bugs:** Print "No bugs to fix." and break the cycle loop.
 
@@ -834,6 +884,8 @@ Return via:
 
 #### 4c.6: Write REVIEW-UAT.md
 
+**If `POST_MERGE=true`:** Write to `.planning/post-merge/{setId}/REVIEW-UAT.md` instead of `.planning/waves/{setId}/REVIEW-UAT.md`.
+
 Write UAT results to `.planning/waves/{setId}/REVIEW-UAT.md`:
 
 ```markdown
@@ -862,6 +914,8 @@ Write UAT results to `.planning/waves/{setId}/REVIEW-UAT.md`:
 
 #### 4c.7: Log failed UAT steps as issues
 
+**If `POST_MERGE=true`:** Use `--post-merge` flag when logging issues (same as Step 4a.6).
+
 For each failed UAT step, log it as a review issue:
 
 ```bash
@@ -870,7 +924,17 @@ echo '{"id":"SET-{setId}-uat-{N}","type":"uat","severity":"high","source":"uat",
 
 ## Step 5: Generate Review Summary
 
-After all selected stages have completed, generate a consolidated review summary:
+After all selected stages have completed, generate a consolidated review summary.
+
+**If `POST_MERGE=true`:**
+
+```bash
+node "${RAPID_TOOLS}" review summary <set-id> --post-merge
+```
+
+This writes `REVIEW-SUMMARY.md` to `.planning/post-merge/{setId}/REVIEW-SUMMARY.md`.
+
+**If `POST_MERGE` is not set (standard path):**
 
 ```bash
 node "${RAPID_TOOLS}" review summary <set-id>
@@ -878,7 +942,28 @@ node "${RAPID_TOOLS}" review summary <set-id>
 
 This writes `REVIEW-SUMMARY.md` to `.planning/waves/{setId}/REVIEW-SUMMARY.md`.
 
-Print the completion banner:
+Print the completion banner.
+
+**If `POST_MERGE=true`:**
+
+```
+--- RAPID Post-Merge Review Complete ---
+Set: {setId}
+Scope: {totalFiles} files across {chunks.length} chunk(s)
+Unit tests: {passed} passed, {failed} failed
+Bug hunt: {accepted} accepted, {dismissed} dismissed, {deferred} deferred
+UAT: {passed} passed, {failed} failed, {skipped} skipped
+Open issues: {count}
+
+Review artifacts:
+  .planning/post-merge/{setId}/REVIEW-SUMMARY.md
+  .planning/post-merge/{setId}/REVIEW-UNIT.md
+  .planning/post-merge/{setId}/REVIEW-BUGS.md
+  .planning/post-merge/{setId}/REVIEW-UAT.md
+-----------------------------------------
+```
+
+**If `POST_MERGE` is not set (standard path):**
 
 ```
 --- RAPID Review Complete ---
@@ -901,7 +986,17 @@ Only list artifact paths for stages that were actually run. If a stage was skipp
 
 ## Step 6: Next Steps
 
-Display the available next steps. Extract the setIndex from the resolve step at Step 0b:
+Display the available next steps. Extract the setIndex from the resolve step at Step 0b.
+
+**If `POST_MERGE=true`:**
+
+> **Next steps:**
+> - `/rapid:review {setIndex} --post-merge` -- *Re-run post-merge review on this set*
+> - `/rapid:status` -- *View project state*
+
+Do not suggest `/rapid:merge` since the set is already merged.
+
+**If `POST_MERGE` is not set (standard path):**
 
 > **Next steps:**
 > - `/rapid:merge {setIndex}` -- *Set is ready, proceed to merge*
@@ -930,3 +1025,4 @@ Then exit. Do NOT prompt for selection.
 - **Concern-based scoping runs for unit test and bug hunt stages only.** A scoper agent categorizes files by concern area as Step 2.5. Each concern group includes cross-cutting files. If cross-cutting files exceed 50% of total, concern scoping falls back to directory chunking with a warning.
 - **Deduplication runs before the adversarial pipeline.** After concern-scoped (or chunk-scoped) hunters complete, findings are merged and deduplicated. Same file + similar description (>0.7 Levenshtein similarity) = duplicate. Higher severity wins. This saves tokens by running ONE advocate and ONE judge on the deduplicated set.
 - **Concern tags trace code health by area.** Each finding includes a `concern` field from the scoper. This appears in REVIEW-BUGS.md and in logged issues for understanding which concern areas surface the most bugs.
+- **Post-merge review (`--post-merge`):** When invoked with `--post-merge`, the review pipeline operates on an already-merged set. It scopes files from the set's merge commit diff (not a worktree branch diff), skips all status validation and transitions, writes artifacts to `.planning/post-merge/{setId}/` instead of `.planning/waves/{setId}/`, and uses `cwd` (project root on main) as the working directory. The bugfix agent commits fixes directly to main. This is useful for catching integration issues after merge and auditing merged code.

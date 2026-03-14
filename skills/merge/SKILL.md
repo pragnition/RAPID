@@ -364,6 +364,7 @@ Parse the JSON result:
   node "${RAPID_TOOLS}" state transition set <milestone> <setName> merged
   ```
   > [{waveNum}/{totalWaves}] {setName}: MERGED and status updated to 'merged' (commit {commitHash})
+  > Tip: Run `/rapid:review {setIndex} --post-merge` to review this set's merged code.
 
   Add this set to the wave's merged-sets list for integration gate tracking.
 
@@ -588,6 +589,7 @@ Present final summary:
 Display the available next steps:
 
 > **Next steps:**
+> - `/rapid:review {setIndex} --post-merge` -- *Run post-merge review on merged sets (recommended)*
 > - `/rapid:cleanup` -- *Remove completed worktrees*
 > - `/rapid:status` -- *View project state*
 > - `/rapid:new-version` -- *Start planning next version (if all sets merged)*
@@ -613,3 +615,4 @@ Display the available next steps:
 - **AskUserQuestion at every decision gate** -- all decisions are blocking until the user responds.
 - **No "Resolve manually" in post-wave recovery** -- blocked set recovery options are Retry, Skip, and Abort only (per user locked decision).
 - **Set status auto-transitions to 'merged' after successful merge.** This is the terminal set lifecycle state. After `merge execute` returns `merged: true`, the orchestrator runs `state transition set` to move the set to 'merged' status in STATE.json.
+- **Post-merge review suggestion:** After successful merge, the pipeline suggests running `/rapid:review <set> --post-merge` for post-merge review. This is optional but recommended to catch integration issues and verify merge correctness. Post-merge review scopes files from the merge commit diff and does not require a worktree.

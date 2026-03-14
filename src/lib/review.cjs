@@ -14,8 +14,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { z } = require('zod');
 const execute = require('./execute.cjs');
+const merge = require('./merge.cjs');
 
 // ────────────────────────────────────────────────────────────────
 // Constants
@@ -91,6 +93,81 @@ const ReviewIssues = z.object({
 function scopeSetForReview(cwd, worktreePath, baseBranch) {
   const changedFiles = execute.getChangedFiles(worktreePath, baseBranch);
   const dependentFiles = findDependents(cwd, changedFiles);
+  return {
+    changedFiles,
+    dependentFiles,
+    totalFiles: changedFiles.length + dependentFiles.length,
+  };
+}
+
+/**
+ * Compute review scope for a set from its merge commit (post-merge mode).
+ * Uses MERGE-STATE.json mergeCommit hash when available, falls back to
+ * git log grep. Validates the commit is a merge (2 parents), diffs against
+ * the first parent, and filters out .planning/ files.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {{ changedFiles: string[], dependentFiles: string[], totalFiles: number }}
+ */
+function scopeSetPostMerge(cwd, setId) {
+  let mergeCommit = null;
+
+  // 1. Try MERGE-STATE.json first
+  const mergeState = merge.readMergeState(cwd, setId);
+  if (mergeState && mergeState.mergeCommit) {
+    mergeCommit = mergeState.mergeCommit;
+  }
+
+  // 2. Fallback to git log grep
+  if (!mergeCommit) {
+    try {
+      const result = execSync(
+        `git log --oneline --grep="merge(${setId})" --format="%H" -1`,
+        { cwd, stdio: 'pipe', encoding: 'utf-8' }
+      ).trim();
+      if (result) {
+        mergeCommit = result;
+      }
+    } catch {
+      // git log failed -- will throw below
+    }
+  }
+
+  if (!mergeCommit) {
+    throw new Error(`No merge commit found for set '${setId}'. Verify the set has been merged.`);
+  }
+
+  // 3. Validate merge commit has 2 parents
+  try {
+    const catFile = execSync(
+      `git cat-file -p ${mergeCommit}`,
+      { cwd, stdio: 'pipe', encoding: 'utf-8' }
+    );
+    const parentLines = catFile.split('\n').filter(line => line.startsWith('parent '));
+    if (parentLines.length < 2) {
+      throw new Error(`Commit ${mergeCommit} is not a merge commit (expected 2 parents).`);
+    }
+  } catch (err) {
+    if (err.message.includes('is not a merge commit')) throw err;
+    throw new Error(`Failed to validate merge commit ${mergeCommit}: ${err.message}`);
+  }
+
+  // 4. Get changed files via diff against first parent
+  const diffOutput = execSync(
+    `git diff --name-only ${mergeCommit}^1..${mergeCommit}`,
+    { cwd, stdio: 'pipe', encoding: 'utf-8' }
+  ).trim();
+
+  const changedFiles = diffOutput
+    .split('\n')
+    .filter(f => f.length > 0)
+    .filter(f => !f.startsWith('.planning/'));
+
+  // 5. Find dependents
+  const dependentFiles = findDependents(cwd, changedFiles);
+
+  // 6. Return same shape as scopeSetForReview
   return {
     changedFiles,
     dependentFiles,
@@ -562,6 +639,78 @@ function generateReviewSummary(setId, issues) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Post-Merge Review Artifacts
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Log a review issue to the post-merge artifact directory.
+ * Writes to .planning/post-merge/{setId}/REVIEW-ISSUES.json
+ * instead of the standard .planning/waves/{setId}/ directory.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {Object} issue - Issue data to log
+ */
+function logIssuePostMerge(cwd, setId, issue) {
+  const setDir = path.join(cwd, '.planning', 'post-merge', setId);
+  const issuesPath = path.join(setDir, 'REVIEW-ISSUES.json');
+
+  // Validate issue with Zod
+  const validatedIssue = ReviewIssue.parse(issue);
+
+  // Create directory if needed
+  fs.mkdirSync(setDir, { recursive: true });
+
+  // Read existing or create new container
+  let existing = { setId, issues: [], lastUpdatedAt: '' };
+  if (fs.existsSync(issuesPath)) {
+    existing = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
+  }
+
+  // Append issue and update timestamp
+  existing.issues.push(validatedIssue);
+  existing.lastUpdatedAt = new Date().toISOString();
+
+  // Write atomically
+  fs.writeFileSync(issuesPath, JSON.stringify(existing, null, 2), 'utf-8');
+}
+
+/**
+ * Load issues from the post-merge artifact directory.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {Array<Object>} Array of issues (empty if none exist)
+ */
+function loadPostMergeIssues(cwd, setId) {
+  const issuesPath = path.join(cwd, '.planning', 'post-merge', setId, 'REVIEW-ISSUES.json');
+  if (!fs.existsSync(issuesPath)) return [];
+  try {
+    const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
+    return data.issues || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Generate REVIEW-SUMMARY.md in the post-merge artifact directory.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {Array<Object>} issues - Array of issues to summarize
+ * @returns {string} Path to the written summary file
+ */
+function generatePostMergeReviewSummary(cwd, setId, issues) {
+  const summaryContent = generateReviewSummary(setId, issues);
+  const summaryDir = path.join(cwd, '.planning', 'post-merge', setId);
+  fs.mkdirSync(summaryDir, { recursive: true });
+  const summaryPath = path.join(summaryDir, 'REVIEW-SUMMARY.md');
+  fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
+  return summaryPath;
+}
+
+// ────────────────────────────────────────────────────────────────
 // Concern-Based Scoping
 // ────────────────────────────────────────────────────────────────
 
@@ -682,6 +831,7 @@ module.exports = {
 
   // Scoping
   scopeSetForReview,
+  scopeSetPostMerge,
   findDependents,
 
   // Concern-based scoping
@@ -702,6 +852,11 @@ module.exports = {
 
   // Summary
   generateReviewSummary,
+
+  // Post-merge review
+  logIssuePostMerge,
+  loadPostMergeIssues,
+  generatePostMergeReviewSummary,
 
   // Constants
   REVIEW_CONSTANTS,
