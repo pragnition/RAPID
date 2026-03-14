@@ -271,20 +271,9 @@ Options:
 
 ---
 
-## Step 7: Contract Validation (PLAN-05 enforcement point 1)
+## Step 7: Contract Validation (skipped)
 
-For each wave PLAN.md, run contract validation:
-
-```bash
-# (env preamble here)
-node "${RAPID_TOOLS}" wave-plan validate-contracts "${SET_ID}" "wave-${N}"
-```
-
-Parse results. Log violations as advisory warnings in the output (do NOT block planning).
-
-**If violations exist:** Display them but continue. Note: "Contract violations are advisory during planning. They will be enforced during execution and merge."
-
-**If no violations:** Display: "All wave plans validated against contracts."
+Contract validation is deferred to execution and merge time. The planner and verifier agents validate plan structure and coverage, but contract conformance (whether the implementation matches CONTRACT.json exports/imports) is checked during `/rapid:execute-set` and `/rapid:merge`.
 
 ---
 
