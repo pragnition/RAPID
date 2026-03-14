@@ -117,7 +117,7 @@ const ROLE_TOOL_MAP = {
   'bugfix':           ['state-get'],
 
   // Planner variants
-  'plan-verifier':    ['state-get', 'plan-load-set', 'wave-plan-validate'],
+  'plan-verifier':    ['state-get', 'plan-load-set'],
 
   // Init/context pipeline
   'roadmapper':       ['state-get', 'init-scaffold'],
