@@ -33,19 +33,30 @@ function _loadStateFromDisk(cwd) {
 /**
  * Resolve a set reference (numeric index or string ID) to full set info.
  *
- * Numeric IDs are 1-based indices into the alphabetically-sorted set list
- * from `.planning/sets/`. String IDs are matched exactly against directory names.
+ * Numeric IDs are 1-based indices into the current milestone's sets[] array
+ * in STATE.json (insertion order). String IDs are matched exactly against
+ * set IDs in the milestone.
  *
  * @param {string} input - Numeric index (e.g., "1") or string ID (e.g., "set-01-foundation")
  * @param {string} cwd - Project root directory
+ * @param {object} [state] - Optional pre-loaded ProjectState object. If omitted, STATE.json is read from disk.
  * @returns {{ resolvedId: string, numericIndex: number, wasNumeric: boolean }}
  * @throws {Error} On invalid index, out-of-range, no sets, or not found
  */
-function resolveSet(input, cwd) {
-  const sets = plan.listSets(cwd);
+function resolveSet(input, cwd, state) {
+  if (!state) {
+    state = _loadStateFromDisk(cwd);
+  }
+
+  const milestone = state.milestones.find((m) => m.id === state.currentMilestone);
+  if (!milestone) {
+    throw new Error(`Current milestone '${state.currentMilestone}' not found in state.`);
+  }
+
+  const sets = milestone.sets.map((s) => s.id);
 
   if (sets.length === 0) {
-    throw new Error('No sets found. Run /rapid:plan first to create a project plan with sets.');
+    throw new Error(`No sets found in current milestone '${state.currentMilestone}'. Run /rapid:init first.`);
   }
 
   if (NUMERIC_SET_PATTERN.test(input)) {
