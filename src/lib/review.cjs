@@ -639,6 +639,78 @@ function generateReviewSummary(setId, issues) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Post-Merge Review Artifacts
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Log a review issue to the post-merge artifact directory.
+ * Writes to .planning/post-merge/{setId}/REVIEW-ISSUES.json
+ * instead of the standard .planning/waves/{setId}/ directory.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {Object} issue - Issue data to log
+ */
+function logIssuePostMerge(cwd, setId, issue) {
+  const setDir = path.join(cwd, '.planning', 'post-merge', setId);
+  const issuesPath = path.join(setDir, 'REVIEW-ISSUES.json');
+
+  // Validate issue with Zod
+  const validatedIssue = ReviewIssue.parse(issue);
+
+  // Create directory if needed
+  fs.mkdirSync(setDir, { recursive: true });
+
+  // Read existing or create new container
+  let existing = { setId, issues: [], lastUpdatedAt: '' };
+  if (fs.existsSync(issuesPath)) {
+    existing = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
+  }
+
+  // Append issue and update timestamp
+  existing.issues.push(validatedIssue);
+  existing.lastUpdatedAt = new Date().toISOString();
+
+  // Write atomically
+  fs.writeFileSync(issuesPath, JSON.stringify(existing, null, 2), 'utf-8');
+}
+
+/**
+ * Load issues from the post-merge artifact directory.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {Array<Object>} Array of issues (empty if none exist)
+ */
+function loadPostMergeIssues(cwd, setId) {
+  const issuesPath = path.join(cwd, '.planning', 'post-merge', setId, 'REVIEW-ISSUES.json');
+  if (!fs.existsSync(issuesPath)) return [];
+  try {
+    const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
+    return data.issues || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Generate REVIEW-SUMMARY.md in the post-merge artifact directory.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {Array<Object>} issues - Array of issues to summarize
+ * @returns {string} Path to the written summary file
+ */
+function generatePostMergeReviewSummary(cwd, setId, issues) {
+  const summaryContent = generateReviewSummary(setId, issues);
+  const summaryDir = path.join(cwd, '.planning', 'post-merge', setId);
+  fs.mkdirSync(summaryDir, { recursive: true });
+  const summaryPath = path.join(summaryDir, 'REVIEW-SUMMARY.md');
+  fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
+  return summaryPath;
+}
+
+// ────────────────────────────────────────────────────────────────
 // Concern-Based Scoping
 // ────────────────────────────────────────────────────────────────
 
@@ -780,6 +852,11 @@ module.exports = {
 
   // Summary
   generateReviewSummary,
+
+  // Post-merge review
+  logIssuePostMerge,
+  loadPostMergeIssues,
+  generatePostMergeReviewSummary,
 
   // Constants
   REVIEW_CONSTANTS,
