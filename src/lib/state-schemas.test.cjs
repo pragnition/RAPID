@@ -305,3 +305,53 @@ describe('SetState backward compatibility with waves', () => {
     assert.deepEqual(roundTripped, original);
   });
 });
+
+describe('status literal consistency (regression)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+
+  function findMdFiles(dir) {
+    if (!fs.existsSync(dir)) return [];
+    const results = [];
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        results.push(...findMdFiles(fullPath));
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        results.push(fullPath);
+      }
+    }
+    return results;
+  }
+
+  it('no SKILL.md or agent .md file contains invalid present-tense status in state transition set calls', () => {
+    const projectRoot = path.resolve(__dirname, '..', '..');
+    const invalidPattern = /state transition set\b.*\b(discussing|planning|executing|reviewing)\b/;
+
+    const dirsToScan = [
+      path.join(projectRoot, 'skills'),
+      path.join(projectRoot, 'agents'),
+    ];
+
+    const violations = [];
+    for (const dir of dirsToScan) {
+      const files = findMdFiles(dir);
+      for (const filePath of files) {
+        const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
+        lines.forEach((line, idx) => {
+          if (invalidPattern.test(line)) {
+            const relPath = path.relative(projectRoot, filePath);
+            violations.push(`${relPath}:${idx + 1}: ${line.trim()}`);
+          }
+        });
+      }
+    }
+
+    assert.equal(
+      violations.length,
+      0,
+      `Found ${violations.length} invalid present-tense status literal(s) in state transition set calls:\n${violations.join('\n')}`
+    );
+  });
+});
