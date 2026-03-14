@@ -257,6 +257,7 @@ describe('resolveWave -- numeric dot notation (UX-02)', () => {
 
   beforeEach(() => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data', 'set-03-ui']);
   });
 
   it('resolves "1.1" to set 1, wave 1', () => {
@@ -328,6 +329,7 @@ describe('resolveWave -- string ID backward compat (UX-03)', () => {
 
   beforeEach(() => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data']);
   });
 
   it('resolves string wave ID "wave-02" with wasNumeric=false', () => {
@@ -357,6 +359,7 @@ describe('resolveWave -- error cases', () => {
 
   beforeEach(() => {
     createMockSets(tmpDir, ['set-01-api']);
+    createMockState(tmpDir, ['set-01-api']);
   });
 
   it('throws on malformed "1." input', () => {
@@ -415,6 +418,7 @@ describe('resolveWave -- error cases', () => {
 describe('resolveWave -- edge cases', () => {
   it('handles single set with single wave', () => {
     createMockSets(tmpDir, ['only-set']);
+    createMockState(tmpDir, ['only-set']);
     const state = makeState([
       {
         id: 'only-set',
@@ -436,11 +440,12 @@ describe('resolveWave -- edge cases', () => {
 
   it('resolveWave with set not in state throws descriptive error', () => {
     createMockSets(tmpDir, ['set-01-api']);
-    // State has no sets in milestone
+    createMockState(tmpDir, ['set-01-api']);
+    // State has no sets in milestone -- emptyState passed explicitly overrides disk
     const emptyState = makeState([]);
     assert.throws(
       () => resolveWave('1.1', emptyState, tmpDir),
-      { message: /not found in state/ }
+      { message: /No sets found in current milestone/ }
     );
   });
 });
@@ -471,6 +476,7 @@ describe('resolveWave -- with setId parameter (FLOW-01)', () => {
 
   beforeEach(() => {
     createMockSets(tmpDir, ['set-01-api', 'set-02-data']);
+    createMockState(tmpDir, ['set-01-api', 'set-02-data']);
   });
 
   it('resolves string setId + string waveId correctly', () => {
