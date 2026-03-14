@@ -663,3 +663,52 @@ describe('resolveWave -- with setId parameter (FLOW-01)', () => {
     assert.equal(result.wasNumeric, false);
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// resolveWave -- state-based set indexing
+// ────────────────────────────────────────────────────────────────
+describe('resolveWave -- state-based set indexing', () => {
+  it('string wave ID returns milestone-ordered setIndex', () => {
+    const state = makeState([
+      {
+        id: 'zebra-set',
+        status: 'pending',
+        waves: [{ id: 'wave-01', status: 'pending', jobs: [] }],
+      },
+      {
+        id: 'apple-set',
+        status: 'pending',
+        waves: [{ id: 'wave-01', status: 'pending', jobs: [] }],
+      },
+    ]);
+    createMockState(tmpDir, ['zebra-set', 'apple-set']);
+    const result = resolveWave('wave-01', state, tmpDir);
+    assert.equal(result.setIndex, 1);
+    assert.equal(result.setId, 'zebra-set');
+    assert.equal(result.waveId, 'wave-01');
+    assert.equal(result.wasNumeric, false);
+  });
+
+  it('dot notation resolves set index from milestone order, not filesystem', () => {
+    const state = makeState([
+      {
+        id: 'zebra-set',
+        status: 'pending',
+        waves: [{ id: 'wave-01', status: 'pending', jobs: [] }],
+      },
+      {
+        id: 'apple-set',
+        status: 'pending',
+        waves: [{ id: 'wave-01', status: 'pending', jobs: [] }],
+      },
+    ]);
+    // Create directories in alphabetical order (apple before zebra)
+    createMockSets(tmpDir, ['apple-set', 'zebra-set']);
+    createMockState(tmpDir, ['zebra-set', 'apple-set']);
+    const result = resolveWave('1.1', state, tmpDir);
+    assert.equal(result.setId, 'zebra-set');
+    assert.equal(result.setIndex, 1);
+    assert.equal(result.waveId, 'wave-01');
+    assert.equal(result.wasNumeric, true);
+  });
+});
