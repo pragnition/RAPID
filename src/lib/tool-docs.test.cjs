@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
@@ -224,5 +226,49 @@ describe('module exports', () => {
 
   it('exports estimateTokens as a function', () => {
     assert.equal(typeof estimateTokens, 'function');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phantom command guard: no skill/agent .md references wave-plan CLI calls
+// ---------------------------------------------------------------------------
+describe('phantom command guard', () => {
+  it('no skill SKILL.md files contain wave-plan CLI invocations', () => {
+    const skillsDir = path.join(__dirname, '..', '..', 'skills');
+    const skillDirs = fs.readdirSync(skillsDir, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name);
+
+    for (const dir of skillDirs) {
+      const skillFile = path.join(skillsDir, dir, 'SKILL.md');
+      if (!fs.existsSync(skillFile)) continue;
+      const content = fs.readFileSync(skillFile, 'utf-8');
+      // Match CLI invocations: node "$RAPID_TOOLS" wave-plan or node "${RAPID_TOOLS}" wave-plan
+      const cliPattern = /node\s+["']?\$\{?RAPID_TOOLS\}?["']?\s+wave-plan/g;
+      const matches = content.match(cliPattern);
+      assert.ok(
+        !matches,
+        `skills/${dir}/SKILL.md contains phantom wave-plan CLI call(s): ${matches ? matches.join(', ') : ''}`
+      );
+    }
+  });
+
+  it('no agent .md files reference wave-plan-* tool keys in <tools> sections', () => {
+    const agentsDir = path.join(__dirname, '..', '..', 'agents');
+    const agentFiles = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
+
+    for (const file of agentFiles) {
+      const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
+      // Extract <tools> section if present
+      const toolsMatch = content.match(/<tools>([\s\S]*?)<\/tools>/);
+      if (!toolsMatch) continue;
+      const toolsSection = toolsMatch[1];
+      const phantomPattern = /wave-plan-/g;
+      const matches = toolsSection.match(phantomPattern);
+      assert.ok(
+        !matches,
+        `agents/${file} <tools> section references phantom wave-plan-* key(s)`
+      );
+    }
   });
 });

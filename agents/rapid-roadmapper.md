@@ -238,7 +238,7 @@ For each set, generate a contract:
 - A single agent working on a larger chunk makes better decisions than many agents on tiny pieces
 - More than 4 jobs per wave is allowed ONLY if the wave planner explicitly justifies why in the plan
 - Detailed job plans are NOT created here -- only titles and complexity estimates
-- Detailed planning happens later via /rapid:discuss and /rapid:wave-plan per wave
+- Detailed planning happens later via /rapid:discuss-set and /rapid:plan-set per set
 
 ### Contract Unification
 - ALL contracts across ALL sets must be generated together in a single pass

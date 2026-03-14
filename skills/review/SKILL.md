@@ -183,14 +183,14 @@ Scoping: {'concern-based' if useConcernScoping else 'directory chunking (fallbac
 
 ## Step 3: Load Acceptance Criteria
 
-Read ALL JOB-PLAN.md files from the set's planning directory to extract acceptance criteria. Iterate wave directories:
+Read ALL JOB-PLAN.md files from the set's planning directory to extract acceptance criteria. Use Glob to discover job plan files:
 
 ```bash
-# For each wave in the set, list job plans
-node "${RAPID_TOOLS}" wave-plan list-jobs <set-id> <wave-id>
+# Discover all JOB-PLAN.md files across all waves in this set
+find .planning/waves/${SET_ID} -name "JOB-PLAN.md" -type f 2>/dev/null | sort
 ```
 
-For each wave directory found under `.planning/waves/{setId}/`, call `wave-plan list-jobs` to get job plan file paths, then read each JOB-PLAN.md to extract acceptance criteria sections.
+Alternatively, use the Glob tool directly: `Glob .planning/waves/{setId}/*/JOB-PLAN.md` to discover job plan file paths. Read each JOB-PLAN.md to extract acceptance criteria sections.
 
 Aggregate acceptance criteria from all waves into a single list. This provides context for unit test and UAT stages. Tag each criterion with its originating wave for traceability.
 
