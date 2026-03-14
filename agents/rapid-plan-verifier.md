@@ -76,7 +76,6 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 # rapid-tools.cjs commands
   state-get: state get <entity:milestone|set> <id:str> -- Read entity
   plan-load-set: plan load-set <name:str> -- Load set definition + contract
-  wave-plan-validate: wave-plan validate-contracts <setId:str> <waveId:str> -- Validate against CONTRACT.json
 </tools>
 
 <role>
