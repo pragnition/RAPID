@@ -225,6 +225,64 @@ describe('resolveSet -- error cases', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// resolveSet -- explicit state parameter
+// ────────────────────────────────────────────────────────────────
+describe('resolveSet -- explicit state parameter', () => {
+  it('resolves numeric index from provided state', () => {
+    const state = makeState([
+      { id: 'alpha', status: 'pending', waves: [] },
+      { id: 'beta', status: 'pending', waves: [] },
+      { id: 'gamma', status: 'pending', waves: [] },
+    ]);
+    const result = resolveSet('2', tmpDir, state);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'beta',
+      numericIndex: 2,
+      wasNumeric: true,
+    });
+  });
+
+  it('resolves string ID from provided state', () => {
+    const state = makeState([
+      { id: 'alpha', status: 'pending', waves: [] },
+      { id: 'beta', status: 'pending', waves: [] },
+      { id: 'gamma', status: 'pending', waves: [] },
+    ]);
+    const result = resolveSet('gamma', tmpDir, state);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'gamma',
+      numericIndex: 3,
+      wasNumeric: false,
+    });
+  });
+
+  it('uses milestone ordering, not alphabetical', () => {
+    const state = makeState([
+      { id: 'zebra', status: 'pending', waves: [] },
+      { id: 'apple', status: 'pending', waves: [] },
+      { id: 'mango', status: 'pending', waves: [] },
+    ]);
+    const result = resolveSet('1', tmpDir, state);
+    assert.deepStrictEqual(result, {
+      resolvedId: 'zebra',
+      numericIndex: 1,
+      wasNumeric: true,
+    });
+  });
+
+  it('throws on out-of-range with state-provided sets', () => {
+    const state = makeState([
+      { id: 'alpha', status: 'pending', waves: [] },
+      { id: 'beta', status: 'pending', waves: [] },
+    ]);
+    assert.throws(
+      () => resolveSet('5', tmpDir, state),
+      { message: 'Set 5 not found. Valid range: 1-2. Use /rapid:status to see available sets.' }
+    );
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // resolveWave -- numeric dot notation happy path (UX-02)
 // ────────────────────────────────────────────────────────────────
 describe('resolveWave -- numeric dot notation (UX-02)', () => {
