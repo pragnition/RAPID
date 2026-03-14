@@ -28,6 +28,28 @@ function createMockSets(cwd, setNames) {
 }
 
 /**
+ * Create a .planning/STATE.json file with a valid ProjectState structure.
+ * Each set gets status: 'pending' and waves: [].
+ */
+function createMockState(cwd, setNames) {
+  const stateFile = path.join(cwd, '.planning', 'STATE.json');
+  fs.mkdirSync(path.join(cwd, '.planning'), { recursive: true });
+  const state = {
+    version: 1,
+    projectName: 'test-project',
+    currentMilestone: 'v1.0',
+    milestones: [{
+      id: 'v1.0',
+      name: 'v1.0',
+      sets: setNames.map(name => ({ id: name, status: 'pending', waves: [] })),
+    }],
+    lastUpdatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+}
+
+/**
  * Create a valid ProjectState object for wave resolution tests.
  */
 function makeState(sets) {
