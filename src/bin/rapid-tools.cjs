@@ -77,12 +77,12 @@ Commands:
   merge prepare-context <set>    Assemble launch briefing for set-merger subagent
   set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
   set-init list-available        List pending sets without worktrees
-  review scope <set-id> <wave-id> [--branch <b>]     Scope wave files for review
-  review log-issue <set-id> <wave-id>                Log issue from stdin JSON
+  review scope <set-id> [<wave-id>] [--branch <b>] [--post-merge]  Scope files for review
+  review log-issue <set-id> [<wave-id>] [--post-merge]  Log issue from stdin JSON
   review list-issues <set-id> [--status <s>]         List all issues for a set
   review update-issue <set-id> <wave-id> <issue-id> <status>  Update issue status
   review lean <set-id> <wave-id>                     Run lean wave-level review
-  review summary <set-id>                            Generate REVIEW-SUMMARY.md
+  review summary <set-id> [--post-merge]             Generate REVIEW-SUMMARY.md
   display banner <stage> [target]  Display branded RAPID stage banner
   build-agents              Build all agent .md files from source modules
 
@@ -1373,8 +1373,22 @@ async function handleReview(cwd, subcommand, args) {
     case 'scope': {
       const setId = args[0];
       if (!setId) {
-        error('Usage: rapid-tools review scope <set-id> [<wave-id>] [--branch <branch>]');
+        error('Usage: rapid-tools review scope <set-id> [<wave-id>] [--branch <branch>] [--post-merge]');
         process.exit(1);
+      }
+      const postMerge = args.includes('--post-merge');
+      // Post-merge mode: scope from merge commit, skip worktree resolution
+      if (postMerge) {
+        try {
+          const result = review.scopeSetPostMerge(cwd, setId);
+          const allFiles = [...result.changedFiles, ...result.dependentFiles];
+          const chunks = review.chunkByDirectory(allFiles);
+          output(JSON.stringify({ ...result, chunks, postMerge: true }));
+        } catch (err) {
+          output(JSON.stringify({ error: err.message }));
+          process.exit(1);
+        }
+        break;
       }
       // Detect mode: if args[1] is missing or starts with '--', set-level mode
       const waveId = (args[1] && !args[1].startsWith('--')) ? args[1] : null;
@@ -1408,11 +1422,12 @@ async function handleReview(cwd, subcommand, args) {
     case 'log-issue': {
       const setId = args[0];
       if (!setId) {
-        error('Usage: rapid-tools review log-issue <set-id> [<wave-id>]  (reads JSON issue from stdin)');
+        error('Usage: rapid-tools review log-issue <set-id> [<wave-id>] [--post-merge]  (reads JSON issue from stdin)');
         process.exit(1);
       }
-      // Detect mode: if args[1] present, it is the wave-id (lean compat)
-      const waveId = args[1] || null;
+      const logPostMerge = args.includes('--post-merge');
+      // Detect mode: if args[1] present and not a flag, it is the wave-id (lean compat)
+      const waveId = (args[1] && !args[1].startsWith('--')) ? args[1] : null;
       try {
         const stdinData = fs.readFileSync(0, 'utf-8').trim();
         if (!stdinData) {
@@ -1424,8 +1439,12 @@ async function handleReview(cwd, subcommand, args) {
         if (waveId) {
           issue.originatingWave = waveId;
         }
-        review.logIssue(cwd, setId, issue);
-        output(JSON.stringify({ logged: true, issueId: issue.id }));
+        if (logPostMerge) {
+          review.logIssuePostMerge(cwd, setId, issue);
+        } else {
+          review.logIssue(cwd, setId, issue);
+        }
+        output(JSON.stringify({ logged: true, issueId: issue.id, postMerge: logPostMerge }));
       } catch (err) {
         output(JSON.stringify({ error: err.message }));
         process.exit(1);
@@ -1560,16 +1579,23 @@ async function handleReview(cwd, subcommand, args) {
     case 'summary': {
       const setId = args[0];
       if (!setId) {
-        error('Usage: rapid-tools review summary <set-id>');
+        error('Usage: rapid-tools review summary <set-id> [--post-merge]');
         process.exit(1);
       }
+      const summaryPostMerge = args.includes('--post-merge');
       try {
-        const issues = review.loadSetIssues(cwd, setId);
-        const summaryContent = review.generateReviewSummary(setId, issues);
-        const summaryPath = path.join(cwd, '.planning', 'waves', setId, 'REVIEW-SUMMARY.md');
-        fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
-        fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
-        output(JSON.stringify({ written: true, path: summaryPath, issueCount: issues.length }));
+        if (summaryPostMerge) {
+          const issues = review.loadPostMergeIssues(cwd, setId);
+          const summaryPath = review.generatePostMergeReviewSummary(cwd, setId, issues);
+          output(JSON.stringify({ written: true, path: summaryPath, issueCount: issues.length, postMerge: true }));
+        } else {
+          const issues = review.loadSetIssues(cwd, setId);
+          const summaryContent = review.generateReviewSummary(setId, issues);
+          const summaryPath = path.join(cwd, '.planning', 'waves', setId, 'REVIEW-SUMMARY.md');
+          fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
+          fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
+          output(JSON.stringify({ written: true, path: summaryPath, issueCount: issues.length }));
+        }
       } catch (err) {
         output(JSON.stringify({ error: err.message }));
         process.exit(1);
