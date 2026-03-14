@@ -7,6 +7,30 @@ const NUMERIC_SET_PATTERN = /^\d+$/;
 const NUMERIC_WAVE_PATTERN = /^\d+\.\d+$/;
 
 /**
+ * Load STATE.json synchronously from disk.
+ * Internal helper -- not exported. Used as fallback when callers
+ * do not pass a pre-loaded state object.
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {object} Parsed state object
+ * @throws {Error} If STATE.json does not exist or is malformed
+ */
+function _loadStateFromDisk(cwd) {
+  const statePath = path.join(cwd, '.planning', 'STATE.json');
+  let raw;
+  try {
+    raw = fs.readFileSync(statePath, 'utf8');
+  } catch (err) {
+    throw new Error('No STATE.json found. Run /rapid:init first to initialize the project.');
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    throw new Error('STATE.json is corrupted. Re-run /rapid:init to reinitialize.');
+  }
+}
+
+/**
  * Resolve a set reference (numeric index or string ID) to full set info.
  *
  * Numeric IDs are 1-based indices into the alphabetically-sorted set list
