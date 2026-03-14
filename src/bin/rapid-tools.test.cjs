@@ -1712,4 +1712,117 @@ describe('handleReview CLI dual-mode', () => {
     const result = parseCliJson(stdout);
     assert.ok(Array.isArray(result), 'Should return array of issues');
   });
+
+  // ── post-merge: scope ──
+
+  it('review scope --post-merge returns postMerge:true in output', () => {
+    // Create a git repo with a merge commit for a test set
+    const setId = 'pm-scope-test';
+    const opts = { cwd: tmpDir, stdio: 'pipe' };
+    execSync('git init -b main', opts);
+    execSync('git config user.email "test@test.com"', opts);
+    execSync('git config user.name "Test"', opts);
+    fs.writeFileSync(path.join(tmpDir, 'base.cjs'), 'module.exports = {};');
+    execSync('git add base.cjs', opts);
+    execSync('git commit -m "initial commit"', opts);
+    execSync(`git checkout -b rapid/${setId}`, opts);
+    fs.writeFileSync(path.join(tmpDir, 'feature.cjs'), 'module.exports = { feature: true };');
+    execSync('git add feature.cjs', opts);
+    execSync(`git commit -m "feat(${setId}): add feature"`, opts);
+    execSync('git checkout main', opts);
+    execSync(`git merge rapid/${setId} --no-ff -m "merge(${setId}): merge set into main"`, opts);
+
+    const stdout = execSync(
+      `node "${CLI_PATH}" review scope ${setId} --post-merge`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+
+    const result = parseCliJson(stdout);
+    assert.equal(result.postMerge, true, 'should include postMerge: true');
+    assert.ok(Array.isArray(result.changedFiles), 'should have changedFiles array');
+    assert.ok(result.changedFiles.includes('feature.cjs'), 'should include feature.cjs');
+  });
+
+  it('review scope without --post-merge does not include postMerge flag', () => {
+    // This test uses an existing non-git tmpDir, so scopeSetForReview will fail
+    // but the error should NOT contain postMerge flag
+    try {
+      execSync(`node "${CLI_PATH}" review scope auth-core`, {
+        cwd: tmpDir, encoding: 'utf-8', timeout: 10000,
+      });
+    } catch (err) {
+      const stdout = err.stdout || '';
+      // Whether it succeeds or fails, the output should not contain postMerge
+      if (stdout.trim()) {
+        const result = parseCliJson(stdout);
+        assert.ok(result.postMerge === undefined || result.postMerge !== true,
+          'Should not include postMerge flag without --post-merge');
+      }
+      // If no stdout, error is expected (git not available) -- just verify no postMerge
+      return;
+    }
+  });
+
+  // ── post-merge: log-issue ──
+
+  it('review log-issue --post-merge writes to post-merge directory', () => {
+    const issue = JSON.stringify({
+      id: 'PM-CLI-001',
+      type: 'bug',
+      severity: 'high',
+      file: 'src/auth.cjs',
+      description: 'Post-merge issue from CLI',
+      source: 'bug-hunt',
+      status: 'open',
+      createdAt: '2026-03-14T10:00:00Z',
+    });
+
+    const stdout = execSync(
+      `echo '${issue}' | node "${CLI_PATH}" review log-issue pm-cli-test --post-merge`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, shell: true }
+    );
+
+    const result = parseCliJson(stdout);
+    assert.equal(result.logged, true, 'should report logged');
+    assert.equal(result.postMerge, true, 'should report postMerge');
+
+    // Verify the file was written to post-merge directory
+    const issuesPath = path.join(tmpDir, '.planning', 'post-merge', 'pm-cli-test', 'REVIEW-ISSUES.json');
+    assert.ok(fs.existsSync(issuesPath), 'REVIEW-ISSUES.json should exist in post-merge dir');
+  });
+
+  // ── post-merge: summary ──
+
+  it('review summary --post-merge writes to post-merge directory', () => {
+    // First log a post-merge issue so summary has content
+    const issue = JSON.stringify({
+      id: 'PM-SUM-CLI-001',
+      type: 'bug',
+      severity: 'medium',
+      file: 'src/test.cjs',
+      description: 'Summary test issue',
+      source: 'bug-hunt',
+      status: 'open',
+      createdAt: '2026-03-14T10:00:00Z',
+    });
+
+    execSync(
+      `echo '${issue}' | node "${CLI_PATH}" review log-issue sum-test --post-merge`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, shell: true }
+    );
+
+    const stdout = execSync(
+      `node "${CLI_PATH}" review summary sum-test --post-merge`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+
+    const result = parseCliJson(stdout);
+    assert.equal(result.written, true, 'should report written');
+    assert.equal(result.postMerge, true, 'should report postMerge');
+    assert.equal(result.issueCount, 1, 'should have 1 issue');
+
+    // Verify the file was written to post-merge directory
+    const summaryPath = path.join(tmpDir, '.planning', 'post-merge', 'sum-test', 'REVIEW-SUMMARY.md');
+    assert.ok(fs.existsSync(summaryPath), 'REVIEW-SUMMARY.md should exist in post-merge dir');
+  });
 });

@@ -1430,3 +1430,144 @@ describe('scopeSetPostMerge', () => {
     assert.ok(result.dependentFiles.includes('consumer.cjs'), 'consumer.cjs should be in dependentFiles');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// logIssuePostMerge Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('logIssuePostMerge', () => {
+  let tmpDir;
+
+  function makeValidIssue(id) {
+    return {
+      id: id || 'PM-001',
+      type: 'bug',
+      severity: 'high',
+      file: 'src/auth.cjs',
+      description: 'Missing null check on token parse',
+      source: 'bug-hunt',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    cleanupDir(tmpDir);
+  });
+
+  it('writes issue to .planning/post-merge/{setId}/ directory', () => {
+    const issue = makeValidIssue('PM-001');
+    review.logIssuePostMerge(tmpDir, 'test-set', issue);
+
+    const issuesPath = path.join(tmpDir, '.planning', 'post-merge', 'test-set', 'REVIEW-ISSUES.json');
+    assert.ok(fs.existsSync(issuesPath), 'REVIEW-ISSUES.json should exist in post-merge dir');
+
+    const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
+    assert.equal(data.setId, 'test-set');
+    assert.equal(data.issues.length, 1);
+    assert.equal(data.issues[0].id, 'PM-001');
+  });
+
+  it('creates directory if it does not exist', () => {
+    const postMergeDir = path.join(tmpDir, '.planning', 'post-merge');
+    assert.ok(!fs.existsSync(postMergeDir), 'post-merge dir should not exist yet');
+
+    review.logIssuePostMerge(tmpDir, 'new-set', makeValidIssue());
+
+    assert.ok(fs.existsSync(postMergeDir), '.planning/post-merge/ should be created automatically');
+    assert.ok(fs.existsSync(path.join(postMergeDir, 'new-set')), 'set subdirectory should be created');
+  });
+
+  it('appends to existing issues', () => {
+    review.logIssuePostMerge(tmpDir, 'test-set', makeValidIssue('PM-001'));
+    review.logIssuePostMerge(tmpDir, 'test-set', makeValidIssue('PM-002'));
+
+    const issuesPath = path.join(tmpDir, '.planning', 'post-merge', 'test-set', 'REVIEW-ISSUES.json');
+    const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
+    assert.equal(data.issues.length, 2, 'should have 2 issues');
+    assert.equal(data.issues[0].id, 'PM-001');
+    assert.equal(data.issues[1].id, 'PM-002');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// loadPostMergeIssues Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('loadPostMergeIssues', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    cleanupDir(tmpDir);
+  });
+
+  it('returns empty array when no post-merge issues exist', () => {
+    const issues = review.loadPostMergeIssues(tmpDir, 'nonexistent');
+    assert.deepStrictEqual(issues, []);
+  });
+
+  it('loads issues from post-merge directory', () => {
+    const issue = {
+      id: 'PM-LOAD-001',
+      type: 'bug',
+      severity: 'medium',
+      file: 'src/test.cjs',
+      description: 'Test issue',
+      source: 'bug-hunt',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    };
+    review.logIssuePostMerge(tmpDir, 'load-test', issue);
+
+    const loaded = review.loadPostMergeIssues(tmpDir, 'load-test');
+    assert.equal(loaded.length, 1);
+    assert.equal(loaded[0].id, 'PM-LOAD-001');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// generatePostMergeReviewSummary Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('generatePostMergeReviewSummary', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    cleanupDir(tmpDir);
+  });
+
+  it('writes REVIEW-SUMMARY.md to post-merge directory', () => {
+    const issues = [
+      {
+        id: 'PM-SUM-001',
+        type: 'bug',
+        severity: 'high',
+        file: 'src/auth.cjs',
+        description: 'Missing check',
+        source: 'bug-hunt',
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    const summaryPath = review.generatePostMergeReviewSummary(tmpDir, 'summary-test', issues);
+    assert.ok(summaryPath.includes(path.join('.planning', 'post-merge', 'summary-test', 'REVIEW-SUMMARY.md')));
+    assert.ok(fs.existsSync(summaryPath), 'REVIEW-SUMMARY.md should be created');
+
+    const content = fs.readFileSync(summaryPath, 'utf-8');
+    assert.ok(content.includes('# Review Summary: summary-test'), 'should contain set id in title');
+    assert.ok(content.includes('**Total issues:** 1'), 'should report issue count');
+  });
+});
