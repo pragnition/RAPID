@@ -1,0 +1,32 @@
+{
+  "setId": "ux-improvements",
+  "version": "1.0.0",
+  "exports": {
+    "batched-questions": {
+      "type": "file",
+      "signature": "skills/discuss-set/SKILL.md :: Steps 5-6",
+      "description": "discuss-set rewritten to use AskUserQuestion with multi-header batching and pre-filled option arrays. Each gray area presented as a single AskUserQuestion with 2-3 options plus 'I'll answer in my own words'."
+    },
+    "dark-purple-banners": {
+      "type": "file",
+      "signature": "src/lib/display.cjs :: STAGE_BG",
+      "description": "Planning-stage backgrounds changed from bright blue (\\x1b[104m) to dark purple (\\x1b[45m). Execution and review stages updated for visual consistency."
+    },
+    "options-always-present": {
+      "type": "file",
+      "signature": "skills/*/SKILL.md :: AskUserQuestion calls",
+      "description": "All AskUserQuestion calls across all skills provide at least 2 pre-filled options. Freeform questions include an 'I'll answer in my own words' option."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "no-optionless-questions": {
+      "description": "Every AskUserQuestion invocation in any SKILL.md must include at least one pre-filled option. Freeform questions must include an 'I'll answer in my own words' escape hatch option.",
+      "enforced_by": "test"
+    },
+    "banner-readability": {
+      "description": "All banner backgrounds must provide sufficient contrast with bright white (\\x1b[97m) text. Dark purple (\\x1b[45m) passes; bright pink does not.",
+      "enforced_by": "test"
+    }
+  }
+}
