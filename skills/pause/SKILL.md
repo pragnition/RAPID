@@ -67,7 +67,15 @@ Use AskUserQuestion to ask for pause notes:
   - "Add notes" -- "Write a message describing current progress and context"
   - "Skip notes" -- "Pause without additional notes"
 
-**If "Add notes":** Ask freeform: "What notes should the next session see when resuming?" Capture the response as `userNotes`.
+**If "Add notes":** Use AskUserQuestion with:
+- question: "What notes should the next developer see when resuming this set?"
+- Options:
+  - "Blocked on dependency" -- "Waiting for another set or external resource"
+  - "Partial progress" -- "Some tasks done, resuming from a specific point"
+  - "Context switch" -- "Pausing to work on something else, will return later"
+  - "I'll answer in my own words" -- "Write custom notes for the next session"
+
+If the user selects "I'll answer in my own words", ask freeform: "What notes should the next session see when resuming?" and capture their typed response. Capture the response as `userNotes`.
 
 **If "Skip notes":** Set `userNotes` to empty string.
 

@@ -63,15 +63,27 @@ Existing sets:
 
 Ask the user 2 focused questions to understand the new set's scope.
 
-**Question 1** -- Use AskUserQuestion (freeform):
+**Question 1** -- Use AskUserQuestion with:
+- question: "What should this new set accomplish? Describe the scope, goals, and key deliverables."
+- Options:
+  - "New feature" -- "Add a new user-facing feature or capability"
+  - "Bug fix / tech debt" -- "Fix issues or clean up existing code"
+  - "Infrastructure / tooling" -- "Build internal tools, CI/CD, or system infrastructure"
+  - "I'll answer in my own words" -- "Describe the scope in detail"
 
-> "What should this new set accomplish? Describe the scope, goals, and key deliverables."
+If the user selects a pre-filled option, use it as the starting point and ask ONE targeted follow-up to gather specifics about the scope. If the user selects "I'll answer in my own words", present the same question as a freeform AskUserQuestion (no options) to collect their typed response.
 
 Record the answer as `SET_SCOPE`.
 
-**Question 2** -- Use AskUserQuestion (freeform):
+**Question 2** -- Use AskUserQuestion with:
+- question: "What files or areas of the codebase will this set modify? Are there dependencies on existing sets?"
+- Options:
+  - "Mostly new files" -- "Creating new modules/components with minimal changes to existing code"
+  - "Modifying existing code" -- "Changes to existing files with some new additions"
+  - "No dependencies on other sets" -- "This set is fully independent"
+  - "I'll answer in my own words" -- "Describe files and dependencies in detail"
 
-> "What files or areas of the codebase will this set modify? Are there dependencies on existing sets?"
+If the user selects a pre-filled option, use it as context and ask ONE targeted follow-up to gather specifics. If the user selects "I'll answer in my own words", present the same question as a freeform AskUserQuestion (no options) to collect their typed response.
 
 Record the answer as `SET_FILES_AND_DEPS`.
 
@@ -94,7 +106,14 @@ Options:
 ```
 
 - If "Yes": Use the proposed ID.
-- If "Custom ID": Use AskUserQuestion (freeform): "Enter your preferred set ID (kebab-case):" and use the user's input.
+- If "Custom ID": Use AskUserQuestion with:
+  - question: "Enter your preferred set ID"
+  - Options:
+    - "{alternative-slug-1}" -- "Alternative derived from scope description"
+    - "{alternative-slug-2}" -- "Shorter variant of the proposed ID"
+    - "I'll answer in my own words" -- "Type a custom kebab-case set ID"
+
+  Generate 2 dynamic alternative slug suggestions based on the user's scope description from Question 1. If the user selects "I'll answer in my own words", ask freeform: "Enter your preferred set ID (kebab-case):" and use their input.
 
 ### Validate Uniqueness
 
@@ -108,7 +127,14 @@ echo "$STATE_JSON"
 
 Parse the JSON and check if any existing set has the same ID.
 
-**If duplicate:** Display: "Set ID '{SET_ID}' already exists. Please choose a different ID." Use AskUserQuestion (freeform) to get a new ID. Re-validate until unique.
+**If duplicate:** Display: "Set ID '{SET_ID}' already exists. Please choose a different ID." Use AskUserQuestion with:
+- question: "Set ID '{SET_ID}' already exists. Choose a different ID."
+- Options:
+  - "{SET_ID}-2" -- "Append a number to differentiate"
+  - "{SET_ID}-alt" -- "Add '-alt' suffix"
+  - "I'll answer in my own words" -- "Type a completely different set ID"
+
+If the user selects "I'll answer in my own words", ask freeform for a new ID. Re-validate until unique.
 
 Record `SET_ID` for subsequent steps.
 

@@ -159,16 +159,17 @@ Present gray areas using AskUserQuestion:
 "I've analyzed set '{SET_ID}' and identified 4 areas that would benefit from your input.
 Select which areas you'd like to discuss:"
 Options:
-1. "Let Claude decide all" -- "Skip discussion, all decisions at Claude's discretion"
-2. "{Gray area 1 title}" -- "{1-sentence description}"
-3. "{Gray area 2 title}" -- "{1-sentence description}"
-4. "{Gray area 3 title}" -- "{1-sentence description}"
-5. "{Gray area 4 title}" -- "{1-sentence description}"
+1. "{Gray area 1 title}" -- "{1-sentence description}"
+2. "{Gray area 2 title}" -- "{1-sentence description}"
+3. "{Gray area 3 title}" -- "{1-sentence description}"
+4. "{Gray area 4 title}" -- "{1-sentence description}"
 ```
 
 **Handling responses:**
-- If "Let Claude decide all": Record all 4 areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
-- If the user selects specific areas: Record selected areas for Step 6.
+- If the user selects specific areas: Record selected areas for Step 6. Unselected areas are recorded as "Claude's Discretion" in CONTEXT.md.
+- If the user selects ALL 4 areas: All areas proceed to Step 6 for deep-dive discussion.
+
+**Note:** There is no global "Let Claude decide all" option. The user MUST engage with the area selection. They can still skip individual areas in Step 6 by choosing "Claude decides" per-area.
 
 ---
 
@@ -176,7 +177,7 @@ Options:
 
 For EACH selected gray area (in order):
 
-1. Present ONE AskUserQuestion that covers the area comprehensively. Batch 2-3 questions per area into a single prompt:
+1. Present ONE AskUserQuestion per area that covers it comprehensively. Include 4-5 questions per area, each with 2-3 concrete pre-filled approach options:
 
    ```
    "{Gray area title}
@@ -184,24 +185,57 @@ For EACH selected gray area (in order):
    Context: {2-3 sentences explaining the tradeoffs and why this matters}
 
    Questions:
-   1. {Question about approach}
-   2. {Question about edge case or tradeoff}
-   3. {Question about specific detail}
+   1. {Question about primary approach}
+      a) {Concrete option A} -- {1-sentence rationale}
+      b) {Concrete option B} -- {1-sentence rationale}
+      c) {Concrete option C} -- {1-sentence rationale} (optional, if 3 options are warranted)
 
-   Answer all questions above, or type 'Claude decides' to let me handle this area."
+   2. {Question about integration or edge case}
+      a) {Concrete option A} -- {1-sentence rationale}
+      b) {Concrete option B} -- {1-sentence rationale}
+
+   3. {Question about tradeoff or performance consideration}
+      a) {Concrete option A} -- {1-sentence rationale}
+      b) {Concrete option B} -- {1-sentence rationale}
+
+   4. {Question about UX or developer experience detail}
+      a) {Concrete option A} -- {1-sentence rationale}
+      b) {Concrete option B} -- {1-sentence rationale}
+
+   5. {Question about specific implementation detail} (optional 5th question if area warrants it)
+      a) {Concrete option A} -- {1-sentence rationale}
+      b) {Concrete option B} -- {1-sentence rationale}
+
+   For each question, pick a letter (a/b/c) or write your own answer.
+   Type 'Claude decides' to let me handle this entire area."
    ```
 
-   This is a freeform AskUserQuestion -- the user answers all 2-3 questions about the area in one response.
+   **Options for the AskUserQuestion wrapper:**
+   - "Claude decides" -- "Let Claude handle all decisions for this area"
+   - "I'll answer in my own words" -- "Respond to all questions with free-form text"
 
-2. Parse the user's response. Extract decisions.
+   **Note on the hybrid format:** The question body contains inline lettered options (a/b/c) for each sub-question, while the AskUserQuestion wrapper provides the two escape hatches. Users can:
+   - Pick letters for each sub-question (e.g., "1a, 2b, 3a, 4b")
+   - Mix letters and prose (e.g., "1a, 2b, 3: I want to use Redis instead, 4a")
+   - Select "Claude decides" to skip the whole area
+   - Select "I'll answer in my own words" to write a full prose response
 
-3. If user said "Claude decides": Record as Claude's discretion with rationale.
+2. Parse the user's response. Extract decisions per sub-question:
+   - Letter selections map to the corresponding approach option
+   - Prose responses are recorded verbatim
+   - "Claude decides" records all sub-questions as Claude's discretion with rationale
+
+3. If user said "Claude decides": Record the entire area as Claude's discretion with rationale explaining why each sub-decision was made a particular way.
 
 ### Follow-Up (Only If Needed)
 
 After ALL selected areas are discussed:
 - Compile follow-up questions ONLY if genuine gaps remain after all 4 areas were covered.
-- If gaps exist: ONE final AskUserQuestion with remaining questions (not per-area).
+- If gaps exist: ONE final AskUserQuestion with remaining questions. Include pre-filled options:
+  ```
+  - "These gaps don't matter" -- "Proceed without resolving these points"
+  - "I'll answer in my own words" -- "Address the remaining gaps"
+  ```
 - If no gaps: Skip follow-up entirely.
 
 ---
@@ -228,13 +262,19 @@ Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 ## Implementation Decisions
 
 ### {Area 1 Title}
-- {Decision from discussion or "Claude's Discretion"}
+- Q1: {Decision -- letter selection with option text, or prose response}
+- Q2: {Decision -- letter selection with option text, or prose response}
+- Q3: {Decision -- letter selection with option text, or prose response}
+- Q4: {Decision -- letter selection with option text, or prose response}
 
 ### {Area 2 Title}
-- ...
+- Q1: ...
+- Q2: ...
+- Q3: ...
+- Q4: ...
 
 ### Claude's Discretion
-- {Areas where user selected "Let Claude decide"}
+- {Areas where user selected "Claude decides" -- include rationale per sub-question}
 </decisions>
 
 <specifics>
@@ -316,8 +356,8 @@ Show what is done, what failed, and what to run next.
 
 - **Set-scoped discussion:** Discussion captures vision at the set level, not per-wave. CONTEXT.md is the output artifact.
 - **Exactly 4 gray areas:** Identify exactly 4 implementation facets for discussion. Not more, not fewer.
-- **Batched questions per area:** Present 2-3 questions per gray area in a single AskUserQuestion call, not one at a time.
-- **"Claude decides" option:** Available per-area and as a global "Let Claude decide all" option.
+- **Batched questions per area:** Present 4-5 questions per gray area in a single AskUserQuestion call with 2-3 concrete pre-filled approach options per question (radio-style). Not one question at a time.
+- **"Claude decides" option:** Available per-area only. No global skip -- the user always sees the gray area list and decides per-area.
 - **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md without user interaction.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
 - **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set.
@@ -333,5 +373,7 @@ Show what is done, what failed, and what to run next.
 - Do not reference or resolve individual waves anywhere in this skill.
 - Use `state transition set` for all state changes. No per-wave transitions.
 - Do NOT ask more than 4 gray areas -- the locked decision is exactly 4.
-- Do NOT ask one question at a time per area -- batch 2-3 questions per area into one AskUserQuestion.
+- Do NOT ask one question at a time per area -- batch 4-5 questions per area into one AskUserQuestion with inline lettered options.
+- Do NOT present a global "Let Claude decide all" option -- "Claude decides" is per-area only.
+- Do NOT present freeform AskUserQuestion calls without pre-filled options -- always include at least "Claude decides" and "I'll answer in my own words" as AskUserQuestion options.
 - Do NOT prompt for every implementation detail -- capture vision/what, not implementation/how.
