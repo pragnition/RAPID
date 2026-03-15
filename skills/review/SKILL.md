@@ -74,23 +74,17 @@ Read STATE.json to verify the target set exists and is in a reviewable state:
 node "${RAPID_TOOLS}" state get --all
 ```
 
-Parse the JSON output and find the target set. The set status MUST be `complete` or `reviewing`. If the set is in any other status (e.g., `pending`, `planning`, `executing`):
+Parse the JSON output and find the target set. The set status MUST be `complete`. If the set is in any other status (e.g., `pending`, `planned`, `executed`):
 
-> Cannot review set '{set-id}' -- current status is '{status}'. Set must be in 'complete' or 'reviewing' state. Run `/rapid:execute-set {set-id}` first.
+> Cannot review set '{set-id}' -- current status is '{status}'. Set must be in 'complete' state. Run `/rapid:execute-set {set-id}` first.
 
 Exit.
 
-### 0d: Transition set to 'reviewing'
+### 0d: Validate review eligibility
 
-**If `POST_MERGE=true`:** Skip this step entirely. Post-merge review does NOT transition set status. The `merged` status is terminal and must not be modified.
+**If `POST_MERGE=true`:** Skip this step entirely. Post-merge review does not require any specific set status -- it operates on already-merged sets. Proceed directly to Step 1.
 
-If the set is currently in `complete` state, transition it to `reviewing`:
-
-```bash
-node "${RAPID_TOOLS}" state transition set <milestone> <set-id> reviewing
-```
-
-If the set is already in `reviewing` state, skip this transition (idempotent re-entry for resuming a previous review session).
+The set must be in `complete` state to proceed. No state transition is performed -- review is a non-mutating operation on set status.
 
 ## Step 1: Stage Selection
 
@@ -1017,10 +1011,10 @@ Then exit. Do NOT prompt for selection.
 - **Re-hunts narrow scope.** Cycles 2 and 3 only analyze files the bugfix agent modified in the previous cycle. No re-chunking for re-hunts -- flat scope on modified files only. This prevents scope creep and ensures the re-hunt is targeted.
 - **UAT runs once on the full set scope.** UAT tests user workflows across the entire set, not individual files or chunks. It is never chunked.
 - **UAT browser automation depends on MCP tool availability.** If the configured browser automation tool is not available at runtime, automated steps should be converted to human steps. The UAT subagent handles this gracefully.
-- **Review state is set-level.** The set transitions `complete` -> `reviewing`. The review does not modify individual wave states.
+- **Review does not modify set status.** Review operates on sets in `complete` state without transitioning them. The review skill is a non-mutating observation step.
 - **All review artifacts are committed at the end.** After all stages complete and REVIEW-SUMMARY.md is generated, the orchestrator should commit review artifacts alongside STATE.json.
 - **Stage ordering is fixed.** When multiple stages are selected, they always run in order: unit test, then bug hunt, then UAT. This ensures unit test failures inform the bug hunt, and both inform UAT.
-- **Idempotent re-entry.** If a previous review session was interrupted, re-invoking `/rapid:review` picks up where it left off. The set is already in `reviewing` state, and existing REVIEW-*.md artifacts are preserved (overwritten only if the stage runs again).
+- **Idempotent re-entry.** If a previous review session was interrupted, re-invoking `/rapid:review` picks up where it left off. The set remains in `complete` state, and existing REVIEW-*.md artifacts are preserved (overwritten only if the stage runs again).
 - **Token cost awareness.** The 3-agent adversarial bug hunt is the most expensive stage. Chunked parallel execution multiplies cost by chunk count per cycle. Users can control costs by selecting only the stages they need.
 - **Concern-based scoping runs for unit test and bug hunt stages only.** A scoper agent categorizes files by concern area as Step 2.5. Each concern group includes cross-cutting files. If cross-cutting files exceed 50% of total, concern scoping falls back to directory chunking with a warning.
 - **Deduplication runs before the adversarial pipeline.** After concern-scoped (or chunk-scoped) hunters complete, findings are merged and deduplicated. Same file + similar description (>0.7 Levenshtein similarity) = duplicate. Higher severity wins. This saves tokens by running ONE advocate and ONE judge on the deduplicated set.

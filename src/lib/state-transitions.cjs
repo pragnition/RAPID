@@ -2,7 +2,7 @@
 
 const SET_TRANSITIONS = {
   pending:     ['discussed', 'planned'],
-  discussed:   ['planned'],
+  discussed:   ['planned', 'discussed'],
   planned:     ['executed'],
   executed:    ['complete'],
   complete:    ['merged'],
