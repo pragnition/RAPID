@@ -61,7 +61,7 @@
       "sets": [
         {
           "id": "state-consistency",
-          "status": "complete"
+          "status": "merged"
         },
         {
           "id": "command-audit",
@@ -73,7 +73,7 @@
         },
         {
           "id": "ux-improvements",
-          "status": "pending"
+          "status": "discussing"
         },
         {
           "id": "review-after-merge",
@@ -82,6 +82,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-14T15:29:34.826Z",
+  "lastUpdatedAt": "2026-03-15T13:59:16.397Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
