@@ -23,3 +23,9 @@ I've identified 4 areas for set 'ux-improvements'. Which would you like to discu
   Audit only the 6-8 files with known gaps, or do a full 17-skill sweep of all AskUserQuestion calls
   5. [ ] Type something
      Submit
+
+
+Currently the entire review process is very context heavy. Lets make the /review run the scoping agent and write its output/files to a REVIEW-SCOPE.md
+
+Afterwhich, we can ahve the user do /unit-test /uat /bug-hunt on their own (this way, we don't even need to prompt the user to choose which review stages we need!)
+Also show the judge's leaning for each of the rulings
