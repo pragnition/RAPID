@@ -67,15 +67,39 @@ Use AskUserQuestion with:
   - Suggest the next logical version based on current milestone (e.g., if current is "v1.0", suggest "v2.0")
   - "Other" -- "Enter a custom milestone ID/version"
 
-If "Other" is selected, ask freeform: "What version/ID should the new milestone have?"
+If "Other" is selected, use AskUserQuestion with:
+- question: "Custom milestone version"
+- Options:
+  - "{next-patch}" -- "Patch version bump (e.g., v1.0.1)"
+  - "{next-minor}" -- "Minor version bump (e.g., v1.1.0)"
+  - "{next-major}" -- "Major version bump (e.g., v2.0.0)"
+  - "I'll answer in my own words" -- "Type a custom version string"
+
+Compute the version suggestions dynamically from the current milestone version by parsing its semver components. If the user selects "I'll answer in my own words", ask freeform: "What version/ID should the new milestone have?" and accept their typed response.
 
 **Question B: Milestone Name**
 
-Ask freeform: "Give a short name or description for this milestone (e.g., 'Mark III', 'API Rewrite', 'Performance Overhaul')."
+Use AskUserQuestion with:
+- question: "Milestone name"
+- Options:
+  - "Performance & Optimization" -- "Focus on speed, efficiency, and resource usage"
+  - "Feature Expansion" -- "New capabilities and user-facing features"
+  - "Stability & Maintenance" -- "Bug fixes, refactoring, tech debt reduction"
+  - "I'll answer in my own words" -- "Type a custom milestone name"
+
+If the user selects "I'll answer in my own words", ask freeform: "Give a short name or description for this milestone (e.g., 'Mark III', 'API Rewrite', 'Performance Overhaul')." and accept their typed response.
 
 **Question C: Milestone Goals**
 
-Ask freeform: "Describe the goals for this milestone. What should be achieved? What features, improvements, or changes are in scope? Be as specific as possible -- this will guide the research and roadmap generation."
+Use AskUserQuestion with:
+- question: "Milestone goals"
+- Options:
+  - "Incremental improvement" -- "Build on existing foundation with targeted enhancements"
+  - "Major new capability" -- "Add a significant new feature or system component"
+  - "Rewrite or migration" -- "Replace or significantly restructure existing code"
+  - "I'll answer in my own words" -- "Describe goals in detail"
+
+If the user selects "I'll answer in my own words", ask freeform: "Describe the goals for this milestone. What should be achieved? What features, improvements, or changes are in scope? Be as specific as possible -- this will guide the research and roadmap generation." and accept their typed response.
 
 Store these values for use in subsequent steps.
 
@@ -435,7 +459,15 @@ Confirm: "Roadmap written and state updated."
 
 **If "Revise":**
 
-Ask freeform: "What changes would you like to the roadmap?"
+Use AskUserQuestion with:
+- question: "What changes would you like to the roadmap?"
+- Options:
+  - "Merge some sets" -- "Combine sets that are too small or closely related"
+  - "Split a set" -- "Break a large set into smaller, more focused sets"
+  - "Change priorities" -- "Reorder sets or adjust scope boundaries"
+  - "I'll answer in my own words" -- "Describe the changes you want"
+
+If the user selects "I'll answer in my own words", ask freeform: "What changes would you like to the roadmap?" and accept their typed response.
 
 Re-spawn the roadmapper agent with:
 - All original context (synthesis, milestone goals, milestone name)
