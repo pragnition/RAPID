@@ -140,14 +140,7 @@ Use AskUserQuestion with:
   - "{detected directory name}" -- "Use the current directory name"
   - "Other" -- "Enter a custom project name"
 
-If the user selects "Other", use AskUserQuestion with:
-- question: "Custom project name"
-- Options:
-  - "{parent-directory-name}-project" -- "Common naming convention using parent directory"
-  - "{detected-framework}-app" -- "Framework-based naming (if detectable from package.json etc.)"
-  - "I'll answer in my own words" -- "Type a custom project name"
-
-If no framework is detected, use two reasonable variants of the directory name (e.g., "{dirname}-app", "{dirname}-service"). If the user selects "I'll answer in my own words", ask freeform: "What would you like to name the project?" and accept their input.
+If the user selects "Other", ask freeform: "What would you like to name the project?" and accept their input.
 
 **Team Size:**
 
@@ -189,59 +182,54 @@ Store the selection as `opus` or `sonnet`.
 
 **Batch 1: Vision and Users (Areas 1-2)**
 
-Ask ALL of the following in a SINGLE AskUserQuestion call with options:
+Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
 
-- question: "Tell me about this project. I'd like to understand the big picture in one go:\n\n1. **What are you building and why?** What problem does it solve? What makes this different from existing solutions?\n2. **Who are the target users?** Primary and secondary users, their technical sophistication, B2B/B2C/internal/open-source?\n3. **What scale are you targeting?** How many users initially and at scale?\n\nFeel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
-- Options:
-  - "It's a web application" -- "SaaS, web portal, or browser-based tool for end users"
-  - "It's a developer tool / CLI / library" -- "SDK, package, CLI tool, or developer-facing infrastructure"
-  - "It's a mobile or desktop app" -- "Native or cross-platform application for phones/tablets/desktop"
-  - "I'll answer in my own words" -- "Describe the project in your own words"
-
-If the user selects a pre-filled option, use it as the starting point and ask ONE targeted follow-up to gather specifics about their vision and users. If the user selects "I'll answer in my own words", present the same question as a freeform AskUserQuestion (no options) to collect their typed response.
+> "Tell me about this project. I'd like to understand the big picture in one go:
+>
+> 1. **What are you building and why?** What problem does it solve? What makes this different from existing solutions?
+> 2. **Who are the target users?** Primary and secondary users, their technical sophistication, B2B/B2C/internal/open-source?
+> 3. **What scale are you targeting?** How many users initially and at scale?
+>
+> Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
 
 After receiving the response, analyze it. If the user's vision or target audience is vague (e.g., "a task management app" with no differentiation), ask ONE targeted follow-up before proceeding to the next batch. Otherwise, continue.
 
 **Batch 2: Features and Technical (Areas 3-4)**
 
-Ask ALL of the following in a SINGLE AskUserQuestion call with options:
+Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
 
-- question: "Now let's talk features and technical approach:\n\n1. **Must-have features for v1?** What does a first usable version need? Walk me through the primary user journey from start to finish.\n2. **Nice-to-have features?** What can wait for later versions? Anything you explicitly do NOT want?\n3. **Tech stack preferences or constraints?** Languages, frameworks, databases, deployment target (cloud, self-hosted, serverless, mobile, desktop)?\n4. **Existing dependencies?** Any existing code, APIs, or services this integrates with?"
-- Options:
-  - "I have a clear feature list" -- "I know exactly what features I need and can list them"
-  - "I have a rough idea" -- "I know the general direction but details are still forming"
-  - "I'll answer in my own words" -- "Describe features and tech approach freely"
-
-If the user selects a pre-filled option, use it as context and ask ONE targeted follow-up to gather specifics. If the user selects "I'll answer in my own words", present the same question as a freeform AskUserQuestion (no options) to collect their typed response.
+> "Now let's talk features and technical approach:
+>
+> 1. **Must-have features for v1?** What does a first usable version need? Walk me through the primary user journey from start to finish.
+> 2. **Nice-to-have features?** What can wait for later versions? Anything you explicitly do NOT want?
+> 3. **Tech stack preferences or constraints?** Languages, frameworks, databases, deployment target (cloud, self-hosted, serverless, mobile, desktop)?
+> 4. **Existing dependencies?** Any existing code, APIs, or services this integrates with?"
 
 After receiving the response, analyze for gaps. If any must-have feature is unclear or the tech approach is contradictory, ask ONE targeted follow-up.
 
 **Batch 3: Scale and Integrations (Areas 5-6)**
 
-Ask ALL of the following in a SINGLE AskUserQuestion call with options:
+Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
 
-- question: "A few questions about scale and external systems:\n\n1. **Data and traffic expectations?** Rough order of magnitude for data volume, concurrent users, latency requirements, real-time features?\n2. **Compliance or data residency?** Any regulatory requirements (HIPAA, SOC2, GDPR, etc.)?\n3. **Third-party integrations?** What external services or APIs will this connect to?\n4. **Auth approach?** SSO, OAuth, API keys, or other authentication/authorization strategy?"
-- Options:
-  - "Small scale, minimal integrations" -- "Hundreds of users, few external services, standard auth"
-  - "Medium scale with common integrations" -- "Thousands of users, OAuth/payment/email services"
-  - "Large scale with complex infrastructure" -- "Enterprise-grade, many services, strict compliance"
-  - "I'll answer in my own words" -- "Describe scale and integration needs in detail"
-
-If the user selects a pre-filled option, use it as context and ask ONE targeted follow-up for specifics. If the user selects "I'll answer in my own words", present the same question as a freeform AskUserQuestion (no options) to collect their typed response.
+> "A few questions about scale and external systems:
+>
+> 1. **Data and traffic expectations?** Rough order of magnitude for data volume, concurrent users, latency requirements, real-time features?
+> 2. **Compliance or data residency?** Any regulatory requirements (HIPAA, SOC2, GDPR, etc.)?
+> 3. **Third-party integrations?** What external services or APIs will this connect to?
+> 4. **Auth approach?** SSO, OAuth, API keys, or other authentication/authorization strategy?"
 
 If the user has already addressed some of these areas in previous batches, note that and skip the already-covered items in your prompt. Do NOT re-ask what's already been answered.
 
 **Batch 4: Context and Success (Areas 7-10)**
 
-Ask ALL of the following in a SINGLE AskUserQuestion call with options:
+Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
 
-- question: "Last batch -- context and success criteria:\n\n1. **Team experience?** What's your experience with the likely tech stack? Any lessons from similar projects?\n2. **Inspiration?** Are there existing products that do something similar? What do they do well or poorly?\n3. **Non-functional requirements?** Security beyond basics, accessibility, internationalization, monitoring/observability?\n4. **Success criteria?** What does 'done' look like for v1? Any hard deadlines?"
-- Options:
-  - "First project with this stack" -- "Learning as we go, prioritize simplicity and good defaults"
-  - "Experienced with this stack" -- "Know the patterns, want best practices and performance focus"
-  - "I'll answer in my own words" -- "Share context and success criteria in your own words"
-
-If the user selects a pre-filled option, use it as context and ask ONE targeted follow-up for specifics. If the user selects "I'll answer in my own words", present the same question as a freeform AskUserQuestion (no options) to collect their typed response.
+> "Last batch -- context and success criteria:
+>
+> 1. **Team experience?** What's your experience with the likely tech stack? Any lessons from similar projects?
+> 2. **Inspiration?** Are there existing products that do something similar? What do they do well or poorly?
+> 3. **Non-functional requirements?** Security beyond basics, accessibility, internationalization, monitoring/observability?
+> 4. **Success criteria?** What does 'done' look like for v1? Any hard deadlines?"
 
 **Adaptive behavior:**
 - If a batch response thoroughly covers areas from upcoming batches, acknowledge what you learned and SKIP those items in the next batch.
@@ -649,15 +637,7 @@ c) Write STATE.json with the project > milestone > sets structure:
 
 **If "Request changes":**
 
-Use AskUserQuestion with:
-- question: "What changes would you like to the roadmap?"
-- Options:
-  - "Merge some sets" -- "Combine sets that are too small or closely related"
-  - "Split a set" -- "Break a large set into smaller, more focused sets"
-  - "Change priorities" -- "Reorder sets or adjust scope boundaries"
-  - "I'll answer in my own words" -- "Describe the changes you want"
-
-If the user selects "I'll answer in my own words", ask freeform: "What changes would you like to make to the roadmap?" and accept their typed response.
+Ask the user freeform: "What changes would you like to make to the roadmap?"
 
 Re-spawn the roadmapper agent with:
 - All original context (SUMMARY.md, full project brief, team size, model)

@@ -64,14 +64,14 @@ describe('display', () => {
       }
     });
 
-    it('planning stages (init, set-init, discuss, wave-plan, plan-set, start-set, discuss-set, new-version, add-set) use dark purple background ANSI code', () => {
+    it('planning stages (init, set-init, discuss, wave-plan, plan-set, start-set, discuss-set, new-version, add-set) use blue background ANSI code', () => {
       const display = require(displayPath);
       const planningStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'start-set', 'discuss-set', 'new-version', 'add-set'];
       for (const stage of planningStages) {
         assert.equal(
           display.STAGE_BG[stage],
-          '\x1b[45m',
-          `Planning stage "${stage}" should use dark purple background (\\x1b[45m), got: "${display.STAGE_BG[stage]}"`
+          '\x1b[104m',
+          `Planning stage "${stage}" should use bright blue background (\\x1b[104m), got: "${display.STAGE_BG[stage]}"`
         );
       }
     });
@@ -266,14 +266,14 @@ describe('display', () => {
       assert.ok(targetWidth >= 50, `Padded width should be at least 50, got ${targetWidth}`);
     });
 
-    it('planning stages use dark purple background ANSI code in banner', () => {
+    it('planning stages use blue background ANSI code in banner', () => {
       const display = require(displayPath);
       const planningStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'start-set', 'discuss-set', 'new-version', 'add-set'];
       for (const stage of planningStages) {
         const result = display.renderBanner(stage);
         assert.ok(
-          result.includes('\x1b[45m'),
-          `Planning stage "${stage}" banner should contain dark purple background code (\\x1b[45m)`
+          result.includes('\x1b[104m'),
+          `Planning stage "${stage}" banner should contain bright blue background code (\\x1b[104m)`
         );
       }
     });

@@ -32,15 +32,9 @@ node "${RAPID_TOOLS}" display banner quick
 
 ## Step 1: Gather Task Description
 
-Use AskUserQuestion with:
-- question: "Describe what you'd like to do. Be specific about the changes needed -- files, behavior, constraints."
-- Options:
-  - "Fix a bug" -- "Something is broken and needs to be corrected"
-  - "Add a small feature" -- "A contained addition that doesn't need full set lifecycle"
-  - "Refactor / cleanup" -- "Improve code quality without changing behavior"
-  - "I'll answer in my own words" -- "Describe the task in detail"
+Use AskUserQuestion (freeform):
 
-If the user selects a pre-filled option, use it as context and ask ONE targeted follow-up freeform question to gather specifics about what needs to change. If the user selects "I'll answer in my own words", present the same question as a freeform AskUserQuestion (no options) to collect their typed response.
+> "Describe what you'd like to do. Be specific about the changes needed -- files, behavior, constraints."
 
 Record the user's task description verbatim. This is the sole input -- no further user interaction during the pipeline.
 

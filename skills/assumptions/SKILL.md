@@ -52,19 +52,17 @@ Parse the JSON output. The response contains `availableSets` (array of set names
   - Options: Each set name as an option label (no consequence description needed since options are just names)
   - Add an "Other" option with description "Type a set name manually"
 
-  Map the user's selection to a set name. If they select "Other", use AskUserQuestion with:
-  - question: "Which set would you like to review?"
-  - Options: Dynamically include the first few set names that were not in the initial option list, plus:
-    - "I'll answer in my own words" -- "Type the set name manually"
+  Map the user's selection to a set name. If they select "Other", ask them in plain text: "Which set would you like to review?" and accept their input.
 
-  If the user selects "I'll answer in my own words", ask freeform: "Which set would you like to review?" and accept their input.
+- If sets exist and there are **more than 4**: Display the available sets as a numbered list and ask the user which set they want to review:
+  > **Available sets:**
+  > 1. {set-name-1}
+  > 2. {set-name-2}
+  > ...
+  >
+  > Which set would you like to review assumptions for? (Enter the name or number)
 
-- If sets exist and there are **more than 4**: Display the available sets as a numbered list, then use AskUserQuestion with:
-  - question: "Which set would you like to review assumptions for?"
-  - Options: Dynamically populate with the first 4 set names from the list, plus:
-    - "I'll answer in my own words" -- "Type a set name or number"
-
-  If the user selects "I'll answer in my own words", ask freeform for the set name or number and accept their input. Map their answer to a set name (accept both the number and the name).
+  Wait for the user's response. Map their answer to a set name (accept both the number and the name).
 
 **If a set name was provided:**
 Continue directly to Step 2 with that set name.
@@ -127,15 +125,7 @@ Use AskUserQuestion with:
 Wait for the developer's response.
 
 **If the developer selects "Correct assumptions":**
-Use AskUserQuestion with:
-- question: "What specifically needs to change about these assumptions?"
-- Options:
-  - "Scope is wrong" -- "The set's scope or boundary is misunderstood"
-  - "Dependencies are incorrect" -- "Wrong assumptions about what this set depends on or provides"
-  - "File ownership conflict" -- "Files listed conflict with another set's ownership"
-  - "I'll answer in my own words" -- "Describe the specific corrections needed"
-
-If the user selects "I'll answer in my own words", ask freeform: "What specifically needs to change about these assumptions?" and collect their typed response. Then tell them:
+Ask in plain text: "What specifically needs to change about these assumptions?" Collect their response. Then tell them:
 
 > To apply these corrections, run `/rapid:plan` again and select **Re-plan**. The planner subagent will propose updated sets. The `/rapid:assumptions` skill is read-only by design -- it surfaces the model but does not modify set definitions or contracts.
 

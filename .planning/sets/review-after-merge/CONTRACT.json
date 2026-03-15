@@ -1,0 +1,34 @@
+{
+  "setId": "review-after-merge",
+  "version": "1.0.0",
+  "exports": {
+    "post-merge-review-flag": {
+      "type": "endpoint",
+      "signature": "/rapid:review <set-id> --post-merge",
+      "description": "New --post-merge flag on the review skill. When set, review scopes against the merge commit diff (main~1..main for the set's merge commit) rather than the worktree branch diff. Does not require or modify set status."
+    },
+    "merge-review-suggestion": {
+      "type": "file",
+      "signature": "skills/merge/SKILL.md :: post-merge step",
+      "description": "After successful merge, the merge skill suggests 'Run /rapid:review <set-id> --post-merge for post-merge review' as an optional next action."
+    }
+  },
+  "imports": {
+    "canonical-status-literals": {
+      "fromSet": "state-consistency",
+      "type": "file",
+      "signature": "Correct past-tense status names for review skill precondition checks",
+      "description": "review/SKILL.md needs to reference correct status values (complete, not reviewing) for its precondition gate. Set 1 establishes which status values are canonical."
+    }
+  },
+  "behavioral": {
+    "no-status-mutation": {
+      "description": "The --post-merge review path must NOT call `state transition set`. It operates on already-merged sets and produces review artifacts without changing set status.",
+      "enforced_by": "test"
+    },
+    "scoping-correctness": {
+      "description": "Post-merge review must scope changed files from the set's merge commit, not from a worktree branch (which no longer exists after merge). Uses git diff against the merge commit.",
+      "enforced_by": "test"
+    }
+  }
+}

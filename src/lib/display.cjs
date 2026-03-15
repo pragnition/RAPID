@@ -43,24 +43,24 @@ const STAGE_VERBS = {
  * Uses bright background variants (10Xm) for better readability with white text.
  *
  * Groups:
- *   Planning stages (init, set-init, discuss, wave-plan, plan-set, start-set, discuss-set, new-version, add-set) = dark purple/magenta bg
+ *   Planning stages (init, set-init, discuss, wave-plan, plan-set, start-set, discuss-set, new-version, add-set) = bright blue bg
  *   Execution stages (execute, execute-set, quick) = bright green bg
  *   Review stages (review, merge) = bright red bg
  */
 const STAGE_BG = {
-  'init': '\x1b[45m',        // dark purple/magenta
-  'set-init': '\x1b[45m',    // dark purple/magenta
-  'discuss': '\x1b[45m',     // dark purple/magenta
-  'wave-plan': '\x1b[45m',   // dark purple/magenta
-  'plan-set': '\x1b[45m',    // dark purple/magenta
+  'init': '\x1b[104m',        // bright blue
+  'set-init': '\x1b[104m',    // bright blue
+  'discuss': '\x1b[104m',     // bright blue
+  'wave-plan': '\x1b[104m',   // bright blue
+  'plan-set': '\x1b[104m',    // bright blue
   'execute': '\x1b[102m',     // bright green
   'review': '\x1b[101m',      // bright red
   'merge': '\x1b[101m',       // bright red
-  'start-set': '\x1b[45m',   // dark purple/magenta (planning stage)
-  'discuss-set': '\x1b[45m', // dark purple/magenta (planning stage)
+  'start-set': '\x1b[104m',   // bright blue (planning stage)
+  'discuss-set': '\x1b[104m', // bright blue (planning stage)
   'execute-set': '\x1b[102m', // bright green (execution stage)
-  'new-version': '\x1b[45m', // dark purple/magenta (lifecycle stage)
-  'add-set': '\x1b[45m',    // dark purple/magenta (planning stage)
+  'new-version': '\x1b[104m', // bright blue (lifecycle stage)
+  'add-set': '\x1b[104m',    // bright blue (planning stage)
   'quick': '\x1b[102m',      // bright green (execution stage)
 };
 

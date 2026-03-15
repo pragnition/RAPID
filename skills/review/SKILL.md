@@ -332,15 +332,7 @@ Use AskUserQuestion:
 
 **If "Approve":** Proceed to Step 4a.3.
 
-**If "Modify":** Use AskUserQuestion with:
-- question: "What changes to the test plan?"
-- Options:
-  - "Add more edge cases" -- "Include boundary conditions and error scenarios"
-  - "Remove redundant tests" -- "Trim overlapping or low-value test cases"
-  - "Focus on critical paths" -- "Prioritize tests for the most important user flows"
-  - "I'll answer in my own words" -- "Describe specific modifications"
-
-If the user selects "I'll answer in my own words", present a freeform AskUserQuestion to collect their typed modifications. Re-invoke the unit-tester subagent(s) with the user's feedback appended to the prompt. Repeat Step 4a.2.
+**If "Modify":** Use AskUserQuestion to collect the user's modifications. Re-invoke the unit-tester subagent(s) with the user's feedback appended to the prompt. Repeat Step 4a.2.
 
 **If "Skip":** Move to Step 4b (bug hunt) or 4c (UAT) depending on selected stages.
 
@@ -840,14 +832,7 @@ Use AskUserQuestion:
 
 **If "Approve":** Proceed to Step 4c.5.
 
-**If "Modify tags":** Use AskUserQuestion with:
-- question: "How should test tags be modified?"
-- Options:
-  - "Make all automated" -- "Convert human-tagged steps to automated where possible"
-  - "Make all human" -- "Convert automated steps to human verification"
-  - "I'll answer in my own words" -- "Specify which steps to change"
-
-If the user selects "I'll answer in my own words", present a freeform AskUserQuestion to collect their typed modifications. Re-invoke UAT subagent with updated tags. Repeat Step 4c.4.
+**If "Modify tags":** Use AskUserQuestion to collect modifications. Re-invoke UAT subagent with updated tags. Repeat Step 4c.4.
 
 **If "Skip":** Move to Step 5.
 

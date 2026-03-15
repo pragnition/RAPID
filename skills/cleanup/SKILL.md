@@ -56,12 +56,7 @@ Use `SET_NAME` for all subsequent operations. Skip to Step 4.
   - **name:** The set name (e.g., `auth-core`)
   - **description:** Status summary (e.g., "Phase: Done, Branch: rapid/auth-core" or "Phase: Executing, Branch: rapid/ui-shell")
 
-**If more than 4 worktrees:** Display a numbered text list of all worktrees with their status, then use AskUserQuestion with:
-- question: "Which worktree would you like to clean up?"
-- Options: Dynamically populate with the first 4 worktree set names and their status descriptions, plus:
-  - "I'll answer in my own words" -- "Type the set name manually"
-
-If the user selects "I'll answer in my own words", ask freeform for the set name and accept their input.
+**If more than 4 worktrees:** Display a numbered text list of all worktrees with their status, then ask the developer to type the set name via freeform input.
 
 **If the selected set name does not match an existing worktree:** Inform the user which set names are available and re-prompt.
 

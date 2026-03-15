@@ -73,7 +73,7 @@
         },
         {
           "id": "ux-improvements",
-          "status": "planning"
+          "status": "merged"
         },
         {
           "id": "review-after-merge",
@@ -82,6 +82,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-15T14:39:24.759Z",
+  "lastUpdatedAt": "2026-03-15T15:09:15.514Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

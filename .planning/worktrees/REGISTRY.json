@@ -1,4 +1,65 @@
 {
   "version": 1,
-  "worktrees": {}
+  "worktrees": {
+    "command-audit": {
+      "setName": "command-audit",
+      "branch": "rapid/command-audit",
+      "path": ".rapid-worktrees/command-audit",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-13T18:22:01.471Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-14T10:16:27.021Z",
+      "mergeCommit": "09cd300f1f2d03713738e172470074c222398f46"
+    },
+    "resolve-fix": {
+      "setName": "resolve-fix",
+      "branch": "rapid/resolve-fix",
+      "path": ".rapid-worktrees/resolve-fix",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-14T03:57:28.478Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-14T10:17:08.802Z",
+      "mergeCommit": "49fb281e52df17f30f329bb14bec2eb2af86431c"
+    },
+    "review-after-merge": {
+      "setName": "review-after-merge",
+      "branch": "rapid/review-after-merge",
+      "path": ".rapid-worktrees/review-after-merge",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-14T13:45:49.124Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-14T14:40:46.615Z",
+      "mergeCommit": "927024ebe8ecf319235da143f02b74e8f66d775e"
+    },
+    "state-consistency": {
+      "setName": "state-consistency",
+      "branch": "rapid/state-consistency",
+      "path": ".rapid-worktrees/state-consistency",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-14T14:43:37.616Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-15T07:36:58.985Z",
+      "mergeCommit": "13d3c2d8049e0e111345447ab12dfdbf49b1be29"
+    },
+    "ux-improvements": {
+      "setName": "ux-improvements",
+      "branch": "rapid/ux-improvements",
+      "path": ".rapid-worktrees/ux-improvements",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-15T13:53:01.392Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-15T15:08:29.878Z",
+      "mergeCommit": "d0109cd4670b8c398dfef767591cd3755e4d8985"
+    }
+  }
 }

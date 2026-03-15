@@ -8,8 +8,8 @@
 - **v2.1 Improvements & Fixes** — 10 sets (shipped 2026-03-10)
 - **v2.2 Subagent Merger & Documentation** — 5 sets (shipped 2026-03-12)
 - **v3.0 Refresh** — 8 sets (shipped 2026-03-13)
-
-All milestones complete. 49 sets across 6 milestones, all merged.
+- **v3.1.0 Polish & Cleanup** — 4 sets (shipped 2026-03-13)
+- **v3.2.0 General Fixes** — 5 sets (in progress)
 
 ## Completed Milestone Details
 
@@ -98,8 +98,39 @@ All milestones complete. 49 sets across 6 milestones, all merged.
 
 </details>
 
-## Next Milestone
+<details>
+<summary>v3.1.0 Polish & Cleanup (4 sets) — shipped 2026-03-13</summary>
 
-Not yet planned. Use `/rapid:new-version` to start the next milestone.
+- [x] status-rename — Rename set statuses from present-tense to past-tense
+- [x] command-cleanup — Remove deprecated CLI commands and stubs
+- [x] install-version — Version-aware install with path configuration
+- [x] parallel-waves — Parallel wave dispatch in execute-set
+
+</details>
+
+## Current Milestone: v3.2.0 General Fixes (5 sets)
+
+### Set 1: State Machine Consistency (`state-consistency`)
+Fix root-cause mismatch between skill-layer status literals (present-tense) and the state machine's past-tense statuses. Update all 24 SKILL.md files and agent modules.
+**Features:** #8 (Invalid State Transitions), #7 (State Update Enforcement)
+
+### Set 2: CLI Command Audit (`command-audit`)
+Audit all skills and agents for references to non-existent rapid-tools.cjs commands. Remove wave-plan-* entries from tool-docs.cjs and skill files.
+**Features:** #5 (Invalid Command Calls)
+
+### Set 3: Set Resolution Fix (`resolve-fix`)
+Switch resolveSet() from filesystem-based resolution to STATE.json-based resolution. Add regression tests for archival scenario.
+**Features:** #1 (Set Name Resolution Bug)
+
+### Set 4: UX Improvements (`ux-improvements`)
+Rewrite discuss-set AskUserQuestion UX, audit all skills for pre-filled options, change banner colors to dark purple.
+**Features:** #2 (Batched Questions), #4 (Never Claude Decides), #3 (Banner Colours)
+
+### Set 5: Review After Merge (`review-after-merge`)
+Add --post-merge flag to review skill. Scopes review against merge commit diff. Does not modify set status.
+**Features:** #6 (Review After Merge)
+
+### Dependency Graph
+Sets 1-4 are fully independent (parallel). Set 5 has soft dependency on Set 1.
 
 Historical phase details archived to `.planning/milestones/{version}/`.
