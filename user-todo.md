@@ -94,9 +94,33 @@ Finding #3: Unchecked null dereference in merge.cjs:245
 
 ---
 
+### 5. Version Migration Command (`/migrate`)
+**Motivation:** RAPID is iterating fast — v2→v3 already changed artifact paths (`.planning/waves/` → `.planning/sets/`), state schema fields, and agent prompt structure. When users update RAPID on an existing project, they hit cryptic errors because their on-disk state no longer matches what the new version expects. Currently the only fix is manual patching or re-initializing the project (losing planning history). A `/migrate` command provides a safe, automated upgrade path.
+
+**Requirements:**
+- Detect the current RAPID version from `STATE.json` schema shape, artifact directory structure, or an explicit `rapidVersion` field
+- Run versioned migration steps in order (e.g., v2→v3→v3.1→v3.2) — never skip intermediate migrations
+- Migration operations:
+  - **Schema migrations:** Rename/add/remove fields in `STATE.json` with sensible defaults for new required fields
+  - **Artifact relocation:** Move files to new expected paths (e.g., `.planning/waves/{id}/` → `.planning/sets/{id}/`)
+  - **Agent rebuild:** Automatically run `build-agents` to regenerate agent prompts from updated modules
+  - **Config updates:** Merge new default config values into existing `config.json` without overwriting user customizations
+  - **Contract revalidation:** Re-validate existing `CONTRACT.json` files against updated schema, flag incompatibilities
+- Dry-run mode (`--dry-run`): show what would change without writing anything
+- Produce a migration report summarizing all changes made
+- Back up the pre-migration state (e.g., copy `.planning/` to `.planning/.pre-migrate-backup/`) before applying changes
+- Stamp the new version into `STATE.json` after successful migration
+
+**Edge cases to consider:**
+- Partially migrated state (migration crashed halfway) — migrations should be atomic or resumable
+- Projects with custom/hand-edited `STATE.json` fields that don't match any known version
+- Running `/migrate` when already on the latest version should no-op cleanly
+
+---
+
 ## Bugs
 
-### 5. Missing DEFINITION.md on Start-Set
+### 6. Missing DEFINITION.md on Start-Set
 **Symptom:**
 ```
 Warning: Scoped CLAUDE.md could not be generated (missing DEFINITION.md).
@@ -119,7 +143,7 @@ This appears when running `/start-set` on sets that should have been fully initi
 
 ---
 
-### 6. Discuss-Set Shows "Let Claude Decide All" as a Peer Option
+### 7. Discuss-Set Shows "Let Claude Decide All" as a Peer Option
 **Symptom:** When the discuss agent identifies gray areas for a set, it presents options like:
 ```
 1. [ ] Let Claude decide all
