@@ -29,3 +29,7 @@ Currently the entire review process is very context heavy. Lets make the /review
 
 Afterwhich, we can ahve the user do /unit-test /uat /bug-hunt on their own (this way, we don't even need to prompt the user to choose which review stages we need!)
 Also show the judge's leaning for each of the rulings
+
+
+It might be good to have context aware internal compaction so that we can keep the ctx length permenantly below 120k
+This might be a little complicated so we need to implement this comprehensively.
