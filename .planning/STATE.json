@@ -111,17 +111,17 @@
         },
         {
           "id": "structural-cleanup",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         },
         {
           "id": "bug-fixes",
-          "status": "executed",
+          "status": "merged",
           "waves": []
         },
         {
           "id": "solo-mode",
-          "status": "executed",
+          "status": "merged",
           "waves": []
         },
         {
@@ -147,6 +147,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T08:05:23.523Z",
+  "lastUpdatedAt": "2026-03-16T08:53:16.198Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
