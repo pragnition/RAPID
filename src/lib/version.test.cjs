@@ -80,3 +80,22 @@ describe('versionCheck', () => {
     });
   });
 });
+
+// --- version sync ---
+
+describe('version sync', () => {
+  it('package.json and plugin.json versions match', () => {
+    const pkgPath = path.resolve(__dirname, '../../package.json');
+    const pluginPath = path.resolve(__dirname, '../../.claude-plugin/plugin.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    const plugin = JSON.parse(fs.readFileSync(pluginPath, 'utf-8'));
+    assert.equal(pkg.version, plugin.version,
+      `package.json version (${pkg.version}) !== plugin.json version (${plugin.version})`);
+  });
+
+  it('getVersion() matches plugin.json version', () => {
+    const pluginPath = path.resolve(__dirname, '../../.claude-plugin/plugin.json');
+    const plugin = JSON.parse(fs.readFileSync(pluginPath, 'utf-8'));
+    assert.equal(getVersion(), plugin.version);
+  });
+});
