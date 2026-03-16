@@ -176,10 +176,17 @@ function createBackup(cwd) {
     throw new Error(`Pre-migration backup already exists at ${backupPath}. Remove it manually or run cleanup first.`);
   }
 
-  fs.cpSync(planningDir, backupPath, {
-    recursive: true,
-    filter: (src) => !src.includes('.locks'),
-  });
+  fs.mkdirSync(backupPath, { recursive: true });
+
+  // Copy each entry individually to avoid "cannot copy to subdirectory of self" error
+  const entries = fs.readdirSync(planningDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === '.pre-migrate-backup') continue;
+    if (entry.name === '.locks') continue;
+    const src = path.join(planningDir, entry.name);
+    const dest = path.join(backupPath, entry.name);
+    fs.cpSync(src, dest, { recursive: true });
+  }
 
   const fileCount = _countFiles(backupPath);
   return { backupPath, fileCount };
