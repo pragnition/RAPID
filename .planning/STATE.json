@@ -126,7 +126,7 @@
         },
         {
           "id": "review-pipeline",
-          "status": "discussed",
+          "status": "merged",
           "waves": []
         },
         {
@@ -141,12 +141,12 @@
         },
         {
           "id": "context-optimization",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T10:22:52.910Z",
+  "lastUpdatedAt": "2026-03-16T14:47:17.349Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
