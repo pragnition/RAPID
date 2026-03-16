@@ -17,6 +17,7 @@ const { handleReview } = require('../commands/review.cjs');
 const { handleBuildAgents } = require('../commands/build-agents.cjs');
 const { handleExecute } = require('../commands/execute.cjs');
 const { handleMerge } = require('../commands/merge.cjs');
+const { handleScaffold } = require('../commands/scaffold.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -99,6 +100,8 @@ Commands:
   review summary <set-id> [--post-merge]             Generate REVIEW-SUMMARY.md
   display banner <stage> [target]  Display branded RAPID stage banner
   build-agents              Build all agent .md files from source modules
+  scaffold run [--type <type>]  Generate project-type-aware foundation files
+  scaffold status               Show scaffold report (if scaffold has been run)
 
 Options:
   --help, -h             Show this help message
@@ -219,6 +222,10 @@ async function main() {
 
       case 'build-agents':
         handleBuildAgents(cwd, args.slice(1));
+        break;
+
+      case 'scaffold':
+        handleScaffold(cwd, subcommand, args.slice(2));
         break;
 
       default:
