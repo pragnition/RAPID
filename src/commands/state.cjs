@@ -1,6 +1,6 @@
 'use strict';
 
-const { error } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 
 async function handleState(cwd, subcommand, args) {
   const sm = require('../lib/state-machine.cjs');
@@ -10,19 +10,16 @@ async function handleState(cwd, subcommand, args) {
       case 'get': {
         const target = args[0];
         if (!target) {
-          error('Usage: rapid-tools state get --all | milestone <id> | set <m> <s> | wave <m> <s> <w> | job <m> <s> <w> <j>');
-          process.exit(1);
+          throw new CliError('Usage: rapid-tools state get --all | milestone <id> | set <m> <s> | wave <m> <s> <w> | job <m> <s> <w> <j>');
         }
 
         if (target === '--all') {
           const result = await sm.readState(cwd);
           if (result === null) {
-            error('STATE.json not found. Run init to create project state.');
-            process.exit(1);
+            throw new CliError('STATE.json not found. Run init to create project state.');
           }
           if (!result.valid) {
-            error('STATE.json is invalid: ' + JSON.stringify(result.errors));
-            process.exit(1);
+            throw new CliError('STATE.json is invalid: ' + JSON.stringify(result.errors));
           }
           process.stdout.write(JSON.stringify(result.state, null, 2) + '\n');
           break;
@@ -31,47 +28,44 @@ async function handleState(cwd, subcommand, args) {
         // Hierarchy lookups: need to read state first
         const readResult = await sm.readState(cwd);
         if (readResult === null) {
-          error('STATE.json not found.');
-          process.exit(1);
+          throw new CliError('STATE.json not found.');
         }
         if (!readResult.valid) {
-          error('STATE.json is invalid: ' + JSON.stringify(readResult.errors));
-          process.exit(1);
+          throw new CliError('STATE.json is invalid: ' + JSON.stringify(readResult.errors));
         }
         const state = readResult.state;
 
         switch (target) {
           case 'milestone': {
             const milestoneId = args[1];
-            if (!milestoneId) { error('Usage: state get milestone <id>'); process.exit(1); }
+            if (!milestoneId) { throw new CliError('Usage: state get milestone <id>'); }
             const milestone = sm.findMilestone(state, milestoneId);
             process.stdout.write(JSON.stringify(milestone, null, 2) + '\n');
             break;
           }
           case 'set': {
             const [, mId, sId] = args;
-            if (!mId || !sId) { error('Usage: state get set <milestoneId> <setId>'); process.exit(1); }
+            if (!mId || !sId) { throw new CliError('Usage: state get set <milestoneId> <setId>'); }
             const set = sm.findSet(state, mId, sId);
             process.stdout.write(JSON.stringify(set, null, 2) + '\n');
             break;
           }
           case 'wave': {
             const [, mId, sId, wId] = args;
-            if (!mId || !sId || !wId) { error('Usage: state get wave <milestoneId> <setId> <waveId>'); process.exit(1); }
+            if (!mId || !sId || !wId) { throw new CliError('Usage: state get wave <milestoneId> <setId> <waveId>'); }
             const wave = sm.findWave(state, mId, sId, wId);
             process.stdout.write(JSON.stringify(wave, null, 2) + '\n');
             break;
           }
           case 'job': {
             const [, mId, sId, wId, jId] = args;
-            if (!mId || !sId || !wId || !jId) { error('Usage: state get job <milestoneId> <setId> <waveId> <jobId>'); process.exit(1); }
+            if (!mId || !sId || !wId || !jId) { throw new CliError('Usage: state get job <milestoneId> <setId> <waveId> <jobId>'); }
             const job = sm.findJob(state, mId, sId, wId, jId);
             process.stdout.write(JSON.stringify(job, null, 2) + '\n');
             break;
           }
           default:
-            error(`Unknown state get target: ${target}. Use --all, milestone, set, wave, or job.`);
-            process.exit(1);
+            throw new CliError(`Unknown state get target: ${target}. Use --all, milestone, set, wave, or job.`);
         }
         break;
       }
@@ -79,16 +73,14 @@ async function handleState(cwd, subcommand, args) {
       case 'transition': {
         const entity = args[0];
         if (!entity) {
-          error('Usage: rapid-tools state transition set|wave|job <...ids> <newStatus>');
-          process.exit(1);
+          throw new CliError('Usage: rapid-tools state transition set|wave|job <...ids> <newStatus>');
         }
 
         switch (entity) {
           case 'set': {
             const [, mId, sId, newStatus] = args;
             if (!mId || !sId || !newStatus) {
-              error('Usage: state transition set <milestoneId> <setId> <newStatus>');
-              process.exit(1);
+              throw new CliError('Usage: state transition set <milestoneId> <setId> <newStatus>');
             }
             await sm.transitionSet(cwd, mId, sId, newStatus);
             process.stdout.write(JSON.stringify({ transitioned: true, entity: 'set', id: sId, status: newStatus }) + '\n');
@@ -97,8 +89,7 @@ async function handleState(cwd, subcommand, args) {
           case 'wave': {
             const [, mId, sId, wId, newStatus] = args;
             if (!mId || !sId || !wId || !newStatus) {
-              error('Usage: state transition wave <milestoneId> <setId> <waveId> <newStatus>');
-              process.exit(1);
+              throw new CliError('Usage: state transition wave <milestoneId> <setId> <waveId> <newStatus>');
             }
             await sm.transitionWave(cwd, mId, sId, wId, newStatus);
             process.stdout.write(JSON.stringify({ transitioned: true, entity: 'wave', id: wId, status: newStatus }) + '\n');
@@ -107,16 +98,14 @@ async function handleState(cwd, subcommand, args) {
           case 'job': {
             const [, mId, sId, wId, jId, newStatus] = args;
             if (!mId || !sId || !wId || !jId || !newStatus) {
-              error('Usage: state transition job <milestoneId> <setId> <waveId> <jobId> <newStatus>');
-              process.exit(1);
+              throw new CliError('Usage: state transition job <milestoneId> <setId> <waveId> <jobId> <newStatus>');
             }
             await sm.transitionJob(cwd, mId, sId, wId, jId, newStatus);
             process.stdout.write(JSON.stringify({ transitioned: true, entity: 'job', id: jId, status: newStatus }) + '\n');
             break;
           }
           default:
-            error(`Unknown transition entity: ${entity}. Use set, wave, or job.`);
-            process.exit(1);
+            throw new CliError(`Unknown transition entity: ${entity}. Use set, wave, or job.`);
         }
         break;
       }
@@ -130,8 +119,7 @@ async function handleState(cwd, subcommand, args) {
           if (args[i] === '--name' && args[i + 1]) { name = args[i + 1]; i++; }
         }
         if (!id) {
-          error('Usage: state add-milestone --id <milestoneId> [--name <milestoneName>]');
-          process.exit(1);
+          throw new CliError('Usage: state add-milestone --id <milestoneId> [--name <milestoneName>]');
         }
 
         // Read stdin for carryForwardSets JSON (optional)
@@ -146,12 +134,11 @@ async function handleState(cwd, subcommand, args) {
             try {
               carryForwardSets = JSON.parse(stdinData);
               if (!Array.isArray(carryForwardSets)) {
-                error('stdin must be a JSON array of sets');
-                process.exit(1);
+                throw new CliError('stdin must be a JSON array of sets');
               }
             } catch (e) {
-              error('Invalid JSON on stdin: ' + e.message);
-              process.exit(1);
+              if (e instanceof CliError) throw e;
+              throw new CliError('Invalid JSON on stdin: ' + e.message);
             }
           }
         }
@@ -174,12 +161,11 @@ async function handleState(cwd, subcommand, args) {
       }
 
       default:
-        error(`Unknown state subcommand: ${subcommand}`);
-        process.exit(1);
+        throw new CliError(`Unknown state subcommand: ${subcommand}`);
     }
   } catch (err) {
-    process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
-    process.exit(1);
+    if (err instanceof CliError) throw err;
+    throw new CliError(err.message);
   }
 }
 

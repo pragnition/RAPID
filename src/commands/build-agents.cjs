@@ -1,6 +1,7 @@
 'use strict';
 
 const { output, error, resolveRapidDir, loadConfig } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 
 function handleBuildAgents(cwd, args) {
   const fs = require('fs');
@@ -259,8 +260,7 @@ color: ${color}
   // Validate SKIP_GENERATION entries exist in ROLE_CORE_MAP
   for (const role of SKIP_GENERATION) {
     if (!ROLE_CORE_MAP[role]) {
-      error(`SKIP_GENERATION references unknown role "${role}" not in ROLE_CORE_MAP`);
-      process.exit(1);
+      throw new CliError(`SKIP_GENERATION references unknown role "${role}" not in ROLE_CORE_MAP`);
     }
   }
 

@@ -1,6 +1,7 @@
 'use strict';
 
-const { output, error } = require('../lib/core.cjs');
+const { output } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 const { parseArgs } = require('../lib/args.cjs');
 
 async function handleReview(cwd, subcommand, args) {
@@ -14,8 +15,7 @@ async function handleReview(cwd, subcommand, args) {
       const { flags: scopeFlags, positional: scopePos } = parseArgs(args, { branch: 'string', 'post-merge': 'boolean' });
       const setId = scopePos[0];
       if (!setId) {
-        error('Usage: rapid-tools review scope <set-id> [<wave-id>] [--branch <branch>] [--post-merge]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools review scope <set-id> [<wave-id>] [--branch <branch>] [--post-merge]');
       }
       const postMerge = scopeFlags['post-merge'];
       // Post-merge mode: scope from merge commit, skip worktree resolution
@@ -26,8 +26,7 @@ async function handleReview(cwd, subcommand, args) {
           const chunks = review.chunkByDirectory(allFiles);
           output(JSON.stringify({ ...result, chunks, postMerge: true }));
         } catch (err) {
-          output(JSON.stringify({ error: err.message }));
-          process.exit(1);
+          throw new CliError(err.message);
         }
         break;
       }
@@ -51,8 +50,7 @@ async function handleReview(cwd, subcommand, args) {
           output(JSON.stringify(result));
         }
       } catch (err) {
-        output(JSON.stringify({ error: err.message }));
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
@@ -60,8 +58,7 @@ async function handleReview(cwd, subcommand, args) {
     case 'log-issue': {
       const setId = args[0];
       if (!setId) {
-        error('Usage: rapid-tools review log-issue <set-id> [<wave-id>] [--post-merge]  (reads JSON issue from stdin)');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools review log-issue <set-id> [<wave-id>] [--post-merge]  (reads JSON issue from stdin)');
       }
       const logPostMerge = args.includes('--post-merge');
       // Detect mode: if args[1] present and not a flag, it is the wave-id (lean compat)
@@ -69,8 +66,7 @@ async function handleReview(cwd, subcommand, args) {
       try {
         const stdinData = fs.readFileSync(0, 'utf-8').trim();
         if (!stdinData) {
-          error('No issue data on stdin. Pipe a JSON issue object.');
-          process.exit(1);
+          throw new CliError('No issue data on stdin. Pipe a JSON issue object.');
         }
         const issue = JSON.parse(stdinData);
         // If wave-id provided (lean compat), add originatingWave to issue
@@ -84,8 +80,8 @@ async function handleReview(cwd, subcommand, args) {
         }
         output(JSON.stringify({ logged: true, issueId: issue.id, postMerge: logPostMerge }));
       } catch (err) {
-        output(JSON.stringify({ error: err.message }));
-        process.exit(1);
+        if (err instanceof CliError) throw err;
+        throw new CliError(err.message);
       }
       break;
     }
@@ -94,8 +90,7 @@ async function handleReview(cwd, subcommand, args) {
       const { flags: listFlags, positional: listPos } = parseArgs(args, { status: 'string' });
       const setId = listPos[0];
       if (!setId) {
-        error('Usage: rapid-tools review list-issues <set-id> [--status <status>]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools review list-issues <set-id> [--status <status>]');
       }
       let statusFilter = listFlags.status || null;
       try {
@@ -105,8 +100,7 @@ async function handleReview(cwd, subcommand, args) {
         }
         output(JSON.stringify(issues));
       } catch (err) {
-        output(JSON.stringify({ error: err.message }));
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
@@ -126,19 +120,16 @@ async function handleReview(cwd, subcommand, args) {
         issueId = args[1];
         newStatus = args[2];
       } else {
-        error('Usage: rapid-tools review update-issue <set-id> [<wave-id>] <issue-id> <status>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools review update-issue <set-id> [<wave-id>] <issue-id> <status>');
       }
       if (!setId || !issueId || !newStatus) {
-        error('Usage: rapid-tools review update-issue <set-id> [<wave-id>] <issue-id> <status>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools review update-issue <set-id> [<wave-id>] <issue-id> <status>');
       }
       try {
         review.updateIssueStatus(cwd, setId, issueId, newStatus);
         output(JSON.stringify({ updated: true }));
       } catch (err) {
-        output(JSON.stringify({ error: err.message }));
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
@@ -147,8 +138,7 @@ async function handleReview(cwd, subcommand, args) {
       const setId = args[0];
       const waveId = args[1];
       if (!setId || !waveId) {
-        error('Usage: rapid-tools review lean <set-id> <wave-id>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools review lean <set-id> <wave-id>');
       }
       // Resolve worktree path from registry
       const registry = wt.loadRegistry(cwd);
@@ -206,8 +196,7 @@ async function handleReview(cwd, subcommand, args) {
 
         output(JSON.stringify({ issues, autoFixed, needsAttention }));
       } catch (err) {
-        output(JSON.stringify({ error: err.message }));
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
@@ -215,8 +204,7 @@ async function handleReview(cwd, subcommand, args) {
     case 'summary': {
       const setId = args[0];
       if (!setId) {
-        error('Usage: rapid-tools review summary <set-id> [--post-merge]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools review summary <set-id> [--post-merge]');
       }
       const summaryPostMerge = args.includes('--post-merge');
       try {
@@ -233,15 +221,13 @@ async function handleReview(cwd, subcommand, args) {
           output(JSON.stringify({ written: true, path: summaryPath, issueCount: issues.length }));
         }
       } catch (err) {
-        output(JSON.stringify({ error: err.message }));
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
 
     default:
-      error(`Unknown review subcommand: ${subcommand}. Use: scope, log-issue, list-issues, update-issue, lean, summary`);
-      process.exit(1);
+      throw new CliError(`Unknown review subcommand: ${subcommand}. Use: scope, log-issue, list-issues, update-issue, lean, summary`);
   }
 }
 

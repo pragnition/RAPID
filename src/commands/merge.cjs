@@ -1,6 +1,7 @@
 'use strict';
 
-const { output, error } = require('../lib/core.cjs');
+const { output } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 const { parseArgs } = require('../lib/args.cjs');
 
 async function handleMerge(cwd, subcommand, args) {
@@ -13,8 +14,7 @@ async function handleMerge(cwd, subcommand, args) {
     case 'review': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools merge review <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge review <set-name>');
       }
       const result = merge.runProgrammaticGate(cwd, setName);
       const setDir = path.join(cwd, '.planning', 'sets', setName);
@@ -38,8 +38,7 @@ async function handleMerge(cwd, subcommand, args) {
     case 'execute': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools merge execute <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge execute <set-name>');
       }
       const baseBranch = wt.detectMainBranch(cwd);
       const result = merge.mergeSet(cwd, setName, baseBranch);
@@ -101,8 +100,7 @@ async function handleMerge(cwd, subcommand, args) {
       const setName = usPos[0];
       const status = usPos[1];
       if (!setName || !status) {
-        error('Usage: rapid-tools merge update-status <set> <status> [--agent-phase <idle|spawned|done|failed>] [--agent-phase2 <conflictId> <idle|spawned|done|failed>]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge update-status <set> <status> [--agent-phase <idle|spawned|done|failed>] [--agent-phase2 <conflictId> <idle|spawned|done|failed>]');
       }
       // Validate --agent-phase
       let agentPhase1 = undefined;
@@ -110,8 +108,7 @@ async function handleMerge(cwd, subcommand, args) {
         const agentPhaseValue = usFlags['agent-phase'];
         const validPhases = ['idle', 'spawned', 'done', 'failed'];
         if (!validPhases.includes(agentPhaseValue)) {
-          error(`Invalid agent-phase value: "${agentPhaseValue}". Must be one of: ${validPhases.join(', ')}`);
-          process.exit(1);
+          throw new CliError(`Invalid agent-phase value: "${agentPhaseValue}". Must be one of: ${validPhases.join(', ')}`);
         }
         agentPhase1 = agentPhaseValue;
       }
@@ -122,8 +119,7 @@ async function handleMerge(cwd, subcommand, args) {
         const [conflictId, phase2Value] = agentPhase2Raw;
         const validPhases2 = ['idle', 'spawned', 'done', 'failed'];
         if (!validPhases2.includes(phase2Value)) {
-          error(`Invalid --agent-phase2 phase: "${phase2Value}". Must be one of: ${validPhases2.join(', ')}`);
-          process.exit(1);
+          throw new CliError(`Invalid --agent-phase2 phase: "${phase2Value}". Must be one of: ${validPhases2.join(', ')}`);
         }
         agentPhase2Update = { conflictId, phase: phase2Value };
       }
@@ -175,8 +171,7 @@ async function handleMerge(cwd, subcommand, args) {
     case 'detect': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools merge detect <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge detect <set-name>');
       }
       const baseBranch = wt.detectMainBranch(cwd);
       // Create/update MERGE-STATE with detecting status
@@ -212,14 +207,12 @@ async function handleMerge(cwd, subcommand, args) {
     case 'resolve': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools merge resolve <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge resolve <set-name>');
       }
       // Load detection results from MERGE-STATE.json
       const mergeState = merge.readMergeState(cwd, setName);
       if (!mergeState || !mergeState.detection) {
-        error(`No detection results found for set '${setName}'. Run 'merge detect ${setName}' first.`);
-        process.exit(1);
+        throw new CliError(`No detection results found for set '${setName}'. Run 'merge detect ${setName}' first.`);
       }
       // Update status to resolving
       await merge.withMergeStateTransaction(cwd, setName, (state) => { state.status = 'resolving'; });
@@ -292,20 +285,17 @@ async function handleMerge(cwd, subcommand, args) {
     case 'bisect': {
       const waveNumStr = args[0];
       if (!waveNumStr) {
-        error('Usage: rapid-tools merge bisect <waveNum>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge bisect <waveNum>');
       }
       const waveNum = parseInt(waveNumStr, 10);
       if (isNaN(waveNum) || waveNum < 1) {
-        error('Wave number must be a positive integer');
-        process.exit(1);
+        throw new CliError('Wave number must be a positive integer');
       }
       const baseBranch = wt.detectMainBranch(cwd);
       // Get wave-grouped merge order
       const waves = merge.getMergeOrder(cwd);
       if (waveNum > waves.length) {
-        error(`Wave ${waveNum} does not exist. There are ${waves.length} waves.`);
-        process.exit(1);
+        throw new CliError(`Wave ${waveNum} does not exist. There are ${waves.length} waves.`);
       }
       const waveSets = waves[waveNum - 1]; // 0-indexed
       // Find merged sets and their pre-wave commit from MERGE-STATE.json
@@ -323,8 +313,7 @@ async function handleMerge(cwd, subcommand, args) {
         }
       }
       if (mergedSets.length === 0) {
-        error(`No merged sets found in wave ${waveNum}. Nothing to bisect.`);
-        process.exit(1);
+        throw new CliError(`No merged sets found in wave ${waveNum}. Nothing to bisect.`);
       }
       // Get preWaveCommit: commit before earliest merge in this wave
       // Use git log to find commit before the earliest merge commit
@@ -357,8 +346,7 @@ async function handleMerge(cwd, subcommand, args) {
     case 'rollback': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools merge rollback <set-name> [--force]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge rollback <set-name> [--force]');
       }
       const forceFlag = args.includes('--force');
       // Check cascade impact first
@@ -400,8 +388,7 @@ async function handleMerge(cwd, subcommand, args) {
     case 'merge-state': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools merge merge-state <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge merge-state <set-name>');
       }
       const state = merge.readMergeState(cwd, setName);
       output(JSON.stringify(state || {}));
@@ -411,8 +398,7 @@ async function handleMerge(cwd, subcommand, args) {
     case 'prepare-context': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools merge prepare-context <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools merge prepare-context <set-name>');
       }
       // Read MERGE-STATE for conflicts
       const mergeState = merge.readMergeState(cwd, setName);
@@ -464,8 +450,7 @@ async function handleMerge(cwd, subcommand, args) {
     }
 
     default:
-      error(`Unknown merge subcommand: ${subcommand}. Use: review, execute, status, integration-test, order, update-status, detect, resolve, bisect, rollback, merge-state, prepare-context`);
-      process.exit(1);
+      throw new CliError(`Unknown merge subcommand: ${subcommand}. Use: review, execute, status, integration-test, order, update-status, detect, resolve, bisect, rollback, merge-state, prepare-context`);
   }
 }
 

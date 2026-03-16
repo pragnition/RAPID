@@ -1,6 +1,6 @@
 'use strict';
 
-const { error } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 
 async function handleWorktree(cwd, subcommand, args) {
   const fs = require('fs');
@@ -11,8 +11,7 @@ async function handleWorktree(cwd, subcommand, args) {
     case 'create': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools worktree create <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools worktree create <set-name>');
       }
       try {
         const { branch, path: wtPath } = wt.createWorktree(cwd, setName);
@@ -31,6 +30,7 @@ async function handleWorktree(cwd, subcommand, args) {
         });
         process.stdout.write(JSON.stringify({ created: true, branch, path: wtPath, setName }) + '\n');
       } catch (err) {
+        // Write structured result JSON (callers parse this shape)
         process.stdout.write(JSON.stringify({ created: false, error: err.message }) + '\n');
         process.exit(1);
       }
@@ -46,14 +46,12 @@ async function handleWorktree(cwd, subcommand, args) {
     case 'cleanup': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools worktree cleanup <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools worktree cleanup <set-name>');
       }
       const registry = wt.loadRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
-        error(`No worktree registered for set "${setName}"`);
-        process.exit(1);
+        throw new CliError(`No worktree registered for set "${setName}"`);
       }
       // Resolve absolute path from the stored relative path
       const absolutePath = path.resolve(cwd, entry.path);
@@ -66,6 +64,7 @@ async function handleWorktree(cwd, subcommand, args) {
         });
         process.stdout.write(JSON.stringify({ removed: true, setName }) + '\n');
       } else {
+        // Write structured result JSON (not CliError -- callers parse this shape)
         process.stdout.write(JSON.stringify({ removed: false, reason: result.reason, setName, message: result.message }) + '\n');
         process.exit(1);
       }
@@ -148,8 +147,7 @@ async function handleWorktree(cwd, subcommand, args) {
       const stateResult = await stateMachine.readState(cwd);
 
       if (!stateResult || !stateResult.valid) {
-        error('STATE.json not found or invalid. Run /rapid:init to set up Mark II state.');
-        process.exit(1);
+        throw new CliError('STATE.json not found or invalid. Run /rapid:init to set up Mark II state.');
       }
 
       const state = stateResult.state;
@@ -180,14 +178,12 @@ async function handleWorktree(cwd, subcommand, args) {
     case 'generate-claude-md': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools worktree generate-claude-md <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools worktree generate-claude-md <set-name>');
       }
       const registry = wt.loadRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
-        error(`No worktree registered for set "${setName}"`);
-        process.exit(1);
+        throw new CliError(`No worktree registered for set "${setName}"`);
       }
       const md = wt.generateScopedClaudeMd(cwd, setName);
       const wtClaudeMdPath = path.join(path.resolve(cwd, entry.path), 'CLAUDE.md');
@@ -200,8 +196,7 @@ async function handleWorktree(cwd, subcommand, args) {
     case 'delete-branch': {
       const branchName = args[0];
       if (!branchName) {
-        error('Usage: rapid-tools worktree delete-branch <branch-name> [--force]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools worktree delete-branch <branch-name> [--force]');
       }
       const force = args.includes('--force');
       try {
@@ -211,6 +206,7 @@ async function handleWorktree(cwd, subcommand, args) {
           process.exit(1);
         }
       } catch (err) {
+        // Write structured result JSON (callers parse this shape)
         process.stdout.write(JSON.stringify({ deleted: false, error: err.message }) + '\n');
         process.exit(1);
       }
@@ -218,8 +214,7 @@ async function handleWorktree(cwd, subcommand, args) {
     }
 
     default:
-      error(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, status-v2, generate-claude-md, delete-branch`);
-      process.exit(1);
+      throw new CliError(`Unknown worktree subcommand: ${subcommand}. Use: create, list, cleanup, reconcile, status, status-v2, generate-claude-md, delete-branch`);
   }
 }
 

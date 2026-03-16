@@ -1,6 +1,7 @@
 'use strict';
 
-const { output, error } = require('../lib/core.cjs');
+const { output } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 const { parseArgs } = require('../lib/args.cjs');
 
 async function handleExecute(cwd, subcommand, args) {
@@ -14,8 +15,7 @@ async function handleExecute(cwd, subcommand, args) {
     case 'prepare-context': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools execute prepare-context <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute prepare-context <set-name>');
       }
       const context = execute.prepareSetContext(cwd, setName);
       const result = {
@@ -32,16 +32,14 @@ async function handleExecute(cwd, subcommand, args) {
       const { flags: verifyFlags, positional: verifyPos } = parseArgs(args, { branch: 'string' });
       const setName = verifyPos[0];
       if (!setName) {
-        error('Usage: rapid-tools execute verify <set-name> --branch <branch>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute verify <set-name> --branch <branch>');
       }
       let branch = verifyFlags.branch || 'main';
       // Load registry to find worktree path
       const registry = wt.loadRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
-        error(`No worktree registered for set "${setName}"`);
-        process.exit(1);
+        throw new CliError(`No worktree registered for set "${setName}"`);
       }
       const worktreePath = path.resolve(cwd, entry.path);
       // Try to load LAST_RETURN.json
@@ -50,8 +48,7 @@ async function handleExecute(cwd, subcommand, args) {
       try {
         returnData = JSON.parse(fs.readFileSync(returnPath, 'utf-8'));
       } catch (err) {
-        error(`Cannot read ${returnPath}: ${err.message}. Create LAST_RETURN.json first.`);
-        process.exit(1);
+        throw new CliError(`Cannot read ${returnPath}: ${err.message}. Create LAST_RETURN.json first.`);
       }
       const results = execute.verifySetExecution(cwd, setName, returnData, worktreePath, branch);
       process.stdout.write(JSON.stringify(results) + '\n');
@@ -61,8 +58,7 @@ async function handleExecute(cwd, subcommand, args) {
     case 'generate-stubs': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools execute generate-stubs <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute generate-stubs <set-name>');
       }
       const stubPaths = stub.generateStubFiles(cwd, setName);
       process.stdout.write(JSON.stringify({ setName, stubs: stubPaths }) + '\n');
@@ -72,14 +68,12 @@ async function handleExecute(cwd, subcommand, args) {
     case 'cleanup-stubs': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools execute cleanup-stubs <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute cleanup-stubs <set-name>');
       }
       const registry = wt.loadRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
-        error(`No worktree registered for set "${setName}"`);
-        process.exit(1);
+        throw new CliError(`No worktree registered for set "${setName}"`);
       }
       const worktreePath = path.resolve(cwd, entry.path);
       const result = stub.cleanupStubFiles(worktreePath);
@@ -95,8 +89,7 @@ async function handleExecute(cwd, subcommand, args) {
         const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
         dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
       } catch (err) {
-        error('No DAG.json found. Run /rapid:plan first to create sets and DAG.');
-        process.exit(1);
+        throw new CliError('No DAG.json found. Run /rapid:plan first to create sets and DAG.');
       }
       // Load and reconcile registry
       const registry = await wt.reconcileRegistry(cwd);
@@ -133,13 +126,11 @@ async function handleExecute(cwd, subcommand, args) {
       const setName = args[0];
       const phase = args[1];
       if (!setName || !phase) {
-        error('Usage: rapid-tools execute update-phase <set-name> <phase>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute update-phase <set-name> <phase>');
       }
       const validPhases = ['Discussing', 'Planning', 'Executing', 'Verifying', 'Done', 'Error', 'Paused'];
       if (!validPhases.includes(phase)) {
-        error(`Invalid phase: "${phase}". Must be one of: ${validPhases.join(', ')}`);
-        process.exit(1);
+        throw new CliError(`Invalid phase: "${phase}". Must be one of: ${validPhases.join(', ')}`);
       }
       await wt.registryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
@@ -197,19 +188,16 @@ async function handleExecute(cwd, subcommand, args) {
     case 'pause': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools execute pause <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute pause <set-name>');
       }
       // Validate registry entry exists and phase is Executing
       const registry = wt.loadRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
-        error(`No worktree registered for set "${setName}"`);
-        process.exit(1);
+        throw new CliError(`No worktree registered for set "${setName}"`);
       }
       if (entry.phase !== 'Executing') {
-        error(`Set "${setName}" is in phase "${entry.phase}", not Executing. Pause is only available during execution.`);
-        process.exit(1);
+        throw new CliError(`Set "${setName}" is in phase "${entry.phase}", not Executing. Pause is only available during execution.`);
       }
       // Read CHECKPOINT data from stdin (JSON)
       let checkpointData;
@@ -217,8 +205,7 @@ async function handleExecute(cwd, subcommand, args) {
         const input = fs.readFileSync(0, 'utf-8');
         checkpointData = JSON.parse(input);
       } catch (err) {
-        error(`Failed to read CHECKPOINT JSON from stdin: ${err.message}`);
-        process.exit(1);
+        throw new CliError(`Failed to read CHECKPOINT JSON from stdin: ${err.message}`);
       }
       // Load current pauseCycles from registry entry (default 0), increment
       const pauseCycles = (entry.pauseCycles || 0) + 1;
@@ -246,15 +233,13 @@ async function handleExecute(cwd, subcommand, args) {
     case 'resume': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools execute resume <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute resume <set-name>');
       }
       try {
         const result = await execute.resumeSet(cwd, setName);
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
-        error(err.message);
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
@@ -264,8 +249,7 @@ async function handleExecute(cwd, subcommand, args) {
       const { flags: reconcileFlags, positional: reconcilePos } = parseArgs(args, { mode: 'string' });
       const waveNum = parseInt(reconcilePos[0], 10);
       if (isNaN(waveNum)) {
-        error('Usage: rapid-tools execute reconcile <wave-number> [--mode <mode>]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute reconcile <wave-number> [--mode <mode>]');
       }
       const executionMode = reconcileFlags.mode;
       // Load DAG.json and registry
@@ -274,8 +258,7 @@ async function handleExecute(cwd, subcommand, args) {
         const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
         dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
       } catch (err) {
-        error(`Cannot read DAG.json: ${err.message}`);
-        process.exit(1);
+        throw new CliError(`Cannot read DAG.json: ${err.message}`);
       }
       const registry = wt.loadRegistry(cwd);
       // Run reconciliation
@@ -320,8 +303,7 @@ async function handleExecute(cwd, subcommand, args) {
       const setId = rjPos[0];
       const waveId = rjPos[1];
       if (!setId || !waveId) {
-        error('Usage: rapid-tools execute reconcile-jobs <set-id> <wave-id> [--branch <branch>] [--mode <mode>]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute reconcile-jobs <set-id> <wave-id> [--branch <branch>] [--mode <mode>]');
       }
       let branch = rjFlags.branch || 'main';
       let mode = rjFlags.mode || 'Subagents';
@@ -331,8 +313,7 @@ async function handleExecute(cwd, subcommand, args) {
       const worktreePath = entry ? path.resolve(cwd, entry.path) : cwd;
       // Run job-level reconciliation
       if (typeof execute.reconcileWaveJobs !== 'function') {
-        error('reconcileWaveJobs not available -- ensure plan 01 (execution engine library) is implemented first');
-        process.exit(1);
+        throw new CliError('reconcileWaveJobs not available -- ensure plan 01 (execution engine library) is implemented first');
       }
       const result = execute.reconcileWaveJobs(cwd, setId, waveId, worktreePath, branch);
       // Generate wave summary
@@ -353,13 +334,11 @@ async function handleExecute(cwd, subcommand, args) {
       const sm = require('../lib/state-machine.cjs');
       const setId = args[0];
       if (!setId) {
-        error('Usage: rapid-tools execute job-status <set-id>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools execute job-status <set-id>');
       }
       const result = await sm.readState(cwd);
       if (!result || !result.valid) {
-        error('STATE.json is missing or invalid');
-        process.exit(1);
+        throw new CliError('STATE.json is missing or invalid');
       }
       const state = result.state;
       const milestoneId = state.currentMilestone;
@@ -387,8 +366,7 @@ async function handleExecute(cwd, subcommand, args) {
     }
 
     default:
-      error(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, reconcile-jobs, job-status, commit-state`);
-      process.exit(1);
+      throw new CliError(`Unknown execute subcommand: ${subcommand}. Use: prepare-context, verify, generate-stubs, cleanup-stubs, wave-status, update-phase, pause, resume, reconcile, reconcile-jobs, job-status, commit-state`);
   }
 }
 

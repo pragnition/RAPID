@@ -17,8 +17,9 @@ async function handleSetInit(cwd, subcommand, args) {
         const result = await wt.setInit(cwd, setName);
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
+        // Write structured result JSON (callers parse this shape)
         process.stdout.write(JSON.stringify({ created: false, error: err.message }) + '\n');
-        throw new CliError(err.message);
+        process.exit(1);
       }
       break;
     }
