@@ -101,7 +101,7 @@
         },
         {
           "id": "data-integrity",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         },
         {
@@ -147,6 +147,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T01:47:25.323Z",
+  "lastUpdatedAt": "2026-03-16T02:04:04.908Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
