@@ -109,6 +109,20 @@ describe('createInitialState', () => {
     assert.ok(new Date(state.createdAt).toISOString());
     assert.ok(new Date(state.lastUpdatedAt).toISOString());
   });
+
+  it('includes rapidVersion when provided', () => {
+    const state = createInitialState('proj', 'v1.0', '3.2.0');
+    assert.equal(state.rapidVersion, '3.2.0');
+    // Verify it validates through the schema
+    const parsed = ProjectState.parse(state);
+    assert.equal(parsed.rapidVersion, '3.2.0');
+  });
+
+  it('does not include rapidVersion when omitted', () => {
+    const state = createInitialState('proj', 'v1.0');
+    assert.equal(state.rapidVersion, undefined);
+    assert.ok(!('rapidVersion' in state));
+  });
 });
 
 // ---- readState ----
@@ -188,6 +202,43 @@ describe('writeState', () => {
     );
     const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
     assert.equal(fs.existsSync(stateFile), false);
+  });
+});
+
+// ---- writeState/readState round-trip with passthrough ----
+
+describe('writeState/readState passthrough round-trip', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTempProject(); });
+  afterEach(() => { cleanTempProject(tmpDir); });
+
+  it('preserves unknown fields through writeState + readState cycle', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.customExtension = 'test';
+    state.futureConfig = { enabled: true, threshold: 42 };
+
+    await writeState(tmpDir, state);
+    const result = await readState(tmpDir);
+
+    assert.equal(result.valid, true);
+    assert.equal(result.state.customExtension, 'test');
+    assert.deepEqual(result.state.futureConfig, { enabled: true, threshold: 42 });
+  });
+
+  it('preserves unknown fields on nested schemas through round-trip', async () => {
+    const state = createInitialState('proj', 'v1');
+    state.milestones[0].sets = [{
+      id: 'set-1',
+      status: 'pending',
+      waves: [],
+      customSetField: 'preserved',
+    }];
+
+    await writeState(tmpDir, state);
+    const result = await readState(tmpDir);
+
+    assert.equal(result.valid, true);
+    assert.equal(result.state.milestones[0].sets[0].customSetField, 'preserved');
   });
 });
 
