@@ -1115,3 +1115,123 @@ describe('parseJobHandoff', () => {
     assert.equal(executeModule.parseJobHandoff(undefined), null, 'undefined');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// resumeSet
+// ────────────────────────────────────────────────────────────────
+describe('resumeSet', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-resume-'));
+    // Create .planning/sets/test-set/
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'test-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    // Create HANDOFF.md
+    fs.writeFileSync(path.join(setDir, 'HANDOFF.md'), [
+      '---',
+      'set: test-set',
+      'paused_at: 2026-01-01T00:00:00.000Z',
+      'pause_cycle: 1',
+      'tasks_completed: 2',
+      'tasks_total: 4',
+      '---',
+      '',
+      '## Completed Work',
+      'Tasks 1-2 done',
+      '',
+      '## Remaining Work',
+      'Tasks 3-4 remain',
+      '',
+      '## Resume Instructions',
+      'Continue from task 3',
+    ].join('\n'), 'utf-8');
+    // Create .planning/worktrees/REGISTRY.json with Paused entry
+    const wtDir = path.join(tmpDir, '.planning', 'worktrees');
+    fs.mkdirSync(wtDir, { recursive: true });
+    fs.writeFileSync(path.join(wtDir, 'REGISTRY.json'), JSON.stringify({
+      worktrees: {
+        'test-set': {
+          setName: 'test-set',
+          branch: 'rapid/test-set',
+          path: '.rapid-worktrees/test-set',
+          phase: 'Paused',
+          status: 'active',
+          pauseCycles: 1,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      },
+    }, null, 2), 'utf-8');
+    // Create .planning/.locks/ for lock infrastructure
+    fs.mkdirSync(path.join(tmpDir, '.planning', '.locks'), { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns resume data for a paused set', async () => {
+    const result = await executeModule.resumeSet(tmpDir, 'test-set');
+    assert.equal(result.resumed, true, 'resumed should be true');
+    assert.equal(result.setName, 'test-set', 'setName should match');
+    assert.ok(result.handoff !== null && typeof result.handoff === 'object', 'handoff should be an object');
+    assert.equal(result.handoff.pauseCycle, 1, 'handoff pauseCycle should be 1');
+    assert.ok(result.definitionPath.includes('test-set'), 'definitionPath should contain set name');
+    assert.ok(result.contractPath.includes('test-set'), 'contractPath should contain set name');
+    assert.equal(result.pauseCycles, 1, 'pauseCycles should be 1');
+  });
+
+  it('returns resumed:false with infoOnly option', async () => {
+    const result = await executeModule.resumeSet(tmpDir, 'test-set', { infoOnly: true });
+    assert.equal(result.resumed, false, 'resumed should be false with infoOnly');
+    // Verify registry still shows Paused phase
+    const regRaw = fs.readFileSync(path.join(tmpDir, '.planning', 'worktrees', 'REGISTRY.json'), 'utf-8');
+    const reg = JSON.parse(regRaw);
+    assert.equal(reg.worktrees['test-set'].phase, 'Paused', 'registry should still show Paused');
+  });
+
+  it('throws if setId is missing', async () => {
+    await assert.rejects(
+      () => executeModule.resumeSet(tmpDir, ''),
+      /requires a setId/,
+      'should throw for empty setId'
+    );
+  });
+
+  it('throws if set is not Paused', async () => {
+    // Modify registry entry to Executing phase
+    const regPath = path.join(tmpDir, '.planning', 'worktrees', 'REGISTRY.json');
+    const reg = JSON.parse(fs.readFileSync(regPath, 'utf-8'));
+    reg.worktrees['test-set'].phase = 'Executing';
+    fs.writeFileSync(regPath, JSON.stringify(reg, null, 2), 'utf-8');
+
+    await assert.rejects(
+      () => executeModule.resumeSet(tmpDir, 'test-set'),
+      /not Paused/,
+      'should throw for non-Paused set'
+    );
+  });
+
+  it('throws if HANDOFF.md is missing', async () => {
+    // Delete HANDOFF.md
+    fs.unlinkSync(path.join(tmpDir, '.planning', 'sets', 'test-set', 'HANDOFF.md'));
+
+    await assert.rejects(
+      () => executeModule.resumeSet(tmpDir, 'test-set'),
+      /No HANDOFF.md/,
+      'should throw for missing HANDOFF.md'
+    );
+  });
+
+  it('handles pauseCycles being undefined', async () => {
+    // Remove pauseCycles from registry entry
+    const regPath = path.join(tmpDir, '.planning', 'worktrees', 'REGISTRY.json');
+    const reg = JSON.parse(fs.readFileSync(regPath, 'utf-8'));
+    delete reg.worktrees['test-set'].pauseCycles;
+    fs.writeFileSync(regPath, JSON.stringify(reg, null, 2), 'utf-8');
+
+    const result = await executeModule.resumeSet(tmpDir, 'test-set');
+    assert.equal(result.pauseCycles, 0, 'pauseCycles should default to 0');
+  });
+});
