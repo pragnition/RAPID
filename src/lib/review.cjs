@@ -371,7 +371,7 @@ function chunkByDirectory(files) {
  */
 function buildWaveAttribution(cwd, setId) {
   const attribution = {};
-  const wavesDir = path.join(cwd, '.planning', 'waves', setId);
+  const wavesDir = path.join(cwd, '.planning', 'sets', setId);
 
   if (!fs.existsSync(wavesDir)) return attribution;
 
@@ -430,7 +430,7 @@ function buildWaveAttribution(cwd, setId) {
  * @param {Object} issue - Issue data to log (may include originatingWave)
  */
 function logIssue(cwd, setId, issue) {
-  const setDir = path.join(cwd, '.planning', 'waves', setId);
+  const setDir = path.join(cwd, '.planning', 'sets', setId);
   const issuesPath = path.join(setDir, 'REVIEW-ISSUES.json');
 
   // Validate issue with Zod
@@ -463,7 +463,7 @@ function logIssue(cwd, setId, issue) {
  * @returns {Array<Object>} Flat array of issues with originatingWave preserved
  */
 function loadSetIssues(cwd, setId) {
-  const wavesDir = path.join(cwd, '.planning', 'waves', setId);
+  const wavesDir = path.join(cwd, '.planning', 'sets', setId);
   const issues = [];
   const seenIds = new Set();
 
@@ -525,7 +525,7 @@ function loadSetIssues(cwd, setId) {
  * @param {string} newStatus - New status ('open', 'fixed', 'deferred', 'dismissed')
  */
 function updateIssueStatus(cwd, setId, issueId, newStatus) {
-  const issuesPath = path.join(cwd, '.planning', 'waves', setId, 'REVIEW-ISSUES.json');
+  const issuesPath = path.join(cwd, '.planning', 'sets', setId, 'REVIEW-ISSUES.json');
 
   if (!fs.existsSync(issuesPath)) {
     throw new Error(`REVIEW-ISSUES.json not found at ${issuesPath}`);
@@ -645,7 +645,7 @@ function generateReviewSummary(setId, issues) {
 /**
  * Log a review issue to the post-merge artifact directory.
  * Writes to .planning/post-merge/{setId}/REVIEW-ISSUES.json
- * instead of the standard .planning/waves/{setId}/ directory.
+ * instead of the standard .planning/sets/{setId}/ directory.
  *
  * @param {string} cwd - Project root directory
  * @param {string} setId - Set identifier
