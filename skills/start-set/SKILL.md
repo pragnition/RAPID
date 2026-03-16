@@ -1,5 +1,5 @@
 ---
-description: Initialize a set for development -- creates isolated worktree and generates scoped CLAUDE.md
+description: Initialize a set for development -- creates isolated worktree (or solo mode without worktree) and generates scoped CLAUDE.md
 allowed-tools: Bash(rapid-tools:*), Read, AskUserQuestion, Agent
 ---
 
@@ -55,6 +55,12 @@ Use `SET_NAME` for all subsequent operations. The numeric input has been resolve
 
 **If set name was provided:** Resolve it (above), then use the resolved `SET_NAME`. Skip to Step 2.
 
+### Check for --solo Flag
+
+Parse the user's invocation for a `--solo` flag (e.g., `/rapid:start-set 6 --solo`).
+
+If `--solo` is present, set `SOLO_MODE=true`. Solo mode skips worktree creation, branch creation, and scoped CLAUDE.md generation. Work happens directly on the current branch.
+
 **If no set name was provided:** List available (pending) sets:
 
 ```bash
@@ -85,6 +91,8 @@ Before creating the worktree, validate:
 
 2. **Check if worktree already exists** -- look up the set in the available list output. If it was not in the list, it already has a worktree.
 
+**If SOLO_MODE is true:** Skip the branch existence check entirely (solo mode does not create a branch). Skip to Step 3.
+
 3. **Check if branch already exists** -- run:
 
 ```bash
@@ -113,6 +121,27 @@ If "Cancel" is selected, STOP.
 ---
 
 ## Step 3: Create Worktree and Scoped CLAUDE.md
+
+**If SOLO_MODE is true:**
+
+Display progress: "Initializing set in solo mode: {set-name}..."
+
+Run the solo set-init command:
+
+```bash
+# (env preamble here)
+node "${RAPID_TOOLS}" set-init create {set-name} --solo
+```
+
+Parse the JSON output:
+- On success (`created: true`, `solo: true`): Display:
+  - "Solo set initialized on branch {branch} at commit {startCommit}"
+  - "No worktree or branch created -- working directly on {branch}"
+- On error: Display error and suggest fixes. Then STOP.
+
+Skip to Step 4.
+
+**If SOLO_MODE is false:**
 
 Display progress: "Creating worktree for set: {set-name}..."
 

@@ -44,6 +44,19 @@ node "${RAPID_TOOLS}" state get --all
 
 Parse the merge order (wave-grouped arrays) and status. Identify which sets are ready to merge (status='complete' in STATE.json, mergeStatus=pending in MERGE-STATE). Check MERGE-STATE.json for each set to enable idempotent re-entry -- skip sets that are already status='complete' in MERGE-STATE.
 
+### 1d: Detect solo sets
+
+For each set in the merge plan, check the registry for solo entries:
+
+```bash
+node "${RAPID_TOOLS}" worktree status --json
+```
+
+Parse the JSON output. For each worktree entry with `solo: true`, mark that set as a solo set. Solo sets will be fast-pathed in Step 3 (no subagent dispatch, no conflict detection).
+
+In the merge plan display, annotate solo sets:
+> - Wave 1: {set-name} **(solo -- auto-merge)**
+
 If a specific set name was provided (e.g., `/rapid:merge auth-set` or `/rapid:merge 1`):
 
 #### Resolve Set Reference
@@ -117,6 +130,15 @@ node "${RAPID_TOOLS}" merge merge-state {setName}
 
 - If agentPhase1='done', skip to Step 6 (merge execute). Display:
   > [{waveNum}/{totalWaves}] {setName}: detection/resolution done, proceeding to merge
+
+### 3a-solo: Solo set fast path
+
+Before running merge-tree or dispatching a subagent, check if the set is a solo set via the registry:
+
+If the set has `solo: true` in the registry:
+> [{waveNum}/{totalWaves}] {setName}: solo set (no merge needed)
+
+Skip directly to Step 6 (merge execute). The `merge execute` CLI command (via `mergeSet()`) already handles solo sets by returning `{ merged: true, solo: true }` immediately.
 
 ### 3b: Fast-path check
 
@@ -596,6 +618,7 @@ Display the available next steps:
 
 ## Important Notes
 
+- **Solo sets skip the entire merge pipeline.** Solo sets have `solo: true` in the registry. The merge execute command returns immediate success without git operations. No subagent is dispatched, no conflict detection runs, no integration tests are needed for solo-only waves.
 - **Subagent dispatch:** This skill spawns **rapid-set-merger** subagents (one per set) for detection, resolution, and gate validation, and **rapid-conflict-resolver** subagents (one per conflict) for mid-confidence escalation resolution. The Agent tool is the only mechanism for subagent dispatch.
 - **Fast path via git merge-tree:** Before dispatching a subagent, `git merge-tree --write-tree HEAD rapid/{setName}` checks for conflicts without touching the index or working tree. Exit code 0 means clean merge -- skip subagent entirely. This is the common case for well-isolated sets.
 - **Sequential within waves:** Sets in the same wave merge one at a time. Each merge sees the result of the previous. HEAD advances after each Step 6, so merge-tree fast-path checks are always against current HEAD.

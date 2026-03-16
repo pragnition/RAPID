@@ -133,6 +133,8 @@ async function handleExecute(cwd, subcommand, args) {
       if (!validPhases.includes(phase)) {
         throw new CliError(`Invalid phase: "${phase}". Must be one of: ${validPhases.join(', ')}`);
       }
+      // Note: Solo entries are preserved -- the 'if' branch only updates phase/updatedAt,
+      // keeping solo, startCommit, path, and branch intact.
       await wt.registryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
           reg.worktrees[setName].phase = phase;

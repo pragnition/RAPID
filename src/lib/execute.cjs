@@ -173,10 +173,12 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext) {
  *
  * @param {string} worktreePath - Absolute path to the worktree
  * @param {string} baseBranch - Base branch name (e.g., 'main')
+ * @param {string} [startCommit] - Optional commit hash to use as base instead of baseBranch (for solo mode)
  * @returns {string[]} Array of changed file paths
  */
-function getChangedFiles(worktreePath, baseBranch) {
-  const result = worktree.gitExec(['diff', '--name-only', `${baseBranch}...HEAD`], worktreePath);
+function getChangedFiles(worktreePath, baseBranch, startCommit) {
+  const ref = startCommit || baseBranch;
+  const result = worktree.gitExec(['diff', '--name-only', `${ref}...HEAD`], worktreePath);
   if (!result.ok) return [];
   return result.stdout.split('\n').filter(line => line.trim().length > 0);
 }
@@ -186,10 +188,12 @@ function getChangedFiles(worktreePath, baseBranch) {
  *
  * @param {string} worktreePath - Absolute path to the worktree
  * @param {string} baseBranch - Base branch name (e.g., 'main')
+ * @param {string} [startCommit] - Optional commit hash to use as base instead of baseBranch (for solo mode)
  * @returns {number} Number of commits
  */
-function getCommitCount(worktreePath, baseBranch) {
-  const result = worktree.gitExec(['rev-list', '--count', `${baseBranch}..HEAD`], worktreePath);
+function getCommitCount(worktreePath, baseBranch, startCommit) {
+  const ref = startCommit || baseBranch;
+  const result = worktree.gitExec(['rev-list', '--count', `${ref}..HEAD`], worktreePath);
   if (!result.ok) return 0;
   return parseInt(result.stdout, 10) || 0;
 }
@@ -199,10 +203,12 @@ function getCommitCount(worktreePath, baseBranch) {
  *
  * @param {string} worktreePath - Absolute path to the worktree
  * @param {string} baseBranch - Base branch name (e.g., 'main')
+ * @param {string} [startCommit] - Optional commit hash to use as base instead of baseBranch (for solo mode)
  * @returns {string[]} Array of commit message subject lines
  */
-function getCommitMessages(worktreePath, baseBranch) {
-  const result = worktree.gitExec(['log', '--format=%s', `${baseBranch}..HEAD`], worktreePath);
+function getCommitMessages(worktreePath, baseBranch, startCommit) {
+  const ref = startCommit || baseBranch;
+  const result = worktree.gitExec(['log', '--format=%s', `${ref}..HEAD`], worktreePath);
   if (!result.ok) return [];
   return result.stdout.split('\n').filter(line => line.trim().length > 0);
 }
@@ -226,6 +232,11 @@ function getCommitMessages(worktreePath, baseBranch) {
 function verifySetExecution(cwd, setName, returnData, worktreePath, baseBranch) {
   const results = { passed: [], failed: [] };
 
+  // Detect solo mode: use startCommit as diff base if available
+  const registry = worktree.loadRegistry(cwd);
+  const regEntry = registry.worktrees[setName];
+  const startCommit = (regEntry && regEntry.solo && regEntry.startCommit) ? regEntry.startCommit : undefined;
+
   // 1. Artifact existence check
   const artifactResults = verify.verifyLight(
     returnData.artifacts || [],
@@ -235,7 +246,7 @@ function verifySetExecution(cwd, setName, returnData, worktreePath, baseBranch) 
   results.failed.push(...artifactResults.failed);
 
   // 2. Commit count check
-  const actualCount = getCommitCount(worktreePath, baseBranch);
+  const actualCount = getCommitCount(worktreePath, baseBranch, startCommit);
   const expectedCount = returnData.tasks_total || 0;
   if (actualCount === expectedCount) {
     results.passed.push({ type: 'commit_count_match', target: `${actualCount} commits` });
@@ -247,7 +258,7 @@ function verifySetExecution(cwd, setName, returnData, worktreePath, baseBranch) 
   }
 
   // 3. Commit message format check
-  const messages = getCommitMessages(worktreePath, baseBranch);
+  const messages = getCommitMessages(worktreePath, baseBranch, startCommit);
   const formatPattern = new RegExp(`^(feat|fix|refactor|test|docs|chore)\\(${escapeRegExp(setName)}\\):`);
   for (const msg of messages) {
     if (formatPattern.test(msg)) {
@@ -261,7 +272,7 @@ function verifySetExecution(cwd, setName, returnData, worktreePath, baseBranch) 
   try {
     const ownershipPath = path.join(cwd, '.planning', 'sets', 'OWNERSHIP.json');
     const ownershipData = JSON.parse(fs.readFileSync(ownershipPath, 'utf-8'));
-    const changedFiles = getChangedFiles(worktreePath, baseBranch);
+    const changedFiles = getChangedFiles(worktreePath, baseBranch, startCommit);
 
     for (const file of changedFiles) {
       const owner = contract.checkOwnership(ownershipData.ownership, file);

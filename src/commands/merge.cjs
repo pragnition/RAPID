@@ -173,6 +173,13 @@ async function handleMerge(cwd, subcommand, args) {
       if (!setName) {
         throw new CliError('Usage: rapid-tools merge detect <set-name>');
       }
+      // Solo sets: no branch to diff against
+      const reg = wt.loadRegistry(cwd);
+      const regEntry = reg.worktrees[setName];
+      if (regEntry && regEntry.solo === true) {
+        output(JSON.stringify({ solo: true, textual: { conflicts: [] }, structural: { conflicts: [] }, dependency: { conflicts: [] }, api: { conflicts: [] } }));
+        break;
+      }
       const baseBranch = wt.detectMainBranch(cwd);
       // Create/update MERGE-STATE with detecting status
       await merge.ensureMergeState(cwd, setName, { status: 'detecting', startedAt: new Date().toISOString() });
@@ -208,6 +215,13 @@ async function handleMerge(cwd, subcommand, args) {
       const setName = args[0];
       if (!setName) {
         throw new CliError('Usage: rapid-tools merge resolve <set-name>');
+      }
+      // Solo sets: nothing to resolve
+      const regResolve = wt.loadRegistry(cwd);
+      const regEntryResolve = regResolve.worktrees[setName];
+      if (regEntryResolve && regEntryResolve.solo === true) {
+        output(JSON.stringify({ results: [], summary: { tier1Resolved: 0, tier2Resolved: 0, unresolvedForAgent: 0, total: 0 } }));
+        break;
       }
       // Load detection results from MERGE-STATE.json
       const mergeState = merge.readMergeState(cwd, setName);

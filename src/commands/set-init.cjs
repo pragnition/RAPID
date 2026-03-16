@@ -10,11 +10,14 @@ async function handleSetInit(cwd, subcommand, args) {
   switch (subcommand) {
     case 'create': {
       const setName = args[0];
+      const isSolo = args.includes('--solo');
       if (!setName) {
-        throw new CliError('Usage: rapid-tools set-init create <set-name>');
+        throw new CliError('Usage: rapid-tools set-init create <set-name> [--solo]');
       }
       try {
-        const result = await wt.setInit(cwd, setName);
+        const result = isSolo
+          ? await wt.setInitSolo(cwd, setName)
+          : await wt.setInit(cwd, setName);
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
         // Write structured result JSON (callers parse this shape)

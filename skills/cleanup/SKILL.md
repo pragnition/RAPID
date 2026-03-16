@@ -70,7 +70,13 @@ node "${RAPID_TOOLS}" worktree cleanup {setName}
 
 Parse the JSON output to determine the result.
 
-**If successful** (`removed: true`): Skip to Step 5.
+**If successful** (`removed: true`): Check if the JSON output contains `solo: true`.
+
+**If the set is a solo set** (the JSON output contains `solo: true`):
+The cleanup was instant -- no worktree to remove, just deregistered from REGISTRY.json.
+Skip to Step 6 (no branch deletion needed for solo sets).
+
+**If the set is not a solo set:** Continue to Step 5.
 
 **If blocked** (`removed: false, reason: "dirty"`):
 
@@ -115,6 +121,8 @@ node "${RAPID_TOOLS}" worktree reconcile
 **If other error** (`removed: false` with different reason): Display the error message and suggest manual investigation.
 
 ## Step 5: Branch Deletion
+
+**If the set was a solo set:** Skip branch deletion entirely (solo sets do not create branches). Print: "Solo set -- no branch to delete." Continue to Step 6.
 
 After successful worktree removal, offer branch deletion via AskUserQuestion:
 - **question:** "Also delete branch rapid/{setName}?"

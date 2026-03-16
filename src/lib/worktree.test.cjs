@@ -1382,3 +1382,163 @@ describe('DEFINITION.md path resolution from worktree context', () => {
     assert.ok(sets.includes('test-set'), 'should find test-set from worktree context');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// Solo mode tests
+// ────────────────────────────────────────────────────────────────
+describe('solo mode', () => {
+  describe('isSoloMode', () => {
+    let tmpDir;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-solo-'));
+      fs.mkdirSync(path.join(tmpDir, '.planning', 'worktrees'), { recursive: true });
+    });
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it('returns true for a solo entry in registry', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'test-set': { setName: 'test-set', solo: true, branch: 'main', path: '.', status: 'active', phase: 'Created' },
+        },
+      });
+      assert.equal(worktree.isSoloMode(tmpDir, 'test-set'), true);
+    });
+
+    it('returns false for nonexistent set', () => {
+      worktree.writeRegistry(tmpDir, { version: 1, worktrees: {} });
+      assert.equal(worktree.isSoloMode(tmpDir, 'nonexistent'), false);
+    });
+
+    it('returns false for a normal (non-solo) entry', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'normal-set': { setName: 'normal-set', branch: 'rapid/normal-set', path: '.rapid-worktrees/normal-set', status: 'active', phase: 'Created' },
+        },
+      });
+      assert.equal(worktree.isSoloMode(tmpDir, 'normal-set'), false);
+    });
+  });
+
+  describe('getSetDiffBase', () => {
+    let tmpDir;
+
+    beforeEach(() => {
+      tmpDir = createTempRepo();
+      fs.mkdirSync(path.join(tmpDir, '.planning', 'worktrees'), { recursive: true });
+    });
+
+    afterEach(() => {
+      cleanupRepo(tmpDir);
+    });
+
+    it('returns startCommit for a solo entry', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'solo-set': { setName: 'solo-set', solo: true, startCommit: 'abc123def456', branch: 'master', path: '.', status: 'active', phase: 'Created' },
+        },
+      });
+      assert.equal(worktree.getSetDiffBase(tmpDir, 'solo-set'), 'abc123def456');
+    });
+
+    it('returns current branch name for a normal set', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'normal-set': { setName: 'normal-set', branch: 'rapid/normal-set', path: '.rapid-worktrees/normal-set', status: 'active', phase: 'Created' },
+        },
+      });
+      const result = worktree.getSetDiffBase(tmpDir, 'normal-set');
+      // detectMainBranch returns current branch name
+      assert.equal(typeof result, 'string');
+      assert.ok(result.length > 0, 'should return non-empty branch name');
+    });
+  });
+
+  describe('setInitSolo', () => {
+    let tmpDir;
+
+    beforeEach(() => {
+      tmpDir = createTempRepo();
+      fs.mkdirSync(path.join(tmpDir, '.planning', 'worktrees'), { recursive: true });
+    });
+
+    afterEach(() => {
+      cleanupRepo(tmpDir);
+    });
+
+    it('creates a solo registry entry with correct fields', async () => {
+      const result = await worktree.setInitSolo(tmpDir, 'my-solo-set');
+
+      assert.equal(result.created, true);
+      assert.equal(result.solo, true);
+      assert.equal(result.setName, 'my-solo-set');
+      assert.equal(result.claudeMdGenerated, false);
+      assert.equal(result.claudeMdError, null);
+      // startCommit should be a 40-char hex SHA
+      assert.match(result.startCommit, /^[0-9a-f]{40}$/, 'startCommit should be a 40-char hex SHA');
+      // worktreePath should be the project root itself
+      assert.equal(result.worktreePath, tmpDir);
+    });
+
+    it('writes registry entry with solo: true and path: "."', async () => {
+      await worktree.setInitSolo(tmpDir, 'my-solo-set');
+
+      const registry = worktree.loadRegistry(tmpDir);
+      const entry = registry.worktrees['my-solo-set'];
+      assert.ok(entry, 'should have registry entry');
+      assert.equal(entry.solo, true);
+      assert.equal(entry.path, '.');
+      assert.equal(entry.phase, 'Created');
+      assert.equal(entry.status, 'active');
+      assert.ok(entry.startCommit, 'should have startCommit');
+      assert.ok(entry.branch, 'should have branch');
+    });
+
+    it('does NOT create a .rapid-worktrees directory', async () => {
+      await worktree.setInitSolo(tmpDir, 'my-solo-set');
+      assert.ok(!fs.existsSync(path.join(tmpDir, '.rapid-worktrees', 'my-solo-set')), 'should not create worktree directory');
+    });
+
+    it('does NOT create a rapid/* branch', async () => {
+      await worktree.setInitSolo(tmpDir, 'my-solo-set');
+      const branchResult = worktree.gitExec(['branch', '--list', 'rapid/my-solo-set'], tmpDir);
+      assert.ok(!branchResult.stdout || branchResult.stdout.trim() === '', 'should not create rapid/my-solo-set branch');
+    });
+  });
+
+  describe('reconcileRegistry solo guard', () => {
+    let tmpDir;
+
+    beforeEach(() => {
+      tmpDir = createTempRepo();
+      fs.mkdirSync(path.join(tmpDir, '.planning', 'worktrees'), { recursive: true });
+    });
+
+    afterEach(() => {
+      cleanupRepo(tmpDir);
+    });
+
+    it('does NOT mark solo entries as orphaned', async () => {
+      // Write a solo entry that has branch: 'main' (which exists, but is the main worktree)
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'solo-set': { setName: 'solo-set', solo: true, branch: 'master', path: '.', status: 'active', phase: 'Created' },
+        },
+      });
+
+      await worktree.reconcileRegistry(tmpDir);
+
+      const registry = worktree.loadRegistry(tmpDir);
+      assert.notEqual(registry.worktrees['solo-set'].status, 'orphaned', 'solo entry should NOT be marked orphaned');
+      assert.equal(registry.worktrees['solo-set'].status, 'active', 'solo entry should remain active');
+    });
+  });
+});
