@@ -1757,9 +1757,11 @@ function bisectWave(cwd, baseBranch, mergedSets, preWaveCommit) {
   }
 
   // 6. Update MERGE-STATE.json with bisection results
+  // TODO(data-integrity): migrate to withMergeStateTransaction when bisectWave becomes async
   try {
     const currentState = readMergeState(cwd, breakingSet);
     if (currentState) {
+      // TODO(data-integrity): migrate to withMergeStateTransaction when bisectWave becomes async
       updateMergeState(cwd, breakingSet, {
         bisection: {
           triggered: true,
@@ -1770,6 +1772,7 @@ function bisectWave(cwd, baseBranch, mergedSets, preWaveCommit) {
       });
     } else {
       // Create a new MERGE-STATE for the breaking set
+      // TODO(data-integrity): migrate to ensureMergeState when bisectWave becomes async
       writeMergeState(cwd, breakingSet, {
         setId: breakingSet,
         status: 'failed',
