@@ -1,6 +1,7 @@
 'use strict';
 
 const { error } = require('../lib/core.cjs');
+const { parseArgs } = require('../lib/args.cjs');
 
 function handleAssumptions(cwd, args) {
   const plan = require('../lib/plan.cjs');
@@ -86,24 +87,15 @@ function handleVerifyArtifacts(args) {
     process.exit(1);
   }
 
-  const isHeavy = args.includes('--heavy');
-  const isReport = args.includes('--report');
-  let testCommand = null;
-
-  const testIdx = args.indexOf('--test');
-  if (testIdx !== -1 && args[testIdx + 1]) {
-    testCommand = args[testIdx + 1];
-  }
-
-  // Collect file paths (skip flags and their arguments)
-  const files = [];
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--heavy' || args[i] === '--report') continue;
-    if (args[i] === '--test') { i++; continue; }
-    if (!args[i].startsWith('--')) {
-      files.push(args[i]);
-    }
-  }
+  const { flags: vaFlags, positional: vaPos } = parseArgs(args, {
+    test: 'string',
+    heavy: 'boolean',
+    report: 'boolean',
+  });
+  const isHeavy = vaFlags.heavy;
+  const isReport = vaFlags.report;
+  const testCommand = vaFlags.test || null;
+  const files = vaPos;
 
   if (files.length === 0) {
     error('Usage: rapid-tools verify-artifacts [--heavy --test "<cmd>"] [--report] <file1> [file2...]');

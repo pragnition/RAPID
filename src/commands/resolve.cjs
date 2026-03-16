@@ -1,13 +1,14 @@
 'use strict';
 
 const { error } = require('../lib/core.cjs');
+const { parseArgs } = require('../lib/args.cjs');
 
 async function handleResolve(cwd, subcommand, args) {
   const resolveLib = require('../lib/resolve.cjs');
-  const input = args[0];
 
   switch (subcommand) {
     case 'set': {
+      const input = args[0];
       if (!input) {
         error('Usage: rapid-tools resolve set <input>');
         process.exit(1);
@@ -28,6 +29,8 @@ async function handleResolve(cwd, subcommand, args) {
     }
 
     case 'wave': {
+      const { flags: waveFlags, positional: wavePos } = parseArgs(args, { set: 'string' });
+      const input = wavePos[0];
       if (!input) {
         error('Usage: rapid-tools resolve wave <input> [--set <setInput>]');
         process.exit(1);
@@ -38,8 +41,7 @@ async function handleResolve(cwd, subcommand, args) {
         if (!stateResult || !stateResult.valid) {
           throw new Error('Cannot read STATE.json. Run /rapid:plan first to initialize state.');
         }
-        const setIdx = args.indexOf('--set');
-        const setInput = (setIdx !== -1 && args[setIdx + 1]) ? args[setIdx + 1] : undefined;
+        const setInput = waveFlags.set;
         const result = resolveLib.resolveWave(input, stateResult.state, cwd, setInput);
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
