@@ -270,7 +270,7 @@ async function handleExecute(cwd, subcommand, args) {
       // Generate summary (pass executionMode for wave summary metadata)
       const summaryContent = execute.generateWaveSummary(waveNum, reconcileResult, new Date().toISOString(), executionMode);
       // Write summary
-      const wavesDir = path.join(cwd, '.planning', 'waves');
+      const wavesDir = path.join(cwd, '.planning', 'sets');
       fs.mkdirSync(wavesDir, { recursive: true });
       const summaryPath = path.join(wavesDir, `WAVE-${waveNum}-SUMMARY.md`);
       fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
@@ -322,7 +322,7 @@ async function handleExecute(cwd, subcommand, args) {
       const result = execute.reconcileWaveJobs(cwd, setId, waveId, worktreePath, branch);
       // Generate wave summary
       const timestamp = new Date().toISOString();
-      const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+      const waveDir = path.join(cwd, '.planning', 'sets', setId, waveId);
       const summaryContent = typeof execute.generateWaveJobsSummary === 'function'
         ? execute.generateWaveJobsSummary(waveId, result, timestamp, mode)
         : JSON.stringify(result, null, 2);

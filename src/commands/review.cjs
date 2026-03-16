@@ -142,7 +142,7 @@ async function handleReview(cwd, subcommand, args) {
       const registry = wt.readRegistry(cwd);
       const entry = registry.worktrees[setId];
       const worktreePath = entry ? path.resolve(cwd, entry.path) : cwd;
-      const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+      const waveDir = path.join(cwd, '.planning', 'sets', setId, waveId);
 
       const issues = [];
       let autoFixed = 0;
@@ -213,7 +213,7 @@ async function handleReview(cwd, subcommand, args) {
         } else {
           const issues = review.loadSetIssues(cwd, setId);
           const summaryContent = review.generateReviewSummary(setId, issues);
-          const summaryPath = path.join(cwd, '.planning', 'waves', setId, 'REVIEW-SUMMARY.md');
+          const summaryPath = path.join(cwd, '.planning', 'sets', setId, 'REVIEW-SUMMARY.md');
           fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
           fs.writeFileSync(summaryPath, summaryContent, 'utf-8');
           output(JSON.stringify({ written: true, path: summaryPath, issueCount: issues.length }));
