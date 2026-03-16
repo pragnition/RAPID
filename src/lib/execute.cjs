@@ -421,6 +421,89 @@ function parseHandoff(handoffContent) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Resume deduplication
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Resume a paused set by validating its pause state, parsing HANDOFF.md,
+ * and optionally transitioning the registry back to Executing.
+ *
+ * Consolidates duplicated resume logic from handleResume() and
+ * "execute resume" CLI into a single function. Both CLI entry points
+ * become thin wrappers delegating to this function.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier to resume
+ * @param {Object} [options={}] - Options
+ * @param {boolean} [options.infoOnly=false] - If true, skip registry update and return resumed:false
+ * @returns {Promise<{ resumed: boolean, setName: string, handoff: Object, stateContext: Object|null, definitionPath: string, contractPath: string, pauseCycles: number }>}
+ * @throws {Error} If setId is missing, not registered, not Paused, or HANDOFF.md is missing/unparseable
+ */
+async function resumeSet(cwd, setId, options = {}) {
+  // 1. Validate setId exists
+  if (!setId) {
+    throw new Error('resumeSet requires a setId');
+  }
+
+  // 2. Load registry and validate entry
+  const registry = worktree.loadRegistry(cwd);
+  const entry = registry.worktrees[setId];
+  if (!entry) throw new Error(`No worktree registered for set "${setId}"`);
+  if (entry.phase !== 'Paused') throw new Error(`Set "${setId}" is in phase "${entry.phase}", not Paused`);
+
+  // 3. Validate HANDOFF.md exists
+  const handoffPath = path.join(cwd, '.planning', 'sets', setId, 'HANDOFF.md');
+  if (!fs.existsSync(handoffPath)) throw new Error(`No HANDOFF.md found for set "${setId}"`);
+
+  // 4. Parse HANDOFF.md
+  const handoffRaw = fs.readFileSync(handoffPath, 'utf-8');
+  const handoff = parseHandoff(handoffRaw);
+  if (!handoff) throw new Error(`Failed to parse HANDOFF.md for set "${setId}"`);
+
+  // 5. Read STATE.json for set context
+  let stateContext = null;
+  try {
+    const sm = require('./state-machine.cjs');
+    const stateResult = await sm.readState(cwd);
+    if (stateResult && stateResult.valid) {
+      for (const milestone of stateResult.state.milestones) {
+        const setData = (milestone.sets || []).find(s => s.id === setId);
+        if (setData) {
+          stateContext = { milestoneId: milestone.id, setId: setData.id, status: setData.status, waves: setData.waves || [] };
+          break;
+        }
+      }
+    }
+  } catch { /* Graceful -- STATE.json may not exist */ }
+
+  // 6. Build paths
+  const definitionPath = path.join('.planning', 'sets', setId, 'DEFINITION.md');
+  const contractPath = path.join('.planning', 'sets', setId, 'CONTRACT.json');
+
+  // 7. Update registry (unless infoOnly)
+  if (!options.infoOnly) {
+    await worktree.registryUpdate(cwd, (reg) => {
+      if (reg.worktrees[setId]) {
+        reg.worktrees[setId].phase = 'Executing';
+        reg.worktrees[setId].updatedAt = new Date().toISOString();
+      }
+      return reg;
+    });
+  }
+
+  // 8. Return unified result
+  return {
+    resumed: !options.infoOnly,
+    setName: setId,
+    handoff,
+    stateContext,
+    definitionPath,
+    contractPath,
+    pauseCycles: entry.pauseCycles || 0,
+  };
+}
+
+// ────────────────────────────────────────────────────────────────
 // Wave reconciliation engine
 // ────────────────────────────────────────────────────────────────
 
@@ -962,6 +1045,7 @@ module.exports = {
   getCommitMessages,
   generateHandoff,
   parseHandoff,
+  resumeSet,
   reconcileWave,
   generateWaveSummary,
   reconcileJob,
