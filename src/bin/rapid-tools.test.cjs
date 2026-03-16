@@ -21,7 +21,7 @@ describe('handleBuildAgents integration', () => {
       timeout: 15000,
     });
 
-    assert.ok(stdout.includes('Built 26 agents'), 'Should report 26 agents built');
+    assert.ok(stdout.includes('Built 22 agents'), 'Should report 22 agents built (4 core skipped)');
 
     // Verify agents directory has 26 .md files
     const mdFiles = fs.readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md'));
@@ -462,7 +462,7 @@ describe('handleWorktree CLI integration', () => {
     });
     // Should contain table headers
     assert.ok(stdout.includes('SET'), 'should contain SET header');
-    assert.ok(stdout.includes('BRANCH'), 'should contain BRANCH header');
+    assert.ok(stdout.includes('WAVE'), 'should contain WAVE header');
     assert.ok(stdout.includes('status-set'), 'should contain the set name');
   });
 

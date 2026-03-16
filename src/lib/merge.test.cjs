@@ -2303,10 +2303,10 @@ describe('build-agents set-merger registration', () => {
     assert.ok(fs.existsSync(agentPath), 'rapid-set-merger.md should exist after build-agents');
 
     const content = fs.readFileSync(agentPath, 'utf-8');
-    // Core modules: identity, returns, git
+    // Core modules: identity, conventions, returns
     assert.ok(content.includes('<identity>'), 'should contain identity core module');
     assert.ok(content.includes('<returns>'), 'should contain returns core module');
-    assert.ok(content.includes('<git>'), 'should contain git core module');
+    assert.ok(content.includes('<conventions>'), 'should contain conventions core module');
     // Should NOT contain state-access or context-loading
     assert.ok(!content.includes('<state-access>'), 'should NOT contain state-access core module');
     assert.ok(!content.includes('<context-loading>'), 'should NOT contain context-loading core module');
