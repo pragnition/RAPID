@@ -316,6 +316,40 @@ function collectWaveArtifacts(setDir) {
 }
 
 // ---------------------------------------------------------------------------
+// registerDefaultHooks(cwd)
+// Register the default compaction lifecycle hooks.
+// Called once during RAPID initialization.
+//
+// Hooks:
+// - 'wave-complete': Validates that plan digests exist for completed waves.
+//   Logs a warning if digest is missing (does not block execution).
+// - 'pause': No-op placeholder for future pause-time compaction.
+// - 'review-stage-complete': No-op placeholder for future review compaction.
+// ---------------------------------------------------------------------------
+function registerDefaultHooks(cwd) {
+  // wave-complete: check for missing plan digests (advisory only)
+  registerCompactionTrigger('wave-complete', async function onWaveComplete(context) {
+    // context: { setId, waveNum, setDir }
+    const planFile = path.join(context.setDir, `wave-${context.waveNum}-PLAN.md`);
+    const digestFile = resolveDigestPath(planFile);
+    if (fs.existsSync(planFile) && !fs.existsSync(digestFile)) {
+      // Log warning -- the execute-set skill should have created this
+      console.error(`[COMPACTION WARN] Missing plan digest: ${digestFile}`);
+    }
+  });
+
+  // pause: placeholder for future pause-time compaction
+  registerCompactionTrigger('pause', async function onPause(/* context */) {
+    // No-op placeholder
+  });
+
+  // review-stage-complete: placeholder for future review compaction
+  registerCompactionTrigger('review-stage-complete', async function onReviewStageComplete(/* context */) {
+    // No-op placeholder
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 module.exports = {
@@ -324,6 +358,7 @@ module.exports = {
   fireCompactionTrigger,
   clearHooks,
   getRegisteredHooks,
+  registerDefaultHooks,
   resolveDigestPath,
   readDigestOrFull,
   isVerbatimArtifact,

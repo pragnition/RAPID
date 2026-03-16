@@ -12,6 +12,7 @@ const {
   fireCompactionTrigger,
   clearHooks,
   getRegisteredHooks,
+  registerDefaultHooks,
   resolveDigestPath,
   readDigestOrFull,
   isVerbatimArtifact,
@@ -1005,5 +1006,98 @@ describe('integration with execute', () => {
     assert.ok(stats.digestsUsed > 0, 'Should have used at least one digest');
     assert.ok(stats.totalTokens > 0, 'Should have positive total tokens');
     assert.equal(stats.budgetExceeded, false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// registerDefaultHooks
+// ---------------------------------------------------------------------------
+describe('registerDefaultHooks', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    clearHooks();
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    clearHooks();
+    rmDir(tmpDir);
+  });
+
+  it('registers hooks for all three lifecycle events', () => {
+    registerDefaultHooks(tmpDir);
+    const hooks = getRegisteredHooks();
+    assert.equal(hooks['wave-complete'], 1);
+    assert.equal(hooks['pause'], 1);
+    assert.equal(hooks['review-stage-complete'], 1);
+  });
+
+  it('wave-complete hook logs warning when plan digest is missing', async () => {
+    const setDir = path.join(tmpDir, 'test-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), 'Plan content.');
+    // No digest file created
+
+    registerDefaultHooks(tmpDir);
+
+    // Capture stderr output
+    const originalStderr = console.error;
+    let capturedWarning = '';
+    console.error = (msg) => { capturedWarning = msg; };
+
+    try {
+      await fireCompactionTrigger('wave-complete', {
+        setId: 'test-set',
+        waveNum: 1,
+        setDir,
+      });
+
+      assert.ok(capturedWarning.includes('[COMPACTION WARN]'),
+        `Expected warning message, got: "${capturedWarning}"`);
+      assert.ok(capturedWarning.includes('wave-1-PLAN-DIGEST.md'),
+        'Warning should mention the missing digest file');
+    } finally {
+      console.error = originalStderr;
+    }
+  });
+
+  it('wave-complete hook does not warn when digest exists', async () => {
+    const setDir = path.join(tmpDir, 'test-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), 'Plan content.');
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN-DIGEST.md'), 'Digest.');
+
+    registerDefaultHooks(tmpDir);
+
+    const originalStderr = console.error;
+    let capturedWarning = '';
+    console.error = (msg) => { capturedWarning = msg; };
+
+    try {
+      await fireCompactionTrigger('wave-complete', {
+        setId: 'test-set',
+        waveNum: 1,
+        setDir,
+      });
+
+      assert.equal(capturedWarning, '', 'Should not produce a warning when digest exists');
+    } finally {
+      console.error = originalStderr;
+    }
+  });
+
+  it('pause hook fires without error (no-op)', async () => {
+    registerDefaultHooks(tmpDir);
+    const result = await fireCompactionTrigger('pause', {});
+    assert.equal(result.fired, 1);
+    assert.equal(result.errors.length, 0);
+  });
+
+  it('review-stage-complete hook fires without error (no-op)', async () => {
+    registerDefaultHooks(tmpDir);
+    const result = await fireCompactionTrigger('review-stage-complete', {});
+    assert.equal(result.fired, 1);
+    assert.equal(result.errors.length, 0);
   });
 });
