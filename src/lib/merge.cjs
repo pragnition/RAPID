@@ -1571,6 +1571,19 @@ function getMergeOrder(cwd) {
  * @returns {{ merged: true, branch: string, commitHash: string } | { merged: false, reason: string, detail: string }}
  */
 function mergeSet(projectRoot, setName, baseBranch) {
+  // Solo mode: no merge needed -- work is already on main
+  const registry = worktree.loadRegistry(projectRoot);
+  const entry = registry.worktrees[setName];
+  if (entry && entry.solo === true) {
+    const headResult = worktree.gitExec(['rev-parse', 'HEAD'], projectRoot);
+    return {
+      merged: true,
+      branch: entry.branch || baseBranch,
+      commitHash: headResult.ok ? headResult.stdout : '',
+      solo: true,
+    };
+  }
+
   const checkoutResult = worktree.gitExec(['checkout', baseBranch], projectRoot);
   if (!checkoutResult.ok) {
     return {
