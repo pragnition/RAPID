@@ -301,6 +301,40 @@ async function reconcileRegistry(cwd) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Solo Mode Helpers
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Check if a set is running in solo mode (no worktree, works on main).
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {boolean} True if the set has solo: true in registry
+ */
+function isSoloMode(cwd, setId) {
+  const registry = loadRegistry(cwd);
+  const entry = registry.worktrees[setId];
+  return !!(entry && entry.solo === true);
+}
+
+/**
+ * Get the diff base reference for a set. Solo sets use their startCommit;
+ * normal sets use the base branch name.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {string} A commit hash (solo) or branch name (normal)
+ */
+function getSetDiffBase(cwd, setId) {
+  const registry = loadRegistry(cwd);
+  const entry = registry.worktrees[setId];
+  if (entry && entry.solo === true && entry.startCommit) {
+    return entry.startCommit;
+  }
+  return detectMainBranch(cwd);
+}
+
+// ────────────────────────────────────────────────────────────────
 // Set Init Orchestration
 // ────────────────────────────────────────────────────────────────
 
@@ -353,6 +387,53 @@ async function setInit(cwd, setName) {
     setName,
     claudeMdGenerated,
     claudeMdError,
+  };
+}
+
+/**
+ * Initialize a set in solo mode: register in REGISTRY.json without creating
+ * a git worktree or branch. Work happens directly on the current branch.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setName - Name of the set to initialize
+ * @returns {Promise<{ created: boolean, branch: string, worktreePath: string, setName: string, solo: boolean, startCommit: string, claudeMdGenerated: boolean, claudeMdError: string|null }>}
+ */
+async function setInitSolo(cwd, setName) {
+  // Capture the current commit hash as the diff base
+  const headResult = gitExec(['rev-parse', 'HEAD'], cwd);
+  if (!headResult.ok) {
+    throw new Error(`Failed to get HEAD commit: ${headResult.stderr}`);
+  }
+  const startCommit = headResult.stdout;
+
+  // Detect the current branch
+  const branch = detectMainBranch(cwd);
+
+  // Register in REGISTRY.json -- virtual entry, no actual worktree
+  await registryUpdate(cwd, (reg) => {
+    reg.worktrees[setName] = {
+      setName,
+      branch,
+      path: '.',
+      phase: 'Created',
+      status: 'active',
+      solo: true,
+      startCommit,
+      wave: null,
+      createdAt: new Date().toISOString(),
+    };
+    return reg;
+  });
+
+  return {
+    created: true,
+    branch,
+    worktreePath: cwd,
+    setName,
+    solo: true,
+    startCommit,
+    claudeMdGenerated: false,
+    claudeMdError: null,
   };
 }
 
@@ -859,6 +940,9 @@ module.exports = {
   reconcileRegistry,
   ensureWorktreeDir,
   setInit,
+  setInitSolo,
+  isSoloMode,
+  getSetDiffBase,
   formatStatusTable,
   formatStatusOutput,
   formatWaveSummary,
