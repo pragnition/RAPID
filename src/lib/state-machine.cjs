@@ -350,7 +350,7 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
 
   // Check: if status says executing or later, wave plans dir should exist
   if (['executed', 'complete', 'merged'].includes(set.status)) {
-    const wavesDir = path.join(cwd, '.planning', 'waves', setId);
+    const wavesDir = path.join(cwd, '.planning', 'sets', setId);
     if (!fs.existsSync(wavesDir)) {
       warnings.push({
         type: 'warning',
