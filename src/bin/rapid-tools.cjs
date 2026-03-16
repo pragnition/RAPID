@@ -5,7 +5,7 @@ const { output, error, findProjectRoot } = require('../lib/core.cjs');
 const { handleDisplay } = require('../commands/display.cjs');
 const { handleLock } = require('../commands/lock.cjs');
 const { handlePrereqs } = require('../commands/prereqs.cjs');
-const { handleAssumptions, handleParseReturn, handleResume, handleVerifyArtifacts } = require('../commands/misc.cjs');
+const { handleAssumptions, handleParseReturn, handleResume, handleVerifyArtifacts, handleContext } = require('../commands/misc.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -805,51 +805,6 @@ function handleInit(args) {
   }
 
   error(`Unknown init subcommand: ${subcommand}. Use 'detect', 'scaffold', 'research-dir', or 'write-config'.`);
-  process.exit(1);
-}
-
-function handleContext(args) {
-  const fs = require('fs');
-  const path = require('path');
-
-  const subcommand = args[0];
-  if (!subcommand) {
-    error('Usage: rapid-tools context <detect|generate> [options]');
-    process.exit(1);
-  }
-
-  if (subcommand === 'detect') {
-    // Can run without .planning/ -- just scans for source code
-    const { detectCodebase, buildScanManifest } = require('../lib/context.cjs');
-    const codebase = detectCodebase(process.cwd());
-    if (!codebase.hasSourceCode) {
-      process.stdout.write(JSON.stringify({ hasSourceCode: false, message: 'No source code detected. Run /rapid:context later when code exists.' }) + '\n');
-      return;
-    }
-    const manifest = buildScanManifest(process.cwd());
-    process.stdout.write(JSON.stringify({ hasSourceCode: true, manifest }) + '\n');
-    return;
-  }
-
-  if (subcommand === 'generate') {
-    // Needs project root -- writes to .planning/context/
-    let cwd;
-    try {
-      cwd = findProjectRoot();
-    } catch (err) {
-      error(`Cannot find project root: ${err.message}`);
-      process.exit(1);
-    }
-    // generate just ensures .planning/context/ dir exists and outputs the path
-    const contextDir = path.join(cwd, '.planning', 'context');
-    if (!fs.existsSync(contextDir)) {
-      fs.mkdirSync(contextDir, { recursive: true });
-    }
-    process.stdout.write(JSON.stringify({ contextDir, ready: true }) + '\n');
-    return;
-  }
-
-  error(`Unknown context subcommand: ${subcommand}. Use 'detect' or 'generate'.`);
   process.exit(1);
 }
 
