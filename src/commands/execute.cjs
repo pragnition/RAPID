@@ -3,6 +3,7 @@
 const { output } = require('../lib/core.cjs');
 const { CliError } = require('../lib/errors.cjs');
 const { parseArgs } = require('../lib/args.cjs');
+const { readStdinSync } = require('../lib/stdin.cjs');
 
 async function handleExecute(cwd, subcommand, args) {
   const fs = require('fs');
@@ -202,9 +203,10 @@ async function handleExecute(cwd, subcommand, args) {
       // Read CHECKPOINT data from stdin (JSON)
       let checkpointData;
       try {
-        const input = fs.readFileSync(0, 'utf-8');
+        const input = readStdinSync();
         checkpointData = JSON.parse(input);
       } catch (err) {
+        if (err instanceof CliError) throw err;
         throw new CliError(`Failed to read CHECKPOINT JSON from stdin: ${err.message}`);
       }
       // Load current pauseCycles from registry entry (default 0), increment

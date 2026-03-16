@@ -3,6 +3,7 @@
 const { output } = require('../lib/core.cjs');
 const { CliError } = require('../lib/errors.cjs');
 const { parseArgs } = require('../lib/args.cjs');
+const { readStdinSync } = require('../lib/stdin.cjs');
 
 async function handleReview(cwd, subcommand, args) {
   const fs = require('fs');
@@ -64,10 +65,7 @@ async function handleReview(cwd, subcommand, args) {
       // Detect mode: if args[1] present and not a flag, it is the wave-id (lean compat)
       const waveId = (args[1] && !args[1].startsWith('--')) ? args[1] : null;
       try {
-        const stdinData = fs.readFileSync(0, 'utf-8').trim();
-        if (!stdinData) {
-          throw new CliError('No issue data on stdin. Pipe a JSON issue object.');
-        }
+        const stdinData = readStdinSync();
         const issue = JSON.parse(stdinData);
         // If wave-id provided (lean compat), add originatingWave to issue
         if (waveId) {

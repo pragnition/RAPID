@@ -1,6 +1,7 @@
 'use strict';
 
 const { CliError } = require('../lib/errors.cjs');
+const { readStdinAsync } = require('../lib/stdin.cjs');
 
 async function handleState(cwd, subcommand, args) {
   const sm = require('../lib/state-machine.cjs');
@@ -125,19 +126,19 @@ async function handleState(cwd, subcommand, args) {
         // Read stdin for carryForwardSets JSON (optional)
         let carryForwardSets = [];
         if (!process.stdin.isTTY) {
-          const chunks = [];
-          for await (const chunk of process.stdin) {
-            chunks.push(chunk);
-          }
-          const stdinData = Buffer.concat(chunks).toString('utf-8').trim();
-          if (stdinData) {
-            try {
-              carryForwardSets = JSON.parse(stdinData);
-              if (!Array.isArray(carryForwardSets)) {
-                throw new CliError('stdin must be a JSON array of sets');
-              }
-            } catch (e) {
-              if (e instanceof CliError) throw e;
+          try {
+            const stdinData = await readStdinAsync();
+            carryForwardSets = JSON.parse(stdinData);
+            if (!Array.isArray(carryForwardSets)) {
+              throw new CliError('stdin must be a JSON array of sets');
+            }
+          } catch (e) {
+            // Empty stdin is OK for add-milestone (stdin is optional)
+            if (e instanceof CliError && e.message === 'No data on stdin') {
+              // No-op: proceed with empty carryForwardSets
+            } else if (e instanceof CliError) {
+              throw e;
+            } else {
               throw new CliError('Invalid JSON on stdin: ' + e.message);
             }
           }

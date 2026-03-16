@@ -1,16 +1,16 @@
 'use strict';
 
 const { CliError } = require('../lib/errors.cjs');
+const { readStdinSync } = require('../lib/stdin.cjs');
 
 function handlePlan(cwd, subcommand, args) {
-  const fs = require('fs');
   const plan = require('../lib/plan.cjs');
 
   switch (subcommand) {
     case 'create-set': {
       // Reads set definition from stdin (JSON)
       // Usage: echo '{"name":"auth",...}' | rapid-tools plan create-set
-      const input = fs.readFileSync(0, 'utf-8');
+      const input = readStdinSync();
       const setDef = JSON.parse(input);
       const result = plan.createSet(cwd, setDef);
       process.stdout.write(JSON.stringify(result) + '\n');
@@ -20,7 +20,7 @@ function handlePlan(cwd, subcommand, args) {
     case 'decompose': {
       // Reads array of set definitions from stdin (JSON)
       // Usage: echo '[{...}, {...}]' | rapid-tools plan decompose
-      const input = fs.readFileSync(0, 'utf-8');
+      const input = readStdinSync();
       const setDefs = JSON.parse(input);
       const result = plan.decomposeIntoSets(cwd, setDefs);
       process.stdout.write(JSON.stringify(result) + '\n');
@@ -29,7 +29,7 @@ function handlePlan(cwd, subcommand, args) {
 
     case 'write-dag': {
       // Reads DAG object from stdin
-      const input = fs.readFileSync(0, 'utf-8');
+      const input = readStdinSync();
       const dagObj = JSON.parse(input);
       plan.writeDAG(cwd, dagObj);
       process.stdout.write(JSON.stringify({ written: true, path: '.planning/sets/DAG.json' }) + '\n');
