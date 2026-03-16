@@ -1314,3 +1314,71 @@ describe('writeRegistry atomic writes', () => {
     assert.ok(raw.endsWith('\n'), 'file should end with a trailing newline');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// DEFINITION.md path resolution from worktree context
+// ────────────────────────────────────────────────────────────────
+describe('DEFINITION.md path resolution from worktree context', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempRepo();
+    // Create .planning/sets/test-set/ with DEFINITION.md and CONTRACT.json
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'test-set'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'test-set', 'DEFINITION.md'),
+      '# Set: test-set\n\n## Scope\nTest set for worktree resolution\n\n## File Ownership\nFiles:\n- src/test/**\n',
+      'utf-8'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'test-set', 'CONTRACT.json'),
+      JSON.stringify({
+        exports: { functions: [{ name: 'testFn', file: 'src/test.cjs', params: [], returns: 'void' }], types: [] },
+      }, null, 2),
+      'utf-8'
+    );
+    // Write OWNERSHIP.json for generateScopedClaudeMd
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'OWNERSHIP.json'),
+      JSON.stringify({
+        version: 1,
+        generated: '2026-03-16',
+        ownership: { 'src/test.cjs': 'test-set' },
+      }, null, 2),
+      'utf-8'
+    );
+    // Commit all .planning files so the worktree can be created
+    execSync('git add -A && git commit -m "add planning files"', { cwd: tmpDir, stdio: 'pipe' });
+    // Create a git worktree
+    execSync(
+      'git worktree add -b rapid/test-set .rapid-worktrees/test-set HEAD',
+      { cwd: tmpDir, stdio: 'pipe' }
+    );
+  });
+
+  afterEach(() => {
+    cleanupRepo(tmpDir);
+  });
+
+  it('loadSet works when called with worktree path as cwd', () => {
+    const plan = require('./plan.cjs');
+    const worktreePath = path.join(tmpDir, '.rapid-worktrees', 'test-set');
+    const loaded = plan.loadSet(worktreePath, 'test-set');
+    assert.ok(loaded.definition.includes('# Set: test-set'), 'should find DEFINITION.md from worktree context');
+    assert.ok(loaded.contract.exports, 'should load CONTRACT.json from worktree context');
+  });
+
+  it('generateScopedClaudeMd finds DEFINITION.md from worktree context', () => {
+    const worktreePath = path.join(tmpDir, '.rapid-worktrees', 'test-set');
+    const md = worktree.generateScopedClaudeMd(worktreePath, 'test-set');
+    assert.ok(md.includes('# Set: test-set'), 'should produce scoped CLAUDE.md with set header from worktree context');
+    assert.ok(md.includes('Interface Contract'), 'should include contract section from worktree context');
+  });
+
+  it('listSets works when called with worktree path as cwd', () => {
+    const plan = require('./plan.cjs');
+    const worktreePath = path.join(tmpDir, '.rapid-worktrees', 'test-set');
+    const sets = plan.listSets(worktreePath);
+    assert.ok(sets.includes('test-set'), 'should find test-set from worktree context');
+  });
+});

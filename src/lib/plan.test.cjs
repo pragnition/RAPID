@@ -493,3 +493,36 @@ describe('surfaceAssumptions', () => {
     assert.throws(() => surfaceAssumptions(tmpDir, 'nonexistent'), /does not exist|ENOENT/);
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// resolveProjectRoot and worktree-aware loadSet
+// ────────────────────────────────────────────────────────────────
+describe('resolveProjectRoot and worktree-aware loadSet', () => {
+  it('resolveProjectRoot falls back to cwd when no git repo', () => {
+    // tmpDir is a plain temp dir with no git init -- resolveProjectRoot
+    // should fall back to cwd, so loadSet still works with .planning/sets/<name>/ in tmpDir
+    const def = makeSetDef({ name: 'fallback-set' });
+    createSet(tmpDir, def);
+    const loaded = loadSet(tmpDir, 'fallback-set');
+    assert.ok(loaded.definition.includes('# Set: fallback-set'), 'should load definition via cwd fallback');
+    assert.ok(loaded.contract.exports, 'should load contract via cwd fallback');
+  });
+
+  it('loadSet error message includes cwd and resolved root', () => {
+    try {
+      loadSet(tmpDir, 'nonexistent-set');
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.message.includes('cwd:'), `error message should contain "cwd:" but got: ${err.message}`);
+      assert.ok(err.message.includes('resolved root:'), `error message should contain "resolved root:" but got: ${err.message}`);
+      assert.ok(err.message.includes('nonexistent-set'), `error message should contain set name but got: ${err.message}`);
+    }
+  });
+
+  it('listSets works from non-git temp dir context (fallback)', () => {
+    createSet(tmpDir, makeSetDef({ name: 'alpha' }));
+    createSet(tmpDir, makeSetDef({ name: 'beta' }));
+    const sets = listSets(tmpDir);
+    assert.deepStrictEqual(sets, ['alpha', 'beta']);
+  });
+});
