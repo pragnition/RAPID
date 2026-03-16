@@ -5,7 +5,7 @@ const { output, error, findProjectRoot } = require('../lib/core.cjs');
 const { acquireLock, isLocked } = require('../lib/lock.cjs');
 const { handleDisplay } = require('../commands/display.cjs');
 const { handlePrereqs } = require('../commands/prereqs.cjs');
-const { handleAssumptions } = require('../commands/misc.cjs');
+const { handleAssumptions, handleParseReturn } = require('../commands/misc.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -733,36 +733,6 @@ color: ${color}
   }
 
   output(`Built ${built.length} agents (${skipped.length} core skipped) in ${agentsDir}`);
-}
-
-function handleParseReturn(args) {
-  const fs = require('fs');
-  const { parseReturn, validateReturn } = require('../lib/returns.cjs');
-
-  const doValidate = args.includes('--validate');
-  const filePath = args.filter(a => !a.startsWith('--'))[0];
-
-  if (!filePath) {
-    error('Usage: rapid-tools parse-return [--validate] <file>');
-    process.exit(1);
-  }
-
-  let content;
-  try {
-    content = fs.readFileSync(filePath, 'utf-8');
-  } catch (err) {
-    error(`Cannot read file: ${err.message}`);
-    process.exit(1);
-  }
-
-  const result = parseReturn(content);
-
-  if (doValidate && result.parsed) {
-    const validation = validateReturn(result.data);
-    process.stdout.write(JSON.stringify({ ...result, validation }) + '\n');
-  } else {
-    process.stdout.write(JSON.stringify(result) + '\n');
-  }
 }
 
 function handleVerifyArtifacts(args) {
