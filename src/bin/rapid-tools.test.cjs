@@ -1856,7 +1856,12 @@ describe('data-integrity behavioral enforcement', () => {
 
   it('execute resume case delegates to execute.resumeSet', () => {
     // Find "case 'resume': {" (the block form inside handleExecute, not the top-level dispatch)
-    const resumeCaseMatch = rapidToolsSrc.match(/case 'resume': \{[\s\S]*?break;\s*\}/);
+    let src = rapidToolsSrc;
+    try {
+      const executeSrc = fs.readFileSync(path.join(__dirname, '..', 'commands', 'execute.cjs'), 'utf-8');
+      if (executeSrc.includes("case 'resume':")) src = executeSrc;
+    } catch { /* not yet extracted */ }
+    const resumeCaseMatch = src.match(/case 'resume': \{[\s\S]*?break;\s*\}/);
     assert.ok(resumeCaseMatch, 'execute resume case found');
     assert.ok(
       resumeCaseMatch[0].includes('resumeSet'),
@@ -1881,8 +1886,13 @@ describe('data-integrity behavioral enforcement', () => {
   });
 
   it('update-phase includes STATE.json validation guard', () => {
+    let src = rapidToolsSrc;
+    try {
+      const executeSrc = fs.readFileSync(path.join(__dirname, '..', 'commands', 'execute.cjs'), 'utf-8');
+      if (executeSrc.includes('Phase/status inconsistency')) src = executeSrc;
+    } catch { /* not yet extracted */ }
     assert.ok(
-      rapidToolsSrc.includes('Phase/status inconsistency'),
+      src.includes('Phase/status inconsistency'),
       'update-phase must include STATE.json validation warning'
     );
   });
