@@ -1840,8 +1840,13 @@ describe('data-integrity behavioral enforcement', () => {
   );
 
   it('handleResume delegates to execute.resumeSet', () => {
-    // Find the handleResume function body
-    const handleResumeMatch = rapidToolsSrc.match(/async function handleResume[\s\S]*?^}/m);
+    // handleResume may be in rapid-tools.cjs or extracted to a command module
+    let src = rapidToolsSrc;
+    try {
+      const miscSrc = fs.readFileSync(path.join(__dirname, '..', 'commands', 'misc.cjs'), 'utf-8');
+      if (miscSrc.includes('handleResume')) src = miscSrc;
+    } catch { /* not yet extracted */ }
+    const handleResumeMatch = src.match(/async function handleResume[\s\S]*?^}/m);
     assert.ok(handleResumeMatch, 'handleResume function found');
     assert.ok(
       handleResumeMatch[0].includes('resumeSet'),

@@ -56,4 +56,24 @@ function handleParseReturn(args) {
   }
 }
 
-module.exports = { handleAssumptions, handleParseReturn };
+async function handleResume(cwd, args) {
+  const execute = require('../lib/execute.cjs');
+
+  const infoOnly = args.includes('--info-only');
+  const positionalArgs = args.filter(a => !a.startsWith('--'));
+  const setName = positionalArgs[0];
+  if (!setName) {
+    error('Usage: rapid-tools resume <set-name> [--info-only]');
+    process.exit(1);
+  }
+
+  try {
+    const result = await execute.resumeSet(cwd, setName, { infoOnly });
+    process.stdout.write(JSON.stringify(result) + '\n');
+  } catch (err) {
+    error(err.message);
+    process.exit(1);
+  }
+}
+
+module.exports = { handleAssumptions, handleParseReturn, handleResume };

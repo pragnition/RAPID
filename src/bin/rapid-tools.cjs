@@ -5,7 +5,7 @@ const { output, error, findProjectRoot } = require('../lib/core.cjs');
 const { acquireLock, isLocked } = require('../lib/lock.cjs');
 const { handleDisplay } = require('../commands/display.cjs');
 const { handlePrereqs } = require('../commands/prereqs.cjs');
-const { handleAssumptions, handleParseReturn } = require('../commands/misc.cjs');
+const { handleAssumptions, handleParseReturn, handleResume } = require('../commands/misc.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -1531,26 +1531,6 @@ async function handleReview(cwd, subcommand, args) {
       error(`Unknown review subcommand: ${subcommand}. Use: scope, log-issue, list-issues, update-issue, lean, summary`);
       process.stdout.write(USAGE);
       process.exit(1);
-  }
-}
-
-async function handleResume(cwd, args) {
-  const execute = require('../lib/execute.cjs');
-
-  const infoOnly = args.includes('--info-only');
-  const positionalArgs = args.filter(a => !a.startsWith('--'));
-  const setName = positionalArgs[0];
-  if (!setName) {
-    error('Usage: rapid-tools resume <set-name> [--info-only]');
-    process.exit(1);
-  }
-
-  try {
-    const result = await execute.resumeSet(cwd, setName, { infoOnly });
-    process.stdout.write(JSON.stringify(result) + '\n');
-  } catch (err) {
-    error(err.message);
-    process.exit(1);
   }
 }
 
