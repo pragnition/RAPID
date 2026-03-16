@@ -1,6 +1,7 @@
 'use strict';
 
 const { output, error } = require('../lib/core.cjs');
+const { parseArgs } = require('../lib/args.cjs');
 
 async function handleMerge(cwd, subcommand, args) {
   const path = require('path');
@@ -93,33 +94,35 @@ async function handleMerge(cwd, subcommand, args) {
     }
 
     case 'update-status': {
-      const setName = args[0];
-      const status = args[1];
+      const { flags: usFlags, positional: usPos } = parseArgs(args, {
+        'agent-phase': 'string',
+        'agent-phase2': 'multi:2',
+      });
+      const setName = usPos[0];
+      const status = usPos[1];
       if (!setName || !status) {
         error('Usage: rapid-tools merge update-status <set> <status> [--agent-phase <idle|spawned|done|failed>] [--agent-phase2 <conflictId> <idle|spawned|done|failed>]');
         process.exit(1);
       }
-      // Parse optional --agent-phase flag
-      const agentPhaseIdx = args.indexOf('--agent-phase');
+      // Validate --agent-phase
       let agentPhase1 = undefined;
-      if (agentPhaseIdx !== -1) {
-        const agentPhaseValue = args[agentPhaseIdx + 1];
+      if (usFlags['agent-phase'] !== undefined) {
+        const agentPhaseValue = usFlags['agent-phase'];
         const validPhases = ['idle', 'spawned', 'done', 'failed'];
-        if (!agentPhaseValue || !validPhases.includes(agentPhaseValue)) {
-          error(`Invalid agent-phase value: "${agentPhaseValue || ''}". Must be one of: ${validPhases.join(', ')}`);
+        if (!validPhases.includes(agentPhaseValue)) {
+          error(`Invalid agent-phase value: "${agentPhaseValue}". Must be one of: ${validPhases.join(', ')}`);
           process.exit(1);
         }
         agentPhase1 = agentPhaseValue;
       }
-      // Parse optional --agent-phase2 flag (per-conflict tracking)
-      const agentPhase2Idx = args.indexOf('--agent-phase2');
+      // Validate --agent-phase2 (multi:2 yields [conflictId, phase])
       let agentPhase2Update = undefined;
-      if (agentPhase2Idx !== -1) {
-        const conflictId = args[agentPhase2Idx + 1];
-        const phase2Value = args[agentPhase2Idx + 2];
+      const agentPhase2Raw = usFlags['agent-phase2'];
+      if (agentPhase2Raw && agentPhase2Raw.length === 2) {
+        const [conflictId, phase2Value] = agentPhase2Raw;
         const validPhases2 = ['idle', 'spawned', 'done', 'failed'];
-        if (!conflictId || !phase2Value || !validPhases2.includes(phase2Value)) {
-          error(`Invalid --agent-phase2 args: "${conflictId || ''}" "${phase2Value || ''}". Usage: --agent-phase2 <conflictId> <idle|spawned|done|failed>`);
+        if (!validPhases2.includes(phase2Value)) {
+          error(`Invalid --agent-phase2 phase: "${phase2Value}". Must be one of: ${validPhases2.join(', ')}`);
           process.exit(1);
         }
         agentPhase2Update = { conflictId, phase: phase2Value };
