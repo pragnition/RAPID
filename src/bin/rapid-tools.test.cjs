@@ -21,7 +21,7 @@ describe('handleBuildAgents integration', () => {
       timeout: 15000,
     });
 
-    assert.ok(stdout.includes('Built 26 agents'), 'Should report 26 agents built');
+    assert.ok(stdout.includes('Built 22 agents'), 'Should report 22 agents built (4 core skipped)');
 
     // Verify agents directory has 26 .md files
     const mdFiles = fs.readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md'));
@@ -462,7 +462,7 @@ describe('handleWorktree CLI integration', () => {
     });
     // Should contain table headers
     assert.ok(stdout.includes('SET'), 'should contain SET header');
-    assert.ok(stdout.includes('BRANCH'), 'should contain BRANCH header');
+    assert.ok(stdout.includes('WAVE'), 'should contain WAVE header');
     assert.ok(stdout.includes('status-set'), 'should contain the set name');
   });
 
@@ -1824,5 +1824,61 @@ describe('handleReview CLI dual-mode', () => {
     // Verify the file was written to post-merge directory
     const summaryPath = path.join(tmpDir, '.planning', 'post-merge', 'sum-test', 'REVIEW-SUMMARY.md');
     assert.ok(fs.existsSync(summaryPath), 'REVIEW-SUMMARY.md should exist in post-merge dir');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// Data-integrity behavioral enforcement tests
+// ────────────────────────────────────────────────────────────────
+
+describe('data-integrity behavioral enforcement', () => {
+  const rapidToolsSrc = fs.readFileSync(
+    path.join(__dirname, 'rapid-tools.cjs'), 'utf-8'
+  );
+  const mergeSrc = fs.readFileSync(
+    path.join(__dirname, '..', 'lib', 'merge.cjs'), 'utf-8'
+  );
+
+  it('handleResume delegates to execute.resumeSet', () => {
+    // Find the handleResume function body
+    const handleResumeMatch = rapidToolsSrc.match(/async function handleResume[\s\S]*?^}/m);
+    assert.ok(handleResumeMatch, 'handleResume function found');
+    assert.ok(
+      handleResumeMatch[0].includes('resumeSet'),
+      'handleResume must delegate to resumeSet()'
+    );
+  });
+
+  it('execute resume case delegates to execute.resumeSet', () => {
+    // Find "case 'resume': {" (the block form inside handleExecute, not the top-level dispatch)
+    const resumeCaseMatch = rapidToolsSrc.match(/case 'resume': \{[\s\S]*?break;\s*\}/);
+    assert.ok(resumeCaseMatch, 'execute resume case found');
+    assert.ok(
+      resumeCaseMatch[0].includes('resumeSet'),
+      'execute resume must delegate to resumeSet()'
+    );
+  });
+
+  it('rapid-tools.cjs has no direct writeMergeState calls', () => {
+    // Allow readMergeState but not writeMergeState or updateMergeState
+    const writeMatches = rapidToolsSrc.match(/merge\.(writeMergeState|updateMergeState)\s*\(/g) || [];
+    assert.equal(
+      writeMatches.length, 0,
+      `Found ${writeMatches.length} direct merge state write calls in rapid-tools.cjs -- all should use withMergeStateTransaction or ensureMergeState`
+    );
+  });
+
+  it('merge.cjs exports withMergeStateTransaction', () => {
+    assert.ok(
+      mergeSrc.includes('withMergeStateTransaction'),
+      'merge.cjs must export withMergeStateTransaction'
+    );
+  });
+
+  it('update-phase includes STATE.json validation guard', () => {
+    assert.ok(
+      rapidToolsSrc.includes('Phase/status inconsistency'),
+      'update-phase must include STATE.json validation warning'
+    );
   });
 });

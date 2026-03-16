@@ -2303,10 +2303,10 @@ describe('build-agents set-merger registration', () => {
     assert.ok(fs.existsSync(agentPath), 'rapid-set-merger.md should exist after build-agents');
 
     const content = fs.readFileSync(agentPath, 'utf-8');
-    // Core modules: identity, returns, git
+    // Core modules: identity, conventions, returns
     assert.ok(content.includes('<identity>'), 'should contain identity core module');
     assert.ok(content.includes('<returns>'), 'should contain returns core module');
-    assert.ok(content.includes('<git>'), 'should contain git core module');
+    assert.ok(content.includes('<conventions>'), 'should contain conventions core module');
     // Should NOT contain state-access or context-loading
     assert.ok(!content.includes('<state-access>'), 'should NOT contain state-access core module');
     assert.ok(!content.includes('<context-loading>'), 'should NOT contain context-loading core module');
@@ -2860,6 +2860,8 @@ describe('merge.cjs module exports', () => {
       'writeMergeState',
       'readMergeState',
       'updateMergeState',
+      'withMergeStateTransaction',
+      'ensureMergeState',
       // v2.0 helpers
       'getChangedFiles',
       'extractFunctionNames',
@@ -2904,5 +2906,131 @@ describe('merge.cjs module exports', () => {
         assert.equal(typeof merge[name], 'function', `should export ${name} as a function`);
       }
     }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// withMergeStateTransaction and ensureMergeState tests
+// ────────────────────────────────────────────────────────────────
+
+describe('withMergeStateTransaction', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-tx-'));
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'tx-test');
+    fs.mkdirSync(setDir, { recursive: true });
+    // Create .planning/.locks/
+    fs.mkdirSync(path.join(tmpDir, '.planning', '.locks'), { recursive: true });
+    // Write initial MERGE-STATE.json
+    const mergeModule = require('./merge.cjs');
+    mergeModule.writeMergeState(tmpDir, 'tx-test', {
+      setId: 'tx-test',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    });
+  });
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('mutates state atomically', async () => {
+    const mergeModule = require('./merge.cjs');
+    const result = await mergeModule.withMergeStateTransaction(tmpDir, 'tx-test', (state) => {
+      state.status = 'detecting';
+    });
+    assert.equal(result.status, 'detecting');
+    // Verify on disk
+    const onDisk = JSON.parse(fs.readFileSync(
+      path.join(tmpDir, '.planning', 'sets', 'tx-test', 'MERGE-STATE.json'), 'utf-8'
+    ));
+    assert.equal(onDisk.status, 'detecting');
+    assert.ok(onDisk.lastUpdatedAt, 'should have lastUpdatedAt');
+  });
+
+  it('validates state via Zod', async () => {
+    const mergeModule = require('./merge.cjs');
+    await assert.rejects(
+      () => mergeModule.withMergeStateTransaction(tmpDir, 'tx-test', (state) => {
+        state.status = 'invalid-status-value';
+      }),
+      (err) => {
+        // Zod validation error
+        assert.ok(err.message || err.issues, 'should throw validation error');
+        return true;
+      }
+    );
+  });
+
+  it('throws if MERGE-STATE.json does not exist', async () => {
+    const mergeModule = require('./merge.cjs');
+    await assert.rejects(
+      () => mergeModule.withMergeStateTransaction(tmpDir, 'no-such-set', (state) => {
+        state.status = 'detecting';
+      }),
+      /No MERGE-STATE\.json/
+    );
+  });
+
+  it('does not leave tmp files on success', async () => {
+    const mergeModule = require('./merge.cjs');
+    await mergeModule.withMergeStateTransaction(tmpDir, 'tx-test', (state) => {
+      state.status = 'detecting';
+    });
+    const tmpPath = path.join(tmpDir, '.planning', 'sets', 'tx-test', 'MERGE-STATE.json.tmp');
+    assert.ok(!fs.existsSync(tmpPath), 'tmp file should not remain after success');
+  });
+
+  it('releases lock even on error', async () => {
+    const mergeModule = require('./merge.cjs');
+    const lockModule = require('./lock.cjs');
+    try {
+      await mergeModule.withMergeStateTransaction(tmpDir, 'tx-test', () => {
+        throw new Error('intentional test error');
+      });
+    } catch { /* expected */ }
+    const locked = lockModule.isLocked(tmpDir, 'merge-state-tx-test');
+    assert.equal(locked, false, 'lock should be released after error');
+  });
+});
+
+describe('ensureMergeState', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-ensure-'));
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'tx-test');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', '.locks'), { recursive: true });
+    const mergeModule = require('./merge.cjs');
+    mergeModule.writeMergeState(tmpDir, 'tx-test', {
+      setId: 'tx-test',
+      status: 'pending',
+      lastUpdatedAt: new Date().toISOString(),
+    });
+  });
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('creates state if none exists', async () => {
+    const mergeModule = require('./merge.cjs');
+    // Create the set directory for the new set
+    const newSetDir = path.join(tmpDir, '.planning', 'sets', 'new-set');
+    fs.mkdirSync(newSetDir, { recursive: true });
+    const result = await mergeModule.ensureMergeState(tmpDir, 'new-set', {
+      status: 'detecting',
+      startedAt: new Date().toISOString(),
+    });
+    assert.ok(result, 'should return state');
+    assert.equal(result.status, 'detecting');
+    assert.equal(result.setId, 'new-set');
+  });
+
+  it('updates state if it exists', async () => {
+    const mergeModule = require('./merge.cjs');
+    const result = await mergeModule.ensureMergeState(tmpDir, 'tx-test', {
+      status: 'merging',
+    });
+    assert.equal(result.status, 'merging');
+    assert.equal(result.setId, 'tx-test');
   });
 });

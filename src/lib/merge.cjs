@@ -31,6 +31,7 @@ const worktree = require('./worktree.cjs');
 const execute = require('./execute.cjs');
 const plan = require('./plan.cjs');
 const returns = require('./returns.cjs');
+const { acquireLock } = require('./lock.cjs');
 
 // ────────────────────────────────────────────────────────────────
 // MERGE-STATE.json Schema (MERG-03)
@@ -142,6 +143,7 @@ const MergeStateSchema = z.object({
 /**
  * Write MERGE-STATE.json for a set. Validates via Zod.
  *
+ * @deprecated Use withMergeStateTransaction() or ensureMergeState() instead.
  * @param {string} cwd - Project root directory
  * @param {string} setId - Set identifier
  * @param {Object} mergeState - State object to write
@@ -177,6 +179,7 @@ function readMergeState(cwd, setId) {
 /**
  * Update MERGE-STATE.json with partial updates. Reads, merges, writes back.
  *
+ * @deprecated Use withMergeStateTransaction() or ensureMergeState() instead.
  * @param {string} cwd - Project root directory
  * @param {string} setId - Set identifier
  * @param {Object} updates - Partial state to merge
@@ -188,6 +191,68 @@ function updateMergeState(cwd, setId, updates) {
   }
   const merged = { ...current, ...updates, lastUpdatedAt: new Date().toISOString() };
   writeMergeState(cwd, setId, merged);
+}
+
+/**
+ * Execute a MERGE-STATE mutation within a transaction.
+ * Acquires per-set lock, reads state, calls mutationFn(state) to mutate in-place,
+ * validates with MergeStateSchema.parse, updates lastUpdatedAt, writes atomically
+ * via tmp+rename, and releases lock. Returns validated state.
+ *
+ * CRITICAL: Do NOT call writeMergeState/updateMergeState from mutationFn -- it would bypass the lock.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {Function} mutationFn - Function that receives state and mutates in-place
+ * @returns {Promise<object>} The validated state after mutation
+ */
+async function withMergeStateTransaction(cwd, setId, mutationFn) {
+  const release = await acquireLock(cwd, `merge-state-${setId}`);
+  try {
+    const current = readMergeState(cwd, setId);
+    if (!current) {
+      throw new Error(`No MERGE-STATE.json found for set ${setId}`);
+    }
+    mutationFn(current);
+    const validated = MergeStateSchema.parse(current);
+    validated.lastUpdatedAt = new Date().toISOString();
+    const statePath = path.join(cwd, '.planning', 'sets', setId, 'MERGE-STATE.json');
+    const tmpPath = statePath + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(validated, null, 2), 'utf-8');
+    fs.renameSync(tmpPath, statePath);
+    return validated;
+  } finally {
+    await release();
+  }
+}
+
+/**
+ * Ensure a MERGE-STATE.json exists for a set. If it exists, update with the
+ * provided fields via transaction. If not, create it with writeMergeState().
+ *
+ * This replaces the common try-updateMergeState/catch-writeMergeState pattern.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {Object} fields - Fields to set/update
+ * @returns {Promise<object>} The validated state
+ */
+async function ensureMergeState(cwd, setId, fields) {
+  const existing = readMergeState(cwd, setId);
+  if (existing) {
+    return withMergeStateTransaction(cwd, setId, (state) => {
+      Object.assign(state, fields);
+    });
+  } else {
+    // No existing state -- create with writeMergeState (already validates via Zod)
+    const newState = {
+      setId,
+      lastUpdatedAt: new Date().toISOString(),
+      ...fields,
+    };
+    writeMergeState(cwd, setId, newState);
+    return readMergeState(cwd, setId);
+  }
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -1692,9 +1757,11 @@ function bisectWave(cwd, baseBranch, mergedSets, preWaveCommit) {
   }
 
   // 6. Update MERGE-STATE.json with bisection results
+  // TODO(data-integrity): migrate to withMergeStateTransaction when bisectWave becomes async
   try {
     const currentState = readMergeState(cwd, breakingSet);
     if (currentState) {
+      // TODO(data-integrity): migrate to withMergeStateTransaction when bisectWave becomes async
       updateMergeState(cwd, breakingSet, {
         bisection: {
           triggered: true,
@@ -1705,6 +1772,7 @@ function bisectWave(cwd, baseBranch, mergedSets, preWaveCommit) {
       });
     } else {
       // Create a new MERGE-STATE for the breaking set
+      // TODO(data-integrity): migrate to ensureMergeState when bisectWave becomes async
       writeMergeState(cwd, breakingSet, {
         setId: breakingSet,
         status: 'failed',
@@ -1944,6 +2012,8 @@ module.exports = {
   writeMergeState,
   readMergeState,
   updateMergeState,
+  withMergeStateTransaction,
+  ensureMergeState,
 
   // v2.0 Bisection Recovery (MERG-05)
   bisectWave,
