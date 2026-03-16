@@ -1,6 +1,7 @@
 'use strict';
 
 const { output, error } = require('../lib/core.cjs');
+const { parseArgs } = require('../lib/args.cjs');
 
 async function handleExecute(cwd, subcommand, args) {
   const fs = require('fs');
@@ -28,17 +29,13 @@ async function handleExecute(cwd, subcommand, args) {
     }
 
     case 'verify': {
-      const setName = args[0];
+      const { flags: verifyFlags, positional: verifyPos } = parseArgs(args, { branch: 'string' });
+      const setName = verifyPos[0];
       if (!setName) {
         error('Usage: rapid-tools execute verify <set-name> --branch <branch>');
         process.exit(1);
       }
-      // Parse --branch flag
-      let branch = 'main';
-      const branchIdx = args.indexOf('--branch');
-      if (branchIdx !== -1 && args[branchIdx + 1]) {
-        branch = args[branchIdx + 1];
-      }
+      let branch = verifyFlags.branch || 'main';
       // Load registry to find worktree path
       const registry = wt.loadRegistry(cwd);
       const entry = registry.worktrees[setName];
@@ -264,14 +261,13 @@ async function handleExecute(cwd, subcommand, args) {
 
     case 'reconcile': {
       const dag = require('../lib/dag.cjs');
-      const waveNum = parseInt(args[0], 10);
+      const { flags: reconcileFlags, positional: reconcilePos } = parseArgs(args, { mode: 'string' });
+      const waveNum = parseInt(reconcilePos[0], 10);
       if (isNaN(waveNum)) {
         error('Usage: rapid-tools execute reconcile <wave-number> [--mode <mode>]');
         process.exit(1);
       }
-      // Check for --mode flag
-      const modeIdx = args.indexOf('--mode');
-      const executionMode = modeIdx >= 0 ? args[modeIdx + 1] : undefined;
+      const executionMode = reconcileFlags.mode;
       // Load DAG.json and registry
       let dagJson;
       try {
@@ -320,20 +316,15 @@ async function handleExecute(cwd, subcommand, args) {
     }
 
     case 'reconcile-jobs': {
-      const setId = args[0];
-      const waveId = args[1];
+      const { flags: rjFlags, positional: rjPos } = parseArgs(args, { branch: 'string', mode: 'string' });
+      const setId = rjPos[0];
+      const waveId = rjPos[1];
       if (!setId || !waveId) {
         error('Usage: rapid-tools execute reconcile-jobs <set-id> <wave-id> [--branch <branch>] [--mode <mode>]');
         process.exit(1);
       }
-      // Parse --branch flag (default: main)
-      let branch = 'main';
-      const branchIdx = args.indexOf('--branch');
-      if (branchIdx !== -1 && args[branchIdx + 1]) branch = args[branchIdx + 1];
-      // Parse --mode flag (default: Subagents)
-      let mode = 'Subagents';
-      const modeIdx = args.indexOf('--mode');
-      if (modeIdx !== -1 && args[modeIdx + 1]) mode = args[modeIdx + 1];
+      let branch = rjFlags.branch || 'main';
+      let mode = rjFlags.mode || 'Subagents';
       // Find worktree path for this set
       const registry = wt.loadRegistry(cwd);
       const entry = registry.worktrees[setId];
