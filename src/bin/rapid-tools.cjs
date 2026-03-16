@@ -6,6 +6,7 @@ const { handleDisplay } = require('../commands/display.cjs');
 const { handleLock } = require('../commands/lock.cjs');
 const { handlePrereqs } = require('../commands/prereqs.cjs');
 const { handleAssumptions, handleParseReturn, handleResume, handleVerifyArtifacts, handleContext } = require('../commands/misc.cjs');
+const { handleResolve } = require('../commands/resolve.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -2260,59 +2261,6 @@ async function handleMerge(cwd, subcommand, args) {
     default:
       error(`Unknown merge subcommand: ${subcommand}. Use: review, execute, status, integration-test, order, update-status, detect, resolve, bisect, rollback, merge-state, prepare-context`);
       process.stdout.write(USAGE);
-      process.exit(1);
-  }
-}
-
-async function handleResolve(cwd, subcommand, args) {
-  const resolveLib = require('../lib/resolve.cjs');
-  const input = args[0];
-
-  switch (subcommand) {
-    case 'set': {
-      if (!input) {
-        error('Usage: rapid-tools resolve set <input>');
-        process.exit(1);
-      }
-      try {
-        const sm = require('../lib/state-machine.cjs');
-        const stateResult = await sm.readState(cwd);
-        if (!stateResult || !stateResult.valid) {
-          throw new Error('Cannot read STATE.json. Run /rapid:plan first to initialize state.');
-        }
-        const result = resolveLib.resolveSet(input, cwd, stateResult.state);
-        process.stdout.write(JSON.stringify(result) + '\n');
-      } catch (err) {
-        process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
-        process.exit(1);
-      }
-      break;
-    }
-
-    case 'wave': {
-      if (!input) {
-        error('Usage: rapid-tools resolve wave <input> [--set <setInput>]');
-        process.exit(1);
-      }
-      try {
-        const sm = require('../lib/state-machine.cjs');
-        const stateResult = await sm.readState(cwd);
-        if (!stateResult || !stateResult.valid) {
-          throw new Error('Cannot read STATE.json. Run /rapid:plan first to initialize state.');
-        }
-        const setIdx = args.indexOf('--set');
-        const setInput = (setIdx !== -1 && args[setIdx + 1]) ? args[setIdx + 1] : undefined;
-        const result = resolveLib.resolveWave(input, stateResult.state, cwd, setInput);
-        process.stdout.write(JSON.stringify(result) + '\n');
-      } catch (err) {
-        process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
-        process.exit(1);
-      }
-      break;
-    }
-
-    default:
-      error('Usage: rapid-tools resolve set <input> | wave <input>');
       process.exit(1);
   }
 }
