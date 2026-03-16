@@ -485,10 +485,10 @@ describe('validateDiskArtifacts', () => {
     const state = makeStateWithSet();
     state.milestones[0].sets[0].status = 'executed';
     writeTestState(tmpDir, state);
-    // Create both CONTEXT.md and waves dir
+    // Create both CONTEXT.md and wave plan subdirectory
     fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'set-1'), { recursive: true });
     fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'set-1', 'CONTEXT.md'), 'ctx', 'utf-8');
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'waves', 'set-1'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'set-1', 'wave-1'), { recursive: true });
 
     const warnings = await validateDiskArtifacts(tmpDir, 'v1.0', 'set-1');
     assert.deepEqual(warnings, []);

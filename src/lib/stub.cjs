@@ -12,7 +12,7 @@
  *
  * Depends on:
  *   - plan.cjs: loadSet to read CONTRACT.json for imported sets
- *   - worktree.cjs: loadRegistry to find worktree paths
+ *   - worktree.cjs: readRegistry to find worktree paths
  */
 
 const fs = require('fs');
@@ -105,7 +105,7 @@ function generateStubFiles(cwd, setName) {
   }
 
   // Find the worktree path for this set
-  const registry = worktree.loadRegistry(cwd);
+  const registry = worktree.readRegistry(cwd);
   const entry = registry.worktrees[setName];
   if (!entry) {
     throw new Error(`No worktree registered for set "${setName}"`);

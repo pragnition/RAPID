@@ -111,7 +111,7 @@
         },
         {
           "id": "structural-cleanup",
-          "status": "discussed",
+          "status": "executed",
           "waves": []
         },
         {
@@ -147,6 +147,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T08:53:16.198Z",
+  "lastUpdatedAt": "2026-03-16T09:28:54.347Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

@@ -821,7 +821,7 @@ describe('reconcileJob', () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-reconcile-job-'));
 
     // Create wave directory with a JOB-PLAN.md
-    const waveDir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    const waveDir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
     fs.mkdirSync(waveDir, { recursive: true });
     fs.writeFileSync(path.join(waveDir, 'job-schema-PLAN.md'), [
       '# JOB-PLAN: job-schema',
@@ -922,7 +922,7 @@ describe('reconcileWaveJobs', () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-reconcile-wave-jobs-'));
 
     // Create wave directory with two JOB-PLAN.md files
-    const waveDir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    const waveDir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
     fs.mkdirSync(waveDir, { recursive: true });
 
     fs.writeFileSync(path.join(waveDir, 'job-a-PLAN.md'), [

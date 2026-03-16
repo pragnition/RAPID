@@ -9,7 +9,7 @@
  * prompts, and verify execution results.
  *
  * Depends on:
- *   - worktree.cjs: generateScopedClaudeMd, loadRegistry, gitExec
+ *   - worktree.cjs: generateScopedClaudeMd, readRegistry, gitExec
  *   - plan.cjs: loadSet, listSets
  *   - verify.cjs: verifyLight
  *   - contract.cjs: checkOwnership
@@ -233,7 +233,7 @@ function verifySetExecution(cwd, setName, returnData, worktreePath, baseBranch) 
   const results = { passed: [], failed: [] };
 
   // Detect solo mode: use startCommit as diff base if available
-  const registry = worktree.loadRegistry(cwd);
+  const registry = worktree.readRegistry(cwd);
   const regEntry = registry.worktrees[setName];
   const startCommit = (regEntry && regEntry.solo && regEntry.startCommit) ? regEntry.startCommit : undefined;
 
@@ -457,7 +457,7 @@ async function resumeSet(cwd, setId, options = {}) {
   }
 
   // 2. Load registry and validate entry
-  const registry = worktree.loadRegistry(cwd);
+  const registry = worktree.readRegistry(cwd);
   const entry = registry.worktrees[setId];
   if (!entry) throw new Error(`No worktree registered for set "${setId}"`);
   if (entry.phase !== 'Paused') throw new Error(`Set "${setId}" is in phase "${entry.phase}", not Paused`);
@@ -493,7 +493,7 @@ async function resumeSet(cwd, setId, options = {}) {
 
   // 7. Update registry (unless infoOnly)
   if (!options.infoOnly) {
-    await worktree.registryUpdate(cwd, (reg) => {
+    await worktree.withRegistryUpdate(cwd, (reg) => {
       if (reg.worktrees[setId]) {
         reg.worktrees[setId].phase = 'Executing';
         reg.worktrees[setId].updatedAt = new Date().toISOString();
@@ -661,7 +661,7 @@ function reconcileWave(cwd, waveNum, dagJson, registry) {
 /**
  * Generate a formatted Markdown summary for wave reconciliation results.
  *
- * Produces content for .planning/waves/WAVE-{N}-SUMMARY.md with per-set
+ * Produces content for .planning/sets/WAVE-{N}-SUMMARY.md with per-set
  * details, contract compliance, hard/soft blocks, and action items.
  *
  * @param {number} waveNum - Wave number
@@ -789,7 +789,7 @@ function parseJobPlanFiles(jobPlanContent) {
 /**
  * Reconcile a single job's deliverables against its JOB-PLAN.md.
  *
- * Reads the job plan from `.planning/waves/{setId}/{waveId}/{jobId}-PLAN.md`.
+ * Reads the job plan from `.planning/sets/{setId}/{waveId}/{jobId}-PLAN.md`.
  * Checks file existence in worktreePath and commit format using
  * `type(setId): description` pattern.
  *
@@ -802,7 +802,7 @@ function parseJobPlanFiles(jobPlanContent) {
  * @returns {{ passed: Array<{type: string, target: string}>, failed: Array<{type: string, target: string}> }}
  */
 function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
-  const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+  const waveDir = path.join(cwd, '.planning', 'sets', setId, waveId);
   const jobPlanPath = path.join(waveDir, `${jobId}-PLAN.md`);
   const jobPlan = fs.readFileSync(jobPlanPath, 'utf-8');
 
@@ -838,7 +838,7 @@ function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
 /**
  * Aggregate per-job reconciliation into wave-level results.
  *
- * Reads all `*-PLAN.md` files from `.planning/waves/{setId}/{waveId}/`.
+ * Reads all `*-PLAN.md` files from `.planning/sets/{setId}/{waveId}/`.
  * Calls reconcileJob for each. Computes hardBlocks, softBlocks, and
  * overall PASS/PASS_WITH_WARNINGS/FAIL.
  *
@@ -850,7 +850,7 @@ function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
  * @returns {{ hardBlocks: Array, softBlocks: Array, jobResults: Object, overall: string }}
  */
 function reconcileWaveJobs(cwd, setId, waveId, worktreePath, baseBranch) {
-  const waveDir = path.join(cwd, '.planning', 'waves', setId, waveId);
+  const waveDir = path.join(cwd, '.planning', 'sets', setId, waveId);
   const jobPlanFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
 
   const hardBlocks = [];
@@ -929,7 +929,7 @@ function formatProgressBanner(waveId, waveIndex, totalWaves, jobStatuses, timest
  * Generate HANDOFF.md content for a job-level CHECKPOINT return.
  *
  * Like generateHandoff but includes wave and job context in frontmatter.
- * Stores at `.planning/waves/{setId}/{waveId}/{jobId}-HANDOFF.md`.
+ * Stores at `.planning/sets/{setId}/{waveId}/{jobId}-HANDOFF.md`.
  *
  * @param {Object} checkpointData - Parsed CHECKPOINT return data
  * @param {string} setId - Set identifier

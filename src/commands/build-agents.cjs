@@ -279,14 +279,11 @@ color: ${color}
     built.push(filePath);
   }
 
-  // Generate stubs for core agents (skip if already hand-written with CORE prefix)
+  // SKIP_GENERATION roles: never overwrite existing files, only create if missing
   for (const role of SKIP_GENERATION) {
     const filePath = path.join(agentsDir, `rapid-${role}.md`);
     if (fs.existsSync(filePath)) {
-      const existing = fs.readFileSync(filePath, 'utf-8');
-      if (existing.startsWith('<!-- CORE: Hand-written agent')) {
-        continue; // Preserve hand-written core agent
-      }
+      continue; // Preserve existing core agent file unconditionally
     }
     const coreModules = ROLE_CORE_MAP[role];
     const assembled = assembleStubPrompt(role, coreModules);

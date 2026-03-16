@@ -37,7 +37,7 @@ async function handleSetInit(cwd, subcommand, args) {
           break;
         }
 
-        const registry = wt.loadRegistry(cwd);
+        const registry = wt.readRegistry(cwd);
         const registeredSets = new Set(Object.keys(registry.worktrees));
 
         const available = [];

@@ -348,10 +348,12 @@ async function validateDiskArtifacts(cwd, milestoneId, setId) {
     }
   }
 
-  // Check: if status says executing or later, wave plans dir should exist
+  // Check: if status says executing or later, wave plan subdirectories should exist
   if (['executed', 'complete', 'merged'].includes(set.status)) {
-    const wavesDir = path.join(cwd, '.planning', 'waves', setId);
-    if (!fs.existsSync(wavesDir)) {
+    const setDir = path.join(cwd, '.planning', 'sets', setId);
+    const hasWaveDirs = fs.existsSync(setDir) &&
+      fs.readdirSync(setDir).some(entry => entry.startsWith('wave-'));
+    if (!hasWaveDirs) {
       warnings.push({
         type: 'warning',
         message: `Set "${setId}" is "${set.status}" but no wave plans found -- run /plan-set`,

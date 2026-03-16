@@ -219,9 +219,9 @@ describe('listWorktrees', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
-// loadRegistry tests
+// readRegistry tests
 // ────────────────────────────────────────────────────────────────
-describe('loadRegistry', () => {
+describe('readRegistry', () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -234,7 +234,7 @@ describe('loadRegistry', () => {
   });
 
   it('returns default registry when file is missing', () => {
-    const reg = worktree.loadRegistry(tmpDir);
+    const reg = worktree.readRegistry(tmpDir);
     assert.deepStrictEqual(reg, { version: 1, worktrees: {} });
   });
 
@@ -244,15 +244,15 @@ describe('loadRegistry', () => {
     const data = { version: 1, worktrees: { foo: { setName: 'foo', status: 'active' } } };
     fs.writeFileSync(path.join(regDir, 'REGISTRY.json'), JSON.stringify(data, null, 2));
 
-    const reg = worktree.loadRegistry(tmpDir);
+    const reg = worktree.readRegistry(tmpDir);
     assert.deepStrictEqual(reg, data);
   });
 });
 
 // ────────────────────────────────────────────────────────────────
-// registryUpdate tests
+// withRegistryUpdate tests
 // ────────────────────────────────────────────────────────────────
-describe('registryUpdate', () => {
+describe('withRegistryUpdate', () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -265,19 +265,19 @@ describe('registryUpdate', () => {
   });
 
   it('applies updateFn and persists result', async () => {
-    const result = await worktree.registryUpdate(tmpDir, (reg) => {
+    const result = await worktree.withRegistryUpdate(tmpDir, (reg) => {
       reg.worktrees['my-set'] = { setName: 'my-set', status: 'active' };
       return reg;
     });
     assert.equal(result.worktrees['my-set'].status, 'active');
 
     // Verify persisted
-    const onDisk = worktree.loadRegistry(tmpDir);
+    const onDisk = worktree.readRegistry(tmpDir);
     assert.deepStrictEqual(onDisk.worktrees['my-set'], { setName: 'my-set', status: 'active' });
   });
 
   it('returns updated registry', async () => {
-    const result = await worktree.registryUpdate(tmpDir, (reg) => {
+    const result = await worktree.withRegistryUpdate(tmpDir, (reg) => {
       reg.worktrees['a'] = { setName: 'a' };
       return reg;
     });
@@ -943,7 +943,7 @@ describe('setInit', () => {
 
   it('registers the worktree in REGISTRY.json with phase Created and status active', async () => {
     await worktree.setInit(tmpDir, 'test-set');
-    const registry = worktree.loadRegistry(tmpDir);
+    const registry = worktree.readRegistry(tmpDir);
     assert.ok(registry.worktrees['test-set'], 'registry should contain test-set entry');
     assert.equal(registry.worktrees['test-set'].phase, 'Created');
     assert.equal(registry.worktrees['test-set'].status, 'active');
@@ -1490,7 +1490,7 @@ describe('solo mode', () => {
     it('writes registry entry with solo: true and path: "."', async () => {
       await worktree.setInitSolo(tmpDir, 'my-solo-set');
 
-      const registry = worktree.loadRegistry(tmpDir);
+      const registry = worktree.readRegistry(tmpDir);
       const entry = registry.worktrees['my-solo-set'];
       assert.ok(entry, 'should have registry entry');
       assert.equal(entry.solo, true);
@@ -1536,7 +1536,7 @@ describe('solo mode', () => {
 
       await worktree.reconcileRegistry(tmpDir);
 
-      const registry = worktree.loadRegistry(tmpDir);
+      const registry = worktree.readRegistry(tmpDir);
       assert.notEqual(registry.worktrees['solo-set'].status, 'orphaned', 'solo entry should NOT be marked orphaned');
       assert.equal(registry.worktrees['solo-set'].status, 'active', 'solo entry should remain active');
     });

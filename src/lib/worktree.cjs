@@ -198,12 +198,13 @@ function listWorktrees(projectRoot) {
 }
 
 /**
- * Load the worktree registry.
+ * Load the worktree registry (internal mutable version).
  *
  * @param {string} cwd - Project root directory
  * @returns {{ version: number, worktrees: Object }}
+ * @private
  */
-function loadRegistry(cwd) {
+function _loadRegistryRaw(cwd) {
   const regPath = path.join(cwd, REGISTRY_DIR, REGISTRY_FILE);
   try {
     const raw = fs.readFileSync(regPath, 'utf-8');
@@ -214,6 +215,16 @@ function loadRegistry(cwd) {
     }
     throw err;
   }
+}
+
+/**
+ * Read the worktree registry (public, frozen).
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {Readonly<{version: number, worktrees: Object}>}
+ */
+function readRegistry(cwd) {
+  return Object.freeze(_loadRegistryRaw(cwd));
 }
 
 /**
@@ -238,10 +249,10 @@ function writeRegistry(cwd, registry) {
  * @param {function} updateFn - Function that receives current registry and returns updated registry
  * @returns {Promise<Object>} Updated registry
  */
-async function registryUpdate(cwd, updateFn) {
+async function withRegistryUpdate(cwd, updateFn) {
   const release = await acquireLock(cwd, 'worktree-registry');
   try {
-    const registry = loadRegistry(cwd);
+    const registry = _loadRegistryRaw(cwd);
     const updated = updateFn(registry);
     writeRegistry(cwd, updated);
     return updated;
@@ -260,7 +271,7 @@ async function registryUpdate(cwd, updateFn) {
 async function reconcileRegistry(cwd) {
   const release = await acquireLock(cwd, 'worktree-registry');
   try {
-    const registry = loadRegistry(cwd);
+    const registry = _loadRegistryRaw(cwd);
     const gitWorktrees = listWorktrees(cwd);
 
     // Build a set of git worktree branch names for quick lookup
@@ -314,7 +325,7 @@ async function reconcileRegistry(cwd) {
  * @returns {boolean} True if the set has solo: true in registry
  */
 function isSoloMode(cwd, setId) {
-  const registry = loadRegistry(cwd);
+  const registry = readRegistry(cwd);
   const entry = registry.worktrees[setId];
   return !!(entry && entry.solo === true);
 }
@@ -328,7 +339,7 @@ function isSoloMode(cwd, setId) {
  * @returns {string} A commit hash (solo) or branch name (normal)
  */
 function getSetDiffBase(cwd, setId) {
-  const registry = loadRegistry(cwd);
+  const registry = readRegistry(cwd);
   const entry = registry.worktrees[setId];
   if (entry && entry.solo === true && entry.startCommit) {
     return entry.startCommit;
@@ -368,7 +379,7 @@ async function setInit(cwd, setName) {
   }
 
   // 3. Register in REGISTRY.json
-  await registryUpdate(cwd, (reg) => {
+  await withRegistryUpdate(cwd, (reg) => {
     reg.worktrees[setName] = {
       setName,
       branch,
@@ -412,7 +423,7 @@ async function setInitSolo(cwd, setName) {
   const branch = detectMainBranch(cwd);
 
   // Register in REGISTRY.json -- virtual entry, no actual worktree
-  await registryUpdate(cwd, (reg) => {
+  await withRegistryUpdate(cwd, (reg) => {
     reg.worktrees[setName] = {
       setName,
       branch,
@@ -942,9 +953,9 @@ module.exports = {
   removeWorktree,
   deleteBranch,
   listWorktrees,
-  loadRegistry,
+  readRegistry,
   writeRegistry,
-  registryUpdate,
+  withRegistryUpdate,
   reconcileRegistry,
   ensureWorktreeDir,
   setInit,

@@ -105,7 +105,7 @@ After completing all three checks, determine the overall verdict:
 
 ### VERIFICATION-REPORT.md
 
-Write the report to the path specified in the task prompt (typically `.planning/waves/{setId}/{waveId}/VERIFICATION-REPORT.md`).
+Write the report to the path specified in the task prompt (typically `.planning/sets/{setId}/{waveId}/VERIFICATION-REPORT.md`).
 
 Use this exact structure:
 

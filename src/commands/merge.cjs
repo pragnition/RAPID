@@ -44,7 +44,7 @@ async function handleMerge(cwd, subcommand, args) {
       const result = merge.mergeSet(cwd, setName, baseBranch);
       if (result.merged) {
         // Update registry with merge status
-        await wt.registryUpdate(cwd, (reg) => {
+        await wt.withRegistryUpdate(cwd, (reg) => {
           if (reg.worktrees[setName]) {
             reg.worktrees[setName].mergeStatus = 'merged';
             reg.worktrees[setName].mergedAt = new Date().toISOString();
@@ -64,7 +64,7 @@ async function handleMerge(cwd, subcommand, args) {
     }
 
     case 'status': {
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
       const statuses = {};
       for (const [name, entry] of Object.entries(registry.worktrees || {})) {
         const mergeState = merge.readMergeState(cwd, name);
@@ -123,7 +123,7 @@ async function handleMerge(cwd, subcommand, args) {
         }
         agentPhase2Update = { conflictId, phase: phase2Value };
       }
-      await wt.registryUpdate(cwd, (reg) => {
+      await wt.withRegistryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
           reg.worktrees[setName].mergeStatus = status;
         }
@@ -174,7 +174,7 @@ async function handleMerge(cwd, subcommand, args) {
         throw new CliError('Usage: rapid-tools merge detect <set-name>');
       }
       // Solo sets: no branch to diff against
-      const reg = wt.loadRegistry(cwd);
+      const reg = wt.readRegistry(cwd);
       const regEntry = reg.worktrees[setName];
       if (regEntry && regEntry.solo === true) {
         output(JSON.stringify({ solo: true, textual: { conflicts: [] }, structural: { conflicts: [] }, dependency: { conflicts: [] }, api: { conflicts: [] } }));
@@ -217,7 +217,7 @@ async function handleMerge(cwd, subcommand, args) {
         throw new CliError('Usage: rapid-tools merge resolve <set-name>');
       }
       // Solo sets: nothing to resolve
-      const regResolve = wt.loadRegistry(cwd);
+      const regResolve = wt.readRegistry(cwd);
       const regEntryResolve = regResolve.worktrees[setName];
       if (regEntryResolve && regEntryResolve.solo === true) {
         output(JSON.stringify({ results: [], summary: { tier1Resolved: 0, tier2Resolved: 0, unresolvedForAgent: 0, total: 0 } }));
@@ -382,7 +382,7 @@ async function handleMerge(cwd, subcommand, args) {
         // Update MERGE-STATE status to reverted
         await merge.ensureMergeState(cwd, setName, { status: 'reverted' });
         // Update registry mergeStatus to reverted
-        await wt.registryUpdate(cwd, (reg) => {
+        await wt.withRegistryUpdate(cwd, (reg) => {
           if (reg.worktrees[setName]) {
             reg.worktrees[setName].mergeStatus = 'reverted';
           }
@@ -417,7 +417,7 @@ async function handleMerge(cwd, subcommand, args) {
       // Read MERGE-STATE for conflicts
       const mergeState = merge.readMergeState(cwd, setName);
       // Get worktree path from registry
-      const reg = wt.loadRegistry(cwd);
+      const reg = wt.readRegistry(cwd);
       const worktreeInfo = reg.worktrees[setName];
       const worktreePath = worktreeInfo ? worktreeInfo.path : '';
       // Get changed files (best effort -- may fail if branch doesn't exist in test envs)
