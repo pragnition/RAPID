@@ -116,12 +116,12 @@
         },
         {
           "id": "bug-fixes",
-          "status": "discussed",
+          "status": "executed",
           "waves": []
         },
         {
           "id": "solo-mode",
-          "status": "discussed",
+          "status": "planned",
           "waves": []
         },
         {
@@ -147,6 +147,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T07:32:28.185Z",
+  "lastUpdatedAt": "2026-03-16T07:46:07.244Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
