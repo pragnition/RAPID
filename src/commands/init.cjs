@@ -1,6 +1,6 @@
 'use strict';
 
-const { error } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 
 function handleInit(args) {
   const { scaffoldProject, detectExisting } = require('../lib/init.cjs');
@@ -8,8 +8,7 @@ function handleInit(args) {
   const subcommand = args[0];
 
   if (!subcommand) {
-    error('Usage: rapid-tools init <detect|scaffold> [options]');
-    process.exit(1);
+    throw new CliError('Usage: rapid-tools init <detect|scaffold> [options]');
   }
 
   if (subcommand === 'detect') {
@@ -50,8 +49,7 @@ function handleInit(args) {
     }
 
     if (!name || !desc || !teamSize) {
-      error('Usage: rapid-tools init scaffold --name <name> --desc <description> --team-size <N> [--mode fresh|reinitialize|upgrade|cancel]');
-      process.exit(1);
+      throw new CliError('Usage: rapid-tools init scaffold --name <name> --desc <description> --team-size <N> [--mode fresh|reinitialize|upgrade|cancel]');
     }
 
     const result = scaffoldProject(process.cwd(), { name, description: desc, teamSize }, mode);
@@ -111,8 +109,7 @@ function handleInit(args) {
     return;
   }
 
-  error(`Unknown init subcommand: ${subcommand}. Use 'detect', 'scaffold', 'research-dir', or 'write-config'.`);
-  process.exit(1);
+  throw new CliError(`Unknown init subcommand: ${subcommand}. Use 'detect', 'scaffold', 'research-dir', or 'write-config'.`);
 }
 
 module.exports = { handleInit };

@@ -1,6 +1,6 @@
 'use strict';
 
-const { error } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 const { parseArgs } = require('../lib/args.cjs');
 
 async function handleResolve(cwd, subcommand, args) {
@@ -10,8 +10,7 @@ async function handleResolve(cwd, subcommand, args) {
     case 'set': {
       const input = args[0];
       if (!input) {
-        error('Usage: rapid-tools resolve set <input>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools resolve set <input>');
       }
       try {
         const sm = require('../lib/state-machine.cjs');
@@ -22,8 +21,7 @@ async function handleResolve(cwd, subcommand, args) {
         const result = resolveLib.resolveSet(input, cwd, stateResult.state);
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
-        process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
@@ -32,8 +30,7 @@ async function handleResolve(cwd, subcommand, args) {
       const { flags: waveFlags, positional: wavePos } = parseArgs(args, { set: 'string' });
       const input = wavePos[0];
       if (!input) {
-        error('Usage: rapid-tools resolve wave <input> [--set <setInput>]');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools resolve wave <input> [--set <setInput>]');
       }
       try {
         const sm = require('../lib/state-machine.cjs');
@@ -45,15 +42,13 @@ async function handleResolve(cwd, subcommand, args) {
         const result = resolveLib.resolveWave(input, stateResult.state, cwd, setInput);
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
-        process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
 
     default:
-      error('Usage: rapid-tools resolve set <input> | wave <input>');
-      process.exit(1);
+      throw new CliError('Usage: rapid-tools resolve set <input> | wave <input>');
   }
 }
 

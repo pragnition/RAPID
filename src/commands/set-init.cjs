@@ -1,6 +1,6 @@
 'use strict';
 
-const { error } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 
 async function handleSetInit(cwd, subcommand, args) {
   const fs = require('fs');
@@ -11,15 +11,14 @@ async function handleSetInit(cwd, subcommand, args) {
     case 'create': {
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools set-init create <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools set-init create <set-name>');
       }
       try {
         const result = await wt.setInit(cwd, setName);
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
         process.stdout.write(JSON.stringify({ created: false, error: err.message }) + '\n');
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
@@ -52,15 +51,13 @@ async function handleSetInit(cwd, subcommand, args) {
 
         process.stdout.write(JSON.stringify({ available }) + '\n');
       } catch (err) {
-        process.stdout.write(JSON.stringify({ available: [], error: err.message }) + '\n');
-        process.exit(1);
+        throw new CliError(err.message);
       }
       break;
     }
 
     default:
-      error(`Unknown set-init subcommand: ${subcommand}. Use: create, list-available`);
-      process.exit(1);
+      throw new CliError(`Unknown set-init subcommand: ${subcommand}. Use: create, list-available`);
   }
 }
 

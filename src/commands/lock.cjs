@@ -1,14 +1,13 @@
 'use strict';
 
-const { error } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 const { acquireLock, isLocked } = require('../lib/lock.cjs');
 
 async function handleLock(cwd, subcommand, args) {
   const lockName = args[0];
 
   if (!lockName) {
-    error('Lock name required. Usage: rapid-tools lock <acquire|status|release> <name>');
-    process.exit(1);
+    throw new CliError('Lock name required. Usage: rapid-tools lock <acquire|status|release> <name>');
   }
 
   switch (subcommand) {
@@ -31,14 +30,11 @@ async function handleLock(cwd, subcommand, args) {
     }
 
     case 'release': {
-      error('Lock release via CLI is not supported. Locks are released when the acquiring process exits.');
-      process.exit(1);
-      break;
+      throw new CliError('Lock release via CLI is not supported. Locks are released when the acquiring process exits.');
     }
 
     default:
-      error(`Unknown lock subcommand: ${subcommand}`);
-      process.exit(1);
+      throw new CliError(`Unknown lock subcommand: ${subcommand}`);
   }
 }
 

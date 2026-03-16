@@ -1,6 +1,6 @@
 'use strict';
 
-const { error } = require('../lib/core.cjs');
+const { CliError } = require('../lib/errors.cjs');
 
 function handlePlan(cwd, subcommand, args) {
   const fs = require('fs');
@@ -46,8 +46,7 @@ function handlePlan(cwd, subcommand, args) {
       // Usage: rapid-tools plan load-set <set-name>
       const setName = args[0];
       if (!setName) {
-        error('Usage: rapid-tools plan load-set <set-name>');
-        process.exit(1);
+        throw new CliError('Usage: rapid-tools plan load-set <set-name>');
       }
       const set = plan.loadSet(cwd, setName);
       process.stdout.write(JSON.stringify(set) + '\n');
@@ -55,8 +54,7 @@ function handlePlan(cwd, subcommand, args) {
     }
 
     default:
-      error(`Unknown plan subcommand: ${subcommand}. Use: create-set, decompose, write-dag, check-gate, update-gate, list-sets, load-set`);
-      process.exit(1);
+      throw new CliError(`Unknown plan subcommand: ${subcommand}. Use: create-set, decompose, write-dag, check-gate, update-gate, list-sets, load-set`);
   }
 }
 
