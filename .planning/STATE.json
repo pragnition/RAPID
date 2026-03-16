@@ -121,7 +121,7 @@
         },
         {
           "id": "solo-mode",
-          "status": "planned",
+          "status": "executed",
           "waves": []
         },
         {
@@ -147,6 +147,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T07:46:07.244Z",
+  "lastUpdatedAt": "2026-03-16T07:47:12.947Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
