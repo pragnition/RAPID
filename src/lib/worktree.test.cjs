@@ -1245,3 +1245,72 @@ describe('deriveNextActions', () => {
     assert.ok(actions.length <= 5, `should return at most 5 actions but got ${actions.length}`);
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// writeRegistry atomic writes
+// ────────────────────────────────────────────────────────────────
+describe('writeRegistry atomic writes', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-registry-atomic-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('writes REGISTRY.json with no leftover .tmp file', () => {
+    const registry = { version: 1, worktrees: {} };
+    worktree.writeRegistry(tmpDir, registry);
+
+    const regPath = path.join(tmpDir, '.planning', 'worktrees', 'REGISTRY.json');
+    const tmpPath = regPath + '.tmp';
+
+    assert.ok(fs.existsSync(regPath), 'REGISTRY.json should exist after write');
+    assert.ok(!fs.existsSync(tmpPath), 'REGISTRY.json.tmp should NOT exist after successful write');
+
+    const written = JSON.parse(fs.readFileSync(regPath, 'utf-8'));
+    assert.deepStrictEqual(written, registry);
+  });
+
+  it('preserves content integrity with complex registry data', () => {
+    const registry = {
+      version: 1,
+      worktrees: {
+        'test-set': {
+          setName: 'test-set',
+          branch: 'rapid/test-set',
+          path: '.rapid-worktrees/test-set',
+          phase: 'Created',
+          status: 'active',
+        },
+      },
+    };
+
+    worktree.writeRegistry(tmpDir, registry);
+
+    const regPath = path.join(tmpDir, '.planning', 'worktrees', 'REGISTRY.json');
+    const written = JSON.parse(fs.readFileSync(regPath, 'utf-8'));
+    assert.deepStrictEqual(written, registry);
+    assert.equal(written.worktrees['test-set'].branch, 'rapid/test-set');
+  });
+
+  it('creates directory structure if it does not exist', () => {
+    const registry = { version: 1, worktrees: {} };
+    const regDir = path.join(tmpDir, '.planning', 'worktrees');
+
+    assert.ok(!fs.existsSync(regDir), 'directory should not exist before write');
+    worktree.writeRegistry(tmpDir, registry);
+    assert.ok(fs.existsSync(regDir), 'directory should be created by writeRegistry');
+  });
+
+  it('file ends with a trailing newline', () => {
+    const registry = { version: 1, worktrees: {} };
+    worktree.writeRegistry(tmpDir, registry);
+
+    const regPath = path.join(tmpDir, '.planning', 'worktrees', 'REGISTRY.json');
+    const raw = fs.readFileSync(regPath, 'utf-8');
+    assert.ok(raw.endsWith('\n'), 'file should end with a trailing newline');
+  });
+});
