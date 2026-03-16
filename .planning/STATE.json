@@ -101,12 +101,12 @@
         },
         {
           "id": "data-integrity",
-          "status": "executed",
+          "status": "merged",
           "waves": []
         },
         {
           "id": "cli-restructuring",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         },
         {
@@ -147,6 +147,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T02:19:51.877Z",
+  "lastUpdatedAt": "2026-03-16T03:14:14.903Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
