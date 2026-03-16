@@ -548,7 +548,8 @@ function formatStatusTable(worktrees, dagJson = null) {
     // Last activity
     const lastActivity = relativeTime(entry.updatedAt);
 
-    return [entry.setName, wave, displayPhase, progress, lastActivity];
+    const setDisplay = entry.solo ? `${entry.setName} (solo)` : entry.setName;
+    return [setDisplay, wave, displayPhase, progress, lastActivity];
   });
 
   // Calculate column widths
@@ -828,7 +829,12 @@ function formatMarkIIStatus(stateData, registryData) {
 
     // Worktree path from registry
     const regEntry = registryData.worktrees[set.id];
-    const worktreePath = regEntry ? regEntry.path : 'not created';
+    let worktreePath;
+    if (regEntry && regEntry.solo === true) {
+      worktreePath = '(solo)';
+    } else {
+      worktreePath = regEntry ? regEntry.path : 'not created';
+    }
 
     // Updated time from registry
     const updatedAt = regEntry && regEntry.updatedAt ? relativeTime(regEntry.updatedAt) : '-';
