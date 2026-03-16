@@ -3034,3 +3034,64 @@ describe('ensureMergeState', () => {
     assert.equal(result.setId, 'tx-test');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// Solo mode: mergeSet early-return tests
+// ────────────────────────────────────────────────────────────────
+describe('mergeSet solo early-return', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-merge-solo-'));
+    // Initialize a git repo
+    execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "init"', { cwd: tmpDir, stdio: 'pipe' });
+    // Create REGISTRY.json with solo entry
+    const regDir = path.join(tmpDir, '.planning', 'worktrees');
+    fs.mkdirSync(regDir, { recursive: true });
+    const worktreeLib = require('./worktree.cjs');
+    worktreeLib.writeRegistry(tmpDir, {
+      version: 1,
+      worktrees: {
+        'solo-set': {
+          setName: 'solo-set',
+          solo: true,
+          branch: 'master',
+          path: '.',
+          status: 'active',
+          phase: 'Created',
+          startCommit: 'abc123',
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns merged: true and solo: true for solo sets', () => {
+    const mergeModule = require('./merge.cjs');
+    const result = mergeModule.mergeSet(tmpDir, 'solo-set', 'master');
+    assert.equal(result.merged, true, 'should report merged success');
+    assert.equal(result.solo, true, 'should flag as solo merge');
+    assert.ok(result.branch, 'should have branch');
+    assert.ok(result.commitHash, 'should have commitHash');
+  });
+
+  it('does NOT perform any git merge for solo sets', () => {
+    const worktreeLib = require('./worktree.cjs');
+    // Get commit before merge attempt
+    const beforeResult = worktreeLib.gitExec(['rev-parse', 'HEAD'], tmpDir);
+    const beforeHash = beforeResult.stdout;
+
+    const mergeModule = require('./merge.cjs');
+    mergeModule.mergeSet(tmpDir, 'solo-set', 'master');
+
+    // Commit should be unchanged -- no merge happened
+    const afterResult = worktreeLib.gitExec(['rev-parse', 'HEAD'], tmpDir);
+    assert.equal(afterResult.stdout, beforeHash, 'HEAD should not change for solo merge');
+  });
+});

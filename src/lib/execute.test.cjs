@@ -1235,3 +1235,55 @@ describe('resumeSet', () => {
     assert.equal(result.pauseCycles, 0, 'pauseCycles should default to 0');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// Solo mode: diff functions with startCommit parameter
+// ────────────────────────────────────────────────────────────────
+describe('solo mode diff functions with startCommit', () => {
+  let tmpDir;
+  let startCommit;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-solo-diff-'));
+    execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit --allow-empty -m "initial"', { cwd: tmpDir, stdio: 'pipe' });
+
+    // Record start commit
+    startCommit = execSync('git rev-parse HEAD', { cwd: tmpDir, encoding: 'utf-8' }).trim();
+
+    // Create a file and commit it
+    fs.writeFileSync(path.join(tmpDir, 'new-file.txt'), 'hello\n', 'utf-8');
+    execSync('git add new-file.txt', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git commit -m "feat(solo-mode): add new file"', { cwd: tmpDir, stdio: 'pipe' });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('getChangedFiles with startCommit returns changed files', () => {
+    const changed = executeModule.getChangedFiles(tmpDir, 'main', startCommit);
+    assert.ok(changed.includes('new-file.txt'), 'should include new-file.txt in changed files');
+  });
+
+  it('getChangedFiles without startCommit works for backward compatibility', () => {
+    // This should not throw -- uses baseBranch as ref
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: tmpDir, encoding: 'utf-8' }).trim();
+    const changed = executeModule.getChangedFiles(tmpDir, branch);
+    // On same branch, diff with self should be empty or return no error
+    assert.ok(Array.isArray(changed), 'should return an array');
+  });
+
+  it('getCommitCount with startCommit returns correct count', () => {
+    const count = executeModule.getCommitCount(tmpDir, 'main', startCommit);
+    assert.equal(count, 1, 'should count 1 commit since startCommit');
+  });
+
+  it('getCommitMessages with startCommit returns correct messages', () => {
+    const messages = executeModule.getCommitMessages(tmpDir, 'main', startCommit);
+    assert.equal(messages.length, 1, 'should have 1 message');
+    assert.ok(messages[0].includes('add new file'), 'message should contain commit subject');
+  });
+});
