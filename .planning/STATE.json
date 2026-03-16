@@ -116,7 +116,7 @@
         },
         {
           "id": "bug-fixes",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         },
         {
@@ -147,6 +147,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T07:31:08.953Z",
+  "lastUpdatedAt": "2026-03-16T07:32:28.185Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
