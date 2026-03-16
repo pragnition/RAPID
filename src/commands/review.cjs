@@ -1,6 +1,7 @@
 'use strict';
 
 const { output, error } = require('../lib/core.cjs');
+const { parseArgs } = require('../lib/args.cjs');
 
 async function handleReview(cwd, subcommand, args) {
   const fs = require('fs');
@@ -10,12 +11,13 @@ async function handleReview(cwd, subcommand, args) {
 
   switch (subcommand) {
     case 'scope': {
-      const setId = args[0];
+      const { flags: scopeFlags, positional: scopePos } = parseArgs(args, { branch: 'string', 'post-merge': 'boolean' });
+      const setId = scopePos[0];
       if (!setId) {
         error('Usage: rapid-tools review scope <set-id> [<wave-id>] [--branch <branch>] [--post-merge]');
         process.exit(1);
       }
-      const postMerge = args.includes('--post-merge');
+      const postMerge = scopeFlags['post-merge'];
       // Post-merge mode: scope from merge commit, skip worktree resolution
       if (postMerge) {
         try {
@@ -29,12 +31,9 @@ async function handleReview(cwd, subcommand, args) {
         }
         break;
       }
-      // Detect mode: if args[1] is missing or starts with '--', set-level mode
-      const waveId = (args[1] && !args[1].startsWith('--')) ? args[1] : null;
-      // Parse --branch flag (default: main)
-      let baseBranch = 'main';
-      const branchIdx = args.indexOf('--branch');
-      if (branchIdx !== -1 && args[branchIdx + 1]) baseBranch = args[branchIdx + 1];
+      // Detect mode: if positional[1] exists, it is the wave-id
+      const waveId = scopePos[1] || null;
+      let baseBranch = scopeFlags.branch || 'main';
       // Resolve worktree path from registry
       const registry = wt.loadRegistry(cwd);
       const entry = registry.worktrees[setId];
@@ -92,15 +91,13 @@ async function handleReview(cwd, subcommand, args) {
     }
 
     case 'list-issues': {
-      const setId = args[0];
+      const { flags: listFlags, positional: listPos } = parseArgs(args, { status: 'string' });
+      const setId = listPos[0];
       if (!setId) {
         error('Usage: rapid-tools review list-issues <set-id> [--status <status>]');
         process.exit(1);
       }
-      // Parse optional --status filter
-      let statusFilter = null;
-      const statusIdx = args.indexOf('--status');
-      if (statusIdx !== -1 && args[statusIdx + 1]) statusFilter = args[statusIdx + 1];
+      let statusFilter = listFlags.status || null;
       try {
         let issues = review.loadSetIssues(cwd, setId);
         if (statusFilter) {
