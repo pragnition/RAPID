@@ -1536,7 +1536,7 @@ describe('handleReview CLI dual-mode', () => {
     // Create .planning/waves/auth-core directory structure
     const setDir = path.join(tmpDir, '.planning', 'waves', 'auth-core');
     fs.mkdirSync(setDir, { recursive: true });
-    // Create worktree registry so CLI doesn't fail on loadRegistry
+    // Create worktree registry so CLI doesn't fail on readRegistry
     fs.mkdirSync(path.join(tmpDir, '.worktrees'), { recursive: true });
     fs.writeFileSync(path.join(tmpDir, '.worktrees', 'registry.json'), JSON.stringify({
       version: 1,
