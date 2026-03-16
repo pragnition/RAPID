@@ -1790,6 +1790,37 @@ async function handleExecute(cwd, subcommand, args) {
         }
         return reg;
       });
+      // Validation guard: warn if registry phase implies STATE.json inconsistency
+      try {
+        const sm = require('../lib/state-machine.cjs');
+        const stateResult = await sm.readState(cwd);
+        if (stateResult && stateResult.valid) {
+          for (const milestone of stateResult.state.milestones) {
+            const setData = (milestone.sets || []).find(s => s.id === setName);
+            if (setData) {
+              // Phase-status consistency rules:
+              // Done registry phase should correspond to 'executed' or 'merged' status
+              // Error registry phase should not have 'executing' status
+              const phaseStatusWarnings = [];
+              if (phase === 'Done' && !['executed', 'merged'].includes(setData.status)) {
+                phaseStatusWarnings.push(`Registry phase "Done" but STATE.json status is "${setData.status}" (expected "executed" or "merged")`);
+              }
+              if (phase === 'Error' && setData.status === 'executing') {
+                phaseStatusWarnings.push(`Registry phase "Error" but STATE.json status is still "executing"`);
+              }
+              if (phase === 'Executing' && setData.status === 'merged') {
+                phaseStatusWarnings.push(`Registry phase "Executing" but STATE.json status is already "merged"`);
+              }
+              for (const w of phaseStatusWarnings) {
+                process.stderr.write(`[WARN] Phase/status inconsistency for "${setName}": ${w}\n`);
+              }
+              break;
+            }
+          }
+        }
+      } catch {
+        // Graceful -- STATE.json may not exist
+      }
       process.stdout.write(JSON.stringify({ updated: true, setName, phase }) + '\n');
       break;
     }
