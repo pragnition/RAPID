@@ -225,11 +225,10 @@ function loadRegistry(cwd) {
 function writeRegistry(cwd, registry) {
   const regDir = path.join(cwd, REGISTRY_DIR);
   fs.mkdirSync(regDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(regDir, REGISTRY_FILE),
-    JSON.stringify(registry, null, 2) + '\n',
-    'utf-8'
-  );
+  const regFile = path.join(regDir, REGISTRY_FILE);
+  const tmpFile = regFile + '.tmp';
+  fs.writeFileSync(tmpFile, JSON.stringify(registry, null, 2) + '\n', 'utf-8');
+  fs.renameSync(tmpFile, regFile);
 }
 
 /**
@@ -855,6 +854,7 @@ module.exports = {
   deleteBranch,
   listWorktrees,
   loadRegistry,
+  writeRegistry,
   registryUpdate,
   reconcileRegistry,
   ensureWorktreeDir,
