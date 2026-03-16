@@ -1,0 +1,47 @@
+{
+  "setId": "version-migration",
+  "version": "1.0.0",
+  "exports": {
+    "migrateCommand": {
+      "type": "function",
+      "signature": "handleMigrate(cwd: string, subcommand: string, args: string[]): void",
+      "description": "/migrate CLI handler: dispatches detect, is-latest, backup, restore, cleanup subcommands"
+    },
+    "migrateInfra": {
+      "type": "module",
+      "signature": "{ detectVersion, isLatestVersion, createBackup, restoreBackup, cleanupBackup }",
+      "description": "Deterministic migration infrastructure: version detection heuristics, backup/restore/cleanup"
+    },
+    "migrateSkill": {
+      "type": "skill",
+      "signature": "skills/migrate/SKILL.md",
+      "description": "Agent-driven migration skill that analyzes .planning/ state and proposes transformations"
+    }
+  },
+  "imports": {
+    "rapidVersionField": {
+      "fromSet": "foundation-hardening",
+      "type": "file",
+      "signature": "STATE.json.rapidVersion: string",
+      "description": "Version field used to detect current version and stamp new version after migration"
+    }
+  },
+  "behavioral": {
+    "agentDrivenMigration": {
+      "description": "Migration agent dynamically analyzes .planning/ state against current schemas -- no hardcoded step registry",
+      "enforced_by": "skill"
+    },
+    "dryRunSafe": {
+      "description": "--dry-run must show all changes without writing any files",
+      "enforced_by": "test"
+    },
+    "preMigrationBackup": {
+      "description": "Pre-migration backup must be created at .planning/.pre-migrate-backup/ before any changes",
+      "enforced_by": "test"
+    },
+    "latestVersionNoOp": {
+      "description": "Running /migrate when already on latest version must produce clean no-op message",
+      "enforced_by": "test"
+    }
+  }
+}
