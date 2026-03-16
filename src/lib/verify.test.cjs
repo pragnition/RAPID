@@ -17,7 +17,7 @@ function createTempFile(name, content) {
 
 // Helper: get a valid commit hash from the current repo
 function getValidCommitHash() {
-  return execSync('git rev-parse HEAD', { cwd: path.resolve(__dirname, '../../..'), encoding: 'utf-8' }).trim();
+  return execSync('git rev-parse HEAD', { cwd: path.resolve(__dirname, '../..'), encoding: 'utf-8' }).trim();
 }
 
 describe('verifyLight', () => {

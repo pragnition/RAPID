@@ -16,8 +16,8 @@ describe('SET_TRANSITIONS map', () => {
     assert.deepEqual(SET_TRANSITIONS.pending, ['discussed', 'planned']);
   });
 
-  it('discussed -> planned only', () => {
-    assert.deepEqual(SET_TRANSITIONS.discussed, ['planned']);
+  it('discussed -> planned or discussed (allows re-discussion)', () => {
+    assert.deepEqual(SET_TRANSITIONS.discussed, ['planned', 'discussed']);
   });
 
   it('planned -> executed only', () => {

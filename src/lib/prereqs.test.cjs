@@ -175,8 +175,8 @@ describe('validatePrereqs', () => {
 
 describe('checkGitRepo', () => {
   it('returns isRepo: true for a known git repository', () => {
-    // RAPID project root is a git repo
-    const projectRoot = path.resolve(__dirname, '..', '..', '..');
+    // RAPID project root is a git repo (2 levels up from src/lib/)
+    const projectRoot = path.resolve(__dirname, '..', '..');
     const result = checkGitRepo(projectRoot);
     assert.equal(result.isRepo, true);
     assert.equal(typeof result.toplevel, 'string');
