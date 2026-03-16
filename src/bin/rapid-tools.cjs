@@ -5,6 +5,7 @@ const { output, error, findProjectRoot } = require('../lib/core.cjs');
 const { acquireLock, isLocked } = require('../lib/lock.cjs');
 const { handleDisplay } = require('../commands/display.cjs');
 const { handlePrereqs } = require('../commands/prereqs.cjs');
+const { handleAssumptions } = require('../commands/misc.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -1028,30 +1029,6 @@ function handlePlan(cwd, subcommand, args) {
       error(`Unknown plan subcommand: ${subcommand}. Use: create-set, decompose, write-dag, check-gate, update-gate, list-sets, load-set`);
       process.stdout.write(USAGE);
       process.exit(1);
-  }
-}
-
-function handleAssumptions(cwd, args) {
-  const plan = require('../lib/plan.cjs');
-
-  const setName = args[0];
-  if (!setName) {
-    // If no set name, list available sets
-    const sets = plan.listSets(cwd);
-    if (sets.length === 0) {
-      error('No sets found. Run /rapid:plan first to create sets.');
-      process.exit(1);
-    }
-    process.stdout.write(JSON.stringify({ availableSets: sets, usage: 'rapid-tools assumptions <set-name>' }) + '\n');
-    return;
-  }
-
-  try {
-    const assumptions = plan.surfaceAssumptions(cwd, setName);
-    process.stdout.write(assumptions + '\n');
-  } catch (err) {
-    error(`Cannot surface assumptions for set "${setName}": ${err.message}`);
-    process.exit(1);
   }
 }
 
