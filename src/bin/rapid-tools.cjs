@@ -17,6 +17,7 @@ const { handleReview } = require('../commands/review.cjs');
 const { handleBuildAgents } = require('../commands/build-agents.cjs');
 const { handleExecute } = require('../commands/execute.cjs');
 const { handleMerge } = require('../commands/merge.cjs');
+const { handleMigrate } = require('../commands/migrate.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -99,6 +100,11 @@ Commands:
   review summary <set-id> [--post-merge]             Generate REVIEW-SUMMARY.md
   display banner <stage> [target]  Display branded RAPID stage banner
   build-agents              Build all agent .md files from source modules
+  migrate detect                   Detect current RAPID version from .planning/ state
+  migrate is-latest                Check if .planning/ state is at the latest version
+  migrate backup                   Create pre-migration backup of .planning/
+  migrate restore                  Restore .planning/ from pre-migration backup
+  migrate cleanup                  Remove pre-migration backup
 
 Options:
   --help, -h             Show this help message
@@ -219,6 +225,10 @@ async function main() {
 
       case 'build-agents':
         handleBuildAgents(cwd, args.slice(1));
+        break;
+
+      case 'migrate':
+        handleMigrate(cwd, subcommand, args.slice(2));
         break;
 
       default:
