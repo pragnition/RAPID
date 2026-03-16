@@ -1805,8 +1805,8 @@ async function handleExecute(cwd, subcommand, args) {
               if (phase === 'Done' && !['executed', 'merged'].includes(setData.status)) {
                 phaseStatusWarnings.push(`Registry phase "Done" but STATE.json status is "${setData.status}" (expected "executed" or "merged")`);
               }
-              if (phase === 'Error' && setData.status === 'executing') {
-                phaseStatusWarnings.push(`Registry phase "Error" but STATE.json status is still "executing"`);
+              if (phase === 'Error' && setData.status === 'planned') {
+                phaseStatusWarnings.push(`Registry phase "Error" but STATE.json status is still "planned"`);
               }
               if (phase === 'Executing' && setData.status === 'merged') {
                 phaseStatusWarnings.push(`Registry phase "Executing" but STATE.json status is already "merged"`);
