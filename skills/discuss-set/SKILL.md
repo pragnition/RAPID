@@ -157,18 +157,17 @@ Present gray areas using AskUserQuestion:
 
 ```
 "I've analyzed set '{SET_ID}' and identified 4 areas that would benefit from your input.
-Select which areas you'd like to discuss:"
+Select which areas you'd like to discuss (unselected areas default to Claude's discretion):"
 Options:
-1. "Let Claude decide all" -- "Skip discussion, all decisions at Claude's discretion"
-2. "{Gray area 1 title}" -- "{1-sentence description}"
-3. "{Gray area 2 title}" -- "{1-sentence description}"
-4. "{Gray area 3 title}" -- "{1-sentence description}"
-5. "{Gray area 4 title}" -- "{1-sentence description}"
+1. "{Gray area 1 title}" -- "{1-sentence description}"
+2. "{Gray area 2 title}" -- "{1-sentence description}"
+3. "{Gray area 3 title}" -- "{1-sentence description}"
+4. "{Gray area 4 title}" -- "{1-sentence description}"
 ```
 
 **Handling responses:**
-- If "Let Claude decide all": Record all 4 areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
-- If the user selects specific areas: Record selected areas for Step 6.
+- If the user selects no areas (empty selection): Record all 4 areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
+- If the user selects specific areas: Record selected areas for Step 6. Unselected areas are recorded as Claude's discretion.
 
 ---
 
@@ -176,26 +175,25 @@ Options:
 
 For EACH selected gray area (in order):
 
-1. Present ONE AskUserQuestion that covers the area comprehensively. Batch 2-3 questions per area into a single prompt:
+1. For EACH question within the gray area, present a SEPARATE AskUserQuestion with prefilled options:
 
    ```
-   "{Gray area title}
+   "{Gray area title} -- {Question about approach}
 
-   Context: {2-3 sentences explaining the tradeoffs and why this matters}
-
-   Questions:
-   1. {Question about approach}
-   2. {Question about edge case or tradeoff}
-   3. {Question about specific detail}
-
-   Answer all questions above, or type 'Claude decides' to let me handle this area."
+   Context: {1-2 sentences explaining this specific tradeoff}
+   "
+   Options:
+   1. "{Option A}" -- "{Brief explanation of approach A}"
+   2. "{Option B}" -- "{Brief explanation of approach B}"
+   3. "{Option C}" -- "{Brief explanation of approach C, if applicable}"
+   4. "Claude decides" -- "Let Claude pick the best approach"
    ```
 
-   This is a freeform AskUserQuestion -- the user answers all 2-3 questions about the area in one response.
+   Repeat for each question in the area (typically 2-3 questions per area). Each question is a separate AskUserQuestion call with its own prefilled options.
 
-2. Parse the user's response. Extract decisions.
+2. Record the user's selected option for each question.
 
-3. If user said "Claude decides": Record as Claude's discretion with rationale.
+3. If user selected "Claude decides" for a question: Record that specific question as Claude's discretion.
 
 ### Follow-Up (Only If Needed)
 
@@ -316,8 +314,8 @@ Show what is done, what failed, and what to run next.
 
 - **Set-scoped discussion:** Discussion captures vision at the set level, not per-wave. CONTEXT.md is the output artifact.
 - **Exactly 4 gray areas:** Identify exactly 4 implementation facets for discussion. Not more, not fewer.
-- **Batched questions per area:** Present 2-3 questions per gray area in a single AskUserQuestion call, not one at a time.
-- **"Claude decides" option:** Available per-area and as a global "Let Claude decide all" option.
+- **Individual questions with options:** Present each question within a gray area as a separate AskUserQuestion with prefilled options including "Claude decides".
+- **"Claude decides" option:** Available as a prefilled option per question. Unselected gray areas in Step 5 automatically default to Claude's discretion.
 - **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md without user interaction.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
 - **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set.
@@ -333,5 +331,6 @@ Show what is done, what failed, and what to run next.
 - Do not reference or resolve individual waves anywhere in this skill.
 - Use `state transition set` for all state changes. No per-wave transitions.
 - Do NOT ask more than 4 gray areas -- the locked decision is exactly 4.
-- Do NOT ask one question at a time per area -- batch 2-3 questions per area into one AskUserQuestion.
+- Do NOT batch multiple questions into a single freeform AskUserQuestion -- each question gets its own AskUserQuestion with prefilled options.
+- Do NOT present "Let Claude decide all" as a checkbox option -- use the implicit unselected model instead.
 - Do NOT prompt for every implementation detail -- capture vision/what, not implementation/how.
