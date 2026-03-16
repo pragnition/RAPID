@@ -109,7 +109,18 @@ Count total waves from PLAN.md files.
 
 ### Determine Worktree Path
 
-Determine the worktree path for this set. Check `.rapid-worktrees/{SET_ID}` or equivalent worktree directory.
+Check the registry for this set's entry:
+
+```bash
+# (env preamble here)
+node "${RAPID_TOOLS}" worktree status --json
+```
+
+Parse the JSON output to find the entry for `SET_ID`.
+
+**If the entry has `solo: true`:** The worktree path is the project root (cwd). No `.rapid-worktrees/` directory involved.
+
+**Otherwise:** The worktree path is `.rapid-worktrees/${SET_ID}` or the path from the registry entry.
 
 ---
 
@@ -179,6 +190,8 @@ For most sets, waves have linear dependencies (Wave 2 depends on Wave 1, etc.), 
 ### 4b: Execute Wave Batches
 
 For each batch in order:
+
+**If solo mode:** Git commits happen directly on the current branch (typically main). The commit convention is identical -- `type({SET_ID}): description`.
 
 **If batch contains a single wave:** Spawn one **rapid-executor** agent with the standard task prompt (including git commit instructions):
 

@@ -132,6 +132,18 @@ Note: No `waveAttribution` is available in post-merge mode. Wave attribution tag
 
 Set the working directory for all subagents to `cwd` (the project root on main branch). Do NOT attempt to resolve a worktree path.
 
+**Solo set scoping:** For solo sets, the scope command should use the `startCommit` from the registry entry instead of the base branch. The review scope CLI handles this internally when it detects a solo entry. If manual scoping is needed:
+
+```bash
+# Get the solo set's start commit from registry
+REGISTRY=$(cat .planning/worktrees/REGISTRY.json)
+START_COMMIT=$(echo "$REGISTRY" | node -e "d=JSON.parse(require('fs').readFileSync(0,'utf-8')); e=d.worktrees['${SET_NAME}']; console.log(e && e.startCommit || '')")
+# Use startCommit for diff
+git diff --name-only ${START_COMMIT}...HEAD
+```
+
+For solo sets, the working directory is the project root (cwd), not a worktree path.
+
 **If `POST_MERGE` is not set (standard path):**
 
 Scope all changed files across the entire set in a single call:
