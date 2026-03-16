@@ -92,19 +92,6 @@ Start next cycle:
 
 10. **`/rapid:new-version`** -- Archive completed milestone, begin next version
 
-## Deprecated Commands
-
-These v2 commands have been replaced. Running them will show migration guidance:
-
-| Old Command | Replacement |
-|-------------|-------------|
-| `/rapid:set-init` | `/rapid:start-set` |
-| `/rapid:discuss` | `/rapid:discuss-set` |
-| `/rapid:execute` | `/rapid:execute-set` |
-| `/rapid:plan` | `/rapid:plan-set` (set planning) or `/rapid:init` (project planning) |
-| `/rapid:wave-plan` | `/rapid:plan-set` |
-| `/rapid:new-milestone` | `/rapid:new-version` |
-
 ---
 
 RAPID v3.0 | 7+4 commands | Rapid Agentic Parallelizable and Isolatable Development
