@@ -2181,21 +2181,11 @@ async function handleMerge(cwd, subcommand, args) {
           return reg;
         });
         // Also update MERGE-STATE.json with merge commit and status
-        try {
-          merge.updateMergeState(cwd, setName, {
-            status: 'complete',
-            mergeCommit: result.commitHash,
-            completedAt: new Date().toISOString(),
-          });
-        } catch {
-          // MERGE-STATE may not exist yet if detection was skipped; create it
-          merge.writeMergeState(cwd, setName, {
-            setId: setName,
-            status: 'complete',
-            mergeCommit: result.commitHash,
-            completedAt: new Date().toISOString(),
-          });
-        }
+        await merge.ensureMergeState(cwd, setName, {
+          status: 'complete',
+          mergeCommit: result.commitHash,
+          completedAt: new Date().toISOString(),
+        });
       }
       output(JSON.stringify(result));
       break;
@@ -2275,34 +2265,26 @@ async function handleMerge(cwd, subcommand, args) {
       }
       // Handle agentPhase2 per-conflict update (merge into existing object map)
       if (agentPhase2Update) {
-        try {
-          const currentState = merge.readMergeState(cwd, setName);
-          const existingPhase2 = (currentState && currentState.agentPhase2) || {};
+        await merge.withMergeStateTransaction(cwd, setName, (state) => {
+          const existingPhase2 = state.agentPhase2 || {};
           existingPhase2[agentPhase2Update.conflictId] = agentPhase2Update.phase;
-          stateUpdates.agentPhase2 = existingPhase2;
-        } catch {
-          // No existing state -- create fresh agentPhase2 map
-          stateUpdates.agentPhase2 = { [agentPhase2Update.conflictId]: agentPhase2Update.phase };
-        }
-      }
-      // Also update MERGE-STATE.json status (and optionally agentPhase1/agentPhase2)
-      try {
-        merge.updateMergeState(cwd, setName, stateUpdates);
-      } catch {
-        // MERGE-STATE may not exist yet -- create minimal state
-        const newState = {
-          setId: setName,
-          status,
-          startedAt: new Date().toISOString(),
-          lastUpdatedAt: new Date().toISOString(),
-        };
-        if (agentPhase1 !== undefined) {
-          newState.agentPhase1 = agentPhase1;
-        }
-        if (stateUpdates.agentPhase2) {
-          newState.agentPhase2 = stateUpdates.agentPhase2;
-        }
-        merge.writeMergeState(cwd, setName, newState);
+          state.agentPhase2 = existingPhase2;
+          Object.assign(state, { status });
+          if (agentPhase1 !== undefined) state.agentPhase1 = agentPhase1;
+        }).catch(() => {
+          // No existing state -- create minimal
+          return merge.ensureMergeState(cwd, setName, {
+            status,
+            startedAt: new Date().toISOString(),
+            ...(agentPhase1 !== undefined ? { agentPhase1 } : {}),
+            agentPhase2: { [agentPhase2Update.conflictId]: agentPhase2Update.phase },
+          });
+        });
+        // Read back for result
+        stateUpdates.agentPhase2 = (merge.readMergeState(cwd, setName) || {}).agentPhase2;
+      } else {
+        // Update MERGE-STATE.json status (and optionally agentPhase1)
+        await merge.ensureMergeState(cwd, setName, stateUpdates);
       }
       const result = { updated: true, set: setName, mergeStatus: status };
       if (agentPhase1 !== undefined) {
@@ -2323,20 +2305,12 @@ async function handleMerge(cwd, subcommand, args) {
       }
       const baseBranch = wt.detectMainBranch(cwd);
       // Create/update MERGE-STATE with detecting status
-      try {
-        merge.updateMergeState(cwd, setName, { status: 'detecting' });
-      } catch {
-        merge.writeMergeState(cwd, setName, {
-          setId: setName,
-          status: 'detecting',
-          startedAt: new Date().toISOString(),
-        });
-      }
+      await merge.ensureMergeState(cwd, setName, { status: 'detecting', startedAt: new Date().toISOString() });
       // Run 5-level detection (L5 semantic = null, filled by agent)
       const detectionResults = merge.detectConflicts(cwd, setName, baseBranch);
       // Update MERGE-STATE with detection results
-      merge.updateMergeState(cwd, setName, {
-        detection: {
+      await merge.withMergeStateTransaction(cwd, setName, (state) => {
+        state.detection = {
           textual: {
             ran: true,
             conflicts: (detectionResults.textual && detectionResults.textual.conflicts) || [],
@@ -2354,7 +2328,7 @@ async function handleMerge(cwd, subcommand, args) {
             conflicts: (detectionResults.api && detectionResults.api.conflicts) || [],
           },
           semantic: detectionResults.semantic || undefined,
-        },
+        };
       });
       output(JSON.stringify(detectionResults));
       break;
@@ -2373,7 +2347,7 @@ async function handleMerge(cwd, subcommand, args) {
         process.exit(1);
       }
       // Update status to resolving
-      merge.updateMergeState(cwd, setName, { status: 'resolving' });
+      await merge.withMergeStateTransaction(cwd, setName, (state) => { state.status = 'resolving'; });
       // Flatten detection results into allConflicts array for resolveConflicts()
       const allConflicts = [];
       const det = mergeState.detection;
@@ -2420,13 +2394,13 @@ async function handleMerge(cwd, subcommand, args) {
       const tier2Count = resolutionResults.filter(r => r.tier === 2 && r.resolved).length;
       const unresolvedCount = resolutionResults.filter(r => !r.resolved).length;
       // Update MERGE-STATE with resolution counts
-      merge.updateMergeState(cwd, setName, {
-        resolution: {
+      await merge.withMergeStateTransaction(cwd, setName, (state) => {
+        state.resolution = {
           tier1Resolved: tier1Count,
           tier2Resolved: tier2Count,
           unresolvedForAgent: unresolvedCount,
           total: resolutionResults.length,
-        },
+        };
       });
       output(JSON.stringify({
         results: resolutionResults,
@@ -2496,12 +2470,8 @@ async function handleMerge(cwd, subcommand, args) {
       // Update MERGE-STATE for breaking set
       if (result.breakingSet) {
         try {
-          merge.updateMergeState(cwd, result.breakingSet, {
-            bisection: {
-              isBreaking: true,
-              iterations: result.iterations,
-              detectedAt: new Date().toISOString(),
-            },
+          await merge.withMergeStateTransaction(cwd, result.breakingSet, (state) => {
+            state.bisection = { isBreaking: true, iterations: result.iterations, detectedAt: new Date().toISOString() };
           });
         } catch { /* may not have MERGE-STATE */ }
       }
@@ -2533,14 +2503,7 @@ async function handleMerge(cwd, subcommand, args) {
       const result = merge.revertSetMerge(cwd, setName);
       if (result.reverted) {
         // Update MERGE-STATE status to reverted
-        try {
-          merge.updateMergeState(cwd, setName, { status: 'reverted' });
-        } catch {
-          merge.writeMergeState(cwd, setName, {
-            setId: setName,
-            status: 'reverted',
-          });
-        }
+        await merge.ensureMergeState(cwd, setName, { status: 'reverted' });
         // Update registry mergeStatus to reverted
         await wt.registryUpdate(cwd, (reg) => {
           if (reg.worktrees[setName]) {
