@@ -53,7 +53,18 @@ async function handleWorktree(cwd, subcommand, args) {
       if (!entry) {
         throw new CliError(`No worktree registered for set "${setName}"`);
       }
-      // Resolve absolute path from the stored relative path
+
+      // Solo sets: just deregister (no worktree to remove)
+      if (entry.solo === true) {
+        await wt.registryUpdate(cwd, (reg) => {
+          delete reg.worktrees[setName];
+          return reg;
+        });
+        process.stdout.write(JSON.stringify({ removed: true, setName, solo: true }) + '\n');
+        break;
+      }
+
+      // Non-solo: existing worktree removal logic
       const absolutePath = path.resolve(cwd, entry.path);
       const result = wt.removeWorktree(cwd, absolutePath);
       if (result.removed) {
