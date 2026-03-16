@@ -19,6 +19,7 @@ const { handleExecute } = require('../commands/execute.cjs');
 const { handleMerge } = require('../commands/merge.cjs');
 const { handleMigrate } = require('../commands/migrate.cjs');
 const { handleScaffold } = require('../commands/scaffold.cjs');
+const { handleCompact } = require('../commands/compact.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -103,6 +104,7 @@ Commands:
   build-agents              Build all agent .md files from source modules
   scaffold run [--type <type>]  Generate project-type-aware foundation files
   scaffold status               Show scaffold report (if scaffold has been run)
+  compact context <set-id> [--active-wave N]  Diagnostic: show compaction stats for a set
   migrate detect                   Detect current RAPID version from .planning/ state
   migrate is-latest                Check if .planning/ state is at the latest version
   migrate backup                   Create pre-migration backup of .planning/
@@ -236,6 +238,10 @@ async function main() {
 
       case 'scaffold':
         handleScaffold(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'compact':
+        await handleCompact(cwd, subcommand, args.slice(2));
         break;
 
       default:
