@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectName": "RAPID",
-  "currentMilestone": "v3.2.0",
+  "currentMilestone": "v3.3.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -39,19 +39,23 @@
       "sets": [
         {
           "id": "status-rename",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
         },
         {
           "id": "command-cleanup",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
         },
         {
           "id": "install-version",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
         },
         {
           "id": "parallel-waves",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
         }
       ]
     },
@@ -61,27 +65,88 @@
       "sets": [
         {
           "id": "state-consistency",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
         },
         {
           "id": "command-audit",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
         },
         {
           "id": "resolve-fix",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
         },
         {
           "id": "ux-improvements",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
         },
         {
           "id": "review-after-merge",
-          "status": "merged"
+          "status": "merged",
+          "waves": []
+        }
+      ]
+    },
+    {
+      "id": "v3.3.0",
+      "name": "Developer Experience",
+      "sets": [
+        {
+          "id": "foundation-hardening",
+          "status": "discussed",
+          "waves": []
+        },
+        {
+          "id": "data-integrity",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "cli-restructuring",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "structural-cleanup",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "bug-fixes",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "solo-mode",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "review-pipeline",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "version-migration",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "scaffold-command",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "context-optimization",
+          "status": "pending",
+          "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-15T15:09:15.514Z",
+  "lastUpdatedAt": "2026-03-16T01:08:58.110Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
