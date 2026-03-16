@@ -371,45 +371,37 @@ function chunkByDirectory(files) {
  */
 function buildWaveAttribution(cwd, setId) {
   const attribution = {};
-  const wavesDir = path.join(cwd, '.planning', 'sets', setId);
+  const setDir = path.join(cwd, '.planning', 'sets', setId);
 
-  if (!fs.existsSync(wavesDir)) return attribution;
+  if (!fs.existsSync(setDir)) return attribution;
 
-  let waveEntries;
+  let entries;
   try {
-    waveEntries = fs.readdirSync(wavesDir, { withFileTypes: true })
-      .filter(e => e.isDirectory())
-      .sort((a, b) => a.name.localeCompare(b.name));
+    entries = fs.readdirSync(setDir)
+      .filter(f => /^wave-.*-PLAN\.md$/.test(f))
+      .sort((a, b) => a.localeCompare(b));
   } catch {
     return attribution;
   }
 
-  for (const waveEntry of waveEntries) {
-    const waveDir = path.join(wavesDir, waveEntry.name);
+  for (const planFile of entries) {
+    // Extract wave identifier: "wave-1-PLAN.md" -> "wave-1"
+    const waveId = planFile.replace(/-PLAN\.md$/, '');
 
-    let planFiles;
     try {
-      planFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
-    } catch {
-      continue;
-    }
-
-    for (const planFile of planFiles) {
-      try {
-        const content = fs.readFileSync(path.join(waveDir, planFile), 'utf-8');
-        // Regex matches table rows: | `file/path.cjs` | Create | or | file/path.cjs | Modify |
-        const tableRegex = /\|\s*`?([^`|]+?)`?\s*\|\s*(Create|Modify)\s*\|/gi;
-        let match;
-        while ((match = tableRegex.exec(content)) !== null) {
-          const filePath = match[1].trim();
-          if (filePath && filePath !== 'File' && !filePath.startsWith('---')) {
-            // Last wave wins (sequential execution model)
-            attribution[filePath] = waveEntry.name;
-          }
+      const content = fs.readFileSync(path.join(setDir, planFile), 'utf-8');
+      // Regex matches table rows: | `file/path.cjs` | Create | or | file/path.cjs | Modify |
+      const tableRegex = /\|\s*`?([^`|]+?)`?\s*\|\s*(Create|Modify)\s*\|/gi;
+      let match;
+      while ((match = tableRegex.exec(content)) !== null) {
+        const filePath = match[1].trim();
+        if (filePath && filePath !== 'File' && !filePath.startsWith('---')) {
+          // Last wave wins (sequential execution model)
+          attribution[filePath] = waveId;
         }
-      } catch {
-        // Skip malformed plan files gracefully
       }
+    } catch {
+      // Skip malformed plan files gracefully
     }
   }
 

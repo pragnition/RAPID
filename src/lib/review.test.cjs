@@ -322,11 +322,11 @@ describe('buildWaveAttribution', () => {
     cleanupDir(tmpDir);
   });
 
-  it('reads JOB-PLAN.md files and returns file-to-wave map', () => {
-    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
-    fs.mkdirSync(wave1Dir, { recursive: true });
-    fs.writeFileSync(path.join(wave1Dir, '01-JOB-PLAN.md'), `
-# Job Plan
+  it('reads wave-*-PLAN.md files and returns file-to-wave map', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
+# Wave 1 Plan
 
 ## Files to Create/Modify
 
@@ -336,10 +336,8 @@ describe('buildWaveAttribution', () => {
 | \`src/lib/token.cjs\` | Modify |
 `);
 
-    const wave2Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-2');
-    fs.mkdirSync(wave2Dir, { recursive: true });
-    fs.writeFileSync(path.join(wave2Dir, '01-JOB-PLAN.md'), `
-# Job Plan
+    fs.writeFileSync(path.join(setDir, 'wave-2-PLAN.md'), `
+# Wave 2 Plan
 
 ## Files to Create/Modify
 
@@ -355,17 +353,15 @@ describe('buildWaveAttribution', () => {
   });
 
   it('last wave wins when file appears in multiple waves', () => {
-    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
-    fs.mkdirSync(wave1Dir, { recursive: true });
-    fs.writeFileSync(path.join(wave1Dir, '01-JOB-PLAN.md'), `
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
 | File | Action |
 |------|--------|
 | \`src/shared.cjs\` | Create |
 `);
 
-    const wave2Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-2');
-    fs.mkdirSync(wave2Dir, { recursive: true });
-    fs.writeFileSync(path.join(wave2Dir, '01-JOB-PLAN.md'), `
+    fs.writeFileSync(path.join(setDir, 'wave-2-PLAN.md'), `
 | File | Action |
 |------|--------|
 | \`src/shared.cjs\` | Modify |
@@ -375,16 +371,16 @@ describe('buildWaveAttribution', () => {
     assert.equal(attribution['src/shared.cjs'], 'wave-2', 'Last wave should win');
   });
 
-  it('returns empty object when wavesDir does not exist', () => {
+  it('returns empty object when set directory does not exist', () => {
     const attribution = review.buildWaveAttribution(tmpDir, 'nonexistent-set');
     assert.deepStrictEqual(attribution, {});
   });
 
   it('skips malformed plan files gracefully', () => {
-    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
-    fs.mkdirSync(wave1Dir, { recursive: true });
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setDir, { recursive: true });
     // Write a plan file with no valid table entries
-    fs.writeFileSync(path.join(wave1Dir, '01-JOB-PLAN.md'), `
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
 # Just a title, no table
 Some random content here
 `);
@@ -393,23 +389,24 @@ Some random content here
     assert.deepStrictEqual(attribution, {});
   });
 
-  it('handles multiple plan files in a single wave', () => {
-    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
-    fs.mkdirSync(wave1Dir, { recursive: true });
-    fs.writeFileSync(path.join(wave1Dir, '01-JOB-PLAN.md'), `
+  it('ignores non-wave files in the set directory', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
 | File | Action |
 |------|--------|
 | \`src/a.cjs\` | Create |
 `);
-    fs.writeFileSync(path.join(wave1Dir, '02-JOB-PLAN.md'), `
+    // This file should be ignored -- not matching wave-*-PLAN.md pattern
+    fs.writeFileSync(path.join(setDir, 'SET-OVERVIEW.md'), `
 | File | Action |
 |------|--------|
-| \`src/b.cjs\` | Create |
+| \`src/should-not-appear.cjs\` | Create |
 `);
 
     const attribution = review.buildWaveAttribution(tmpDir, 'auth-core');
     assert.equal(attribution['src/a.cjs'], 'wave-1');
-    assert.equal(attribution['src/b.cjs'], 'wave-1');
+    assert.equal(attribution['src/should-not-appear.cjs'], undefined);
   });
 });
 
