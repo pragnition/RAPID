@@ -93,6 +93,10 @@ const TOOL_REGISTRY = {
   // Display
   'display-banner':       'display banner <stage:str> [target:str] -- Show RAPID banner',
 
+  // Scaffold
+  'scaffold-run':         'scaffold run [--type <type:str>] -- Generate project foundation files',
+  'scaffold-status':      'scaffold status -- Show scaffold report',
+
   // Prereqs
   'prereqs-check':        'prereqs -- Check prerequisites',
 };
