@@ -227,8 +227,6 @@ async function main() {
   }
 }
 
-// handleMerge extracted to ../commands/merge.cjs
-
 if (require.main === module) {
   main().catch((err) => {
     error(err.message);
