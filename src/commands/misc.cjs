@@ -76,4 +76,54 @@ async function handleResume(cwd, args) {
   }
 }
 
-module.exports = { handleAssumptions, handleParseReturn, handleResume };
+function handleVerifyArtifacts(args) {
+  // Will be fully implemented in Task 2
+  let verifyModule;
+  try {
+    verifyModule = require('../lib/verify.cjs');
+  } catch (err) {
+    error('Verify module not yet available. It will be added in a subsequent task.');
+    process.exit(1);
+  }
+
+  const isHeavy = args.includes('--heavy');
+  const isReport = args.includes('--report');
+  let testCommand = null;
+
+  const testIdx = args.indexOf('--test');
+  if (testIdx !== -1 && args[testIdx + 1]) {
+    testCommand = args[testIdx + 1];
+  }
+
+  // Collect file paths (skip flags and their arguments)
+  const files = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--heavy' || args[i] === '--report') continue;
+    if (args[i] === '--test') { i++; continue; }
+    if (!args[i].startsWith('--')) {
+      files.push(args[i]);
+    }
+  }
+
+  if (files.length === 0) {
+    error('Usage: rapid-tools verify-artifacts [--heavy --test "<cmd>"] [--report] <file1> [file2...]');
+    process.exit(1);
+  }
+
+  let results;
+  if (isHeavy) {
+    results = verifyModule.verifyHeavy(files, testCommand);
+  } else {
+    results = verifyModule.verifyLight(files, []);
+  }
+
+  if (isReport) {
+    const tier = isHeavy ? 'heavy' : 'light';
+    const report = verifyModule.generateVerificationReport(results, tier);
+    process.stdout.write(report + '\n');
+  } else {
+    process.stdout.write(JSON.stringify(results) + '\n');
+  }
+}
+
+module.exports = { handleAssumptions, handleParseReturn, handleResume, handleVerifyArtifacts };
