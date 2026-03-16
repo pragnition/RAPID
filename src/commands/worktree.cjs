@@ -16,7 +16,7 @@ async function handleWorktree(cwd, subcommand, args) {
       try {
         const { branch, path: wtPath } = wt.createWorktree(cwd, setName);
         // Register in REGISTRY.json
-        await wt.registryUpdate(cwd, (reg) => {
+        await wt.withRegistryUpdate(cwd, (reg) => {
           reg.worktrees[setName] = {
             setName,
             branch,
@@ -48,7 +48,7 @@ async function handleWorktree(cwd, subcommand, args) {
       if (!setName) {
         throw new CliError('Usage: rapid-tools worktree cleanup <set-name>');
       }
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
         throw new CliError(`No worktree registered for set "${setName}"`);
@@ -56,7 +56,7 @@ async function handleWorktree(cwd, subcommand, args) {
 
       // Solo sets: just deregister (no worktree to remove)
       if (entry.solo === true) {
-        await wt.registryUpdate(cwd, (reg) => {
+        await wt.withRegistryUpdate(cwd, (reg) => {
           delete reg.worktrees[setName];
           return reg;
         });
@@ -69,7 +69,7 @@ async function handleWorktree(cwd, subcommand, args) {
       const result = wt.removeWorktree(cwd, absolutePath);
       if (result.removed) {
         // Deregister from REGISTRY.json
-        await wt.registryUpdate(cwd, (reg) => {
+        await wt.withRegistryUpdate(cwd, (reg) => {
           delete reg.worktrees[setName];
           return reg;
         });
@@ -83,7 +83,7 @@ async function handleWorktree(cwd, subcommand, args) {
     }
 
     case 'reconcile': {
-      const beforeRegistry = wt.loadRegistry(cwd);
+      const beforeRegistry = wt.readRegistry(cwd);
       const beforeEntries = Object.keys(beforeRegistry.worktrees);
       const beforeStatuses = {};
       for (const [k, v] of Object.entries(beforeRegistry.worktrees)) {
@@ -164,7 +164,7 @@ async function handleWorktree(cwd, subcommand, args) {
       const state = stateResult.state;
       const milestoneId = state.currentMilestone;
       const milestone = stateMachine.findMilestone(state, milestoneId);
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
 
       const stateData = {
         milestone: milestoneId,
@@ -191,7 +191,7 @@ async function handleWorktree(cwd, subcommand, args) {
       if (!setName) {
         throw new CliError('Usage: rapid-tools worktree generate-claude-md <set-name>');
       }
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
         throw new CliError(`No worktree registered for set "${setName}"`);

@@ -37,7 +37,7 @@ async function handleExecute(cwd, subcommand, args) {
       }
       let branch = verifyFlags.branch || 'main';
       // Load registry to find worktree path
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
         throw new CliError(`No worktree registered for set "${setName}"`);
@@ -71,7 +71,7 @@ async function handleExecute(cwd, subcommand, args) {
       if (!setName) {
         throw new CliError('Usage: rapid-tools execute cleanup-stubs <set-name>');
       }
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
         throw new CliError(`No worktree registered for set "${setName}"`);
@@ -135,7 +135,7 @@ async function handleExecute(cwd, subcommand, args) {
       }
       // Note: Solo entries are preserved -- the 'if' branch only updates phase/updatedAt,
       // keeping solo, startCommit, path, and branch intact.
-      await wt.registryUpdate(cwd, (reg) => {
+      await wt.withRegistryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
           reg.worktrees[setName].phase = phase;
           reg.worktrees[setName].updatedAt = new Date().toISOString();
@@ -194,7 +194,7 @@ async function handleExecute(cwd, subcommand, args) {
         throw new CliError('Usage: rapid-tools execute pause <set-name>');
       }
       // Validate registry entry exists and phase is Executing
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
       const entry = registry.worktrees[setName];
       if (!entry) {
         throw new CliError(`No worktree registered for set "${setName}"`);
@@ -222,7 +222,7 @@ async function handleExecute(cwd, subcommand, args) {
       fs.mkdirSync(path.dirname(handoffPath), { recursive: true });
       fs.writeFileSync(handoffPath, handoffContent, 'utf-8');
       // Update registry: phase = Paused, pauseCycles, updatedAt
-      await wt.registryUpdate(cwd, (reg) => {
+      await wt.withRegistryUpdate(cwd, (reg) => {
         if (reg.worktrees[setName]) {
           reg.worktrees[setName].phase = 'Paused';
           reg.worktrees[setName].pauseCycles = pauseCycles;
@@ -264,7 +264,7 @@ async function handleExecute(cwd, subcommand, args) {
       } catch (err) {
         throw new CliError(`Cannot read DAG.json: ${err.message}`);
       }
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
       // Run reconciliation
       const reconcileResult = execute.reconcileWave(cwd, waveNum, dagJson, registry);
       // Generate summary (pass executionMode for wave summary metadata)
@@ -312,7 +312,7 @@ async function handleExecute(cwd, subcommand, args) {
       let branch = rjFlags.branch || 'main';
       let mode = rjFlags.mode || 'Subagents';
       // Find worktree path for this set
-      const registry = wt.loadRegistry(cwd);
+      const registry = wt.readRegistry(cwd);
       const entry = registry.worktrees[setId];
       const worktreePath = entry ? path.resolve(cwd, entry.path) : cwd;
       // Run job-level reconciliation
