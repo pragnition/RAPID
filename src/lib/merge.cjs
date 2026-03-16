@@ -15,7 +15,7 @@
  * Depends on:
  *   - contract.cjs: compileContract, generateContractTest, checkOwnership
  *   - dag.cjs: getExecutionOrder for merge ordering
- *   - worktree.cjs: gitExec, loadRegistry, detectMainBranch
+ *   - worktree.cjs: gitExec, readRegistry, detectMainBranch
  *   - execute.cjs: getChangedFiles (for v1.0 programmatic gate)
  *   - plan.cjs: loadSet
  *   - zod: MergeState schema validation
@@ -1247,7 +1247,7 @@ function runProgrammaticGate(cwd, setName) {
   // 3. Check file ownership compliance
   const ownershipViolations = [];
   try {
-    const registry = worktree.loadRegistry(cwd);
+    const registry = worktree.readRegistry(cwd);
     const entry = registry.worktrees[setName];
 
     if (entry) {
@@ -1328,7 +1328,7 @@ function prepareReviewContext(cwd, setName) {
 
   let changedFiles = [];
   try {
-    const registry = worktree.loadRegistry(cwd);
+    const registry = worktree.readRegistry(cwd);
     const entry = registry.worktrees[setName];
     if (entry) {
       const worktreePath = path.resolve(cwd, entry.path);
@@ -1572,7 +1572,7 @@ function getMergeOrder(cwd) {
  */
 function mergeSet(projectRoot, setName, baseBranch) {
   // Solo mode: no merge needed -- work is already on main
-  const registry = worktree.loadRegistry(projectRoot);
+  const registry = worktree.readRegistry(projectRoot);
   const entry = registry.worktrees[setName];
   if (entry && entry.solo === true) {
     const headResult = worktree.gitExec(['rev-parse', 'HEAD'], projectRoot);
