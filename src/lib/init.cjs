@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createInitialState } = require('./state-machine.cjs');
+const { getVersion } = require('./version.cjs');
 
 /**
  * Generate PROJECT.md content from project configuration.
@@ -233,7 +234,7 @@ function scaffoldProject(cwd, opts, mode = 'fresh') {
     'ROADMAP.md': () => generateRoadmapMd(opts.name),
     'REQUIREMENTS.md': () => generateRequirementsMd(opts.name),
     'config.json': () => generateConfigJson(opts),
-    'STATE.json': () => JSON.stringify(createInitialState(opts.name, 'v1.0'), null, 2),
+    'STATE.json': () => JSON.stringify(createInitialState(opts.name, 'v1.0', getVersion()), null, 2),
   };
 
   // Helper: ensure research directory exists inside planningDir

@@ -16,11 +16,12 @@ const STATE_FILE = 'STATE.json';
  *
  * @param {string} projectName - Name of the project
  * @param {string} milestoneName - Name of the first milestone
+ * @param {string} [rapidVersion] - RAPID tool version that created the project (e.g., '3.2.0')
  * @returns {object} A valid ProjectState object
  */
-function createInitialState(projectName, milestoneName) {
+function createInitialState(projectName, milestoneName, rapidVersion) {
   const now = new Date().toISOString();
-  return {
+  const state = {
     version: 1,
     projectName,
     currentMilestone: milestoneName,
@@ -32,6 +33,8 @@ function createInitialState(projectName, milestoneName) {
     lastUpdatedAt: now,
     createdAt: now,
   };
+  if (rapidVersion) state.rapidVersion = rapidVersion;
+  return state;
 }
 
 /**

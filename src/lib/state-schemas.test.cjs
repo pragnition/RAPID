@@ -48,9 +48,15 @@ describe('SetState', () => {
     assert.equal(set.status, 'pending');
   });
 
-  it('has no extra fields on parsed result', () => {
+  it('has no extra fields on parsed result when none provided', () => {
     const set = SetState.parse({ id: 'auth', status: 'pending' });
     assert.deepEqual(Object.keys(set).sort(), ['id', 'status', 'waves']);
+  });
+
+  it('preserves extra fields when provided (passthrough)', () => {
+    const set = SetState.parse({ id: 'auth', status: 'pending', customField: 'hello' });
+    assert.equal(set.customField, 'hello');
+    assert.ok(Object.keys(set).includes('customField'));
   });
 
   it('parses waves array when provided', () => {
@@ -134,8 +140,44 @@ describe('ProjectState', () => {
     assert.deepEqual(roundTripped, first);
   });
 
-  it('rejects version !== 1', () => {
+  it('accepts version 2 (forward-compatible)', () => {
     const result = ProjectState.safeParse({ ...validProject, version: 2 });
+    assert.equal(result.success, true);
+    assert.equal(result.data.version, 2);
+  });
+
+  it('rejects version 0 (below minimum)', () => {
+    const result = ProjectState.safeParse({ ...validProject, version: 0 });
+    assert.equal(result.success, false);
+  });
+
+  it('rejects negative version', () => {
+    const result = ProjectState.safeParse({ ...validProject, version: -1 });
+    assert.equal(result.success, false);
+  });
+
+  it('rejects non-integer version (1.5)', () => {
+    const result = ProjectState.safeParse({ ...validProject, version: 1.5 });
+    assert.equal(result.success, false);
+  });
+
+  it('rejects string version', () => {
+    const result = ProjectState.safeParse({ ...validProject, version: '1' });
+    assert.equal(result.success, false);
+  });
+
+  it('parses without rapidVersion (field is optional)', () => {
+    const result = ProjectState.parse({ ...validProject });
+    assert.equal(result.rapidVersion, undefined);
+  });
+
+  it('preserves rapidVersion when provided', () => {
+    const result = ProjectState.parse({ ...validProject, rapidVersion: '3.2.0' });
+    assert.equal(result.rapidVersion, '3.2.0');
+  });
+
+  it('rejects non-string rapidVersion', () => {
+    const result = ProjectState.safeParse({ ...validProject, rapidVersion: 123 });
     assert.equal(result.success, false);
   });
 
@@ -278,6 +320,43 @@ describe('JobState', () => {
   it('rejects invalid status', () => {
     const result = JobState.safeParse({ id: 'j1', status: 'discussed' });
     assert.equal(result.success, false);
+  });
+});
+
+describe('passthrough behavior', () => {
+  const { WaveState, JobState } = schemas;
+
+  const validProject = {
+    version: 1,
+    projectName: 'TestProject',
+    currentMilestone: 'ms-1',
+    lastUpdatedAt: '2026-01-01T00:00:00Z',
+    createdAt: '2026-01-01T00:00:00Z',
+  };
+
+  it('JobState preserves unknown fields', () => {
+    const result = JobState.parse({ id: 'j1', status: 'pending', customField: 'hello' });
+    assert.equal(result.customField, 'hello');
+  });
+
+  it('WaveState preserves unknown fields', () => {
+    const result = WaveState.parse({ id: 'w1', jobs: [], futureField: 42 });
+    assert.equal(result.futureField, 42);
+  });
+
+  it('SetState preserves unknown fields', () => {
+    const result = SetState.parse({ id: 's1', extraData: true });
+    assert.equal(result.extraData, true);
+  });
+
+  it('MilestoneState preserves unknown fields', () => {
+    const result = MilestoneState.parse({ id: 'm1', name: 'M1', metadata: {} });
+    assert.deepEqual(result.metadata, {});
+  });
+
+  it('ProjectState preserves unknown fields', () => {
+    const result = ProjectState.parse({ ...validProject, unknownKey: 'preserved' });
+    assert.equal(result.unknownKey, 'preserved');
   });
 });
 
