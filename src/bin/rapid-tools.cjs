@@ -2,6 +2,7 @@
 'use strict';
 
 const { output, error, findProjectRoot } = require('../lib/core.cjs');
+const { CliError, exitWithError } = require('../lib/errors.cjs');
 const { handleDisplay } = require('../commands/display.cjs');
 const { handleLock } = require('../commands/lock.cjs');
 const { handlePrereqs } = require('../commands/prereqs.cjs');
@@ -134,96 +135,102 @@ async function main() {
   const command = args[0];
   const subcommand = args[1];
 
-  // Commands that don't need project root
-  if (command === 'prereqs') {
-    await handlePrereqs(args.slice(1));
-    return;
-  }
-  if (command === 'init') {
-    handleInit(args.slice(1));
-    return;
-  }
-  if (command === 'context') {
-    handleContext(args.slice(1));
-    return;
-  }
-  if (command === 'display') {
-    handleDisplay(args[1], args.slice(2));
-    return;
-  }
-
-  // All other commands need project root
-  let cwd;
   try {
-    cwd = findProjectRoot();
+    // Commands that don't need project root
+    if (command === 'prereqs') {
+      await handlePrereqs(args.slice(1));
+      return;
+    }
+    if (command === 'init') {
+      handleInit(args.slice(1));
+      return;
+    }
+    if (command === 'context') {
+      handleContext(args.slice(1));
+      return;
+    }
+    if (command === 'display') {
+      handleDisplay(args[1], args.slice(2));
+      return;
+    }
+
+    // All other commands need project root
+    let cwd;
+    try {
+      cwd = findProjectRoot();
+    } catch (err) {
+      throw new CliError(`Cannot find project root: ${err.message}`);
+    }
+
+    migrateStateVersion(cwd);
+
+    switch (command) {
+      case 'lock':
+        await handleLock(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'state':
+        await handleState(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'parse-return':
+        handleParseReturn(args.slice(1));
+        break;
+
+      case 'verify-artifacts':
+        handleVerifyArtifacts(args.slice(1));
+        break;
+
+      case 'plan':
+        handlePlan(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'assumptions':
+        handleAssumptions(cwd, args.slice(1));
+        break;
+
+      case 'worktree':
+        await handleWorktree(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'execute':
+        await handleExecute(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'merge':
+        await handleMerge(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'set-init':
+        await handleSetInit(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'review':
+        await handleReview(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'resume':
+        await handleResume(cwd, args.slice(1));
+        break;
+
+      case 'resolve':
+        await handleResolve(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'build-agents':
+        handleBuildAgents(cwd, args.slice(1));
+        break;
+
+      default:
+        error(`Unknown command: ${command}`);
+        process.stdout.write(USAGE);
+        process.exit(1);
+    }
   } catch (err) {
-    error(`Cannot find project root: ${err.message}`);
-    process.exit(1);
-  }
-
-  migrateStateVersion(cwd);
-
-  switch (command) {
-    case 'lock':
-      await handleLock(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'state':
-      await handleState(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'parse-return':
-      handleParseReturn(args.slice(1));
-      break;
-
-    case 'verify-artifacts':
-      handleVerifyArtifacts(args.slice(1));
-      break;
-
-    case 'plan':
-      handlePlan(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'assumptions':
-      handleAssumptions(cwd, args.slice(1));
-      break;
-
-    case 'worktree':
-      await handleWorktree(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'execute':
-      await handleExecute(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'merge':
-      await handleMerge(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'set-init':
-      await handleSetInit(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'review':
-      await handleReview(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'resume':
-      await handleResume(cwd, args.slice(1));
-      break;
-
-    case 'resolve':
-      await handleResolve(cwd, subcommand, args.slice(2));
-      break;
-
-    case 'build-agents':
-      handleBuildAgents(cwd, args.slice(1));
-      break;
-
-    default:
-      error(`Unknown command: ${command}`);
-      process.stdout.write(USAGE);
-      process.exit(1);
+    if (err instanceof CliError) {
+      exitWithError(err.message, err.code);
+    }
+    throw err; // re-throw unexpected errors for the outer .catch()
   }
 }
 
