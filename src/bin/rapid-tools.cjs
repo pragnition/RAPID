@@ -18,6 +18,7 @@ const { handleBuildAgents } = require('../commands/build-agents.cjs');
 const { handleExecute } = require('../commands/execute.cjs');
 const { handleMerge } = require('../commands/merge.cjs');
 const { handleMigrate } = require('../commands/migrate.cjs');
+const { handleScaffold } = require('../commands/scaffold.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -100,6 +101,8 @@ Commands:
   review summary <set-id> [--post-merge]             Generate REVIEW-SUMMARY.md
   display banner <stage> [target]  Display branded RAPID stage banner
   build-agents              Build all agent .md files from source modules
+  scaffold run [--type <type>]  Generate project-type-aware foundation files
+  scaffold status               Show scaffold report (if scaffold has been run)
   migrate detect                   Detect current RAPID version from .planning/ state
   migrate is-latest                Check if .planning/ state is at the latest version
   migrate backup                   Create pre-migration backup of .planning/
@@ -229,6 +232,10 @@ async function main() {
 
       case 'migrate':
         handleMigrate(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'scaffold':
+        handleScaffold(cwd, subcommand, args.slice(2));
         break;
 
       default:

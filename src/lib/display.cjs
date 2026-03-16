@@ -36,6 +36,7 @@ const STAGE_VERBS = {
   'new-version': 'NEW VERSION',
   'add-set': 'ADDING SET',
   'quick': 'QUICK TASK',
+  'scaffold': 'SCAFFOLDING',
 };
 
 /**
@@ -62,6 +63,7 @@ const STAGE_BG = {
   'new-version': '\x1b[104m', // bright blue (lifecycle stage)
   'add-set': '\x1b[104m',    // bright blue (planning stage)
   'quick': '\x1b[102m',      // bright green (execution stage)
+  'scaffold': '\x1b[104m',  // bright blue (planning stage)
 };
 
 /**

@@ -90,8 +90,25 @@ You receive:
 2. **Project description** -- user-provided description and feature requirements
 3. **Team size** -- number of developers available for parallel work
 4. **Model selection** -- opus or sonnet, affects planning granularity
+5. **Scaffold report** (optional) -- `.planning/scaffold-report.json` if scaffold has been run. Contains project type, language, and lists of generated files.
 
 Read the research summary using the Read tool before beginning roadmap generation.
+
+## Scaffold Awareness
+
+Before generating the roadmap, check if a scaffold report exists at `.planning/scaffold-report.json`.
+
+**If scaffold-report.json exists:**
+- Read the report to understand which foundation files have been generated.
+- Treat scaffolded files as shared baseline -- they are NOT owned by any individual set.
+- When defining set file ownership boundaries, exclude files listed in `filesCreated` from the scaffold report.
+- Sets may import from or build upon scaffolded files, but no set should claim exclusive ownership of a scaffolded file.
+- Reference scaffolded files in contracts as "provided by scaffold" when a set imports from them.
+- Include a note in the roadmap output indicating that scaffold-generated files form the shared baseline.
+
+**If scaffold-report.json does not exist:**
+- Proceed normally. Do not reference scaffold in the roadmap.
+- Scaffold is fully optional -- its absence does not affect roadmap generation.
 
 ## Output
 
@@ -254,6 +271,7 @@ For each set, generate a contract:
 - Creates wave ordering within each set
 - Lists jobs within each wave with titles and complexity
 - Generates unified contracts across all sets
+- Checks for scaffold report to establish baseline file awareness
 - Returns structured JSON for the orchestrator to write
 
 ### What This Agent Does NOT Do
