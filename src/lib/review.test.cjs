@@ -1254,6 +1254,18 @@ describe('module exports', () => {
   it('exports generatePostMergeReviewSummary', () => {
     assert.equal(typeof review.generatePostMergeReviewSummary, 'function');
   });
+
+  it('exports serializeReviewScope', () => {
+    assert.equal(typeof review.serializeReviewScope, 'function');
+  });
+
+  it('exports parseReviewScope', () => {
+    assert.equal(typeof review.parseReviewScope, 'function');
+  });
+
+  it('exports extractAcceptanceCriteria', () => {
+    assert.equal(typeof review.extractAcceptanceCriteria, 'function');
+  });
 });
 
 // ────────────────────────────────────────────────────────────────
@@ -1566,5 +1578,340 @@ describe('generatePostMergeReviewSummary', () => {
     const content = fs.readFileSync(summaryPath, 'utf-8');
     assert.ok(content.includes('# Review Summary: summary-test'), 'should contain set id in title');
     assert.ok(content.includes('**Total issues:** 1'), 'should report issue count');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// serializeReviewScope Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('serializeReviewScope', () => {
+  const baseScopeData = {
+    setId: 'auth-core',
+    date: '2026-03-16T10:00:00Z',
+    postMerge: false,
+    worktreePath: '/tmp/worktree/auth-core',
+    changedFiles: ['src/lib/auth.cjs', 'src/lib/token.cjs'],
+    dependentFiles: ['src/lib/app.cjs'],
+    totalFiles: 3,
+    chunks: [{ dir: 'src/lib', files: ['src/lib/auth.cjs', 'src/lib/token.cjs', 'src/lib/app.cjs'] }],
+    waveAttribution: { 'src/lib/auth.cjs': 'wave-1', 'src/lib/token.cjs': 'wave-2' },
+    concernScoping: null,
+    useConcernScoping: false,
+    fallbackWarning: null,
+    acceptanceCriteria: ['[wave-1] Auth tokens must expire after 1 hour', '[wave-2] Session refresh must work'],
+  };
+
+  it('produces markdown with correct heading', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.startsWith('# REVIEW-SCOPE: auth-core'), 'Should start with heading');
+  });
+
+  it('includes SCOPE-META JSON block with correct fields', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.includes('<!-- SCOPE-META'), 'Should contain SCOPE-META marker');
+    assert.ok(md.includes('"setId":"auth-core"'), 'SCOPE-META should contain setId');
+    assert.ok(md.includes('"totalFiles":3'), 'SCOPE-META should contain totalFiles');
+    assert.ok(md.includes('"postMerge":false'), 'SCOPE-META should contain postMerge');
+    assert.ok(md.includes('"useConcernScoping":false'), 'SCOPE-META should contain useConcernScoping');
+  });
+
+  it('includes Set Metadata table', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.includes('## Set Metadata'), 'Should contain Set Metadata heading');
+    assert.ok(md.includes('| Set ID | auth-core |'), 'Should contain set ID row');
+    assert.ok(md.includes('| Total Files | 3 |'), 'Should contain total files row');
+  });
+
+  it('includes Changed Files table with wave attribution', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.includes('## Changed Files'), 'Should contain Changed Files heading');
+    assert.ok(md.includes('| `src/lib/auth.cjs` | wave-1 |'), 'Should show wave-1 attribution');
+    assert.ok(md.includes('| `src/lib/token.cjs` | wave-2 |'), 'Should show wave-2 attribution');
+  });
+
+  it('marks unattributed files as "unattributed" in Changed Files', () => {
+    const data = { ...baseScopeData, waveAttribution: {} };
+    const md = review.serializeReviewScope(data);
+    assert.ok(md.includes('| `src/lib/auth.cjs` | unattributed |'), 'Should show unattributed');
+  });
+
+  it('includes Dependent Files table', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.includes('## Dependent Files'), 'Should contain Dependent Files heading');
+    assert.ok(md.includes('| `src/lib/app.cjs` |'), 'Should list dependent file');
+  });
+
+  it('shows "No dependent files" message when empty', () => {
+    const data = { ...baseScopeData, dependentFiles: [] };
+    const md = review.serializeReviewScope(data);
+    assert.ok(md.includes('No dependent files detected.'), 'Should show no dependents message');
+  });
+
+  it('includes Directory Chunks sections', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.includes('## Directory Chunks'), 'Should contain Directory Chunks heading');
+    assert.ok(md.includes('### Chunk 1: src/lib'), 'Should contain chunk heading');
+    assert.ok(md.includes('- `src/lib/auth.cjs`'), 'Should list chunk files');
+  });
+
+  it('includes Wave Attribution table', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.includes('## Wave Attribution'), 'Should contain Wave Attribution heading');
+    assert.ok(md.includes('| `src/lib/auth.cjs` | wave-1 |'), 'Should show wave attribution');
+  });
+
+  it('shows "No wave attribution" when empty', () => {
+    const data = { ...baseScopeData, waveAttribution: {} };
+    const md = review.serializeReviewScope(data);
+    assert.ok(md.includes('No wave attribution available.'), 'Should show no attribution message');
+  });
+
+  it('handles null concernScoping with message', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.includes('## Concern Scoping'), 'Should contain Concern Scoping heading');
+    assert.ok(md.includes('Concern scoping was not performed.'), 'Should show null concern message');
+  });
+
+  it('renders concern scoping data when present', () => {
+    const data = {
+      ...baseScopeData,
+      useConcernScoping: true,
+      concernScoping: {
+        concerns: [
+          { name: 'Authentication', files: ['src/lib/auth.cjs'], rationale: {} },
+        ],
+        crossCutting: [
+          { file: 'src/lib/utils.cjs', rationale: 'Shared utility' },
+        ],
+        totalFiles: 2,
+        concernCount: 1,
+        crossCuttingCount: 1,
+      },
+    };
+    const md = review.serializeReviewScope(data);
+    assert.ok(md.includes('### Authentication'), 'Should contain concern name');
+    assert.ok(md.includes('- `src/lib/auth.cjs`'), 'Should list concern files');
+    assert.ok(md.includes('### Cross-Cutting Files'), 'Should contain cross-cutting section');
+    assert.ok(md.includes('- `src/lib/utils.cjs`: Shared utility'), 'Should list cross-cutting files');
+  });
+
+  it('includes fallback warning when present', () => {
+    const data = { ...baseScopeData, fallbackWarning: 'Too many cross-cutting files' };
+    const md = review.serializeReviewScope(data);
+    assert.ok(md.includes('> **Warning:** Too many cross-cutting files'), 'Should include warning');
+  });
+
+  it('includes Acceptance Criteria as numbered list', () => {
+    const md = review.serializeReviewScope(baseScopeData);
+    assert.ok(md.includes('## Acceptance Criteria'), 'Should contain Acceptance Criteria heading');
+    assert.ok(md.includes('1. [wave-1] Auth tokens must expire after 1 hour'), 'Should contain first criterion');
+    assert.ok(md.includes('2. [wave-2] Session refresh must work'), 'Should contain second criterion');
+  });
+
+  it('shows "No acceptance criteria" when empty', () => {
+    const data = { ...baseScopeData, acceptanceCriteria: [] };
+    const md = review.serializeReviewScope(data);
+    assert.ok(md.includes('No acceptance criteria found.'), 'Should show empty criteria message');
+  });
+
+  it('handles postMerge=true in SCOPE-META', () => {
+    const data = { ...baseScopeData, postMerge: true };
+    const md = review.serializeReviewScope(data);
+    assert.ok(md.includes('"postMerge":true'), 'SCOPE-META should reflect postMerge=true');
+    assert.ok(md.includes('| Post-Merge | true |'), 'Metadata table should show true');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// parseReviewScope Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('parseReviewScope', () => {
+  it('round-trips with serializeReviewScope', () => {
+    const scopeData = {
+      setId: 'test-set',
+      date: '2026-03-16T10:00:00Z',
+      postMerge: false,
+      worktreePath: '/tmp/test',
+      changedFiles: ['a.cjs'],
+      dependentFiles: [],
+      totalFiles: 1,
+      chunks: [{ dir: '.', files: ['a.cjs'] }],
+      waveAttribution: { 'a.cjs': 'wave-1' },
+      concernScoping: null,
+      useConcernScoping: false,
+      fallbackWarning: null,
+      acceptanceCriteria: [],
+    };
+    const md = review.serializeReviewScope(scopeData);
+    const parsed = review.parseReviewScope(md);
+    assert.equal(parsed.setId, 'test-set');
+    assert.equal(parsed.date, '2026-03-16T10:00:00Z');
+    assert.equal(parsed.postMerge, false);
+    assert.equal(parsed.worktreePath, '/tmp/test');
+    assert.equal(parsed.totalFiles, 1);
+    assert.equal(parsed.useConcernScoping, false);
+  });
+
+  it('throws when SCOPE-META marker is missing', () => {
+    assert.throws(
+      () => review.parseReviewScope('# No meta here\nJust text.'),
+      /SCOPE-META marker not found/
+    );
+  });
+
+  it('throws on malformed JSON in SCOPE-META', () => {
+    assert.throws(
+      () => review.parseReviewScope('<!-- SCOPE-META {not valid json} -->'),
+      /Failed to parse SCOPE-META JSON/
+    );
+  });
+
+  it('parses SCOPE-META with extra whitespace', () => {
+    const md = '<!-- SCOPE-META   {"setId":"ws-test","date":"2026-01-01","postMerge":true,"worktreePath":"/x","totalFiles":5,"useConcernScoping":true}   -->';
+    const parsed = review.parseReviewScope(md);
+    assert.equal(parsed.setId, 'ws-test');
+    assert.equal(parsed.postMerge, true);
+    assert.equal(parsed.totalFiles, 5);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// extractAcceptanceCriteria Tests
+// ────────────────────────────────────────────────────────────────
+
+describe('extractAcceptanceCriteria', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    cleanupDir(tmpDir);
+  });
+
+  it('extracts criteria from wave-*-PLAN.md files with wave tags', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
+# Wave 1
+
+## Success Criteria
+
+- Auth tokens must expire after 1 hour
+- Login endpoint returns 401 on bad credentials
+`);
+    fs.writeFileSync(path.join(setDir, 'wave-2-PLAN.md'), `
+# Wave 2
+
+## Acceptance Criteria
+
+- Session refresh must work within 5 minutes
+`);
+
+    const criteria = review.extractAcceptanceCriteria(tmpDir, 'auth-core');
+    assert.equal(criteria.length, 3);
+    assert.equal(criteria[0], '[wave-1] Auth tokens must expire after 1 hour');
+    assert.equal(criteria[1], '[wave-1] Login endpoint returns 401 on bad credentials');
+    assert.equal(criteria[2], '[wave-2] Session refresh must work within 5 minutes');
+  });
+
+  it('returns empty array when set directory does not exist', () => {
+    const criteria = review.extractAcceptanceCriteria(tmpDir, 'nonexistent');
+    assert.deepStrictEqual(criteria, []);
+  });
+
+  it('returns empty array when no plan files have criteria sections', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'empty-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
+# Wave 1
+
+## Tasks
+
+### Task 1
+Do something.
+`);
+
+    const criteria = review.extractAcceptanceCriteria(tmpDir, 'empty-set');
+    assert.deepStrictEqual(criteria, []);
+  });
+
+  it('stops extracting at the next ## heading', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'boundary-test');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
+# Wave 1
+
+## Success Criteria
+
+- First criterion
+- Second criterion
+
+## Tasks
+
+- This should NOT be included
+`);
+
+    const criteria = review.extractAcceptanceCriteria(tmpDir, 'boundary-test');
+    assert.equal(criteria.length, 2);
+    assert.equal(criteria[0], '[wave-1] First criterion');
+    assert.equal(criteria[1], '[wave-1] Second criterion');
+  });
+
+  it('handles criteria at end of file (no trailing heading)', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'eof-test');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
+# Wave 1
+
+## Acceptance Criteria
+
+- Only criterion at EOF`);
+
+    const criteria = review.extractAcceptanceCriteria(tmpDir, 'eof-test');
+    assert.equal(criteria.length, 1);
+    assert.equal(criteria[0], '[wave-1] Only criterion at EOF');
+  });
+
+  it('ignores non-wave files in the directory', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'ignore-test');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
+## Success Criteria
+
+- Real criterion
+`);
+    fs.writeFileSync(path.join(setDir, 'SET-OVERVIEW.md'), `
+## Success Criteria
+
+- Should be ignored
+`);
+
+    const criteria = review.extractAcceptanceCriteria(tmpDir, 'ignore-test');
+    assert.equal(criteria.length, 1);
+    assert.equal(criteria[0], '[wave-1] Real criterion');
+  });
+
+  it('sorts criteria by wave order', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'order-test');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'wave-2-PLAN.md'), `
+## Success Criteria
+
+- Second wave criterion
+`);
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), `
+## Success Criteria
+
+- First wave criterion
+`);
+
+    const criteria = review.extractAcceptanceCriteria(tmpDir, 'order-test');
+    assert.equal(criteria.length, 2);
+    assert.equal(criteria[0], '[wave-1] First wave criterion');
+    assert.equal(criteria[1], '[wave-2] Second wave criterion');
   });
 });
