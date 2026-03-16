@@ -1611,10 +1611,7 @@ async function handleReview(cwd, subcommand, args) {
 }
 
 async function handleResume(cwd, args) {
-  const fs = require('fs');
-  const path = require('path');
   const execute = require('../lib/execute.cjs');
-  const wt = require('../lib/worktree.cjs');
 
   const infoOnly = args.includes('--info-only');
   const positionalArgs = args.filter(a => !a.startsWith('--'));
@@ -1624,81 +1621,13 @@ async function handleResume(cwd, args) {
     process.exit(1);
   }
 
-  // Validate registry entry exists and is Paused
-  const registry = wt.loadRegistry(cwd);
-  const entry = registry.worktrees[setName];
-  if (!entry) {
-    error(`No worktree registered for set "${setName}"`);
-    process.exit(1);
-  }
-  if (entry.phase !== 'Paused') {
-    error(`Set "${setName}" is in phase "${entry.phase}", not Paused. Resume is only available for paused sets.`);
-    process.exit(1);
-  }
-
-  // Validate HANDOFF.md exists
-  const handoffPath = path.join(cwd, '.planning', 'sets', setName, 'HANDOFF.md');
-  if (!fs.existsSync(handoffPath)) {
-    error(`No HANDOFF.md found for set "${setName}" at ${handoffPath}`);
-    process.exit(1);
-  }
-
-  // Parse HANDOFF.md
-  const handoffRaw = fs.readFileSync(handoffPath, 'utf-8');
-  const handoff = execute.parseHandoff(handoffRaw);
-  if (!handoff) {
-    error(`Failed to parse HANDOFF.md for set "${setName}"`);
-    process.exit(1);
-  }
-
-  // Read STATE.json for set context (wave/job progress)
-  let stateContext = null;
   try {
-    const sm = require('../lib/state-machine.cjs');
-    const stateResult = await sm.readState(cwd);
-    if (stateResult && stateResult.valid) {
-      // Find the set in state
-      for (const milestone of stateResult.state.milestones) {
-        const setData = (milestone.sets || []).find(s => s.id === setName);
-        if (setData) {
-          stateContext = {
-            milestoneId: milestone.id,
-            setId: setData.id,
-            status: setData.status,
-            waves: setData.waves || [],
-          };
-          break;
-        }
-      }
-    }
+    const result = await execute.resumeSet(cwd, setName, { infoOnly });
+    process.stdout.write(JSON.stringify(result) + '\n');
   } catch (err) {
-    // Graceful -- STATE.json may not exist or be invalid
+    error(err.message);
+    process.exit(1);
   }
-
-  // Get definition and contract paths
-  const definitionPath = path.join('.planning', 'sets', setName, 'DEFINITION.md');
-  const contractPath = path.join('.planning', 'sets', setName, 'CONTRACT.json');
-
-  // Update registry: phase = Executing (skip when --info-only)
-  if (!infoOnly) {
-    await wt.registryUpdate(cwd, (reg) => {
-      if (reg.worktrees[setName]) {
-        reg.worktrees[setName].phase = 'Executing';
-        reg.worktrees[setName].updatedAt = new Date().toISOString();
-      }
-      return reg;
-    });
-  }
-
-  process.stdout.write(JSON.stringify({
-    resumed: infoOnly ? false : true,
-    setName,
-    handoff,
-    stateContext,
-    definitionPath,
-    contractPath,
-    pauseCycles: entry.pauseCycles || 0,
-  }) + '\n');
 }
 
 async function handleExecute(cwd, subcommand, args) {
@@ -1920,73 +1849,13 @@ async function handleExecute(cwd, subcommand, args) {
         error('Usage: rapid-tools execute resume <set-name>');
         process.exit(1);
       }
-      // Validate registry entry exists and is Paused
-      const registry = wt.loadRegistry(cwd);
-      const entry = registry.worktrees[setName];
-      if (!entry) {
-        error(`No worktree registered for set "${setName}"`);
-        process.exit(1);
-      }
-      if (entry.phase !== 'Paused') {
-        error(`Set "${setName}" is in phase "${entry.phase}", not Paused. Resume is only available for paused sets.`);
-        process.exit(1);
-      }
-      // Validate HANDOFF.md exists
-      const handoffPath = path.join(cwd, '.planning', 'sets', setName, 'HANDOFF.md');
-      if (!fs.existsSync(handoffPath)) {
-        error(`No HANDOFF.md found for set "${setName}" at ${handoffPath}`);
-        process.exit(1);
-      }
-      // Read and parse HANDOFF.md
-      const handoffRaw = fs.readFileSync(handoffPath, 'utf-8');
-      const handoff = execute.parseHandoff(handoffRaw);
-      if (!handoff) {
-        error(`Failed to parse HANDOFF.md for set "${setName}"`);
-        process.exit(1);
-      }
-      // Get definition and contract paths for the orchestrator
-      const definitionPath = path.join('.planning', 'sets', setName, 'DEFINITION.md');
-      const contractPath = path.join('.planning', 'sets', setName, 'CONTRACT.json');
-      const pauseCycles = entry.pauseCycles || 0;
-      // Read STATE.json for set context (wave/job progress)
-      let stateContext = null;
       try {
-        const sm = require('../lib/state-machine.cjs');
-        const stateResult = await sm.readState(cwd);
-        if (stateResult && stateResult.valid) {
-          for (const milestone of stateResult.state.milestones) {
-            const setData = (milestone.sets || []).find(s => s.id === setName);
-            if (setData) {
-              stateContext = {
-                milestoneId: milestone.id,
-                setId: setData.id,
-                status: setData.status,
-                waves: setData.waves || [],
-              };
-              break;
-            }
-          }
-        }
+        const result = await execute.resumeSet(cwd, setName);
+        process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
-        // Graceful -- STATE.json may not exist or be invalid
+        error(err.message);
+        process.exit(1);
       }
-      // Update registry: phase = Executing, updatedAt
-      await wt.registryUpdate(cwd, (reg) => {
-        if (reg.worktrees[setName]) {
-          reg.worktrees[setName].phase = 'Executing';
-          reg.worktrees[setName].updatedAt = new Date().toISOString();
-        }
-        return reg;
-      });
-      process.stdout.write(JSON.stringify({
-        resumed: true,
-        setName,
-        handoff,
-        stateContext,
-        definitionPath,
-        contractPath,
-        pauseCycles,
-      }) + '\n');
       break;
     }
 
