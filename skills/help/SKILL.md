@@ -23,7 +23,7 @@ Output this content now:
   INIT -> START-SET -> DISCUSS-SET -> PLAN-SET -> EXECUTE-SET -> REVIEW -> MERGE
    |          |             |             |              |           |        |
    |          |             |             |              |           |        +-- Integrate to main
-   |          |             |             |              |           +-- Test + bug hunt + UAT
+   |          |             |             |              |           +-- Scope for review (then unit-test, bug-hunt, uat)
    |          |             |             |              +-- Parallel job execution per wave
    |          |             |             +-- Research, wave plans, job plans, validation
    |          |             +-- Capture implementation vision per wave
@@ -40,8 +40,16 @@ Output this content now:
 | 3 | `/rapid:discuss-set` | Capture developer implementation vision for a wave before planning |
 | 4 | `/rapid:plan-set` | Plan all waves in a set -- research, wave plans, job plans, validation |
 | 5 | `/rapid:execute-set` | Execute jobs within waves (parallel subagents or agent teams, smart re-entry) |
-| 6 | `/rapid:review` | Run unit test > bug hunt > UAT pipeline for completed set |
+| 6 | `/rapid:review` | Scope a completed set for review -- produces REVIEW-SCOPE.md |
 | 7 | `/rapid:merge` | Merge completed sets to main with contract validation and conflict detection |
+
+## 3 Review Pipeline Commands
+
+| # | Command | Description |
+|---|---------|-------------|
+| 1 | `/rapid:unit-test` | Run unit test pipeline (reads REVIEW-SCOPE.md) |
+| 2 | `/rapid:bug-hunt` | Run adversarial bug hunt (reads REVIEW-SCOPE.md) |
+| 3 | `/rapid:uat` | Run user acceptance testing (reads REVIEW-SCOPE.md) |
 
 ## 4 Auxiliary Commands
 
@@ -81,7 +89,10 @@ Then for each set (in parallel across developers):
 4. **`/rapid:discuss-set`** -- Capture vision for each wave in the set
 5. **`/rapid:plan-set`** -- Plan all waves (research, wave plans, job plans, validation)
 6. **`/rapid:execute-set`** -- Run jobs (parallel agents within each wave)
-7. **`/rapid:review`** -- Run adversarial review pipeline
+7. **`/rapid:review`** -- Scope set for review (produces REVIEW-SCOPE.md)
+7a. **`/rapid:unit-test`** -- Run unit test pipeline
+7b. **`/rapid:bug-hunt`** -- Run adversarial bug hunt
+7c. **`/rapid:uat`** -- Run user acceptance testing
 
 After sets complete:
 
@@ -94,4 +105,4 @@ Start next cycle:
 
 ---
 
-RAPID v3.0 | 7+4 commands | Rapid Agentic Parallelizable and Isolatable Development
+RAPID v3.0 | 7+3+4 commands | Rapid Agentic Parallelizable and Isolatable Development
