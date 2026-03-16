@@ -371,45 +371,37 @@ function chunkByDirectory(files) {
  */
 function buildWaveAttribution(cwd, setId) {
   const attribution = {};
-  const wavesDir = path.join(cwd, '.planning', 'sets', setId);
+  const setDir = path.join(cwd, '.planning', 'sets', setId);
 
-  if (!fs.existsSync(wavesDir)) return attribution;
+  if (!fs.existsSync(setDir)) return attribution;
 
-  let waveEntries;
+  let entries;
   try {
-    waveEntries = fs.readdirSync(wavesDir, { withFileTypes: true })
-      .filter(e => e.isDirectory())
-      .sort((a, b) => a.name.localeCompare(b.name));
+    entries = fs.readdirSync(setDir)
+      .filter(f => /^wave-.*-PLAN\.md$/.test(f))
+      .sort((a, b) => a.localeCompare(b));
   } catch {
     return attribution;
   }
 
-  for (const waveEntry of waveEntries) {
-    const waveDir = path.join(wavesDir, waveEntry.name);
+  for (const planFile of entries) {
+    // Extract wave identifier: "wave-1-PLAN.md" -> "wave-1"
+    const waveId = planFile.replace(/-PLAN\.md$/, '');
 
-    let planFiles;
     try {
-      planFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
-    } catch {
-      continue;
-    }
-
-    for (const planFile of planFiles) {
-      try {
-        const content = fs.readFileSync(path.join(waveDir, planFile), 'utf-8');
-        // Regex matches table rows: | `file/path.cjs` | Create | or | file/path.cjs | Modify |
-        const tableRegex = /\|\s*`?([^`|]+?)`?\s*\|\s*(Create|Modify)\s*\|/gi;
-        let match;
-        while ((match = tableRegex.exec(content)) !== null) {
-          const filePath = match[1].trim();
-          if (filePath && filePath !== 'File' && !filePath.startsWith('---')) {
-            // Last wave wins (sequential execution model)
-            attribution[filePath] = waveEntry.name;
-          }
+      const content = fs.readFileSync(path.join(setDir, planFile), 'utf-8');
+      // Regex matches table rows: | `file/path.cjs` | Create | or | file/path.cjs | Modify |
+      const tableRegex = /\|\s*`?([^`|]+?)`?\s*\|\s*(Create|Modify)\s*\|/gi;
+      let match;
+      while ((match = tableRegex.exec(content)) !== null) {
+        const filePath = match[1].trim();
+        if (filePath && filePath !== 'File' && !filePath.startsWith('---')) {
+          // Last wave wins (sequential execution model)
+          attribution[filePath] = waveId;
         }
-      } catch {
-        // Skip malformed plan files gracefully
       }
+    } catch {
+      // Skip malformed plan files gracefully
     }
   }
 
@@ -820,6 +812,258 @@ function deduplicateFindings(findings) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// REVIEW-SCOPE.md Serialization / Parsing
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Serialize review scope data into a structured REVIEW-SCOPE.md markdown string.
+ *
+ * @param {Object} scopeData
+ * @param {string} scopeData.setId
+ * @param {string} scopeData.date - ISO timestamp
+ * @param {boolean} scopeData.postMerge
+ * @param {string} scopeData.worktreePath
+ * @param {string[]} scopeData.changedFiles
+ * @param {string[]} scopeData.dependentFiles
+ * @param {number} scopeData.totalFiles
+ * @param {Array<{dir: string, files: string[]}>} scopeData.chunks
+ * @param {Object<string, string>} scopeData.waveAttribution
+ * @param {Object|null} scopeData.concernScoping
+ * @param {boolean} scopeData.useConcernScoping
+ * @param {string|null} scopeData.fallbackWarning
+ * @param {string[]} scopeData.acceptanceCriteria
+ * @returns {string} Markdown content
+ */
+function serializeReviewScope(scopeData) {
+  const lines = [];
+
+  // Title
+  lines.push(`# REVIEW-SCOPE: ${scopeData.setId}`);
+  lines.push('');
+
+  // Machine-readable metadata block
+  const meta = {
+    setId: scopeData.setId,
+    date: scopeData.date,
+    postMerge: scopeData.postMerge,
+    worktreePath: scopeData.worktreePath,
+    totalFiles: scopeData.totalFiles,
+    useConcernScoping: scopeData.useConcernScoping,
+  };
+  lines.push(`<!-- SCOPE-META ${JSON.stringify(meta)} -->`);
+  lines.push('');
+
+  // Set Metadata table
+  lines.push('## Set Metadata');
+  lines.push('');
+  lines.push('| Field | Value |');
+  lines.push('|-------|-------|');
+  lines.push(`| Set ID | ${scopeData.setId} |`);
+  lines.push(`| Date | ${scopeData.date} |`);
+  lines.push(`| Post-Merge | ${scopeData.postMerge} |`);
+  lines.push(`| Worktree Path | ${scopeData.worktreePath} |`);
+  lines.push(`| Total Files | ${scopeData.totalFiles} |`);
+  lines.push(`| Concern Scoping | ${scopeData.useConcernScoping} |`);
+  lines.push('');
+
+  // Changed Files table
+  lines.push('## Changed Files');
+  lines.push('');
+  lines.push('| File | Wave Attribution |');
+  lines.push('|------|-----------------|');
+  for (const file of scopeData.changedFiles) {
+    const wave = (scopeData.waveAttribution && scopeData.waveAttribution[file]) || 'unattributed';
+    lines.push(`| \`${file}\` | ${wave} |`);
+  }
+  lines.push('');
+
+  // Dependent Files table
+  lines.push('## Dependent Files');
+  lines.push('');
+  if (scopeData.dependentFiles.length === 0) {
+    lines.push('No dependent files detected.');
+  } else {
+    lines.push('| File |');
+    lines.push('|------|');
+    for (const file of scopeData.dependentFiles) {
+      lines.push(`| \`${file}\` |`);
+    }
+  }
+  lines.push('');
+
+  // Directory Chunks
+  lines.push('## Directory Chunks');
+  lines.push('');
+  for (let i = 0; i < scopeData.chunks.length; i++) {
+    const chunk = scopeData.chunks[i];
+    lines.push(`### Chunk ${i + 1}: ${chunk.dir}`);
+    lines.push('');
+    for (const file of chunk.files) {
+      lines.push(`- \`${file}\``);
+    }
+    lines.push('');
+  }
+
+  // Wave Attribution table
+  lines.push('## Wave Attribution');
+  lines.push('');
+  const attribution = scopeData.waveAttribution || {};
+  const attrEntries = Object.entries(attribution);
+  if (attrEntries.length === 0) {
+    lines.push('No wave attribution available.');
+  } else {
+    lines.push('| File | Wave |');
+    lines.push('|------|------|');
+    for (const [file, wave] of attrEntries) {
+      lines.push(`| \`${file}\` | ${wave} |`);
+    }
+  }
+  lines.push('');
+
+  // Concern Scoping
+  lines.push('## Concern Scoping');
+  lines.push('');
+  if (scopeData.fallbackWarning) {
+    lines.push(`> **Warning:** ${scopeData.fallbackWarning}`);
+    lines.push('');
+  }
+  if (!scopeData.concernScoping) {
+    lines.push('Concern scoping was not performed.');
+  } else {
+    const cs = scopeData.concernScoping;
+    if (cs.concerns && cs.concerns.length > 0) {
+      for (const concern of cs.concerns) {
+        lines.push(`### ${concern.name}`);
+        lines.push('');
+        for (const file of concern.files) {
+          lines.push(`- \`${file}\``);
+        }
+        lines.push('');
+      }
+    }
+    if (cs.crossCutting && cs.crossCutting.length > 0) {
+      lines.push('### Cross-Cutting Files');
+      lines.push('');
+      for (const cc of cs.crossCutting) {
+        lines.push(`- \`${cc.file}\`: ${cc.rationale}`);
+      }
+      lines.push('');
+    }
+  }
+  lines.push('');
+
+  // Acceptance Criteria
+  lines.push('## Acceptance Criteria');
+  lines.push('');
+  if (scopeData.acceptanceCriteria.length === 0) {
+    lines.push('No acceptance criteria found.');
+  } else {
+    for (let i = 0; i < scopeData.acceptanceCriteria.length; i++) {
+      lines.push(`${i + 1}. ${scopeData.acceptanceCriteria[i]}`);
+    }
+  }
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
+ * Parse a REVIEW-SCOPE.md markdown string to extract the SCOPE-META JSON block.
+ *
+ * @param {string} markdown - The REVIEW-SCOPE.md content
+ * @returns {Object} Parsed SCOPE-META JSON object
+ * @throws {Error} If SCOPE-META marker is missing or JSON is malformed
+ */
+function parseReviewScope(markdown) {
+  const marker = '<!-- SCOPE-META';
+  const startIdx = markdown.indexOf(marker);
+  if (startIdx === -1) {
+    throw new Error('SCOPE-META marker not found in REVIEW-SCOPE.md');
+  }
+
+  const jsonStart = startIdx + marker.length;
+  const endIdx = markdown.indexOf('-->', jsonStart);
+  if (endIdx === -1) {
+    throw new Error('SCOPE-META closing marker (-->) not found');
+  }
+
+  const jsonStr = markdown.substring(jsonStart, endIdx).trim();
+  try {
+    return JSON.parse(jsonStr);
+  } catch (err) {
+    throw new Error(`Failed to parse SCOPE-META JSON: ${err.message}`);
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+// Acceptance Criteria Extraction
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Extract acceptance criteria from all wave-*-PLAN.md files for a set.
+ * Reads each plan file, extracts content under "## Success Criteria" or
+ * "## Acceptance Criteria" headings, parses bullet points, and prefixes
+ * each with the wave identifier for traceability.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {string[]} Flat array of acceptance criteria prefixed with [waveId]
+ */
+function extractAcceptanceCriteria(cwd, setId) {
+  const criteria = [];
+  const setDir = path.join(cwd, '.planning', 'sets', setId);
+
+  if (!fs.existsSync(setDir)) return criteria;
+
+  let entries;
+  try {
+    entries = fs.readdirSync(setDir)
+      .filter(f => /^wave-.*-PLAN\.md$/.test(f))
+      .sort((a, b) => a.localeCompare(b));
+  } catch {
+    return criteria;
+  }
+
+  for (const planFile of entries) {
+    const waveId = planFile.replace(/-PLAN\.md$/, '');
+
+    try {
+      const content = fs.readFileSync(path.join(setDir, planFile), 'utf-8');
+
+      // Find "## Success Criteria" or "## Acceptance Criteria" section
+      const sectionRegex = /^##\s+(?:Success|Acceptance)\s+Criteria\s*$/m;
+      const sectionMatch = sectionRegex.exec(content);
+      if (!sectionMatch) continue;
+
+      // Extract content from section start to next ## heading or EOF
+      const sectionStart = sectionMatch.index + sectionMatch[0].length;
+      const nextHeadingMatch = content.substring(sectionStart).match(/^## /m);
+      const sectionEnd = nextHeadingMatch
+        ? sectionStart + nextHeadingMatch.index
+        : content.length;
+
+      const sectionContent = content.substring(sectionStart, sectionEnd);
+
+      // Parse bullet points (lines starting with "- ")
+      const bulletLines = sectionContent.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('- '));
+
+      for (const bullet of bulletLines) {
+        const text = bullet.substring(2).trim();
+        if (text) {
+          criteria.push(`[${waveId}] ${text}`);
+        }
+      }
+    } catch {
+      // Skip unreadable files
+    }
+  }
+
+  return criteria;
+}
+
+// ────────────────────────────────────────────────────────────────
 // Module Exports
 // ────────────────────────────────────────────────────────────────
 
@@ -844,6 +1088,13 @@ module.exports = {
 
   // Wave attribution
   buildWaveAttribution,
+
+  // Review scope serialization/parsing
+  serializeReviewScope,
+  parseReviewScope,
+
+  // Acceptance criteria
+  extractAcceptanceCriteria,
 
   // Issue management
   logIssue,
