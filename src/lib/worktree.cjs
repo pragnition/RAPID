@@ -268,6 +268,8 @@ async function reconcileRegistry(cwd) {
 
     // Mark orphaned registry entries (in registry but not in git)
     for (const [setName, entry] of Object.entries(registry.worktrees)) {
+      // Solo entries work on main with no dedicated branch -- skip orphan check
+      if (entry.solo === true) continue;
       const expectedBranch = entry.branch || `rapid/${setName}`;
       if (!gitBranches.has(expectedBranch)) {
         entry.status = 'orphaned';
