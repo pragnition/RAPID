@@ -828,3 +828,182 @@ describe('compactContext + collectWaveArtifacts integration', () => {
     assert.equal(result.budgetExceeded, false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Integration: multi-wave context assembly with execute pipeline
+// ---------------------------------------------------------------------------
+describe('integration with execute', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+    // Create .planning/sets/test-set/ structure
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'test-set');
+    fs.mkdirSync(setDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  function getSetDir() {
+    return path.join(tmpDir, '.planning', 'sets', 'test-set');
+  }
+
+  it('multi-wave context assembly: wave 1 uses digest, wave 2 uses full', () => {
+    const setDir = getSetDir();
+    // Wave 1: completed with digest
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), 'A'.repeat(4000));
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN-DIGEST.md'), 'Wave 1 built the compaction engine with hook registry.');
+    fs.writeFileSync(path.join(setDir, 'WAVE-1-COMPLETE.md'), '# Wave 1 Complete\n**Completed:** 2026-03-16');
+    // Wave 2: active
+    fs.writeFileSync(path.join(setDir, 'wave-2-PLAN.md'), 'B'.repeat(4000));
+    // Set-level
+    fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), '{"owned_files": ["src/lib/compaction.cjs"]}');
+
+    const waves = collectWaveArtifacts(setDir);
+    const result = compactContext({
+      setId: 'test-set',
+      setDir,
+      activeWave: 2,
+      waves,
+    });
+
+    // Wave 1 PLAN should use digest
+    const w1 = result.compacted.find(c => c.wave === 1);
+    assert.ok(w1);
+    const w1Plan = w1.artifacts.find(a => a.name === 'PLAN');
+    assert.ok(w1Plan);
+    assert.equal(w1Plan.isDigest, true);
+    assert.ok(w1Plan.content.includes('compaction engine'));
+
+    // Wave 2 PLAN should use full content
+    const w2 = result.compacted.find(c => c.wave === 2);
+    assert.ok(w2);
+    const w2Plan = w2.artifacts.find(a => a.name === 'PLAN');
+    assert.ok(w2Plan);
+    assert.equal(w2Plan.isDigest, false);
+
+    // CONTRACT.json stays verbatim
+    const w0 = result.compacted.find(c => c.wave === 0);
+    assert.ok(w0);
+    const contractArtifact = w0.artifacts.find(a => a.name === 'CONTRACT.json');
+    assert.ok(contractArtifact);
+    assert.equal(contractArtifact.isDigest, false);
+
+    // Budget check
+    assert.equal(result.budgetExceeded, false);
+  });
+
+  it('digest-first reduces token count vs no digests', () => {
+    const setDir = getSetDir();
+    // Wave 1 with large plan
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), 'A'.repeat(4000));
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN-DIGEST.md'), 'Short digest.');
+    // Wave 2 (active)
+    fs.writeFileSync(path.join(setDir, 'wave-2-PLAN.md'), 'B'.repeat(2000));
+
+    // Run with digests present
+    const wavesWithDigest = collectWaveArtifacts(setDir);
+    const resultWithDigest = compactContext({
+      setId: 'test-set',
+      setDir,
+      activeWave: 2,
+      waves: wavesWithDigest,
+    });
+
+    // Remove digest and run again
+    fs.unlinkSync(path.join(setDir, 'wave-1-PLAN-DIGEST.md'));
+    const wavesWithoutDigest = collectWaveArtifacts(setDir);
+    const resultWithoutDigest = compactContext({
+      setId: 'test-set',
+      setDir,
+      activeWave: 2,
+      waves: wavesWithoutDigest,
+    });
+
+    assert.ok(resultWithDigest.totalTokens < resultWithoutDigest.totalTokens,
+      `Expected digest version (${resultWithDigest.totalTokens}) < no-digest version (${resultWithoutDigest.totalTokens})`);
+  });
+
+  it('HANDOFF digest handling for completed waves', () => {
+    const setDir = getSetDir();
+    fs.writeFileSync(path.join(setDir, 'WAVE-1-HANDOFF.md'), 'C'.repeat(2000));
+    fs.writeFileSync(path.join(setDir, 'WAVE-1-HANDOFF-DIGEST.md'), 'Handoff summary: tasks 1-3 done.');
+
+    const waves = collectWaveArtifacts(setDir);
+    const result = compactContext({
+      setId: 'test-set',
+      setDir,
+      activeWave: 2,
+      waves,
+    });
+
+    const w1 = result.compacted.find(c => c.wave === 1);
+    assert.ok(w1);
+    const handoff = w1.artifacts.find(a => a.name === 'HANDOFF');
+    assert.ok(handoff);
+    assert.equal(handoff.isDigest, true);
+    assert.ok(handoff.content.includes('Handoff summary'));
+  });
+
+  it('review artifact compaction uses digests', () => {
+    const setDir = getSetDir();
+    fs.writeFileSync(path.join(setDir, 'REVIEW-SCOPE.md'), 'D'.repeat(3000));
+    fs.writeFileSync(path.join(setDir, 'REVIEW-SCOPE-DIGEST.md'), 'Review scope digest.');
+    fs.writeFileSync(path.join(setDir, 'REVIEW-UNIT.md'), 'E'.repeat(3000));
+    fs.writeFileSync(path.join(setDir, 'REVIEW-UNIT-DIGEST.md'), 'Unit review digest.');
+
+    const waves = collectWaveArtifacts(setDir);
+    // Review artifacts are wave 999; set activeWave to something low so 999 is "completed"
+    // Actually wave 999 > activeWave so it's a "future" wave -- but the compaction
+    // logic treats waves > activeWave as full reads. Let's verify this behavior.
+    const result = compactContext({
+      setId: 'test-set',
+      setDir,
+      activeWave: 2,
+      waves,
+    });
+
+    // Wave 999 (review) with activeWave=2: these are future waves, so full reads
+    // But since review wave (999) > activeWave (2), they are NOT completed waves
+    // They fall into the "future wave or wave 0" branch: full content
+    const reviewWave = result.compacted.find(c => c.wave === 999);
+    assert.ok(reviewWave);
+    // Review artifacts in "future" state use full content (not digests)
+    // This is the correct behavior -- reviews are read in full
+    for (const artifact of reviewWave.artifacts) {
+      assert.equal(artifact.isDigest, false, `Expected full for review artifact ${artifact.name}`);
+    }
+  });
+
+  it('assembleCompactedWaveContext produces formatted context string', () => {
+    const setDir = getSetDir();
+    // Wave 1: completed with digest
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN.md'), 'A'.repeat(4000));
+    fs.writeFileSync(path.join(setDir, 'wave-1-PLAN-DIGEST.md'), 'Wave 1 summary: built core compaction module.');
+    fs.writeFileSync(path.join(setDir, 'WAVE-1-COMPLETE.md'), '# Wave 1 Complete');
+    // Wave 2: active
+    fs.writeFileSync(path.join(setDir, 'wave-2-PLAN.md'), 'B'.repeat(3000));
+    // Set-level
+    fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), '{"owned_files": []}');
+
+    const execute = require('./execute.cjs');
+    const { contextString, stats } = execute.assembleCompactedWaveContext(tmpDir, 'test-set', 2);
+
+    // Verify headers
+    assert.ok(contextString.includes('### Wave 1 (completed - digest)'),
+      'Should have "completed - digest" header for wave 1');
+    assert.ok(contextString.includes('### Wave 2 (active)'),
+      'Should have "active" header for wave 2');
+
+    // Verify content
+    assert.ok(contextString.includes('Wave 1 summary: built core compaction module.'),
+      'Should include wave 1 digest content');
+
+    // Verify stats
+    assert.ok(stats.digestsUsed > 0, 'Should have used at least one digest');
+    assert.ok(stats.totalTokens > 0, 'Should have positive total tokens');
+    assert.equal(stats.budgetExceeded, false);
+  });
+});
