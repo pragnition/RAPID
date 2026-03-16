@@ -1533,8 +1533,8 @@ describe('handleReview CLI dual-mode', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-review-cli-'));
-    // Create .planning/waves/auth-core directory structure
-    const setDir = path.join(tmpDir, '.planning', 'waves', 'auth-core');
+    // Create .planning/sets/auth-core directory structure
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
     fs.mkdirSync(setDir, { recursive: true });
     // Create worktree registry so CLI doesn't fail on readRegistry
     fs.mkdirSync(path.join(tmpDir, '.worktrees'), { recursive: true });
@@ -1572,7 +1572,7 @@ describe('handleReview CLI dual-mode', () => {
     assert.equal(result.issueId, 'I-001');
 
     // Verify file is at set level
-    const issuesPath = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'REVIEW-ISSUES.json');
+    const issuesPath = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'REVIEW-ISSUES.json');
     assert.ok(fs.existsSync(issuesPath), 'REVIEW-ISSUES.json should be at set level');
     const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
     assert.equal(data.issues[0].originatingWave, undefined, 'No originatingWave in set-level mode');
@@ -1601,7 +1601,7 @@ describe('handleReview CLI dual-mode', () => {
     assert.equal(result.logged, true);
 
     // Verify originatingWave was added
-    const issuesPath = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'REVIEW-ISSUES.json');
+    const issuesPath = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'REVIEW-ISSUES.json');
     const data = JSON.parse(fs.readFileSync(issuesPath, 'utf-8'));
     assert.equal(data.issues[0].originatingWave, 'wave-1', 'originatingWave should be set from wave-id arg');
   });
@@ -1610,7 +1610,7 @@ describe('handleReview CLI dual-mode', () => {
 
   it('review update-issue with 3 args (set-id + issue-id + status) updates set-level issue', () => {
     // Pre-create REVIEW-ISSUES.json with an open issue
-    const issuesPath = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'REVIEW-ISSUES.json');
+    const issuesPath = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'REVIEW-ISSUES.json');
     fs.writeFileSync(issuesPath, JSON.stringify({
       setId: 'auth-core',
       issues: [{
@@ -1639,7 +1639,7 @@ describe('handleReview CLI dual-mode', () => {
 
   it('review update-issue with 4 args (set-id + wave-id + issue-id + status) still works', () => {
     // Pre-create REVIEW-ISSUES.json at set level
-    const issuesPath = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'REVIEW-ISSUES.json');
+    const issuesPath = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'REVIEW-ISSUES.json');
     fs.writeFileSync(issuesPath, JSON.stringify({
       setId: 'auth-core',
       issues: [{

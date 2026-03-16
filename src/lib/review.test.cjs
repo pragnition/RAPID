@@ -323,7 +323,7 @@ describe('buildWaveAttribution', () => {
   });
 
   it('reads JOB-PLAN.md files and returns file-to-wave map', () => {
-    const wave1Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
     fs.mkdirSync(wave1Dir, { recursive: true });
     fs.writeFileSync(path.join(wave1Dir, '01-JOB-PLAN.md'), `
 # Job Plan
@@ -336,7 +336,7 @@ describe('buildWaveAttribution', () => {
 | \`src/lib/token.cjs\` | Modify |
 `);
 
-    const wave2Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-2');
+    const wave2Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-2');
     fs.mkdirSync(wave2Dir, { recursive: true });
     fs.writeFileSync(path.join(wave2Dir, '01-JOB-PLAN.md'), `
 # Job Plan
@@ -355,7 +355,7 @@ describe('buildWaveAttribution', () => {
   });
 
   it('last wave wins when file appears in multiple waves', () => {
-    const wave1Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
     fs.mkdirSync(wave1Dir, { recursive: true });
     fs.writeFileSync(path.join(wave1Dir, '01-JOB-PLAN.md'), `
 | File | Action |
@@ -363,7 +363,7 @@ describe('buildWaveAttribution', () => {
 | \`src/shared.cjs\` | Create |
 `);
 
-    const wave2Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-2');
+    const wave2Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-2');
     fs.mkdirSync(wave2Dir, { recursive: true });
     fs.writeFileSync(path.join(wave2Dir, '01-JOB-PLAN.md'), `
 | File | Action |
@@ -381,7 +381,7 @@ describe('buildWaveAttribution', () => {
   });
 
   it('skips malformed plan files gracefully', () => {
-    const wave1Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
     fs.mkdirSync(wave1Dir, { recursive: true });
     // Write a plan file with no valid table entries
     fs.writeFileSync(path.join(wave1Dir, '01-JOB-PLAN.md'), `
@@ -394,7 +394,7 @@ Some random content here
   });
 
   it('handles multiple plan files in a single wave', () => {
-    const wave1Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
     fs.mkdirSync(wave1Dir, { recursive: true });
     fs.writeFileSync(path.join(wave1Dir, '01-JOB-PLAN.md'), `
 | File | Action |
@@ -443,7 +443,7 @@ describe('logIssue', () => {
     review.logIssue(tmpDir, 'auth-core', issue);
 
     // Should be at set level, NOT wave subdirectory
-    const setLevelPath = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'REVIEW-ISSUES.json');
+    const setLevelPath = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'REVIEW-ISSUES.json');
     assert.ok(fs.existsSync(setLevelPath), 'REVIEW-ISSUES.json should be at set level');
 
     const data = JSON.parse(fs.readFileSync(setLevelPath, 'utf-8'));
@@ -488,7 +488,7 @@ describe('logIssue', () => {
 
     review.logIssue(tmpDir, 'auth-core', issue);
 
-    const setLevelPath = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'REVIEW-ISSUES.json');
+    const setLevelPath = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'REVIEW-ISSUES.json');
     const data = JSON.parse(fs.readFileSync(setLevelPath, 'utf-8'));
     assert.equal(data.issues[0].originatingWave, 'wave-2');
   });
@@ -518,7 +518,7 @@ describe('logIssue', () => {
     review.logIssue(tmpDir, 'auth-core', issue1);
     review.logIssue(tmpDir, 'auth-core', issue2);
 
-    const setLevelPath = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'REVIEW-ISSUES.json');
+    const setLevelPath = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'REVIEW-ISSUES.json');
     const data = JSON.parse(fs.readFileSync(setLevelPath, 'utf-8'));
     assert.equal(data.issues.length, 2);
     assert.equal(data.issues[0].id, 'I-001');
@@ -538,7 +538,7 @@ describe('loadSetIssues', () => {
   });
 
   it('reads set-level REVIEW-ISSUES.json', () => {
-    const setDir = path.join(tmpDir, '.planning', 'waves', 'auth-core');
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
     fs.mkdirSync(setDir, { recursive: true });
     fs.writeFileSync(path.join(setDir, 'REVIEW-ISSUES.json'), JSON.stringify({
       setId: 'auth-core',
@@ -557,7 +557,7 @@ describe('loadSetIssues', () => {
 
   it('falls back to reading wave subdirectories for legacy compatibility', () => {
     // Set up legacy wave-level REVIEW-ISSUES.json files (from lean review)
-    const wave1Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-1');
+    const wave1Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-1');
     fs.mkdirSync(wave1Dir, { recursive: true });
     fs.writeFileSync(path.join(wave1Dir, 'REVIEW-ISSUES.json'), JSON.stringify({
       waveId: 'wave-1',
@@ -568,7 +568,7 @@ describe('loadSetIssues', () => {
       lastUpdatedAt: '2026-03-08',
     }));
 
-    const wave2Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-2');
+    const wave2Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-2');
     fs.mkdirSync(wave2Dir, { recursive: true });
     fs.writeFileSync(path.join(wave2Dir, 'REVIEW-ISSUES.json'), JSON.stringify({
       waveId: 'wave-2',
@@ -590,7 +590,7 @@ describe('loadSetIssues', () => {
 
   it('aggregates both set-level and legacy wave-level issues', () => {
     // Set-level issues
-    const setDir = path.join(tmpDir, '.planning', 'waves', 'auth-core');
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
     fs.mkdirSync(setDir, { recursive: true });
     fs.writeFileSync(path.join(setDir, 'REVIEW-ISSUES.json'), JSON.stringify({
       setId: 'auth-core',
@@ -601,7 +601,7 @@ describe('loadSetIssues', () => {
     }));
 
     // Legacy wave-level issues
-    const wave2Dir = path.join(tmpDir, '.planning', 'waves', 'auth-core', 'wave-2');
+    const wave2Dir = path.join(tmpDir, '.planning', 'sets', 'auth-core', 'wave-2');
     fs.mkdirSync(wave2Dir, { recursive: true });
     fs.writeFileSync(path.join(wave2Dir, 'REVIEW-ISSUES.json'), JSON.stringify({
       waveId: 'wave-2',
@@ -635,7 +635,7 @@ describe('updateIssueStatus', () => {
 
   it('accepts 4 params (cwd, setId, issueId, newStatus) not 5', () => {
     // Set up set-level REVIEW-ISSUES.json
-    const setDir = path.join(tmpDir, '.planning', 'waves', 'auth-core');
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
     fs.mkdirSync(setDir, { recursive: true });
     fs.writeFileSync(path.join(setDir, 'REVIEW-ISSUES.json'), JSON.stringify({
       setId: 'auth-core',
@@ -655,7 +655,7 @@ describe('updateIssueStatus', () => {
   });
 
   it('reads from set-level REVIEW-ISSUES.json (not wave subdirectory)', () => {
-    const setDir = path.join(tmpDir, '.planning', 'waves', 'auth-core');
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
     fs.mkdirSync(setDir, { recursive: true });
     fs.writeFileSync(path.join(setDir, 'REVIEW-ISSUES.json'), JSON.stringify({
       setId: 'auth-core',
@@ -674,7 +674,7 @@ describe('updateIssueStatus', () => {
   });
 
   it('throws when issue not found', () => {
-    const setDir = path.join(tmpDir, '.planning', 'waves', 'auth-core');
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'auth-core');
     fs.mkdirSync(setDir, { recursive: true });
     fs.writeFileSync(path.join(setDir, 'REVIEW-ISSUES.json'), JSON.stringify({
       setId: 'auth-core',

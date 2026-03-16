@@ -488,7 +488,7 @@ describe('validateDiskArtifacts', () => {
     // Create both CONTEXT.md and waves dir
     fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'set-1'), { recursive: true });
     fs.writeFileSync(path.join(tmpDir, '.planning', 'sets', 'set-1', 'CONTEXT.md'), 'ctx', 'utf-8');
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'waves', 'set-1'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets', 'set-1'), { recursive: true });
 
     const warnings = await validateDiskArtifacts(tmpDir, 'v1.0', 'set-1');
     assert.deepEqual(warnings, []);
