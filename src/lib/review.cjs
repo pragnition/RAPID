@@ -195,18 +195,6 @@ function findDependents(cwd, changedFiles) {
   const changedSet = new Set(changedFiles);
   const dependents = new Set();
 
-  // Build patterns to search for: basename without extension, relative paths
-  const searchPatterns = [];
-  for (const filePath of changedFiles) {
-    const basename = path.basename(filePath);
-    const basenameNoExt = path.basename(filePath, path.extname(filePath));
-    // Match require('./utils.cjs'), require('./utils'), import from './utils'
-    searchPatterns.push(basename);
-    searchPatterns.push(basenameNoExt);
-    // Also match the relative path patterns
-    searchPatterns.push(filePath);
-  }
-
   // Recursively walk project files
   const allFiles = walkDir(cwd, ['node_modules', '.git', '.planning', '.worktrees', '.rapid-worktrees']);
 
