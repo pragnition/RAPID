@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectName": "RAPID",
-  "currentMilestone": "v3.3.0",
+  "currentMilestone": "v3.4.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -145,8 +145,44 @@
           "waves": []
         }
       ]
+    },
+    {
+      "id": "v3.4.0",
+      "name": "Agent Intelligence",
+      "sets": [
+        {
+          "id": "memory-system",
+          "status": "discussed",
+          "waves": []
+        },
+        {
+          "id": "quick-and-addset",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "hooks-system",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "code-quality",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "ui-contracts",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "documentation",
+          "status": "pending",
+          "waves": []
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-17T02:59:04.836Z",
+  "lastUpdatedAt": "2026-03-17T07:23:23.702Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
