@@ -1,0 +1,38 @@
+{
+  "setId": "context-optimization",
+  "version": "1.0.0",
+  "exports": {
+    "compactionEngine": {
+      "type": "function",
+      "signature": "compactContext(context: object, options?: { budget?: number }): CompactedContext",
+      "description": "Context-aware compaction that preserves active state while summarizing completed work"
+    },
+    "compactionTriggers": {
+      "type": "function",
+      "signature": "registerCompactionTrigger(event: string, handler: () => Promise<void>): void",
+      "description": "Hook system for triggering compaction at defined lifecycle points"
+    }
+  },
+  "imports": {
+    "reviewPipelineStructure": {
+      "fromSet": "review-pipeline",
+      "type": "file",
+      "signature": "REVIEW-SCOPE.md, REVIEW-UNIT.md, REVIEW-BUGS.md, REVIEW-UAT.md",
+      "description": "Split review artifacts that compaction can individually summarize rather than treating as monolith"
+    }
+  },
+  "behavioral": {
+    "budgetEnforced": {
+      "description": "Working context must stay below ~120k tokens during multi-wave execution",
+      "enforced_by": "runtime"
+    },
+    "noQualityDegradation": {
+      "description": "Agent output quality must not observably degrade after compaction",
+      "enforced_by": "test"
+    },
+    "diskRecovery": {
+      "description": "Any compacted information must be recoverable from disk artifacts",
+      "enforced_by": "test"
+    }
+  }
+}

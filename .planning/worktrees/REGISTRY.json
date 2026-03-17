@@ -60,6 +60,40 @@
       "mergeStatus": "merged",
       "mergedAt": "2026-03-15T15:08:29.878Z",
       "mergeCommit": "d0109cd4670b8c398dfef767591cd3755e4d8985"
+    },
+    "structural-cleanup": {
+      "setName": "structural-cleanup",
+      "branch": "rapid/structural-cleanup",
+      "path": ".rapid-worktrees/structural-cleanup",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-16T08:42:02.300Z",
+      "mergeStatus": "complete"
+    },
+    "review-pipeline": {
+      "setName": "review-pipeline",
+      "branch": "rapid/review-pipeline",
+      "path": ".rapid-worktrees/review-pipeline",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-16T10:08:27.090Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-16T14:28:59.380Z",
+      "mergeCommit": "0c93b58497cebdcd3998243413857685f66b9732"
+    },
+    "context-optimization": {
+      "setName": "context-optimization",
+      "branch": "rapid/context-optimization",
+      "path": ".rapid-worktrees/context-optimization",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-16T14:34:11.616Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-17T02:58:45.079Z",
+      "mergeCommit": "0a8a677c99b1a0de8a5368a197ade942a579a7f7"
     }
   }
 }

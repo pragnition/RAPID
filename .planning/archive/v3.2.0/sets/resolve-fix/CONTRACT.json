@@ -1,0 +1,27 @@
+{
+  "setId": "resolve-fix",
+  "version": "1.0.0",
+  "exports": {
+    "resolveSet-api": {
+      "type": "function",
+      "signature": "resolveSet(input: string, cwd: string, state?: ProjectState): { resolvedId: string, numericIndex: number, wasNumeric: boolean }",
+      "description": "Updated resolveSet function that resolves numeric indices against the current milestone's sets array in STATE.json (not filesystem directories). Optional state parameter avoids re-reading STATE.json when the caller already has it."
+    },
+    "resolveWave-api": {
+      "type": "function",
+      "signature": "resolveWave(input: string, state: object, cwd: string, setId?: string): { setId: string, waveId: string, setIndex: number, waveIndex: number, wasNumeric: boolean }",
+      "description": "resolveWave updated to use STATE.json-based set resolution internally (calls updated resolveSet)."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "archive-resilient-resolution": {
+      "description": "Numeric set index N resolves to the Nth set in the current milestone's sets array (1-based), regardless of whether .planning/sets/ directories have been archived or reordered. The filesystem is not consulted for index resolution.",
+      "enforced_by": "test"
+    },
+    "backward-compatible-string-ids": {
+      "description": "String set IDs (e.g., 'state-consistency') continue to resolve by exact match against milestone sets. Behavior is unchanged for string inputs.",
+      "enforced_by": "test"
+    }
+  }
+}

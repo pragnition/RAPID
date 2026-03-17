@@ -141,12 +141,12 @@
         },
         {
           "id": "context-optimization",
-          "status": "discussed",
+          "status": "merged",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-16T14:47:17.349Z",
+  "lastUpdatedAt": "2026-03-17T02:59:04.836Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

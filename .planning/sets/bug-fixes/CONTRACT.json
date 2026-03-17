@@ -1,0 +1,34 @@
+{
+  "setId": "bug-fixes",
+  "version": "1.0.0",
+  "exports": {
+    "definitionMdResolution": {
+      "type": "function",
+      "signature": "Corrected DEFINITION.md path resolution in generateScopedClaudeMd()",
+      "description": "DEFINITION.md is always found at .planning/sets/{setId}/DEFINITION.md for any set naming pattern"
+    },
+    "discussSetUX": {
+      "type": "file",
+      "signature": "skills/discuss-set/SKILL.md -- restructured gray area question assembly",
+      "description": "Auto-decide is no longer a peer checkbox; either a separate prompt or implicit via empty selection"
+    }
+  },
+  "imports": {
+    "commandHandlers": {
+      "fromSet": "cli-restructuring",
+      "type": "file",
+      "signature": "src/commands/{command}.cjs",
+      "description": "Split command files where the DEFINITION.md path resolution fix is applied"
+    }
+  },
+  "behavioral": {
+    "definitionMdAlwaysFound": {
+      "description": "start-set on any initialized set must find DEFINITION.md without warnings",
+      "enforced_by": "test"
+    },
+    "noAutoDecideCheckbox": {
+      "description": "discuss-set must never present 'Let Claude Decide All' as a checkbox alongside individual topics",
+      "enforced_by": "test"
+    }
+  }
+}

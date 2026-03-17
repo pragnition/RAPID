@@ -1,0 +1,33 @@
+{
+  "setId": "structural-cleanup",
+  "status": "complete",
+  "startedAt": "2026-03-16T09:56:18.211Z",
+  "detection": {
+    "textual": {
+      "ran": true,
+      "conflicts": []
+    },
+    "structural": {
+      "ran": true,
+      "conflicts": []
+    },
+    "dependency": {
+      "ran": true,
+      "conflicts": []
+    },
+    "api": {
+      "ran": true,
+      "conflicts": []
+    }
+  },
+  "resolution": {
+    "tier1Count": 0,
+    "tier2Count": 0,
+    "tier3Count": 0,
+    "tier4Count": 0,
+    "escalatedConflicts": [],
+    "allResolved": false
+  },
+  "agentPhase1": "done",
+  "lastUpdatedAt": "2026-03-16T10:03:36.149Z"
+}

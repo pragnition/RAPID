@@ -33,3 +33,6 @@ Also show the judge's leaning for each of the rulings
 
 It might be good to have context aware internal compaction so that we can keep the ctx length permenantly below 120k
 This might be a little complicated so we need to implement this comprehensively.
+
+
+When agents finish execution/planning/everything, they do not update the state properly. Make a hook that asks the agent if they updated the state on stop.

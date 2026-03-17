@@ -1,0 +1,47 @@
+{
+  "setId": "solo-mode",
+  "version": "1.0.0",
+  "exports": {
+    "soloConfig": {
+      "type": "function",
+      "signature": "isSoloMode(cwd: string, setId?: string): boolean",
+      "description": "Checks project config and per-set overrides to determine if solo mode is active"
+    },
+    "soloRegistryEntry": {
+      "type": "function",
+      "signature": "Virtual registry entry: { path: '.', branch: currentBranch, solo: true }",
+      "description": "Registry entries for solo sets that point to the working directory instead of a worktree"
+    },
+    "soloLifecycle": {
+      "type": "function",
+      "signature": "Solo-aware start-set, execute-set, merge, status, cleanup handlers",
+      "description": "All lifecycle commands check solo flag and skip worktree/merge operations when active"
+    }
+  },
+  "imports": {
+    "commandHandlers": {
+      "fromSet": "cli-restructuring",
+      "type": "file",
+      "signature": "src/commands/{command}.cjs",
+      "description": "Split command files where solo mode checks are inserted"
+    }
+  },
+  "behavioral": {
+    "soloSkipsWorktree": {
+      "description": "In solo mode, start-set must not create a worktree or branch -- work happens on main",
+      "enforced_by": "test"
+    },
+    "soloMergeNoOp": {
+      "description": "Running /merge on a solo set must return success with informational message, not error",
+      "enforced_by": "test"
+    },
+    "soloPreservesLifecycle": {
+      "description": "Solo mode must preserve discuss, plan, execute, and review steps -- only isolation changes",
+      "enforced_by": "test"
+    },
+    "soloStatusVisible": {
+      "description": "/status must visibly indicate when a set or project is in solo mode",
+      "enforced_by": "test"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "setId": "scaffold-command",
+  "status": "complete",
+  "startedAt": "2026-03-16T06:44:34.526Z",
+  "detection": {
+    "textual": {
+      "ran": true,
+      "conflicts": [
+        {
+          "file": "src/bin/rapid-tools.cjs",
+          "type": "content",
+          "detail": "CONFLICT (content): Merge conflict in src/bin/rapid-tools.cjs"
+        }
+      ]
+    },
+    "structural": {
+      "ran": true,
+      "conflicts": [
+        {
+          "file": "src/bin/rapid-tools.cjs",
+          "functions": [
+            "main"
+          ]
+        }
+      ]
+    },
+    "dependency": {
+      "ran": true,
+      "conflicts": [
+        {
+          "file": "src/bin/rapid-tools.cjs",
+          "added": [
+            "../commands/scaffold.cjs",
+            "../commands/migrate.cjs"
+          ],
+          "removed": []
+        }
+      ]
+    },
+    "api": {
+      "ran": true,
+      "conflicts": []
+    }
+  },
+  "resolution": {
+    "tier1Count": 0,
+    "tier2Count": 0,
+    "tier3Count": 0,
+    "tier4Count": 0,
+    "escalatedConflicts": [],
+    "allResolved": false
+  },
+  "agentPhase1": "done",
+  "lastUpdatedAt": "2026-03-16T06:50:56.595Z"
+}

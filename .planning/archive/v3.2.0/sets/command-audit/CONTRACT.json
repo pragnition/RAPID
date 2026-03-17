@@ -1,0 +1,27 @@
+{
+  "setId": "command-audit",
+  "version": "1.0.0",
+  "exports": {
+    "cleaned-tool-registry": {
+      "type": "file",
+      "signature": "src/lib/tool-docs.cjs :: TOOL_REGISTRY, ROLE_TOOL_MAP",
+      "description": "TOOL_REGISTRY with wave-plan-* entries removed. ROLE_TOOL_MAP updated so no role references removed keys. plan-verifier role updated to use valid commands only."
+    },
+    "audited-skills": {
+      "type": "file",
+      "signature": "skills/{review,plan-set}/SKILL.md",
+      "description": "Skills updated to remove all references to wave-plan subcommands (list-jobs, resolve-wave, create-wave-dir, validate-contracts). Replaced with equivalent valid commands or inline logic."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "no-phantom-commands": {
+      "description": "No SKILL.md or agent .md file may reference a rapid-tools.cjs subcommand that does not exist in the CLI router. Specifically: wave-plan-resolve, wave-plan-create-dir, wave-plan-validate, wave-plan-list-jobs are all removed.",
+      "enforced_by": "test"
+    },
+    "tool-registry-consistency": {
+      "description": "Every key referenced in ROLE_TOOL_MAP must exist in TOOL_REGISTRY. getToolDocsForRole() must not throw for any role in the map.",
+      "enforced_by": "test"
+    }
+  }
+}

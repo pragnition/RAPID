@@ -1,0 +1,27 @@
+{
+  "setId": "state-consistency",
+  "version": "1.0.0",
+  "exports": {
+    "canonical-status-literals": {
+      "type": "file",
+      "signature": "src/lib/state-transitions.cjs :: SET_TRANSITIONS map",
+      "description": "The authoritative mapping of valid set status values (pending, discussed, planned, executed, complete, merged) and their allowed transitions. All skills and agents MUST reference these exact strings."
+    },
+    "corrected-skill-transitions": {
+      "type": "file",
+      "signature": "skills/*/SKILL.md :: state transition set calls",
+      "description": "All 24 SKILL.md files updated to use past-tense status literals matching SET_TRANSITIONS. Specifically: discussing -> discussed, executing -> executed, reviewing -> removed."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "status-literal-consistency": {
+      "description": "Every `state transition set` call in any SKILL.md or agent .md file must use a status value that exists in SET_TRANSITIONS keys or values. No present-tense status names (discussing, executing, planning, reviewing) may appear in transition calls.",
+      "enforced_by": "test"
+    },
+    "transition-validity": {
+      "description": "Every transition sequence in skills must follow the SET_TRANSITIONS graph: pending -> discussed -> planned -> executed -> complete -> merged. No skipping steps.",
+      "enforced_by": "test"
+    }
+  }
+}

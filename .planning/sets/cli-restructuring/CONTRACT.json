@@ -1,0 +1,60 @@
+{
+  "setId": "cli-restructuring",
+  "version": "1.0.0",
+  "exports": {
+    "commandHandlers": {
+      "type": "file",
+      "signature": "src/commands/{command}.cjs -- one file per command group",
+      "description": "Split command handlers extracted from rapid-tools.cjs, each exporting handler functions"
+    },
+    "parseArgs": {
+      "type": "function",
+      "signature": "parseArgs(args: string[], schema: object): object",
+      "description": "Lightweight argument parser supporting --flag value and --flag=value patterns"
+    },
+    "readAndValidateStdin": {
+      "type": "function",
+      "signature": "readAndValidateStdin(zodSchema: ZodSchema): Promise<object>",
+      "description": "Reads stdin JSON and validates against a Zod schema, throwing typed error on validation failure"
+    },
+    "exitWithError": {
+      "type": "function",
+      "signature": "exitWithError(msg: string, code?: number): never",
+      "description": "Standardized error output: JSON to stdout, human-readable to stderr, then process.exit"
+    }
+  },
+  "imports": {
+    "stateSchemas": {
+      "fromSet": "foundation-hardening",
+      "type": "function",
+      "signature": "ProjectStateSchema with .passthrough()",
+      "description": "Updated state schemas needed for stdin validation and state operations in split handlers"
+    },
+    "resumeSet": {
+      "fromSet": "data-integrity",
+      "type": "function",
+      "signature": "resumeSet(cwd: string, setId: string, options?: object): Promise<object>",
+      "description": "Resume function that the execute command handler delegates to"
+    },
+    "withMergeStateTransaction": {
+      "fromSet": "data-integrity",
+      "type": "function",
+      "signature": "withMergeStateTransaction(cwd: string, setId: string, mutationFn: (state) => void): Promise<void>",
+      "description": "Merge state transaction wrapper used by merge command handler"
+    }
+  },
+  "behavioral": {
+    "jsonOutputPreserved": {
+      "description": "All JSON output format must remain identical to pre-split format -- skills and agents parse specific fields",
+      "enforced_by": "test"
+    },
+    "routerUnder300Lines": {
+      "description": "rapid-tools.cjs must be reduced to a thin router under 300 lines",
+      "enforced_by": "test"
+    },
+    "consistentErrorFormat": {
+      "description": "All handlers must use exitWithError() for error responses -- no mixed error patterns",
+      "enforced_by": "test"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "setId": "scaffold-command",
+  "version": "1.0.0",
+  "exports": {
+    "scaffoldCommand": {
+      "type": "function",
+      "signature": "handleScaffold(cwd: string, options?: { projectType?: string }): Promise<ScaffoldReport>",
+      "description": "/scaffold command: analyzes project type and generates appropriate foundation layer"
+    },
+    "scaffoldTemplates": {
+      "type": "file",
+      "signature": "src/lib/scaffold-templates.cjs or embedded in scaffold.cjs",
+      "description": "Project-type-specific foundation templates (webapp, API, library, CLI)"
+    }
+  },
+  "imports": {
+    "initInfrastructure": {
+      "fromSet": "foundation-hardening",
+      "type": "function",
+      "signature": "Project type detection from init-time context analysis",
+      "description": "Leverages project type detected during /init to determine which scaffold to generate"
+    }
+  },
+  "behavioral": {
+    "commitsToMain": {
+      "description": "Scaffold output must commit to main branch before any set branches are created",
+      "enforced_by": "test"
+    },
+    "reRunnable": {
+      "description": "Running /scaffold again must not destroy existing customizations -- additive only or skip existing files",
+      "enforced_by": "test"
+    },
+    "roadmapperAware": {
+      "description": "Roadmapper agent must incorporate scaffold existence when planning set boundaries",
+      "enforced_by": "test"
+    }
+  }
+}

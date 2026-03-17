@@ -1,0 +1,31 @@
+{
+  "setId": "data-integrity",
+  "version": "1.0.0",
+  "exports": {
+    "resumeSet": {
+      "type": "function",
+      "signature": "resumeSet(cwd: string, setId: string, options?: object): Promise<object>",
+      "description": "Single resume function in execute.cjs replacing both handleResume() and execute resume code paths"
+    },
+    "withMergeStateTransaction": {
+      "type": "function",
+      "signature": "withMergeStateTransaction(cwd: string, setId: string, mutationFn: (state) => void): Promise<void>",
+      "description": "Atomic read-validate-mutate-write wrapper for MERGE-STATE.json, mirroring withStateTransaction() pattern"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "singleResumePath": {
+      "description": "All resume operations must route through the single resumeSet() function -- no duplicate code paths",
+      "enforced_by": "test"
+    },
+    "transactionalStateMutation": {
+      "description": "execute update-phase must use withStateTransaction() -- no direct STATE.json mutation",
+      "enforced_by": "test"
+    },
+    "atomicMergeState": {
+      "description": "All MERGE-STATE writes must go through withMergeStateTransaction() -- no direct fs.writeFileSync calls",
+      "enforced_by": "test"
+    }
+  }
+}

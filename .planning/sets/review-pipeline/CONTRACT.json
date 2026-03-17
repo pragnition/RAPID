@@ -1,0 +1,52 @@
+{
+  "setId": "review-pipeline",
+  "version": "1.0.0",
+  "exports": {
+    "reviewScope": {
+      "type": "file",
+      "signature": ".planning/sets/{setId}/REVIEW-SCOPE.md",
+      "description": "/review writes scoping output -- categorized concerns, file chunks, cross-cutting analysis"
+    },
+    "unitTestSkill": {
+      "type": "file",
+      "signature": "skills/unit-test/SKILL.md",
+      "description": "Independent /unit-test skill reading REVIEW-SCOPE.md, writing REVIEW-UNIT.md"
+    },
+    "bugHuntSkill": {
+      "type": "file",
+      "signature": "skills/bug-hunt/SKILL.md",
+      "description": "Independent /bug-hunt skill running hunter+advocate+judge, writing REVIEW-BUGS.md with leaning indicators"
+    },
+    "uatSkill": {
+      "type": "file",
+      "signature": "skills/uat/SKILL.md",
+      "description": "Independent /uat skill testing against CONTRACT.json criteria, writing REVIEW-UAT.md"
+    }
+  },
+  "imports": {
+    "reviewArtifactPaths": {
+      "fromSet": "structural-cleanup",
+      "type": "file",
+      "signature": ".planning/sets/{setId}/REVIEW-*.md",
+      "description": "Corrected review artifact paths that the new review skills write to"
+    }
+  },
+  "behavioral": {
+    "scopeRequired": {
+      "description": "/unit-test, /bug-hunt, /uat must detect missing REVIEW-SCOPE.md and prompt user to run /review first",
+      "enforced_by": "test"
+    },
+    "idempotentRerun": {
+      "description": "Re-running any review stage must overwrite previous output cleanly without accumulation",
+      "enforced_by": "test"
+    },
+    "judgeLeaningVisible": {
+      "description": "/bug-hunt output must include judge leaning (accept/reject/uncertain) with confidence for each finding",
+      "enforced_by": "test"
+    },
+    "noStagePrompting": {
+      "description": "Review skills must not prompt user to select stages -- each skill is independently invoked",
+      "enforced_by": "test"
+    }
+  }
+}

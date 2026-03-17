@@ -1,0 +1,43 @@
+{
+  "setId": "structural-cleanup",
+  "version": "1.0.0",
+  "exports": {
+    "readRegistry": {
+      "type": "function",
+      "signature": "readRegistry(cwd: string): Readonly<RegistryData>",
+      "description": "Read-only registry access returning a frozen copy (renamed from loadRegistry)"
+    },
+    "withRegistryUpdate": {
+      "type": "function",
+      "signature": "withRegistryUpdate(cwd: string, mutationFn: (registry) => void): Promise<void>",
+      "description": "Mutation callback pattern for registry writes (renamed from registryUpdate)"
+    },
+    "reviewArtifactPaths": {
+      "type": "file",
+      "signature": ".planning/sets/{setId}/REVIEW-*.md",
+      "description": "Review artifacts relocated from .planning/waves/{setId}/ to .planning/sets/{setId}/"
+    }
+  },
+  "imports": {
+    "commandHandlers": {
+      "fromSet": "cli-restructuring",
+      "type": "file",
+      "signature": "src/commands/{command}.cjs",
+      "description": "Split command files where path resolution and registry naming changes are applied"
+    }
+  },
+  "behavioral": {
+    "consistentPathResolution": {
+      "description": "All file path operations must use path.resolve() -- no path.join() with potentially relative cwd",
+      "enforced_by": "test"
+    },
+    "noCommentDetection": {
+      "description": "handleBuildAgents() must use only SKIP_GENERATION list -- no comment-marker-based agent detection",
+      "enforced_by": "test"
+    },
+    "noDeprecatedSkills": {
+      "description": "skills/ directory must contain only active skills -- no redirect-only deprecated skills",
+      "enforced_by": "test"
+    }
+  }
+}

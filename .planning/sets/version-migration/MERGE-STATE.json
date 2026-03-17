@@ -1,0 +1,9 @@
+{
+  "setId": "version-migration",
+  "status": "complete",
+  "startedAt": "2026-03-16T06:44:12.832Z",
+  "completedAt": "2026-03-16T06:44:16.038Z",
+  "mergeCommit": "5a8f8c97d8ad57478518b71280b2be225401f859",
+  "agentPhase1": "idle",
+  "lastUpdatedAt": "2026-03-16T06:44:16.039Z"
+}

@@ -1,0 +1,42 @@
+{
+  "setId": "foundation-hardening",
+  "version": "1.0.0",
+  "exports": {
+    "stateSchemaPassthrough": {
+      "type": "function",
+      "signature": "ProjectStateSchema.passthrough() applied to all Zod schemas in state-schemas.cjs",
+      "description": "State schemas that preserve unknown fields instead of stripping them, enabling forward-compatible schema evolution"
+    },
+    "rapidVersionField": {
+      "type": "file",
+      "signature": "STATE.json.rapidVersion: string (semver)",
+      "description": "New rapidVersion field in STATE.json populated during init, used by /migrate to determine current version"
+    },
+    "atomicWriteRegistry": {
+      "type": "function",
+      "signature": "writeRegistry(cwd: string, data: object): void -- uses tmp+rename atomic write",
+      "description": "Registry writes using the same atomic tmp+rename pattern as writeState() to prevent corruption"
+    },
+    "npmTestScript": {
+      "type": "file",
+      "signature": "package.json scripts.test: string",
+      "description": "npm test command that runs all test suites via node --test"
+    },
+    "versionSync": {
+      "type": "file",
+      "signature": "package.json.version === plugin.json.version, version.cjs reads correct source",
+      "description": "Consistent version number across all version-bearing files"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "noFieldStripping": {
+      "description": "Zod .parse() on STATE.json must preserve all fields, including those not in the current schema version",
+      "enforced_by": "test"
+    },
+    "atomicWrites": {
+      "description": "Both writeState() and writeRegistry() must use tmp-file-then-rename pattern to prevent corruption on crash",
+      "enforced_by": "test"
+    }
+  }
+}
