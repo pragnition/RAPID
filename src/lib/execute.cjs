@@ -134,6 +134,18 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
   }
 
   const ctx = prepareSetContext(cwd, setName);
+
+  // Load memory context for plan and execute phases
+  let memoryContext = '';
+  if (phase === 'plan' || phase === 'execute') {
+    try {
+      const memory = require('./memory.cjs');
+      memoryContext = memory.buildMemoryContext(cwd, setName);
+    } catch {
+      // Graceful -- skip memory if module not available or errors
+    }
+  }
+
   let prompt = '';
 
   switch (phase) {
@@ -180,6 +192,7 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
         '## Discussion Decisions',
         '',
         priorContext || 'No prior discussion -- proceed with contract and definition as given.',
+        ...(memoryContext ? ['', memoryContext] : []),
         '',
         '## Instructions',
         'Create a step-by-step implementation plan. For each step:',
@@ -210,6 +223,11 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
         } catch {
           // Graceful -- skip compaction if artifacts cannot be read
         }
+      }
+
+      if (memoryContext) {
+        parts.push('');
+        parts.push(memoryContext);
       }
 
       parts.push('');
