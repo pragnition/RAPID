@@ -17,6 +17,7 @@ const { handleReview } = require('../commands/review.cjs');
 const { handleBuildAgents } = require('../commands/build-agents.cjs');
 const { handleExecute } = require('../commands/execute.cjs');
 const { handleMemory } = require('../commands/memory.cjs');
+const { handleQuick } = require('../commands/quick.cjs');
 const { handleMerge } = require('../commands/merge.cjs');
 const { handleMigrate } = require('../commands/migrate.cjs');
 const { handleScaffold } = require('../commands/scaffold.cjs');
@@ -100,6 +101,9 @@ Commands:
   memory query [--category <c>] [--type decisions|corrections]  Query memory logs
                [--set-id <id>] [--milestone <m>] [--limit <n>]
   memory context <set-name> [--budget <n>]  Build token-budgeted memory context
+  quick log --description <d> --outcome <o> --slug <s> --branch <b>  Append quick task to log
+  quick list [--limit <n>]                                           List quick task history
+  quick show <id>                                                    Show a quick task by ID
   set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
   set-init list-available        List pending sets without worktrees
   review scope <set-id> [<wave-id>] [--branch <b>] [--post-merge]  Scope files for review
@@ -218,6 +222,10 @@ async function main() {
 
       case 'memory':
         await handleMemory(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'quick':
+        await handleQuick(cwd, subcommand, args.slice(2));
         break;
 
       case 'merge':
