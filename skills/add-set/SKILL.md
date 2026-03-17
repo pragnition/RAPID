@@ -164,32 +164,43 @@ Note: CONTRACT.json starts with empty arrays. File ownership, exports, and impor
 
 ---
 
-## Step 5: Update STATE.json
+## Step 5: Update STATE.json and Recalculate DAG
 
-Read the current STATE.json:
+Add the new set to the current milestone atomically using the CLI command. This uses `withStateTransaction` internally for safe mutation and automatically recalculates DAG.json and OWNERSHIP.json.
+
+Determine dependencies from the user's `SET_FILES_AND_DEPS` answer in Step 2. If the user mentioned dependencies on existing sets, extract the set IDs and format them as a comma-separated list for the `--deps` flag. If no dependencies were mentioned, omit the `--deps` flag.
 
 ```bash
 # (env preamble here)
-STATE_JSON=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null)
-echo "$STATE_JSON"
+node "${RAPID_TOOLS}" state add-set \
+  --milestone "${MILESTONE_ID}" \
+  --set-id "${SET_ID}" \
+  --set-name "${SET_ID}" \
+  [--deps "dep1,dep2"]
 ```
 
-Parse the JSON. Find the current milestone's `sets` array. Add a new set object:
-
+Parse the JSON output to confirm success. The output will be:
 ```json
-{ "id": "{SET_ID}", "status": "pending" }
+{
+  "setId": "...",
+  "milestoneId": "...",
+  "depsValidated": [...]
+}
 ```
-
-Write the updated STATE.json using the Write tool (same pattern as /init roadmapper writes STATE.json directly).
 
 Commit the state change:
 
 ```bash
 # (env preamble here)
-node "${RAPID_TOOLS}" state commit-state "add-set(${SET_ID}): add new set to milestone"
+node "${RAPID_TOOLS}" execute commit-state "add-set(${SET_ID}): add new set to milestone"
 ```
 
-**If STATE.json write fails:** Display error: "Failed to update STATE.json. Your set artifacts were created at .planning/sets/${SET_ID}/ but state was not updated. Try re-running /rapid:add-set or manually add the set." STOP.
+**If the CLI command fails:** Display the error message from stderr. Common failures:
+- "Set X already exists" -- the set ID is a duplicate, ask user for a new ID
+- "Dependency X not found" -- a referenced dependency does not exist in the milestone
+- "STATE.json not found" -- project not initialized, suggest `/rapid:init`
+
+Display: "Failed to add set to STATE.json. Your set artifacts were created at .planning/sets/${SET_ID}/ but state was not updated. Try re-running /rapid:add-set or manually add the set." STOP.
 
 ---
 
