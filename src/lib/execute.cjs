@@ -912,6 +912,8 @@ function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
       results.passed.push({ type: 'file_exists', target: file.path });
     } else if (file.action === 'Create') {
       results.failed.push({ type: 'missing_file', target: file.path });
+    } else if (file.action === 'Modify') {
+      results.failed.push({ type: 'missing_modify_file', target: file.path });
     }
   }
 
