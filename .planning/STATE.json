@@ -157,12 +157,12 @@
         },
         {
           "id": "quick-and-addset",
-          "status": "discussed",
+          "status": "planned",
           "waves": []
         },
         {
           "id": "hooks-system",
-          "status": "discussed",
+          "status": "planned",
           "waves": []
         },
         {
@@ -183,6 +183,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-17T08:40:53.155Z",
+  "lastUpdatedAt": "2026-03-17T08:56:25.473Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
