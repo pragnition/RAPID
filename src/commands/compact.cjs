@@ -16,6 +16,9 @@ async function handleCompact(cwd, subcommand, args) {
       }
 
       const activeWave = parseInt(flags['active-wave'] || '0', 10);
+      if (Number.isNaN(activeWave)) {
+        throw new CliError('Invalid --active-wave value: must be a number');
+      }
       const setDir = path.join(cwd, '.planning', 'sets', setId);
 
       const waves = compaction.collectWaveArtifacts(setDir);
