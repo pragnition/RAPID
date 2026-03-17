@@ -884,7 +884,12 @@ function parseJobPlanFiles(jobPlanContent) {
 function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
   const waveDir = path.join(cwd, '.planning', 'sets', setId, waveId);
   const jobPlanPath = path.join(waveDir, `${jobId}-PLAN.md`);
-  const jobPlan = fs.readFileSync(jobPlanPath, 'utf-8');
+  let jobPlan;
+  try {
+    jobPlan = fs.readFileSync(jobPlanPath, 'utf-8');
+  } catch (err) {
+    return { passed: [], failed: [{ type: 'plan_read_error', target: err.message }] };
+  }
 
   const results = { passed: [], failed: [] };
 
@@ -1145,4 +1150,6 @@ module.exports = {
   formatProgressBanner,
   generateJobHandoff,
   parseJobHandoff,
+  parseOwnedFiles,
+  parseJobPlanFiles,
 };
