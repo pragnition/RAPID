@@ -936,7 +936,12 @@ function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
  */
 function reconcileWaveJobs(cwd, setId, waveId, worktreePath, baseBranch) {
   const waveDir = path.join(cwd, '.planning', 'sets', setId, waveId);
-  const jobPlanFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
+  let jobPlanFiles;
+  try {
+    jobPlanFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
+  } catch (err) {
+    return { hardBlocks: [], softBlocks: [{ job: waveId, type: 'wave_dir_error', detail: err.message }], jobResults: {}, overall: 'PASS_WITH_WARNINGS' };
+  }
 
   const hardBlocks = [];
   const softBlocks = [];
