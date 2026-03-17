@@ -133,7 +133,7 @@ function compactContext(context, options = {}) {
         };
       }
 
-      // Future wave or wave 0 (set-level): read full content
+      // Future wave (waves >= activeWave that are not active): read full content
       const content = fs.readFileSync(artifact.path, 'utf-8');
       const tokens = estimateTokens(content);
       totalTokens += tokens;
