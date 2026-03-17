@@ -42,6 +42,12 @@ const TOOL_REGISTRY = {
   'execute-pause':        'execute pause <set:str> -- Pause execution, write HANDOFF.md',
   'execute-resume':       'execute resume <set:str> -- Resume from HANDOFF.md',
 
+  // Memory
+  'memory-log-decision':  'memory log-decision --category <c:str> --decision <d:str> --rationale <r:str> --source <s:str> -- Log decision',
+  'memory-log-correction': 'memory log-correction --original <o:str> --correction <c:str> --reason <r:str> -- Log correction',
+  'memory-query':         'memory query [--category <c:str>] [--type <t:str>] [--limit <n:int>] -- Query memory',
+  'memory-context':       'memory context <set:str> [--budget <n:int>] -- Build memory context',
+
   // Merge
   'merge-detect':         'merge detect <set:str> -- Run 5-level conflict detection',
   'merge-resolve':        'merge resolve <set:str> -- Run resolution cascade',
@@ -108,10 +114,10 @@ const TOOL_REGISTRY = {
 // ---------------------------------------------------------------------------
 const ROLE_TOOL_MAP = {
   // Core roles that use CLI heavily
-  'executor':         ['state-get', 'state-transition-set', 'verify-light'],
+  'executor':         ['state-get', 'state-transition-set', 'verify-light', 'memory-log-decision', 'memory-log-correction'],
   'planner':          ['state-get', 'state-get-all', 'plan-create-set', 'plan-decompose', 'plan-write-dag',
-                       'plan-list-sets', 'plan-load-set', 'resolve-set', 'resolve-wave'],
-  'set-planner':      ['state-get', 'state-get-all', 'plan-create-set', 'plan-decompose', 'plan-write-dag'],
+                       'plan-list-sets', 'plan-load-set', 'resolve-set', 'resolve-wave', 'memory-query', 'memory-context'],
+  'set-planner':      ['state-get', 'state-get-all', 'plan-create-set', 'plan-decompose', 'plan-write-dag', 'memory-log-decision'],
   'reviewer':         ['state-get', 'review-scope', 'review-log-issue', 'review-list-issues',
                        'review-update-issue', 'review-lean', 'review-summary'],
   'verifier':         ['state-get', 'verify-light', 'verify-heavy'],
