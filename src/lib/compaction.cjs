@@ -189,6 +189,9 @@ function registerCompactionTrigger(event, handler) {
 // prevent subsequent handlers from running.
 // ---------------------------------------------------------------------------
 async function fireCompactionTrigger(event, context) {
+  if (!VALID_EVENTS.includes(event)) {
+    throw new Error(`Invalid compaction trigger event "${event}". Valid events: ${VALID_EVENTS.join(', ')}`);
+  }
   const handlers = _hookRegistry[event] || [];
   let fired = 0;
   const errors = [];

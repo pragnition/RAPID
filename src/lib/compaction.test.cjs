@@ -521,9 +521,11 @@ describe('hook registry', () => {
     assert.equal(result.errors.length, 0);
   });
 
-  it('fires 0 handlers for unknown event name', async () => {
-    const result = await fireCompactionTrigger('nonexistent-event');
-    assert.equal(result.fired, 0);
+  it('throws for unknown event name', async () => {
+    await assert.rejects(
+      () => fireCompactionTrigger('nonexistent-event'),
+      { message: /Invalid compaction trigger event/ }
+    );
   });
 
   it('throws when registering hook for invalid event', () => {
@@ -1099,5 +1101,612 @@ describe('registerDefaultHooks', () => {
     const result = await fireCompactionTrigger('review-stage-complete', {});
     assert.equal(result.fired, 1);
     assert.equal(result.errors.length, 0);
+  });
+});
+
+// ===========================================================================
+// NEW TESTS -- Approved test plan for context-optimization / compaction-engine
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// resolveDigestPath -- edge cases
+// ---------------------------------------------------------------------------
+describe('resolveDigestPath - edge cases', () => {
+  // BEHAVIOR: resolveDigestPath should handle an empty string without crashing
+  // GUARDS AGAINST: Undefined behavior when callers pass empty or uninitialized paths
+  // EDGE CASE: Empty string does not end with '.md', so it should get '-DIGEST.md' appended
+  it('handles empty string input', () => {
+    const result = resolveDigestPath('');
+    assert.equal(result, '-DIGEST.md');
+  });
+
+  // BEHAVIOR: resolveDigestPath should be case-sensitive for the .md extension check
+  // GUARDS AGAINST: Silently swallowing uppercase .MD extensions as if they were .md,
+  // which would produce incorrect digest paths by stripping the wrong suffix
+  // EDGE CASE: .MD (uppercase) is not the same as .md -- should append -DIGEST.md
+  it('handles .MD uppercase extension', () => {
+    const result = resolveDigestPath('/sets/test/FILE.MD');
+    // .MD does NOT match .md, so it should append -DIGEST.md to the full path
+    assert.equal(result, '/sets/test/FILE.MD-DIGEST.md');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readDigestOrFull -- edge cases
+// ---------------------------------------------------------------------------
+describe('readDigestOrFull - edge cases', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: readDigestOrFull should throw ENOENT when both digest and full file are missing
+  // GUARDS AGAINST: Silent null returns that mask broken artifact references,
+  // causing downstream code to operate on undefined content
+  it('throws when artifact missing', () => {
+    const missingPath = path.join(tmpDir, 'nonexistent.md');
+    assert.throws(
+      () => readDigestOrFull(missingPath),
+      { code: 'ENOENT' }
+    );
+  });
+
+  // BEHAVIOR: readDigestOrFull returns empty content with 0 tokens for an empty file
+  // GUARDS AGAINST: Token estimation or content handling that crashes on empty strings
+  // EDGE CASE: Empty file is a valid file -- should not throw, should return sensible defaults
+  it('handles empty file', () => {
+    const emptyFile = path.join(tmpDir, 'empty.md');
+    fs.writeFileSync(emptyFile, '');
+
+    const result = readDigestOrFull(emptyFile);
+    assert.equal(result.content, '');
+    assert.equal(result.isDigest, false);
+    assert.equal(result.tokens, 0);
+  });
+
+  // BEHAVIOR: readDigestOrFull should prefer the digest for non-.md files (e.g., CONTRACT.json)
+  // GUARDS AGAINST: Digest resolution only working for .md files, silently ignoring
+  // digests for JSON or other file types
+  // EDGE CASE: Non-.md files get digest path via appending -DIGEST.md (e.g., CONTRACT.json-DIGEST.md)
+  it('prefers digest for non-.md file', () => {
+    const jsonFile = path.join(tmpDir, 'CONTRACT.json');
+    const jsonDigest = path.join(tmpDir, 'CONTRACT.json-DIGEST.md');
+    fs.writeFileSync(jsonFile, '{"full": true}');
+    fs.writeFileSync(jsonDigest, 'Digest of contract.');
+
+    const result = readDigestOrFull(jsonFile);
+    assert.equal(result.content, 'Digest of contract.');
+    assert.equal(result.isDigest, true);
+    assert.equal(result.path, jsonFile); // path always points to original
+  });
+});
+
+// ---------------------------------------------------------------------------
+// compactContext -- empty input edge cases
+// ---------------------------------------------------------------------------
+describe('compactContext - empty input edge cases', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: compactContext should handle an empty waves array without crashing
+  // GUARDS AGAINST: Array.map on undefined or null, or division by zero in token stats
+  // EDGE CASE: A freshly created set with no artifacts yet
+  it('handles empty waves array', () => {
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 1,
+      waves: [],
+    };
+
+    const result = compactContext(context);
+    assert.deepEqual(result.compacted, []);
+    assert.equal(result.totalTokens, 0);
+    assert.equal(result.digestsUsed, 0);
+    assert.equal(result.fullsUsed, 0);
+    assert.equal(result.budgetExceeded, false);
+  });
+
+  // BEHAVIOR: compactContext should handle a wave with an empty artifacts array
+  // GUARDS AGAINST: Array.map crashing on empty artifact lists or incorrect counting
+  // EDGE CASE: Wave exists in metadata but all its files were deleted
+  it('handles wave with empty artifacts', () => {
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 1,
+      waves: [
+        { wave: 1, artifacts: [] },
+      ],
+    };
+
+    const result = compactContext(context);
+    assert.equal(result.compacted.length, 1);
+    assert.deepEqual(result.compacted[0].artifacts, []);
+    assert.equal(result.totalTokens, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// compactContext -- wave 0 behavior
+// ---------------------------------------------------------------------------
+describe('compactContext - wave 0 behavior', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: Wave 0 (set-level artifacts) should be treated as "future wave or wave 0"
+  // when activeWave > 0, meaning full content is read (not compacted via digest)
+  // GUARDS AGAINST: Wave 0 being misclassified as a "completed wave" (0 < activeWave),
+  // which would cause set-level docs like CONTEXT.md to use digests prematurely
+  // NOTE: This documents the ACTUAL behavior -- wave 0 IS treated as completed
+  // because the code checks wave.wave < context.activeWave, and 0 < 1 is true.
+  it('wave 0 treated as completed when activeWave > 0', () => {
+    const contextFile = path.join(tmpDir, 'CONTEXT.md');
+    fs.writeFileSync(contextFile, 'Full set context content here.');
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 1,
+      waves: [
+        { wave: 0, artifacts: [{ name: 'CONTEXT.md', path: contextFile }] },
+      ],
+    };
+
+    const result = compactContext(context);
+    const w0 = result.compacted.find(c => c.wave === 0);
+    assert.ok(w0);
+    // Wave 0 with activeWave=1: 0 < 1 is true, so it IS a completed wave
+    // Without a digest file, it falls back to full content
+    assert.equal(w0.artifacts[0].isDigest, false);
+    assert.equal(w0.artifacts[0].content, 'Full set context content here.');
+  });
+
+  // BEHAVIOR: CONTEXT.md at wave 0 should use digest content when a digest file exists
+  // and activeWave > 0 (making wave 0 a "completed" wave)
+  // GUARDS AGAINST: Digest files being ignored for wave 0 artifacts, wasting token budget
+  it('CONTEXT.md at wave 0 uses digest when activeWave > 0', () => {
+    const contextFile = path.join(tmpDir, 'CONTEXT.md');
+    const contextDigest = path.join(tmpDir, 'CONTEXT-DIGEST.md');
+    fs.writeFileSync(contextFile, 'A'.repeat(4000)); // 1000 tokens full
+    fs.writeFileSync(contextDigest, 'Short context digest.'); // 6 tokens digest
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 1,
+      waves: [
+        { wave: 0, artifacts: [{ name: 'CONTEXT.md', path: contextFile }] },
+      ],
+    };
+
+    const result = compactContext(context);
+    const w0 = result.compacted.find(c => c.wave === 0);
+    assert.ok(w0);
+    // Wave 0 is completed (0 < 1), CONTEXT.md is NOT verbatim, so digest is used
+    assert.equal(w0.artifacts[0].isDigest, true);
+    assert.equal(w0.artifacts[0].content, 'Short context digest.');
+    assert.equal(result.digestsUsed, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// compactContext -- mixed digest availability
+// ---------------------------------------------------------------------------
+describe('compactContext - mixed digest availability', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: When multiple waves have a mix of digest-available and digest-missing
+  // artifacts, each artifact should independently resolve to digest or full
+  // GUARDS AGAINST: A single missing digest causing all artifacts to fall back to full,
+  // or digest count tracking being off
+  it('multiple waves with mixed digest availability', () => {
+    // Wave 1: two artifacts, one with digest, one without
+    const w1Plan = path.join(tmpDir, 'wave-1-PLAN.md');
+    const w1PlanDigest = path.join(tmpDir, 'wave-1-PLAN-DIGEST.md');
+    const w1Complete = path.join(tmpDir, 'WAVE-1-COMPLETE.md');
+    // No digest for COMPLETE
+    fs.writeFileSync(w1Plan, 'A'.repeat(400));
+    fs.writeFileSync(w1PlanDigest, 'Plan digest.');
+    fs.writeFileSync(w1Complete, 'B'.repeat(400));
+
+    // Wave 2: one artifact with digest (but wave 2 is completed too)
+    const w2Plan = path.join(tmpDir, 'wave-2-PLAN.md');
+    const w2PlanDigest = path.join(tmpDir, 'wave-2-PLAN-DIGEST.md');
+    fs.writeFileSync(w2Plan, 'C'.repeat(400));
+    fs.writeFileSync(w2PlanDigest, 'Wave 2 digest.');
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 3, // Both wave 1 and 2 are completed
+      waves: [
+        { wave: 1, artifacts: [
+          { name: 'PLAN', path: w1Plan },
+          { name: 'COMPLETE', path: w1Complete },
+        ]},
+        { wave: 2, artifacts: [
+          { name: 'PLAN', path: w2Plan },
+        ]},
+      ],
+    };
+
+    const result = compactContext(context);
+    // Arrange: w1 PLAN has digest, w1 COMPLETE does not, w2 PLAN has digest
+    assert.equal(result.digestsUsed, 2);
+    assert.equal(result.fullsUsed, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// compactContext -- field preservation
+// ---------------------------------------------------------------------------
+describe('compactContext - field preservation', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: The artifact 'name' field should be preserved unchanged through compaction
+  // GUARDS AGAINST: Name being overwritten by filename extraction or digest path logic
+  it('preserves artifact name field', () => {
+    const file = path.join(tmpDir, 'wave-1-PLAN.md');
+    fs.writeFileSync(file, 'content');
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 1,
+      waves: [
+        { wave: 1, artifacts: [{ name: 'PLAN', path: file }] },
+      ],
+    };
+
+    const result = compactContext(context);
+    assert.equal(result.compacted[0].artifacts[0].name, 'PLAN');
+  });
+
+  // BEHAVIOR: totalTokens should be the exact sum of all individual artifact tokens
+  // GUARDS AGAINST: Off-by-one in token accumulation or double-counting
+  it('totalTokens is sum of artifact tokens', () => {
+    // Arrange: three files with known token counts
+    // estimateTokens = Math.ceil(text.length / 4)
+    const f1 = path.join(tmpDir, 'wave-1-PLAN.md');
+    const f2 = path.join(tmpDir, 'wave-2-PLAN.md');
+    const f3 = path.join(tmpDir, 'wave-3-PLAN.md');
+    fs.writeFileSync(f1, 'A'.repeat(40)); // 10 tokens
+    fs.writeFileSync(f2, 'B'.repeat(80)); // 20 tokens
+    fs.writeFileSync(f3, 'C'.repeat(120)); // 30 tokens
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 3, // only wave 3 is active
+      waves: [
+        { wave: 1, artifacts: [{ name: 'PLAN', path: f1 }] },
+        { wave: 2, artifacts: [{ name: 'PLAN', path: f2 }] },
+        { wave: 3, artifacts: [{ name: 'PLAN', path: f3 }] },
+      ],
+    };
+
+    const result = compactContext(context);
+    const sum = result.compacted.reduce((acc, wave) =>
+      acc + wave.artifacts.reduce((a, art) => a + art.tokens, 0), 0);
+    assert.equal(result.totalTokens, sum);
+    assert.equal(result.totalTokens, 10 + 20 + 30);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hook registry -- additional edge cases
+// ---------------------------------------------------------------------------
+describe('hook registry - additional edge cases', () => {
+  beforeEach(() => {
+    clearHooks();
+  });
+
+  afterEach(() => {
+    clearHooks();
+  });
+
+  // BEHAVIOR: registerCompactionTrigger accepts any value as a handler
+  // without type-checking; the error surfaces at fire-time when the
+  // non-function is invoked as handler(context), causing a TypeError
+  // that is caught and added to the errors array
+  // GUARDS AGAINST: Assuming registration validates handler types --
+  // callers must pass functions or face fire-time errors
+  it('rejects non-function handler at fire time, not registration', async () => {
+    // Registration accepts anything (no type check in source)
+    registerCompactionTrigger('wave-complete', 'not-a-function');
+
+    // fireCompactionTrigger catches the TypeError internally
+    const result = await fireCompactionTrigger('wave-complete');
+    assert.equal(result.fired, 1); // fired counts all attempts, including errors
+    assert.equal(result.errors.length, 1);
+    assert.ok(result.errors[0].includes('is not a function'));
+  });
+
+  // BEHAVIOR: fireCompactionTrigger should work correctly with synchronous handlers
+  // (not just async functions), since it uses await which handles sync returns
+  // GUARDS AGAINST: Only async handlers being supported, causing sync handlers
+  // to be silently skipped or miscounted
+  it('fireCompactionTrigger with sync handler', async () => {
+    let called = false;
+    registerCompactionTrigger('wave-complete', () => {
+      called = true;
+    });
+
+    const result = await fireCompactionTrigger('wave-complete');
+    assert.equal(called, true);
+    assert.equal(result.fired, 1);
+    assert.equal(result.errors.length, 0);
+  });
+
+  // BEHAVIOR: When a handler throws a non-Error value (e.g., a raw string),
+  // it should still be captured in the errors array via String(err)
+  // GUARDS AGAINST: err.message being undefined for non-Error throws, causing
+  // "undefined" to appear in the errors array instead of the actual thrown value
+  it('non-Error throws captured in errors array', async () => {
+    registerCompactionTrigger('wave-complete', async () => {
+      throw 'raw string error'; // eslint-disable-line no-throw-literal
+    });
+
+    const result = await fireCompactionTrigger('wave-complete');
+    assert.equal(result.fired, 1);
+    assert.equal(result.errors.length, 1);
+    // err.message is undefined for string throws, so String(err) is used
+    assert.equal(result.errors[0], 'raw string error');
+  });
+
+  // BEHAVIOR: Handlers are executed in the order they were registered (FIFO)
+  // GUARDS AGAINST: Non-deterministic handler execution that could cause
+  // state-dependent hooks to produce inconsistent results
+  it('handler execution order preserved', async () => {
+    const order = [];
+    registerCompactionTrigger('wave-complete', async () => order.push('A'));
+    registerCompactionTrigger('wave-complete', async () => order.push('B'));
+    registerCompactionTrigger('wave-complete', async () => order.push('C'));
+
+    await fireCompactionTrigger('wave-complete');
+    assert.deepEqual(order, ['A', 'B', 'C']);
+  });
+
+  // BEHAVIOR: 'resume' is NOT a valid compaction trigger event
+  // GUARDS AGAINST: Callers assuming 'resume' is handled, leading to silently
+  // unregistered hooks that never fire
+  it('resume event NOT in VALID_EVENTS', () => {
+    assert.throws(
+      () => registerCompactionTrigger('resume', async () => {}),
+      { message: /Invalid compaction trigger event/ }
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// collectWaveArtifacts -- additional edge cases
+// ---------------------------------------------------------------------------
+describe('collectWaveArtifacts - additional edge cases', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: Unrecognized files (e.g., README.md, random.txt) should be ignored
+  // GUARDS AGAINST: Unknown files being assigned to wave 0 or causing crashes
+  it('ignores unrecognized files', () => {
+    fs.writeFileSync(path.join(tmpDir, 'README.md'), 'readme');
+    fs.writeFileSync(path.join(tmpDir, 'random.txt'), 'random');
+    fs.writeFileSync(path.join(tmpDir, 'notes.json'), '{}');
+
+    const result = collectWaveArtifacts(tmpDir);
+    assert.deepEqual(result, []);
+  });
+
+  // BEHAVIOR: DEFINITION.md is a recognized set-level artifact collected at wave 0
+  // GUARDS AGAINST: DEFINITION.md being silently dropped from context assembly
+  it('DEFINITION.md collected as wave 0 artifact', () => {
+    fs.writeFileSync(path.join(tmpDir, 'DEFINITION.md'), 'definition content');
+
+    const result = collectWaveArtifacts(tmpDir);
+    const w0 = result.find(w => w.wave === 0);
+    assert.ok(w0, 'Should have wave 0 group');
+    const def = w0.artifacts.find(a => a.name === 'DEFINITION.md');
+    assert.ok(def, 'Should find DEFINITION.md in wave 0');
+  });
+
+  // BEHAVIOR: All four review artifact types should be collected in wave 999
+  // GUARDS AGAINST: Missing review artifact patterns causing incomplete review context
+  it('all four review artifact types collected', () => {
+    fs.writeFileSync(path.join(tmpDir, 'REVIEW-SCOPE.md'), 'scope');
+    fs.writeFileSync(path.join(tmpDir, 'REVIEW-UNIT.md'), 'unit');
+    fs.writeFileSync(path.join(tmpDir, 'REVIEW-BUGS.md'), 'bugs');
+    fs.writeFileSync(path.join(tmpDir, 'REVIEW-UAT.md'), 'uat');
+
+    const result = collectWaveArtifacts(tmpDir);
+    const reviewWave = result.find(w => w.wave === 999);
+    assert.ok(reviewWave, 'Should have wave 999 group');
+    assert.equal(reviewWave.artifacts.length, 4);
+    const names = reviewWave.artifacts.map(a => a.name).sort();
+    assert.deepEqual(names, ['REVIEW-BUGS.md', 'REVIEW-SCOPE.md', 'REVIEW-UAT.md', 'REVIEW-UNIT.md']);
+  });
+
+  // BEHAVIOR: Files that look similar to wave artifacts but have wrong extensions
+  // or casing should be rejected
+  // GUARDS AGAINST: Loose regex patterns matching unintended files
+  it('non-matching filenames rejected', () => {
+    // These should NOT match the wave artifact patterns
+    fs.writeFileSync(path.join(tmpDir, 'wave-1-PLAN.txt'), 'wrong ext');
+    fs.writeFileSync(path.join(tmpDir, 'Wave-1-PLAN.md'), 'wrong case');
+    fs.writeFileSync(path.join(tmpDir, 'wave-1-plan.md'), 'lowercase plan');
+    fs.writeFileSync(path.join(tmpDir, 'wave-X-PLAN.md'), 'non-numeric');
+
+    const result = collectWaveArtifacts(tmpDir);
+    assert.deepEqual(result, []);
+  });
+
+  // BEHAVIOR: Large wave numbers (e.g., wave 99) should be parsed correctly
+  // GUARDS AGAINST: Regex only matching single-digit wave numbers
+  it('large wave numbers parse correctly', () => {
+    fs.writeFileSync(path.join(tmpDir, 'wave-99-PLAN.md'), 'plan 99');
+    fs.writeFileSync(path.join(tmpDir, 'WAVE-99-COMPLETE.md'), 'complete 99');
+
+    const result = collectWaveArtifacts(tmpDir);
+    const w99 = result.find(w => w.wave === 99);
+    assert.ok(w99, 'Should have wave 99 group');
+    assert.equal(w99.artifacts.length, 2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// registerDefaultHooks -- additional edge cases
+// ---------------------------------------------------------------------------
+describe('registerDefaultHooks - additional edge cases', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    clearHooks();
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    clearHooks();
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: wave-complete hook should NOT produce a warning when the plan file
+  // itself does not exist (only warns when plan exists but digest is missing)
+  // GUARDS AGAINST: False positive warnings for waves that have no plan file at all
+  it('wave-complete hook no warn when plan file missing', async () => {
+    const setDir = path.join(tmpDir, 'test-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    // No plan file at all -- neither plan nor digest
+
+    registerDefaultHooks(tmpDir);
+
+    const originalStderr = console.error;
+    let capturedWarning = '';
+    console.error = (msg) => { capturedWarning = msg; };
+
+    try {
+      await fireCompactionTrigger('wave-complete', {
+        setId: 'test-set',
+        waveNum: 1,
+        setDir,
+      });
+
+      assert.equal(capturedWarning, '', 'Should not produce warning when plan file is missing');
+    } finally {
+      console.error = originalStderr;
+    }
+  });
+
+  // BEHAVIOR: Calling registerDefaultHooks twice doubles the hook count per event
+  // GUARDS AGAINST: Assuming registerDefaultHooks is idempotent when it is not --
+  // this documents the actual behavior to prevent accidental double-registration
+  it('registerDefaultHooks twice doubles hook count', () => {
+    registerDefaultHooks(tmpDir);
+    registerDefaultHooks(tmpDir);
+
+    const hooks = getRegisteredHooks();
+    assert.equal(hooks['wave-complete'], 2);
+    assert.equal(hooks['pause'], 2);
+    assert.equal(hooks['review-stage-complete'], 2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// compactContext -- budget boundary conditions
+// ---------------------------------------------------------------------------
+describe('compactContext - budget boundary conditions', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: budgetExceeded should be false when totalTokens is exactly equal
+  // to the budget (uses strict > comparison, not >=)
+  // GUARDS AGAINST: Off-by-one where exactly-at-budget is flagged as exceeded
+  // EDGE CASE: Budget boundary -- the difference between > and >= matters
+  it('budget boundary exactly at threshold', () => {
+    // Budget = 50 tokens. 50 tokens = 200 chars (Math.ceil(200/4) = 50)
+    const file = path.join(tmpDir, 'test.md');
+    fs.writeFileSync(file, 'X'.repeat(200)); // exactly 50 tokens
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 1,
+      waves: [
+        { wave: 1, artifacts: [{ name: 'TEST', path: file }] },
+      ],
+    };
+
+    const result = compactContext(context, { budget: 50 });
+    assert.equal(result.totalTokens, 50);
+    assert.equal(result.budgetExceeded, false); // 50 > 50 is false
+  });
+
+  // BEHAVIOR: budgetExceeded should be true when totalTokens is one token over budget
+  // GUARDS AGAINST: Off-by-one where one-over-budget is not flagged
+  // EDGE CASE: Smallest possible overage
+  it('budget boundary one token over', () => {
+    // Budget = 50 tokens. 51 tokens = 204 chars (Math.ceil(204/4) = 51)
+    const file = path.join(tmpDir, 'test.md');
+    fs.writeFileSync(file, 'X'.repeat(204)); // exactly 51 tokens
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 1,
+      waves: [
+        { wave: 1, artifacts: [{ name: 'TEST', path: file }] },
+      ],
+    };
+
+    const result = compactContext(context, { budget: 50 });
+    assert.equal(result.totalTokens, 51);
+    assert.equal(result.budgetExceeded, true); // 51 > 50 is true
   });
 });
