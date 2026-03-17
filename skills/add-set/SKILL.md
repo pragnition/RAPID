@@ -283,6 +283,9 @@ Next: {what to run to recover}
 - Do NOT write wave PLAN.md files -- wave planning happens in `/rapid:plan-set`
 - Do NOT use `state transition set` -- the new set is written directly to STATE.json as `pending`
 - Do NOT modify existing sets -- only add the new set to the milestone
+- Do NOT use the Write tool to modify STATE.json directly -- always use `state add-set` CLI command which provides atomic transactions via `withStateTransaction`
+- Do NOT read STATE.json with `state get --all` and then write it back manually -- this creates race conditions and bypasses validation
+- Do NOT skip the DAG recalculation -- `state add-set` handles this automatically; manual STATE.json edits would leave DAG.json inconsistent
 
 ## Key Principles
 
@@ -293,3 +296,5 @@ Next: {what to run to recover}
 - **Suggests `/rapid:start-set`:** Explicit next action, not auto-started (locked decision)
 - **No subagent spawns:** Lightweight interactive command -- direct file creation and state mutation
 - **Progress breadcrumb:** Shown at completion to orient the user in the workflow
+- **Atomic state mutation:** STATE.json is mutated via `state add-set` CLI command, which uses `withStateTransaction` for lock-protected atomic writes with Zod validation
+- **DAG consistency:** DAG.json and OWNERSHIP.json are automatically recalculated after every `state add-set` call
