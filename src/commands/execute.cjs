@@ -235,12 +235,13 @@ async function handleExecute(cwd, subcommand, args) {
     }
 
     case 'resume': {
-      const setName = args[0];
+      const { flags: resumeFlags, positional: resumePos } = parseArgs(args, { 'info-only': 'boolean' });
+      const setName = resumePos[0];
       if (!setName) {
-        throw new CliError('Usage: rapid-tools execute resume <set-name>');
+        throw new CliError('Usage: rapid-tools execute resume <set-name> [--info-only]');
       }
       try {
-        const result = await execute.resumeSet(cwd, setName);
+        const result = await execute.resumeSet(cwd, setName, { infoOnly: !!resumeFlags['info-only'] });
         process.stdout.write(JSON.stringify(result) + '\n');
       } catch (err) {
         throw new CliError(err.message);
