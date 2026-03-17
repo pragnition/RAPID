@@ -154,15 +154,21 @@ function scopeSetPostMerge(cwd, setId) {
   }
 
   // 4. Get changed files via diff against first parent
-  const diffOutput = execSync(
-    `git diff --name-only ${mergeCommit}^1..${mergeCommit}`,
-    { cwd, stdio: 'pipe', encoding: 'utf-8' }
-  ).trim();
+  let changedFiles;
+  try {
+    const diffOutput = execSync(
+      `git diff --name-only ${mergeCommit}^1..${mergeCommit}`,
+      { cwd, stdio: 'pipe', encoding: 'utf-8' }
+    ).trim();
 
-  const changedFiles = diffOutput
-    .split('\n')
-    .filter(f => f.length > 0)
-    .filter(f => !f.startsWith('.planning/'));
+    changedFiles = diffOutput
+      .split('\n')
+      .filter(f => f.length > 0)
+      .filter(f => !f.startsWith('.planning/'));
+  } catch {
+    // Git diff failed -- return empty scope with warning
+    return { changedFiles: [], dependentFiles: [], totalFiles: 0 };
+  }
 
   // 5. Find dependents
   const dependentFiles = findDependents(cwd, changedFiles);
