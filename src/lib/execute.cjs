@@ -964,15 +964,16 @@ function reconcileWaveJobs(cwd, setId, waveId, worktreePath, baseBranch) {
 
     jobResults[jobId] = {
       filesPlanned: result.passed.filter(p => p.type === 'file_exists').length +
-                     result.failed.filter(f => f.type === 'missing_file').length,
+                     result.failed.filter(f => f.type === 'missing_file').length +
+                     result.failed.filter(f => f.type === 'missing_modify_file').length,
       filesDelivered: result.passed.filter(p => p.type === 'file_exists').length,
-      missingFiles: result.failed.filter(f => f.type === 'missing_file').map(f => f.target),
+      missingFiles: result.failed.filter(f => f.type === 'missing_file' || f.type === 'missing_modify_file').map(f => f.target),
       commitViolations: result.failed.filter(f => f.type === 'commit_format_violation').map(f => f.target),
     };
 
     // Missing files are soft blocks
-    for (const f of result.failed.filter(f => f.type === 'missing_file')) {
-      softBlocks.push({ job: jobId, type: 'missing_file', detail: f.target });
+    for (const f of result.failed.filter(f => f.type === 'missing_file' || f.type === 'missing_modify_file')) {
+      softBlocks.push({ job: jobId, type: f.type, detail: f.target });
     }
     // Commit violations are soft blocks
     for (const f of result.failed.filter(f => f.type === 'commit_format_violation')) {
@@ -1065,9 +1066,18 @@ function generateJobHandoff(checkpointData, setId, waveId, jobId, pauseCycle) {
     checkpointData.handoff_resume || 'Continue from where execution stopped.',
   ];
 
-  if (checkpointData.decisions && checkpointData.decisions.length > 0) {
+  // Support both .decisions (array) and .handoff_decisions (string, per RAPID protocol)
+  let decisions = checkpointData.decisions;
+  if (!decisions || decisions.length === 0) {
+    const hd = checkpointData.handoff_decisions;
+    if (hd) {
+      decisions = Array.isArray(hd) ? hd : [hd];
+    }
+  }
+
+  if (decisions && decisions.length > 0) {
     sections.push('', '## Decisions Made');
-    for (const d of checkpointData.decisions) {
+    for (const d of decisions) {
       sections.push(`- ${d}`);
     }
   }
