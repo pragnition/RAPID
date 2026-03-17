@@ -33,6 +33,7 @@ node "${RAPID_TOOLS}" display banner discuss-set
 ## Step 2: Resolve Set
 
 Accept a set identifier as argument. The user may invoke as:
+
 - `/rapid:discuss-set 1` (numeric index)
 - `/rapid:discuss-set auth-system` (string set ID)
 - `/rapid:discuss-set --skip 1` or `/rapid:discuss-set 1 --skip` (with --skip flag)
@@ -115,6 +116,7 @@ If the `--skip` flag is set:
 1. Display: "Auto-generating CONTEXT.md for set '{SET_ID}' (--skip mode)..."
 
 2. Spawn a lightweight **rapid-research-stack** agent with this task:
+
    ```
    Generate auto-context for set '{SET_ID}' (--skip mode).
 
@@ -133,6 +135,7 @@ If the `--skip` flag is set:
    ```
 
 3. After agent completes, verify CONTEXT.md was written:
+
    ```bash
    # (env preamble here)
    [ -f ".planning/sets/${SET_ID}/CONTEXT.md" ] && echo "CONTEXT.md created" || echo "ERROR: CONTEXT.md not found"
@@ -144,29 +147,32 @@ If the `--skip` flag is NOT set, continue to Step 5.
 
 ---
 
-## Step 5: Identify 4 Gray Areas (Interactive Mode)
+## Step 5: Identify 3-5 Gray Areas (Interactive Mode)
 
-Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, source files) and identify exactly 4 gray areas. Gray areas are implementation facets where:
+Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, source files) and identify 2-5 gray areas. Gray areas may be implementation facets or UI/UX consideratons where:
 
 - Multiple valid approaches exist
 - Integration points are ambiguous
 - User experience decisions are needed
 - Performance/quality tradeoffs exist
+- UI/UX decisions need to be made
 
 Present gray areas using AskUserQuestion:
 
 ```
-"I've analyzed set '{SET_ID}' and identified 4 areas that would benefit from your input.
+"I've analyzed set '{SET_ID}' and identified {GRAY_AREA_COUNT} areas that would benefit from your input.
 Select which areas you'd like to discuss (unselected areas default to Claude's discretion):"
 Options:
 1. "{Gray area 1 title}" -- "{1-sentence description}"
 2. "{Gray area 2 title}" -- "{1-sentence description}"
 3. "{Gray area 3 title}" -- "{1-sentence description}"
 4. "{Gray area 4 title}" -- "{1-sentence description}"
+5. "{Gray area 5 title}" -- "{1-sentence description}"
 ```
 
 **Handling responses:**
-- If the user selects no areas (empty selection): Record all 4 areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
+
+- If the user selects no areas (empty selection): Record all areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
 - If the user selects specific areas: Record selected areas for Step 6. Unselected areas are recorded as Claude's discretion.
 
 ---
@@ -175,7 +181,7 @@ Options:
 
 For EACH selected gray area (in order):
 
-1. For EACH question within the gray area, present a SEPARATE AskUserQuestion with prefilled options:
+1. Use ONE AskUserQuestion prompt and for EACH question within the gray area, ask a SEPERATE question wth a header, with prefilled options (if you have a recommendation, tag your recommeded option with "(recommended)"). EACH question should only ask the user about ONE thng. The user should not be thinkiing about multiple decisions within the same question.:
 
    ```
    "{Gray area title} -- {Question about approach}
@@ -189,7 +195,7 @@ For EACH selected gray area (in order):
    4. "Claude decides" -- "Let Claude pick the best approach"
    ```
 
-   Repeat for each question in the area (typically 2-3 questions per area). Each question is a separate AskUserQuestion call with its own prefilled options.
+   Repeat for each question in the area (typically 2-4 questions per area). Each question is a separate AskUserQuestion call with its own prefilled options.
 
 2. Record the user's selected option for each question.
 
@@ -198,8 +204,9 @@ For EACH selected gray area (in order):
 ### Follow-Up (Only If Needed)
 
 After ALL selected areas are discussed:
+
 - Compile follow-up questions ONLY if genuine gaps remain after all 4 areas were covered.
-- If gaps exist: ONE final AskUserQuestion with remaining questions (not per-area).
+- If gaps exist: Continue to prompt the user using AskUserQuestion with remaining questions until you are FULLY satisfied.
 - If no gaps: Skip follow-up entirely.
 
 ---
@@ -226,14 +233,17 @@ Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 ## Implementation Decisions
 
 ### {Area 1 Title}
+
 - {Decision from discussion or "Claude's Discretion"}
 
 ### {Area 2 Title}
+
 - ...
 
 ### Claude's Discretion
+
 - {Areas where user selected "Let Claude decide"}
-</decisions>
+  </decisions>
 
 <specifics>
 ## Specific Ideas
@@ -241,7 +251,9 @@ Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 </specifics>
 
 <code_context>
+
 ## Existing Code Insights
+
 {Patterns, integration points, reusable code discovered during context gathering}
 </code_context>
 
@@ -283,7 +295,7 @@ git commit -m "discuss-set(${SET_ID}): capture set implementation vision"
 Display next step:
 
 > **Next step:** `/rapid:plan-set {SET_INDEX}`
-> *(Plan set {SET_ID})*
+> _(Plan set {SET_ID})_
 
 Display progress breadcrumb:
 
@@ -313,8 +325,8 @@ Show what is done, what failed, and what to run next.
 ## Key Principles
 
 - **Set-scoped discussion:** Discussion captures vision at the set level, not per-wave. CONTEXT.md is the output artifact.
-- **Exactly 4 gray areas:** Identify exactly 4 implementation facets for discussion. Not more, not fewer.
-- **Individual questions with options:** Present each question within a gray area as a separate AskUserQuestion with prefilled options including "Claude decides".
+- **2-5 gray areas, more is better than less:** Identify 2-5 gray areas. The goal is to capture the user's FULL vision. It is better to ask more than ask less.
+- **Batched questions with options:** Present each gray area as a separate AskUserQuestion with SEPERATE questionns contaiig prefilled options including "Claude decides".
 - **"Claude decides" option:** Available as a prefilled option per question. Unselected gray areas in Step 5 automatically default to Claude's discretion.
 - **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md without user interaction.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
@@ -330,7 +342,7 @@ Show what is done, what failed, and what to run next.
 - Write CONTEXT.md using the Write tool directly -- do not call wave-planning.cjs helpers.
 - Do not reference or resolve individual waves anywhere in this skill.
 - Use `state transition set` for all state changes. No per-wave transitions.
-- Do NOT ask more than 4 gray areas -- the locked decision is exactly 4.
+- Do NOT ask about less than 2 gray areas.
 - Do NOT batch multiple questions into a single freeform AskUserQuestion -- each question gets its own AskUserQuestion with prefilled options.
 - Do NOT present "Let Claude decide all" as a checkbox option -- use the implicit unselected model instead.
 - Do NOT prompt for every implementation detail -- capture vision/what, not implementation/how.
