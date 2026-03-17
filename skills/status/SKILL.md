@@ -71,7 +71,7 @@ Using the parsed state and git activity data, display a compact set-level dashbo
    | 3 | third-set | merged | 1d ago: "final fix" | rapid/third-set |
    ```
 
-   - **#**: 1-based numeric index (alphabetical order of set names)
+   - **#**: Do NOT list the sets based on alphabetical order. List the set in their canonical order.
    - **Set**: The set name
    - **Status**: Set status from STATE.json (pending, discussed, planned, executed, complete, merged)
    - **Last Activity**: Relative time + commit message from the set's git branch, or "no branch" if no branch exists
@@ -93,14 +93,14 @@ This is read-only -- no state modification.
 
 Based on each set's status, determine the suggested v3.3.0 next action:
 
-| Set Status | Suggested Action |
-|------------|-----------------|
-| pending | `/rapid:start-set {N}` |
-| discussed | `/rapid:discuss-set {N}` |
-| planned | `/rapid:plan-set {N}` |
-| executed | `/rapid:execute-set {N}` |
-| complete | `/rapid:review {N}` |
-| merged | (done) |
+| Set Status | Suggested Action         |
+| ---------- | ------------------------ |
+| pending    | `/rapid:start-set {N}`   |
+| discussed  | `/rapid:discuss-set {N}` |
+| planned    | `/rapid:plan-set {N}`    |
+| executed   | `/rapid:execute-set {N}` |
+| complete   | `/rapid:review {N}`      |
+| merged     | (done)                   |
 
 Where `{N}` is the 1-based numeric index of the set.
 
@@ -111,6 +111,7 @@ Collect all non-merged sets that have a suggested action. These are the actionab
 **If 4 or fewer actionable sets:**
 
 Use AskUserQuestion with one option per action plus a "Done" option:
+
 - For each actionable set:
   - name: the v3.3.0 command with numeric shorthand (e.g., "/rapid:start-set 1")
   - description: what it does, including the full set name (e.g., "Start set-01-foundation for development")
@@ -128,6 +129,7 @@ Show the top 4 via AskUserQuestion (same format, plus "Done" option). After the 
 **Fallback (STATE.json missing, no state data):**
 
 Use AskUserQuestion with:
+
 - Option: "Run /rapid:init" -- "Initialize project state and planning infrastructure"
 - Option: "Done viewing" -- "Exit status"
 
