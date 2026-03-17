@@ -484,13 +484,13 @@ function parseHandoff(handoffContent) {
   const sectionStarts = [];
 
   while ((match = sectionRegex.exec(content)) !== null) {
-    sectionStarts.push({ name: match[1], index: match.index + match[0].length });
+    sectionStarts.push({ name: match[1], headingStart: match.index, index: match.index + match[0].length });
   }
 
   for (let i = 0; i < sectionStarts.length; i++) {
     const start = sectionStarts[i].index;
     const end = i + 1 < sectionStarts.length
-      ? content.lastIndexOf('## ', sectionStarts[i + 1].index)
+      ? sectionStarts[i + 1].headingStart
       : content.length;
     const sectionContent = content.slice(start, end).trim();
     sections[sectionStarts[i].name] = sectionContent;
@@ -1108,13 +1108,13 @@ function parseJobHandoff(handoffContent) {
   const sectionStarts = [];
 
   while ((match = sectionRegex.exec(content)) !== null) {
-    sectionStarts.push({ name: match[1], index: match.index + match[0].length });
+    sectionStarts.push({ name: match[1], headingStart: match.index, index: match.index + match[0].length });
   }
 
   for (let i = 0; i < sectionStarts.length; i++) {
     const start = sectionStarts[i].index;
     const end = i + 1 < sectionStarts.length
-      ? content.lastIndexOf('## ', sectionStarts[i + 1].index)
+      ? sectionStarts[i + 1].headingStart
       : content.length;
     const sectionContent = content.slice(start, end).trim();
     sections[sectionStarts[i].name] = sectionContent;
