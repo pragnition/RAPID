@@ -16,6 +16,7 @@ const { handleWorktree } = require('../commands/worktree.cjs');
 const { handleReview } = require('../commands/review.cjs');
 const { handleBuildAgents } = require('../commands/build-agents.cjs');
 const { handleExecute } = require('../commands/execute.cjs');
+const { handleMemory } = require('../commands/memory.cjs');
 const { handleMerge } = require('../commands/merge.cjs');
 const { handleMigrate } = require('../commands/migrate.cjs');
 const { handleScaffold } = require('../commands/scaffold.cjs');
@@ -92,6 +93,13 @@ Commands:
   merge rollback <set> [--force]  Revert a merged set's merge commit (cascade check)
   merge merge-state <set>         Show MERGE-STATE.json for a set
   merge prepare-context <set>    Assemble launch briefing for set-merger subagent
+  memory log-decision --category <c> --decision <d> --rationale <r> --source <s>  Log a decision
+                      [--milestone <m>] [--set-id <id>] [--topic <t>]
+  memory log-correction --original <o> --correction <c> --reason <r>  Log a correction
+                        [--affected-sets <s1,s2>] [--set-id <id>]
+  memory query [--category <c>] [--type decisions|corrections]  Query memory logs
+               [--set-id <id>] [--milestone <m>] [--limit <n>]
+  memory context <set-name> [--budget <n>]  Build token-budgeted memory context
   set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
   set-init list-available        List pending sets without worktrees
   review scope <set-id> [<wave-id>] [--branch <b>] [--post-merge]  Scope files for review
@@ -206,6 +214,10 @@ async function main() {
 
       case 'execute':
         await handleExecute(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'memory':
+        await handleMemory(cwd, subcommand, args.slice(2));
         break;
 
       case 'merge':
