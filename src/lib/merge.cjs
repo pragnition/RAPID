@@ -421,6 +421,11 @@ function isApiSignatureConflict(escalation, mergeState) {
  * @returns {'human-api-gate'|'human-direct'|'resolver-agent'|'auto-accept'} Route decision
  */
 function routeEscalation(escalation, mergeState) {
+  // Guard: undefined/null/NaN confidence defaults to safest route
+  if (escalation.confidence == null || Number.isNaN(escalation.confidence)) {
+    return 'human-direct';
+  }
+
   if (isApiSignatureConflict(escalation, mergeState)) {
     return 'human-api-gate';
   }
