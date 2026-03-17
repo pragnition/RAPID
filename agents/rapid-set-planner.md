@@ -79,6 +79,7 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
   plan-create-set: plan create-set -- Create set from stdin JSON
   plan-decompose: plan decompose -- Decompose sets from stdin JSON array
   plan-write-dag: plan write-dag -- Write DAG.json from stdin JSON
+  memory-log-decision: memory log-decision --category <c:str> --decision <d:str> --rationale <r:str> --source <s:str> -- Log decision
 </tools>
 
 <role>

@@ -1,0 +1,46 @@
+{
+  "setId": "documentation",
+  "version": "1.0.0",
+  "exports": {
+    "documentationSkill": {
+      "type": "endpoint",
+      "signature": "/rapid:documentation [--scope <full|changelog|api|architecture>] [--diff-only]",
+      "description": "Skill command that orchestrates agent-driven documentation generation"
+    },
+    "templateScaffold": {
+      "type": "function",
+      "signature": "scaffoldDocTemplates(cwd: string, scope: string): string[] (list of template paths created)",
+      "description": "Create documentation templates for the specified scope if they do not already exist"
+    },
+    "extractChangelog": {
+      "type": "function",
+      "signature": "extractChangelog(cwd: string, milestoneId: string): ChangelogEntry[]",
+      "description": "Extract changelog entries from git history and RAPID artifacts for a milestone"
+    },
+    "diffAwareUpdate": {
+      "type": "function",
+      "signature": "updateDocSection(docPath: string, sectionId: string, newContent: string): { updated: boolean, diff: string }",
+      "description": "Update a specific section of an existing doc file without overwriting unrelated sections"
+    },
+    "docCliCommands": {
+      "type": "endpoint",
+      "signature": "rapid-tools docs generate [--scope <s>] | docs list | docs diff <milestone>",
+      "description": "CLI commands for documentation operations"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "diffAware": {
+      "description": "Documentation updates modify only changed sections; unchanged sections are preserved exactly as-is",
+      "enforced_by": "test"
+    },
+    "templateIdempotent": {
+      "description": "Running scaffoldDocTemplates multiple times never overwrites existing templates",
+      "enforced_by": "test"
+    },
+    "gitHistoryBased": {
+      "description": "Changelog extraction uses git log and RAPID artifacts (ROADMAP.md, set definitions) as source of truth, never fabricates entries",
+      "enforced_by": "test"
+    }
+  }
+}

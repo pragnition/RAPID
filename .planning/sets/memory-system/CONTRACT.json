@@ -1,0 +1,51 @@
+{
+  "setId": "memory-system",
+  "version": "1.0.0",
+  "exports": {
+    "appendDecision": {
+      "type": "function",
+      "signature": "appendDecision(cwd: string, entry: { category: string, decision: string, rationale: string, source: 'user'|'agent', milestone?: string }): void",
+      "description": "Append a decision record to .planning/memory/DECISIONS.jsonl"
+    },
+    "appendCorrection": {
+      "type": "function",
+      "signature": "appendCorrection(cwd: string, entry: { original: string, correction: string, reason: string, affectedSets?: string[] }): void",
+      "description": "Append a mid-execution correction to .planning/memory/CORRECTIONS.jsonl"
+    },
+    "queryDecisions": {
+      "type": "function",
+      "signature": "queryDecisions(cwd: string, filters?: { category?: string, milestone?: string, limit?: number }): DecisionEntry[]",
+      "description": "Query decision log with optional filters, returns most recent first"
+    },
+    "queryCorrections": {
+      "type": "function",
+      "signature": "queryCorrections(cwd: string, filters?: { affectedSet?: string, limit?: number }): CorrectionEntry[]",
+      "description": "Query correction log with optional filters"
+    },
+    "buildMemoryContext": {
+      "type": "function",
+      "signature": "buildMemoryContext(cwd: string, setName: string, tokenBudget?: number): string",
+      "description": "Build a token-budgeted memory context section for injection into agent prompts"
+    },
+    "memoryCliCommands": {
+      "type": "endpoint",
+      "signature": "rapid-tools memory log-decision | memory log-correction | memory query [--category <c>] [--limit <n>]",
+      "description": "CLI commands for memory operations exposed through rapid-tools.cjs"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "appendOnly": {
+      "description": "JSONL files are append-only; entries are never modified or deleted after write",
+      "enforced_by": "test"
+    },
+    "tokenBudgeted": {
+      "description": "buildMemoryContext output must not exceed the provided tokenBudget (default: 8000 tokens)",
+      "enforced_by": "test"
+    },
+    "lazyInit": {
+      "description": ".planning/memory/ directory is created on first write, never eagerly",
+      "enforced_by": "test"
+    }
+  }
+}

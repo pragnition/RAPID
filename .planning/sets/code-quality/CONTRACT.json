@@ -1,0 +1,53 @@
+{
+  "setId": "code-quality",
+  "version": "1.0.0",
+  "exports": {
+    "loadQualityProfile": {
+      "type": "function",
+      "signature": "loadQualityProfile(cwd: string): QualityProfile",
+      "description": "Load project quality profile from .planning/context/QUALITY.md or generate default"
+    },
+    "buildQualityContext": {
+      "type": "function",
+      "signature": "buildQualityContext(cwd: string, setName: string, tokenBudget?: number): string",
+      "description": "Build token-budgeted quality context section for agent prompt injection"
+    },
+    "checkQualityGates": {
+      "type": "function",
+      "signature": "checkQualityGates(cwd: string, setName: string, artifacts: string[]): { passed: boolean, violations: QualityViolation[] }",
+      "description": "Verify agent output against quality profile patterns and anti-patterns"
+    },
+    "patternLibrary": {
+      "type": "file",
+      "signature": ".planning/context/PATTERNS.md (approved implementation patterns per language/framework)",
+      "description": "Curated library of approved patterns referenced during execution"
+    },
+    "enrichedPrepareSetContext": {
+      "type": "function",
+      "signature": "prepareSetContext(cwd: string, setName: string): EnrichedContext (extends existing with quality + patterns sections)",
+      "description": "Enhanced prepareSetContext that includes quality guidelines and pattern references"
+    }
+  },
+  "imports": {
+    "queryDecisions": {
+      "fromSet": "memory-system",
+      "type": "function",
+      "signature": "queryDecisions(cwd: string, filters?: { category?: string, milestone?: string, limit?: number }): DecisionEntry[]",
+      "description": "Query memory decisions to inject relevant past decisions into quality context (soft dependency -- degrades gracefully to empty array if unavailable)"
+    }
+  },
+  "behavioral": {
+    "tokenBudgeted": {
+      "description": "buildQualityContext output must not exceed tokenBudget (default: 10000 tokens); total enriched context stays within compaction.cjs DEFAULT_BUDGET_TOKENS",
+      "enforced_by": "test"
+    },
+    "gracefulDegradation": {
+      "description": "If memory-system queryDecisions is unavailable, code-quality operates with empty decision history -- no errors, just reduced context",
+      "enforced_by": "test"
+    },
+    "nonDestructive": {
+      "description": "Quality gates produce warnings and violation reports but never modify agent output or block execution",
+      "enforced_by": "test"
+    }
+  }
+}

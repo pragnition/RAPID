@@ -94,6 +94,119 @@
       "mergeStatus": "merged",
       "mergedAt": "2026-03-17T02:58:45.079Z",
       "mergeCommit": "0a8a677c99b1a0de8a5368a197ade942a579a7f7"
+    },
+    "memory-system": {
+      "setName": "memory-system",
+      "branch": "rapid/memory-system",
+      "path": ".rapid-worktrees/memory-system",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-17T07:15:49.406Z"
+    },
+    "bug-fixes": {
+      "setName": "bug-fixes",
+      "branch": "rapid/bug-fixes",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/bug-fixes",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.726Z"
+    },
+    "cli-restructuring": {
+      "setName": "cli-restructuring",
+      "branch": "rapid/cli-restructuring",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/cli-restructuring",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "command-cleanup": {
+      "setName": "command-cleanup",
+      "branch": "rapid/command-cleanup",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/command-cleanup",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "data-integrity": {
+      "setName": "data-integrity",
+      "branch": "rapid/data-integrity",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/data-integrity",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "foundation-hardening": {
+      "setName": "foundation-hardening",
+      "branch": "rapid/foundation-hardening",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/foundation-hardening",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "install-version": {
+      "setName": "install-version",
+      "branch": "rapid/install-version",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/install-version",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "migrate": {
+      "setName": "migrate",
+      "branch": "rapid/migrate",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/migrate",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "parallel-waves": {
+      "setName": "parallel-waves",
+      "branch": "rapid/parallel-waves",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/parallel-waves",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "scaffold-command": {
+      "setName": "scaffold-command",
+      "branch": "rapid/scaffold-command",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/scaffold-command",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "solo-mode": {
+      "setName": "solo-mode",
+      "branch": "rapid/solo-mode",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/solo-mode",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "state-and-ux": {
+      "setName": "state-and-ux",
+      "branch": "rapid/state-and-ux",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/state-and-ux",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "status-rename": {
+      "setName": "status-rename",
+      "branch": "rapid/status-rename",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/status-rename",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "version-migration": {
+      "setName": "version-migration",
+      "branch": "rapid/version-migration",
+      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/version-migration",
+      "phase": "Created",
+      "status": "active",
+      "discoveredAt": "2026-03-17T07:39:27.727Z"
     }
   }
 }

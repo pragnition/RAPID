@@ -1,0 +1,41 @@
+{
+  "setId": "hooks-system",
+  "version": "1.0.0",
+  "exports": {
+    "runPostTaskHooks": {
+      "type": "function",
+      "signature": "runPostTaskHooks(cwd: string, returnData: RapidReturn): { passed: boolean, issues: HookIssue[], remediation?: string }",
+      "description": "Execute all registered post-task hooks and return aggregated results"
+    },
+    "hooksConfig": {
+      "type": "file",
+      "signature": "hooks/hooks.json ({ hooks: [{ id, type, script, enabled }] })",
+      "description": "Hook configuration file declaring registered hooks and their scripts"
+    },
+    "stateVerificationHook": {
+      "type": "function",
+      "signature": "verifyStateUpdated(cwd: string, returnData: RapidReturn): { stateConsistent: boolean, missingTransitions: string[] }",
+      "description": "Check if STATE.json reflects the work reported in RAPID:RETURN marker"
+    },
+    "hookCliCommands": {
+      "type": "endpoint",
+      "signature": "rapid-tools hooks run [--dry-run] | hooks list | hooks enable <id> | hooks disable <id>",
+      "description": "CLI commands for hook management"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "readOnlyStateAccess": {
+      "description": "Hook verification reads STATE.json without acquiring a write lock to avoid deadlock with in-progress state transitions",
+      "enforced_by": "test"
+    },
+    "nonBlocking": {
+      "description": "Hook failures produce warnings and remediation prompts but never block the agent pipeline",
+      "enforced_by": "test"
+    },
+    "idempotent": {
+      "description": "Running hooks multiple times on the same RAPID:RETURN produces identical results",
+      "enforced_by": "test"
+    }
+  }
+}

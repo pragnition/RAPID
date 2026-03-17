@@ -108,29 +108,61 @@
 
 </details>
 
-## Current Milestone: v3.2.0 General Fixes (5 sets)
+<details>
+<summary>v3.2.0 General Fixes (5 sets) — shipped 2026-03-14</summary>
 
-### Set 1: State Machine Consistency (`state-consistency`)
-Fix root-cause mismatch between skill-layer status literals (present-tense) and the state machine's past-tense statuses. Update all 24 SKILL.md files and agent modules.
-**Features:** #8 (Invalid State Transitions), #7 (State Update Enforcement)
+- [x] state-consistency — Fix skill-layer status literals to match state machine past-tense
+- [x] command-audit — Remove references to non-existent rapid-tools.cjs commands
+- [x] resolve-fix — Switch resolveSet() from filesystem to STATE.json-based resolution
+- [x] ux-improvements — AskUserQuestion UX rewrite, banner colors to dark purple
+- [x] review-after-merge — Add --post-merge flag to review skill
 
-### Set 2: CLI Command Audit (`command-audit`)
-Audit all skills and agents for references to non-existent rapid-tools.cjs commands. Remove wave-plan-* entries from tool-docs.cjs and skill files.
-**Features:** #5 (Invalid Command Calls)
+</details>
 
-### Set 3: Set Resolution Fix (`resolve-fix`)
-Switch resolveSet() from filesystem-based resolution to STATE.json-based resolution. Add regression tests for archival scenario.
-**Features:** #1 (Set Name Resolution Bug)
+<details>
+<summary>v3.3.0 Developer Experience (10 sets) — shipped 2026-03-17</summary>
 
-### Set 4: UX Improvements (`ux-improvements`)
-Rewrite discuss-set AskUserQuestion UX, audit all skills for pre-filled options, change banner colors to dark purple.
-**Features:** #2 (Batched Questions), #4 (Never Claude Decides), #3 (Banner Colours)
+- [x] foundation-hardening — Core infrastructure hardening
+- [x] data-integrity — Data integrity improvements
+- [x] cli-restructuring — CLI command restructuring
+- [x] structural-cleanup — Structural code cleanup
+- [x] bug-fixes — Bug fixes
+- [x] solo-mode — Solo mode (no worktree) execution
+- [x] review-pipeline — Review pipeline improvements
+- [x] version-migration — Version migration tooling
+- [x] scaffold-command — Project scaffold command
+- [x] context-optimization — Context window optimization
 
-### Set 5: Review After Merge (`review-after-merge`)
-Add --post-merge flag to review skill. Scopes review against merge commit diff. Does not modify set status.
-**Features:** #6 (Review After Merge)
+</details>
+
+## Current Milestone: v3.4.0 Agent Intelligence (6 sets)
+
+### Set 1: Memory Infrastructure (`memory-system`) [Large]
+Build foundational memory persistence infrastructure — append-only JSONL decision log (`.planning/memory/DECISIONS.jsonl`), corrections log for mid-execution user changes (`.planning/memory/CORRECTIONS.jsonl`), cross-milestone preference tracking, and context injection so downstream agents receive relevant decisions and corrections.
+
+### Set 2: Quick Logging + Add-Set (`quick-and-addset`) [Medium]
+Two lightweight enhancements: persistent `/quick` task logging to `.planning/memory/quick-tasks.jsonl` with CLI query commands, and refactoring `add-set` to use proper CLI-backed `state add-set` command with DAG recalculation and OWNERSHIP.json regeneration.
+
+### Set 3: Hooks + State Verification (`hooks-system`) [Medium]
+Node.js hook system that verifies project state is updated after agent task completion. Includes hooks configuration (`hooks/hooks.json`), state verification via read-only STATE.json access (avoiding deadlock), and remediation prompts on stale state.
+
+### Set 4: Code Quality + Context Enrichment (`code-quality`) [Large]
+Enrich planning/execution context for higher-quality agent output. Quality profile system, enhanced `prepareSetContext()` with quality guidelines, pattern library, quality gates, and token-budgeted context injection. Soft dependency on memory-system.
+
+### Set 5: UI Specs/Contracts (`ui-contracts`) [Large]
+Per-set `UI-CONTRACT.json` schema with Ajv validation, cross-set UI consistency checks, and context injection into executors. Separate from existing CONTRACT.json.
+
+### Set 6: Documentation Generation (`documentation`) [Large]
+Agent-driven documentation generation for end-of-version use. Template scaffolding, changelog extraction from git/RAPID artifacts, diff-aware updates, and `/rapid:documentation` skill.
 
 ### Dependency Graph
-Sets 1-4 are fully independent (parallel). Set 5 has soft dependency on Set 1.
+```
+memory-system       (independent — wave 1)
+quick-and-addset    (independent — wave 1)
+hooks-system        (independent — wave 1)
+ui-contracts        (independent — wave 1)
+documentation       (independent — wave 1)
+code-quality        → memory-system (soft dep — wave 2)
+```
 
 Historical phase details archived to `.planning/milestones/{version}/`.

@@ -1,0 +1,46 @@
+{
+  "setId": "ui-contracts",
+  "version": "1.0.0",
+  "exports": {
+    "uiContractSchema": {
+      "type": "file",
+      "signature": "src/schemas/ui-contract-schema.json (JSON Schema for UI-CONTRACT.json)",
+      "description": "Ajv-validated JSON Schema defining the structure of per-set UI contracts"
+    },
+    "validateUiContract": {
+      "type": "function",
+      "signature": "validateUiContract(contract: object): { valid: boolean, errors?: AjvError[] }",
+      "description": "Validate a UI-CONTRACT.json against the schema using Ajv"
+    },
+    "checkUiConsistency": {
+      "type": "function",
+      "signature": "checkUiConsistency(cwd: string, milestoneId: string): { consistent: boolean, conflicts: UiConflict[] }",
+      "description": "Cross-set UI consistency check -- verifies component naming, layout rules, and shared UI patterns"
+    },
+    "buildUiContext": {
+      "type": "function",
+      "signature": "buildUiContext(cwd: string, setName: string): string",
+      "description": "Build UI specification context section for executor agent prompt injection"
+    },
+    "uiContractCliCommands": {
+      "type": "endpoint",
+      "signature": "rapid-tools ui-contract validate <set> | ui-contract check-consistency | ui-contract show <set>",
+      "description": "CLI commands for UI contract management"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "schemaValidated": {
+      "description": "All UI-CONTRACT.json files must pass Ajv schema validation before being accepted",
+      "enforced_by": "test"
+    },
+    "crossSetConsistency": {
+      "description": "UI consistency check detects conflicting component names, contradictory layout rules, and incompatible design tokens across sets",
+      "enforced_by": "test"
+    },
+    "existingContractUnchanged": {
+      "description": "The existing CONTRACT.json schema and validation pipeline is not modified; UI-CONTRACT.json is a separate, parallel artifact",
+      "enforced_by": "test"
+    }
+  }
+}

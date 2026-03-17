@@ -1,0 +1,41 @@
+{
+  "setId": "quick-and-addset",
+  "version": "1.0.0",
+  "exports": {
+    "quickTaskLog": {
+      "type": "file",
+      "signature": ".planning/memory/quick-tasks.jsonl (JSONL: { id, description, outcome, slug, timestamp, branch })",
+      "description": "Append-only log of quick task executions with outcomes"
+    },
+    "quickQueryCommand": {
+      "type": "endpoint",
+      "signature": "rapid-tools quick list [--limit <n>] | quick show <id>",
+      "description": "CLI commands to query quick task history"
+    },
+    "stateAddSetCommand": {
+      "type": "endpoint",
+      "signature": "rapid-tools state add-set --milestone <id> --set-id <id> --set-name <name> [--deps <dep1,dep2>]",
+      "description": "CLI-backed set addition with DAG recalculation and OWNERSHIP.json regeneration"
+    },
+    "dagRecalculation": {
+      "type": "function",
+      "signature": "recalculateDAG(cwd: string, milestoneId: string): DAGResult",
+      "description": "Recalculate and persist DAG.json after set addition or dependency change"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "quickLogAppendOnly": {
+      "description": "quick-tasks.jsonl is append-only; existing entries never modified",
+      "enforced_by": "test"
+    },
+    "addSetTransactional": {
+      "description": "state add-set uses withStateTransaction for atomic STATE.json mutation, never direct file writes",
+      "enforced_by": "test"
+    },
+    "dagConsistency": {
+      "description": "After add-set, DAG.json is consistent with STATE.json set list and dependency declarations",
+      "enforced_by": "test"
+    }
+  }
+}

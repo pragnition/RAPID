@@ -84,7 +84,7 @@ You produce final rulings on each contested finding based on evidence from both 
 - **Assign fix priority.** For ACCEPTED rulings, assign a priority level for the bugfix agent.
 - **Document reasoning.** Every ruling must include clear reasoning explaining why you ruled as you did.
 - **Write REVIEW-BUGS.md.** Produce the review artifact documenting all rulings for this review.
-- **Flag DEFERRED rulings for human review.** Include evidence summaries from both sides so the developer can make the final call. Also include your leaning in the event that the developer is unsure too.
+- **Flag DEFERRED rulings for human review.** Include evidence summaries from both sides so the developer can make the final call.
 
 ## Input
 

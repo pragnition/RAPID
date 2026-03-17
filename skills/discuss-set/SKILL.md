@@ -147,9 +147,9 @@ If the `--skip` flag is NOT set, continue to Step 5.
 
 ---
 
-## Step 5: Identify 3-5 Gray Areas (Interactive Mode)
+## Step 5: Identify 4 Gray Areas (Interactive Mode)
 
-Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, source files) and identify 2-5 gray areas. Gray areas may be implementation facets or UI/UX consideratons where:
+Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, source files) and identify exactly 4 gray areas. Gray areas may be implementation facets or UI/UX consideratons where:
 
 - Multiple valid approaches exist
 - Integration points are ambiguous
@@ -160,7 +160,7 @@ Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, 
 Present gray areas using AskUserQuestion:
 
 ```
-"I've analyzed set '{SET_ID}' and identified {GRAY_AREA_COUNT} areas that would benefit from your input.
+"I've analyzed set '{SET_ID}' and identified 4 areas that would benefit from your input.
 Select which areas you'd like to discuss (unselected areas default to Claude's discretion):"
 Options:
 1. "{Gray area 1 title}" -- "{1-sentence description}"
@@ -172,7 +172,7 @@ Options:
 
 **Handling responses:**
 
-- If the user selects no areas (empty selection): Record all areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
+- If the user selects no areas (empty selection): Record all 4 areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
 - If the user selects specific areas: Record selected areas for Step 6. Unselected areas are recorded as Claude's discretion.
 
 ---
@@ -195,7 +195,7 @@ For EACH selected gray area (in order):
    4. "Claude decides" -- "Let Claude pick the best approach"
    ```
 
-   Repeat for each question in the area (typically 2-4 questions per area). Each question is a separate AskUserQuestion call with its own prefilled options.
+   If you have more questions within the area, just make another "batch" of questions.
 
 2. Record the user's selected option for each question.
 

@@ -152,7 +152,7 @@
       "sets": [
         {
           "id": "memory-system",
-          "status": "complete",
+          "status": "merged",
           "waves": []
         },
         {
@@ -183,6 +183,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-17T07:56:05.340Z",
+  "lastUpdatedAt": "2026-03-17T08:16:33.948Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
