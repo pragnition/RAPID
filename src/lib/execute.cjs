@@ -22,6 +22,7 @@ const worktree = require('./worktree.cjs');
 const plan = require('./plan.cjs');
 const verify = require('./verify.cjs');
 const contract = require('./contract.cjs');
+const compaction = require('./compaction.cjs');
 
 const VALID_PHASES = ['discuss', 'plan', 'execute'];
 
@@ -49,6 +50,67 @@ function prepareSetContext(cwd, setName) {
 }
 
 /**
+ * Build a compacted context string for multi-wave execution.
+ * For completed waves, uses digest siblings if available.
+ * For the active wave, includes full content.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setName - Name of the set
+ * @param {number} activeWave - Current wave number being executed (1-based)
+ * @returns {{ contextString: string, stats: { totalTokens: number, digestsUsed: number, fullsUsed: number, budgetExceeded: boolean } }}
+ */
+function assembleCompactedWaveContext(cwd, setName, activeWave) {
+  const setDir = path.join(cwd, '.planning', 'sets', setName);
+  const artifacts = compaction.collectWaveArtifacts(setDir);
+  const compacted = compaction.compactContext({
+    setId: setName,
+    setDir,
+    activeWave,
+    waves: artifacts,
+  });
+
+  const sections = [];
+
+  for (const waveGroup of compacted.compacted) {
+    const waveNum = waveGroup.wave;
+    // Skip set-level (wave 0) and review (wave 999) artifacts -- they are not wave context
+    if (waveNum === 0 || waveNum === 999) continue;
+
+    let header;
+    if (waveNum === activeWave) {
+      header = `### Wave ${waveNum} (active)`;
+    } else if (waveNum < activeWave) {
+      const hasDigest = waveGroup.artifacts.some(a => a.isDigest);
+      header = `### Wave ${waveNum} (completed${hasDigest ? ' - digest' : ''})`;
+    } else {
+      header = `### Wave ${waveNum} (future)`;
+    }
+    sections.push(header);
+
+    for (const artifact of waveGroup.artifacts) {
+      sections.push(`\n**${artifact.name}:**`);
+      sections.push(artifact.content);
+    }
+
+    sections.push('');
+  }
+
+  // Footer
+  sections.push(`---`);
+  sections.push(`*Context stats: ${compacted.digestsUsed} digests used, ${compacted.fullsUsed} full reads, ${compacted.totalTokens} tokens total*`);
+
+  return {
+    contextString: sections.join('\n'),
+    stats: {
+      totalTokens: compacted.totalTokens,
+      digestsUsed: compacted.digestsUsed,
+      fullsUsed: compacted.fullsUsed,
+      budgetExceeded: compacted.budgetExceeded,
+    },
+  };
+}
+
+/**
  * Assemble a prompt string for a subagent executing a specific lifecycle phase.
  *
  * Supports three phases:
@@ -62,10 +124,11 @@ function prepareSetContext(cwd, setName) {
  * @param {string} setName - Name of the set
  * @param {string} phase - Lifecycle phase: 'discuss' | 'plan' | 'execute'
  * @param {string} [priorContext] - Output from previous phase (optional)
+ * @param {number} [activeWave=0] - Current wave number for multi-wave compaction (0 = no compaction)
  * @returns {string} Assembled prompt string
  * @throws {Error} If phase is not valid
  */
-function assembleExecutorPrompt(cwd, setName, phase, priorContext) {
+function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 0) {
   if (!VALID_PHASES.includes(phase)) {
     throw new Error(`Invalid phase: "${phase}". Must be one of: ${VALID_PHASES.join(', ')}`);
   }
@@ -129,24 +192,41 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext) {
       ].join('\n');
       break;
 
-    case 'execute':
-      prompt = [
+    case 'execute': {
+      const parts = [
         `# Set: ${setName} -- Execution Phase`,
         '',
         ctx.scopedMd,
-        '',
-        '## Implementation Plan',
-        '',
-        priorContext || 'No plan provided -- implement according to the contract and definition.',
-        '',
-        '## Commit Convention',
-        `After each task, commit with: type(${setName}): description`,
-        'Where type is feat|fix|refactor|test|docs|chore',
-        '',
-        'Use `git add <specific files>` -- NEVER `git add .` or `git add -A`.',
-        'Each commit must leave the codebase in a working state.',
-      ].join('\n');
+      ];
+
+      // Inject compacted prior wave context for multi-wave execution (wave 2+)
+      if (activeWave > 1) {
+        try {
+          const compactedCtx = assembleCompactedWaveContext(cwd, setName, activeWave);
+          parts.push('');
+          parts.push('## Prior Wave Context (Compacted)');
+          parts.push('');
+          parts.push(compactedCtx.contextString);
+        } catch {
+          // Graceful -- skip compaction if artifacts cannot be read
+        }
+      }
+
+      parts.push('');
+      parts.push('## Implementation Plan');
+      parts.push('');
+      parts.push(priorContext || 'No plan provided -- implement according to the contract and definition.');
+      parts.push('');
+      parts.push('## Commit Convention');
+      parts.push(`After each task, commit with: type(${setName}): description`);
+      parts.push('Where type is feat|fix|refactor|test|docs|chore');
+      parts.push('');
+      parts.push('Use `git add <specific files>` -- NEVER `git add .` or `git add -A`.');
+      parts.push('Each commit must leave the codebase in a working state.');
+
+      prompt = parts.join('\n');
       break;
+    }
   }
 
   // Cross-set bleed check (informational only)
@@ -348,9 +428,18 @@ function generateHandoff(checkpointData, setName, pauseCycle) {
     checkpointData.handoff_resume || 'Continue from where execution stopped.',
   ];
 
-  if (checkpointData.decisions && checkpointData.decisions.length > 0) {
+  // Support both .decisions (array) and .handoff_decisions (string, per RAPID protocol)
+  let decisions = checkpointData.decisions;
+  if (!decisions || decisions.length === 0) {
+    const hd = checkpointData.handoff_decisions;
+    if (hd) {
+      decisions = Array.isArray(hd) ? hd : [hd];
+    }
+  }
+
+  if (decisions && decisions.length > 0) {
     sections.push('', '## Decisions Made');
-    for (const d of checkpointData.decisions) {
+    for (const d of decisions) {
       sections.push(`- ${d}`);
     }
   }
@@ -395,13 +484,13 @@ function parseHandoff(handoffContent) {
   const sectionStarts = [];
 
   while ((match = sectionRegex.exec(content)) !== null) {
-    sectionStarts.push({ name: match[1], index: match.index + match[0].length });
+    sectionStarts.push({ name: match[1], headingStart: match.index, index: match.index + match[0].length });
   }
 
   for (let i = 0; i < sectionStarts.length; i++) {
     const start = sectionStarts[i].index;
     const end = i + 1 < sectionStarts.length
-      ? content.lastIndexOf('## ', sectionStarts[i + 1].index)
+      ? sectionStarts[i + 1].headingStart
       : content.length;
     const sectionContent = content.slice(start, end).trim();
     sections[sectionStarts[i].name] = sectionContent;
@@ -804,7 +893,12 @@ function parseJobPlanFiles(jobPlanContent) {
 function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
   const waveDir = path.join(cwd, '.planning', 'sets', setId, waveId);
   const jobPlanPath = path.join(waveDir, `${jobId}-PLAN.md`);
-  const jobPlan = fs.readFileSync(jobPlanPath, 'utf-8');
+  let jobPlan;
+  try {
+    jobPlan = fs.readFileSync(jobPlanPath, 'utf-8');
+  } catch (err) {
+    return { passed: [], failed: [{ type: 'plan_read_error', target: err.message }] };
+  }
 
   const results = { passed: [], failed: [] };
 
@@ -818,6 +912,8 @@ function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
       results.passed.push({ type: 'file_exists', target: file.path });
     } else if (file.action === 'Create') {
       results.failed.push({ type: 'missing_file', target: file.path });
+    } else if (file.action === 'Modify') {
+      results.failed.push({ type: 'missing_modify_file', target: file.path });
     }
   }
 
@@ -851,7 +947,12 @@ function reconcileJob(cwd, setId, waveId, jobId, worktreePath, baseBranch) {
  */
 function reconcileWaveJobs(cwd, setId, waveId, worktreePath, baseBranch) {
   const waveDir = path.join(cwd, '.planning', 'sets', setId, waveId);
-  const jobPlanFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
+  let jobPlanFiles;
+  try {
+    jobPlanFiles = fs.readdirSync(waveDir).filter(f => f.endsWith('-PLAN.md'));
+  } catch (err) {
+    return { hardBlocks: [], softBlocks: [{ job: waveId, type: 'wave_dir_error', detail: err.message }], jobResults: {}, overall: 'PASS_WITH_WARNINGS' };
+  }
 
   const hardBlocks = [];
   const softBlocks = [];
@@ -863,15 +964,16 @@ function reconcileWaveJobs(cwd, setId, waveId, worktreePath, baseBranch) {
 
     jobResults[jobId] = {
       filesPlanned: result.passed.filter(p => p.type === 'file_exists').length +
-                     result.failed.filter(f => f.type === 'missing_file').length,
+                     result.failed.filter(f => f.type === 'missing_file').length +
+                     result.failed.filter(f => f.type === 'missing_modify_file').length,
       filesDelivered: result.passed.filter(p => p.type === 'file_exists').length,
-      missingFiles: result.failed.filter(f => f.type === 'missing_file').map(f => f.target),
+      missingFiles: result.failed.filter(f => f.type === 'missing_file' || f.type === 'missing_modify_file').map(f => f.target),
       commitViolations: result.failed.filter(f => f.type === 'commit_format_violation').map(f => f.target),
     };
 
     // Missing files are soft blocks
-    for (const f of result.failed.filter(f => f.type === 'missing_file')) {
-      softBlocks.push({ job: jobId, type: 'missing_file', detail: f.target });
+    for (const f of result.failed.filter(f => f.type === 'missing_file' || f.type === 'missing_modify_file')) {
+      softBlocks.push({ job: jobId, type: f.type, detail: f.target });
     }
     // Commit violations are soft blocks
     for (const f of result.failed.filter(f => f.type === 'commit_format_violation')) {
@@ -964,9 +1066,18 @@ function generateJobHandoff(checkpointData, setId, waveId, jobId, pauseCycle) {
     checkpointData.handoff_resume || 'Continue from where execution stopped.',
   ];
 
-  if (checkpointData.decisions && checkpointData.decisions.length > 0) {
+  // Support both .decisions (array) and .handoff_decisions (string, per RAPID protocol)
+  let decisions = checkpointData.decisions;
+  if (!decisions || decisions.length === 0) {
+    const hd = checkpointData.handoff_decisions;
+    if (hd) {
+      decisions = Array.isArray(hd) ? hd : [hd];
+    }
+  }
+
+  if (decisions && decisions.length > 0) {
     sections.push('', '## Decisions Made');
-    for (const d of checkpointData.decisions) {
+    for (const d of decisions) {
       sections.push(`- ${d}`);
     }
   }
@@ -1009,13 +1120,13 @@ function parseJobHandoff(handoffContent) {
   const sectionStarts = [];
 
   while ((match = sectionRegex.exec(content)) !== null) {
-    sectionStarts.push({ name: match[1], index: match.index + match[0].length });
+    sectionStarts.push({ name: match[1], headingStart: match.index, index: match.index + match[0].length });
   }
 
   for (let i = 0; i < sectionStarts.length; i++) {
     const start = sectionStarts[i].index;
     const end = i + 1 < sectionStarts.length
-      ? content.lastIndexOf('## ', sectionStarts[i + 1].index)
+      ? sectionStarts[i + 1].headingStart
       : content.length;
     const sectionContent = content.slice(start, end).trim();
     sections[sectionStarts[i].name] = sectionContent;
@@ -1050,6 +1161,7 @@ function parseJobHandoff(handoffContent) {
 module.exports = {
   prepareSetContext,
   assembleExecutorPrompt,
+  assembleCompactedWaveContext,
   verifySetExecution,
   getChangedFiles,
   getCommitCount,
@@ -1064,4 +1176,6 @@ module.exports = {
   formatProgressBanner,
   generateJobHandoff,
   parseJobHandoff,
+  parseOwnedFiles,
+  parseJobPlanFiles,
 };

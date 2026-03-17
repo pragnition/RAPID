@@ -154,15 +154,21 @@ function scopeSetPostMerge(cwd, setId) {
   }
 
   // 4. Get changed files via diff against first parent
-  const diffOutput = execSync(
-    `git diff --name-only ${mergeCommit}^1..${mergeCommit}`,
-    { cwd, stdio: 'pipe', encoding: 'utf-8' }
-  ).trim();
+  let changedFiles;
+  try {
+    const diffOutput = execSync(
+      `git diff --name-only ${mergeCommit}^1..${mergeCommit}`,
+      { cwd, stdio: 'pipe', encoding: 'utf-8' }
+    ).trim();
 
-  const changedFiles = diffOutput
-    .split('\n')
-    .filter(f => f.length > 0)
-    .filter(f => !f.startsWith('.planning/'));
+    changedFiles = diffOutput
+      .split('\n')
+      .filter(f => f.length > 0)
+      .filter(f => !f.startsWith('.planning/'));
+  } catch {
+    // Git diff failed -- return empty scope with warning
+    return { changedFiles: [], dependentFiles: [], totalFiles: 0 };
+  }
 
   // 5. Find dependents
   const dependentFiles = findDependents(cwd, changedFiles);
@@ -189,20 +195,8 @@ function findDependents(cwd, changedFiles) {
   const changedSet = new Set(changedFiles);
   const dependents = new Set();
 
-  // Build patterns to search for: basename without extension, relative paths
-  const searchPatterns = [];
-  for (const filePath of changedFiles) {
-    const basename = path.basename(filePath);
-    const basenameNoExt = path.basename(filePath, path.extname(filePath));
-    // Match require('./utils.cjs'), require('./utils'), import from './utils'
-    searchPatterns.push(basename);
-    searchPatterns.push(basenameNoExt);
-    // Also match the relative path patterns
-    searchPatterns.push(filePath);
-  }
-
   // Recursively walk project files
-  const allFiles = walkDir(cwd, ['node_modules', '.git', '.planning', '.worktrees']);
+  const allFiles = walkDir(cwd, ['node_modules', '.git', '.planning', '.worktrees', '.rapid-worktrees']);
 
   for (const absPath of allFiles) {
     const relPath = path.relative(cwd, absPath);
