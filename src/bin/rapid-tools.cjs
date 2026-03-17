@@ -38,6 +38,7 @@ Commands:
   state transition wave <milestoneId> <setId> <waveId> <status>  Transition wave
   state transition job <milestoneId> <setId> <waveId> <jobId> <status>  Transition job
   state add-milestone --id <id> [--name <name>]        Add new milestone (stdin: JSON sets)
+  state add-set --milestone <id> --set-id <id> --set-name <name> [--deps <dep1,dep2>]  Add new set to milestone
   state detect-corruption                             Check STATE.json integrity
   state recover                                       Recover STATE.json from git
   parse-return <file>    Parse a RAPID:RETURN marker from a file
