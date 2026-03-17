@@ -42,12 +42,16 @@ Record the user's task description verbatim. This is the sole input -- no furthe
 
 ## Step 2: Create Quick Task Directory
 
-Count existing quick task directories and compute the next ID:
+Compute the next ID using the monotonic counter from the JSONL log:
 
 ```bash
 # (env preamble here)
-EXISTING=$(ls .planning/quick/ 2>/dev/null | wc -l)
-NEXT_ID=$((EXISTING + 1))
+LAST_ENTRY=$(node "${RAPID_TOOLS}" quick list --limit 1 2>/dev/null)
+# Parse the max ID from the most recent entry (list returns descending by ID)
+NEXT_ID=$(echo "$LAST_ENTRY" | node -e "
+  const data = JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
+  console.log(Array.isArray(data) && data.length > 0 ? data[0].id + 1 : 1);
+")
 echo "Next quick task ID: $NEXT_ID"
 ```
 
