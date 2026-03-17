@@ -162,7 +162,7 @@
         },
         {
           "id": "hooks-system",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         },
         {
@@ -183,6 +183,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-17T08:39:55.898Z",
+  "lastUpdatedAt": "2026-03-17T08:40:53.155Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
