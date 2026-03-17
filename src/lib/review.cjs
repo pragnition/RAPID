@@ -202,7 +202,7 @@ function findDependents(cwd, changedFiles) {
   }
 
   // Recursively walk project files
-  const allFiles = walkDir(cwd, ['node_modules', '.git', '.planning', '.worktrees']);
+  const allFiles = walkDir(cwd, ['node_modules', '.git', '.planning', '.worktrees', '.rapid-worktrees']);
 
   for (const absPath of allFiles) {
     const relPath = path.relative(cwd, absPath);
