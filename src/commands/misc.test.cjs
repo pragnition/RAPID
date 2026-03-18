@@ -65,7 +65,7 @@ describe('handleAssumptions', () => {
     fs.mkdirSync(setsDir, { recursive: true });
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.json'), JSON.stringify({
       milestone: 'v1',
-      sets: { 'auth-core': { status: 'executing' } },
+      sets: { 'auth-core': { status: 'executed' } },
     }));
   });
 
