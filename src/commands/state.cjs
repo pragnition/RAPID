@@ -149,6 +149,35 @@ async function handleState(cwd, subcommand, args) {
         break;
       }
 
+      case 'add-set': {
+        const { parseArgs } = require('../lib/args.cjs');
+        const { flags } = parseArgs(args, {
+          milestone: 'string',
+          'set-id': 'string',
+          'set-name': 'string',
+          deps: 'string',
+        });
+
+        if (!flags.milestone || !flags['set-id'] || !flags['set-name']) {
+          throw new CliError(
+            'Usage: state add-set --milestone <id> --set-id <id> --set-name <name> [--deps <dep1,dep2>]'
+          );
+        }
+
+        const deps = flags.deps ? flags.deps.split(',').map(d => d.trim()).filter(Boolean) : [];
+
+        const { addSetToMilestone } = require('../lib/add-set.cjs');
+        const result = await addSetToMilestone(
+          cwd,
+          flags.milestone,
+          flags['set-id'],
+          flags['set-name'],
+          deps
+        );
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+        break;
+      }
+
       case 'detect-corruption': {
         const result = sm.detectCorruption(cwd);
         process.stdout.write(JSON.stringify(result, null, 2) + '\n');

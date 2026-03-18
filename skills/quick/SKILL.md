@@ -42,12 +42,16 @@ Record the user's task description verbatim. This is the sole input -- no furthe
 
 ## Step 2: Create Quick Task Directory
 
-Count existing quick task directories and compute the next ID:
+Compute the next ID using the monotonic counter from the JSONL log:
 
 ```bash
 # (env preamble here)
-EXISTING=$(ls .planning/quick/ 2>/dev/null | wc -l)
-NEXT_ID=$((EXISTING + 1))
+LAST_ENTRY=$(node "${RAPID_TOOLS}" quick list --limit 1 2>/dev/null)
+# Parse the max ID from the most recent entry (list returns descending by ID)
+NEXT_ID=$(echo "$LAST_ENTRY" | node -e "
+  const data = JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
+  console.log(Array.isArray(data) && data.length > 0 ? data[0].id + 1 : 1);
+")
 echo "Next quick task ID: $NEXT_ID"
 ```
 
@@ -225,10 +229,28 @@ Write `{TASK_DIR}/{NEXT_ID}-SUMMARY.md` with:
 **Files Modified:** {artifacts from executor return}
 ```
 
-Commit the quick task directory:
+### Append to Quick Task Log
+
+Record this task execution in the persistent JSONL log:
+
+```bash
+# (env preamble here)
+node "${RAPID_TOOLS}" quick log \
+  --description "{task description from Step 1}" \
+  --outcome "{COMPLETE/CHECKPOINT/BLOCKED from executor return}" \
+  --slug "${SLUG}" \
+  --branch "$(git branch --show-current)"
+```
+
+This creates an append-only log entry at `.planning/memory/quick-tasks.jsonl` for future querying via `rapid-tools quick list` and `rapid-tools quick show`.
+
+### Commit
+
+Commit the quick task directory and JSONL log:
 
 ```bash
 git add "{TASK_DIR}"
+git add ".planning/memory/quick-tasks.jsonl"
 git commit -m "quick({SLUG}): complete quick task {NEXT_ID}"
 ```
 
