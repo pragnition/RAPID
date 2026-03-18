@@ -130,6 +130,51 @@ describe('add-set', () => {
       );
     });
 
+    it('accepts deps as comma-separated string', async () => {
+      const result = await addSetToMilestone(tmpDir, 'v1', 'set-c', 'Set C', 'set-a, set-b');
+      assert.deepEqual(result.depsValidated, ['set-a', 'set-b']);
+
+      // Verify set was actually added
+      const state = readStateFromDisk(tmpDir);
+      const milestone = state.milestones.find(m => m.id === 'v1');
+      assert.ok(milestone.sets.find(s => s.id === 'set-c'));
+    });
+
+    it('handles undefined deps gracefully', async () => {
+      const result = await addSetToMilestone(tmpDir, 'v1', 'set-c', 'Set C', undefined);
+      assert.deepEqual(result.depsValidated, []);
+
+      // Verify set was added
+      const state = readStateFromDisk(tmpDir);
+      const milestone = state.milestones.find(m => m.id === 'v1');
+      assert.ok(milestone.sets.find(s => s.id === 'set-c'));
+    });
+
+    it('handles null deps gracefully', async () => {
+      const result = await addSetToMilestone(tmpDir, 'v1', 'set-c', 'Set C', null);
+      assert.deepEqual(result.depsValidated, []);
+
+      // Verify set was added
+      const state = readStateFromDisk(tmpDir);
+      const milestone = state.milestones.find(m => m.id === 'v1');
+      assert.ok(milestone.sets.find(s => s.id === 'set-c'));
+    });
+
+    it('validates multiple dependencies', async () => {
+      const result = await addSetToMilestone(tmpDir, 'v1', 'set-c', 'Set C', ['set-a', 'set-b']);
+      assert.deepEqual(result.depsValidated, ['set-a', 'set-b']);
+
+      // Verify set was added
+      const state = readStateFromDisk(tmpDir);
+      const milestone = state.milestones.find(m => m.id === 'v1');
+      assert.ok(milestone.sets.find(s => s.id === 'set-c'));
+    });
+
+    it('filters empty strings from comma-separated deps', async () => {
+      const result = await addSetToMilestone(tmpDir, 'v1', 'set-c', 'Set C', 'set-a,,, set-b, ,');
+      assert.deepEqual(result.depsValidated, ['set-a', 'set-b']);
+    });
+
     it('recalculates DAG.json after adding set', async () => {
       await addSetToMilestone(tmpDir, 'v1', 'set-c', 'Set C', []);
 
@@ -212,6 +257,125 @@ describe('add-set', () => {
       const ownership = JSON.parse(fs.readFileSync(ownerPath, 'utf-8'));
       assert.equal(ownership.ownership['src/lib/alpha.cjs'], 'set-a');
       assert.equal(ownership.ownership['src/lib/alpha.test.cjs'], 'set-a');
+    });
+
+    it('throws when STATE.json is missing', async () => {
+      // Remove STATE.json to simulate missing state
+      fs.unlinkSync(path.join(tmpDir, '.planning', 'STATE.json'));
+
+      await assert.rejects(
+        () => recalculateDAG(tmpDir, 'v1'),
+        (err) => {
+          assert.ok(
+            err.message.match(/missing|invalid/i),
+            `Expected 'missing' or 'invalid' in: ${err.message}`
+          );
+          return true;
+        }
+      );
+    });
+
+    it('skips malformed CONTRACT.json gracefully', async () => {
+      // Write invalid JSON as CONTRACT.json for set-a
+      const setDir = path.join(tmpDir, '.planning', 'sets', 'set-a');
+      fs.mkdirSync(setDir, { recursive: true });
+      fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), '{ INVALID JSON!!!');
+
+      // Should not throw -- malformed CONTRACT.json is skipped
+      const result = await recalculateDAG(tmpDir, 'v1');
+      assert.equal(result.dag.nodes.length, 2);
+      assert.equal(result.dag.edges.length, 0);
+    });
+
+    it('filters edges referencing non-existent nodes', async () => {
+      // Create CONTRACT.json for set-b with an import from a non-existent set
+      writeContract(tmpDir, 'set-b', {
+        exports: { functions: [], types: [] },
+        imports: {
+          fromSets: [
+            { set: 'set-a' },           // exists
+            { set: 'set-phantom' },      // does NOT exist as a node
+          ],
+        },
+      });
+
+      const result = await recalculateDAG(tmpDir, 'v1');
+      // Only the edge from set-a -> set-b should be added; set-phantom is filtered out
+      assert.equal(result.dag.edges.length, 1);
+      assert.deepEqual(result.dag.edges[0], { from: 'set-a', to: 'set-b' });
+    });
+
+    it('combines edges and ownership from multiple CONTRACT.json files', async () => {
+      // set-a owns file1, exports nothing
+      writeContract(tmpDir, 'set-a', {
+        exports: { functions: [], types: [] },
+        imports: { fromSets: [] },
+        fileOwnership: ['src/alpha.cjs'],
+      });
+
+      // set-b depends on set-a, owns file2
+      writeContract(tmpDir, 'set-b', {
+        exports: { functions: [], types: [] },
+        imports: {
+          fromSets: [{ set: 'set-a' }],
+        },
+        fileOwnership: ['src/beta.cjs'],
+      });
+
+      const result = await recalculateDAG(tmpDir, 'v1');
+
+      // Check edges
+      assert.equal(result.dag.edges.length, 1);
+      assert.deepEqual(result.dag.edges[0], { from: 'set-a', to: 'set-b' });
+
+      // Check combined ownership
+      const ownerPath = path.join(tmpDir, '.planning', 'sets', 'OWNERSHIP.json');
+      const ownership = JSON.parse(fs.readFileSync(ownerPath, 'utf-8'));
+      assert.equal(ownership.ownership['src/alpha.cjs'], 'set-a');
+      assert.equal(ownership.ownership['src/beta.cjs'], 'set-b');
+    });
+
+    it('returns correct metadata (totalSets, totalWaves, maxParallelism)', async () => {
+      // set-b depends on set-a: wave 0 = [set-a], wave 1 = [set-b]
+      writeContract(tmpDir, 'set-b', {
+        exports: { functions: [], types: [] },
+        imports: {
+          fromSets: [{ set: 'set-a' }],
+        },
+      });
+
+      const result = await recalculateDAG(tmpDir, 'v1');
+
+      assert.equal(result.dag.metadata.totalSets, 2);
+      assert.equal(result.dag.metadata.totalWaves, 2);
+      assert.equal(result.dag.metadata.maxParallelism, 1);
+    });
+
+    it('handles empty milestone with no sets', async () => {
+      // Overwrite STATE.json with a milestone that has zero sets
+      const state = {
+        version: 1,
+        projectName: 'test-project',
+        currentMilestone: 'v1',
+        milestones: [{
+          id: 'v1',
+          name: 'Version 1',
+          sets: [],
+        }],
+        lastUpdatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      fs.writeFileSync(
+        path.join(tmpDir, '.planning', 'STATE.json'),
+        JSON.stringify(state, null, 2)
+      );
+
+      const result = await recalculateDAG(tmpDir, 'v1');
+      assert.equal(result.dag.nodes.length, 0);
+      assert.equal(result.dag.edges.length, 0);
+      assert.equal(result.dag.metadata.totalSets, 0);
+      assert.equal(result.dag.metadata.totalWaves, 0);
+      assert.equal(result.dag.metadata.maxParallelism, 0);
     });
   });
 });
