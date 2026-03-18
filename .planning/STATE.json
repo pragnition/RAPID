@@ -157,7 +157,7 @@
         },
         {
           "id": "quick-and-addset",
-          "status": "pending",
+          "status": "complete",
           "waves": []
         },
         {
@@ -183,6 +183,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-17T08:16:33.948Z",
+  "lastUpdatedAt": "2026-03-17T09:20:59.870Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
