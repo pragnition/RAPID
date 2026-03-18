@@ -50,6 +50,32 @@ function prepareSetContext(cwd, setName) {
 }
 
 /**
+ * Enhanced prepareSetContext that includes quality guidelines and pattern references.
+ * Extends the existing prepareSetContext output with quality context sections.
+ * This is a separate function to avoid breaking existing prepareSetContext callers.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setName - Name of the set
+ * @returns {{ scopedMd: string, definition: string, contractStr: string, setName: string, qualityContext: string }}
+ */
+function enrichedPrepareSetContext(cwd, setName) {
+  const ctx = prepareSetContext(cwd, setName);
+
+  let qualityContext = '';
+  try {
+    const quality = require('./quality.cjs');
+    qualityContext = quality.buildQualityContext(cwd, setName);
+  } catch {
+    // Graceful -- quality context is optional
+  }
+
+  return {
+    ...ctx,
+    qualityContext,
+  };
+}
+
+/**
  * Build a compacted context string for multi-wave execution.
  * For completed waves, uses digest siblings if available.
  * For the active wave, includes full content.
@@ -146,6 +172,17 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
     }
   }
 
+  // Load quality context for plan and execute phases
+  let qualityContext = '';
+  if (phase === 'plan' || phase === 'execute') {
+    try {
+      const quality = require('./quality.cjs');
+      qualityContext = quality.buildQualityContext(cwd, setName);
+    } catch {
+      // Graceful -- skip quality if module not available or errors
+    }
+  }
+
   let prompt = '';
 
   switch (phase) {
@@ -193,6 +230,7 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
         '',
         priorContext || 'No prior discussion -- proceed with contract and definition as given.',
         ...(memoryContext ? ['', memoryContext] : []),
+        ...(qualityContext ? ['', qualityContext] : []),
         '',
         '## Instructions',
         'Create a step-by-step implementation plan. For each step:',
@@ -228,6 +266,11 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
       if (memoryContext) {
         parts.push('');
         parts.push(memoryContext);
+      }
+
+      if (qualityContext) {
+        parts.push('');
+        parts.push(qualityContext);
       }
 
       parts.push('');
@@ -1178,6 +1221,7 @@ function parseJobHandoff(handoffContent) {
 
 module.exports = {
   prepareSetContext,
+  enrichedPrepareSetContext,
   assembleExecutorPrompt,
   assembleCompactedWaveContext,
   verifySetExecution,
