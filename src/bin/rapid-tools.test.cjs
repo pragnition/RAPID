@@ -1828,6 +1828,231 @@ describe('handleReview CLI dual-mode', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// Quick CLI subcommand tests
+// ────────────────────────────────────────────────────────────────
+describe('handleQuick CLI integration', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quick-cli-'));
+    // Create .planning/memory/ so quick-log.cjs can write
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'memory'), { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('quick log CLI outputs JSON with appended record', () => {
+    const stdout = execSync(
+      `node "${CLI_PATH}" quick log --description "Test task" --outcome COMPLETE --slug test-slug --branch main`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.id, 1, 'first record should have id 1');
+    assert.equal(result.description, 'Test task');
+    assert.equal(result.outcome, 'COMPLETE');
+    assert.equal(result.slug, 'test-slug');
+    assert.equal(result.branch, 'main');
+    assert.ok(result.timestamp, 'should have timestamp');
+  });
+
+  it('quick list CLI outputs JSON array of tasks', () => {
+    // Log two tasks first
+    execSync(
+      `node "${CLI_PATH}" quick log --description "Task 1" --outcome COMPLETE --slug slug-1 --branch main`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+    execSync(
+      `node "${CLI_PATH}" quick log --description "Task 2" --outcome BLOCKED --slug slug-2 --branch dev`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+
+    const stdout = execSync(`node "${CLI_PATH}" quick list`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.ok(Array.isArray(result), 'should return an array');
+    assert.equal(result.length, 2, 'should have 2 tasks');
+    // Most recent first (sorted by id descending)
+    assert.equal(result[0].id, 2);
+    assert.equal(result[1].id, 1);
+  });
+
+  it('quick list --limit N CLI respects limit', () => {
+    // Log three tasks
+    for (let i = 1; i <= 3; i++) {
+      execSync(
+        `node "${CLI_PATH}" quick log --description "Task ${i}" --outcome COMPLETE --slug slug-${i} --branch main`,
+        { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+      );
+    }
+
+    const stdout = execSync(`node "${CLI_PATH}" quick list --limit 2`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.ok(Array.isArray(result), 'should return an array');
+    assert.equal(result.length, 2, 'should respect --limit 2');
+    assert.equal(result[0].id, 3, 'most recent first');
+    assert.equal(result[1].id, 2);
+  });
+
+  it('quick show <id> CLI outputs single task JSON', () => {
+    // Log a task
+    execSync(
+      `node "${CLI_PATH}" quick log --description "Findable task" --outcome CHECKPOINT --slug find-me --branch feature`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+
+    const stdout = execSync(`node "${CLI_PATH}" quick show 1`, {
+      cwd: tmpDir,
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.id, 1);
+    assert.equal(result.description, 'Findable task');
+    assert.equal(result.slug, 'find-me');
+  });
+
+  it('quick show non-existent ID exits non-zero', () => {
+    try {
+      execSync(`node "${CLI_PATH}" quick show 999`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// State add-set CLI subcommand tests
+// ────────────────────────────────────────────────────────────────
+describe('handleState add-set CLI integration', () => {
+  let tmpDir;
+
+  async function createStateProjectWithSet() {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-addset-cli-'));
+    fs.mkdirSync(path.join(dir, '.planning', '.locks'), { recursive: true });
+    fs.mkdirSync(path.join(dir, '.planning', 'sets'), { recursive: true });
+
+    const sm = require('../lib/state-machine.cjs');
+    const state = sm.createInitialState('test-project', 'v1.0');
+
+    // Add an existing set for dependency/duplicate tests
+    state.milestones[0].sets.push({
+      id: 'existing-set',
+      name: 'Existing Set',
+      status: 'pending',
+      waves: [],
+    });
+
+    await sm.writeState(dir, state);
+    return dir;
+  }
+
+  beforeEach(async () => {
+    tmpDir = await createStateProjectWithSet();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('state add-set creates set in milestone and recalculates DAG', () => {
+    const stdout = execSync(
+      `node "${CLI_PATH}" state add-set --milestone v1.0 --set-id new-set --set-name "New Set"`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.setId, 'new-set');
+    assert.equal(result.milestoneId, 'v1.0');
+
+    // Verify DAG.json was created
+    const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    assert.ok(fs.existsSync(dagPath), 'DAG.json should be created');
+    const dag = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+    const nodeIds = dag.nodes.map(n => n.id);
+    assert.ok(nodeIds.includes('new-set'), 'DAG should contain the new set');
+    assert.ok(nodeIds.includes('existing-set'), 'DAG should contain the existing set');
+  });
+
+  it('state add-set with --deps validates dependencies', () => {
+    const stdout = execSync(
+      `node "${CLI_PATH}" state add-set --milestone v1.0 --set-id dep-set --set-name "Dep Set" --deps existing-set`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000 }
+    );
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.setId, 'dep-set');
+    assert.deepStrictEqual(result.depsValidated, ['existing-set']);
+  });
+
+  it('state add-set without required flags exits non-zero', () => {
+    try {
+      execSync(`node "${CLI_PATH}" state add-set`, {
+        cwd: tmpDir,
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  it('state add-set duplicate set exits non-zero', () => {
+    try {
+      execSync(
+        `node "${CLI_PATH}" state add-set --milestone v1.0 --set-id existing-set --set-name "Duplicate"`,
+        {
+          cwd: tmpDir,
+          encoding: 'utf-8',
+          timeout: 10000,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }
+      );
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero for duplicate set');
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// USAGE: --help includes quick and state add-set commands
+// ────────────────────────────────────────────────────────────────
+describe('USAGE help text for quick and state add-set', () => {
+  it('--help includes quick commands', () => {
+    const stdout = execSync(`node "${CLI_PATH}" --help`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    assert.ok(stdout.includes('quick log'), 'should document quick log');
+    assert.ok(stdout.includes('quick list'), 'should document quick list');
+    assert.ok(stdout.includes('quick show'), 'should document quick show');
+  });
+
+  it('--help includes state add-set command', () => {
+    const stdout = execSync(`node "${CLI_PATH}" --help`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    assert.ok(stdout.includes('state add-set'), 'should document state add-set');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // Data-integrity behavioral enforcement tests
 // ────────────────────────────────────────────────────────────────
 
@@ -1895,5 +2120,142 @@ describe('data-integrity behavioral enforcement', () => {
       src.includes('Phase/status inconsistency'),
       'update-phase must include STATE.json validation warning'
     );
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// USAGE: quick subcommands and state add-set
+// ────────────────────────────────────────────────────────────────
+describe('USAGE help text — quick and add-set', () => {
+  let helpOutput;
+
+  before(() => {
+    helpOutput = execSync(`node "${CLI_PATH}" --help`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+  });
+
+  it('USAGE string includes quick log subcommand', () => {
+    assert.ok(helpOutput.includes('quick log'), 'should document quick log');
+  });
+
+  it('USAGE string includes quick list subcommand', () => {
+    assert.ok(helpOutput.includes('quick list'), 'should document quick list');
+  });
+
+  it('USAGE string includes quick show subcommand', () => {
+    assert.ok(helpOutput.includes('quick show'), 'should document quick show');
+  });
+
+  it('USAGE string includes state add-set line', () => {
+    assert.ok(helpOutput.includes('state add-set'), 'should document state add-set');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// CLI dispatch: --help, no-args, unknown command, quick dispatch
+// ────────────────────────────────────────────────────────────────
+describe('CLI dispatch behavior', () => {
+  it('--help flag prints USAGE to stdout and exits 0', () => {
+    const stdout = execSync(`node "${CLI_PATH}" --help`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    assert.ok(stdout.includes('Usage: rapid-tools'), 'should print USAGE text');
+    assert.ok(stdout.includes('Commands:'), 'should include Commands section');
+  });
+
+  it('no arguments prints USAGE and exits with code 1', () => {
+    try {
+      execSync(`node "${CLI_PATH}"`, {
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have exited with non-zero');
+    } catch (err) {
+      assert.equal(err.status, 1, 'exit code should be 1');
+      assert.ok(err.stdout.includes('Usage: rapid-tools'), 'stdout should contain USAGE');
+    }
+  });
+
+  it('unknown command prints USAGE and exits with code 1', () => {
+    try {
+      execSync(`node "${CLI_PATH}" totally-bogus-cmd`, {
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have exited with non-zero');
+    } catch (err) {
+      assert.equal(err.status, 1, 'exit code should be 1');
+      // USAGE is printed to stdout on unknown command
+      assert.ok(err.stdout.includes('Usage: rapid-tools'), 'stdout should contain USAGE');
+    }
+  });
+
+  it('quick command dispatches to handleQuick (missing subcommand exits non-zero)', () => {
+    // quick with no subcommand should reach handleQuick which will error
+    try {
+      execSync(`node "${CLI_PATH}" quick`, {
+        encoding: 'utf-8',
+        timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      assert.fail('should have exited with non-zero');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero when quick has no subcommand');
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// migrateStateVersion — additional coverage
+// ────────────────────────────────────────────────────────────────
+describe('migrateStateVersion — replaces gsd with rapid', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-migrate-gsd-'));
+  });
+
+  afterEach(() => {
+    if (tmpDir && fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('replaces gsd→rapid in STATE.md content', () => {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(planningDir, 'STATE.md'),
+      '---\ngsd_state_version: 2.0\n---\n\nContent with gsd_state_version ref\n'
+    );
+
+    migrateStateVersion(tmpDir);
+
+    const content = fs.readFileSync(path.join(planningDir, 'STATE.md'), 'utf-8');
+    assert.ok(!content.includes('gsd_state_version'), 'should not contain gsd_state_version');
+    assert.ok(content.includes('rapid_state_version'), 'should contain rapid_state_version');
+  });
+
+  it('is a no-op when STATE.md file is missing', () => {
+    // tmpDir has no .planning/ at all
+    assert.doesNotThrow(() => migrateStateVersion(tmpDir));
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.planning', 'STATE.md')), 'STATE.md should not be created');
+  });
+
+  it('is a no-op when already migrated', () => {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    const original = '---\nrapid_state_version: 1.0\n---\n';
+    fs.writeFileSync(path.join(planningDir, 'STATE.md'), original);
+
+    migrateStateVersion(tmpDir);
+
+    const content = fs.readFileSync(path.join(planningDir, 'STATE.md'), 'utf-8');
+    assert.equal(content, original, 'content should be unchanged');
   });
 });
