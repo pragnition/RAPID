@@ -167,7 +167,7 @@
         },
         {
           "id": "code-quality",
-          "status": "discussed",
+          "status": "merged",
           "waves": []
         },
         {
@@ -183,6 +183,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-18T05:44:14.633Z",
+  "lastUpdatedAt": "2026-03-18T07:48:01.829Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
