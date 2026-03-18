@@ -1287,3 +1287,183 @@ describe('solo mode diff functions with startCommit', () => {
     assert.ok(messages[0].includes('add new file'), 'message should contain commit subject');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// Helper: add quality context files to a mock project tmpDir
+// ────────────────────────────────────────────────────────────────
+function addQualityContext(tmpDir) {
+  const contextDir = path.join(tmpDir, '.planning', 'context');
+  fs.mkdirSync(contextDir, { recursive: true });
+
+  fs.writeFileSync(path.join(contextDir, 'QUALITY.md'), [
+    '# Quality Profile',
+    '',
+    '## Approved Patterns',
+    '',
+    '### General',
+    '- Use descriptive variable names',
+    '- Handle all error cases explicitly',
+    '',
+    '## Anti-Patterns',
+    '',
+    '### General',
+    '- Avoid eval() in production code',
+    '- Do not swallow errors silently',
+  ].join('\n'), 'utf-8');
+
+  fs.writeFileSync(path.join(contextDir, 'PATTERNS.md'), [
+    '# Pattern Library',
+    '',
+    '## Error Handling',
+    '',
+    '### Approved',
+    '- Wrap async operations in try/catch',
+    '',
+    '### Anti-Patterns',
+    '- Never ignore promise rejections',
+  ].join('\n'), 'utf-8');
+}
+
+// ────────────────────────────────────────────────────────────────
+// assembleExecutorPrompt with quality context
+// ────────────────────────────────────────────────────────────────
+describe('assembleExecutorPrompt with quality context', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createMockProject();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('should inject quality context in plan phase prompt', () => {
+    addQualityContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'plan');
+
+    assert.ok(prompt.includes('## Quality Context'), 'should contain Quality Context heading');
+    assert.ok(prompt.includes('Use descriptive variable names'), 'should contain content from QUALITY.md');
+  });
+
+  it('should inject quality context in execute phase prompt', () => {
+    addQualityContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'execute');
+
+    assert.ok(prompt.includes('## Quality Context'), 'should contain Quality Context heading in execute phase');
+    assert.ok(prompt.includes('Use descriptive variable names'), 'should contain content from QUALITY.md in execute phase');
+  });
+
+  it('should NOT inject quality context in discuss phase prompt', () => {
+    addQualityContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'discuss');
+
+    assert.ok(!prompt.includes('## Quality Context'), 'should NOT contain Quality Context in discuss phase');
+  });
+
+  it('should place quality context after memory context in plan phase', () => {
+    addQualityContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'plan');
+
+    // Quality context must appear somewhere in the prompt
+    // (memory context may be absent if memory module is not available, so just check quality is present)
+    assert.ok(prompt.includes('## Quality Context'), 'should contain Quality Context');
+
+    // If both memory and quality are present, quality should come after memory
+    const memIdx = prompt.indexOf('## Memory Context');
+    const qualIdx = prompt.indexOf('## Quality Context');
+    if (memIdx !== -1) {
+      assert.ok(qualIdx > memIdx, 'quality context should appear after memory context');
+    }
+  });
+
+  it('should place quality context after memory context in execute phase', () => {
+    addQualityContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'execute');
+
+    assert.ok(prompt.includes('## Quality Context'), 'should contain Quality Context');
+
+    const memIdx = prompt.indexOf('## Memory Context');
+    const qualIdx = prompt.indexOf('## Quality Context');
+    if (memIdx !== -1) {
+      assert.ok(qualIdx > memIdx, 'quality context should appear after memory context in execute phase');
+    }
+  });
+
+  it('should gracefully skip quality context when quality files do not exist', () => {
+    // No addQualityContext call -- quality module will generate defaults
+    // The key property is that assembleExecutorPrompt does not throw
+    let prompt;
+    assert.doesNotThrow(() => {
+      prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'execute');
+    }, 'should not throw when quality context generation runs');
+    assert.ok(typeof prompt === 'string', 'should return a string prompt');
+  });
+
+  it('should include quality context before Implementation Plan section in execute phase', () => {
+    addQualityContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'execute');
+
+    const qualIdx = prompt.indexOf('## Quality Context');
+    const implIdx = prompt.indexOf('## Implementation Plan');
+
+    assert.ok(qualIdx !== -1, 'should have Quality Context section');
+    assert.ok(implIdx !== -1, 'should have Implementation Plan section');
+    assert.ok(qualIdx < implIdx, '## Quality Context should appear before ## Implementation Plan');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// enrichedPrepareSetContext
+// ────────────────────────────────────────────────────────────────
+describe('enrichedPrepareSetContext', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createMockProject();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('should return all fields from prepareSetContext plus qualityContext', () => {
+    const result = executeModule.enrichedPrepareSetContext(tmpDir, 'auth-core');
+
+    assert.ok(typeof result.scopedMd === 'string', 'should have scopedMd');
+    assert.ok(typeof result.definition === 'string', 'should have definition');
+    assert.ok(typeof result.contractStr === 'string', 'should have contractStr');
+    assert.equal(result.setName, 'auth-core', 'should have setName');
+    assert.ok('qualityContext' in result, 'should have qualityContext field');
+    assert.ok(typeof result.qualityContext === 'string', 'qualityContext should be a string');
+  });
+
+  it('should include quality context string when QUALITY.md exists', () => {
+    addQualityContext(tmpDir);
+    const result = executeModule.enrichedPrepareSetContext(tmpDir, 'auth-core');
+
+    assert.ok(result.qualityContext.length > 0, 'qualityContext should be non-empty when QUALITY.md exists');
+    assert.ok(result.qualityContext.includes('Quality Context'), 'qualityContext should include section header');
+    assert.ok(result.qualityContext.includes('Use descriptive variable names'), 'qualityContext should contain quality content');
+  });
+
+  it('should return qualityContext when no quality files exist (defaults are generated)', () => {
+    // No addQualityContext -- quality module generates defaults from stack detection
+    const result = executeModule.enrichedPrepareSetContext(tmpDir, 'auth-core');
+
+    // The quality module writes default files, so qualityContext is typically non-empty.
+    // The key requirement is that the field exists and is a string.
+    assert.ok('qualityContext' in result, 'should have qualityContext field even with no pre-existing files');
+    assert.ok(typeof result.qualityContext === 'string', 'qualityContext should be a string');
+  });
+
+  it('should not modify the original prepareSetContext shape', () => {
+    const baseResult = executeModule.prepareSetContext(tmpDir, 'auth-core');
+    const enrichedResult = executeModule.enrichedPrepareSetContext(tmpDir, 'auth-core');
+
+    // All fields from prepareSetContext should be identical
+    assert.equal(enrichedResult.setName, baseResult.setName, 'setName should match');
+    assert.equal(enrichedResult.definition, baseResult.definition, 'definition should match');
+    assert.equal(enrichedResult.contractStr, baseResult.contractStr, 'contractStr should match');
+  });
+});
