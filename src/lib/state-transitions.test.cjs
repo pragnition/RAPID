@@ -24,8 +24,8 @@ describe('SET_TRANSITIONS map', () => {
     assert.deepEqual(SET_TRANSITIONS.planned, ['executed']);
   });
 
-  it('executed -> complete only', () => {
-    assert.deepEqual(SET_TRANSITIONS.executed, ['complete']);
+  it('executed -> complete or executed (allows re-execution)', () => {
+    assert.deepEqual(SET_TRANSITIONS.executed, ['complete', 'executed']);
   });
 
   it('complete -> merged only', () => {
@@ -56,6 +56,10 @@ describe('validateTransition - valid transitions', () => {
 
   it('executed -> complete succeeds', () => {
     assert.doesNotThrow(() => validateTransition('executed', 'complete'));
+  });
+
+  it('executed -> executed succeeds (idempotent re-entry)', () => {
+    assert.doesNotThrow(() => validateTransition('executed', 'executed'));
   });
 
   it('complete -> merged succeeds', () => {

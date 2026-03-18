@@ -1598,6 +1598,21 @@ function mergeSet(projectRoot, setName, baseBranch) {
     };
   }
 
+  // Pre-merge cleanup: commit untracked planning artifacts on main
+  const untrackedResult = worktree.gitExec(
+    ['ls-files', '--others', '--exclude-standard', '.planning/'],
+    projectRoot
+  );
+  if (untrackedResult.ok && untrackedResult.stdout.trim()) {
+    // Stage all untracked planning artifacts
+    worktree.gitExec(['add', '.planning/'], projectRoot);
+    // Commit them so merge --no-ff does not fail
+    worktree.gitExec(
+      ['commit', '-m', 'chore: stage untracked planning artifacts before merge'],
+      projectRoot
+    );
+  }
+
   const branch = `rapid/${setName}`;
   const mergeMsg = `merge(${setName}): merge set into ${baseBranch}`;
   let mergeOk = false;
