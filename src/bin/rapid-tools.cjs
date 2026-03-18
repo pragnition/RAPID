@@ -23,6 +23,7 @@ const { handleHooks } = require('../commands/hooks.cjs');
 const { handleMigrate } = require('../commands/migrate.cjs');
 const { handleScaffold } = require('../commands/scaffold.cjs');
 const { handleCompact } = require('../commands/compact.cjs');
+const { handleUiContract } = require('../commands/ui-contract.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -123,6 +124,9 @@ Commands:
   hooks run [--dry-run]          Run post-task hooks (reads RAPID:RETURN JSON from stdin)
   hooks enable <id>              Enable a verification check
   hooks disable <id>             Disable a verification check
+  ui-contract validate <set>        Validate a set's UI-CONTRACT.json against schema
+  ui-contract check-consistency     Check cross-set UI consistency
+  ui-contract show <set>            Show formatted UI contract summary for a set
   migrate detect                   Detect current RAPID version from .planning/ state
   migrate is-latest                Check if .planning/ state is at the latest version
   migrate backup                   Create pre-migration backup of .planning/
@@ -272,6 +276,10 @@ async function main() {
 
       case 'hooks':
         await handleHooks(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'ui-contract':
+        await handleUiContract(cwd, subcommand, args.slice(2));
         break;
 
       default:
