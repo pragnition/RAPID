@@ -172,7 +172,7 @@
         },
         {
           "id": "ui-contracts",
-          "status": "discussed",
+          "status": "complete",
           "waves": []
         },
         {
@@ -183,6 +183,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-18T08:04:15.217Z",
+  "lastUpdatedAt": "2026-03-18T08:33:14.191Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
