@@ -24,6 +24,7 @@ const { handleMigrate } = require('../commands/migrate.cjs');
 const { handleScaffold } = require('../commands/scaffold.cjs');
 const { handleCompact } = require('../commands/compact.cjs');
 const { handleUiContract } = require('../commands/ui-contract.cjs');
+const { handleDocs } = require('../commands/docs.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -127,6 +128,9 @@ Commands:
   ui-contract validate <set>        Validate a set's UI-CONTRACT.json against schema
   ui-contract check-consistency     Check cross-set UI consistency
   ui-contract show <set>            Show formatted UI contract summary for a set
+  docs generate [--scope <s>]      Generate documentation templates (scope: full|changelog|api|architecture)
+  docs list                         List existing documentation files
+  docs diff <milestone>             Show changelog entries for a milestone
   migrate detect                   Detect current RAPID version from .planning/ state
   migrate is-latest                Check if .planning/ state is at the latest version
   migrate backup                   Create pre-migration backup of .planning/
@@ -280,6 +284,10 @@ async function main() {
 
       case 'ui-contract':
         await handleUiContract(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'docs':
+        handleDocs(cwd, subcommand, args.slice(2));
         break;
 
       default:
