@@ -693,3 +693,363 @@ describe('checkQualityGates', () => {
     assert.equal(statAfter.mtimeMs, statBefore.mtimeMs, 'file mtime should be unchanged after checkQualityGates');
   });
 });
+
+// ---------------------------------------------------------------------------
+// _generateDefaultQualityMd (tested via loadQualityProfile + generated file)
+// ---------------------------------------------------------------------------
+
+describe('_generateDefaultQualityMd (via loadQualityProfile)', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-gen-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('includes TypeScript-specific patterns when TS detected', () => {
+    // tsconfig.json triggers 'typescript' language detection
+    fs.writeFileSync(path.join(tmpDir, 'tsconfig.json'), '{}', 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### TypeScript'), 'should have TypeScript subsection heading');
+    assert.ok(content.includes('type annotations'), 'should mention type annotations');
+    assert.ok(content.includes('`any`'), 'should mention avoiding any type');
+  });
+
+  it('includes Python patterns when Python detected', () => {
+    fs.writeFileSync(path.join(tmpDir, 'requirements.txt'), 'flask==2.0\n', 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### Python'), 'should have Python subsection heading');
+    assert.ok(content.includes('type hints'), 'should mention type hints');
+    assert.ok(content.includes('PEP 8'), 'should mention PEP 8');
+  });
+
+  it('includes Go patterns when Go detected', () => {
+    fs.writeFileSync(path.join(tmpDir, 'go.mod'), 'module example.com/test\n\ngo 1.21\n', 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### Go'), 'should have Go subsection heading');
+    assert.ok(content.includes('context.Context'), 'should mention context.Context');
+    assert.ok(content.includes('%w'), 'should mention error wrapping with %w');
+  });
+
+  it('includes Rust patterns when Rust detected', () => {
+    fs.writeFileSync(path.join(tmpDir, 'Cargo.toml'), '[package]\nname = "test"\nversion = "0.1.0"\n', 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### Rust'), 'should have Rust subsection heading');
+    assert.ok(content.includes('Result'), 'should mention Result type');
+    assert.ok(content.includes('Derive') || content.includes('derive'), 'should mention derive traits');
+  });
+
+  it('includes React framework patterns', () => {
+    const pkg = { name: 'test', dependencies: { react: '^18.0.0' } };
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg), 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### React'), 'should have React subsection heading');
+    assert.ok(content.includes('hooks') || content.includes('functional components'), 'should mention React patterns');
+  });
+
+  it('includes Express framework patterns', () => {
+    const pkg = { name: 'test', dependencies: { express: '^4.0.0' } };
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg), 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### Express'), 'should have Express subsection heading');
+    assert.ok(content.includes('middleware'), 'should mention middleware');
+    assert.ok(content.includes('HTTP status codes'), 'should mention HTTP status codes');
+  });
+
+  it('includes Django framework patterns', () => {
+    fs.writeFileSync(path.join(tmpDir, 'requirements.txt'), 'django==4.2\n', 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### Django'), 'should have Django subsection heading');
+    assert.ok(content.includes('ORM') || content.includes('service layer'), 'should mention Django patterns');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _generateDefaultPatternsMd (tested via loadQualityProfile + PATTERNS.md)
+// ---------------------------------------------------------------------------
+
+describe('_generateDefaultPatternsMd (via loadQualityProfile)', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-patterns-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  function readPatterns() {
+    return fs.readFileSync(path.join(tmpDir, '.planning', 'context', 'PATTERNS.md'), 'utf-8');
+  }
+
+  it('content matches stack for JS', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ name: 'test' }), 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = readPatterns();
+    assert.ok(content.includes('# Pattern Library'), 'should have Pattern Library heading');
+    assert.ok(content.includes('async/await') || content.includes('try/catch'), 'should include JS error handling patterns');
+    assert.ok(content.includes('node:test') || content.includes('assert/strict'), 'should include JS testing patterns');
+  });
+
+  it('content matches stack for Python', () => {
+    fs.writeFileSync(path.join(tmpDir, 'requirements.txt'), 'requests==2.31\n', 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = readPatterns();
+    assert.ok(content.includes('# Pattern Library'), 'should have Pattern Library heading');
+    assert.ok(content.includes('except') || content.includes('exception'), 'should include Python error handling patterns');
+    assert.ok(content.includes('pytest') || content.includes('fixtures'), 'should include Python testing patterns');
+  });
+
+  it('content matches stack for Go', () => {
+    fs.writeFileSync(path.join(tmpDir, 'go.mod'), 'module example.com/test\n\ngo 1.21\n', 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = readPatterns();
+    assert.ok(content.includes('# Pattern Library'), 'should have Pattern Library heading');
+    assert.ok(content.includes('fmt.Errorf') || content.includes('%w'), 'should include Go error wrapping patterns');
+    assert.ok(content.includes('table-driven') || content.includes('t.Run'), 'should include Go testing patterns');
+  });
+
+  it('falls back to generic patterns for unknown stack', () => {
+    // No manifest files -- no language detected
+    loadQualityProfile(tmpDir);
+    const content = readPatterns();
+    assert.ok(content.includes('# Pattern Library'), 'should have Pattern Library heading');
+    assert.ok(content.includes('## Error Handling'), 'should include Error Handling section');
+    assert.ok(content.includes('## Testing'), 'should include Testing section');
+    // Verify it does NOT contain language-specific patterns
+    assert.ok(!content.includes('async/await'), 'should not contain JS-specific patterns');
+    assert.ok(!content.includes('pytest'), 'should not contain Python-specific patterns');
+    assert.ok(!content.includes('fmt.Errorf'), 'should not contain Go-specific patterns');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _parseQualityMd edge cases (tested via loadQualityProfile)
+// ---------------------------------------------------------------------------
+
+describe('_parseQualityMd edge cases (via loadQualityProfile)', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-parse-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('handles "antipatterns" heading variant (no hyphen)', () => {
+    const content = `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Approved pattern one
+
+## AntiPatterns
+
+### General
+- Anti no-hyphen pattern
+`;
+    writeQualityMd(tmpDir, content);
+    const profile = loadQualityProfile(tmpDir);
+    assert.ok(Array.isArray(profile.antiPatterns.general), 'antiPatterns.general should exist');
+    assert.ok(
+      profile.antiPatterns.general.includes('Anti no-hyphen pattern'),
+      'should parse anti-pattern under "AntiPatterns" heading',
+    );
+  });
+
+  it('ignores bullet points outside known subsections', () => {
+    const content = `# Quality Profile
+
+- Stray bullet outside any section
+
+## Approved Patterns
+
+- Another stray bullet outside subsection
+
+### General
+- Legit approved pattern
+
+## Anti-Patterns
+
+- Stray bullet outside subsection in anti
+
+### General
+- Legit anti-pattern
+`;
+    writeQualityMd(tmpDir, content);
+    const profile = loadQualityProfile(tmpDir);
+    // The "stray" bullets should NOT appear in the profile
+    assert.deepEqual(profile.approvedPatterns.general, ['Legit approved pattern']);
+    assert.deepEqual(profile.antiPatterns.general, ['Legit anti-pattern']);
+  });
+
+  it('handles whitespace-only content', () => {
+    writeQualityMd(tmpDir, '   \n\n   \n  \n');
+    const profile = loadQualityProfile(tmpDir);
+    assert.deepEqual(profile.approvedPatterns, {}, 'approvedPatterns should be empty');
+    assert.deepEqual(profile.antiPatterns, {}, 'antiPatterns should be empty');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildQualityContext edge cases
+// ---------------------------------------------------------------------------
+
+describe('buildQualityContext edge cases', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-ctx-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('returns empty string when profile is completely blank', () => {
+    // Write empty QUALITY.md and empty PATTERNS.md, no memory decisions
+    writeQualityMd(tmpDir, '');
+    writePatternsMd(tmpDir, '');
+    const result = buildQualityContext(tmpDir, 'test-set');
+    assert.equal(result, '', 'should return empty string when all content is blank');
+  });
+
+  it('handles zero token budget by truncating immediately', () => {
+    // Write some content so there IS something to truncate
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- A pattern
+`);
+    let result;
+    assert.doesNotThrow(() => {
+      result = buildQualityContext(tmpDir, 'test-set', 0);
+    }, 'should not throw with zero token budget');
+    assert.ok(typeof result === 'string', 'should return a string');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// checkQualityGates edge cases
+// ---------------------------------------------------------------------------
+
+describe('checkQualityGates edge cases', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-gates-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('handles null artifacts array', () => {
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Write clean code
+
+## Anti-Patterns
+
+### General
+- eval()
+`);
+    let result;
+    assert.doesNotThrow(() => {
+      result = checkQualityGates(tmpDir, 'test-set', null);
+    }, 'should not throw with null artifacts');
+    assert.equal(result.passed, true, 'should pass with null artifacts');
+  });
+
+  it('handles empty artifacts array', () => {
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Write clean code
+
+## Anti-Patterns
+
+### General
+- eval()
+`);
+    const result = checkQualityGates(tmpDir, 'test-set', []);
+    assert.equal(result.passed, true, 'should pass with empty artifacts array');
+    assert.equal(result.violations.length, 0, 'should have no violations with empty artifacts');
+  });
+
+  it('performs case-insensitive pattern matching', () => {
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Write safe code
+
+## Anti-Patterns
+
+### General
+- eval()
+`);
+    // Write file with uppercase "EVAL()" -- should still match the lowercase "eval()" pattern
+    const artifactPath = path.join(os.tmpdir(), `rapid-qg-ci-${Date.now()}.js`);
+    fs.writeFileSync(artifactPath, 'const result = EVAL();\n', 'utf-8');
+    try {
+      const result = checkQualityGates(tmpDir, 'test-set', [artifactPath]);
+      assert.equal(result.passed, false, 'should fail -- case-insensitive match should detect EVAL()');
+      assert.ok(result.violations.length >= 1, 'should have at least one violation');
+    } finally {
+      fs.rmSync(artifactPath, { force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _formatDecisionsSection (tested via buildQualityContext with memory)
+// ---------------------------------------------------------------------------
+
+describe('_formatDecisionsSection (via buildQualityContext)', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = makeTmpDirWithMemory();
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('returns empty string for null input (no decisions)', () => {
+    // No decisions written -- _tryQueryDecisions returns []
+    // _formatDecisionsSection([]) returns ''
+    // So "Convention Decisions" section should not appear
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- A pattern
+`);
+    const result = buildQualityContext(tmpDir, 'test-set');
+    assert.ok(!result.includes('### Convention Decisions'), 'should not include Convention Decisions when no decisions exist');
+  });
+
+  it('formats entries without topic field correctly', () => {
+    // Append a decision WITHOUT the topic field
+    appendDecision(tmpDir, {
+      category: 'convention',
+      decision: 'Use tabs for indentation',
+      rationale: 'team preference',
+      source: 'user',
+      // no topic field
+    });
+
+    const result = buildQualityContext(tmpDir, 'test-set');
+    assert.ok(result.includes('### Convention Decisions'), 'should include Convention Decisions section');
+    assert.ok(result.includes('Use tabs for indentation'), 'should include the decision text');
+    // Should format as "[convention]" (no topic) and NOT contain "/undefined"
+    assert.ok(!result.includes('/undefined'), 'should not contain /undefined in formatted output');
+    assert.ok(result.includes('[convention]'), 'should format as [convention] without topic');
+  });
+});
