@@ -105,6 +105,12 @@ const TOOL_REGISTRY = {
 
   // Prereqs
   'prereqs-check':        'prereqs -- Check prerequisites',
+
+  // Hooks
+  'hooks-list':           'hooks list -- List verification checks and status',
+  'hooks-run':            'hooks run [--dry-run] -- Run post-task verification hooks',
+  'hooks-enable':         'hooks enable <id:str> -- Enable a verification check',
+  'hooks-disable':        'hooks disable <id:str> -- Disable a verification check',
 };
 
 // ---------------------------------------------------------------------------
@@ -114,13 +120,13 @@ const TOOL_REGISTRY = {
 // ---------------------------------------------------------------------------
 const ROLE_TOOL_MAP = {
   // Core roles that use CLI heavily
-  'executor':         ['state-get', 'state-transition-set', 'verify-light', 'memory-log-decision', 'memory-log-correction'],
+  'executor':         ['state-get', 'state-transition-set', 'verify-light', 'memory-log-decision', 'memory-log-correction', 'hooks-run', 'hooks-list'],
   'planner':          ['state-get', 'state-get-all', 'plan-create-set', 'plan-decompose', 'plan-write-dag',
                        'plan-list-sets', 'plan-load-set', 'resolve-set', 'resolve-wave', 'memory-query', 'memory-context'],
   'set-planner':      ['state-get', 'state-get-all', 'plan-create-set', 'plan-decompose', 'plan-write-dag', 'memory-log-decision'],
   'reviewer':         ['state-get', 'review-scope', 'review-log-issue', 'review-list-issues',
                        'review-update-issue', 'review-lean', 'review-summary'],
-  'verifier':         ['state-get', 'verify-light', 'verify-heavy'],
+  'verifier':         ['state-get', 'verify-light', 'verify-heavy', 'hooks-list', 'hooks-enable', 'hooks-disable'],
   'merger':           ['merge-detect', 'merge-resolve', 'merge-review'],
   'set-merger':       ['merge-detect', 'merge-resolve', 'merge-review', 'merge-update-status'],
   'conflict-resolver':['merge-detect'],

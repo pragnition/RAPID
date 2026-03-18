@@ -19,6 +19,7 @@ const { handleExecute } = require('../commands/execute.cjs');
 const { handleMemory } = require('../commands/memory.cjs');
 const { handleQuick } = require('../commands/quick.cjs');
 const { handleMerge } = require('../commands/merge.cjs');
+const { handleHooks } = require('../commands/hooks.cjs');
 const { handleMigrate } = require('../commands/migrate.cjs');
 const { handleScaffold } = require('../commands/scaffold.cjs');
 const { handleCompact } = require('../commands/compact.cjs');
@@ -118,6 +119,10 @@ Commands:
   scaffold run [--type <type>]  Generate project-type-aware foundation files
   scaffold status               Show scaffold report (if scaffold has been run)
   compact context <set-id> [--active-wave N]  Diagnostic: show compaction stats for a set
+  hooks list                     List all verification checks and their status
+  hooks run [--dry-run]          Run post-task hooks (reads RAPID:RETURN JSON from stdin)
+  hooks enable <id>              Enable a verification check
+  hooks disable <id>             Disable a verification check
   migrate detect                   Detect current RAPID version from .planning/ state
   migrate is-latest                Check if .planning/ state is at the latest version
   migrate backup                   Create pre-migration backup of .planning/
@@ -263,6 +268,10 @@ async function main() {
 
       case 'compact':
         await handleCompact(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'hooks':
+        await handleHooks(cwd, subcommand, args.slice(2));
         break;
 
       default:

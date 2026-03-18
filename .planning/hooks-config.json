@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "checks": [
+    { "id": "state-verify", "enabled": true },
+    { "id": "artifact-verify", "enabled": true },
+    { "id": "commit-verify", "enabled": true }
+  ]
+}
