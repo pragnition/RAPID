@@ -146,6 +146,17 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
     }
   }
 
+  // Load quality context for plan and execute phases
+  let qualityContext = '';
+  if (phase === 'plan' || phase === 'execute') {
+    try {
+      const quality = require('./quality.cjs');
+      qualityContext = quality.buildQualityContext(cwd, setName);
+    } catch {
+      // Graceful -- skip quality if module not available or errors
+    }
+  }
+
   let prompt = '';
 
   switch (phase) {
@@ -193,6 +204,7 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
         '',
         priorContext || 'No prior discussion -- proceed with contract and definition as given.',
         ...(memoryContext ? ['', memoryContext] : []),
+        ...(qualityContext ? ['', qualityContext] : []),
         '',
         '## Instructions',
         'Create a step-by-step implementation plan. For each step:',
@@ -228,6 +240,11 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
       if (memoryContext) {
         parts.push('');
         parts.push(memoryContext);
+      }
+
+      if (qualityContext) {
+        parts.push('');
+        parts.push(qualityContext);
       }
 
       parts.push('');
