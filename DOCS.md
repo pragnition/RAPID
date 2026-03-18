@@ -2,7 +2,7 @@
 
 RAPID (Rapid Agentic Parallelizable and Isolatable Development) is a Claude Code plugin that enables coordinated parallel AI-assisted development. It structures work around independent sets -- each running in an isolated git worktree with strict file ownership -- connected through machine-verifiable interface contracts and validated through a multi-stage adversarial review pipeline. 26 specialized agents handle research, planning, execution, review, and merge so developers focus on decisions, not coordination.
 
-**Version:** 3.0.0
+**Version:** 3.4.0
 
 For the full technical deep-dive covering all 26 agents, the state machine, configuration, and directory layout, see [technical_documentation.md](technical_documentation.md). For a quickstart overview, see [README.md](README.md).
 
