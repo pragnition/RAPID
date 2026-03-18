@@ -77,6 +77,9 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
   state-get: state get <entity:milestone|set> <id:str> -- Read entity
   verify-light: verify-artifacts <files:str...> -- Verify files exist
   verify-heavy: verify-artifacts --heavy --test <cmd:str> <files:str...> -- Verify with tests
+  hooks-list: hooks list -- List verification checks and status
+  hooks-enable: hooks enable <id:str> -- Enable a verification check
+  hooks-disable: hooks disable <id:str> -- Disable a verification check
 </tools>
 
 <role>

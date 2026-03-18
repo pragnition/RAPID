@@ -207,6 +207,63 @@
       "phase": "Created",
       "status": "active",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
+    },
+    "quick-and-addset": {
+      "setName": "quick-and-addset",
+      "branch": "rapid/quick-and-addset",
+      "path": ".rapid-worktrees/quick-and-addset",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-17T08:26:42.258Z",
+      "mergeStatus": "complete"
+    },
+    "hooks-system": {
+      "setName": "hooks-system",
+      "branch": "rapid/hooks-system",
+      "path": ".rapid-worktrees/hooks-system",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-17T08:27:42.884Z",
+      "mergeStatus": "complete",
+      "mergedAt": "2026-03-18T05:04:55.131Z",
+      "mergeCommit": "4beac88f73caf77221bd4b4be0d972ed0bdc30d5"
+    },
+    "code-quality": {
+      "setName": "code-quality",
+      "branch": "rapid/code-quality",
+      "path": ".rapid-worktrees/code-quality",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-18T05:17:32.926Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-18T07:47:57.998Z",
+      "mergeCommit": "4743253a6f2781fa75ccc897e997b0bb71513740"
+    },
+    "ui-contracts": {
+      "setName": "ui-contracts",
+      "branch": "rapid/ui-contracts",
+      "path": ".rapid-worktrees/ui-contracts",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-18T07:55:15.986Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-18T08:40:23.997Z",
+      "mergeCommit": "74e4c93e5c71ed60b04b71617ff17315b390a212"
+    },
+    "documentation": {
+      "setName": "documentation",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "9078c9ab1fb1c8d02227a3b9fb528da6d8c758ed",
+      "wave": null,
+      "createdAt": "2026-03-18T08:43:37.061Z"
     }
   }
 }

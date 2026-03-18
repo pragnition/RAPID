@@ -1,0 +1,39 @@
+{
+  "setId": "quick-and-addset",
+  "status": "complete",
+  "startedAt": "2026-03-18T04:59:28.228Z",
+  "detection": {
+    "textual": {
+      "ran": true,
+      "conflicts": [
+        {
+          "file": ".planning/STATE.json",
+          "type": "content",
+          "detail": "CONFLICT (content): Merge conflict in .planning/STATE.json"
+        }
+      ]
+    },
+    "structural": {
+      "ran": true,
+      "conflicts": []
+    },
+    "dependency": {
+      "ran": true,
+      "conflicts": []
+    },
+    "api": {
+      "ran": true,
+      "conflicts": []
+    }
+  },
+  "resolution": {
+    "tier1Count": 0,
+    "tier2Count": 0,
+    "tier3Count": 0,
+    "tier4Count": 0,
+    "escalatedConflicts": [],
+    "allResolved": false
+  },
+  "agentPhase1": "done",
+  "lastUpdatedAt": "2026-03-18T05:04:15.738Z"
+}
