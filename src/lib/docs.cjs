@@ -216,6 +216,122 @@ function _splitBySections(content) {
 }
 
 // ---------------------------------------------------------------------------
+// Changelog helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Keyword lists for changelog entry categorization.
+ * Matched case-insensitively against the entry description.
+ */
+const CATEGORY_KEYWORDS = {
+  Added: ['add', 'create', 'build', 'implement', 'new', 'introduce'],
+  Fixed: ['fix', 'repair', 'resolve', 'patch', 'correct'],
+  Breaking: ['break', 'remove', 'delete', 'drop'],
+};
+
+/**
+ * Extract the text block for a given milestone from ROADMAP.md content.
+ * Supports both heading-based (`## Current Milestone: <id>`) and
+ * details/summary-based (`<summary><id> ...`) formats.
+ *
+ * @param {string} content - Full ROADMAP.md content
+ * @param {string} milestoneId - Milestone identifier to match
+ * @returns {string} The text block for the milestone, or empty string if not found
+ */
+function _parseMilestoneSection(content, milestoneId) {
+  const lines = content.split('\n');
+  let inSection = false;
+  let sectionLines = [];
+  let sectionType = null; // 'heading' or 'details'
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (!inSection) {
+      // Check for heading-based milestone: ## ... milestoneId
+      if (/^##\s+/.test(line) && line.includes(milestoneId)) {
+        inSection = true;
+        sectionType = 'heading';
+        continue;
+      }
+      // Check for details/summary-based milestone: <summary>milestoneId ...
+      if (/<summary>/.test(line) && line.includes(milestoneId)) {
+        inSection = true;
+        sectionType = 'details';
+        continue;
+      }
+    } else {
+      // Determine when the section ends
+      if (sectionType === 'heading') {
+        // Ends at the next heading of same or higher level
+        if (/^##\s+/.test(line) || /^#\s+/.test(line)) {
+          break;
+        }
+      } else if (sectionType === 'details') {
+        // Ends at </details>
+        if (/<\/details>/.test(line)) {
+          break;
+        }
+      }
+      sectionLines.push(line);
+    }
+  }
+
+  return sectionLines.join('\n');
+}
+
+/**
+ * Parse set entries from a milestone section's text.
+ * Set entries match: `- [x] set-name -- description` or `- [ ] set-name -- description`
+ * Handles both ASCII em-dash (`--`) and Unicode em-dash (`\u2014`).
+ *
+ * @param {string} sectionText - Text of the milestone section
+ * @returns {{ setName: string, description: string }[]}
+ */
+function _parseSetEntries(sectionText) {
+  const entries = [];
+  const lines = sectionText.split('\n');
+  // Match: - [x] or - [ ] followed by set-name, then -- or \u2014, then description
+  const entryRegex = /^-\s+\[[ x]\]\s+(\S+)\s+(?:--|—)\s+(.+)$/;
+
+  for (const line of lines) {
+    const match = line.trim().match(entryRegex);
+    if (match) {
+      entries.push({
+        setName: match[1],
+        description: match[2].trim(),
+      });
+    }
+  }
+
+  return entries;
+}
+
+/**
+ * Categorize a changelog entry description into one of:
+ * 'Added', 'Fixed', 'Breaking', or 'Changed' (default).
+ *
+ * Keyword matching is case-insensitive.
+ *
+ * @param {string} description - The set description text
+ * @returns {'Added' | 'Changed' | 'Fixed' | 'Breaking'}
+ */
+function _categorizeEntry(description) {
+  const lowerDesc = description.toLowerCase();
+
+  // Check categories in priority order: Breaking > Fixed > Added > Changed
+  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    for (const keyword of keywords) {
+      if (lowerDesc.includes(keyword)) {
+        return category;
+      }
+    }
+  }
+
+  return 'Changed';
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -349,6 +465,38 @@ function updateDocSection(docPath, sectionId, newContent) {
   return { updated: true, diff };
 }
 
+/**
+ * Extract changelog entries from ROADMAP.md for a given milestone.
+ * Returns structured entries categorized by keyword detection on descriptions.
+ * Never fabricates entries -- every returned entry corresponds to a line in ROADMAP.md.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} milestoneId - Milestone identifier (e.g., 'v3.4.0')
+ * @returns {{ category: 'Added'|'Changed'|'Fixed'|'Breaking', description: string, setName: string }[]}
+ */
+function extractChangelog(cwd, milestoneId) {
+  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+
+  if (!fs.existsSync(roadmapPath)) {
+    return [];
+  }
+
+  const content = fs.readFileSync(roadmapPath, 'utf-8');
+  const sectionText = _parseMilestoneSection(content, milestoneId);
+
+  if (!sectionText) {
+    return [];
+  }
+
+  const setEntries = _parseSetEntries(sectionText);
+
+  return setEntries.map((entry) => ({
+    category: _categorizeEntry(entry.description),
+    description: entry.description,
+    setName: entry.setName,
+  }));
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -356,4 +504,5 @@ function updateDocSection(docPath, sectionId, newContent) {
 module.exports = {
   scaffoldDocTemplates,
   updateDocSection,
+  extractChangelog,
 };
