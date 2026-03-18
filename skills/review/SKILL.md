@@ -119,9 +119,9 @@ Read STATE.json to verify the target set exists and is in a reviewable state:
 node "${RAPID_TOOLS}" state get --all
 ```
 
-Parse the JSON output and find the target set. The set status MUST be `complete`. If the set is in any other status (e.g., `pending`, `planned`, `executed`):
+Parse the JSON output and find the target set. The set status MUST be `complete` or `executed`. If the set is in any other status (e.g., `pending`, `planned`):
 
-> Cannot review set '{set-id}' -- current status is '{status}'. Set must be in 'complete' state. Run `/rapid:execute-set {set-id}` first.
+> Cannot review set '{set-id}' -- current status is '{status}'. Set must be in 'complete' or 'executed' state. Run `/rapid:execute-set {set-id}` first.
 
 Exit.
 
@@ -129,7 +129,7 @@ Exit.
 
 **If `POST_MERGE=true`:** Skip this step entirely. Post-merge review does not require any specific set status -- it operates on already-merged sets. Proceed directly to Step 1.
 
-The set must be in `complete` state to proceed. No state transition is performed -- review is a non-mutating operation on set status.
+The set must be in `complete` or `executed` state to proceed. No state transition is performed -- review is a non-mutating operation on set status.
 
 ## Step 1: Scope Set Files
 
