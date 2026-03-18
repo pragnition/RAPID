@@ -50,6 +50,32 @@ function prepareSetContext(cwd, setName) {
 }
 
 /**
+ * Enhanced prepareSetContext that includes quality guidelines and pattern references.
+ * Extends the existing prepareSetContext output with quality context sections.
+ * This is a separate function to avoid breaking existing prepareSetContext callers.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setName - Name of the set
+ * @returns {{ scopedMd: string, definition: string, contractStr: string, setName: string, qualityContext: string }}
+ */
+function enrichedPrepareSetContext(cwd, setName) {
+  const ctx = prepareSetContext(cwd, setName);
+
+  let qualityContext = '';
+  try {
+    const quality = require('./quality.cjs');
+    qualityContext = quality.buildQualityContext(cwd, setName);
+  } catch {
+    // Graceful -- quality context is optional
+  }
+
+  return {
+    ...ctx,
+    qualityContext,
+  };
+}
+
+/**
  * Build a compacted context string for multi-wave execution.
  * For completed waves, uses digest siblings if available.
  * For the active wave, includes full content.
@@ -1195,6 +1221,7 @@ function parseJobHandoff(handoffContent) {
 
 module.exports = {
   prepareSetContext,
+  enrichedPrepareSetContext,
   assembleExecutorPrompt,
   assembleCompactedWaveContext,
   verifySetExecution,
