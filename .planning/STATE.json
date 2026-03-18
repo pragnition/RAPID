@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectName": "RAPID",
-  "currentMilestone": "v3.4.0",
+  "currentMilestone": "v3.5.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -177,12 +177,38 @@
         },
         {
           "id": "documentation",
-          "status": "complete",
+          "status": "merged",
+          "waves": []
+        }
+      ]
+    },
+    {
+      "id": "v3.5.0",
+      "name": "Robustness & Fixes",
+      "sets": [
+        {
+          "id": "state-execution",
+          "status": "discussed",
+          "waves": []
+        },
+        {
+          "id": "agent-prompts",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "init-config",
+          "status": "pending",
+          "waves": []
+        },
+        {
+          "id": "planning-refinement",
+          "status": "pending",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-18T09:26:29.510Z",
+  "lastUpdatedAt": "2026-03-18T11:21:00.793Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
