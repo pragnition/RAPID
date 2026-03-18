@@ -177,12 +177,12 @@
         },
         {
           "id": "documentation",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-18T08:40:28.896Z",
+  "lastUpdatedAt": "2026-03-18T08:55:48.569Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
