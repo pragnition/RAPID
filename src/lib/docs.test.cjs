@@ -517,3 +517,120 @@ describe('extractChangelog', () => {
     assert.deepEqual(entries, [], 'should return empty array for milestone with no sets');
   });
 });
+
+// ---------------------------------------------------------------------------
+// handleDocs
+// ---------------------------------------------------------------------------
+
+const { handleDocs } = require('../commands/docs.cjs');
+const { CliError } = require('./errors.cjs');
+
+/**
+ * Capture stdout output from a synchronous function.
+ */
+function captureStdout(fn) {
+  let captured = '';
+  const original = process.stdout.write;
+  process.stdout.write = (chunk) => { captured += chunk; };
+  try { fn(); } finally { process.stdout.write = original; }
+  return captured;
+}
+
+describe('handleDocs', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { cleanup(tmpDir); });
+
+  it('generate subcommand creates templates with full scope by default', () => {
+    const output = captureStdout(() => handleDocs(tmpDir, 'generate', []));
+    const result = JSON.parse(output);
+
+    assert.ok(Array.isArray(result.created), 'created should be an array');
+    assert.equal(result.scope, 'full', 'scope should default to full');
+    assert.equal(result.created.length, 9, 'should create 9 files');
+  });
+
+  it('generate --scope changelog filters scope', () => {
+    const output = captureStdout(() => handleDocs(tmpDir, 'generate', ['--scope', 'changelog']));
+    const result = JSON.parse(output);
+
+    assert.equal(result.scope, 'changelog');
+    assert.equal(result.created.length, 1, 'should create 1 file');
+    assert.ok(result.created[0].endsWith('CHANGELOG.md'), 'should be CHANGELOG.md');
+  });
+
+  it('generate with invalid scope throws CliError', () => {
+    assert.throws(
+      () => handleDocs(tmpDir, 'generate', ['--scope', 'invalid']),
+      (err) => err instanceof CliError && err.message.includes('Invalid scope'),
+      'should throw CliError for invalid scope',
+    );
+  });
+
+  it('list subcommand returns file list', () => {
+    const docsDir = path.join(tmpDir, 'docs');
+    fs.mkdirSync(docsDir, { recursive: true });
+    fs.writeFileSync(path.join(docsDir, 'guide.md'), '# Guide\n\nContent here.\n', 'utf-8');
+    fs.writeFileSync(path.join(docsDir, 'api.md'), '# API Reference\n\nAPI docs.\n', 'utf-8');
+    fs.writeFileSync(path.join(docsDir, 'notes.txt'), 'not markdown', 'utf-8');
+
+    const output = captureStdout(() => handleDocs(tmpDir, 'list', []));
+    const result = JSON.parse(output);
+
+    assert.equal(result.count, 2, 'should count only .md files');
+    assert.equal(result.files.length, 2, 'should return 2 files');
+
+    const names = result.files.map((f) => f.name).sort();
+    assert.deepEqual(names, ['api.md', 'guide.md']);
+
+    const apiFile = result.files.find((f) => f.name === 'api.md');
+    assert.equal(apiFile.title, 'API Reference', 'should extract title from # heading');
+  });
+
+  it('list with no docs/ returns empty', () => {
+    const output = captureStdout(() => handleDocs(tmpDir, 'list', []));
+    const result = JSON.parse(output);
+
+    assert.deepEqual(result, { files: [], count: 0 });
+  });
+
+  it('diff subcommand returns changelog entries', () => {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    fs.writeFileSync(path.join(planningDir, 'ROADMAP.md'), [
+      '# Roadmap',
+      '',
+      '<details>',
+      '<summary>v1.0 MVP (2 sets)</summary>',
+      '',
+      '- [x] auth -- Add authentication system',
+      '- [x] perf -- Optimize query performance',
+      '',
+      '</details>',
+    ].join('\n'), 'utf-8');
+
+    const output = captureStdout(() => handleDocs(tmpDir, 'diff', ['v1.0']));
+    const result = JSON.parse(output);
+
+    assert.equal(result.milestone, 'v1.0');
+    assert.equal(result.entries.length, 2);
+    assert.ok(result.grouped.Added.length >= 1, 'should have Added entries');
+    assert.ok(result.grouped.Changed !== undefined, 'should have Changed group');
+  });
+
+  it('diff without milestone throws CliError', () => {
+    assert.throws(
+      () => handleDocs(tmpDir, 'diff', []),
+      (err) => err instanceof CliError && err.message.includes('Usage'),
+      'should throw CliError for missing milestone',
+    );
+  });
+
+  it('unknown subcommand throws CliError', () => {
+    assert.throws(
+      () => handleDocs(tmpDir, 'unknown', []),
+      (err) => err instanceof CliError && err.message.includes('Usage'),
+      'should throw CliError for unknown subcommand',
+    );
+  });
+});
