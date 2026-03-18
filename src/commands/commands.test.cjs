@@ -20,6 +20,7 @@ const { handleReview } = require('./review.cjs');
 const { handleWorktree } = require('./worktree.cjs');
 const { handleSetInit } = require('./set-init.cjs');
 const { handleAssumptions, handleParseReturn, handleVerifyArtifacts, handleContext } = require('./misc.cjs');
+const { handleQuick } = require('./quick.cjs');
 
 describe('handler CliError throw behavior', () => {
   let tmpDir;
@@ -342,6 +343,50 @@ describe('handler CliError throw behavior', () => {
       (err) => {
         assert.ok(err instanceof CliError);
         assert.ok(err.message.includes('Unknown context subcommand'));
+        return true;
+      },
+    );
+  });
+
+  it('handleQuick throws CliError for unknown subcommand', async () => {
+    await assert.rejects(
+      async () => handleQuick(tmpDir, 'bogus', []),
+      (err) => {
+        assert.ok(err instanceof CliError, `Expected CliError, got ${err.constructor.name}`);
+        assert.ok(err.message.includes('Usage: quick <subcommand>'));
+        return true;
+      },
+    );
+  });
+
+  it('handleQuick throws CliError when log is missing required flags', async () => {
+    await assert.rejects(
+      async () => handleQuick(tmpDir, 'log', []),
+      (err) => {
+        assert.ok(err instanceof CliError, `Expected CliError, got ${err.constructor.name}`);
+        assert.ok(err.message.includes('Usage: quick log'));
+        return true;
+      },
+    );
+  });
+
+  it('handleQuick throws CliError when show has no ID', async () => {
+    await assert.rejects(
+      async () => handleQuick(tmpDir, 'show', []),
+      (err) => {
+        assert.ok(err instanceof CliError, `Expected CliError, got ${err.constructor.name}`);
+        assert.ok(err.message.includes('Usage: quick show <id>'));
+        return true;
+      },
+    );
+  });
+
+  it('handleState add-set throws CliError when missing required flags', async () => {
+    await assert.rejects(
+      async () => handleState(tmpDir, 'add-set', []),
+      (err) => {
+        assert.ok(err instanceof CliError, `Expected CliError, got ${err.constructor.name}`);
+        assert.ok(err.message.includes('Usage: state add-set'));
         return true;
       },
     );
