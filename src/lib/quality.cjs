@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { estimateTokens } = require('./tool-docs.cjs');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -499,8 +500,249 @@ function _parseQualityMd(content) {
 }
 
 // ---------------------------------------------------------------------------
+// buildQualityContext helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Read .planning/context/PATTERNS.md if it exists; return its content or empty string.
+ * Does NOT call loadQualityProfile (avoids triggering generation).
+ * @param {string} cwd - Project root directory
+ * @returns {string}
+ */
+function _loadPatternsMd(cwd) {
+  const patternsPath = path.join(cwd, CONTEXT_DIR, PATTERNS_FILE);
+  if (!fs.existsSync(patternsPath)) {
+    return '';
+  }
+  try {
+    return fs.readFileSync(patternsPath, 'utf-8');
+  } catch (_e) {
+    return '';
+  }
+}
+
+/**
+ * Attempt to load memory.cjs and call queryDecisions for convention category.
+ * Returns empty array if memory module is unavailable or throws.
+ * Uses lazy require to avoid hard dependency on memory-system.
+ * @param {string} cwd - Project root directory
+ * @returns {object[]}
+ */
+function _tryQueryDecisions(cwd) {
+  try {
+    const { queryDecisions } = require('./memory.cjs');
+    return queryDecisions(cwd, { category: 'convention', limit: 20 });
+  } catch (_e) {
+    return [];
+  }
+}
+
+/**
+ * Format an array of decision entries into a markdown section string.
+ * Each decision becomes a bullet: "- [category/topic] decision (rationale)"
+ * Returns empty string if decisions array is empty.
+ * @param {object[]} decisions
+ * @returns {string}
+ */
+function _formatDecisionsSection(decisions) {
+  if (!decisions || decisions.length === 0) {
+    return '';
+  }
+  const lines = decisions.map((entry) => {
+    const tag = entry.topic
+      ? `[${entry.category}/${entry.topic}]`
+      : `[${entry.category}]`;
+    return `- ${tag} ${entry.decision} (${entry.rationale})`;
+  });
+  return lines.join('\n');
+}
+
+/**
+ * Truncate text to fit within token budget.
+ * Splits by newline, accumulates lines until adding the next would exceed the budget,
+ * then appends a truncation marker. Returns text unchanged if within budget.
+ * @param {string} text
+ * @param {number} budget - Maximum tokens
+ * @returns {string}
+ */
+function _truncateToTokenBudget(text, budget) {
+  if (estimateTokens(text) <= budget) {
+    return text;
+  }
+
+  const TRUNCATION_MARKER = '\n\n[...truncated to fit token budget]';
+  const markerTokens = estimateTokens(TRUNCATION_MARKER);
+  const effectiveBudget = budget - markerTokens;
+
+  const lines = text.split('\n');
+  const accumulated = [];
+  let currentTokens = 0;
+
+  for (const line of lines) {
+    const lineWithNewline = accumulated.length > 0 ? '\n' + line : line;
+    const lineTokens = estimateTokens(lineWithNewline);
+    if (currentTokens + lineTokens > effectiveBudget) {
+      break;
+    }
+    accumulated.push(line);
+    currentTokens += lineTokens;
+  }
+
+  return accumulated.join('\n') + TRUNCATION_MARKER;
+}
+
+// ---------------------------------------------------------------------------
+// checkQualityGates helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Check a single file's content against anti-pattern rules.
+ * Uses case-insensitive string matching (no regex, no AST).
+ * @param {string} filePath - Path to the file (for violation reporting)
+ * @param {string} content - File content string
+ * @param {object} antiPatterns - antiPatterns object from parsed profile
+ * @returns {object[]} Array of violation objects
+ */
+function _checkFileAgainstPatterns(filePath, content, antiPatterns) {
+  const violations = [];
+  const lines = content.split('\n');
+
+  for (const [_category, patterns] of Object.entries(antiPatterns)) {
+    if (!Array.isArray(patterns)) continue;
+    for (const pattern of patterns) {
+      const patternLower = pattern.toLowerCase();
+      // Find which line matches first
+      let matchLine = null;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].toLowerCase().includes(patternLower)) {
+          matchLine = i + 1; // 1-based
+          break;
+        }
+      }
+      if (matchLine !== null) {
+        violations.push({
+          rule: pattern,
+          file: filePath,
+          line: matchLine,
+          severity: 'warning',
+          message: `Found anti-pattern: ${pattern} in ${filePath}`,
+          confidence: 'low',
+        });
+      }
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Write human-readable violation warnings to stderr.
+ * @param {object[]} violations
+ */
+function _logViolationsToStderr(violations) {
+  for (const v of violations) {
+    const location = v.line !== null ? `${v.file}:${v.line}` : v.file;
+    process.stderr.write(`[RAPID QUALITY] ${v.severity}: ${v.message} (${location})\n`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+
+/**
+ * Build a token-budgeted quality context string for agent prompt injection.
+ * Combines QUALITY.md guidelines, PATTERNS.md pattern library, and convention
+ * decisions from memory-system.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setName - Current set name (informational)
+ * @param {number} [tokenBudget] - Max tokens (default DEFAULT_TOKEN_BUDGET = 10000)
+ * @returns {string} Token-budgeted markdown string, or empty string if no content
+ */
+function buildQualityContext(cwd, setName, tokenBudget) {
+  tokenBudget = tokenBudget || DEFAULT_TOKEN_BUDGET;
+
+  const profile = loadQualityProfile(cwd);
+  const patternsMd = _loadPatternsMd(cwd);
+  const decisions = _tryQueryDecisions(cwd);
+
+  const guidelinesContent = profile.raw || '';
+  const hasContent = guidelinesContent.trim() !== '' || patternsMd.trim() !== '' || decisions.length > 0;
+
+  if (!hasContent) {
+    return '';
+  }
+
+  const sections = ['## Quality Context'];
+
+  if (guidelinesContent.trim() !== '') {
+    sections.push('### Quality Guidelines\n' + guidelinesContent.trim());
+  }
+
+  if (patternsMd.trim() !== '') {
+    sections.push('### Pattern Library\n' + patternsMd.trim());
+  }
+
+  const decisionsText = _formatDecisionsSection(decisions);
+  if (decisionsText !== '') {
+    sections.push('### Convention Decisions\n' + decisionsText);
+  }
+
+  const assembled = sections.join('\n\n');
+  return _truncateToTokenBudget(assembled, tokenBudget);
+}
+
+/**
+ * Verify agent output artifacts against quality profile anti-patterns.
+ * Advisory only -- never throws, never modifies files, never blocks execution.
+ * Logs violations to stderr.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setName - Current set name (for context/logging)
+ * @param {string[]} artifacts - Array of absolute file paths to check
+ * @returns {{ passed: boolean, violations: object[] }}
+ */
+function checkQualityGates(cwd, setName, artifacts) {
+  try {
+    const profile = loadQualityProfile(cwd);
+
+    const hasAntiPatterns = Object.values(profile.antiPatterns).some(
+      (arr) => Array.isArray(arr) && arr.length > 0,
+    );
+
+    if (!hasAntiPatterns) {
+      return { passed: true, violations: [] };
+    }
+
+    const allViolations = [];
+
+    for (const artifactPath of (artifacts || [])) {
+      try {
+        if (!fs.existsSync(artifactPath)) {
+          continue;
+        }
+        const stat = fs.statSync(artifactPath);
+        if (stat.isDirectory()) {
+          continue;
+        }
+        const content = fs.readFileSync(artifactPath, 'utf-8');
+        const fileViolations = _checkFileAgainstPatterns(artifactPath, content, profile.antiPatterns);
+        allViolations.push(...fileViolations);
+      } catch (_e) {
+        // Skip files that cannot be read without error
+      }
+    }
+
+    if (allViolations.length > 0) {
+      _logViolationsToStderr(allViolations);
+    }
+
+    return { passed: allViolations.length === 0, violations: allViolations };
+  } catch (_e) {
+    return { passed: true, violations: [] };
+  }
+}
 
 /**
  * Load (or generate) the quality profile for the given project root.
@@ -549,5 +791,7 @@ function loadQualityProfile(cwd) {
 
 module.exports = {
   loadQualityProfile,
+  buildQualityContext,
+  checkQualityGates,
   DEFAULT_TOKEN_BUDGET,
 };
