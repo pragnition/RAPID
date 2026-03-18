@@ -69,9 +69,18 @@ function enrichedPrepareSetContext(cwd, setName) {
     // Graceful -- quality context is optional
   }
 
+  let uiContext = '';
+  try {
+    const uiContractLib = require('./ui-contract.cjs');
+    uiContext = uiContractLib.buildUiContext(cwd, setName);
+  } catch {
+    // Graceful -- UI context is optional
+  }
+
   return {
     ...ctx,
     qualityContext,
+    uiContext,
   };
 }
 
