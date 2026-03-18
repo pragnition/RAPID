@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { scaffoldDocTemplates, updateDocSection } = require('./docs.cjs');
+const { scaffoldDocTemplates, updateDocSection, extractChangelog } = require('./docs.cjs');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -335,5 +335,185 @@ describe('updateDocSection', () => {
     assert.ok(!result.includes('some content'), 'old content removed');
     assert.ok(result.includes('## Bar'), 'Bar heading preserved');
     assert.ok(result.includes('bar content'), 'bar content preserved');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// extractChangelog
+// ---------------------------------------------------------------------------
+
+describe('extractChangelog', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { cleanup(tmpDir); });
+
+  function writeRoadmap(content) {
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    fs.writeFileSync(path.join(planningDir, 'ROADMAP.md'), content, 'utf-8');
+  }
+
+  it('should extract entries from a milestone section', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '<details>',
+      '<summary>v1.0 MVP (3 sets) -- shipped</summary>',
+      '',
+      '- [x] auth-system -- Add user authentication with JWT tokens',
+      '- [x] api-gateway -- Build REST API gateway',
+      '- [x] bug-patch -- Fix login redirect loop',
+      '',
+      '</details>',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v1.0');
+    assert.equal(entries.length, 3, 'should return 3 entries');
+    assert.equal(entries[0].setName, 'auth-system');
+    assert.equal(entries[0].description, 'Add user authentication with JWT tokens');
+    assert.equal(entries[1].setName, 'api-gateway');
+    assert.equal(entries[2].setName, 'bug-patch');
+  });
+
+  it('should categorize Added by keyword', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '## Current Milestone: v2.0',
+      '',
+      '- [x] feat-a -- Add new feature',
+      '- [x] feat-b -- Build the dashboard',
+      '- [x] feat-c -- Implement caching layer',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v2.0');
+    assert.equal(entries.length, 3);
+    for (const entry of entries) {
+      assert.equal(entry.category, 'Added', `"${entry.description}" should be Added`);
+    }
+  });
+
+  it('should categorize Fixed by keyword', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '## Current Milestone: v2.1',
+      '',
+      '- [x] fix-a -- Fix the broken login flow',
+      '- [x] fix-b -- Resolve intermittent timeout',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v2.1');
+    assert.equal(entries.length, 2);
+    for (const entry of entries) {
+      assert.equal(entry.category, 'Fixed', `"${entry.description}" should be Fixed`);
+    }
+  });
+
+  it('should categorize Changed as default', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '## Current Milestone: v3.0',
+      '',
+      '- [x] refactor-a -- Refactor the module system',
+      '- [x] update-b -- Upgrade dependencies to latest',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v3.0');
+    assert.equal(entries.length, 2);
+    for (const entry of entries) {
+      assert.equal(entry.category, 'Changed', `"${entry.description}" should be Changed`);
+    }
+  });
+
+  it('should categorize Breaking by keyword', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '## Current Milestone: v4.0',
+      '',
+      '- [x] break-a -- Remove legacy API endpoints',
+      '- [x] break-b -- Drop support for Node 14',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v4.0');
+    assert.equal(entries.length, 2);
+    for (const entry of entries) {
+      assert.equal(entry.category, 'Breaking', `"${entry.description}" should be Breaking`);
+    }
+  });
+
+  it('should return empty array when milestoneId not found', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '## Current Milestone: v1.0',
+      '',
+      '- [x] some-set -- Add something',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v99.0');
+    assert.deepEqual(entries, [], 'should return empty array');
+  });
+
+  it('should return empty array when ROADMAP.md does not exist', () => {
+    // tmpDir has no .planning/ROADMAP.md
+    const entries = extractChangelog(tmpDir, 'v1.0');
+    assert.deepEqual(entries, [], 'should return empty array');
+  });
+
+  it('should handle details/summary wrapped milestones', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '<details>',
+      '<summary>v1.0 MVP (2 sets) -- shipped</summary>',
+      '',
+      '- [x] auth -- Add authentication',
+      '- [x] api -- Build API layer',
+      '',
+      '</details>',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v1.0');
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].setName, 'auth');
+    assert.equal(entries[1].setName, 'api');
+  });
+
+  it('should handle heading-based milestone format', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '## Current Milestone: v3.4.0',
+      '',
+      '- [x] memory-system -- Add memory persistence layer',
+      '- [ ] plugin-api -- Enhance plugin loading',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v3.4.0');
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].setName, 'memory-system');
+    assert.equal(entries[0].category, 'Added');
+    assert.equal(entries[1].setName, 'plugin-api');
+    assert.equal(entries[1].category, 'Changed');
+  });
+
+  it('should never fabricate entries (empty milestone section)', () => {
+    writeRoadmap([
+      '# Roadmap',
+      '',
+      '## Current Milestone: v5.0',
+      '',
+      'Some descriptive text but no set entries here.',
+      '',
+      '## Previous Milestone: v4.0',
+      '',
+      '- [x] old-set -- Add old feature',
+    ].join('\n'));
+
+    const entries = extractChangelog(tmpDir, 'v5.0');
+    assert.deepEqual(entries, [], 'should return empty array for milestone with no sets');
   });
 });
