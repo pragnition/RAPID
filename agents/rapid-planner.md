@@ -109,6 +109,8 @@ Examples:
   plan-load-set: plan load-set <name:str> -- Load set definition + contract
   resolve-set: resolve set <input:str> -- Resolve set reference to JSON
   resolve-wave: resolve wave <input:str> -- Resolve wave reference to JSON
+  memory-query: memory query [--category <c:str>] [--type <t:str>] [--limit <n:int>] -- Query memory
+  memory-context: memory context <set:str> [--budget <n:int>] -- Build memory context
 </tools>
 
 <role>
