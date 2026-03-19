@@ -1,0 +1,36 @@
+{
+  "setId": "agent-prompts",
+  "version": "1.0.0",
+  "exports": {
+    "cli-reference-in-core-identity": {
+      "type": "file",
+      "signature": "src/modules/core-identity.md :: ## CLI Command Reference section",
+      "description": "Complete CLI command reference embedded in core-identity.md for all agents"
+    },
+    "corrected-agent-commands": {
+      "type": "file",
+      "signature": "agents/*.md :: all generated agent files",
+      "description": "All 26 agents rebuilt with correct CLI command references"
+    },
+    "four-option-discuss": {
+      "type": "file",
+      "signature": "skills/discuss-set/SKILL.md :: Step 5 gray area options",
+      "description": "discuss-set presents exactly 4 gray area options matching AskUserQuestion limit"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "no-hallucinated-commands": {
+      "description": "No agent or skill references a CLI subcommand that does not exist in TOOL_REGISTRY",
+      "enforced_by": "test"
+    },
+    "discuss-option-limit": {
+      "description": "discuss-set never presents more than 4 options to AskUserQuestion; Key Principles says '2-4 gray areas'",
+      "enforced_by": "test"
+    },
+    "build-agents-propagation": {
+      "description": "Running build-agents produces agents that include CLI command reference from core-identity.md",
+      "enforced_by": "test"
+    }
+  }
+}

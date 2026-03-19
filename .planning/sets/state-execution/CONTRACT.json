@@ -1,0 +1,50 @@
+{
+  "setId": "state-execution",
+  "version": "1.0.0",
+  "exports": {
+    "relaxed-review-status-check": {
+      "type": "file",
+      "signature": "skills/review/SKILL.md :: Step 0c status validation",
+      "description": "Review skill accepts sets in both 'complete' and 'executed' status"
+    },
+    "state-transition-self-loop": {
+      "type": "function",
+      "signature": "SET_TRANSITIONS.executed: ['complete', 'executed']",
+      "description": "Self-transition from executed to executed is allowed for idempotency"
+    },
+    "merge-artifact-cleanup": {
+      "type": "file",
+      "signature": "skills/merge/SKILL.md :: pre-merge cleanup step",
+      "description": "Before merging, untracked planning artifacts on main are handled to prevent merge failures"
+    },
+    "bug-fix-skill": {
+      "type": "file",
+      "signature": "skills/bug-fix/SKILL.md",
+      "description": "New /rapid:bug-fix skill that reads review artifacts and dispatches rapid-bugfix agent"
+    },
+    "bug-fix-artifact-reader": {
+      "type": "function",
+      "signature": "readReviewArtifacts(projectRoot, setId, postMerge?): { bugs, unitFailures, uatIssues }",
+      "description": "Library function to read and parse all review artifacts for a set"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "executed-accepted-in-review": {
+      "description": "Review skill accepts sets with status 'executed' in addition to 'complete'",
+      "enforced_by": "test"
+    },
+    "merge-idempotent-with-artifacts": {
+      "description": "Running /rapid:merge with planning artifacts on main succeeds without user intervention",
+      "enforced_by": "test"
+    },
+    "bug-fix-reads-review-artifacts": {
+      "description": "Bug-fix skill reads from standard or post-merge path and presents findings before dispatching fixes",
+      "enforced_by": "test"
+    },
+    "bug-fix-updates-state": {
+      "description": "After applying fixes, bug-fix skill updates REVIEW-ISSUES.json to mark findings as fixed",
+      "enforced_by": "test"
+    }
+  }
+}

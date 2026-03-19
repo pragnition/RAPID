@@ -135,34 +135,40 @@
 
 </details>
 
-## Current Milestone: v3.4.0 Agent Intelligence (6 sets)
+<details>
+<summary>v3.4.0 Agent Intelligence (6 sets) — shipped 2026-03-18</summary>
 
-### Set 1: Memory Infrastructure (`memory-system`) [Large]
-Build foundational memory persistence infrastructure — append-only JSONL decision log (`.planning/memory/DECISIONS.jsonl`), corrections log for mid-execution user changes (`.planning/memory/CORRECTIONS.jsonl`), cross-milestone preference tracking, and context injection so downstream agents receive relevant decisions and corrections.
+- [x] memory-system — Append-only JSONL decision log, corrections log, cross-milestone preferences
+- [x] quick-and-addset — Persistent /quick task logging, add-set with state CLI backing
+- [x] hooks-system — Node.js hook system for state verification after agent tasks
+- [x] code-quality — Quality profile system, enhanced prepareSetContext(), quality gates
+- [x] ui-contracts — Per-set UI-CONTRACT.json schema with Ajv validation
+- [x] documentation — Agent-driven docs generation, changelog extraction, /rapid:documentation skill
 
-### Set 2: Quick Logging + Add-Set (`quick-and-addset`) [Medium]
-Two lightweight enhancements: persistent `/quick` task logging to `.planning/memory/quick-tasks.jsonl` with CLI query commands, and refactoring `add-set` to use proper CLI-backed `state add-set` command with DAG recalculation and OWNERSHIP.json regeneration.
+</details>
 
-### Set 3: Hooks + State Verification (`hooks-system`) [Medium]
-Node.js hook system that verifies project state is updated after agent task completion. Includes hooks configuration (`hooks/hooks.json`), state verification via read-only STATE.json access (avoiding deadlock), and remediation prompts on stale state.
+## Current Milestone: v3.5.0 Robustness & Fixes (4 sets)
 
-### Set 4: Code Quality + Context Enrichment (`code-quality`) [Large]
-Enrich planning/execution context for higher-quality agent output. Quality profile system, enhanced `prepareSetContext()` with quality guidelines, pattern library, quality gates, and token-budgeted context injection. Soft dependency on memory-system.
+All fixes target boundary-condition failures in the existing 5-layer architecture (Skill -> Agent -> CLI -> Library -> Storage). Pattern: defensive middleware with graceful degradation.
 
-### Set 5: UI Specs/Contracts (`ui-contracts`) [Large]
-Per-set `UI-CONTRACT.json` schema with Ajv validation, cross-set UI consistency checks, and context injection into executors. Separate from existing CONTRACT.json.
+### Set 1: State & Execution Robustness (`state-execution`) [Large]
+Fix the execute-to-complete state transition so review accepts `executed` status (F5). Fix merge untracked file handling by committing planning artifacts in the worktree branch and adding pre-merge cleanup (F6). Add `/rapid:bug-fix` user-facing skill that reads review artifacts and dispatches the bugfix agent (F10).
 
-### Set 6: Documentation Generation (`documentation`) [Large]
-Agent-driven documentation generation for end-of-version use. Template scaffolding, changelog extraction from git/RAPID artifacts, diff-aware updates, and `/rapid:documentation` skill.
+### Set 2: Agent Prompts & Correctness (`agent-prompts`) [Medium]
+Sweep all 26 agents and 24 skills to fix CLI command references, ensuring agents use exact subcommand syntax from TOOL_REGISTRY (F1). Fix discuss-set to limit gray area options to 4 matching AskUserQuestion constraint (F3).
+
+### Set 3: Init & Configuration (`init-config`) [Medium]
+Fix DEFINITION.md generation so init creates it alongside CONTRACT.json (F2). Add graceful loadSet() fallback. Add project-wide solo mode config (F8). Add worktree package management with ecosystem-aware install (F4). Auto-commit all planning artifacts after init completes (F11).
+
+### Set 4: Planning & Review Refinement (`planning-refinement`) [Small]
+Strengthen UI/UX emphasis in discuss-set and plan-set templates (F9). Fix review file discovery so downstream skills auto-detect post-merge mode (F7).
 
 ### Dependency Graph
 ```
-memory-system       (independent — wave 1)
-quick-and-addset    (independent — wave 1)
-hooks-system        (independent — wave 1)
-ui-contracts        (independent — wave 1)
-documentation       (independent — wave 1)
-code-quality        → memory-system (soft dep — wave 2)
+state-execution      (independent — wave 1)
+agent-prompts        (independent — wave 1)
+init-config          (independent — wave 1)
+planning-refinement  (independent — wave 1)
 ```
 
-Historical phase details archived to `.planning/milestones/{version}/`.
+Historical phase details archived to `.planning/archive/`.

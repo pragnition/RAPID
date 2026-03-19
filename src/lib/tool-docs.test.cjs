@@ -305,6 +305,89 @@ describe('TOOL_REGISTRY CLI drift guard', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Agent-assembly: plan-check-gate removal, role counts, key format, duplicates
+// ---------------------------------------------------------------------------
+describe('plan-check-gate removal', () => {
+  it('plan-check-gate is not in TOOL_REGISTRY', () => {
+    assert.ok(!('plan-check-gate' in TOOL_REGISTRY), 'plan-check-gate should not exist in TOOL_REGISTRY');
+  });
+
+  it('plan-check-gate is not in any ROLE_TOOL_MAP value', () => {
+    for (const [role, keys] of Object.entries(ROLE_TOOL_MAP)) {
+      assert.ok(
+        !keys.includes('plan-check-gate'),
+        `ROLE_TOOL_MAP["${role}"] still references plan-check-gate`
+      );
+    }
+  });
+});
+
+describe('ROLE_TOOL_MAP exact counts', () => {
+  it('executor has exactly 7 ROLE_TOOL_MAP commands', () => {
+    const keys = ROLE_TOOL_MAP['executor'];
+    assert.ok(keys, 'executor missing from ROLE_TOOL_MAP');
+    assert.equal(keys.length, 7, `Expected 7 executor keys, got ${keys.length}`);
+    const expected = [
+      'state-get', 'state-transition-set', 'verify-light',
+      'memory-log-decision', 'memory-log-correction', 'hooks-run', 'hooks-list',
+    ];
+    assert.deepStrictEqual(keys.sort(), expected.sort());
+  });
+
+  it('planner has exactly 11 ROLE_TOOL_MAP commands', () => {
+    const keys = ROLE_TOOL_MAP['planner'];
+    assert.ok(keys, 'planner missing from ROLE_TOOL_MAP');
+    assert.equal(keys.length, 11, `Expected 11 planner keys, got ${keys.length}`);
+    const expected = [
+      'state-get', 'state-get-all', 'plan-create-set', 'plan-decompose',
+      'plan-write-dag', 'plan-list-sets', 'plan-load-set',
+      'resolve-set', 'resolve-wave', 'memory-query', 'memory-context',
+    ];
+    assert.deepStrictEqual(keys.sort(), expected.sort());
+  });
+});
+
+describe('TOOL_REGISTRY key format', () => {
+  it('TOOL_REGISTRY keys are all kebab-case', () => {
+    const kebabPattern = /^[a-z][a-z0-9-]*$/;
+    for (const key of Object.keys(TOOL_REGISTRY)) {
+      assert.ok(
+        kebabPattern.test(key),
+        `TOOL_REGISTRY key "${key}" is not kebab-case`
+      );
+    }
+  });
+});
+
+describe('ROLE_TOOL_MAP uniqueness', () => {
+  it('ROLE_TOOL_MAP has no duplicate keys within any role', () => {
+    for (const [role, keys] of Object.entries(ROLE_TOOL_MAP)) {
+      const unique = new Set(keys);
+      assert.equal(
+        unique.size, keys.length,
+        `ROLE_TOOL_MAP["${role}"] has duplicate entries: ${keys.filter((k, i) => keys.indexOf(k) !== i)}`
+      );
+    }
+  });
+});
+
+describe('getToolDocsForRole line count', () => {
+  it('returns correct line count for each role', () => {
+    for (const [role, keys] of Object.entries(ROLE_TOOL_MAP)) {
+      const docs = getToolDocsForRole(role);
+      assert.ok(docs !== null, `Expected docs for role "${role}"`);
+      const lines = docs.split('\n');
+      // First line is the header "# rapid-tools.cjs commands"
+      const contentLines = lines.slice(1).filter(l => l.trim() !== '');
+      assert.equal(
+        contentLines.length, keys.length,
+        `Role "${role}": expected ${keys.length} command lines, got ${contentLines.length}`
+      );
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Hand-written agent guard: SKIP_GENERATION agents stay in sync with ROLE_TOOL_MAP
 // ---------------------------------------------------------------------------
 describe('hand-written agent guard', () => {

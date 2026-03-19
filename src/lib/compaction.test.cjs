@@ -1710,3 +1710,84 @@ describe('compactContext - budget boundary conditions', () => {
     assert.equal(result.budgetExceeded, true); // 51 > 50 is true
   });
 });
+
+// ---------------------------------------------------------------------------
+// compactContext -- future wave behavior
+// ---------------------------------------------------------------------------
+describe('compactContext - future wave behavior', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmDir(tmpDir);
+  });
+
+  // BEHAVIOR: A wave that is neither active nor completed (wave > activeWave)
+  // should use full content, not digests, even when a digest file exists.
+  // GUARDS AGAINST: Future waves being compacted prematurely, losing context
+  // that the agent needs for upcoming work.
+  it('compactContext reads full content for future (non-active, non-completed) wave', () => {
+    // Wave 3 is a future wave when activeWave=2
+    const w3Plan = path.join(tmpDir, 'wave-3-PLAN.md');
+    const w3PlanDigest = path.join(tmpDir, 'wave-3-PLAN-DIGEST.md');
+    fs.writeFileSync(w3Plan, 'Full future wave 3 plan content here.');
+    fs.writeFileSync(w3PlanDigest, 'Short digest of wave 3.');
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 2,
+      waves: [
+        { wave: 3, artifacts: [{ name: 'PLAN', path: w3Plan }] },
+      ],
+    };
+
+    const result = compactContext(context);
+    // Wave 3 > activeWave 2, so it is NOT active and NOT completed -- it is a future wave
+    // Future waves use full content (line 137 in compaction.cjs)
+    assert.equal(result.compacted[0].artifacts[0].isDigest, false);
+    assert.equal(result.compacted[0].artifacts[0].content, 'Full future wave 3 plan content here.');
+    assert.equal(result.fullsUsed, 1);
+    assert.equal(result.digestsUsed, 0);
+  });
+
+  // BEHAVIOR: When activeWave=0, no wave has wave < 0, so no wave is completed.
+  // The active wave is wave 0, and all other waves (1, 2, 3...) are future waves.
+  // All waves should use full content.
+  // GUARDS AGAINST: Edge case where activeWave=0 might cause wave 0 to be
+  // misclassified or waves to be incorrectly treated as completed.
+  it('compactContext with activeWave=0 treats all waves as future', () => {
+    const w1Plan = path.join(tmpDir, 'wave-1-PLAN.md');
+    const w1PlanDigest = path.join(tmpDir, 'wave-1-PLAN-DIGEST.md');
+    const w2Plan = path.join(tmpDir, 'wave-2-PLAN.md');
+    const w2PlanDigest = path.join(tmpDir, 'wave-2-PLAN-DIGEST.md');
+    fs.writeFileSync(w1Plan, 'Wave 1 full plan.');
+    fs.writeFileSync(w1PlanDigest, 'Wave 1 digest.');
+    fs.writeFileSync(w2Plan, 'Wave 2 full plan.');
+    fs.writeFileSync(w2PlanDigest, 'Wave 2 digest.');
+
+    const context = {
+      setId: 'test-set',
+      setDir: tmpDir,
+      activeWave: 0,
+      waves: [
+        { wave: 1, artifacts: [{ name: 'PLAN', path: w1Plan }] },
+        { wave: 2, artifacts: [{ name: 'PLAN', path: w2Plan }] },
+      ],
+    };
+
+    const result = compactContext(context);
+    // activeWave=0: wave 0 is active (not present here), waves 1 and 2 are future
+    // No wave has wave < 0, so no wave is completed
+    // All should use full content
+    assert.equal(result.compacted[0].artifacts[0].isDigest, false);
+    assert.equal(result.compacted[0].artifacts[0].content, 'Wave 1 full plan.');
+    assert.equal(result.compacted[1].artifacts[0].isDigest, false);
+    assert.equal(result.compacted[1].artifacts[0].content, 'Wave 2 full plan.');
+    assert.equal(result.fullsUsed, 2);
+    assert.equal(result.digestsUsed, 0);
+  });
+});

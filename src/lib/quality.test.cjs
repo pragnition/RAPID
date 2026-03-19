@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { loadQualityProfile, buildQualityContext, checkQualityGates } = require('./quality.cjs');
+const { loadQualityProfile, buildQualityContext, checkQualityGates, DEFAULT_TOKEN_BUDGET } = require('./quality.cjs');
 const { estimateTokens } = require('./tool-docs.cjs');
 const { appendDecision } = require('./memory.cjs');
 
@@ -1051,5 +1051,475 @@ describe('_formatDecisionsSection (via buildQualityContext)', () => {
     // Should format as "[convention]" (no topic) and NOT contain "/undefined"
     assert.ok(!result.includes('/undefined'), 'should not contain /undefined in formatted output');
     assert.ok(result.includes('[convention]'), 'should format as [convention] without topic');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wave 3: 18 additional tests for quality-system coverage
+// ---------------------------------------------------------------------------
+
+describe('_truncateToTokenBudget (via buildQualityContext)', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-trunc-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('content exactly at budget boundary is not truncated', () => {
+    // Write a small QUALITY.md, then set budget to exactly match the assembled output
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Small pattern
+
+## Anti-Patterns
+
+### General
+- Small anti
+`);
+    writePatternsMd(tmpDir, '');
+    // First, build with a huge budget to see total token count
+    const fullResult = buildQualityContext(tmpDir, 'test-set', 999999);
+    const exactBudget = estimateTokens(fullResult);
+    // Now build with that exact budget -- should not truncate
+    const result = buildQualityContext(tmpDir, 'test-set', exactBudget);
+    assert.ok(!result.includes('[...truncated to fit token budget]'),
+      'content at exact budget boundary should not be truncated');
+    assert.equal(result, fullResult, 'result should be identical to full result');
+  });
+
+  it('single very long line with no newlines', () => {
+    // Create a QUALITY.md with one extremely long line (no newlines in the pattern)
+    const longLine = '- ' + 'x'.repeat(20000);
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+${longLine}
+
+## Anti-Patterns
+
+### General
+- Anti
+`);
+    writePatternsMd(tmpDir, '');
+    // Use a small budget that forces truncation
+    const result = buildQualityContext(tmpDir, 'test-set', 100);
+    assert.ok(result.includes('[...truncated to fit token budget]'),
+      'should contain truncation marker when single long line exceeds budget');
+  });
+
+  it('budget smaller than truncation marker', () => {
+    // Budget of 1 token -- the truncation marker itself is ~10 tokens
+    // effectiveBudget goes negative, no lines accumulate, no throw
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Some pattern to force content
+
+## Anti-Patterns
+
+### General
+- Some anti-pattern
+`);
+    writePatternsMd(tmpDir, '');
+    let result;
+    assert.doesNotThrow(() => {
+      result = buildQualityContext(tmpDir, 'test-set', 1);
+    }, 'should not throw with budget smaller than truncation marker');
+    assert.ok(typeof result === 'string', 'should return a string');
+    // With negative effective budget, no lines accumulate, only truncation marker
+    assert.ok(result.includes('[...truncated to fit token budget]'),
+      'should contain truncation marker');
+  });
+});
+
+describe('_checkFileAgainstPatterns (via checkQualityGates)', () => {
+  let tmpDir;
+  let tmpFiles = [];
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-chk-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+    tmpFiles = [];
+  });
+  afterEach(() => {
+    for (const f of tmpFiles) {
+      try { fs.rmSync(f, { force: true }); } catch (_e) { /* ignore */ }
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function makeTempFile(content, suffix = '.js') {
+    const p = path.join(os.tmpdir(), `rapid-qg-chk-${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}`);
+    fs.writeFileSync(p, content, 'utf-8');
+    tmpFiles.push(p);
+    return p;
+  }
+
+  it('skips non-array values in antiPatterns', () => {
+    // The parser always produces arrays for subsections, but if a subsection heading
+    // exists with no bullet points, the key maps to an empty array.
+    // We can verify the function handles this gracefully by writing a QUALITY.md
+    // where an anti-pattern subsection has no bullets -- the key will be an empty array.
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Write clean code
+
+## Anti-Patterns
+
+### EmptyCategory
+
+### General
+- eval()
+`);
+    const artifactPath = makeTempFile('const x = eval();\n');
+    let result;
+    assert.doesNotThrow(() => {
+      result = checkQualityGates(tmpDir, 'test-set', [artifactPath]);
+    }, 'should not throw when antiPatterns has empty-array category');
+    // Should still detect eval() from the General category
+    assert.equal(result.passed, false, 'should still detect violation from non-empty category');
+  });
+
+  it('reports violations from multiple categories in same file', () => {
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Write clean code
+
+## Anti-Patterns
+
+### Security
+- eval()
+
+### Style
+- var declarations
+`);
+    // File contains both anti-patterns
+    const artifactPath = makeTempFile('var x = eval();\nvar declarations are bad;\n');
+    const result = checkQualityGates(tmpDir, 'test-set', [artifactPath]);
+    assert.equal(result.passed, false, 'should fail when violations from multiple categories');
+    assert.ok(result.violations.length >= 2,
+      `should have violations from both categories, got ${result.violations.length}`);
+    // Verify both rules are represented
+    const rules = result.violations.map(v => v.rule);
+    assert.ok(rules.includes('eval()'), 'should include eval() violation');
+    assert.ok(rules.includes('var declarations'), 'should include var declarations violation');
+  });
+});
+
+describe('loadQualityProfile additional coverage', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-lqp-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('generates PATTERNS.md when QUALITY.md exists but PATTERNS.md does not', () => {
+    // Write QUALITY.md manually (so it won't be generated)
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Custom pattern
+
+## Anti-Patterns
+
+### General
+- Custom anti
+`);
+    // Verify PATTERNS.md does not exist yet
+    assert.ok(!patternsMdExists(tmpDir), 'PATTERNS.md should not exist before call');
+
+    loadQualityProfile(tmpDir);
+
+    assert.ok(patternsMdExists(tmpDir), 'PATTERNS.md should be created when QUALITY.md exists');
+    const patternsContent = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'context', 'PATTERNS.md'), 'utf-8');
+    assert.ok(patternsContent.includes('# Pattern Library'),
+      'generated PATTERNS.md should contain Pattern Library heading');
+  });
+
+  it('does not regenerate either file when both exist', () => {
+    const qualityContent = `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Existing quality pattern
+`;
+    const patternsContent = '# Pattern Library\n\n## Custom Section\nExisting patterns content.\n';
+
+    writeQualityMd(tmpDir, qualityContent);
+    writePatternsMd(tmpDir, patternsContent);
+
+    const qualityMtime = fs.statSync(
+      path.join(tmpDir, '.planning', 'context', 'QUALITY.md')).mtimeMs;
+    const patternsMtime = fs.statSync(
+      path.join(tmpDir, '.planning', 'context', 'PATTERNS.md')).mtimeMs;
+
+    loadQualityProfile(tmpDir);
+
+    const qualityAfter = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    const patternsAfter = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'context', 'PATTERNS.md'), 'utf-8');
+
+    assert.equal(qualityAfter, qualityContent, 'QUALITY.md content should not change');
+    assert.equal(patternsAfter, patternsContent, 'PATTERNS.md content should not change');
+  });
+});
+
+describe('_generateDefaultQualityMd framework coverage (via loadQualityProfile)', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-fw-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('includes Fastify framework patterns', () => {
+    const pkg = { name: 'test', dependencies: { fastify: '^4.0.0' } };
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg), 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### Fastify'), 'should have Fastify subsection heading');
+    assert.ok(content.includes('middleware') || content.includes('Validate'),
+      'should mention middleware or validation for Fastify');
+  });
+
+  it('includes Flask framework patterns', () => {
+    fs.writeFileSync(path.join(tmpDir, 'requirements.txt'), 'flask==2.3.0\n', 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### Flask'), 'should have Flask subsection heading');
+    assert.ok(content.includes('service layer') || content.includes('views') || content.includes('ORM'),
+      'should mention Flask-related patterns');
+  });
+
+  it('handles multiple frameworks simultaneously', () => {
+    const pkg = { name: 'test', dependencies: { react: '^18.0.0', express: '^4.0.0' } };
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg), 'utf-8');
+    loadQualityProfile(tmpDir);
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'context', 'QUALITY.md'), 'utf-8');
+    assert.ok(content.includes('### React'), 'should have React subsection heading');
+    assert.ok(content.includes('### Express'), 'should have Express subsection heading');
+  });
+});
+
+describe('checkQualityGates additional coverage', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-gates2-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('handles undefined artifacts parameter', () => {
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Write clean code
+
+## Anti-Patterns
+
+### General
+- eval()
+`);
+    let result;
+    assert.doesNotThrow(() => {
+      result = checkQualityGates(tmpDir, 'test-set', undefined);
+    }, 'should not throw with undefined artifacts');
+    assert.equal(result.passed, true, 'should return passed: true with undefined artifacts');
+    assert.deepEqual(result.violations, [], 'should have empty violations array');
+  });
+
+  it('outer try/catch returns passed:true on profile load failure', () => {
+    // Pass a path that does not exist and cannot be created (e.g., /dev/null/invalid)
+    // The outer try/catch in checkQualityGates should catch and return passed: true
+    let result;
+    assert.doesNotThrow(() => {
+      result = checkQualityGates('/dev/null/invalid/path', 'test-set', []);
+    }, 'should not throw on profile load failure');
+    assert.equal(result.passed, true, 'should return passed: true on profile load failure');
+    assert.deepEqual(result.violations, [], 'should return empty violations on profile load failure');
+  });
+});
+
+describe('buildQualityContext additional coverage', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-bqc2-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('includes content when only PATTERNS.md has content', () => {
+    // Write empty QUALITY.md but non-empty PATTERNS.md
+    writeQualityMd(tmpDir, '');
+    writePatternsMd(tmpDir, '# Pattern Library\n\n## Error Handling\n### Approved\n- Always handle errors\n');
+    const result = buildQualityContext(tmpDir, 'test-set');
+    assert.ok(result.includes('### Pattern Library'),
+      'should include Pattern Library section when only PATTERNS.md has content');
+    assert.ok(result.includes('Always handle errors'),
+      'should include PATTERNS.md content in output');
+  });
+
+  it('setName parameter does not appear in output', () => {
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Write clean code
+
+## Anti-Patterns
+
+### General
+- Avoid bad code
+`);
+    const uniqueSetName = 'UNIQUE_SET_NAME_THAT_SHOULD_NOT_APPEAR_12345';
+    const result = buildQualityContext(tmpDir, uniqueSetName);
+    assert.ok(!result.includes(uniqueSetName),
+      'setName should not be embedded in the output string');
+  });
+});
+
+describe('_formatDecisionsSection additional coverage (via buildQualityContext)', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = makeTmpDirWithMemory();
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  it('formats multiple decisions as separate bullets', () => {
+    appendDecision(tmpDir, {
+      category: 'convention',
+      decision: 'Use semicolons always',
+      rationale: 'clarity',
+      source: 'user',
+      topic: 'formatting',
+    });
+    appendDecision(tmpDir, {
+      category: 'convention',
+      decision: 'Prefer named exports',
+      rationale: 'discoverability',
+      source: 'user',
+      topic: 'modules',
+    });
+
+    const result = buildQualityContext(tmpDir, 'test-set');
+    assert.ok(result.includes('Use semicolons always'), 'should include first decision');
+    assert.ok(result.includes('Prefer named exports'), 'should include second decision');
+    // Each should be a separate bullet
+    const lines = result.split('\n');
+    const bulletLines = lines.filter(l => l.startsWith('- [convention/'));
+    assert.ok(bulletLines.length >= 2,
+      `should have at least 2 bullet lines with [convention/ tag, got ${bulletLines.length}`);
+  });
+
+  it('includes category/topic tag when topic is present', () => {
+    appendDecision(tmpDir, {
+      category: 'convention',
+      decision: 'Use strict mode',
+      rationale: 'safety',
+      source: 'user',
+      topic: 'javascript',
+    });
+
+    const result = buildQualityContext(tmpDir, 'test-set');
+    assert.ok(result.includes('[convention/javascript]'),
+      'should include [category/topic] format in output');
+  });
+});
+
+describe('DEFAULT_TOKEN_BUDGET export', () => {
+  it('equals 10000', () => {
+    assert.equal(DEFAULT_TOKEN_BUDGET, 10000,
+      'DEFAULT_TOKEN_BUDGET should be exported and equal 10000');
+  });
+});
+
+describe('_logViolationsToStderr (via checkQualityGates)', () => {
+  let tmpDir;
+  let tmpFiles = [];
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-quality-log-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'context'), { recursive: true });
+    tmpFiles = [];
+  });
+  afterEach(() => {
+    for (const f of tmpFiles) {
+      try { fs.rmSync(f, { force: true }); } catch (_e) { /* ignore */ }
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function makeTempFile(content, suffix = '.js') {
+    const p = path.join(os.tmpdir(), `rapid-qg-log-${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}`);
+    fs.writeFileSync(p, content, 'utf-8');
+    tmpFiles.push(p);
+    return p;
+  }
+
+  it('writes violation messages to stderr', () => {
+    writeQualityMd(tmpDir, `# Quality Profile
+
+## Approved Patterns
+
+### General
+- Write safe code
+
+## Anti-Patterns
+
+### General
+- eval()
+`);
+    const artifactPath = makeTempFile('const x = eval();\n');
+
+    // Intercept stderr to capture output
+    const stderrChunks = [];
+    const originalWrite = process.stderr.write;
+    process.stderr.write = function(chunk) {
+      stderrChunks.push(typeof chunk === 'string' ? chunk : chunk.toString());
+      return true;
+    };
+
+    try {
+      checkQualityGates(tmpDir, 'test-set', [artifactPath]);
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+
+    const stderrOutput = stderrChunks.join('');
+    assert.ok(stderrOutput.includes('[RAPID QUALITY]'),
+      'stderr should contain [RAPID QUALITY] prefix');
+    assert.ok(stderrOutput.includes('warning'),
+      'stderr should contain severity "warning"');
+    assert.ok(stderrOutput.includes('eval()'),
+      'stderr should mention the anti-pattern');
+    // Should include file path and line number in "file:line" format
+    assert.ok(stderrOutput.includes(':1'),
+      'stderr should include line number in file:line format');
   });
 });

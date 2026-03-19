@@ -157,6 +157,93 @@ describe('validateUiContract', () => {
       assert.strictEqual(typeof err, 'string', 'each error should be a string');
     }
   });
+
+  // --- NEW TESTS (1-10) ---
+
+  it('accepts contract with only layout section', () => {
+    const result = validateUiContract({
+      layout: { grid: { columns: 12, gutter: '16px' } },
+    });
+    assert.deepStrictEqual(result, { valid: true });
+  });
+
+  it('accepts contract with only interactions section', () => {
+    const result = validateUiContract({
+      interactions: { stateTransitions: ['idle -> loading'] },
+    });
+    assert.deepStrictEqual(result, { valid: true });
+  });
+
+  it('accepts contract with only components section', () => {
+    const result = validateUiContract({
+      components: [{ name: 'Widget', role: 'widget' }],
+    });
+    assert.deepStrictEqual(result, { valid: true });
+  });
+
+  it('rejects component missing required name field', () => {
+    const result = validateUiContract({
+      components: [{ role: 'page' }],
+    });
+    assert.strictEqual(result.valid, false);
+    assert.ok(
+      result.errors.some((e) => e.includes('name')),
+      'should mention missing name property'
+    );
+  });
+
+  it('rejects component missing required role field', () => {
+    const result = validateUiContract({
+      components: [{ name: 'Orphan' }],
+    });
+    assert.strictEqual(result.valid, false);
+    assert.ok(
+      result.errors.some((e) => e.includes('role')),
+      'should mention missing role property'
+    );
+  });
+
+  it('accepts empty components array', () => {
+    const result = validateUiContract({
+      tokens: { primary: '#000' },
+      components: [],
+    });
+    assert.deepStrictEqual(result, { valid: true });
+  });
+
+  it('rejects non-object input (null)', () => {
+    const result = validateUiContract(null);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.errors.length > 0, 'should have validation errors');
+  });
+
+  it('rejects non-object input (array)', () => {
+    const result = validateUiContract([{ tokens: {} }]);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.errors.length > 0, 'should have validation errors');
+  });
+
+  it('rejects interactions with unknown properties', () => {
+    const result = validateUiContract({
+      interactions: { stateTransitions: ['a -> b'], customField: true },
+    });
+    assert.strictEqual(result.valid, false);
+    assert.ok(
+      result.errors.some((e) => e.includes('additional properties')),
+      'should reject additional properties in interactions'
+    );
+  });
+
+  it('rejects layout with unknown properties', () => {
+    const result = validateUiContract({
+      layout: { grid: { columns: 12 }, unknownProp: 'bad' },
+    });
+    assert.strictEqual(result.valid, false);
+    assert.ok(
+      result.errors.some((e) => e.includes('additional properties')),
+      'should reject additional properties in layout'
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -273,6 +360,128 @@ describe('checkUiConsistency', () => {
     const result = checkUiConsistency(tmpDir);
     assert.strictEqual(result.consistent, false);
     assert.ok(result.conflicts.length > 1, `Expected >1 conflicts, got ${result.conflicts.length}`);
+  });
+
+  // --- NEW TESTS (11-19) ---
+
+  it('skips schema-invalid contracts (valid JSON, bad schema)', () => {
+    // set-a has a valid contract, set-b has valid JSON but fails schema
+    writeUiContract(tmpDir, 'set-a', { tokens: { primary: '#3B82F6' } });
+    writeUiContract(tmpDir, 'set-b', { unknownKey: 'not-in-schema' });
+    const result = checkUiConsistency(tmpDir);
+    // set-b is skipped due to schema failure, so no conflicts
+    assert.strictEqual(result.consistent, true);
+    assert.deepStrictEqual(result.conflicts, []);
+  });
+
+  it('detects grid.columns conflicts across sets', () => {
+    writeUiContract(tmpDir, 'set-a', {
+      layout: { grid: { columns: 12 } },
+    });
+    writeUiContract(tmpDir, 'set-b', {
+      layout: { grid: { columns: 16 } },
+    });
+    const result = checkUiConsistency(tmpDir);
+    assert.strictEqual(result.consistent, false);
+    const conflict = result.conflicts.find((c) => c.key === 'grid.columns');
+    assert.ok(conflict, 'should have a grid.columns conflict');
+    assert.strictEqual(conflict.type, 'layout');
+    assert.ok(conflict.sets.includes('set-a'));
+    assert.ok(conflict.sets.includes('set-b'));
+  });
+
+  it('detects grid.gutter conflicts across sets', () => {
+    writeUiContract(tmpDir, 'set-a', {
+      layout: { grid: { gutter: '24px' } },
+    });
+    writeUiContract(tmpDir, 'set-b', {
+      layout: { grid: { gutter: '16px' } },
+    });
+    const result = checkUiConsistency(tmpDir);
+    assert.strictEqual(result.consistent, false);
+    const conflict = result.conflicts.find((c) => c.key === 'grid.gutter');
+    assert.ok(conflict, 'should have a grid.gutter conflict');
+    assert.strictEqual(conflict.type, 'layout');
+  });
+
+  it('no conflict when same component name has same role across sets', () => {
+    writeUiContract(tmpDir, 'set-a', {
+      components: [{ name: 'Header', role: 'layout' }],
+    });
+    writeUiContract(tmpDir, 'set-b', {
+      components: [{ name: 'Header', role: 'layout' }],
+    });
+    const result = checkUiConsistency(tmpDir);
+    assert.strictEqual(result.consistent, true);
+    assert.deepStrictEqual(result.conflicts, []);
+  });
+
+  it('no conflict when same token has same value across sets', () => {
+    writeUiContract(tmpDir, 'set-a', { tokens: { primary: '#3B82F6' } });
+    writeUiContract(tmpDir, 'set-b', { tokens: { primary: '#3B82F6' } });
+    const result = checkUiConsistency(tmpDir);
+    assert.strictEqual(result.consistent, true);
+    assert.deepStrictEqual(result.conflicts, []);
+  });
+
+  it('no conflict when tone matches case-insensitively across sets', () => {
+    writeUiContract(tmpDir, 'set-a', {
+      guidelines: { tone: 'Professional' },
+    });
+    writeUiContract(tmpDir, 'set-b', {
+      guidelines: { tone: 'professional' },
+    });
+    const result = checkUiConsistency(tmpDir);
+    // Tone comparison is case-insensitive, so these should not conflict
+    assert.strictEqual(result.consistent, true);
+    assert.deepStrictEqual(result.conflicts, []);
+  });
+
+  it('detects nested child component role conflicts across sets', () => {
+    // set-a has "Sidebar" as a child of Dashboard with role "layout"
+    writeUiContract(tmpDir, 'set-a', {
+      components: [
+        {
+          name: 'Dashboard',
+          role: 'page',
+          children: [{ name: 'Sidebar', role: 'layout' }],
+        },
+      ],
+    });
+    // set-b has "Sidebar" at top level with role "widget"
+    writeUiContract(tmpDir, 'set-b', {
+      components: [{ name: 'Sidebar', role: 'widget' }],
+    });
+    const result = checkUiConsistency(tmpDir);
+    assert.strictEqual(result.consistent, false);
+    const conflict = result.conflicts.find(
+      (c) => c.type === 'component' && c.key === 'Sidebar'
+    );
+    assert.ok(conflict, 'should detect child vs top-level component conflict');
+    assert.ok(conflict.details.includes('layout'), 'should mention layout role');
+    assert.ok(conflict.details.includes('widget'), 'should mention widget role');
+  });
+
+  it('handles three sets with pairwise conflicts', () => {
+    writeUiContract(tmpDir, 'set-a', { tokens: { primary: '#AAA' } });
+    writeUiContract(tmpDir, 'set-b', { tokens: { primary: '#BBB' } });
+    writeUiContract(tmpDir, 'set-c', { tokens: { primary: '#CCC' } });
+    const result = checkUiConsistency(tmpDir);
+    assert.strictEqual(result.consistent, false);
+    // Three sets with different values -> 3 pairwise conflicts (a-b, a-c, b-c)
+    const tokenConflicts = result.conflicts.filter((c) => c.type === 'token');
+    assert.strictEqual(tokenConflicts.length, 3, 'should have 3 pairwise token conflicts');
+  });
+
+  it('handles contracts with missing optional sections gracefully', () => {
+    // set-a has only tokens, set-b has only components -- no overlapping sections
+    writeUiContract(tmpDir, 'set-a', { tokens: { primary: '#3B82F6' } });
+    writeUiContract(tmpDir, 'set-b', {
+      components: [{ name: 'Widget', role: 'widget' }],
+    });
+    const result = checkUiConsistency(tmpDir);
+    assert.strictEqual(result.consistent, true);
+    assert.deepStrictEqual(result.conflicts, []);
   });
 });
 
@@ -411,5 +620,149 @@ describe('buildUiContext', () => {
       result.includes('[...truncated to fit token budget]'),
       'should include truncation notice'
     );
+  });
+
+  // --- NEW TESTS (20-24) ---
+
+  it('includes layout section with grid, breakpoints, containerWidths, responsive', () => {
+    writeUiContract(tmpDir, 'layout-set', {
+      layout: {
+        grid: { columns: 12, gutter: '24px' },
+        breakpoints: { sm: '640px', md: '768px', lg: '1024px' },
+        containerWidths: { sm: '100%', lg: '1200px' },
+        responsive: ['Stack columns on mobile', 'Hide sidebar below md'],
+      },
+    });
+    const result = buildUiContext(tmpDir, 'layout-set');
+    assert.ok(result.includes('### Layout'), 'should have layout section');
+    assert.ok(result.includes('**Grid Columns:** 12'), 'should include grid columns');
+    assert.ok(result.includes('**Grid Gutter:** 24px'), 'should include grid gutter');
+    assert.ok(result.includes('**Breakpoints:**'), 'should include breakpoints heading');
+    assert.ok(result.includes('sm: 640px'), 'should include sm breakpoint');
+    assert.ok(result.includes('md: 768px'), 'should include md breakpoint');
+    assert.ok(result.includes('lg: 1024px'), 'should include lg breakpoint');
+    assert.ok(result.includes('**Container Widths:**'), 'should include container widths heading');
+    assert.ok(result.includes('sm: 100%'), 'should include sm container width');
+    assert.ok(result.includes('lg: 1200px'), 'should include lg container width');
+    assert.ok(result.includes('**Responsive Rules:**'), 'should include responsive heading');
+    assert.ok(result.includes('Stack columns on mobile'), 'should include first responsive rule');
+    assert.ok(result.includes('Hide sidebar below md'), 'should include second responsive rule');
+  });
+
+  it('includes interactions section with all sub-fields', () => {
+    writeUiContract(tmpDir, 'ix-set', {
+      interactions: {
+        stateTransitions: ['idle -> loading -> done'],
+        animations: ['fade-in 200ms ease'],
+        loadingPatterns: ['skeleton screens'],
+        errorStates: ['inline error below input'],
+        accessibility: ['aria-live for dynamic content'],
+      },
+    });
+    const result = buildUiContext(tmpDir, 'ix-set');
+    assert.ok(result.includes('### Interactions'), 'should have interactions section');
+    assert.ok(result.includes('**State Transitions:**'), 'should have state transitions');
+    assert.ok(result.includes('idle -> loading -> done'), 'should include transition text');
+    assert.ok(result.includes('**Animations:**'), 'should have animations');
+    assert.ok(result.includes('fade-in 200ms ease'), 'should include animation text');
+    assert.ok(result.includes('**Loading Patterns:**'), 'should have loading patterns');
+    assert.ok(result.includes('skeleton screens'), 'should include loading pattern text');
+    assert.ok(result.includes('**Error States:**'), 'should have error states');
+    assert.ok(result.includes('inline error below input'), 'should include error state text');
+    assert.ok(result.includes('**Accessibility:**'), 'should have accessibility');
+    assert.ok(result.includes('aria-live for dynamic content'), 'should include accessibility text');
+  });
+
+  it('handles guidelines with empty fontFamilies and visualIdentity arrays', () => {
+    writeUiContract(tmpDir, 'empty-arr-set', {
+      guidelines: {
+        tone: 'Minimal',
+        fontFamilies: [],
+        visualIdentity: [],
+      },
+    });
+    const result = buildUiContext(tmpDir, 'empty-arr-set');
+    assert.ok(result.includes('### Guidelines'), 'should have guidelines section');
+    assert.ok(result.includes('**Tone:** Minimal'), 'should include tone');
+    // Empty arrays should not produce Font Families or list items
+    assert.ok(!result.includes('**Font Families:**'), 'should not include font families when array is empty');
+    // No visual identity items
+    const lines = result.split('\n');
+    const guidelinesIdx = lines.findIndex((l) => l.includes('### Guidelines'));
+    // Only the tone line should appear after the guidelines header (before next section or end)
+    const guidelineLines = [];
+    for (let i = guidelinesIdx + 1; i < lines.length; i++) {
+      if (lines[i].startsWith('###') || lines[i].startsWith('## ')) break;
+      if (lines[i].trim()) guidelineLines.push(lines[i]);
+    }
+    assert.strictEqual(guidelineLines.length, 1, 'should only have the tone line in guidelines');
+  });
+
+  it('renders full contract with all sections in correct priority order', () => {
+    writeUiContract(tmpDir, 'full-set', makeValidComplete());
+    const result = buildUiContext(tmpDir, 'full-set');
+    // Check all sections exist
+    assert.ok(result.includes('### Guidelines'), 'should have guidelines');
+    assert.ok(result.includes('### Design Tokens'), 'should have tokens');
+    assert.ok(result.includes('### Components'), 'should have components');
+    assert.ok(result.includes('### Layout'), 'should have layout');
+    assert.ok(result.includes('### Interactions'), 'should have interactions');
+    // Verify priority order: Guidelines > Tokens > Components > Layout > Interactions
+    const gIdx = result.indexOf('### Guidelines');
+    const tIdx = result.indexOf('### Design Tokens');
+    const cIdx = result.indexOf('### Components');
+    const lIdx = result.indexOf('### Layout');
+    const iIdx = result.indexOf('### Interactions');
+    assert.ok(gIdx < tIdx, 'Guidelines should come before Tokens');
+    assert.ok(tIdx < cIdx, 'Tokens should come before Components');
+    assert.ok(cIdx < lIdx, 'Components should come before Layout');
+    assert.ok(lIdx < iIdx, 'Layout should come before Interactions');
+  });
+
+  it('formats deeply nested component tree (3+ levels) with increasing indentation', () => {
+    writeUiContract(tmpDir, 'deep-set', {
+      components: [
+        {
+          name: 'App',
+          role: 'page',
+          children: [
+            {
+              name: 'MainLayout',
+              role: 'layout',
+              children: [
+                {
+                  name: 'ContentArea',
+                  role: 'layout',
+                  children: [
+                    { name: 'Card', role: 'widget' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const result = buildUiContext(tmpDir, 'deep-set');
+    const lines = result.split('\n');
+
+    const appLine = lines.find((l) => l.includes('**App**'));
+    const mainLayoutLine = lines.find((l) => l.includes('**MainLayout**'));
+    const contentAreaLine = lines.find((l) => l.includes('**ContentArea**'));
+    const cardLine = lines.find((l) => l.includes('**Card**'));
+
+    assert.ok(appLine, 'should find App line');
+    assert.ok(mainLayoutLine, 'should find MainLayout line');
+    assert.ok(contentAreaLine, 'should find ContentArea line');
+    assert.ok(cardLine, 'should find Card line');
+
+    const appIndent = appLine.match(/^(\s*)/)[1].length;
+    const mainLayoutIndent = mainLayoutLine.match(/^(\s*)/)[1].length;
+    const contentAreaIndent = contentAreaLine.match(/^(\s*)/)[1].length;
+    const cardIndent = cardLine.match(/^(\s*)/)[1].length;
+
+    assert.ok(mainLayoutIndent > appIndent, 'MainLayout should be indented more than App');
+    assert.ok(contentAreaIndent > mainLayoutIndent, 'ContentArea should be indented more than MainLayout');
+    assert.ok(cardIndent > contentAreaIndent, 'Card should be indented more than ContentArea');
   });
 });

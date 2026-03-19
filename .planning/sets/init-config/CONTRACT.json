@@ -1,0 +1,54 @@
+{
+  "setId": "init-config",
+  "version": "1.0.0",
+  "exports": {
+    "definition-md-generation": {
+      "type": "file",
+      "signature": "skills/init/SKILL.md :: DEFINITION.md generation step",
+      "description": "Init skill generates DEFINITION.md for each set alongside CONTRACT.json"
+    },
+    "graceful-loadset": {
+      "type": "function",
+      "signature": "loadSet(cwd, setId): { definition: SetDefinition | null, contract }",
+      "description": "loadSet() gracefully handles missing DEFINITION.md with warning instead of ENOENT"
+    },
+    "solo-config-field": {
+      "type": "file",
+      "signature": ".planning/config.json :: { solo: boolean }",
+      "description": "Project-wide solo mode config; start-set uses solo mode when true"
+    },
+    "worktree-package-install": {
+      "type": "function",
+      "signature": "createWorktree(projectRoot, setId, branch, options?): WorktreeResult",
+      "description": "createWorktree() detects package manager and installs dependencies"
+    },
+    "auto-commit-after-init": {
+      "type": "file",
+      "signature": "skills/init/SKILL.md :: post-init commit step",
+      "description": "Init auto-commits all generated planning artifacts (ROADMAP.md, STATE.json, contracts, definitions)"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "definition-md-always-created": {
+      "description": "After init, every set directory contains both CONTRACT.json and DEFINITION.md",
+      "enforced_by": "test"
+    },
+    "loadset-never-throws-enoent": {
+      "description": "loadSet() never throws ENOENT for DEFINITION.md; returns null definition with warning",
+      "enforced_by": "test"
+    },
+    "solo-config-respected": {
+      "description": "When config.json has solo: true, start-set behaves as if --solo was passed",
+      "enforced_by": "test"
+    },
+    "worktree-deps-available": {
+      "description": "After createWorktree(), tests can import all project dependencies",
+      "enforced_by": "test"
+    },
+    "init-auto-commits": {
+      "description": "After init completes, all generated planning artifacts are committed automatically",
+      "enforced_by": "test"
+    }
+  }
+}

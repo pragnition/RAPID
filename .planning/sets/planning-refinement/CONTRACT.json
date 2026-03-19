@@ -1,0 +1,32 @@
+{
+  "setId": "planning-refinement",
+  "version": "1.0.0",
+  "exports": {
+    "ux-gray-area-category": {
+      "type": "file",
+      "signature": "skills/discuss-set/SKILL.md :: UI/UX gray area section",
+      "description": "discuss-set surfaces UI/UX as a gray area category for sets with user-facing components"
+    },
+    "ux-plan-template-section": {
+      "type": "file",
+      "signature": "skills/plan-set/SKILL.md :: UI/UX section in wave template",
+      "description": "plan-set wave template includes optional UI/UX consideration prompts"
+    },
+    "auto-detect-post-merge-review": {
+      "type": "file",
+      "signature": "skills/{unit-test,bug-hunt,uat}/SKILL.md :: Step 1 path resolution",
+      "description": "Downstream review skills auto-detect post-merge mode by checking both paths"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "ux-surfaced-when-relevant": {
+      "description": "When a set's context mentions user-facing components, discuss-set includes UI/UX gray areas",
+      "enforced_by": "test"
+    },
+    "review-path-auto-detection": {
+      "description": "unit-test, bug-hunt, uat skills find REVIEW-SCOPE.md without --post-merge flag via path fallback",
+      "enforced_by": "test"
+    }
+  }
+}

@@ -1,33 +1,24 @@
 {
   "nodes": [
-    { "id": "status-rename", "wave": 0, "status": "pending" },
-    { "id": "command-cleanup", "wave": 0, "status": "pending" },
-    { "id": "install-version", "wave": 0, "status": "pending" },
-    { "id": "parallel-waves", "wave": 1, "status": "pending" }
+    { "id": "state-execution", "wave": 0, "status": "complete" },
+    { "id": "agent-prompts", "wave": 0, "status": "pending" },
+    { "id": "init-config", "wave": 0, "status": "pending" },
+    { "id": "planning-refinement", "wave": 0, "status": "pending" }
   ],
-  "edges": [
-    { "from": "status-rename", "to": "parallel-waves" }
-  ],
+  "edges": [],
   "waves": {
     "0": {
-      "sets": ["status-rename", "command-cleanup", "install-version"],
+      "sets": ["state-execution", "agent-prompts", "init-config", "planning-refinement"],
       "checkpoint": {
-        "contracts": ["rapid://contracts/status-rename", "rapid://contracts/command-cleanup", "rapid://contracts/install-version"],
-        "artifacts": [".planning/sets/status-rename/CONTRACT.json", ".planning/sets/command-cleanup/CONTRACT.json", ".planning/sets/install-version/CONTRACT.json"]
-      }
-    },
-    "1": {
-      "sets": ["parallel-waves"],
-      "checkpoint": {
-        "contracts": ["rapid://contracts/parallel-waves"],
-        "artifacts": [".planning/sets/parallel-waves/CONTRACT.json"]
+        "contracts": ["rapid://contracts/state-execution", "rapid://contracts/agent-prompts", "rapid://contracts/init-config", "rapid://contracts/planning-refinement"],
+        "artifacts": [".planning/sets/state-execution/CONTRACT.json", ".planning/sets/agent-prompts/CONTRACT.json", ".planning/sets/init-config/CONTRACT.json", ".planning/sets/planning-refinement/CONTRACT.json"]
       }
     }
   },
   "metadata": {
-    "created": "2026-03-14",
+    "created": "2026-03-18",
     "totalSets": 4,
-    "totalWaves": 2,
-    "maxParallelism": 3
+    "totalWaves": 1,
+    "maxParallelism": 4
   }
 }

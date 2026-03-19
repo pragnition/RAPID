@@ -587,3 +587,385 @@ describe('lazy init invariant', () => {
     assert.ok(!fs.existsSync(memDir), 'memory dir should not exist after buildMemoryContext');
   });
 });
+
+// ===========================================================================
+// NEW TESTS -- Approved test plan for context-management concern
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// appendDecision -- null and non-object entry validation
+// ---------------------------------------------------------------------------
+describe('appendDecision - entry validation edge cases', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  // BEHAVIOR: appendDecision must reject null entry with 'entry must be an object'
+  // GUARDS AGAINST: null passing the typeof check (typeof null === 'object')
+  // but the code uses !entry || typeof entry !== 'object' which catches null
+  it('appendDecision throws on null entry', () => {
+    assert.throws(
+      () => appendDecision(tmpDir, null),
+      /entry must be an object/,
+    );
+  });
+
+  // BEHAVIOR: appendDecision must reject string entry with 'entry must be an object'
+  // GUARDS AGAINST: Callers passing serialized JSON strings instead of objects
+  it('appendDecision throws on non-object entry (string)', () => {
+    assert.throws(
+      () => appendDecision(tmpDir, 'not an object'),
+      /entry must be an object/,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// appendCorrection -- validation edge cases
+// ---------------------------------------------------------------------------
+describe('appendCorrection - validation edge cases', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  // BEHAVIOR: appendCorrection must reject null entry with 'entry must be an object'
+  // GUARDS AGAINST: null passing typeof check
+  it('appendCorrection throws on null entry', () => {
+    assert.throws(
+      () => appendCorrection(tmpDir, null),
+      /entry must be an object/,
+    );
+  });
+
+  // BEHAVIOR: appendCorrection must reject entry missing the correction field
+  // GUARDS AGAINST: Partial entries being silently accepted and written to JSONL
+  it('appendCorrection throws on missing correction field', () => {
+    assert.throws(
+      () => appendCorrection(tmpDir, {
+        original: 'Some original',
+        reason: 'Some reason',
+      }),
+      /correction is required/,
+    );
+  });
+
+  // BEHAVIOR: appendCorrection must reject entry missing the reason field
+  // GUARDS AGAINST: Corrections without rationale being persisted
+  it('appendCorrection throws on missing reason field', () => {
+    assert.throws(
+      () => appendCorrection(tmpDir, {
+        original: 'Some original',
+        correction: 'Some correction',
+      }),
+      /reason is required/,
+    );
+  });
+
+  // BEHAVIOR: appendCorrection should include optional milestone and setId
+  // when they are provided in the entry
+  // GUARDS AGAINST: Optional fields being silently dropped during record creation
+  it('appendCorrection includes optional milestone and setId when provided', () => {
+    const record = appendCorrection(tmpDir, validCorrectionEntry({
+      milestone: 'v3.5.0',
+      setId: 'agent-prompts',
+    }));
+
+    assert.equal(record.milestone, 'v3.5.0');
+    assert.equal(record.setId, 'agent-prompts');
+
+    // Verify it was actually persisted to disk
+    const filePath = path.join(tmpDir, '.planning', 'memory', 'CORRECTIONS.jsonl');
+    const content = fs.readFileSync(filePath, 'utf-8').trim();
+    const parsed = JSON.parse(content);
+    assert.equal(parsed.milestone, 'v3.5.0');
+    assert.equal(parsed.setId, 'agent-prompts');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// queryDecisions -- combined filters
+// ---------------------------------------------------------------------------
+describe('queryDecisions - combined filters', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  // BEHAVIOR: queryDecisions should apply both category and setId filters together
+  // GUARDS AGAINST: Filters being applied as OR instead of AND, returning too many results
+  it('queryDecisions applies combined filters (category + setId)', () => {
+    appendDecision(tmpDir, validDecisionEntry({
+      category: 'architecture',
+      setId: 'memory-system',
+      decision: 'Match both',
+    }));
+    appendDecision(tmpDir, validDecisionEntry({
+      category: 'architecture',
+      setId: 'hooks-system',
+      decision: 'Match category only',
+    }));
+    appendDecision(tmpDir, validDecisionEntry({
+      category: 'testing',
+      setId: 'memory-system',
+      decision: 'Match setId only',
+    }));
+    appendDecision(tmpDir, validDecisionEntry({
+      category: 'testing',
+      setId: 'hooks-system',
+      decision: 'Match neither',
+    }));
+
+    const results = queryDecisions(tmpDir, { category: 'architecture', setId: 'memory-system' });
+    assert.equal(results.length, 1);
+    assert.equal(results[0].decision, 'Match both');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// queryCorrections -- additional filter tests
+// ---------------------------------------------------------------------------
+describe('queryCorrections - additional filters', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  // BEHAVIOR: queryCorrections should filter by setId field
+  // GUARDS AGAINST: setId filter being ignored or filtering by wrong field
+  it('queryCorrections filters by setId', () => {
+    appendCorrection(tmpDir, validCorrectionEntry({
+      original: 'A',
+      setId: 'memory-system',
+    }));
+    appendCorrection(tmpDir, validCorrectionEntry({
+      original: 'B',
+      setId: 'hooks-system',
+    }));
+    appendCorrection(tmpDir, validCorrectionEntry({
+      original: 'C',
+      setId: 'memory-system',
+    }));
+
+    const results = queryCorrections(tmpDir, { setId: 'memory-system' });
+    assert.equal(results.length, 2);
+    const originals = results.map((r) => r.original);
+    assert.ok(originals.includes('A'));
+    assert.ok(originals.includes('C'));
+  });
+
+  // BEHAVIOR: queryCorrections should return entries sorted by timestamp descending
+  // (later timestamps first)
+  // GUARDS AGAINST: Results being returned in insertion order instead of recency order
+  it('queryCorrections returns sorted by timestamp descending', () => {
+    // Write entries with controlled timestamps
+    const memDir = path.join(tmpDir, '.planning', 'memory');
+    fs.mkdirSync(memDir, { recursive: true });
+    const filePath = path.join(memDir, 'CORRECTIONS.jsonl');
+
+    const earlyRecord = {
+      id: 'early-id',
+      timestamp: '2024-01-01T00:00:00.000Z',
+      original: 'Early',
+      correction: 'Early fix',
+      reason: 'Early reason',
+      affectedSets: [],
+      setId: null,
+      milestone: null,
+    };
+    const lateRecord = {
+      id: 'late-id',
+      timestamp: '2025-06-01T00:00:00.000Z',
+      original: 'Late',
+      correction: 'Late fix',
+      reason: 'Late reason',
+      affectedSets: [],
+      setId: null,
+      milestone: null,
+    };
+
+    // Write early first, then late
+    fs.writeFileSync(filePath, JSON.stringify(earlyRecord) + '\n');
+    fs.appendFileSync(filePath, JSON.stringify(lateRecord) + '\n');
+
+    const results = queryCorrections(tmpDir);
+    assert.equal(results.length, 2);
+    // Late should come first (descending)
+    assert.equal(results[0].original, 'Late');
+    assert.equal(results[1].original, 'Early');
+    assert.ok(results[0].timestamp > results[1].timestamp);
+  });
+
+  // BEHAVIOR: queryCorrections should apply both affectedSet and limit filters together
+  // GUARDS AGAINST: Limit being applied before filtering (wrong order) or filters being
+  // applied as OR instead of AND
+  it('queryCorrections applies combined filters (affectedSet + limit)', () => {
+    for (let i = 0; i < 5; i++) {
+      appendCorrection(tmpDir, validCorrectionEntry({
+        original: `Targeted ${i}`,
+        affectedSets: ['target-set'],
+      }));
+    }
+    // Add some that don't match the affectedSet filter
+    for (let i = 0; i < 3; i++) {
+      appendCorrection(tmpDir, validCorrectionEntry({
+        original: `Other ${i}`,
+        affectedSets: ['other-set'],
+      }));
+    }
+
+    const results = queryCorrections(tmpDir, { affectedSet: 'target-set', limit: 2 });
+    assert.equal(results.length, 2);
+    // All results should be for target-set
+    for (const r of results) {
+      assert.ok(r.original.startsWith('Targeted'));
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildMemoryContext -- edge cases
+// ---------------------------------------------------------------------------
+describe('buildMemoryContext - context-management edge cases', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  // BEHAVIOR: When setName is null, buildMemoryContext should skip set-specific
+  // corrections query (no affectedSet filter) and only show global corrections
+  // GUARDS AGAINST: Null setName causing a crash in the affectedSet filter
+  it('buildMemoryContext with null setName skips set-specific corrections', () => {
+    appendCorrection(tmpDir, validCorrectionEntry({
+      original: 'Global issue',
+      correction: 'Global fix',
+      reason: 'Applies everywhere',
+      affectedSets: ['some-set'],
+    }));
+    appendCorrection(tmpDir, validCorrectionEntry({
+      original: 'Another issue',
+      correction: 'Another fix',
+      reason: 'Also global',
+      affectedSets: [],
+    }));
+
+    // null setName -- setCorrections will be [], only globalCorrections used
+    const result = buildMemoryContext(tmpDir, null);
+    assert.ok(result.includes('### Corrections'));
+    // Both corrections should appear (both are in globalCorrections)
+    assert.ok(result.includes('Global issue'));
+    assert.ok(result.includes('Another issue'));
+  });
+
+  // BEHAVIOR: When only decisions exist (no corrections), the corrections
+  // section should show "(no corrections recorded)"
+  // GUARDS AGAINST: Missing placeholder text or section being omitted entirely
+  it('buildMemoryContext shows "(no corrections recorded)" when only decisions exist', () => {
+    appendDecision(tmpDir, validDecisionEntry({ decision: 'Some decision' }));
+
+    const result = buildMemoryContext(tmpDir, 'test-set');
+    assert.ok(result.includes('(no corrections recorded)'),
+      'Should show placeholder for empty corrections section');
+    assert.ok(result.includes('### Decisions'));
+    assert.ok(result.includes('Some decision'));
+  });
+
+  // BEHAVIOR: When only corrections exist (no decisions), the decisions
+  // section should show "(no decisions recorded)"
+  // GUARDS AGAINST: Missing placeholder text or section being omitted entirely
+  it('buildMemoryContext shows "(no decisions recorded)" when only corrections exist', () => {
+    appendCorrection(tmpDir, validCorrectionEntry({
+      original: 'Some original',
+      correction: 'Some correction',
+      reason: 'Some reason',
+    }));
+
+    const result = buildMemoryContext(tmpDir, 'test-set');
+    assert.ok(result.includes('(no decisions recorded)'),
+      'Should show placeholder for empty decisions section');
+    assert.ok(result.includes('### Corrections'));
+    assert.ok(result.includes('Some correction'));
+  });
+
+  // BEHAVIOR: Decisions with the same category but null topic should be
+  // deduplicated together -- category::'' is the dedup key for null topics.
+  // When two entries share the same category and both have null topics,
+  // the latest one wins and the older is marked superseded.
+  // GUARDS AGAINST: Null topic creating unique keys per entry (no dedup)
+  it('buildMemoryContext deduplicates entries with null topic on same category', () => {
+    const memDir = path.join(tmpDir, '.planning', 'memory');
+    fs.mkdirSync(memDir, { recursive: true });
+    const filePath = path.join(memDir, 'DECISIONS.jsonl');
+
+    const olderRecord = {
+      id: 'old-null-topic',
+      timestamp: '2024-01-01T00:00:00.000Z',
+      category: 'convention',
+      decision: 'Old convention decision',
+      rationale: 'Old reason',
+      source: 'user',
+      milestone: null,
+      setId: null,
+      topic: null,
+    };
+    const newerRecord = {
+      id: 'new-null-topic',
+      timestamp: '2025-06-01T00:00:00.000Z',
+      category: 'convention',
+      decision: 'New convention decision',
+      rationale: 'New reason',
+      source: 'user',
+      milestone: null,
+      setId: null,
+      topic: null,
+    };
+
+    fs.writeFileSync(filePath, JSON.stringify(olderRecord) + '\n');
+    fs.appendFileSync(filePath, JSON.stringify(newerRecord) + '\n');
+
+    const result = buildMemoryContext(tmpDir, 'test-set', 10000);
+    // Newer should appear without [superseded]
+    assert.ok(result.includes('New convention decision'));
+    // If old appears, it should be marked superseded
+    if (result.includes('Old convention decision')) {
+      assert.ok(result.includes('[superseded]'),
+        'Old entry with same category+null topic should be marked [superseded]');
+    }
+  });
+
+  // BEHAVIOR: The correction section has its own independent token budget
+  // (30% of total budget by default). When corrections exceed this budget,
+  // they should be truncated independently of the decisions section.
+  // GUARDS AGAINST: Correction and decision budgets bleeding into each other,
+  // or corrections consuming the entire budget
+  it('buildMemoryContext respects correction token budget independently', () => {
+    // Add a few decisions (small)
+    appendDecision(tmpDir, validDecisionEntry({
+      decision: 'Keep it simple',
+      rationale: 'KISS principle',
+    }));
+
+    // Add many corrections to exceed the correction budget
+    // With budget=200, correction budget = 200 * 0.3 = 60 tokens
+    for (let i = 0; i < 30; i++) {
+      appendCorrection(tmpDir, validCorrectionEntry({
+        original: `Original problem number ${i} that is quite lengthy to consume tokens`,
+        correction: `Corrected approach number ${i} with detailed explanation`,
+        reason: `Reason number ${i} explaining why this correction is needed`,
+      }));
+    }
+
+    const tinyBudget = 200; // 200 tokens total, 60 tokens for corrections
+    const result = buildMemoryContext(tmpDir, 'test-set', tinyBudget);
+
+    // Count correction lines (each starts with "- Original:")
+    const correctionLines = result.split('\n').filter(
+      (line) => line.startsWith('- Original:'),
+    );
+
+    // Should have some corrections but not all 30 (budget limits them)
+    assert.ok(correctionLines.length > 0, 'Should include at least one correction');
+    assert.ok(correctionLines.length < 30,
+      `Should truncate corrections (got ${correctionLines.length} of 30)`);
+
+    // Decision should still appear (it has its own budget)
+    assert.ok(result.includes('Keep it simple'),
+      'Decision should appear despite correction budget exhaustion');
+  });
+});
