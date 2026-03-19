@@ -188,12 +188,12 @@
       "sets": [
         {
           "id": "state-execution",
-          "status": "discussed",
+          "status": "merged",
           "waves": []
         },
         {
           "id": "agent-prompts",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         },
         {
@@ -209,6 +209,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-18T11:21:00.793Z",
+  "lastUpdatedAt": "2026-03-19T01:16:07.436Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
