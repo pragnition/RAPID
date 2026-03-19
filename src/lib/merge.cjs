@@ -1577,8 +1577,10 @@ function parseReviewVerdict(setDir) {
  * @returns {string[][]}
  */
 function getMergeOrder(cwd) {
-  const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
-  const dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+  const { dag: dagJson, path: dagPath } = dag.tryLoadDAG(cwd);
+  if (!dagJson) {
+    throw new Error(`DAG.json not found at ${dagPath}. Run /rapid:plan first to create sets and DAG.`);
+  }
   return dag.getExecutionOrder(dagJson);
 }
 
@@ -2004,11 +2006,8 @@ function revertSetMerge(cwd, setId) {
  */
 function detectCascadeImpact(cwd, setId) {
   // Read DAG.json
-  const dagPath = path.join(cwd, '.planning', 'DAG.json');
-  let dagData;
-  try {
-    dagData = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
-  } catch {
+  const { dag: dagData } = dag.tryLoadDAG(cwd);
+  if (!dagData) {
     return { hasCascade: false, affectedSets: [], recommendation: 'No DAG.json found -- cannot assess cascade impact' };
   }
 
