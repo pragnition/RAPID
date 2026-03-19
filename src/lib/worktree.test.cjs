@@ -128,6 +128,58 @@ describe('ensureWorktreeDir', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// detectPackageManager tests
+// ────────────────────────────────────────────────────────────────
+describe('detectPackageManager', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-pm-detect-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns npm with npm ci for package-lock.json', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}');
+    fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
+    const result = worktree.detectPackageManager(tmpDir);
+    assert.equal(result.manager, 'npm');
+    assert.equal(result.command, 'npm ci');
+  });
+
+  it('returns pnpm for pnpm-lock.yaml', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}');
+    fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '');
+    const result = worktree.detectPackageManager(tmpDir);
+    assert.equal(result.manager, 'pnpm');
+    assert.equal(result.command, 'pnpm install');
+  });
+
+  it('returns yarn for yarn.lock', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}');
+    fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '');
+    const result = worktree.detectPackageManager(tmpDir);
+    assert.equal(result.manager, 'yarn');
+    assert.equal(result.command, 'yarn install');
+  });
+
+  it('returns npm with npm install for package.json only (no lockfile)', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}');
+    const result = worktree.detectPackageManager(tmpDir);
+    assert.equal(result.manager, 'npm');
+    assert.equal(result.command, 'npm install');
+  });
+
+  it('returns null for no package.json', () => {
+    const result = worktree.detectPackageManager(tmpDir);
+    assert.equal(result.manager, null);
+    assert.equal(result.command, null);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // createWorktree tests
 // ────────────────────────────────────────────────────────────────
 describe('createWorktree', () => {
@@ -151,6 +203,17 @@ describe('createWorktree', () => {
   it('throws when branch already exists', () => {
     worktree.createWorktree(tmpDir, 'dup-set');
     assert.throws(() => worktree.createWorktree(tmpDir, 'dup-set'), /already exists/);
+  });
+
+  it('returns depsInstalled: false when no package.json exists', () => {
+    const result = worktree.createWorktree(tmpDir, 'no-deps-set');
+    assert.equal(result.depsInstalled, false);
+  });
+
+  it('returns depsInstalled field in result', () => {
+    const result = worktree.createWorktree(tmpDir, 'deps-field-set');
+    assert.equal(typeof result.depsInstalled, 'boolean');
+    assert.ok('depsInstalled' in result, 'result should have depsInstalled field');
   });
 });
 

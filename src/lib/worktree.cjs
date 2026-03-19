@@ -62,11 +62,25 @@ function ensureWorktreeDir(projectRoot) {
 }
 
 /**
+ * Detect the package manager used in a directory by checking for lockfiles.
+ *
+ * @param {string} dir - Directory to check
+ * @returns {{ manager: string|null, command: string|null }}
+ */
+function detectPackageManager(dir) {
+  if (fs.existsSync(path.join(dir, 'pnpm-lock.yaml'))) return { manager: 'pnpm', command: 'pnpm install' };
+  if (fs.existsSync(path.join(dir, 'yarn.lock'))) return { manager: 'yarn', command: 'yarn install' };
+  if (fs.existsSync(path.join(dir, 'package-lock.json'))) return { manager: 'npm', command: 'npm ci' };
+  if (fs.existsSync(path.join(dir, 'package.json'))) return { manager: 'npm', command: 'npm install' };
+  return { manager: null, command: null };
+}
+
+/**
  * Create a new git worktree for a named set.
  *
  * @param {string} projectRoot - Project root directory
  * @param {string} setName - Set name (used for branch and directory)
- * @returns {{ branch: string, path: string }}
+ * @returns {{ branch: string, path: string, depsInstalled: boolean }}
  * @throws {Error} If branch or path already exists
  */
 function createWorktree(projectRoot, setName) {
@@ -91,7 +105,20 @@ function createWorktree(projectRoot, setName) {
     throw new Error(`Failed to create worktree for set "${setName}": ${result.stderr}`);
   }
 
-  return { branch, path: worktreePath };
+  // Install dependencies if a package manager is detected
+  let depsInstalled = false;
+  const pm = detectPackageManager(worktreePath);
+  if (pm.command) {
+    try {
+      execSync(pm.command, { cwd: worktreePath, stdio: 'pipe', timeout: 120000 });
+      depsInstalled = true;
+    } catch (err) {
+      // Warn but do not fail -- worktree is still usable without deps
+      console.error(`[RAPID] Warning: dependency install failed in worktree "${setName}": ${err.message}`);
+    }
+  }
+
+  return { branch, path: worktreePath, depsInstalled };
 }
 
 /**
@@ -949,6 +976,7 @@ function formatStatusOutput(worktrees, dagJson, executionMode) {
 module.exports = {
   gitExec,
   detectMainBranch,
+  detectPackageManager,
   createWorktree,
   removeWorktree,
   deleteBranch,
