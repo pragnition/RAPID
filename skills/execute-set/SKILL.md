@@ -409,6 +409,44 @@ for attempt in 1 2 3; do
 done
 ```
 
+### Solo Auto-Merge
+
+If this is a solo set, auto-transition from `complete` to `merged`. Solo sets have no branch to merge, so the merge step is skipped entirely:
+
+```bash
+# Check if this is a solo set
+REGISTRY=$(cat .planning/worktrees/REGISTRY.json 2>/dev/null || echo '{}')
+IS_SOLO=$(echo "$REGISTRY" | node -e "
+  const d = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
+  const e = d.worktrees && d.worktrees['${SET_ID}'];
+  console.log(e && e.solo === true ? 'true' : 'false');
+")
+
+if [ "$IS_SOLO" = "true" ]; then
+  echo "Solo set detected -- auto-transitioning to merged status."
+  for attempt in 1 2 3; do
+    if node "${RAPID_TOOLS}" state transition set "${MILESTONE}" "${SET_ID}" merged 2>/dev/null; then
+      echo "Set '${SET_ID}' auto-merged (solo mode)."
+      break
+    fi
+    if [ "$attempt" -lt 3 ]; then
+      sleep 2
+    else
+      echo "WARNING: Solo auto-merge transition failed after 3 attempts. Set is complete but not merged. Run: node \"\${RAPID_TOOLS}\" state transition set \"\${MILESTONE}\" \"\${SET_ID}\" merged"
+    fi
+  done
+fi
+```
+
+If auto-merge succeeded, update the final summary and next step display:
+- Change "execution complete" to "execution complete (auto-merged)"
+- Change next step from `/rapid:review {SET_INDEX}` to `/rapid:review {SET_INDEX}` (same -- review is the next step regardless)
+- Update the progress breadcrumb to show merge as done:
+
+```
+init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge [auto]
+```
+
 Commit marker files and GAPS.md (if any). Use --allow-empty to avoid failure if files were already committed:
 
 ```bash
