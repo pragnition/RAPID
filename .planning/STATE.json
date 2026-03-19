@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectName": "RAPID",
-  "currentMilestone": "v3.5.0",
+  "currentMilestone": "v3.6.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -207,8 +207,49 @@
           "waves": []
         }
       ]
+    },
+    {
+      "id": "v3.6.0",
+      "name": "Workflow & UX Polish",
+      "sets": [
+        {
+          "id": "dag-and-state-fixes",
+          "status": "discussed",
+          "waves": [],
+          "name": "DAG & State Fixes",
+          "branch": "rapid/dag-and-state-fixes"
+        },
+        {
+          "id": "solo-mode",
+          "status": "pending",
+          "waves": [],
+          "name": "Solo Mode Improvements",
+          "branch": "rapid/solo-mode"
+        },
+        {
+          "id": "review-cycle-confirmation",
+          "status": "pending",
+          "waves": [],
+          "name": "Review Cycle Confirmation",
+          "branch": "rapid/review-cycle-confirmation"
+        },
+        {
+          "id": "init-flow-redesign",
+          "status": "pending",
+          "waves": [],
+          "name": "Init Flow Redesign",
+          "branch": "rapid/init-flow-redesign"
+        },
+        {
+          "id": "branding-system",
+          "status": "pending",
+          "waves": [],
+          "name": "Branding System",
+          "branch": "rapid/branding-system"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-19T04:41:06.391Z",
+  "lastUpdatedAt": "2026-03-19T06:34:41.644Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
