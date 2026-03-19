@@ -531,6 +531,18 @@ describe('surfaceAssumptions', () => {
   it('throws when set does not exist', () => {
     assert.throws(() => surfaceAssumptions(tmpDir, 'nonexistent'), /does not exist|ENOENT/);
   });
+
+  it('returns fallback message when DEFINITION.md is missing', () => {
+    // Create set directory with only CONTRACT.json (no DEFINITION.md)
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'no-def-assumptions');
+    fs.mkdirSync(setDir, { recursive: true });
+    const contract = { exports: { functions: [], types: [] }, imports: { fromSets: [] } };
+    fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), JSON.stringify(contract, null, 2), 'utf-8');
+
+    const text = surfaceAssumptions(tmpDir, 'no-def-assumptions');
+    assert.ok(typeof text === 'string', 'should return a string');
+    assert.ok(text.includes('No DEFINITION.md found'), 'should mention missing DEFINITION.md');
+  });
 });
 
 // ────────────────────────────────────────────────────────────────
