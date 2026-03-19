@@ -167,7 +167,6 @@ Options:
 2. "{Gray area 2 title}" -- "{1-sentence description}"
 3. "{Gray area 3 title}" -- "{1-sentence description}"
 4. "{Gray area 4 title}" -- "{1-sentence description}"
-5. "{Gray area 5 title}" -- "{1-sentence description}"
 ```
 
 **Handling responses:**
@@ -325,7 +324,7 @@ Show what is done, what failed, and what to run next.
 ## Key Principles
 
 - **Set-scoped discussion:** Discussion captures vision at the set level, not per-wave. CONTEXT.md is the output artifact.
-- **2-5 gray areas, more is better than less:** Identify 2-5 gray areas. The goal is to capture the user's FULL vision. It is better to ask more than ask less.
+- **Exactly 4 gray areas:** Always identify exactly 4 gray areas. This matches AskUserQuestion's 4-option constraint and ensures consistent coverage.
 - **Batched questions with options:** Present each gray area as a separate AskUserQuestion with SEPERATE questionns contaiig prefilled options including "Claude decides".
 - **"Claude decides" option:** Available as a prefilled option per question. Unselected gray areas in Step 5 automatically default to Claude's discretion.
 - **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md without user interaction.
@@ -342,7 +341,7 @@ Show what is done, what failed, and what to run next.
 - Write CONTEXT.md using the Write tool directly -- do not call wave-planning.cjs helpers.
 - Do not reference or resolve individual waves anywhere in this skill.
 - Use `state transition set` for all state changes. No per-wave transitions.
-- Do NOT ask about less than 2 gray areas.
+- Do NOT ask about fewer or more than 4 gray areas -- always present exactly 4.
 - Do NOT batch multiple questions into a single freeform AskUserQuestion -- each question gets its own AskUserQuestion with prefilled options.
 - Do NOT present "Let Claude decide all" as a checkbox option -- use the implicit unselected model instead.
 - Do NOT prompt for every implementation detail -- capture vision/what, not implementation/how.
