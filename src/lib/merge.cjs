@@ -1357,7 +1357,7 @@ function prepareReviewContext(cwd, setName) {
     changedFiles,
     contractStr: JSON.stringify(setData.contract, null, 2),
     ownershipData,
-    definition: setData.definition,
+    definition: setData.definition || '(DEFINITION.md not found for this set)',
     setDir,
   };
 }

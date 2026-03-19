@@ -22,7 +22,7 @@ async function handleExecute(cwd, subcommand, args) {
       const result = {
         setName: context.setName,
         scopedMdPreview: context.scopedMd.slice(0, 200) + '...',
-        definitionLength: context.definition.length,
+        definitionLength: context.definition?.length ?? 0,
         contractKeys: Object.keys(JSON.parse(context.contractStr)),
       };
       process.stdout.write(JSON.stringify(result) + '\n');

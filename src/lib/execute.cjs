@@ -43,7 +43,7 @@ function prepareSetContext(cwd, setName) {
 
   return {
     scopedMd,
-    definition: setData.definition,
+    definition: setData.definition || '(DEFINITION.md not found for this set)',
     contractStr: JSON.stringify(setData.contract, null, 2),
     setName,
   };

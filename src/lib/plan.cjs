@@ -369,6 +369,10 @@ function surfaceAssumptions(cwd, setName) {
   const def = loaded.definition;
   const contractJson = loaded.contract;
 
+  if (!def) {
+    return '(No DEFINITION.md found for this set -- assumptions cannot be surfaced)';
+  }
+
   const lines = [];
 
   // Parse scope from DEFINITION.md
