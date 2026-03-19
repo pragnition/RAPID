@@ -113,6 +113,26 @@ If `--post-merge` is present, set `POST_MERGE=true`. The post-merge review path 
 
 **If `POST_MERGE=true`:** Skip this step entirely. Post-merge review does not require any specific set status -- it operates on already-merged sets. Proceed directly to Step 1.
 
+**Solo set auto-detection:** Before validating status, check if the set is a solo set with merged status:
+
+```bash
+REGISTRY=$(cat .planning/worktrees/REGISTRY.json 2>/dev/null || echo '{}')
+IS_SOLO=$(echo "$REGISTRY" | node -e "
+  const d = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
+  const e = d.worktrees && d.worktrees['${SET_NAME}'];
+  console.log(e && e.solo === true ? 'true' : 'false');
+")
+```
+
+If `IS_SOLO` is `true`:
+1. Read STATE.json to check the set's status
+2. If status is `merged`: set `POST_MERGE=true` automatically and display:
+   > Solo set '{set-id}' detected with merged status. Automatically switching to post-merge review mode.
+3. Proceed to Step 1 (skip remaining status validation)
+4. If status is `complete` or `executed`: continue with standard review path (solo sets can be reviewed pre-merge too)
+
+This ensures solo sets that were auto-merged during execution are seamlessly reviewable without the user needing to know about `--post-merge`.
+
 Read STATE.json to verify the target set exists and is in a reviewable state:
 
 ```bash
@@ -164,6 +184,8 @@ git diff --name-only ${START_COMMIT}...HEAD
 ```
 
 For solo sets, the working directory is the project root (cwd), not a worktree path.
+
+**Important:** For solo+merged sets in auto-detected post-merge mode, the scope command uses `scopeSetForReview` with `startCommit` as the base (NOT `scopeSetPostMerge` which expects a merge commit with 2 parents). The review CLI handles this internally -- see `src/commands/review.cjs`.
 
 **If `POST_MERGE` is not set (standard path):**
 
