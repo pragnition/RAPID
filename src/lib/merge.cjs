@@ -1583,6 +1583,76 @@ function getMergeOrder(cwd) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Post-Merge Feature Regression Check (v3.6)
+// ────────────────────────────────────────────────────────────────
+
+const CODE_EXTENSIONS = new Set(['.js', '.cjs', '.mjs', '.ts', '.tsx', '.jsx', '.py', '.go', '.rs']);
+
+/**
+ * Snapshot exported symbols from code files at a given git ref.
+ *
+ * @param {string} cwd - Git repo directory
+ * @param {string} ref - Git ref (branch, commit hash, HEAD, etc.)
+ * @param {string[]} files - File paths to inspect
+ * @returns {Map<string, string[]>} Map of file path -> exported symbol names
+ */
+function snapshotExports(cwd, ref, files) {
+  const pathMod = require('path');
+  const result = new Map();
+  for (const file of files) {
+    const ext = pathMod.extname(file);
+    if (!CODE_EXTENSIONS.has(ext)) continue;
+    const content = getFileContent(cwd, ref, file);
+    result.set(file, content ? extractExports(content) : []);
+  }
+  return result;
+}
+
+/**
+ * Check for feature regression after a merge by comparing exported symbols.
+ *
+ * Computes the union of exports from the base branch and set branch, then
+ * verifies that all expected symbols are present in the merged result.
+ *
+ * @param {string} cwd - Git repo directory
+ * @param {string} preMergeRef - Base branch HEAD before the merge
+ * @param {string} setBranch - Set branch name (e.g. `rapid/my-set`)
+ * @param {string} postMergeRef - HEAD after the merge
+ * @param {string[]} changedFiles - Files changed by the merge
+ * @returns {{ hasRegression: boolean, regressions: Array<{ file: string, missing: string[], base: string[], set: string[], merged: string[] }> }}
+ */
+function checkFeatureRegression(cwd, preMergeRef, setBranch, postMergeRef, changedFiles) {
+  const baseExports = snapshotExports(cwd, preMergeRef, changedFiles);
+  const setExports = snapshotExports(cwd, setBranch, changedFiles);
+  const mergedExports = snapshotExports(cwd, postMergeRef, changedFiles);
+
+  const regressions = [];
+  const allFiles = new Set([...baseExports.keys(), ...setExports.keys()]);
+
+  for (const file of allFiles) {
+    const baseSymbols = baseExports.get(file) || [];
+    const setSymbols = setExports.get(file) || [];
+    const mergedSymbols = mergedExports.get(file) || [];
+
+    const expected = new Set([...baseSymbols, ...setSymbols]);
+    const merged = new Set(mergedSymbols);
+    const missing = [...expected].filter(s => !merged.has(s));
+
+    if (missing.length > 0) {
+      regressions.push({
+        file,
+        missing,
+        base: baseSymbols,
+        set: setSymbols,
+        merged: mergedSymbols,
+      });
+    }
+  }
+
+  return { hasRegression: regressions.length > 0, regressions };
+}
+
+// ────────────────────────────────────────────────────────────────
 // Merge Execution (preserved from v1.0)
 // ────────────────────────────────────────────────────────────────
 
@@ -1633,6 +1703,8 @@ function mergeSet(projectRoot, setName, baseBranch) {
   }
 
   const branch = `rapid/${setName}`;
+  const preMergeResult = worktree.gitExec(['rev-parse', 'HEAD'], projectRoot);
+  const preMergeHead = preMergeResult.ok ? preMergeResult.stdout : '';
   const mergeMsg = `merge(${setName}): merge set into ${baseBranch}`;
   let mergeOk = false;
   let mergeStdout = '';
@@ -1659,6 +1731,34 @@ function mergeSet(projectRoot, setName, baseBranch) {
 
   const headResult = worktree.gitExec(['rev-parse', 'HEAD'], projectRoot);
   const commitHash = headResult.ok ? headResult.stdout : '';
+
+  // Post-merge feature regression check
+  if (preMergeHead) {
+    try {
+      const changedFilesResult = execFileSync(
+        'git', ['diff', '--name-only', preMergeHead, 'HEAD'],
+        { cwd: projectRoot, encoding: 'utf-8', stdio: 'pipe' }
+      ).trim();
+      const changedFiles = changedFilesResult ? changedFilesResult.split('\n').filter(l => l.trim()) : [];
+
+      if (changedFiles.length > 0) {
+        const regression = checkFeatureRegression(projectRoot, preMergeHead, branch, 'HEAD', changedFiles);
+        if (regression.hasRegression) {
+          // Revert the merge
+          worktree.gitExec(['reset', '--hard', preMergeHead], projectRoot);
+          return {
+            merged: false,
+            reason: 'feature_regression',
+            detail: `Exported symbols lost after merge: ${regression.regressions.map(r => `${r.file} lost [${r.missing.join(', ')}]`).join('; ')}`,
+            regressions: regression.regressions,
+          };
+        }
+      }
+    } catch (err) {
+      // Regression check failure should not block the merge -- log and continue
+      // The check is best-effort
+    }
+  }
 
   return { merged: true, branch, commitHash };
 }
@@ -2088,6 +2188,10 @@ module.exports = {
   getMergeOrder,
   mergeSet,
   runIntegrationTests,
+
+  // v3.6 Post-Merge Regression Check
+  snapshotExports,
+  checkFeatureRegression,
 
   // v2.2 Subagent Infrastructure (MERGE-04, MERGE-05)
   prepareMergerContext,
