@@ -198,17 +198,17 @@
         },
         {
           "id": "init-config",
-          "status": "discussed",
+          "status": "merged",
           "waves": []
         },
         {
           "id": "planning-refinement",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-19T02:31:27.515Z",
+  "lastUpdatedAt": "2026-03-19T03:22:20.891Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
