@@ -271,6 +271,45 @@ describe('loadSet', () => {
   it('throws Error when set directory does not exist', () => {
     assert.throws(() => loadSet(tmpDir, 'nonexistent-set'), /does not exist|ENOENT/);
   });
+
+  it('returns null definition when DEFINITION.md is missing', () => {
+    // Create set directory with only CONTRACT.json (no DEFINITION.md)
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'no-def-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    const contract = { exports: { functions: [], types: [] }, imports: { fromSets: [] } };
+    fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), JSON.stringify(contract, null, 2), 'utf-8');
+
+    const loaded = loadSet(tmpDir, 'no-def-set');
+    assert.equal(loaded.definition, null, 'definition should be null when DEFINITION.md is missing');
+    assert.ok(typeof loaded.contract === 'object', 'contract should still be a valid object');
+    assert.deepStrictEqual(loaded.contract.exports.functions, []);
+  });
+
+  it('emits warning to stderr when DEFINITION.md is missing', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'warn-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    const contract = { exports: { functions: [], types: [] }, imports: { fromSets: [] } };
+    fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), JSON.stringify(contract, null, 2), 'utf-8');
+
+    const calls = [];
+    const origError = console.error;
+    try {
+      console.error = (...args) => calls.push(args.join(' '));
+      loadSet(tmpDir, 'warn-set');
+    } finally {
+      console.error = origError;
+    }
+    assert.ok(calls.length > 0, 'console.error should have been called');
+    assert.ok(calls[0].includes('DEFINITION.md not found'), 'warning should mention DEFINITION.md not found');
+  });
+
+  it('still throws when CONTRACT.json is missing', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'no-contract-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'DEFINITION.md'), '# Set: no-contract-set\n', 'utf-8');
+
+    assert.throws(() => loadSet(tmpDir, 'no-contract-set'), /ENOENT|CONTRACT/);
+  });
 });
 
 // ────────────────────────────────────────────────────────────────
