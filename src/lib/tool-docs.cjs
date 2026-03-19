@@ -26,7 +26,6 @@ const TOOL_REGISTRY = {
   'plan-create-set':      'plan create-set -- Create set from stdin JSON',
   'plan-decompose':       'plan decompose -- Decompose sets from stdin JSON array',
   'plan-write-dag':       'plan write-dag -- Write DAG.json from stdin JSON',
-  'plan-check-gate':      'plan check-gate <wave:str> -- Check planning gate for wave',
   'plan-list-sets':       'plan list-sets -- List all defined sets',
   'plan-load-set':        'plan load-set <name:str> -- Load set definition + contract',
 

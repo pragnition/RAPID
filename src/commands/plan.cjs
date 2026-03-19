@@ -54,7 +54,7 @@ function handlePlan(cwd, subcommand, args) {
     }
 
     default:
-      throw new CliError(`Unknown plan subcommand: ${subcommand}. Use: create-set, decompose, write-dag, check-gate, update-gate, list-sets, load-set`);
+      throw new CliError(`Unknown plan subcommand: ${subcommand}. Use: create-set, decompose, write-dag, list-sets, load-set`);
   }
 }
 
