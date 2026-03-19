@@ -103,6 +103,10 @@ Examples:
   state-get: state get <entity:milestone|set> <id:str> -- Read entity
   state-transition-set: state transition set <milestoneId:str> <setId:str> <status:str> -- Transition set status
   verify-light: verify-artifacts <files:str...> -- Verify files exist
+  memory-log-decision: memory log-decision --category <c:str> --decision <d:str> --rationale <r:str> --source <s:str> -- Log decision
+  memory-log-correction: memory log-correction --original <o:str> --correction <c:str> --reason <r:str> -- Log correction
+  hooks-run: hooks run [--dry-run] -- Run post-task verification hooks
+  hooks-list: hooks list -- List verification checks and status
 </tools>
 
 <role>
