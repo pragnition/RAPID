@@ -175,6 +175,7 @@ function generateRequirementsMd(projectName) {
  * @returns {string} JSON string for config.json
  */
 function generateConfigJson(opts = {}) {
+  const soloValue = opts.solo !== undefined ? opts.solo : (opts.teamSize || 1) === 1;
   const config = {
     project: {
       name: opts.name || '',
@@ -184,6 +185,7 @@ function generateConfigJson(opts = {}) {
     planning: {
       max_parallel_sets: Math.max(1, Math.floor((opts.teamSize || 1) * 1.5)),
     },
+    solo: soloValue,
   };
   return JSON.stringify(config, null, 2);
 }

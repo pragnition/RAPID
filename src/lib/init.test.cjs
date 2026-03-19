@@ -230,6 +230,31 @@ describe('generateConfigJson', () => {
     assert.equal(parsed.planning.max_parallel_sets, 4);
     assert.equal(parsed.project.version, '0.1.0');
   });
+
+  it('sets solo: true when teamSize is 1', () => {
+    const parsed = JSON.parse(generateConfigJson({ teamSize: 1 }));
+    assert.equal(parsed.solo, true);
+  });
+
+  it('sets solo: true when teamSize is omitted (defaults to 1)', () => {
+    const parsed = JSON.parse(generateConfigJson({}));
+    assert.equal(parsed.solo, true);
+  });
+
+  it('sets solo: false when teamSize is greater than 1', () => {
+    const parsed = JSON.parse(generateConfigJson({ teamSize: 3 }));
+    assert.equal(parsed.solo, false);
+  });
+
+  it('respects explicit solo: true override regardless of teamSize', () => {
+    const parsed = JSON.parse(generateConfigJson({ teamSize: 5, solo: true }));
+    assert.equal(parsed.solo, true);
+  });
+
+  it('respects explicit solo: false override regardless of teamSize', () => {
+    const parsed = JSON.parse(generateConfigJson({ teamSize: 1, solo: false }));
+    assert.equal(parsed.solo, false);
+  });
 });
 
 // ── Detection Tests ──

@@ -75,6 +75,7 @@ function handleInit(args) {
     let model = null;
     let teamSize = null;
     let name = null;
+    let solo = undefined;
 
     for (let i = 1; i < args.length; i++) {
       switch (args[i]) {
@@ -87,6 +88,9 @@ function handleInit(args) {
         case '--name':
           name = args[++i];
           break;
+        case '--solo':
+          solo = true;
+          break;
       }
     }
 
@@ -94,6 +98,7 @@ function handleInit(args) {
     if (model) opts.model = model;
     if (teamSize) opts.teamSize = teamSize;
     if (name) opts.name = name;
+    if (solo !== undefined) opts.solo = solo;
 
     const configContent = generateConfigJson(opts);
     const configPath = path.join(process.cwd(), '.planning', 'config.json');
