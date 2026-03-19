@@ -179,10 +179,11 @@
     "solo-mode": {
       "setName": "solo-mode",
       "branch": "rapid/solo-mode",
-      "path": "/home/kek/Projects/RAPID/.rapid-worktrees/solo-mode",
+      "path": ".rapid-worktrees/solo-mode",
       "phase": "Created",
       "status": "active",
-      "discoveredAt": "2026-03-17T07:39:27.727Z"
+      "wave": null,
+      "createdAt": "2026-03-19T07:25:16.739Z"
     },
     "state-and-ux": {
       "setName": "state-and-ux",
@@ -326,7 +327,10 @@
       "phase": "Created",
       "status": "active",
       "wave": null,
-      "createdAt": "2026-03-19T06:08:19.159Z"
+      "createdAt": "2026-03-19T06:08:19.159Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-19T07:23:06.786Z",
+      "mergeCommit": "ac2a61701883015e46194e383c4ad6bd13a0d6e6"
     }
   }
 }

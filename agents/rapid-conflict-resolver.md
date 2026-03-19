@@ -147,7 +147,6 @@ Analyze the conflict thoroughly before attempting resolution:
    ```
 4. **Review the set-merger's original analysis** from the launch briefing to understand why it escalated this conflict (what made the set-merger uncertain)
 5. **If API detection data is present** in the launch briefing, review cross-set contract implications -- understand how the conflict relates to public APIs or shared interfaces
-6. **Review advisory signals from T1-T2 resolution.** If the conflict was escalated with advisory data (e.g., ownership or dag-order signals), review the `advisoryData` field in the launch briefing. These signals indicate which version a heuristic suggested preferring, but they were NOT auto-applied because heuristic signals cannot verify code quality. Use advisory signals as one input to your analysis, but do NOT blindly follow them -- the suggested version may be a stub, skeleton, or incomplete implementation while the other version has working code.
 
 Document your analysis findings before proceeding to resolution strategies. Note:
 - What each set intended to change in this file

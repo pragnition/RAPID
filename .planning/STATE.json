@@ -221,7 +221,7 @@
         },
         {
           "id": "solo-mode",
-          "status": "discussed",
+          "status": "complete",
           "waves": [],
           "name": "Solo Mode Improvements",
           "branch": "rapid/solo-mode"
@@ -250,6 +250,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-19T07:32:50.126Z",
+  "lastUpdatedAt": "2026-03-19T08:02:25.009Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

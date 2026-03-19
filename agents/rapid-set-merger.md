@@ -158,11 +158,7 @@ Run the deterministic (Tier 1) and heuristic (Tier 2) resolution cascade:
 node "${RAPID_TOOLS}" merge resolve {SET_NAME}
 ```
 
-Parse the JSON output. If all conflicts are resolved (`unresolvedForAgent` is 0 or not present) AND no advisory signals are present (`advisoryCount` is 0 or not present), skip to Step 3.
-
-**IMPORTANT: Advisory signals require semantic analysis.** If T1-T2 returned advisory signals (ownership, dag-order), you MUST proceed to Step 2b semantic analysis. These signals are hints suggesting which version to prefer, but they do NOT verify code quality or completeness. The file owner's version may be a stub/skeleton, and the earlier-wave version may be incomplete. Review the advisory data in the resolution output to understand the hints, then apply your own semantic judgment in Step 2b.
-
-NEVER skip semantic analysis when the merging set modifies files that are also modified by sets already merged in this wave. Even if T1-T2 reports zero unresolved conflicts, overlapping file modifications require semantic review.
+Parse the JSON output. If all conflicts are resolved (`unresolvedForAgent` is 0 or not present), skip to Step 3.
 
 #### 2b: L5 Semantic Detection + T3/T4 Resolution (Inline)
 
@@ -281,7 +277,6 @@ If you encounter an unrecoverable error, return BLOCKED:
 - **Do NOT commit.** The orchestrator handles commits after reviewing your resolutions.
 - **Read CONTEXT.md and plans before resolving.** Understanding intent is required -- do not resolve based solely on code diff.
 - **Preserve both sets' intent where possible.** The ideal resolution keeps both sets' contributions. Only discard work when the intents are genuinely incompatible.
-- **Post-merge regression check exists.** After the orchestrator runs `merge execute`, `mergeSet()` automatically verifies that no exported symbols from either branch are lost in the merged result. If the check fails, the merge is reverted and returns `feature_regression`. If this happens after your resolution work, the orchestrator may re-dispatch you with regression data -- focus on the affected files and ensure your conflict resolutions preserve all exports from both branches.
 </role>
 
 <returns>
