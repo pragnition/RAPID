@@ -62,15 +62,21 @@ If `--post-merge` is present, set `POST_MERGE=true`. Post-merge mode reads REVIE
 
 ## Step 1: Load REVIEW-SCOPE.md
 
-Determine the scope file path based on mode:
+Determine the scope file path:
 
-- **Standard mode:** `.planning/sets/{setId}/REVIEW-SCOPE.md`
-- **Post-merge mode:** `.planning/post-merge/{setId}/REVIEW-SCOPE.md`
+1. **If `POST_MERGE=true`** (explicit `--post-merge` flag was provided): Use `.planning/post-merge/{setId}/REVIEW-SCOPE.md` directly.
 
-**Guard check:** If the file does not exist, display error and STOP:
+2. **If `POST_MERGE` is not set** (no flag): Auto-detect by checking paths in order:
+   - First, try standard path: `.planning/sets/{setId}/REVIEW-SCOPE.md`
+   - If not found, try post-merge path: `.planning/post-merge/{setId}/REVIEW-SCOPE.md`
+   - If found at the post-merge path, set `POST_MERGE=true` so downstream artifact writes (REVIEW-UNIT.md, issue logging) use the post-merge directory.
+
+**Guard check:** If neither path contains the file, display error and STOP:
 
 ```
 [RAPID ERROR] REVIEW-SCOPE.md not found for set '{setId}'.
+Checked: .planning/sets/{setId}/REVIEW-SCOPE.md
+         .planning/post-merge/{setId}/REVIEW-SCOPE.md
 Run `/rapid:review {setId}` first to generate the review scope.
 ```
 
