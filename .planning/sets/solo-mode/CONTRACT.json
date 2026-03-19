@@ -1,0 +1,59 @@
+{
+  "setId": "solo-mode",
+  "version": "1.0.0",
+  "exports": {
+    "soloAutoMerge": {
+      "type": "function",
+      "signature": "autoMergeSolo(cwd: string, setId: string): { transitioned: boolean }",
+      "description": "After solo execution completes, automatically transitions set status from complete to merged. Called from execute-set Step 6 when registry entry has solo: true."
+    },
+    "soloAwareMerge": {
+      "type": "function",
+      "signature": "detectSoloAndSkip(cwd: string, setId: string): { isSolo: boolean, message: string }",
+      "description": "Merge skill detects solo sets and returns informational message instead of attempting merge operations."
+    },
+    "soloAwareReview": {
+      "type": "function",
+      "signature": "adjustReviewForSolo(cwd: string, setId: string): { postMerge: boolean }",
+      "description": "Review skill detects solo+merged sets and switches to post-merge review mode instead of rejecting them."
+    }
+  },
+  "imports": {
+    "reliableStateTransition": {
+      "fromSet": "dag-and-state-fixes",
+      "type": "function",
+      "signature": "transitionSet(cwd: string, setId: string, targetStatus: string): void",
+      "description": "Depends on the execute-set state transition fix for reliable complete -> merged transition in solo mode."
+    }
+  },
+  "behavioral": {
+    "solo-auto-merge": {
+      "description": "Solo sets (registry entry solo: true) must auto-transition from complete to merged after execution finishes. No worktree merge ceremony required.",
+      "enforced_by": "test"
+    },
+    "merge-skip-solo": {
+      "description": "Merge skill must detect solo sets and display informational message rather than attempting git merge operations.",
+      "enforced_by": "test"
+    },
+    "review-accepts-solo-merged": {
+      "description": "Review skill must accept solo+merged status combination and operate in post-merge mode, not reject with status error.",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Complete the solo mode lifecycle so solo sets work seamlessly on main without merge ceremony. Auto-transition solo sets to merged after execution, update merge and review skills for solo awareness.",
+    "ownedFiles": [
+      "src/lib/worktree.cjs",
+      "src/lib/worktree.test.cjs",
+      "skills/merge/SKILL.md",
+      "skills/review/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Add solo auto-merge logic to execute-set: after execution completes, check registry for solo: true and auto-transition complete -> merged", "acceptance": "Solo sets reach merged status without manual merge command" },
+      { "description": "Update merge skill to detect solo sets and display informational skip message", "acceptance": "Merge on a solo set shows informational message, does not attempt git merge" },
+      { "description": "Update review skill to accept solo+merged status and switch to post-merge review mode", "acceptance": "Review accepts and operates on solo+merged sets" },
+      { "description": "Update status display to correctly reflect solo merged state", "acceptance": "Status command shows solo sets as merged correctly" }
+    ],
+    "acceptance": ["Solo sets auto-transition to merged after execution", "Merge skill handles solo sets gracefully", "Review skill works on solo+merged sets", "No regression in normal set lifecycle"]
+  }
+}

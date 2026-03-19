@@ -1,0 +1,40 @@
+{
+  "setId": "review-cycle-confirmation",
+  "version": "1.0.0",
+  "exports": {
+    "cycleConfirmationGate": {
+      "type": "function",
+      "signature": "AskUserQuestion gate between bug-hunt cycles",
+      "description": "AskUserQuestion prompt inserted between bug-hunt cycles asking whether to continue or stop. If stopped, all accumulated findings are preserved."
+    },
+    "earlyExitWithFindings": {
+      "type": "function",
+      "signature": "writePartialFindings(findings: object[]): void",
+      "description": "When user declines cycle continuation, writes all accumulated findings from completed cycles to REVIEW-BUGS.md before exiting."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "no-runaway-cycles": {
+      "description": "Bug-hunt must not start cycle 2 or cycle 3 without explicit user confirmation via AskUserQuestion.",
+      "enforced_by": "runtime"
+    },
+    "preserve-partial-findings": {
+      "description": "Early exit from bug-hunt cycles must preserve all findings from completed cycles in REVIEW-BUGS.md. No data loss on early termination.",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Add user confirmation gates between bug-hunt review cycles to prevent runaway automatic cycling. Implement early-exit that preserves accumulated findings.",
+    "ownedFiles": [
+      "skills/bug-hunt/SKILL.md",
+      "skills/unit-test/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Add AskUserQuestion confirmation gate between bug-hunt cycles", "acceptance": "User is prompted before each subsequent cycle starts" },
+      { "description": "Implement early-exit path that writes all accumulated findings to REVIEW-BUGS.md", "acceptance": "Declining continuation preserves all findings" },
+      { "description": "Add retry-on-failure confirmation to unit-test skill if appropriate", "acceptance": "Unit-test prompts user before retrying on failure" }
+    ],
+    "acceptance": ["Bug-hunt prompts for confirmation between cycles", "Early exit preserves all accumulated findings", "No runaway automatic cycling"]
+  }
+}

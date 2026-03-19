@@ -147,28 +147,42 @@
 
 </details>
 
-## Current Milestone: v3.5.0 Robustness & Fixes (4 sets)
+<details>
+<summary>v3.5.0 Robustness & Fixes (4 sets) — shipped 2026-03-19</summary>
 
-All fixes target boundary-condition failures in the existing 5-layer architecture (Skill -> Agent -> CLI -> Library -> Storage). Pattern: defensive middleware with graceful degradation.
+- [x] state-execution — Execute-to-complete state transition fix, merge untracked file handling, /rapid:bug-fix skill
+- [x] agent-prompts — CLI command reference sweep across 26 agents and 24 skills, discuss-set option limit fix
+- [x] init-config — DEFINITION.md generation, graceful loadSet(), solo mode config, worktree package management
+- [x] planning-refinement — UI/UX emphasis in templates, review file discovery auto-detection
 
-### Set 1: State & Execution Robustness (`state-execution`) [Large]
-Fix the execute-to-complete state transition so review accepts `executed` status (F5). Fix merge untracked file handling by committing planning artifacts in the worktree branch and adding pre-merge cleanup (F6). Add `/rapid:bug-fix` user-facing skill that reads review artifacts and dispatches the bugfix agent (F10).
+</details>
 
-### Set 2: Agent Prompts & Correctness (`agent-prompts`) [Medium]
-Sweep all 26 agents and 24 skills to fix CLI command references, ensuring agents use exact subcommand syntax from TOOL_REGISTRY (F1). Fix discuss-set to limit gray area options to 4 matching AskUserQuestion constraint (F3).
+## Current Milestone: v3.6.0 Workflow & UX Polish (5 sets)
 
-### Set 3: Init & Configuration (`init-config`) [Medium]
-Fix DEFINITION.md generation so init creates it alongside CONTRACT.json (F2). Add graceful loadSet() fallback. Add project-wide solo mode config (F8). Add worktree package management with ecosystem-aware install (F4). Auto-commit all planning artifacts after init completes (F11).
+This milestone addresses concrete UX friction points and bugs observed during real-world RAPID usage. All changes are application-logic and agent-prompt modifications; no dependency upgrades or infrastructure changes needed.
 
-### Set 4: Planning & Review Refinement (`planning-refinement`) [Small]
-Strengthen UI/UX emphasis in discuss-set and plan-set templates (F9). Fix review file discovery so downstream skills auto-detect post-merge mode (F7).
+### Set 1: DAG & State Fixes (`dag-and-state-fixes`) [Medium-Large]
+Fix DAG.json lifecycle gaps: path consolidation (`.planning/DAG.json` vs `.planning/sets/DAG.json`), centralized `tryLoadDAG()`, ENOENT defensive handling across all consumers, execute-set state-to-complete transition reliability, DAG.json creation at init time via `recalculateDAG()`.
+
+### Set 2: Solo Mode Improvements (`solo-mode`) [Medium]
+Complete solo mode lifecycle: auto-transition `complete -> merged` after solo execution, merge skill detects and skips solo sets with informational message, review skill accepts solo+merged sets in post-merge mode. Depends on dag-and-state-fixes.
+
+### Set 3: Review Cycle Confirmation (`review-cycle-confirmation`) [Small]
+Add AskUserQuestion confirmation gates between bug-hunt review cycles. Implement early-exit path that preserves all accumulated findings in REVIEW-BUGS.md.
+
+### Set 4: Init Flow Redesign (`init-flow-redesign`) [Large]
+Replace prose-based Q&A in init Step 4B with structured AskUserQuestion (4 sub-questions per call). Add granularity preference (target set count) passed to roadmapper. Add summary confirmation before roadmap generation.
+
+### Set 5: Branding System (`branding-system`) [Large]
+New optional `/rapid:branding` skill, `role-branding.md` agent, BRANDING.md artifact at `.planning/BRANDING.md`, context injection via `enrichedPrepareSetContext()`, display stage entries.
 
 ### Dependency Graph
 ```
-state-execution      (independent — wave 1)
-agent-prompts        (independent — wave 1)
-init-config          (independent — wave 1)
-planning-refinement  (independent — wave 1)
+dag-and-state-fixes       (independent — critical path)
+review-cycle-confirmation (independent)
+init-flow-redesign        (independent)
+branding-system           (independent)
+solo-mode                --> dag-and-state-fixes
 ```
 
 Historical phase details archived to `.planning/archive/`.

@@ -1,0 +1,59 @@
+{
+  "setId": "dag-and-state-fixes",
+  "version": "1.0.0",
+  "exports": {
+    "tryLoadDAG": {
+      "type": "function",
+      "signature": "tryLoadDAG(cwd: string): { dag: object|null, path: string }",
+      "description": "Centralized DAG.json loader with canonical path (.planning/sets/DAG.json). Returns null dag on ENOENT instead of throwing. All DAG consumers must use this instead of direct fs.readFileSync."
+    },
+    "recalculateDAGAtInit": {
+      "type": "function",
+      "signature": "recalculateDAG(cwd: string, milestoneId: string): void",
+      "description": "Called during init flow after roadmap acceptance and STATE.json write to create initial DAG.json."
+    },
+    "reliableStateTransition": {
+      "type": "function",
+      "signature": "transitionSet(cwd: string, setId: string, targetStatus: string): void",
+      "description": "Execute-set Step 6 restructured to run state transition BEFORE git commit operations, with explicit CWD and retry on lock contention."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "canonical-dag-path": {
+      "description": "All DAG.json reads and writes MUST use canonical path .planning/sets/DAG.json. The path .planning/DAG.json in merge.cjs must be fixed.",
+      "enforced_by": "test"
+    },
+    "graceful-enoent": {
+      "description": "Missing DAG.json must never crash the application. tryLoadDAG returns null, consumers fall back to auto-regeneration or informational messages.",
+      "enforced_by": "test"
+    },
+    "state-before-commit": {
+      "description": "In execute-set Step 6, state transition to complete must occur BEFORE git commit operations to prevent the stuck-in-executing bug.",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Fix the DAG.json lifecycle gaps that cause downstream failures: path consolidation, centralized tryLoadDAG(), ENOENT defensive handling, execute-set state-to-complete transition reliability, and DAG.json creation at init time.",
+    "ownedFiles": [
+      "src/lib/dag.cjs",
+      "src/lib/dag.test.cjs",
+      "src/lib/plan.cjs",
+      "src/lib/plan.test.cjs",
+      "src/lib/merge.cjs",
+      "src/lib/merge.test.cjs",
+      "src/lib/add-set.cjs",
+      "src/lib/add-set.test.cjs",
+      "skills/execute-set/SKILL.md",
+      "skills/init/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Create centralized tryLoadDAG(cwd) function in dag.cjs that uses canonical path .planning/sets/DAG.json and returns null on ENOENT", "acceptance": "Function exists, tests cover ENOENT and valid DAG cases" },
+      { "description": "Fix merge.cjs DAG.json path from .planning/DAG.json to .planning/sets/DAG.json and migrate to use tryLoadDAG()", "acceptance": "merge.cjs uses tryLoadDAG(), test verifies correct path" },
+      { "description": "Migrate all other DAG.json consumers (plan.cjs, add-set.cjs) to use tryLoadDAG()", "acceptance": "No direct DAG.json path construction remains outside tryLoadDAG()" },
+      { "description": "Restructure execute-set SKILL.md Step 6 to run state transition before git commit, use explicit CWD, add retry on lock contention", "acceptance": "Execute-set reliably transitions to complete status" },
+      { "description": "Add recalculateDAG() call to init SKILL.md after roadmap acceptance and STATE.json write", "acceptance": "DAG.json exists after fresh init flow completes" }
+    ],
+    "acceptance": ["All DAG.json operations use canonical path via tryLoadDAG()", "Missing DAG.json degrades gracefully everywhere", "Execute-set state transition is reliable", "All existing tests pass, new tests cover ENOENT and path edge cases"]
+  }
+}

@@ -214,7 +214,7 @@
       "sets": [
         {
           "id": "dag-and-state-fixes",
-          "status": "discussed",
+          "status": "complete",
           "waves": [],
           "name": "DAG & State Fixes",
           "branch": "rapid/dag-and-state-fixes"
@@ -250,6 +250,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-19T06:34:41.644Z",
+  "lastUpdatedAt": "2026-03-19T07:03:45.330Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

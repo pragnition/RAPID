@@ -318,6 +318,15 @@
       "mergeStatus": "merged",
       "mergedAt": "2026-03-19T04:41:01.937Z",
       "mergeCommit": "dfd332cb60fdd7d0c0c08d9899d83bfb00388af3"
+    },
+    "dag-and-state-fixes": {
+      "setName": "dag-and-state-fixes",
+      "branch": "rapid/dag-and-state-fixes",
+      "path": ".rapid-worktrees/dag-and-state-fixes",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-19T06:08:19.159Z"
     }
   }
 }

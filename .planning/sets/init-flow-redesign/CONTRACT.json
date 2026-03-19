@@ -1,0 +1,50 @@
+{
+  "setId": "init-flow-redesign",
+  "version": "1.0.0",
+  "exports": {
+    "structuredDiscovery": {
+      "type": "function",
+      "signature": "AskUserQuestion with structured options in init Step 4B",
+      "description": "Replaces prose-based Q&A with structured AskUserQuestion calls using pre-filled options, 4 sub-questions per call, across all 10 discovery areas."
+    },
+    "granularityPreference": {
+      "type": "function",
+      "signature": "targetSetCount passed as runtime parameter to roadmapper",
+      "description": "User specifies desired number of sets (granularity preference). Passed as runtime input to roadmapper prompt, not persisted in config."
+    },
+    "summaryConfirmation": {
+      "type": "function",
+      "signature": "Summary review and confirmation step before roadmap generation",
+      "description": "After all discovery questions answered, present summary of all answers for user review and confirmation before proceeding to roadmap generation."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "structured-questions": {
+      "description": "Init Step 4B must use AskUserQuestion with pre-filled options (2-5 options per question). Freeform input via 'Other' option as escape hatch.",
+      "enforced_by": "runtime"
+    },
+    "batch-grouping": {
+      "description": "Questions grouped into batches of 4 sub-questions per AskUserQuestion call, following progressive disclosure.",
+      "enforced_by": "runtime"
+    },
+    "granularity-as-runtime": {
+      "description": "Target set count is passed as runtime parameter to roadmapper prompt, NOT persisted in config.json.",
+      "enforced_by": "runtime"
+    }
+  },
+  "definition": {
+    "scope": "Redesign the init flow Step 4B to use structured AskUserQuestion with pre-filled options, add granularity preference, and add summary confirmation before roadmap generation.",
+    "ownedFiles": [
+      "skills/init/SKILL.md",
+      "src/modules/roles/role-roadmapper.md"
+    ],
+    "tasks": [
+      { "description": "Rewrite init Step 4B to use structured AskUserQuestion with pre-filled options (4 sub-questions per call)", "acceptance": "All 10 discovery areas use structured questions with pre-filled options" },
+      { "description": "Add granularity preference question collecting target set count", "acceptance": "User can specify desired number of sets" },
+      { "description": "Add summary and confirmation step presenting all answers before roadmap generation", "acceptance": "Summary is displayed and user confirms before proceeding" },
+      { "description": "Update roadmapper role to accept targetSetCount as runtime parameter", "acceptance": "Roadmapper receives and respects granularity preference" }
+    ],
+    "acceptance": ["Init Step 4B uses structured AskUserQuestion with pre-filled options", "Granularity preference is collected and passed to roadmapper", "Summary confirmation step exists before roadmap generation", "Init flow completes end-to-end successfully"]
+  }
+}

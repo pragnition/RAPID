@@ -1,0 +1,60 @@
+{
+  "setId": "branding-system",
+  "version": "1.0.0",
+  "exports": {
+    "brandingSkill": {
+      "type": "endpoint",
+      "signature": "/rapid:branding -- optional post-init branding interview",
+      "description": "New skill that conducts structured branding interview via AskUserQuestion and produces BRANDING.md artifact at .planning/BRANDING.md."
+    },
+    "brandingRole": {
+      "type": "file",
+      "signature": "src/modules/roles/role-branding.md",
+      "description": "New agent role module for the branding interview agent. Follows existing role module conventions."
+    },
+    "brandingContextInjection": {
+      "type": "function",
+      "signature": "buildBrandingContext(cwd: string): string",
+      "description": "Reads .planning/BRANDING.md and returns formatted branding context string for injection into enrichedPrepareSetContext()."
+    },
+    "brandingDisplayStage": {
+      "type": "function",
+      "signature": "STAGE_VERBS['branding'] and STAGE_BG['branding']",
+      "description": "Display module entries for the branding stage banner."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "fully-optional": {
+      "description": "Branding is entirely optional. Absence of BRANDING.md must not affect any other RAPID workflow. enrichedPrepareSetContext() must gracefully skip branding context when BRANDING.md does not exist.",
+      "enforced_by": "test"
+    },
+    "concise-artifact": {
+      "description": "BRANDING.md must be concise (50-150 lines) to avoid bloating execution prompts when injected as context.",
+      "enforced_by": "runtime"
+    },
+    "planning-root-location": {
+      "description": "BRANDING.md is stored at .planning/BRANDING.md (planning root), consistent with PROJECT.md, ROADMAP.md, REQUIREMENTS.md.",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Create the branding system: new /rapid:branding skill, role-branding.md agent, BRANDING.md artifact format, enrichedPrepareSetContext() branding injection, and display.cjs stage entries.",
+    "ownedFiles": [
+      "skills/branding/SKILL.md",
+      "src/modules/roles/role-branding.md",
+      "src/lib/display.cjs",
+      "src/lib/display.test.cjs",
+      "src/lib/execute.cjs",
+      "src/lib/execute.test.cjs"
+    ],
+    "tasks": [
+      { "description": "Create skills/branding/SKILL.md with structured AskUserQuestion interview flow", "acceptance": "Skill can be invoked as /rapid:branding and conducts branding interview" },
+      { "description": "Create src/modules/roles/role-branding.md agent role following existing conventions", "acceptance": "Role module follows existing role conventions" },
+      { "description": "Define BRANDING.md artifact format and write to .planning/BRANDING.md", "acceptance": "Artifact is generated with consistent structure, 50-150 lines" },
+      { "description": "Add branding context injection to enrichedPrepareSetContext() in execute.cjs", "acceptance": "Branding context injected when BRANDING.md exists, gracefully skipped when absent" },
+      { "description": "Add branding stage entries to display.cjs STAGE_VERBS and STAGE_BG maps", "acceptance": "Branding banner renders correctly" }
+    ],
+    "acceptance": ["/rapid:branding skill exists and produces BRANDING.md", "Branding context is injected into execution prompts when available", "Branding is fully optional -- absence does not affect any workflow", "Display shows branding stage banner", "All new code has tests"]
+  }
+}
