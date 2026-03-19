@@ -61,6 +61,17 @@ Parse the user's invocation for a `--solo` flag (e.g., `/rapid:start-set 6 --sol
 
 If `--solo` is present, set `SOLO_MODE=true`. Solo mode skips worktree creation, branch creation, and scoped CLAUDE.md generation. Work happens directly on the current branch.
 
+### Check project config for solo mode
+
+If `--solo` was NOT explicitly passed by the user, check the project config for a solo mode setting:
+
+1. Read `.planning/config.json` using the Read tool
+2. Parse the JSON and check for `solo: true`
+3. If `solo: true` in config, set `SOLO_MODE=true` (same effect as `--solo` flag)
+4. Log: "Solo mode enabled from project config (.planning/config.json)"
+
+The `--solo` flag is the explicit override. If config says `solo: true` and the user did NOT pass `--solo`, the skill still enters solo mode from the config. If `.planning/config.json` does not exist or cannot be parsed, proceed without solo mode (graceful fallback).
+
 **If no set name was provided:** List available (pending) sets:
 
 ```bash

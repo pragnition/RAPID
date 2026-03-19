@@ -10,7 +10,18 @@ async function handleSetInit(cwd, subcommand, args) {
   switch (subcommand) {
     case 'create': {
       const setName = args[0];
-      const isSolo = args.includes('--solo');
+      let isSolo = args.includes('--solo');
+      if (!isSolo) {
+        try {
+          const configPath = path.join(cwd, '.planning', 'config.json');
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+          if (config.solo === true) {
+            isSolo = true;
+          }
+        } catch {
+          // Graceful -- config.json may not exist
+        }
+      }
       if (!setName) {
         throw new CliError('Usage: rapid-tools set-init create <set-name> [--solo]');
       }
