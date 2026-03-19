@@ -692,7 +692,42 @@ End the skill.
 
 ---
 
-## Step 10: Completion
+## Step 10: Auto-Commit Planning Artifacts
+
+Before displaying the completion summary, auto-commit all generated planning artifacts.
+
+First, check if there are uncommitted changes outside `.planning/`:
+
+```bash
+OUTSIDE_CHANGES=$(git status --porcelain | grep -v '^\?\? ' | grep -v '.planning/' | head -5)
+if [ -n "$OUTSIDE_CHANGES" ]; then
+  echo "WARNING: Uncommitted changes exist outside .planning/. These will NOT be included in the auto-commit."
+fi
+```
+
+If there are changes outside `.planning/`, warn the user but proceed with the scoped commit.
+
+Then stage and commit only `.planning/` files:
+
+```bash
+git add .planning/
+# Check if there are staged changes
+if git diff --cached --quiet; then
+  echo "No planning artifacts to commit."
+else
+  git commit -m "rapid:init({project-name}): initialize project planning artifacts"
+fi
+```
+
+Replace `{project-name}` with the actual project name from Step 4A.
+
+Display the commit result: "Committed planning artifacts: {commit hash}"
+
+If the commit fails for any reason, warn the user but do NOT fail the entire init process. The planning files are already written to disk.
+
+---
+
+## Step 11: Completion
 
 Display a final summary:
 
@@ -720,7 +755,7 @@ Display a final summary:
 
 ```
 
-## Step 11: Next Step
+## Step 12: Next Step
 
 Determine the first pending set by running:
 
@@ -738,7 +773,7 @@ If the project has no sets yet (e.g., roadmap deferred set creation), display:
 > **Next step:** `/rapid:status`
 > *(View project state)*
 
-## Step 12: Progress Breadcrumb
+## Step 13: Progress Breadcrumb
 
 Render a progress breadcrumb at the very end of the skill output to show the user where they are in the RAPID workflow:
 
