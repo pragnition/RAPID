@@ -275,12 +275,14 @@ async function handleMerge(cwd, subcommand, args) {
       const tier1Count = resolutionResults.filter(r => r.tier === 1 && r.resolved).length;
       const tier2Count = resolutionResults.filter(r => r.tier === 2 && r.resolved).length;
       const unresolvedCount = resolutionResults.filter(r => !r.resolved).length;
+      const advisoryCount = resolutionResults.filter(r => r.advisory === true).length;
       // Update MERGE-STATE with resolution counts
       await merge.withMergeStateTransaction(cwd, setName, (state) => {
         state.resolution = {
           tier1Resolved: tier1Count,
           tier2Resolved: tier2Count,
           unresolvedForAgent: unresolvedCount,
+          advisoryCount,
           total: resolutionResults.length,
         };
       });
@@ -290,6 +292,7 @@ async function handleMerge(cwd, subcommand, args) {
           tier1Resolved: tier1Count,
           tier2Resolved: tier2Count,
           unresolvedForAgent: unresolvedCount,
+          advisoryCount,
           total: resolutionResults.length,
         },
       }));

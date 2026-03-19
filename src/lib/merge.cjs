@@ -1086,30 +1086,34 @@ function tryDeterministicResolve(conflict) {
  * @param {Object} conflict - Conflict descriptor
  * @param {Object} ownership - Ownership map { filePath: ownerSetName }
  * @param {string[]} dagOrder - DAG-ordered set names (earlier = higher priority)
- * @returns {{ resolved: boolean, confidence: number, resolution?: string, signal?: string }}
+ * @returns {{ resolved: boolean, confidence: number, resolution?: string, signal?: string, advisory?: boolean, advisoryData?: Object }}
  */
 function tryHeuristicResolve(conflict, ownership, dagOrder) {
-  // Signal 1: File ownership (weight: 0.4)
+  // Signal 1: File ownership (weight: 0.4) -- advisory only, not auto-resolved
   if (ownership && ownership[conflict.file]) {
     const owner = ownership[conflict.file];
     return {
-      resolved: true,
+      resolved: false,
       confidence: 0.85,
       resolution: `prefer ${owner} version (file owner)`,
       signal: 'ownership',
+      advisory: true,
+      advisoryData: { owner, suggestion: `File is owned by ${owner} -- consider preferring their version unless the other version is more complete` },
     };
   }
 
-  // Signal 2: DAG dependency order (weight: 0.3) -- earlier wave set's changes are base truth
+  // Signal 2: DAG dependency order (weight: 0.3) -- advisory only, not auto-resolved
   if (dagOrder && dagOrder.length > 0 && conflict.setName) {
     const setIndex = dagOrder.indexOf(conflict.setName);
     if (setIndex > 0) {
-      // This set is a later wave -- prefer the earlier set's version
+      // This set is a later wave -- suggest preferring earlier set's version
       return {
-        resolved: true,
+        resolved: false,
         confidence: 0.75,
         resolution: `prefer earlier-wave version (${conflict.setName} is wave ${setIndex + 1})`,
         signal: 'dag-order',
+        advisory: true,
+        advisoryData: { setName: conflict.setName, waveIndex: setIndex + 1, suggestion: `Earlier-wave version may be base truth -- but verify it is not a stub` },
       };
     }
   }
@@ -1174,6 +1178,21 @@ function resolveConflicts(detectionResults, options) {
 
     // Tier 2: heuristic
     const t2 = tryHeuristicResolve(conflict, ownership, dagOrder);
+    if (t2.advisory) {
+      // Advisory signals are NOT auto-resolved -- they provide hints for the agent
+      results.push({
+        conflict,
+        tier: 2,
+        resolved: false,
+        needsAgent: true,
+        confidence: t2.confidence,
+        resolution: t2.resolution,
+        signal: t2.signal,
+        advisory: true,
+        advisoryData: t2.advisoryData,
+      });
+      continue;
+    }
     if (t2.resolved) {
       results.push({
         conflict,
