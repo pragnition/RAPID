@@ -1,7 +1,10 @@
 'use strict';
 
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 const {
   extractExports,
@@ -9,6 +12,8 @@ const {
   compressResult,
   parseSetMergerReturn,
   prepareMergerContext,
+  getMergeOrder,
+  detectCascadeImpact,
 } = require('./merge.cjs');
 
 // ---------------------------------------------------------------------------
@@ -305,5 +310,95 @@ describe('prepareMergerContext', () => {
     };
     const result = prepareMergerContext(ctx);
     assert.ok(result.includes('(details in worktree)'));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getMergeOrder
+// ---------------------------------------------------------------------------
+describe('getMergeOrder', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'merge-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns wave-grouped arrays from valid DAG', () => {
+    const setsDir = path.join(tmpDir, '.planning', 'sets');
+    fs.mkdirSync(setsDir, { recursive: true });
+
+    const dagObj = {
+      nodes: [{ id: 'auth' }, { id: 'data' }, { id: 'api' }],
+      edges: [{ from: 'auth', to: 'api' }, { from: 'data', to: 'api' }],
+      waves: {
+        '1': { sets: ['auth', 'data'] },
+        '2': { sets: ['api'] },
+      },
+      metadata: { generatedAt: new Date().toISOString() },
+    };
+    fs.writeFileSync(path.join(setsDir, 'DAG.json'), JSON.stringify(dagObj), 'utf-8');
+
+    const result = getMergeOrder(tmpDir);
+    assert.deepStrictEqual(result, [['auth', 'data'], ['api']]);
+  });
+
+  it('throws when DAG.json is missing', () => {
+    const setsDir = path.join(tmpDir, '.planning', 'sets');
+    fs.mkdirSync(setsDir, { recursive: true });
+
+    assert.throws(() => getMergeOrder(tmpDir), (err) => {
+      assert.ok(err.message.includes('DAG.json not found'));
+      return true;
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// detectCascadeImpact
+// ---------------------------------------------------------------------------
+describe('detectCascadeImpact', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'merge-cascade-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns hasCascade:false when no DAG exists', () => {
+    const setsDir = path.join(tmpDir, '.planning', 'sets');
+    fs.mkdirSync(setsDir, { recursive: true });
+
+    const result = detectCascadeImpact(tmpDir, 'some-set');
+    assert.equal(result.hasCascade, false);
+    assert.deepStrictEqual(result.affectedSets, []);
+    assert.ok(result.recommendation.includes('No DAG.json found'));
+  });
+
+  it('uses canonical path, not old .planning/DAG.json (regression)', () => {
+    // Create DAG at the WRONG path (.planning/DAG.json)
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    const wrongDag = {
+      nodes: [{ id: 'a' }, { id: 'b' }],
+      edges: [{ from: 'a', to: 'b' }],
+      waves: { '1': { sets: ['a'] }, '2': { sets: ['b'] } },
+    };
+    fs.writeFileSync(path.join(planningDir, 'DAG.json'), JSON.stringify(wrongDag), 'utf-8');
+
+    // Create sets dir but NO DAG.json at the correct canonical path
+    const setsDir = path.join(planningDir, 'sets');
+    fs.mkdirSync(setsDir, { recursive: true });
+
+    // Should NOT find the DAG (it is at the wrong path)
+    const result = detectCascadeImpact(tmpDir, 'a');
+    assert.equal(result.hasCascade, false);
+    assert.ok(result.recommendation.includes('No DAG.json found'));
   });
 });
