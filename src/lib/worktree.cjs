@@ -375,6 +375,113 @@ function getSetDiffBase(cwd, setId) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Solo Mode Lifecycle
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Auto-transition a solo set from complete to merged.
+ * Solo sets have no branch to merge, so this is a state-only transition.
+ * Uses retry logic (3 attempts, 2s pause) for lock contention safety.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {{ transitioned: boolean, error?: string }}
+ */
+function autoMergeSolo(cwd, setId) {
+  if (!isSoloMode(cwd, setId)) {
+    return { transitioned: false, error: 'Not a solo set' };
+  }
+
+  const { execSync } = require('child_process');
+
+  // Find the milestone from STATE.json
+  let milestone;
+  try {
+    const statePath = path.join(cwd, '.planning', 'STATE.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    milestone = state.milestone?.id;
+    if (!milestone) {
+      return { transitioned: false, error: 'No milestone found in STATE.json' };
+    }
+  } catch (err) {
+    return { transitioned: false, error: `Failed to read STATE.json: ${err.message}` };
+  }
+
+  // Retry up to 3 times for lock contention
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const toolsPath = process.env.RAPID_TOOLS;
+      if (!toolsPath) {
+        return { transitioned: false, error: 'RAPID_TOOLS not set' };
+      }
+      execSync(
+        `node "${toolsPath}" state transition set "${milestone}" "${setId}" merged`,
+        { cwd, stdio: 'pipe', encoding: 'utf-8', timeout: 15000 }
+      );
+      return { transitioned: true };
+    } catch (err) {
+      if (attempt < 3) {
+        // Sleep 2 seconds before retry (matches execute-set Step 6 pattern)
+        execSync('sleep 2');
+        continue;
+      }
+      return {
+        transitioned: false,
+        error: `State transition failed after 3 attempts: ${(err.stderr || err.message || '').toString().trim()}`,
+      };
+    }
+  }
+  return { transitioned: false, error: 'Unreachable' };
+}
+
+/**
+ * Detect if a set is solo and return skip information for merge skill.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {{ isSolo: boolean, message: string }}
+ */
+function detectSoloAndSkip(cwd, setId) {
+  if (!isSoloMode(cwd, setId)) {
+    return { isSolo: false, message: '' };
+  }
+  return {
+    isSolo: true,
+    message: `Set '${setId}' is a solo set -- already merged automatically after execution. No merge needed.`,
+  };
+}
+
+/**
+ * Detect if a set is solo and should use post-merge review mode.
+ * Solo sets that have reached 'merged' status should automatically
+ * route to post-merge review without requiring --post-merge flag.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {{ postMerge: boolean }}
+ */
+function adjustReviewForSolo(cwd, setId) {
+  if (!isSoloMode(cwd, setId)) {
+    return { postMerge: false };
+  }
+
+  // Check if the set is in merged status
+  try {
+    const statePath = path.join(cwd, '.planning', 'STATE.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    const sets = state.milestone?.sets || {};
+    const setStatus = sets[setId]?.status;
+    if (setStatus === 'merged') {
+      return { postMerge: true };
+    }
+  } catch {
+    // If we can't read state, fall through to default
+  }
+
+  return { postMerge: false };
+}
+
+// ────────────────────────────────────────────────────────────────
 // Set Init Orchestration
 // ────────────────────────────────────────────────────────────────
 
@@ -990,6 +1097,9 @@ module.exports = {
   setInitSolo,
   isSoloMode,
   getSetDiffBase,
+  autoMergeSolo,
+  detectSoloAndSkip,
+  adjustReviewForSolo,
   formatStatusTable,
   formatStatusOutput,
   formatWaveSummary,
