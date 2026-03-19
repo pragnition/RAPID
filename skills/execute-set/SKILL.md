@@ -379,19 +379,47 @@ After ALL waves complete:
 
 ## Step 6: Complete Set
 
-Transition set to complete:
+Transition set to complete. Use the project root (not the worktree) for state commands:
 
 ```bash
 # (env preamble here)
+# Determine project root (parent of .rapid-worktrees if in a worktree, otherwise cwd)
+PROJECT_ROOT=$(cd "$(git rev-parse --show-toplevel)" && pwd)
+if [ -d "$PROJECT_ROOT/../.planning" ]; then
+  PROJECT_ROOT=$(cd "$PROJECT_ROOT/.." && pwd)
+fi
+
+# Transition state BEFORE git operations (prevents stuck-in-executing if commit fails)
 node "${RAPID_TOOLS}" state transition set "${MILESTONE}" "${SET_ID}" complete
 ```
 
-Commit marker files and GAPS.md (if any):
+If the state transition fails with a lock contention error, retry up to 2 more times with a 2-second pause:
 
 ```bash
-git add ".planning/sets/${SET_ID}/WAVE-*-COMPLETE.md"
+# Retry logic for state transition (lock contention)
+for attempt in 1 2 3; do
+  if node "${RAPID_TOOLS}" state transition set "${MILESTONE}" "${SET_ID}" complete 2>/dev/null; then
+    break
+  fi
+  if [ "$attempt" -lt 3 ]; then
+    sleep 2
+  else
+    echo "WARNING: State transition failed after 3 attempts. Set may still be in 'executing' state."
+  fi
+done
+```
+
+Commit marker files and GAPS.md (if any). Use --allow-empty to avoid failure if files were already committed:
+
+```bash
+git add ".planning/sets/${SET_ID}/WAVE-*-COMPLETE.md" 2>/dev/null || true
 git add ".planning/sets/${SET_ID}/GAPS.md" 2>/dev/null || true
-git commit -m "execute-set(${SET_ID}): complete execution"
+# Only commit if there are staged changes
+if ! git diff --cached --quiet 2>/dev/null; then
+  git commit -m "execute-set(${SET_ID}): complete execution" || echo "WARNING: Git commit failed. Marker files may not be committed."
+else
+  echo "No marker files to commit (already committed in wave execution)."
+fi
 ```
 
 Display final summary:
