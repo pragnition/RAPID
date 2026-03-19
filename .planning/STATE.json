@@ -228,7 +228,7 @@
         },
         {
           "id": "review-cycle-confirmation",
-          "status": "executed",
+          "status": "merged",
           "waves": [],
           "name": "Review Cycle Confirmation",
           "branch": "rapid/review-cycle-confirmation"
@@ -250,6 +250,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-19T09:37:24.812Z",
+  "lastUpdatedAt": "2026-03-19T13:46:21.273Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
