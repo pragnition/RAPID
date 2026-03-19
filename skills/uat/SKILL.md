@@ -242,6 +242,55 @@ If the agent returns with `CHECKPOINT` status and `pendingHuman` entries:
   - Record the human's response
 - Resume the agent with human verification results, or compile final results if all human steps are resolved
 
+## Step 7a: Retry on Failure Confirmation
+
+**This step fires only if there are automated scenario failures** in the execution results from Step 7. Human verification failures (scenarios where the user marked "Fail" during CHECKPOINT resolution) are NOT eligible for retry -- those verdicts are final. If all automated scenarios passed (or there are only human failures), skip directly to Step 8.
+
+**Retry limit:** Up to 2 retries after the initial execution (3 total attempts maximum). Track `retryCount` starting at 0.
+
+**Display failure summary:**
+
+```
+--- UAT Automated Failures ---
+Passed: {passed} | Failed (automated): {failedAuto} | Failed (human): {failedHuman}
+Failed automated scenarios:
+  - {scenario name}: {failure detail}
+```
+
+Use AskUserQuestion:
+- **question:** "UAT execution has {failedAuto} automated scenario failure(s) (attempt {retryCount + 1} of 3).\n\n{failedHuman > 0 ? failedHuman + ' human-verified failure(s) are final and will not be retried.\n\n' : ''}Retrying will attempt to fix test code and re-run failed automated scenarios."
+- **options:** ["Retry (fix test code and re-run)", "Accept results as-is"]
+
+**If user chooses "Retry...":**
+1. Spawn a `rapid-uat-fixer` agent with the failed automated scenario details:
+
+```
+Fix failing UAT automated scenarios for set '{setId}' -- Retry attempt {retryCount + 1}.
+
+## Failed Automated Scenarios
+{JSON array of failed automated scenario results}
+
+## Working Directory
+{worktreePath or cwd}
+
+## Browser Automation
+{browserConfig}
+
+## Instructions
+1. Review each failing automated scenario
+2. Fix the TEST CODE ONLY -- do NOT modify the source code under test
+3. Re-run the fixed scenarios
+4. Return via:
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"results":[{"name":"...","criterion":"...","type":"automated","status":"pass|fail","steps":[...],"notes":"..."}]}} -->
+```
+
+2. Merge the retry results with the previous results (replace entries for retried scenarios; keep human-verified results unchanged)
+3. Increment `retryCount`
+4. If automated failures remain and `retryCount < 2`, loop back to the top of Step 7a
+5. If automated failures remain and `retryCount >= 2`, proceed to Step 8 with the best results achieved
+
+**If user chooses "Accept results as-is":** Proceed to Step 8 with the current results.
+
 ## Step 8: Write REVIEW-UAT.md
 
 Write the UAT results to:
@@ -348,3 +397,4 @@ Then exit. Do NOT prompt for stage selection.
 - **Idempotent overwrite.** Re-running `/rapid:uat` overwrites REVIEW-UAT.md. Previous UAT results are not accumulated.
 - **REVIEW-SCOPE.md is the sole input.** This skill does not scope files itself -- it reads the scope produced by `/rapid:review`. If the scope is stale, re-run `/rapid:review` first.
 - **No stage selection.** This skill runs UAT only. It does not prompt the user to select unit test or bug hunt stages.
+- **Retry on failure with confirmation.** When automated scenario execution produces failures, the user is prompted to retry or accept. Retries spawn a fixer agent that modifies test code only (never source code under test). Maximum 2 retries (3 total attempts). Human verification failures (user marked "Fail" during CHECKPOINT) are final and never retried. The user can accept results at any point to proceed to REVIEW-UAT.md writing.

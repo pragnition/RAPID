@@ -199,6 +199,53 @@ Execute unit tests for set '{setId}' -- {concern/chunk description}.
 
 Merge results across all agents/chunks/concerns.
 
+## Step 5a: Retry on Failure Confirmation
+
+**This step fires only if there are test failures** in the merged results from Step 5. If all tests passed, skip directly to Step 6.
+
+**Retry limit:** Up to 2 retries after the initial execution (3 total attempts maximum). Track `retryCount` starting at 0.
+
+**Display failure summary:**
+
+```
+--- Unit Test Failures ---
+Passed: {passed} | Failed: {failed}
+Failed tests:
+  - {testFile}: {testName} -- {error summary}
+```
+
+Use AskUserQuestion:
+- **question:** "Unit test execution has {failed} failure(s) out of {total} tests (attempt {retryCount + 1} of 3).\n\nRetrying will attempt to fix test code (not source code) and re-run."
+- **options:** ["Retry (fix test code and re-run)", "Accept results as-is"]
+
+**If user chooses "Retry...":**
+1. Spawn a `rapid-test-fixer` agent with the failed test details:
+
+```
+Fix failing unit tests for set '{setId}' -- Retry attempt {retryCount + 1}.
+
+## Failed Tests
+{JSON array of failed test results with testFile, testName, error}
+
+## Working Directory
+{worktreePath or cwd}
+
+## Instructions
+1. Read each failing test file
+2. Fix the TEST CODE ONLY -- do NOT modify the source code under test
+3. Common fixes: incorrect assertions, wrong mock setup, missing test fixtures, async handling errors
+4. Re-run each fixed test with: node --test {testFile}
+5. Return via:
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"results":[{"file":"...","testFile":"...","passed":N,"failed":N,"errors":[]}]}} -->
+```
+
+2. Merge the retry results with the previous passing results (replace entries for retried test files)
+3. Increment `retryCount`
+4. If failures remain and `retryCount < 2`, loop back to the top of Step 5a (display summary and ask again)
+5. If failures remain and `retryCount >= 2`, proceed to Step 6 with the best results achieved
+
+**If user chooses "Accept results as-is":** Proceed to Step 6 with the current results.
+
 ## Step 6: Write REVIEW-UNIT.md
 
 Write the unit test results to:
@@ -286,3 +333,4 @@ Then exit. Do NOT prompt for stage selection.
 - **Uses `node --test` framework.** All tests use Node.js built-in test runner (`node:test`) with `node:assert/strict`. No external test frameworks.
 - **REVIEW-SCOPE.md is the sole input.** This skill does not scope files itself -- it reads the scope produced by `/rapid:review`. If the scope is stale, re-run `/rapid:review` first.
 - **No stage selection.** This skill runs unit tests only. It does not prompt the user to select bug hunt or UAT.
+- **Retry on failure with confirmation.** When test execution produces failures, the user is prompted to retry or accept. Retries spawn a fixer agent that modifies test code only (never source code under test). Maximum 2 retries (3 total attempts). The user can accept results at any point to proceed to REVIEW-UNIT.md writing.
