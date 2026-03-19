@@ -158,7 +158,11 @@ Run the deterministic (Tier 1) and heuristic (Tier 2) resolution cascade:
 node "${RAPID_TOOLS}" merge resolve {SET_NAME}
 ```
 
-Parse the JSON output. If all conflicts are resolved (`unresolvedForAgent` is 0 or not present), skip to Step 3.
+Parse the JSON output. If all conflicts are resolved (`unresolvedForAgent` is 0 or not present) AND no advisory signals are present (`advisoryCount` is 0 or not present), skip to Step 3.
+
+**IMPORTANT: Advisory signals require semantic analysis.** If T1-T2 returned advisory signals (ownership, dag-order), you MUST proceed to Step 2b semantic analysis. These signals are hints suggesting which version to prefer, but they do NOT verify code quality or completeness. The file owner's version may be a stub/skeleton, and the earlier-wave version may be incomplete. Review the advisory data in the resolution output to understand the hints, then apply your own semantic judgment in Step 2b.
+
+NEVER skip semantic analysis when the merging set modifies files that are also modified by sets already merged in this wave. Even if T1-T2 reports zero unresolved conflicts, overlapping file modifications require semantic review.
 
 #### 2b: L5 Semantic Detection + T3/T4 Resolution (Inline)
 
