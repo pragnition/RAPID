@@ -323,6 +323,64 @@ Fix accepted bugs for set '{setId}' -- Cycle {cycleNumber}.
 
 Update `modifiedFiles` with the files reported by the bugfix agent. Add accepted findings to `allAcceptedBugs`.
 
+### 3.9a: Cycle Continuation Confirmation
+
+**This step fires only before cycles 2 and 3** (i.e., when `cycleNumber >= 1` after incrementing). Skip this step entirely on cycle 1.
+
+Before starting the next cycle, present the user with a summary and confirmation prompt.
+
+**Display cycle summary:**
+
+```
+--- Bug Hunt Cycle {cycleNumber + 1} Complete ---
+Findings: {accepted} accepted, {dismissed} dismissed, {deferred} deferred
+Modified files this cycle: {modifiedFiles list, or 'none'}
+```
+
+Use AskUserQuestion:
+- **question:** "Bug hunt cycle {cycleNumber + 1} of 3 complete.\n\nAccepted: {accepted} | Dismissed: {dismissed} | Deferred: {deferred}\nFiles modified by bugfix: {modifiedFiles.length > 0 ? modifiedFiles.join(', ') : 'none'}\n\nContinue to the next cycle?"
+- **options:** ["Continue to cycle {cycleNumber + 2} of 3", "Stop and save {allAcceptedBugs.length} findings"]
+
+**If user chooses "Continue...":** Proceed normally -- increment `cycleNumber` and continue to Step 3.1.
+
+**If user chooses "Stop and save...":** Execute the early-exit path (Step 3.9b).
+
+### 3.9b: Early Exit Path
+
+When the user chooses to stop early at the confirmation gate (Step 3.9a):
+
+**1. Write partial REVIEW-BUGS.md**
+
+Write REVIEW-BUGS.md using the same format as Step 3.8, but add two additional rows to the Summary table:
+
+| Metric | Value |
+|--------|-------|
+| Partial | Yes (stopped after cycle {cycleNumber + 1} of 3) |
+| Cycles Completed | {cycleNumber + 1} |
+
+These rows go after the existing Deferred row. All other content (Accepted/Dismissed/Deferred findings sections) uses the same format as Step 3.8, populated from `allAcceptedBugs` and findings from all completed cycles.
+
+**2. Log all accepted findings**
+
+For every finding in `allAcceptedBugs`, log an issue using the same command as Step 4:
+
+```bash
+node "${RAPID_TOOLS}" review log-issue \
+  --set-id "{setId}" \
+  --type "bug" \
+  --severity "{severity}" \
+  --file "{file}" \
+  --line {line} \
+  --description "{description}" \
+  --source "bug-hunt"
+```
+
+These are real bugs found in completed cycles -- they must be logged regardless of whether all cycles ran.
+
+**3. Jump to Step 4 (Completion Banner)**
+
+After writing REVIEW-BUGS.md and logging issues, skip directly to Step 4. The completion banner should reflect the partial run (use the actual `cycleNumber + 1` for the Cycles count).
+
 ### 3.10: Cycle 3 Remaining Bugs
 
 After the 3rd cycle, if there are still ACCEPTED bugs that were not successfully fixed:
@@ -336,6 +394,7 @@ Log the user's decision for each.
 - `cycleNumber >= 3`
 - `modifiedFiles` is empty (no changes in last cycle)
 - All findings were DISMISSED or DEFERRED
+- User chose to stop at the confirmation gate (Step 3.9a)
 
 ## Step 4: Completion Banner
 
@@ -386,8 +445,11 @@ Then exit. Do NOT prompt for stage selection.
 - **Idempotent overwrite.** Re-running `/rapid:bug-hunt` overwrites REVIEW-BUGS.md. Previous bug hunt results are not accumulated.
 - **REVIEW-SCOPE.md is the sole input.** This skill does not scope files itself -- it reads the scope produced by `/rapid:review`. If the scope is stale, re-run `/rapid:review` first.
 - **No stage selection.** This skill runs bug hunt only. It does not prompt the user to select unit test or UAT stages.
+- **Cycle continuation requires user confirmation.** Before starting cycle 2 or 3, the user is prompted with a summary of findings and modified files from the completed cycle. The user can choose to continue or stop early. Early exit preserves all accumulated findings in REVIEW-BUGS.md with partial-cycle metadata (Partial: Yes, Cycles Completed: N). All accepted findings are logged via `review log-issue` regardless of early exit. This satisfies the `no-runaway-cycles` and `preserve-partial-findings` behavioral contracts.
 - **CONTRACT behavioral requirements enforced:**
   - `judgeLeaningVisible`: REVIEW-BUGS.md includes judge leaning with confidence for each finding
   - `noStagePrompting`: No stage selection menu
   - `idempotentRerun`: Re-running overwrites REVIEW-BUGS.md
   - `scopeRequired`: Guard at Step 1 checks for REVIEW-SCOPE.md
+  - `no-runaway-cycles`: User confirmation required before cycles 2 and 3 (Step 3.9a)
+  - `preserve-partial-findings`: Early exit preserves all findings in REVIEW-BUGS.md (Step 3.9b)
