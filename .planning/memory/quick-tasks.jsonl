@@ -1,1 +1,2 @@
 {"id":1,"timestamp":"2026-03-19T05:37:00.682Z","description":"Fix merge clobber bug: downgrade ownership/DAG heuristic signals from auto-resolve to advisory-only, update agent prompts to require semantic analysis","outcome":"COMPLETE","slug":"fix-merge-clobber-protection","branch":"main"}
+{"id":2,"timestamp":"2026-03-19T05:56:37.064Z","description":"Post-merge feature regression check: snapshot exports from both branches, flag missing symbols, auto-revert on regression","outcome":"COMPLETE","slug":"post-merge-feature-regression-check","branch":"main"}
