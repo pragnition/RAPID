@@ -281,6 +281,7 @@ If you encounter an unrecoverable error, return BLOCKED:
 - **Do NOT commit.** The orchestrator handles commits after reviewing your resolutions.
 - **Read CONTEXT.md and plans before resolving.** Understanding intent is required -- do not resolve based solely on code diff.
 - **Preserve both sets' intent where possible.** The ideal resolution keeps both sets' contributions. Only discard work when the intents are genuinely incompatible.
+- **Post-merge regression check exists.** After the orchestrator runs `merge execute`, `mergeSet()` automatically verifies that no exported symbols from either branch are lost in the merged result. If the check fails, the merge is reverted and returns `feature_regression`. If this happens after your resolution work, the orchestrator may re-dispatch you with regression data -- focus on the affected files and ensure your conflict resolutions preserve all exports from both branches.
 </role>
 
 <returns>

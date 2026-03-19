@@ -438,6 +438,27 @@ Parse the JSON result:
   If "Skip set": continue to next set.
   If "Abort pipeline": exit.
 
+- If `merged: false, reason: 'feature_regression'`:
+  > **Feature regression detected** in set '{setName}'
+  > The merge was automatically reverted because exported symbols were lost.
+  > Detail: {detail}
+  >
+  > **Regressions:**
+  > {for each regression in regressions: "- `{file}`: lost exports [{missing joined by ', '}]"}
+
+  Use AskUserQuestion:
+  - **question:** "Feature regression in {setName}"
+  - **options:**
+    - "Investigate" -- description: "View file diffs and exported symbols for the regressed files"
+    - "Re-dispatch resolver" -- description: "Send back to set-merger for semantic re-analysis of affected files"
+    - "Force merge" -- description: "Override regression check and merge anyway (not recommended)"
+    - "Abort pipeline" -- description: "Exit merge pipeline"
+
+  If "Investigate": display the regression details (base exports, set exports, merged exports for each file) and show `git diff` for affected files between preMergeHead and the set branch. Then present resolve/abort options.
+  If "Re-dispatch resolver": re-run Step 3c for this set with the regression data included in the launch briefing.
+  If "Force merge": re-run `node "${RAPID_TOOLS}" merge execute {setName}` -- but note the regression check will fire again. To truly force, the user must resolve the export loss first.
+  If "Abort pipeline": exit.
+
 ## Post-Wave: Blocked Set Recovery
 
 After all sets in the wave have been processed (dispatched + collected OR fast-pathed + merged):

@@ -58,6 +58,14 @@ async function handleMerge(cwd, subcommand, args) {
           mergeCommit: result.commitHash,
           completedAt: new Date().toISOString(),
         });
+      } else if (result.reason === 'feature_regression') {
+        // Write regression details to MERGE-STATE for agent consumption
+        await merge.ensureMergeState(cwd, setName, {
+          status: 'regression_detected',
+          regressionDetail: result.detail,
+          regressions: result.regressions || [],
+          detectedAt: new Date().toISOString(),
+        });
       }
       output(JSON.stringify(result));
       break;
