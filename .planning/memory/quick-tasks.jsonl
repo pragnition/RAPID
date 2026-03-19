@@ -1,0 +1,1 @@
+{"id":1,"timestamp":"2026-03-19T05:37:00.682Z","description":"Fix merge clobber bug: downgrade ownership/DAG heuristic signals from auto-resolve to advisory-only, update agent prompts to require semantic analysis","outcome":"COMPLETE","slug":"fix-merge-clobber-protection","branch":"main"}
