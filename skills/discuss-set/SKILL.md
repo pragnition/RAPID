@@ -157,6 +157,8 @@ Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, 
 - Performance/quality tradeoffs exist
 - UI/UX decisions need to be made
 
+When the set's context (SET-OVERVIEW.md, CONTRACT.json, ROADMAP.md description) indicates user-facing components, frontend work, or UI changes, weave UI/UX considerations naturally into the relevant gray areas. For example, a "state management" gray area for a frontend set should include UI state questions; an "API design" gray area should consider how the API shapes the user experience. Do NOT reserve a dedicated gray area slot exclusively for UI/UX -- instead, let UI/UX concerns enrich the gray areas that naturally touch user-facing behavior. For sets with no user-facing components (pure backend, CLI internals, infrastructure), UI/UX gray areas are unnecessary and should not be forced.
+
 Present gray areas using AskUserQuestion:
 
 ```
