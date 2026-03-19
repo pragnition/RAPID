@@ -623,12 +623,47 @@ Write the roadmap files using CLI commands (agents do NOT write these directly):
 a) Write ROADMAP.md:
    Use the Write tool to write `.planning/ROADMAP.md` with the roadmapper's `roadmap` content.
 
-b) Write CONTRACT.json files for each set:
-   For each contract in the `contracts` array:
+b) Write CONTRACT.json and DEFINITION.md files for each set:
+   For each entry in the `contracts` array:
    ```bash
    mkdir -p .planning/sets/{setId}
    ```
    Use the Write tool to write `.planning/sets/{setId}/CONTRACT.json` with the contract content.
+
+   Then, use the Write tool to write `.planning/sets/{setId}/DEFINITION.md` with the following content, populated from the entry's `definition` object:
+
+   ```markdown
+   # Set: {setId}
+
+   ## Scope
+   {definition.scope}
+
+   ## File Ownership
+   Files this set owns (exclusive write access):
+   - {definition.ownedFiles[0]}
+   - {definition.ownedFiles[1]}
+   ...
+
+   ## Tasks
+   1. {definition.tasks[0].description}
+      - Acceptance: {definition.tasks[0].acceptance}
+   2. {definition.tasks[1].description}
+      - Acceptance: {definition.tasks[1].acceptance}
+   ...
+
+   ## Interface Contract
+   See: CONTRACT.json (adjacent file)
+
+   ## Wave Assignment
+   Wave: (assigned during plan-set)
+
+   ## Acceptance Criteria
+   - {definition.acceptance[0]}
+   - {definition.acceptance[1]}
+   ...
+   ```
+
+   If the `definition` field is missing from a contracts entry (e.g., from an older roadmapper version), skip DEFINITION.md generation for that set and log a warning: "Warning: No definition metadata for set {setId}. DEFINITION.md was not generated."
 
 c) Write STATE.json with the project > milestone > sets structure:
    Use the Write tool to write `.planning/STATE.json` with the roadmapper's `state` content.
@@ -681,6 +716,7 @@ Display a final summary:
 - .planning/research/SUMMARY.md
 - .planning/research/{research files}
 - .planning/sets/{set}/CONTRACT.json (for each set)
+- .planning/sets/{set}/DEFINITION.md (for each set)
 
 ```
 

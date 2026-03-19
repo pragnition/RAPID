@@ -44,7 +44,15 @@ Return a JSON object with three keys:
   "contracts": [
     {
       "setId": "set-name",
-      "contract": { ... CONTRACT.json content ... }
+      "contract": { ... CONTRACT.json content ... },
+      "definition": {
+        "scope": "2-3 sentence description of what this set delivers",
+        "ownedFiles": ["src/module/file1.cjs", "src/module/file2.cjs"],
+        "tasks": [
+          { "description": "Implement feature X", "acceptance": "Tests pass for X" }
+        ],
+        "acceptance": ["All tasks complete with passing tests", "CONTRACT.json satisfied"]
+      }
     }
   ]
 }
