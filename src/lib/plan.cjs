@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const dag = require('./dag.cjs');
+const { DAG_CANONICAL_SUBPATH } = require('./dag.cjs');
 const contract = require('./contract.cjs');
 
 // ────────────────────────────────────────────────────────────────
@@ -255,7 +256,7 @@ function listSets(cwd) {
  * @param {Object} dagObj - DAG object from createDAG
  */
 function writeDAG(cwd, dagObj) {
-  const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
+  const dagPath = path.join(cwd, DAG_CANONICAL_SUBPATH);
   fs.writeFileSync(dagPath, JSON.stringify(dagObj, null, 2), 'utf-8');
 }
 

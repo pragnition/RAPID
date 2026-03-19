@@ -670,6 +670,14 @@ c) Write STATE.json with the project > milestone > sets structure:
    The state structure is: `{ milestones: [{ id, name, status, sets: [{ id, status: "pending" }] }], currentMilestone }`
    Each set has only `{ id, name, status: "pending", branch }` -- no waves or jobs arrays.
 
+d) Generate DAG.json and OWNERSHIP.json from the newly written STATE.json and CONTRACT.json files:
+   ```bash
+   node -e "const { recalculateDAG } = require('${RAPID_TOOLS}/../lib/add-set.cjs'); recalculateDAG(process.cwd(), '{milestoneId}').then(() => console.log('DAG.json created.')).catch(e => console.error('Warning: DAG generation failed:', e.message))"
+   ```
+   Where `{milestoneId}` is the milestone ID from the roadmapper's `state.currentMilestone` field.
+
+   If this command fails (prints a warning), do NOT fail init. The DAG will be generated automatically by the first `state add-set` call or can be triggered manually later.
+
 **If "Request changes":**
 
 Ask the user freeform: "What changes would you like to make to the roadmap?"
@@ -752,6 +760,8 @@ Display a final summary:
 - .planning/research/{research files}
 - .planning/sets/{set}/CONTRACT.json (for each set)
 - .planning/sets/{set}/DEFINITION.md (for each set)
+- .planning/sets/DAG.json
+- .planning/sets/OWNERSHIP.json
 
 ```
 
