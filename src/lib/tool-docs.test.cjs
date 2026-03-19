@@ -272,3 +272,34 @@ describe('phantom command guard', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// TOOL_REGISTRY CLI drift guard: every entry maps to a real CLI subcommand
+// ---------------------------------------------------------------------------
+describe('TOOL_REGISTRY CLI drift guard', () => {
+  it('every TOOL_REGISTRY entry maps to a real CLI subcommand in USAGE', () => {
+    const rapidToolsSrc = fs.readFileSync(
+      path.join(__dirname, '..', 'bin', 'rapid-tools.cjs'), 'utf-8'
+    );
+    // Extract USAGE block
+    const usageMatch = rapidToolsSrc.match(/const USAGE = `([\s\S]*?)`;/);
+    assert.ok(usageMatch, 'Could not extract USAGE from rapid-tools.cjs');
+    const usage = usageMatch[1];
+
+    for (const [key, doc] of Object.entries(TOOL_REGISTRY)) {
+      // Extract the command portion (before " -- ")
+      const cmdPart = doc.split(' -- ')[0].trim();
+      // Get the words of the command
+      const words = cmdPart.split(/\s+/);
+      // Try 2-word subcommand first (e.g. "state get", "plan create-set"),
+      // then fall back to 1-word top-level command (e.g. "parse-return", "prereqs")
+      const twoWord = words.slice(0, 2).join(' ');
+      const oneWord = words[0];
+      const found = usage.includes(twoWord) || usage.includes(oneWord);
+      assert.ok(
+        found,
+        `TOOL_REGISTRY["${key}"] references subcommand "${twoWord}" (or "${oneWord}") not found in USAGE`
+      );
+    }
+  });
+});
