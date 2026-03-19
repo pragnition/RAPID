@@ -22,7 +22,14 @@ async function handleReview(cwd, subcommand, args) {
       // Post-merge mode: scope from merge commit, skip worktree resolution
       if (postMerge) {
         try {
-          const result = review.scopeSetPostMerge(cwd, setId);
+          let result;
+          // Solo sets have no merge commit -- use scopeSetForReview with startCommit
+          if (wt.isSoloMode(cwd, setId)) {
+            const diffBase = wt.getSetDiffBase(cwd, setId);
+            result = review.scopeSetForReview(cwd, cwd, diffBase);
+          } else {
+            result = review.scopeSetPostMerge(cwd, setId);
+          }
           const allFiles = [...result.changedFiles, ...result.dependentFiles];
           const chunks = review.chunkByDirectory(allFiles);
           output(JSON.stringify({ ...result, chunks, postMerge: true }));

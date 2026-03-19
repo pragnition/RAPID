@@ -1604,4 +1604,174 @@ describe('solo mode', () => {
       assert.equal(registry.worktrees['solo-set'].status, 'active', 'solo entry should remain active');
     });
   });
+
+  // ────────────────────────────────────────────────────────────────
+  // Solo Mode Lifecycle Functions
+  // ────────────────────────────────────────────────────────────────
+
+  describe('detectSoloAndSkip', () => {
+    let tmpDir;
+
+    beforeEach(() => {
+      tmpDir = createTempRepo();
+      fs.mkdirSync(path.join(tmpDir, '.planning', 'worktrees'), { recursive: true });
+    });
+
+    afterEach(() => { cleanupRepo(tmpDir); });
+
+    it('returns isSolo: false for non-solo set', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'normal-set': { setName: 'normal-set', branch: 'rapid/normal-set', path: '.rapid-worktrees/normal-set', status: 'active', phase: 'Created' },
+        },
+      });
+      const result = worktree.detectSoloAndSkip(tmpDir, 'normal-set');
+      assert.equal(result.isSolo, false);
+      assert.equal(result.message, '');
+    });
+
+    it('returns isSolo: false for unknown set', () => {
+      worktree.writeRegistry(tmpDir, { version: 1, worktrees: {} });
+      const result = worktree.detectSoloAndSkip(tmpDir, 'unknown');
+      assert.equal(result.isSolo, false);
+    });
+
+    it('returns isSolo: true with informational message for solo set', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'my-solo': { setName: 'my-solo', solo: true, branch: 'main', path: '.', status: 'active', phase: 'Created', startCommit: 'abc123' },
+        },
+      });
+      const result = worktree.detectSoloAndSkip(tmpDir, 'my-solo');
+      assert.equal(result.isSolo, true);
+      assert.ok(result.message.includes('my-solo'));
+      assert.ok(result.message.includes('solo set'));
+      assert.ok(result.message.includes('No merge needed'));
+    });
+  });
+
+  describe('adjustReviewForSolo', () => {
+    let tmpDir;
+
+    beforeEach(() => {
+      tmpDir = createTempRepo();
+      fs.mkdirSync(path.join(tmpDir, '.planning', 'worktrees'), { recursive: true });
+    });
+
+    afterEach(() => { cleanupRepo(tmpDir); });
+
+    it('returns postMerge: false for non-solo set', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'normal-set': { setName: 'normal-set', branch: 'rapid/normal-set', path: '.rapid-worktrees/normal-set', status: 'active', phase: 'Created' },
+        },
+      });
+      const result = worktree.adjustReviewForSolo(tmpDir, 'normal-set');
+      assert.equal(result.postMerge, false);
+    });
+
+    it('returns postMerge: false for solo set NOT in merged status', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'my-solo': { setName: 'my-solo', solo: true, branch: 'main', path: '.', status: 'active', phase: 'Created', startCommit: 'abc123' },
+        },
+      });
+      // Write STATE.json with set in 'complete' (not merged yet)
+      fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.json'), JSON.stringify({
+        milestone: { id: 'v1', sets: { 'my-solo': { status: 'complete' } } },
+      }));
+      const result = worktree.adjustReviewForSolo(tmpDir, 'my-solo');
+      assert.equal(result.postMerge, false);
+    });
+
+    it('returns postMerge: true for solo set in merged status', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'my-solo': { setName: 'my-solo', solo: true, branch: 'main', path: '.', status: 'active', phase: 'Created', startCommit: 'abc123' },
+        },
+      });
+      fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.json'), JSON.stringify({
+        milestone: { id: 'v1', sets: { 'my-solo': { status: 'merged' } } },
+      }));
+      const result = worktree.adjustReviewForSolo(tmpDir, 'my-solo');
+      assert.equal(result.postMerge, true);
+    });
+
+    it('returns postMerge: false when STATE.json is missing', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'my-solo': { setName: 'my-solo', solo: true, branch: 'main', path: '.', status: 'active', phase: 'Created', startCommit: 'abc123' },
+        },
+      });
+      // No STATE.json written -- should not throw
+      const result = worktree.adjustReviewForSolo(tmpDir, 'my-solo');
+      assert.equal(result.postMerge, false);
+    });
+  });
+
+  describe('autoMergeSolo', () => {
+    let tmpDir;
+    let originalRapidTools;
+
+    beforeEach(() => {
+      tmpDir = createTempRepo();
+      fs.mkdirSync(path.join(tmpDir, '.planning', 'worktrees'), { recursive: true });
+      originalRapidTools = process.env.RAPID_TOOLS;
+    });
+
+    afterEach(() => {
+      cleanupRepo(tmpDir);
+      if (originalRapidTools !== undefined) {
+        process.env.RAPID_TOOLS = originalRapidTools;
+      } else {
+        delete process.env.RAPID_TOOLS;
+      }
+    });
+
+    it('returns transitioned: false for non-solo set', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'normal-set': { setName: 'normal-set', branch: 'rapid/normal-set', path: '.rapid-worktrees/normal-set', status: 'active', phase: 'Created' },
+        },
+      });
+      const result = worktree.autoMergeSolo(tmpDir, 'normal-set');
+      assert.equal(result.transitioned, false);
+      assert.ok(result.error.includes('Not a solo set'));
+    });
+
+    it('returns transitioned: false when STATE.json is missing', () => {
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'my-solo': { setName: 'my-solo', solo: true, branch: 'main', path: '.', status: 'active', phase: 'Created', startCommit: 'abc123' },
+        },
+      });
+      const result = worktree.autoMergeSolo(tmpDir, 'my-solo');
+      assert.equal(result.transitioned, false);
+      assert.ok(result.error.includes('STATE.json'));
+    });
+
+    it('returns transitioned: false when RAPID_TOOLS is not set', () => {
+      delete process.env.RAPID_TOOLS;
+      worktree.writeRegistry(tmpDir, {
+        version: 1,
+        worktrees: {
+          'my-solo': { setName: 'my-solo', solo: true, branch: 'main', path: '.', status: 'active', phase: 'Created', startCommit: 'abc123' },
+        },
+      });
+      fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.json'), JSON.stringify({
+        milestone: { id: 'v1', sets: { 'my-solo': { status: 'complete' } } },
+      }));
+      const result = worktree.autoMergeSolo(tmpDir, 'my-solo');
+      assert.equal(result.transitioned, false);
+      assert.ok(result.error.includes('RAPID_TOOLS'));
+    });
+  });
 });
