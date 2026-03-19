@@ -221,14 +221,14 @@
         },
         {
           "id": "solo-mode",
-          "status": "complete",
+          "status": "merged",
           "waves": [],
           "name": "Solo Mode Improvements",
           "branch": "rapid/solo-mode"
         },
         {
           "id": "review-cycle-confirmation",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Review Cycle Confirmation",
           "branch": "rapid/review-cycle-confirmation"
@@ -250,6 +250,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-19T08:02:25.009Z",
+  "lastUpdatedAt": "2026-03-19T08:55:20.257Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
