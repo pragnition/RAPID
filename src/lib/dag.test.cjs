@@ -2,6 +2,9 @@
 
 const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 const {
   toposort,
@@ -9,6 +12,8 @@ const {
   createDAG,
   validateDAG,
   getExecutionOrder,
+  tryLoadDAG,
+  DAG_CANONICAL_SUBPATH,
   createDAGv2,
   validateDAGv2,
 } = require('./dag.cjs');
@@ -733,5 +738,65 @@ describe('validateDAGv2', () => {
     assert.equal(result.valid, false);
     assert.ok(result.errors.some(e => e.includes('totalNodes')));
     assert.ok(result.errors.some(e => e.includes('totalWaves')));
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// tryLoadDAG
+// ────────────────────────────────────────────────────────────────
+describe('tryLoadDAG', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-dag-test-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets'), { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns null dag when DAG.json does not exist', () => {
+    const result = tryLoadDAG(tmpDir);
+    assert.equal(result.dag, null);
+    assert.ok(result.path.endsWith(path.join('.planning', 'sets', 'DAG.json')));
+  });
+
+  it('returns parsed DAG when file exists and is valid JSON', () => {
+    const dag = createDAG(
+      [{ id: 'auth' }, { id: 'api' }],
+      [{ from: 'auth', to: 'api' }]
+    );
+    const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify(dag, null, 2));
+
+    const result = tryLoadDAG(tmpDir);
+    assert.ok(result.dag !== null, 'dag should not be null');
+    assert.ok(Array.isArray(result.dag.nodes), 'dag.nodes should be an array');
+    assert.equal(result.dag.nodes.length, 2);
+    assert.ok(result.path.endsWith(DAG_CANONICAL_SUBPATH));
+  });
+
+  it('throws SyntaxError on malformed JSON (not ENOENT)', () => {
+    const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    fs.writeFileSync(dagPath, '{ broken json');
+
+    assert.throws(
+      () => tryLoadDAG(tmpDir),
+      (err) => {
+        assert.ok(err instanceof SyntaxError, 'should be a SyntaxError');
+        return true;
+      }
+    );
+  });
+
+  it('returns canonical path string even on ENOENT', () => {
+    const result = tryLoadDAG(tmpDir);
+    const expectedPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    assert.equal(result.path, expectedPath);
+  });
+
+  it('DAG_CANONICAL_SUBPATH is the expected value', () => {
+    assert.equal(DAG_CANONICAL_SUBPATH, path.join('.planning', 'sets', 'DAG.json'));
   });
 });
