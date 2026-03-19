@@ -188,8 +188,8 @@ function generateDefinition(setDef) {
  *
  * @param {string} cwd - Project root directory
  * @param {string} setName - Name of the set to load
- * @returns {{ definition: string, contract: Object, contributions?: Object }}
- * @throws {Error} If set directory does not exist
+ * @returns {{ definition: string | null, contract: Object, contributions?: Object }}
+ * @throws {Error} If set directory or CONTRACT.json does not exist
  */
 function loadSet(cwd, setName) {
   const projectRoot = resolveProjectRoot(cwd);
@@ -199,7 +199,15 @@ function loadSet(cwd, setName) {
     throw new Error(`Set "${setName}" does not exist at ${setDir} (cwd: ${cwd}, resolved root: ${projectRoot})`);
   }
 
-  const definition = fs.readFileSync(path.join(setDir, 'DEFINITION.md'), 'utf-8');
+  // DEFINITION.md is optional -- init creates sets via contracts before definitions exist
+  const defPath = path.join(setDir, 'DEFINITION.md');
+  let definition = null;
+  if (fs.existsSync(defPath)) {
+    definition = fs.readFileSync(defPath, 'utf-8');
+  } else {
+    console.error(`[RAPID] Warning: DEFINITION.md not found for set "${setName}" at ${defPath}`);
+  }
+
   const contractJson = JSON.parse(
     fs.readFileSync(path.join(setDir, 'CONTRACT.json'), 'utf-8')
   );
