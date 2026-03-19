@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 /**
  * dag.cjs - Directed Acyclic Graph operations for RAPID set dependencies.
  *
@@ -13,6 +16,13 @@
  *
  * No external dependencies -- uses only Node.js built-ins.
  */
+
+/**
+ * Canonical subpath for DAG.json within a project root.
+ * All DAG consumers must use this path (or tryLoadDAG) instead of
+ * constructing paths manually.
+ */
+const DAG_CANONICAL_SUBPATH = path.join('.planning', 'sets', 'DAG.json');
 
 /**
  * Topological sort using Kahn's algorithm (BFS-based).
@@ -270,6 +280,32 @@ function getExecutionOrder(dag) {
 }
 
 /**
+ * Load DAG.json from the canonical path within a project root.
+ *
+ * Returns `{ dag, path }` where `dag` is the parsed object or null if the
+ * file does not exist. Always returns `path` (the canonical location) for
+ * logging and error messages.
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {{ dag: object|null, path: string }}
+ * @throws {SyntaxError} If the file exists but contains malformed JSON
+ * @throws {Error} If the file cannot be read for reasons other than ENOENT
+ */
+function tryLoadDAG(cwd) {
+  const canonicalPath = path.join(cwd, DAG_CANONICAL_SUBPATH);
+  let raw;
+  try {
+    raw = fs.readFileSync(canonicalPath, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return { dag: null, path: canonicalPath };
+    }
+    throw err;
+  }
+  return { dag: JSON.parse(raw), path: canonicalPath };
+}
+
+/**
  * Valid node types for v2.0 DAGs.
  */
 const VALID_NODE_TYPES = ['set', 'wave', 'job'];
@@ -462,6 +498,8 @@ module.exports = {
   createDAG,
   validateDAG,
   getExecutionOrder,
+  tryLoadDAG,
+  DAG_CANONICAL_SUBPATH,
   createDAGv2,
   validateDAGv2,
 };
