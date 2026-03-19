@@ -183,7 +183,10 @@
       "phase": "Created",
       "status": "active",
       "wave": null,
-      "createdAt": "2026-03-19T07:25:16.739Z"
+      "createdAt": "2026-03-19T07:25:16.739Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-19T08:28:44.157Z",
+      "mergeCommit": "f1f7a34618b2c1fd96ced00ed9b2f34d9f587e21"
     },
     "state-and-ux": {
       "setName": "state-and-ux",
@@ -331,6 +334,16 @@
       "mergeStatus": "merged",
       "mergedAt": "2026-03-19T07:23:06.786Z",
       "mergeCommit": "ac2a61701883015e46194e383c4ad6bd13a0d6e6"
+    },
+    "review-cycle-confirmation": {
+      "setName": "review-cycle-confirmation",
+      "branch": "rapid/review-cycle-confirmation",
+      "path": ".rapid-worktrees/review-cycle-confirmation",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-19T08:29:47.108Z",
+      "mergeStatus": "resolving"
     }
   }
 }
