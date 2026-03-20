@@ -19,7 +19,8 @@ const ANSI = {
  * Each stage gets an uppercase action verb.
  *
  * Legacy (8): init, set-init, discuss, wave-plan, plan-set, execute, review, merge
- * v3.0  (6): start-set, discuss-set, execute-set, new-version, add-set, quick
+ * v3.0  (7): start-set, discuss-set, execute-set, new-version, add-set, quick, scaffold
+ * Branding (1): branding
  */
 const STAGE_VERBS = {
   'init': 'INITIALIZING',
@@ -37,6 +38,7 @@ const STAGE_VERBS = {
   'add-set': 'ADDING SET',
   'quick': 'QUICK TASK',
   'scaffold': 'SCAFFOLDING',
+  'branding': 'BRANDING',
 };
 
 /**
@@ -64,6 +66,7 @@ const STAGE_BG = {
   'add-set': '\x1b[104m',    // bright blue (planning stage)
   'quick': '\x1b[102m',      // bright green (execution stage)
   'scaffold': '\x1b[104m',  // bright blue (planning stage)
+  'branding': '\x1b[104m',  // bright blue (planning stage)
 };
 
 /**
