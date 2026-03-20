@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.rapid.web</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__RAPID_WEB_BIN__</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>RAPID_WEB</key>
+        <string>true</string>
+        <key>RAPID_WEB_PORT</key>
+        <string>8998</string>
+        <key>RAPID_WEB_HOST</key>
+        <string>127.0.0.1</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>__HOME__/.rapid/logs/rapid-web-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/.rapid/logs/rapid-web-stderr.log</string>
+</dict>
+</plist>
