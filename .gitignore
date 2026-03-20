@@ -10,6 +10,10 @@
 # Dependencies
 node_modules/
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # Note: agents/ is NOT gitignored. Generated files are committed so the plugin
 # works immediately after clone without running setup.sh first.
 # Source of truth is src/modules/. Regenerate with: node src/bin/rapid-tools.cjs build-agents

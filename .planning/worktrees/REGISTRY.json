@@ -6,7 +6,7 @@
       "branch": "rapid/command-audit",
       "path": ".rapid-worktrees/command-audit",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-13T18:22:01.471Z",
       "mergeStatus": "merged",
@@ -18,7 +18,7 @@
       "branch": "rapid/resolve-fix",
       "path": ".rapid-worktrees/resolve-fix",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-14T03:57:28.478Z",
       "mergeStatus": "merged",
@@ -30,7 +30,7 @@
       "branch": "rapid/review-after-merge",
       "path": ".rapid-worktrees/review-after-merge",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-14T13:45:49.124Z",
       "mergeStatus": "merged",
@@ -42,7 +42,7 @@
       "branch": "rapid/state-consistency",
       "path": ".rapid-worktrees/state-consistency",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-14T14:43:37.616Z",
       "mergeStatus": "merged",
@@ -54,7 +54,7 @@
       "branch": "rapid/ux-improvements",
       "path": ".rapid-worktrees/ux-improvements",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-15T13:53:01.392Z",
       "mergeStatus": "merged",
@@ -66,7 +66,7 @@
       "branch": "rapid/structural-cleanup",
       "path": ".rapid-worktrees/structural-cleanup",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-16T08:42:02.300Z",
       "mergeStatus": "complete"
@@ -76,7 +76,7 @@
       "branch": "rapid/review-pipeline",
       "path": ".rapid-worktrees/review-pipeline",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-16T10:08:27.090Z",
       "mergeStatus": "merged",
@@ -88,7 +88,7 @@
       "branch": "rapid/context-optimization",
       "path": ".rapid-worktrees/context-optimization",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-16T14:34:11.616Z",
       "mergeStatus": "merged",
@@ -100,7 +100,7 @@
       "branch": "rapid/memory-system",
       "path": ".rapid-worktrees/memory-system",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-17T07:15:49.406Z"
     },
@@ -109,7 +109,7 @@
       "branch": "rapid/bug-fixes",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/bug-fixes",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.726Z"
     },
     "cli-restructuring": {
@@ -117,7 +117,7 @@
       "branch": "rapid/cli-restructuring",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/cli-restructuring",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "command-cleanup": {
@@ -125,7 +125,7 @@
       "branch": "rapid/command-cleanup",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/command-cleanup",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "data-integrity": {
@@ -133,7 +133,7 @@
       "branch": "rapid/data-integrity",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/data-integrity",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "foundation-hardening": {
@@ -141,7 +141,7 @@
       "branch": "rapid/foundation-hardening",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/foundation-hardening",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "install-version": {
@@ -149,7 +149,7 @@
       "branch": "rapid/install-version",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/install-version",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "migrate": {
@@ -157,7 +157,7 @@
       "branch": "rapid/migrate",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/migrate",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "parallel-waves": {
@@ -165,7 +165,7 @@
       "branch": "rapid/parallel-waves",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/parallel-waves",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "scaffold-command": {
@@ -173,7 +173,7 @@
       "branch": "rapid/scaffold-command",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/scaffold-command",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "solo-mode": {
@@ -181,7 +181,7 @@
       "branch": "rapid/solo-mode",
       "path": ".rapid-worktrees/solo-mode",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-19T07:25:16.739Z",
       "mergeStatus": "merged",
@@ -193,7 +193,7 @@
       "branch": "rapid/state-and-ux",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/state-and-ux",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "status-rename": {
@@ -201,7 +201,7 @@
       "branch": "rapid/status-rename",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/status-rename",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "version-migration": {
@@ -209,7 +209,7 @@
       "branch": "rapid/version-migration",
       "path": "/home/kek/Projects/RAPID/.rapid-worktrees/version-migration",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "discoveredAt": "2026-03-17T07:39:27.727Z"
     },
     "quick-and-addset": {
@@ -217,7 +217,7 @@
       "branch": "rapid/quick-and-addset",
       "path": ".rapid-worktrees/quick-and-addset",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-17T08:26:42.258Z",
       "mergeStatus": "complete"
@@ -227,7 +227,7 @@
       "branch": "rapid/hooks-system",
       "path": ".rapid-worktrees/hooks-system",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-17T08:27:42.884Z",
       "mergeStatus": "complete",
@@ -239,7 +239,7 @@
       "branch": "rapid/code-quality",
       "path": ".rapid-worktrees/code-quality",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-18T05:17:32.926Z",
       "mergeStatus": "merged",
@@ -251,7 +251,7 @@
       "branch": "rapid/ui-contracts",
       "path": ".rapid-worktrees/ui-contracts",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-18T07:55:15.986Z",
       "mergeStatus": "merged",
@@ -274,7 +274,7 @@
       "branch": "rapid/state-execution",
       "path": ".rapid-worktrees/state-execution",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-18T11:09:18.698Z",
       "mergeStatus": "merged",
@@ -328,7 +328,7 @@
       "branch": "rapid/dag-and-state-fixes",
       "path": ".rapid-worktrees/dag-and-state-fixes",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-19T06:08:19.159Z",
       "mergeStatus": "merged",
@@ -340,7 +340,7 @@
       "branch": "rapid/review-cycle-confirmation",
       "path": ".rapid-worktrees/review-cycle-confirmation",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-19T08:29:47.108Z",
       "mergeStatus": "complete"
@@ -350,7 +350,7 @@
       "branch": "rapid/init-flow-redesign",
       "path": ".rapid-worktrees/init-flow-redesign",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-20T01:03:34.324Z"
     },
@@ -359,10 +359,32 @@
       "branch": "rapid/branding-system",
       "path": ".rapid-worktrees/branding-system",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-20T05:14:52.095Z",
       "mergeStatus": "complete"
+    },
+    "service-infrastructure": {
+      "setName": "service-infrastructure",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "259f8587f41dcb7f4c7ca4ee91d47021839ccc74",
+      "wave": null,
+      "createdAt": "2026-03-20T14:44:41.599Z"
+    },
+    "project-registry": {
+      "setName": "project-registry",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "83002048c0be9651953cff59c1dfd32c3df9a885",
+      "wave": null,
+      "createdAt": "2026-03-20T15:54:00.524Z"
     }
   }
 }
