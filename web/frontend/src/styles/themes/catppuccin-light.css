@@ -1,0 +1,36 @@
+[data-theme="catppuccin-light"] {
+  /* Backgrounds (Latte) */
+  --th-bg-dim: #DCE0E8;
+  --th-bg-0: #EFF1F5;
+  --th-bg-1: #E6E9EF;
+  --th-bg-2: #DCE0E8;
+  --th-bg-3: #CCD0DA;
+  --th-bg-4: #BCC0CC;
+
+  /* Foreground */
+  --th-fg: #4C4F69;
+  --th-fg-dim: #6C6F85;
+
+  /* Semantic colors */
+  --th-accent: #40A02B;
+  --th-link: #179299;
+  --th-warning: #DF8E1D;
+  --th-error: #D20F39;
+  --th-info: #1E66F5;
+  --th-muted: #9CA0B0;
+  --th-highlight: #8839EF;
+  --th-orange: #FE640B;
+
+  /* Surface hierarchy */
+  --th-surface-0: #EFF1F5;
+  --th-surface-1: #E6E9EF;
+  --th-surface-2: #DCE0E8;
+  --th-surface-3: #CCD0DA;
+  --th-surface-4: #BCC0CC;
+
+  /* UI tokens */
+  --th-border: #CCD0DA;
+  --th-hover: #E6E9EF;
+  --th-active: #CCD0DA;
+  --th-selection: rgba(64, 160, 43, 0.2);
+}

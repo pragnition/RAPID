@@ -1,0 +1,36 @@
+[data-theme="tokyonight-light"] {
+  /* Backgrounds (Day) */
+  --th-bg-dim: #D5D6DB;
+  --th-bg-0: #E1E2E7;
+  --th-bg-1: #D5D6DB;
+  --th-bg-2: #C4C8DA;
+  --th-bg-3: #B4B5B9;
+  --th-bg-4: #A1A6C5;
+
+  /* Foreground */
+  --th-fg: #3760BF;
+  --th-fg-dim: #6172B0;
+
+  /* Semantic colors */
+  --th-accent: #587539;
+  --th-link: #118C74;
+  --th-warning: #8C6C3E;
+  --th-error: #F52A65;
+  --th-info: #2E7DE9;
+  --th-muted: #848CB5;
+  --th-highlight: #9854F1;
+  --th-orange: #B15C00;
+
+  /* Surface hierarchy */
+  --th-surface-0: #E1E2E7;
+  --th-surface-1: #D5D6DB;
+  --th-surface-2: #C4C8DA;
+  --th-surface-3: #B4B5B9;
+  --th-surface-4: #A1A6C5;
+
+  /* UI tokens */
+  --th-border: #B4B5B9;
+  --th-hover: #D5D6DB;
+  --th-active: #B4B5B9;
+  --th-selection: rgba(88, 117, 57, 0.2);
+}

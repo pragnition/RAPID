@@ -1,0 +1,36 @@
+[data-theme="catppuccin-dark"] {
+  /* Backgrounds (Mocha) */
+  --th-bg-dim: #11111B;
+  --th-bg-0: #1E1E2E;
+  --th-bg-1: #181825;
+  --th-bg-2: #313244;
+  --th-bg-3: #45475A;
+  --th-bg-4: #585B70;
+
+  /* Foreground */
+  --th-fg: #CDD6F4;
+  --th-fg-dim: #A6ADC8;
+
+  /* Semantic colors */
+  --th-accent: #A6E3A1;
+  --th-link: #94E2D5;
+  --th-warning: #F9E2AF;
+  --th-error: #F38BA8;
+  --th-info: #89B4FA;
+  --th-muted: #6C7086;
+  --th-highlight: #CBA6F7;
+  --th-orange: #FAB387;
+
+  /* Surface hierarchy */
+  --th-surface-0: #1E1E2E;
+  --th-surface-1: #181825;
+  --th-surface-2: #313244;
+  --th-surface-3: #45475A;
+  --th-surface-4: #585B70;
+
+  /* UI tokens */
+  --th-border: #45475A;
+  --th-hover: #313244;
+  --th-active: #45475A;
+  --th-selection: rgba(166, 227, 161, 0.2);
+}

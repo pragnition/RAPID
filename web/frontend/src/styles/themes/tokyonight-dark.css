@@ -1,0 +1,36 @@
+[data-theme="tokyonight-dark"] {
+  /* Backgrounds (Storm) */
+  --th-bg-dim: #1F2335;
+  --th-bg-0: #24283B;
+  --th-bg-1: #292E42;
+  --th-bg-2: #3B4261;
+  --th-bg-3: #414868;
+  --th-bg-4: #545C7E;
+
+  /* Foreground */
+  --th-fg: #C0CAF5;
+  --th-fg-dim: #A9B1D6;
+
+  /* Semantic colors */
+  --th-accent: #9ECE6A;
+  --th-link: #73DACA;
+  --th-warning: #E0AF68;
+  --th-error: #F7768E;
+  --th-info: #7AA2F7;
+  --th-muted: #565F89;
+  --th-highlight: #BB9AF7;
+  --th-orange: #FF9E64;
+
+  /* Surface hierarchy */
+  --th-surface-0: #24283B;
+  --th-surface-1: #292E42;
+  --th-surface-2: #3B4261;
+  --th-surface-3: #414868;
+  --th-surface-4: #545C7E;
+
+  /* UI tokens */
+  --th-border: #414868;
+  --th-hover: #3B4261;
+  --th-active: #414868;
+  --th-selection: rgba(158, 206, 106, 0.2);
+}
