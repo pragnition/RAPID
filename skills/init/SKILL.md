@@ -244,18 +244,51 @@ Use AskUserQuestion with:
 
 After receiving the responses, analyze for gaps. If any must-have feature is unclear or the tech approach is contradictory, ask ONE targeted follow-up.
 
-**Batch 3: Scale and Integrations (Areas 5-6)**
+**Batch 3: Scale and Integrations**
 
-Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+This batch uses all structured questions since each area has a well-defined option space.
 
-> "A few questions about scale and external systems:
->
-> 1. **Data and traffic expectations?** Rough order of magnitude for data volume, concurrent users, latency requirements, real-time features?
-> 2. **Compliance or data residency?** Any regulatory requirements (HIPAA, SOC2, GDPR, etc.)?
-> 3. **Third-party integrations?** What external services or APIs will this connect to?
-> 4. **Auth approach?** SSO, OAuth, API keys, or other authentication/authorization strategy?"
+**Area 7 (Performance requirements) -- structured:**
 
-If the user has already addressed some of these areas in previous batches, note that and skip the already-covered items in your prompt. Do NOT re-ask what's already been answered.
+Use AskUserQuestion with:
+- question: "What are your real-time and performance requirements?"
+- Options:
+  - "Standard web app" -- "Page loads, form submissions, typical CRUD operations"
+  - "Real-time features needed" -- "WebSockets, live updates, collaborative editing"
+  - "High throughput" -- "Batch processing, data pipelines, high API call volume"
+  - "Low latency critical" -- "Sub-100ms response times, gaming, trading"
+
+**Area 8 (Compliance) -- structured:**
+
+Use AskUserQuestion with:
+- question: "Any compliance or regulatory requirements?"
+- Options:
+  - "None required" -- "No specific regulatory requirements"
+  - "GDPR" -- "EU data protection regulation"
+  - "HIPAA" -- "Healthcare data protection (US)"
+  - "SOC2" -- "Security and availability auditing"
+
+**Area 9 (Third-party integrations) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What types of third-party integrations are needed?"
+- Options:
+  - "Payment processing" -- "Stripe, PayPal, or similar payment APIs"
+  - "Auth providers" -- "OAuth, SSO/SAML, or identity providers"
+  - "Cloud services" -- "AWS, GCP, Azure services, storage, CDN"
+  - "None / minimal" -- "Mostly self-contained, few external dependencies"
+
+**Area 10 (Auth approach) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What authentication approach do you prefer?"
+- Options:
+  - "OAuth / social login" -- "Google, GitHub, social sign-in"
+  - "Email / password" -- "Traditional email and password with sessions"
+  - "SSO / SAML" -- "Enterprise single sign-on"
+  - "API keys" -- "Token-based authentication for API/developer use"
+
+If the user has already addressed some of these areas in previous batches, note that and skip the already-covered items. Do NOT re-ask what's already been answered.
 
 **Batch 4: Context and Success (Areas 7-10)**
 
