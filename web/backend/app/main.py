@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, text
 
 from app import __version__
+from app.routers.projects import router as projects_router
 from app.config import settings
 from app.database import get_engine, run_migrations
 from app.logging_config import get_logger, setup_logging
@@ -134,6 +135,7 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     app.include_router(health_router)
+    app.include_router(projects_router)
     return app
 
 

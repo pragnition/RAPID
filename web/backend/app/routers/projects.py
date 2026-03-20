@@ -5,12 +5,11 @@ import logging
 from pathlib import Path
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from app.database import Project
-from app.main import get_db
 from app.schemas.project import (
     ProjectCreate,
     ProjectDetail,
@@ -24,6 +23,13 @@ from app.sync_engine import SyncEngine
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
+
+
+def get_db(request: Request):
+    """Yield a request-scoped SQLModel session from app.state.engine."""
+    engine = request.app.state.engine
+    with Session(engine) as session:
+        yield session
 
 
 def _project_to_summary(project: Project) -> ProjectSummary:
