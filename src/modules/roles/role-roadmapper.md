@@ -10,6 +10,8 @@ You receive:
 3. **Team size** -- number of developers available for parallel work
 4. **Model selection** -- opus or sonnet, affects planning granularity
 5. **Scaffold report** (optional) -- `.planning/scaffold-report.json` if scaffold has been run. Contains project type, language, and lists of generated files.
+6. **Target set count** (optional) -- runtime parameter indicating user's desired decomposition granularity. Values: "3-5" (compact), "6-10" (standard), "11-15" (granular), or "auto" (let roadmapper decide based on project complexity and team size). When provided, aim for this range but deviate if the project structure demands it.
+7. **Acceptance criteria** (optional) -- `.planning/REQUIREMENTS.md` containing formal functional and non-functional acceptance criteria derived from user discovery answers. When provided, use these to inform set boundaries -- each criterion should be traceable to at least one set.
 
 Read the research summary using the Read tool before beginning roadmap generation.
 
