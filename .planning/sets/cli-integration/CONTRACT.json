@@ -1,0 +1,83 @@
+{
+  "setId": "cli-integration",
+  "version": "1.0.0",
+  "exports": {
+    "registerProjectWithWeb": {
+      "type": "function",
+      "signature": "(projectRoot: string) -> Promise<{success: boolean, error?: string}>",
+      "description": "Non-blocking HTTP call to register a project with the web service. Fails silently if service is unavailable."
+    },
+    "isWebEnabled": {
+      "type": "function",
+      "signature": "() -> boolean",
+      "description": "Checks for RAPID_WEB=true in environment or .env file"
+    },
+    "register_web_skill": {
+      "type": "file",
+      "signature": "skills/register-web/SKILL.md",
+      "description": "Skill definition for /rapid:register-web command to register legacy projects"
+    },
+    "install_web_extension": {
+      "type": "file",
+      "signature": "Extension to skills/install/SKILL.md",
+      "description": "Additions to /rapid:install for optional web service setup"
+    },
+    "doctor_web_checks": {
+      "type": "function",
+      "signature": "() -> {service_running: boolean, db_accessible: boolean, port_available: boolean}",
+      "description": "Health checks for web service integrated into doctor command"
+    }
+  },
+  "imports": {
+    "health_endpoint": {
+      "fromSet": "service-infrastructure",
+      "type": "endpoint",
+      "signature": "GET /api/health -> {status: str, version: str, uptime: float}"
+    },
+    "register_project": {
+      "fromSet": "project-registry",
+      "type": "endpoint",
+      "signature": "POST /api/projects {path: str, name: str} -> {id: str, status: str}"
+    }
+  },
+  "behavioral": {
+    "non_blocking": {
+      "description": "All HTTP calls to the web service must use fire-and-forget with a 2-second timeout; CLI must never hang waiting for web service",
+      "enforced_by": "test"
+    },
+    "graceful_failure": {
+      "description": "If web service is unavailable, CLI logs a debug message and continues normally; no user-visible error",
+      "enforced_by": "test"
+    },
+    "env_var_gating": {
+      "description": "All web service integration is gated by RAPID_WEB=true; without it, no HTTP calls are made",
+      "enforced_by": "test"
+    },
+    "no_cli_modification": {
+      "description": "Existing CLI commands must behave identically with or without RAPID_WEB; web integration is purely additive",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Integration between the existing RAPID Node.js CLI and the new Python web service. Modifications to /install for optional service setup, /init for auto-registration, new /register-web command for legacy projects, non-blocking HTTP helpers, and doctor checks.",
+    "ownedFiles": [
+      "src/lib/web-client.cjs",
+      "skills/register-web/SKILL.md",
+      "src/lib/web-client.test.cjs"
+    ],
+    "tasks": [
+      {"description": "Implement web-client.cjs with non-blocking HTTP helpers and RAPID_WEB detection", "acceptance": "HTTP calls timeout after 2 seconds, fail silently when service is down"},
+      {"description": "Modify /rapid:install to optionally set up web service (systemd enable, env var)", "acceptance": "Install prompts for web service, writes RAPID_WEB=true to shell config"},
+      {"description": "Modify /rapid:init to auto-register project when RAPID_WEB=true", "acceptance": "After init, project appears in web dashboard"},
+      {"description": "Create /rapid:register-web skill for legacy project registration", "acceptance": "Legacy projects can be registered with a single command"},
+      {"description": "Add web service health checks to doctor command", "acceptance": "Doctor reports service status, DB accessibility, port availability"}
+    ],
+    "acceptance": [
+      "CLI works identically with RAPID_WEB unset",
+      "Project auto-registers during /init when RAPID_WEB=true",
+      "/register-web registers legacy projects",
+      "All HTTP calls are non-blocking with 2-second timeout",
+      "Doctor command reports web service health"
+    ]
+  }
+}

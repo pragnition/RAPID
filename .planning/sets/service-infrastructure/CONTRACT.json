@@ -1,0 +1,96 @@
+{
+  "setId": "service-infrastructure",
+  "version": "1.0.0",
+  "exports": {
+    "create_app": {
+      "type": "function",
+      "signature": "() -> FastAPI",
+      "description": "Factory function returning configured FastAPI application with CORS, exception handlers, and lifespan management"
+    },
+    "get_engine": {
+      "type": "function",
+      "signature": "() -> sqlalchemy.Engine",
+      "description": "Returns SQLite engine configured with WAL mode, busy_timeout, and connection pooling"
+    },
+    "get_session": {
+      "type": "function",
+      "signature": "() -> Generator[sqlmodel.Session]",
+      "description": "FastAPI dependency yielding a SQLModel session for request-scoped database access"
+    },
+    "run_migrations": {
+      "type": "function",
+      "signature": "(engine: Engine) -> None",
+      "description": "Runs Alembic migrations to head on application startup"
+    },
+    "SyncEngine": {
+      "type": "class",
+      "signature": "class SyncEngine(project_path: Path, db_session: Session)",
+      "description": "Bidirectional sync between SQLite and .rapid-web/ directory. Methods: sync_to_disk(), sync_from_disk(), full_sync()"
+    },
+    "health_endpoint": {
+      "type": "endpoint",
+      "signature": "GET /api/health -> {status: str, version: str, uptime: float}",
+      "description": "Health check endpoint for service liveness verification"
+    },
+    "structured_logger": {
+      "type": "function",
+      "signature": "get_logger(name: str) -> logging.Logger",
+      "description": "Returns logger with JSON formatter and rotation, bound to service context"
+    },
+    "systemd_unit_template": {
+      "type": "file",
+      "signature": "rapid-web.service (systemd user unit)",
+      "description": "Template systemd unit file for ~/.config/systemd/user/ with linger support"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "sqlite_wal_mode": {
+      "description": "SQLite must use WAL journal mode with busy_timeout=5000ms to handle concurrent reads",
+      "enforced_by": "runtime"
+    },
+    "localhost_only": {
+      "description": "Server binds to 127.0.0.1 only, never 0.0.0.0",
+      "enforced_by": "runtime"
+    },
+    "idle_resource_budget": {
+      "description": "Service must use <50 MB RAM and <0.1% CPU when idle",
+      "enforced_by": "test"
+    },
+    "graceful_shutdown": {
+      "description": "Service handles SIGTERM gracefully, closing database connections and completing in-flight requests",
+      "enforced_by": "runtime"
+    }
+  },
+  "definition": {
+    "scope": "Foundational Python backend service: FastAPI application shell, SQLite database with Alembic migrations, systemd/launchd service registration, structured logging, health endpoints, and the hybrid data sync engine.",
+    "ownedFiles": [
+      "web/backend/app/__init__.py",
+      "web/backend/app/main.py",
+      "web/backend/app/config.py",
+      "web/backend/app/database.py",
+      "web/backend/app/sync_engine.py",
+      "web/backend/app/logging_config.py",
+      "web/backend/alembic/",
+      "web/backend/alembic.ini",
+      "web/backend/pyproject.toml",
+      "web/backend/service/rapid-web.service",
+      "web/backend/service/com.rapid.web.plist"
+    ],
+    "tasks": [
+      {"description": "Create FastAPI application factory with CORS, exception handlers, lifespan events", "acceptance": "App starts, health endpoint returns 200"},
+      {"description": "Set up SQLite with SQLModel, WAL mode, and Alembic migration infrastructure", "acceptance": "Migrations run on startup, schema is versioned"},
+      {"description": "Implement SyncEngine for bidirectional SQLite <-> .rapid-web/ synchronization", "acceptance": "Changes in either store propagate to the other"},
+      {"description": "Create structured JSON logging with rotation", "acceptance": "Logs written to ~/.rapid/logs/ in JSON format"},
+      {"description": "Create systemd user unit and launchd plist templates", "acceptance": "Service starts on boot when installed"},
+      {"description": "Implement health and readiness endpoints", "acceptance": "GET /api/health returns status, version, uptime"}
+    ],
+    "acceptance": [
+      "FastAPI service starts on port 8998 bound to 127.0.0.1",
+      "SQLite database created at ~/.rapid/rapid.db with WAL mode",
+      "Alembic migrations run automatically on startup",
+      "Health endpoint responds within 100ms",
+      "Service template files generated for systemd and launchd"
+    ]
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "setId": "interactive-features",
+  "version": "1.0.0",
+  "exports": {
+    "KanbanBoard": {
+      "type": "class",
+      "signature": "React.FC<{projectId: string}>",
+      "description": "Drag-and-drop kanban board with columns and cards, project-scoped"
+    },
+    "MarkdownEditor": {
+      "type": "class",
+      "signature": "React.FC<{projectId: string}>",
+      "description": "CodeMirror 6 markdown editor for notes and todos, project-scoped"
+    },
+    "KanbanColumn": {
+      "type": "class",
+      "signature": "class KanbanColumn(SQLModel): id, project_id, title, position",
+      "description": "SQLModel for kanban board columns"
+    },
+    "KanbanCard": {
+      "type": "class",
+      "signature": "class KanbanCard(SQLModel): id, column_id, title, description, position, created_at",
+      "description": "SQLModel for kanban board cards"
+    },
+    "Note": {
+      "type": "class",
+      "signature": "class Note(SQLModel): id, project_id, title, content, created_at, updated_at",
+      "description": "SQLModel for markdown notes"
+    },
+    "kanban_endpoints": {
+      "type": "endpoint",
+      "signature": "CRUD /api/projects/{id}/kanban/columns, /api/projects/{id}/kanban/cards",
+      "description": "Full CRUD for kanban columns and cards with drag-drop reordering"
+    },
+    "notes_endpoints": {
+      "type": "endpoint",
+      "signature": "CRUD /api/projects/{id}/notes",
+      "description": "Full CRUD for markdown notes with content storage"
+    }
+  },
+  "imports": {
+    "Project": {
+      "fromSet": "project-registry",
+      "type": "class",
+      "signature": "class Project(SQLModel)"
+    },
+    "get_session": {
+      "fromSet": "service-infrastructure",
+      "type": "function",
+      "signature": "() -> Generator[sqlmodel.Session]"
+    },
+    "SyncEngine": {
+      "fromSet": "service-infrastructure",
+      "type": "class",
+      "signature": "class SyncEngine(project_path: Path, db_session: Session)"
+    },
+    "AppLayout": {
+      "fromSet": "frontend-shell",
+      "type": "class",
+      "signature": "React.FC<{children: ReactNode}>"
+    },
+    "useKeyboardNav": {
+      "fromSet": "frontend-shell",
+      "type": "function",
+      "signature": "(bindings: KeyBinding[]) -> void"
+    },
+    "apiClient": {
+      "fromSet": "frontend-shell",
+      "type": "function",
+      "signature": "apiClient(path: string, options?: RequestInit) -> Promise<T>"
+    }
+  },
+  "behavioral": {
+    "optimistic_updates": {
+      "description": "Kanban drag-drop uses optimistic updates with rollback on server error",
+      "enforced_by": "runtime"
+    },
+    "autosave": {
+      "description": "Markdown editor autosaves after 2 seconds of inactivity, debounced",
+      "enforced_by": "runtime"
+    },
+    "sync_on_write": {
+      "description": "Every kanban or note mutation triggers SyncEngine.sync_to_disk() to persist to .rapid-web/",
+      "enforced_by": "test"
+    },
+    "portable_format": {
+      "description": ".rapid-web/ files are plain JSON (kanban) and .md (notes) so they can be version-controlled",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Two interactive features with their own data models: Kanban Board with drag-and-drop (dnd-kit) and Markdown Note Editor (CodeMirror 6). Both are project-scoped with dedicated SQLite tables, API endpoints, and .rapid-web/ sync.",
+    "ownedFiles": [
+      "web/backend/app/models/kanban.py",
+      "web/backend/app/models/note.py",
+      "web/backend/app/routers/kanban.py",
+      "web/backend/app/routers/notes.py",
+      "web/backend/app/services/kanban_service.py",
+      "web/backend/app/services/note_service.py",
+      "web/frontend/src/pages/KanbanBoard.tsx",
+      "web/frontend/src/pages/NoteEditor.tsx",
+      "web/frontend/src/components/kanban/",
+      "web/frontend/src/components/editor/"
+    ],
+    "tasks": [
+      {"description": "Define KanbanColumn, KanbanCard, and Note SQLModels with Alembic migrations", "acceptance": "Tables created with correct foreign keys and indexes"},
+      {"description": "Implement kanban CRUD endpoints with position-based reordering", "acceptance": "Cards can be created, moved between columns, reordered, and deleted"},
+      {"description": "Implement notes CRUD endpoints", "acceptance": "Notes can be created, read, updated, and deleted with full content"},
+      {"description": "Build KanbanBoard component with dnd-kit drag-and-drop", "acceptance": "Cards drag between columns with smooth animation"},
+      {"description": "Build MarkdownEditor component with CodeMirror 6", "acceptance": "Editor renders markdown with syntax highlighting and autosave"},
+      {"description": "Wire .rapid-web/ sync for kanban and notes data", "acceptance": "Data persists to .rapid-web/kanban.json and .rapid-web/notes/*.md"}
+    ],
+    "acceptance": [
+      "Kanban board supports full CRUD with drag-and-drop reordering",
+      "Note editor provides CodeMirror 6 editing with autosave",
+      "All data syncs to .rapid-web/ on mutation",
+      "Data survives database rebuild from .rapid-web/ files"
+    ]
+  }
+}

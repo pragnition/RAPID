@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectName": "RAPID",
-  "currentMilestone": "v3.6.0",
+  "currentMilestone": "v4.0.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -235,7 +235,7 @@
         },
         {
           "id": "init-flow-redesign",
-          "status": "complete",
+          "status": "merged",
           "waves": [],
           "name": "Init Flow Redesign",
           "branch": "rapid/init-flow-redesign"
@@ -248,8 +248,50 @@
           "branch": "rapid/branding-system"
         }
       ]
+    },
+    {
+      "id": "v4.0.0",
+      "name": "Mission Control",
+      "sets": [
+        {
+          "id": "service-infrastructure",
+          "name": "Service Infrastructure",
+          "status": "pending",
+          "branch": "rapid/service-infrastructure"
+        },
+        {
+          "id": "project-registry",
+          "name": "Project Registry & Data Pipeline",
+          "status": "pending",
+          "branch": "rapid/project-registry"
+        },
+        {
+          "id": "frontend-shell",
+          "name": "Frontend Shell & Theme",
+          "status": "pending",
+          "branch": "rapid/frontend-shell"
+        },
+        {
+          "id": "read-only-views",
+          "name": "Read-Only Views",
+          "status": "pending",
+          "branch": "rapid/read-only-views"
+        },
+        {
+          "id": "interactive-features",
+          "name": "Interactive Features",
+          "status": "pending",
+          "branch": "rapid/interactive-features"
+        },
+        {
+          "id": "cli-integration",
+          "name": "CLI Integration",
+          "status": "pending",
+          "branch": "rapid/cli-integration"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-20T06:49:52.089Z",
+  "lastUpdatedAt": "2026-03-20T13:52:33.458Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

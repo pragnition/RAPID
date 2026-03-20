@@ -1,0 +1,94 @@
+{
+  "setId": "frontend-shell",
+  "version": "1.0.0",
+  "exports": {
+    "AppLayout": {
+      "type": "class",
+      "signature": "React.FC<{children: ReactNode}>",
+      "description": "Root layout component with sidebar navigation, header, and content area"
+    },
+    "ThemeProvider": {
+      "type": "class",
+      "signature": "React.FC<{children: ReactNode}> with useTheme() hook",
+      "description": "Everforest dark/light theme provider with CSS custom properties and toggle"
+    },
+    "useKeyboardNav": {
+      "type": "function",
+      "signature": "(bindings: KeyBinding[]) -> void",
+      "description": "Hook for vim-style keyboard navigation (hjkl, /, :, g, Enter, Esc, Tab)"
+    },
+    "queryClient": {
+      "type": "class",
+      "signature": "QueryClient (TanStack Query)",
+      "description": "Pre-configured TanStack Query client with default stale time and retry settings"
+    },
+    "useProjectStore": {
+      "type": "function",
+      "signature": "() -> {activeProjectId, setActiveProject, projects}",
+      "description": "Zustand store for active project selection and project list state"
+    },
+    "TooltipOverlay": {
+      "type": "class",
+      "signature": "React.FC<{shortcuts: Shortcut[]}>",
+      "description": "Keyboard shortcut helper overlay toggled with ? key"
+    },
+    "apiClient": {
+      "type": "function",
+      "signature": "apiClient(path: string, options?: RequestInit) -> Promise<T>",
+      "description": "Typed fetch wrapper with base URL configuration and error handling"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "everforest_palette": {
+      "description": "All colors must use Everforest palette tokens (bg_dim, bg0, bg1, fg, green, aqua, etc.) via CSS custom properties, never raw hex values in components",
+      "enforced_by": "test"
+    },
+    "keyboard_first": {
+      "description": "Every navigation action must be reachable via keyboard shortcut; mouse is secondary",
+      "enforced_by": "test"
+    },
+    "responsive_layout": {
+      "description": "Layout must function at minimum 1024px width; sidebar collapses below 768px",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "React 19 + Vite 8 SPA skeleton with Everforest dark theme (light toggle), Tailwind CSS 4.2 configuration, vim-style keyboard navigation, global layout with sidebar, TanStack Query client, Zustand store scaffolding, and helper tooltip system.",
+    "ownedFiles": [
+      "web/frontend/index.html",
+      "web/frontend/package.json",
+      "web/frontend/vite.config.ts",
+      "web/frontend/tailwind.config.ts",
+      "web/frontend/tsconfig.json",
+      "web/frontend/src/main.tsx",
+      "web/frontend/src/App.tsx",
+      "web/frontend/src/components/layout/AppLayout.tsx",
+      "web/frontend/src/components/layout/Sidebar.tsx",
+      "web/frontend/src/components/layout/Header.tsx",
+      "web/frontend/src/components/ui/TooltipOverlay.tsx",
+      "web/frontend/src/hooks/useKeyboardNav.ts",
+      "web/frontend/src/hooks/useTheme.ts",
+      "web/frontend/src/stores/projectStore.ts",
+      "web/frontend/src/lib/apiClient.ts",
+      "web/frontend/src/lib/queryClient.ts",
+      "web/frontend/src/styles/everforest.css",
+      "web/frontend/src/styles/global.css"
+    ],
+    "tasks": [
+      {"description": "Initialize Vite 8 + React 19 + TypeScript project with Tailwind CSS 4.2", "acceptance": "Dev server starts and renders blank page"},
+      {"description": "Implement Everforest color palette as CSS custom properties with dark/light toggle", "acceptance": "Theme switches between dark and light mode"},
+      {"description": "Build AppLayout with sidebar navigation, header, and content area", "acceptance": "Layout renders with working sidebar links"},
+      {"description": "Implement vim-style keyboard navigation system with useKeyboardNav hook", "acceptance": "hjkl navigation works, ? shows shortcut overlay"},
+      {"description": "Set up TanStack Query client and Zustand project store", "acceptance": "API calls use query client, active project persists in store"},
+      {"description": "Create typed API client wrapper with base URL config", "acceptance": "API client handles errors and returns typed responses"}
+    ],
+    "acceptance": [
+      "SPA loads with Everforest dark theme",
+      "Keyboard shortcuts (hjkl, /, ?, Esc) work globally",
+      "Theme toggle switches between dark and light",
+      "Sidebar navigation routes between pages",
+      "TanStack Query and Zustand stores are functional"
+    ]
+  }
+}

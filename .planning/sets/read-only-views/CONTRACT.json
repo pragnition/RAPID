@@ -1,0 +1,125 @@
+{
+  "setId": "read-only-views",
+  "version": "1.0.0",
+  "exports": {
+    "StateView": {
+      "type": "class",
+      "signature": "React.FC<{projectId: string}>",
+      "description": "Dashboard view showing sets, statuses, milestones, and versions from STATE.json"
+    },
+    "WorktreeView": {
+      "type": "class",
+      "signature": "React.FC<{projectId: string}>",
+      "description": "View showing active git worktrees from REGISTRY.json with branch and path info"
+    },
+    "KnowledgeGraph": {
+      "type": "class",
+      "signature": "React.FC<{projectId: string}>",
+      "description": "Cytoscape.js graph visualization of DAG.json dependency relationships"
+    },
+    "CodebaseMap": {
+      "type": "class",
+      "signature": "React.FC<{projectId: string}>",
+      "description": "Tree-sitter based codebase structure visualization for compatible languages"
+    },
+    "state_endpoints": {
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/state -> ProjectState",
+      "description": "Returns parsed STATE.json for a project"
+    },
+    "worktree_endpoints": {
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/worktrees -> WorktreeInfo[]",
+      "description": "Returns active worktrees for a project"
+    },
+    "dag_endpoints": {
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/dag -> DagGraph",
+      "description": "Returns DAG.json parsed as nodes and edges for graph rendering"
+    },
+    "codebase_endpoints": {
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/codebase -> CodebaseTree",
+      "description": "Returns tree-sitter analysis of project codebase structure"
+    }
+  },
+  "imports": {
+    "Project": {
+      "fromSet": "project-registry",
+      "type": "class",
+      "signature": "class Project(SQLModel)"
+    },
+    "FileWatcherService": {
+      "fromSet": "project-registry",
+      "type": "class",
+      "signature": "class FileWatcherService(projects: list[Project])"
+    },
+    "AppLayout": {
+      "fromSet": "frontend-shell",
+      "type": "class",
+      "signature": "React.FC<{children: ReactNode}>"
+    },
+    "useKeyboardNav": {
+      "fromSet": "frontend-shell",
+      "type": "function",
+      "signature": "(bindings: KeyBinding[]) -> void"
+    },
+    "useProjectStore": {
+      "fromSet": "frontend-shell",
+      "type": "function",
+      "signature": "() -> {activeProjectId, setActiveProject, projects}"
+    },
+    "apiClient": {
+      "fromSet": "frontend-shell",
+      "type": "function",
+      "signature": "apiClient(path: string, options?: RequestInit) -> Promise<T>"
+    }
+  },
+  "behavioral": {
+    "read_only": {
+      "description": "All view endpoints are GET-only; no POST/PUT/DELETE/PATCH endpoints in this set",
+      "enforced_by": "test"
+    },
+    "auto_refresh": {
+      "description": "Views auto-refresh when file watcher detects changes to underlying data files",
+      "enforced_by": "runtime"
+    },
+    "graph_performance": {
+      "description": "Knowledge graph must render smoothly for projects with up to 50 sets and 200 dependency edges",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Four read-only dashboard views with corresponding backend API endpoints: Project State View (STATE.json), Worktree Tracking (REGISTRY.json), Knowledge Graph (Cytoscape.js + DAG.json), and Codebase Mapping (tree-sitter analysis).",
+    "ownedFiles": [
+      "web/backend/app/routers/state.py",
+      "web/backend/app/routers/worktrees.py",
+      "web/backend/app/routers/dag.py",
+      "web/backend/app/routers/codebase.py",
+      "web/backend/app/services/state_service.py",
+      "web/backend/app/services/worktree_service.py",
+      "web/backend/app/services/dag_service.py",
+      "web/backend/app/services/codebase_service.py",
+      "web/frontend/src/pages/StateView.tsx",
+      "web/frontend/src/pages/WorktreeView.tsx",
+      "web/frontend/src/pages/KnowledgeGraph.tsx",
+      "web/frontend/src/pages/CodebaseMap.tsx",
+      "web/frontend/src/components/views/"
+    ],
+    "tasks": [
+      {"description": "Build state API endpoint that parses STATE.json and returns structured data", "acceptance": "Endpoint returns correct set statuses and milestone info"},
+      {"description": "Build worktree API endpoint that reads REGISTRY.json", "acceptance": "Endpoint returns active worktrees with branch and path"},
+      {"description": "Build DAG API endpoint that parses DAG.json into graph nodes/edges", "acceptance": "Endpoint returns valid Cytoscape.js-compatible graph data"},
+      {"description": "Build codebase analysis service using tree-sitter", "acceptance": "Service parses Python and JavaScript codebases into structure tree"},
+      {"description": "Build StateView and WorktreeView React components", "acceptance": "Views render project state and worktree data correctly"},
+      {"description": "Build KnowledgeGraph component with Cytoscape.js", "acceptance": "Graph renders DAG with interactive zoom/pan/select"},
+      {"description": "Build CodebaseMap component", "acceptance": "Codebase structure renders as navigable tree"}
+    ],
+    "acceptance": [
+      "All four views render correctly for a registered project",
+      "Views auto-refresh when underlying files change",
+      "Knowledge graph handles 50+ node projects smoothly",
+      "All endpoints are GET-only"
+    ]
+  }
+}

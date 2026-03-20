@@ -1,0 +1,93 @@
+{
+  "setId": "project-registry",
+  "version": "1.0.0",
+  "exports": {
+    "Project": {
+      "type": "class",
+      "signature": "class Project(SQLModel): id, name, path, status, registered_at, last_seen_at, metadata_json",
+      "description": "SQLModel for registered RAPID projects with their metadata"
+    },
+    "register_project": {
+      "type": "endpoint",
+      "signature": "POST /api/projects {path: str, name: str} -> {id: str, status: str}",
+      "description": "Registers a RAPID project by path, reads its STATE.json and populates database"
+    },
+    "list_projects": {
+      "type": "endpoint",
+      "signature": "GET /api/projects?page=N&per_page=M -> {items: Project[], total: int}",
+      "description": "Paginated list of all registered projects with current status"
+    },
+    "get_project": {
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id} -> Project",
+      "description": "Single project with full metadata including latest state snapshot"
+    },
+    "deregister_project": {
+      "type": "endpoint",
+      "signature": "DELETE /api/projects/{id} -> {status: str}",
+      "description": "Removes a project from the registry (does not delete project files)"
+    },
+    "FileWatcherService": {
+      "type": "class",
+      "signature": "class FileWatcherService(projects: list[Project])",
+      "description": "Watches STATE.json and REGISTRY.json for changes in registered projects, updates database on change. Methods: start(), stop(), add_project(), remove_project()"
+    }
+  },
+  "imports": {
+    "create_app": {
+      "fromSet": "service-infrastructure",
+      "type": "function",
+      "signature": "() -> FastAPI"
+    },
+    "get_session": {
+      "fromSet": "service-infrastructure",
+      "type": "function",
+      "signature": "() -> Generator[sqlmodel.Session]"
+    },
+    "SyncEngine": {
+      "fromSet": "service-infrastructure",
+      "type": "class",
+      "signature": "class SyncEngine(project_path: Path, db_session: Session)"
+    }
+  },
+  "behavioral": {
+    "non_blocking_watchers": {
+      "description": "File watchers must not block the FastAPI event loop; use threading or polling fallback",
+      "enforced_by": "runtime"
+    },
+    "inotify_fallback": {
+      "description": "If inotify watch limit is exhausted, fall back to polling at 5-second intervals",
+      "enforced_by": "runtime"
+    },
+    "registration_idempotent": {
+      "description": "Registering an already-registered project updates metadata rather than creating a duplicate",
+      "enforced_by": "test"
+    },
+    "pagination_default": {
+      "description": "All list endpoints default to page=1, per_page=20 with total count in response",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Project registration and lifecycle management. REST API endpoints for CRUD on RAPID projects. File watchers for STATE.json and REGISTRY.json changes. SQLite models for projects. The .rapid-web/ sync layer for portability.",
+    "ownedFiles": [
+      "web/backend/app/models/project.py",
+      "web/backend/app/routers/projects.py",
+      "web/backend/app/services/file_watcher.py",
+      "web/backend/app/services/project_service.py",
+      "web/backend/app/schemas/project.py"
+    ],
+    "tasks": [
+      {"description": "Define Project SQLModel with fields: id, name, path, status, registered_at, last_seen_at, metadata", "acceptance": "Alembic migration creates projects table"},
+      {"description": "Implement project CRUD endpoints with pagination", "acceptance": "All endpoints return correct responses with pagination"},
+      {"description": "Implement FileWatcherService for STATE.json and REGISTRY.json", "acceptance": "Database updates within 5 seconds of file change"},
+      {"description": "Integrate SyncEngine to persist project data to .rapid-web/", "acceptance": "Project data survives database rebuild from .rapid-web/ files"}
+    ],
+    "acceptance": [
+      "Projects can be registered, listed, retrieved, and deregistered via API",
+      "File watcher detects STATE.json changes and updates database",
+      "Pagination works correctly on list endpoints",
+      "Registration is idempotent"
+    ]
+  }
+}

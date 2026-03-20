@@ -9,7 +9,12 @@
 - **v2.2 Subagent Merger & Documentation** — 5 sets (shipped 2026-03-12)
 - **v3.0 Refresh** — 8 sets (shipped 2026-03-13)
 - **v3.1.0 Polish & Cleanup** — 4 sets (shipped 2026-03-13)
-- **v3.2.0 General Fixes** — 5 sets (in progress)
+- **v3.2.0 General Fixes** — 5 sets (shipped 2026-03-14)
+- **v3.3.0 Developer Experience** — 10 sets (shipped 2026-03-17)
+- **v3.4.0 Agent Intelligence** — 6 sets (shipped 2026-03-18)
+- **v3.5.0 Robustness & Fixes** — 4 sets (shipped 2026-03-19)
+- **v3.6.0 Workflow & UX Polish** — 5 sets (shipped 2026-03-20)
+- **v4.0.0 Mission Control** — 6 sets (in progress)
 
 ## Completed Milestone Details
 
@@ -157,32 +162,56 @@
 
 </details>
 
-## Current Milestone: v3.6.0 Workflow & UX Polish (5 sets)
+<details>
+<summary>v3.6.0 Workflow & UX Polish (5 sets) — shipped 2026-03-20</summary>
 
-This milestone addresses concrete UX friction points and bugs observed during real-world RAPID usage. All changes are application-logic and agent-prompt modifications; no dependency upgrades or infrastructure changes needed.
+- [x] dag-and-state-fixes — DAG.json lifecycle fixes, path consolidation, ENOENT handling
+- [x] solo-mode — Solo mode lifecycle completion, auto-transition complete->merged
+- [x] review-cycle-confirmation — AskUserQuestion gates between bug-hunt review cycles
+- [x] init-flow-redesign — Structured AskUserQuestion init flow, granularity preference
+- [x] branding-system — Optional /rapid:branding skill, BRANDING.md artifact
 
-### Set 1: DAG & State Fixes (`dag-and-state-fixes`) [Medium-Large]
-Fix DAG.json lifecycle gaps: path consolidation (`.planning/DAG.json` vs `.planning/sets/DAG.json`), centralized `tryLoadDAG()`, ENOENT defensive handling across all consumers, execute-set state-to-complete transition reliability, DAG.json creation at init time via `recalculateDAG()`.
+</details>
 
-### Set 2: Solo Mode Improvements (`solo-mode`) [Medium]
-Complete solo mode lifecycle: auto-transition `complete -> merged` after solo execution, merge skill detects and skips solo sets with informational message, review skill accepts solo+merged sets in post-merge mode. Depends on dag-and-state-fixes.
+## Current Milestone: v4.0.0 Mission Control (6 sets)
 
-### Set 3: Review Cycle Confirmation (`review-cycle-confirmation`) [Small]
-Add AskUserQuestion confirmation gates between bug-hunt review cycles. Implement early-exit path that preserves all accumulated findings in REVIEW-BUGS.md.
+A greenfield web dashboard companion to the RAPID CLI plugin. Provides knowledge management, project visualization, and task tracking through a locally-hosted web service at `http://127.0.0.1:8998`. Purely optional (gated by `RAPID_WEB=true`), read-only in v4.0.
 
-### Set 4: Init Flow Redesign (`init-flow-redesign`) [Large]
-Replace prose-based Q&A in init Step 4B with structured AskUserQuestion (4 sub-questions per call). Add granularity preference (target set count) passed to roadmapper. Add summary confirmation before roadmap generation.
+**Stack:** Python 3.12+ (FastAPI + SQLModel + SQLite) backend, React 19 + Vite 8 frontend SPA, Tailwind CSS 4.2 with Everforest dark theme.
 
-### Set 5: Branding System (`branding-system`) [Large]
-New optional `/rapid:branding` skill, `role-branding.md` agent, BRANDING.md artifact at `.planning/BRANDING.md`, context injection via `enrichedPrepareSetContext()`, display stage entries.
+**Data Model:** Hybrid storage -- SQLite at `~/.rapid/rapid.db` for fast queries + `.rapid-web/` directory per project for portability and version control.
+
+### Set 1: Service Infrastructure (`service-infrastructure`) [Large]
+FastAPI application shell, SQLite database with WAL mode and Alembic migrations, SyncEngine for bidirectional SQLite <-> .rapid-web/ sync, systemd/launchd service templates, structured JSON logging, health endpoints, security defaults (127.0.0.1, CORS).
+
+### Set 2: Project Registry & Data Pipeline (`project-registry`) [Medium-Large]
+Project CRUD endpoints with pagination, FileWatcherService for STATE.json/REGISTRY.json changes, Project SQLModel, .rapid-web/ sync layer. Depends on service-infrastructure.
+
+### Set 3: Frontend Shell & Theme (`frontend-shell`) [Large]
+React 19 + Vite 8 + TypeScript SPA skeleton, Everforest dark/light theme with CSS custom properties, vim-style keyboard navigation (hjkl, /, :, ?, Esc, Tab), sidebar layout (3 states), TanStack Query + Zustand stores, command palette, typed API client.
+
+### Set 4: Read-Only Views (`read-only-views`) [Large]
+Four dashboard views: Project State View (STATE.json), Worktree Tracking (REGISTRY.json), Knowledge Graph (Cytoscape.js + DAG.json), Codebase Mapping (tree-sitter). All GET-only endpoints + React components. Depends on project-registry, frontend-shell.
+
+### Set 5: Interactive Features (`interactive-features`) [Large]
+Kanban Board (dnd-kit drag-drop, CRUD) and Markdown Note Editor (CodeMirror 6, vim mode, autosave). Both project-scoped with SQLite tables and .rapid-web/ sync. Depends on project-registry, frontend-shell.
+
+### Set 6: CLI Integration (`cli-integration`) [Medium]
+Non-blocking web-client.cjs helper, /install web service setup, /init auto-registration, /register-web for legacy projects, doctor health checks. Depends on service-infrastructure, project-registry.
 
 ### Dependency Graph
 ```
-dag-and-state-fixes       (independent — critical path)
-review-cycle-confirmation (independent)
-init-flow-redesign        (independent)
-branding-system           (independent)
-solo-mode                --> dag-and-state-fixes
+service-infrastructure   (independent — foundational)
+frontend-shell           (independent — no backend needed)
+project-registry        --> service-infrastructure
+cli-integration         --> service-infrastructure, project-registry
+read-only-views         --> project-registry, frontend-shell
+interactive-features    --> project-registry, frontend-shell
 ```
+
+### DAG Waves
+- **Wave 1:** service-infrastructure + frontend-shell (parallel)
+- **Wave 2:** project-registry + cli-integration (parallel, depend on Wave 1)
+- **Wave 3:** read-only-views + interactive-features (parallel, depend on Waves 1+2)
 
 Historical phase details archived to `.planning/archive/`.
