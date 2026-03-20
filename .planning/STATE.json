@@ -255,43 +255,49 @@
       "sets": [
         {
           "id": "service-infrastructure",
+          "status": "discussed",
+          "waves": [],
           "name": "Service Infrastructure",
-          "status": "pending",
           "branch": "rapid/service-infrastructure"
         },
         {
           "id": "project-registry",
-          "name": "Project Registry & Data Pipeline",
           "status": "pending",
+          "waves": [],
+          "name": "Project Registry & Data Pipeline",
           "branch": "rapid/project-registry"
         },
         {
           "id": "frontend-shell",
-          "name": "Frontend Shell & Theme",
           "status": "pending",
+          "waves": [],
+          "name": "Frontend Shell & Theme",
           "branch": "rapid/frontend-shell"
         },
         {
           "id": "read-only-views",
-          "name": "Read-Only Views",
           "status": "pending",
+          "waves": [],
+          "name": "Read-Only Views",
           "branch": "rapid/read-only-views"
         },
         {
           "id": "interactive-features",
-          "name": "Interactive Features",
           "status": "pending",
+          "waves": [],
+          "name": "Interactive Features",
           "branch": "rapid/interactive-features"
         },
         {
           "id": "cli-integration",
-          "name": "CLI Integration",
           "status": "pending",
+          "waves": [],
+          "name": "CLI Integration",
           "branch": "rapid/cli-integration"
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-20T13:52:33.458Z",
+  "lastUpdatedAt": "2026-03-20T15:06:17.494Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
