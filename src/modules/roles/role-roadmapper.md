@@ -171,6 +171,7 @@ For each set, generate a contract:
 2. **Consider team size** -- number of sets should roughly match available developers
 3. **Optimize for merge ease** -- sets that touch different files/modules merge cleanly
 4. **Contracts are foundational** -- all contracts must be generated together so imports/exports match
+5. **Respect granularity preference** -- if targetSetCount is provided, use it as soft guidance for the number of sets. "3-5" means fewer, larger sets; "11-15" means many, smaller sets. "auto" means use your best judgment based on project complexity. If you deviate from the target range, include a brief justification in the roadmap output (e.g., "Target was 3-5 sets, but 7 sets are needed because the frontend and backend have independent deployment pipelines and shared nothing.")
 
 ### Wave Ordering
 1. Waves within a set execute sequentially (wave 2 depends on wave 1)
