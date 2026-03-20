@@ -173,63 +173,152 @@ Store the selection as `opus` or `sonnet`.
 **This is a thorough requirements interview, NOT a form fill.** You must conduct an in-depth conversational discovery session to understand EVERYTHING about the project before proceeding to research and roadmapping. The quality of the entire pipeline depends on the depth of understanding gained here.
 
 **Ground rules:**
-- Ask questions in TOPIC BATCHES using AskUserQuestion (freeform mode). Each batch covers 2-3 related discovery areas in a SINGLE prompt.
+- Ask questions in TOPIC BATCHES using AskUserQuestion. Each batch uses a hybrid approach: freeform AskUserQuestion for open-ended areas (vision, features, experience) and structured AskUserQuestion with pre-filled options for areas with well-defined option spaces (target users, scale, tech stack, compliance, etc.).
 - LISTEN carefully to each batch response. After each batch, analyze the response for follow-up needs. Only ask follow-up questions for genuinely ambiguous or vague responses. Do NOT re-ask areas already covered.
 - Continue asking until you have a comprehensive understanding. This should take 3-4 batch questions plus 0-2 targeted follow-ups depending on project complexity.
 - Mentally track what you know and what gaps remain. Only proceed when no significant gaps exist.
 
-**Discovery must cover these 10 areas, grouped into 4 topic batches:**
+**Discovery must cover these areas, grouped into 4 topic batches:**
 
-**Batch 1: Vision and Users (Areas 1-2)**
+**Batch 1: Vision and Users**
 
-Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+This batch uses a hybrid approach: one freeform question for the open-ended vision, then two structured questions for target users and scale.
 
-> "Tell me about this project. I'd like to understand the big picture in one go:
->
-> 1. **What are you building and why?** What problem does it solve? What makes this different from existing solutions?
-> 2. **Who are the target users?** Primary and secondary users, their technical sophistication, B2B/B2C/internal/open-source?
-> 3. **What scale are you targeting?** How many users initially and at scale?
->
-> Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
+**Area 1 (Vision/problem statement) -- freeform:**
 
-After receiving the response, analyze it. If the user's vision or target audience is vague (e.g., "a task management app" with no differentiation), ask ONE targeted follow-up before proceeding to the next batch. Otherwise, continue.
+Use AskUserQuestion (freeform) with:
 
-**Batch 2: Features and Technical (Areas 3-4)**
+> "What are you building and why? What problem does it solve? What makes this different from existing solutions? Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
 
-Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+**Area 2 (Target users) -- structured:**
 
-> "Now let's talk features and technical approach:
->
-> 1. **Must-have features for v1?** What does a first usable version need? Walk me through the primary user journey from start to finish.
-> 2. **Nice-to-have features?** What can wait for later versions? Anything you explicitly do NOT want?
-> 3. **Tech stack preferences or constraints?** Languages, frameworks, databases, deployment target (cloud, self-hosted, serverless, mobile, desktop)?
-> 4. **Existing dependencies?** Any existing code, APIs, or services this integrates with?"
+Use AskUserQuestion with:
+- question: "Who are the primary target users?"
+- Options:
+  - "B2C consumers" -- "End users interacting through web or mobile apps"
+  - "B2B enterprise" -- "Business customers with team/org structures"
+  - "Internal team tools" -- "Internal company tools for employees"
+  - "Developer/open-source" -- "Developers, CLI users, or open-source community"
 
-After receiving the response, analyze for gaps. If any must-have feature is unclear or the tech approach is contradictory, ask ONE targeted follow-up.
+**Area 3 (Scale targets) -- structured:**
 
-**Batch 3: Scale and Integrations (Areas 5-6)**
+Use AskUserQuestion with:
+- question: "What scale are you targeting initially?"
+- Options:
+  - "Prototype (<100 users)" -- "Proof of concept or personal project"
+  - "Startup (100-10K users)" -- "Early product with growing user base"
+  - "Growth (10K-100K users)" -- "Scaling product with significant traffic"
+  - "Scale (100K+ users)" -- "High-scale production system"
 
-Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+After receiving the responses, analyze them. If the user's vision or target audience is vague (e.g., "a task management app" with no differentiation), ask ONE targeted follow-up before proceeding to the next batch. Otherwise, continue.
 
-> "A few questions about scale and external systems:
->
-> 1. **Data and traffic expectations?** Rough order of magnitude for data volume, concurrent users, latency requirements, real-time features?
-> 2. **Compliance or data residency?** Any regulatory requirements (HIPAA, SOC2, GDPR, etc.)?
-> 3. **Third-party integrations?** What external services or APIs will this connect to?
-> 4. **Auth approach?** SSO, OAuth, API keys, or other authentication/authorization strategy?"
+**Batch 2: Features and Technical**
 
-If the user has already addressed some of these areas in previous batches, note that and skip the already-covered items in your prompt. Do NOT re-ask what's already been answered.
+This batch uses a hybrid approach: one freeform question for features (inherently open-ended), then two structured questions for tech stack and starting point.
 
-**Batch 4: Context and Success (Areas 7-10)**
+**Area 4 (Must-have features) -- freeform:**
 
-Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+Use AskUserQuestion (freeform) with:
 
-> "Last batch -- context and success criteria:
->
-> 1. **Team experience?** What's your experience with the likely tech stack? Any lessons from similar projects?
-> 2. **Inspiration?** Are there existing products that do something similar? What do they do well or poorly?
-> 3. **Non-functional requirements?** Security beyond basics, accessibility, internationalization, monitoring/observability?
-> 4. **Success criteria?** What does 'done' look like for v1? Any hard deadlines?"
+> "What are the must-have features for v1? Walk me through the primary user journey from start to finish. Also mention any nice-to-have features that can wait, and anything you explicitly do NOT want."
+
+**Area 5 (Tech stack) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What is your primary tech stack preference?"
+- Options:
+  - "React/Next.js + Node" -- "JavaScript/TypeScript full stack with React frontend"
+  - "Python + FastAPI/Django" -- "Python backend with your choice of framework"
+  - "Go/Rust backend" -- "Systems-oriented backend language"
+  - "No preference" -- "Let research determine the best stack for this project"
+
+**Area 6 (Existing dependencies) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What is the starting point for this project?"
+- Options:
+  - "Greenfield" -- "Starting from scratch, no existing code"
+  - "Brownfield" -- "Building on or modifying an existing codebase"
+  - "Integration" -- "New code that integrates with existing external APIs/services"
+  - "Migration" -- "Porting or rewriting an existing system"
+
+After receiving the responses, analyze for gaps. If any must-have feature is unclear or the tech approach is contradictory, ask ONE targeted follow-up.
+
+**Batch 3: Scale and Integrations**
+
+This batch uses all structured questions since each area has a well-defined option space.
+
+**Area 7 (Performance requirements) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What are your real-time and performance requirements?"
+- Options:
+  - "Standard web app" -- "Page loads, form submissions, typical CRUD operations"
+  - "Real-time features needed" -- "WebSockets, live updates, collaborative editing"
+  - "High throughput" -- "Batch processing, data pipelines, high API call volume"
+  - "Low latency critical" -- "Sub-100ms response times, gaming, trading"
+
+**Area 8 (Compliance) -- structured:**
+
+Use AskUserQuestion with:
+- question: "Any compliance or regulatory requirements?"
+- Options:
+  - "None required" -- "No specific regulatory requirements"
+  - "GDPR" -- "EU data protection regulation"
+  - "HIPAA" -- "Healthcare data protection (US)"
+  - "SOC2" -- "Security and availability auditing"
+
+**Area 9 (Third-party integrations) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What types of third-party integrations are needed?"
+- Options:
+  - "Payment processing" -- "Stripe, PayPal, or similar payment APIs"
+  - "Auth providers" -- "OAuth, SSO/SAML, or identity providers"
+  - "Cloud services" -- "AWS, GCP, Azure services, storage, CDN"
+  - "None / minimal" -- "Mostly self-contained, few external dependencies"
+
+**Area 10 (Auth approach) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What authentication approach do you prefer?"
+- Options:
+  - "OAuth / social login" -- "Google, GitHub, social sign-in"
+  - "Email / password" -- "Traditional email and password with sessions"
+  - "SSO / SAML" -- "Enterprise single sign-on"
+  - "API keys" -- "Token-based authentication for API/developer use"
+
+If the user has already addressed some of these areas in previous batches, note that and skip the already-covered items. Do NOT re-ask what's already been answered.
+
+**Batch 4: Context and Success**
+
+This batch uses a hybrid approach: one freeform question for experience and inspiration (contextual narratives), then two structured questions for non-functional requirements and success criteria.
+
+**Area 11 (Team experience and inspiration) -- freeform:**
+
+Use AskUserQuestion (freeform) with:
+
+> "What is your team's experience with the likely tech stack? Any lessons learned from similar projects? Are there existing products that do something similar -- what do they do well or poorly?"
+
+**Area 12 (Non-functional requirements) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What non-functional requirements are important?"
+- Options:
+  - "Security beyond basics" -- "Encryption at rest, audit logging, penetration testing"
+  - "Accessibility (a11y)" -- "WCAG compliance, screen reader support"
+  - "Internationalization (i18n)" -- "Multi-language, multi-locale support"
+  - "Monitoring/observability" -- "APM, distributed tracing, alerting"
+
+**Area 13 (Success criteria) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What does 'done' look like for v1?"
+- Options:
+  - "Working MVP" -- "Core features functional, rough edges acceptable"
+  - "Production-ready with tests" -- "Fully tested, deployment pipeline, monitoring"
+  - "Specific deadline target" -- "Must ship by a particular date"
+  - "Feature-complete per spec" -- "All specified features implemented and polished"
 
 **Adaptive behavior:**
 - If a batch response thoroughly covers areas from upcoming batches, acknowledge what you learned and SKIP those items in the next batch.
@@ -293,6 +382,88 @@ Additional Context: {anything else relevant from the conversation}
 This project brief replaces the simple "one-sentence description" in all downstream steps. Wherever the plan previously passed "project description", pass this full project brief instead.
 
 Store the first sentence of "Vision" as the short project description for CLI commands that require `--description`.
+
+### 4C: Granularity Preference
+
+After the project brief is compiled, ask the user about their preferred level of decomposition granularity.
+
+Use AskUserQuestion with:
+- question: "How granular should the project be decomposed into parallel sets?"
+- Options:
+  - "Compact (3-5 sets)" -- "Fewer, larger sets. Less coordination overhead, but less parallelism."
+  - "Standard (6-10 sets)" -- "Balanced decomposition. Recommended for most projects."
+  - "Granular (11-15 sets)" -- "Many smaller sets. Maximum parallelism, but more merge coordination."
+  - "Let Claude decide" -- "The roadmapper will determine the optimal set count based on project complexity and team size."
+
+Map the selection to a `targetSetCount` value:
+- "Compact (3-5 sets)" -> targetSetCount = "3-5"
+- "Standard (6-10 sets)" -> targetSetCount = "6-10"
+- "Granular (11-15 sets)" -> targetSetCount = "11-15"
+- "Let Claude decide" -> targetSetCount = "auto"
+
+Store `targetSetCount` in memory for passing to the roadmapper in Step 9. Do NOT persist this value in config.json -- it is a runtime parameter only.
+
+### 4D: Summary Confirmation and Acceptance Criteria
+
+Before proceeding to scaffold and research, present the complete discovery summary for user review.
+
+**Display the summary:**
+
+Present the compiled PROJECT BRIEF from Step 4B in full, followed by the granularity preference from Step 4C:
+
+```
+PROJECT BRIEF
+=============
+{full compiled project brief}
+
+Granularity Preference: {targetSetCount value and label}
+```
+
+**Generate formal acceptance criteria:**
+
+Based on the discovery answers, generate formal acceptance criteria. These should be specific, testable statements derived from the user's requirements. Format them as:
+
+```markdown
+# Acceptance Criteria
+
+## Functional Requirements
+- [ ] {criterion derived from must-have features}
+- [ ] {criterion derived from user journey}
+...
+
+## Non-Functional Requirements
+- [ ] {criterion derived from scale/performance answers}
+- [ ] {criterion derived from compliance answers}
+...
+
+## Success Criteria
+- [ ] {criterion derived from success criteria answer}
+...
+```
+
+Display the acceptance criteria to the user alongside the project brief.
+
+**Confirmation prompt:**
+
+Use AskUserQuestion with:
+- question: "Please review the project brief and acceptance criteria above. Is everything accurate?"
+- Options:
+  - "Looks good, proceed" -- "Continue to scaffold, research, and roadmap generation"
+  - "Need to change something" -- "Specify which section needs changes"
+  - "Start over" -- "Restart the discovery conversation from the beginning"
+
+**If "Looks good, proceed":**
+Write the acceptance criteria to `.planning/REQUIREMENTS.md` using the Write tool. Then continue to Step 5.
+
+**If "Need to change something":**
+Ask freeform: "Which section needs changes? (e.g., Vision, Target Users, Features, Tech Stack, Scale, Compliance, Integrations, Auth, Non-functional, Success Criteria, Granularity)"
+
+Based on the user's response, re-ask ONLY the questions for that specific section (using the same structured or freeform format as in the original batch). After receiving the updated answer, recompile the project brief and re-display the summary. Loop back to the confirmation prompt.
+
+Limit re-ask cycles to 3 iterations. If the user requests changes a 4th time, suggest: "Consider running /rapid:init again to start fresh if the project scope has changed significantly."
+
+**If "Start over":**
+Loop back to Step 4B and restart the discovery conversation. Clear all previously collected answers.
 
 ---
 
@@ -570,13 +741,23 @@ Generate the project roadmap from synthesized research.
 {content of .planning/research/SUMMARY.md}
 
 ## Project Brief
-{full project brief from Step 4B -- includes description, features, constraints, scale, and all discovery context}
+{full project brief from Step 4B -- includes description, features, constraints, scale, and all discovery context -- compiled from structured discovery in Step 4B}
 
 ## Team Size
 {team size from Step 4A}
 
 ## Model Selection
 {opus or sonnet from Step 4A}
+
+## Target Set Count
+{targetSetCount from Step 4C -- e.g., "6-10" or "auto"}
+
+Aim for roughly this number of sets. You may deviate if the project structure demands it, but note why in the roadmap output.
+
+## Acceptance Criteria
+{content of .planning/REQUIREMENTS.md written in Step 4D}
+
+Use these formal acceptance criteria to inform set boundaries. Each criterion should be traceable to at least one set.
 
 ## Working Directory
 {projectRoot}
@@ -746,6 +927,7 @@ Display a final summary:
 **Description:** {description}
 **Model:** {opus/sonnet}
 **Team Size:** {team size description}
+**Granularity:** {targetSetCount label, e.g., "Standard (6-10 sets)"}
 
 **Roadmap:**
 - {N} sets planned
