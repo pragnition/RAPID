@@ -1,15 +1,28 @@
 {
   "setId": "branding-system",
-  "status": "detecting",
-  "startedAt": "2026-03-20T06:45:12.448Z",
+  "status": "merging",
+  "startedAt": "2026-03-20T06:45:43.830Z",
   "detection": {
     "textual": {
       "ran": true,
-      "conflicts": []
+      "conflicts": [
+        {
+          "file": ".planning/STATE.json",
+          "type": "content",
+          "detail": "CONFLICT (content): Merge conflict in .planning/STATE.json"
+        }
+      ]
     },
     "structural": {
       "ran": true,
-      "conflicts": []
+      "conflicts": [
+        {
+          "file": ".planning/sets/branding-system/wave-2-PLAN-DIGEST.md",
+          "functions": [
+            "to"
+          ]
+        }
+      ]
     },
     "dependency": {
       "ran": true,
@@ -20,6 +33,14 @@
       "conflicts": []
     }
   },
-  "agentPhase1": "spawned",
-  "lastUpdatedAt": "2026-03-20T06:45:12.569Z"
+  "resolution": {
+    "tier1Count": 0,
+    "tier2Count": 0,
+    "tier3Count": 0,
+    "tier4Count": 0,
+    "escalatedConflicts": [],
+    "allResolved": false
+  },
+  "agentPhase1": "done",
+  "lastUpdatedAt": "2026-03-20T06:48:55.822Z"
 }
