@@ -1,0 +1,36 @@
+[data-theme="everforest-dark"] {
+  /* Backgrounds */
+  --th-bg-dim: #232A2E;
+  --th-bg-0: #2D353B;
+  --th-bg-1: #343F44;
+  --th-bg-2: #3D484D;
+  --th-bg-3: #475258;
+  --th-bg-4: #4F585E;
+
+  /* Foreground */
+  --th-fg: #D3C6AA;
+  --th-fg-dim: #9DA9A0;
+
+  /* Semantic colors */
+  --th-accent: #A7C080;
+  --th-link: #83C092;
+  --th-warning: #DBBC7F;
+  --th-error: #E67E80;
+  --th-info: #7FBBB3;
+  --th-muted: #859289;
+  --th-highlight: #D699B6;
+  --th-orange: #E69875;
+
+  /* Surface hierarchy */
+  --th-surface-0: #2D353B;
+  --th-surface-1: #343F44;
+  --th-surface-2: #3D484D;
+  --th-surface-3: #475258;
+  --th-surface-4: #4F585E;
+
+  /* UI tokens */
+  --th-border: #475258;
+  --th-hover: #3D484D;
+  --th-active: #475258;
+  --th-selection: rgba(167, 192, 128, 0.2);
+}

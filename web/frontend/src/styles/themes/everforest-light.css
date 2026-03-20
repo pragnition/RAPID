@@ -1,0 +1,36 @@
+[data-theme="everforest-light"] {
+  /* Backgrounds */
+  --th-bg-dim: #EFEBD4;
+  --th-bg-0: #FDF6E3;
+  --th-bg-1: #F4F0D9;
+  --th-bg-2: #EFEBD4;
+  --th-bg-3: #E6E2CC;
+  --th-bg-4: #E0DCC7;
+
+  /* Foreground */
+  --th-fg: #5C6A72;
+  --th-fg-dim: #829181;
+
+  /* Semantic colors */
+  --th-accent: #8DA101;
+  --th-link: #35A77C;
+  --th-warning: #DFA000;
+  --th-error: #F85552;
+  --th-info: #3A94C5;
+  --th-muted: #939F91;
+  --th-highlight: #DF69BA;
+  --th-orange: #F57D26;
+
+  /* Surface hierarchy */
+  --th-surface-0: #FDF6E3;
+  --th-surface-1: #F4F0D9;
+  --th-surface-2: #EFEBD4;
+  --th-surface-3: #E6E2CC;
+  --th-surface-4: #E0DCC7;
+
+  /* UI tokens */
+  --th-border: #E6E2CC;
+  --th-hover: #F4F0D9;
+  --th-active: #E6E2CC;
+  --th-selection: rgba(141, 161, 1, 0.2);
+}
