@@ -1,6 +1,6 @@
 {
   "setId": "branding-system",
-  "status": "merging",
+  "status": "complete",
   "startedAt": "2026-03-20T06:45:43.830Z",
   "detection": {
     "textual": {
@@ -42,5 +42,5 @@
     "allResolved": false
   },
   "agentPhase1": "done",
-  "lastUpdatedAt": "2026-03-20T06:48:55.822Z"
+  "lastUpdatedAt": "2026-03-20T06:49:53.096Z"
 }
