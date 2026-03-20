@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import "./themes/index.css";
+
+@theme inline {
+  --color-bg-dim: var(--th-bg-dim);
+  --color-bg-0: var(--th-bg-0);
+  --color-bg-1: var(--th-bg-1);
+  --color-bg-2: var(--th-bg-2);
+  --color-bg-3: var(--th-bg-3);
+  --color-bg-4: var(--th-bg-4);
+  --color-fg: var(--th-fg);
+  --color-fg-dim: var(--th-fg-dim);
+  --color-accent: var(--th-accent);
+  --color-link: var(--th-link);
+  --color-warning: var(--th-warning);
+  --color-error: var(--th-error);
+  --color-info: var(--th-info);
+  --color-muted: var(--th-muted);
+  --color-highlight: var(--th-highlight);
+  --color-orange: var(--th-orange);
+  --color-surface-0: var(--th-surface-0);
+  --color-surface-1: var(--th-surface-1);
+  --color-surface-2: var(--th-surface-2);
+  --color-surface-3: var(--th-surface-3);
+  --color-surface-4: var(--th-surface-4);
+  --color-border: var(--th-border);
+  --color-hover: var(--th-hover);
+  --color-active: var(--th-active);
+  --color-selection: var(--th-selection);
+}
+
+body {
+  @apply bg-bg-0 text-fg antialiased;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
