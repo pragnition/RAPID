@@ -344,6 +344,15 @@
       "wave": null,
       "createdAt": "2026-03-19T08:29:47.108Z",
       "mergeStatus": "complete"
+    },
+    "init-flow-redesign": {
+      "setName": "init-flow-redesign",
+      "branch": "rapid/init-flow-redesign",
+      "path": ".rapid-worktrees/init-flow-redesign",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-20T01:03:34.324Z"
     }
   }
 }
