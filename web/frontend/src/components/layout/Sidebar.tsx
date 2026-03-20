@@ -1,5 +1,7 @@
 import { NavLink } from "react-router";
 import { useLayoutStore } from "@/hooks/useLayoutStore";
+import { useProjects } from "@/hooks/useProjects";
+import { useProjectStore } from "@/stores/projectStore";
 import { NAV_ITEMS } from "@/types/layout";
 
 export function Sidebar() {
@@ -76,14 +78,12 @@ function SidebarContent({
 
   return (
     <>
-      {/* Project selector stub */}
+      {/* Project selector */}
       <div className="px-3 py-4 border-b border-border">
         {isFull ? (
-          <div className="text-sm text-muted truncate">No project selected</div>
+          <ProjectSelector />
         ) : isCompact ? (
-          <div className="flex items-center justify-center text-muted" title="No project selected">
-            &#9633;
-          </div>
+          <CompactProjectIndicator />
         ) : null}
       </div>
 
@@ -129,5 +129,71 @@ function SidebarContent({
         ) : null}
       </div>
     </>
+  );
+}
+
+function ProjectSelector() {
+  const { data, isLoading, isError } = useProjects();
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
+  const setActiveProject = useProjectStore((s) => s.setActiveProject);
+
+  if (isLoading) {
+    return <div className="text-sm text-muted truncate">Loading...</div>;
+  }
+
+  if (isError) {
+    return <div className="text-sm text-error truncate">Failed to load</div>;
+  }
+
+  const projects = data?.items ?? [];
+
+  if (projects.length === 0) {
+    return <div className="text-sm text-muted truncate">No projects registered</div>;
+  }
+
+  return (
+    <select
+      value={activeProjectId ?? ""}
+      onChange={(e) => {
+        const val = e.target.value;
+        setActiveProject(val || null);
+      }}
+      className="
+        w-full text-sm bg-surface-1 text-fg
+        border border-border rounded px-2 py-1.5
+        focus:outline-none focus:ring-1 focus:ring-accent
+        truncate
+      "
+      aria-label="Select project"
+    >
+      <option value="">Select a project...</option>
+      {projects.map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function CompactProjectIndicator() {
+  const { data, isLoading } = useProjects();
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
+
+  const activeProject = data?.items.find((p) => p.id === activeProjectId);
+  const initial = activeProject ? activeProject.name.charAt(0).toUpperCase() : null;
+  const title = activeProject
+    ? activeProject.name
+    : isLoading
+      ? "Loading..."
+      : "No project selected";
+
+  return (
+    <div
+      className="flex items-center justify-center text-muted"
+      title={title}
+    >
+      {initial ?? "\u25A1"}
+    </div>
   );
 }
