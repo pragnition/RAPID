@@ -403,6 +403,68 @@ Map the selection to a `targetSetCount` value:
 
 Store `targetSetCount` in memory for passing to the roadmapper in Step 9. Do NOT persist this value in config.json -- it is a runtime parameter only.
 
+### 4D: Summary Confirmation and Acceptance Criteria
+
+Before proceeding to scaffold and research, present the complete discovery summary for user review.
+
+**Display the summary:**
+
+Present the compiled PROJECT BRIEF from Step 4B in full, followed by the granularity preference from Step 4C:
+
+```
+PROJECT BRIEF
+=============
+{full compiled project brief}
+
+Granularity Preference: {targetSetCount value and label}
+```
+
+**Generate formal acceptance criteria:**
+
+Based on the discovery answers, generate formal acceptance criteria. These should be specific, testable statements derived from the user's requirements. Format them as:
+
+```markdown
+# Acceptance Criteria
+
+## Functional Requirements
+- [ ] {criterion derived from must-have features}
+- [ ] {criterion derived from user journey}
+...
+
+## Non-Functional Requirements
+- [ ] {criterion derived from scale/performance answers}
+- [ ] {criterion derived from compliance answers}
+...
+
+## Success Criteria
+- [ ] {criterion derived from success criteria answer}
+...
+```
+
+Display the acceptance criteria to the user alongside the project brief.
+
+**Confirmation prompt:**
+
+Use AskUserQuestion with:
+- question: "Please review the project brief and acceptance criteria above. Is everything accurate?"
+- Options:
+  - "Looks good, proceed" -- "Continue to scaffold, research, and roadmap generation"
+  - "Need to change something" -- "Specify which section needs changes"
+  - "Start over" -- "Restart the discovery conversation from the beginning"
+
+**If "Looks good, proceed":**
+Write the acceptance criteria to `.planning/REQUIREMENTS.md` using the Write tool. Then continue to Step 5.
+
+**If "Need to change something":**
+Ask freeform: "Which section needs changes? (e.g., Vision, Target Users, Features, Tech Stack, Scale, Compliance, Integrations, Auth, Non-functional, Success Criteria, Granularity)"
+
+Based on the user's response, re-ask ONLY the questions for that specific section (using the same structured or freeform format as in the original batch). After receiving the updated answer, recompile the project brief and re-display the summary. Loop back to the confirmation prompt.
+
+Limit re-ask cycles to 3 iterations. If the user requests changes a 4th time, suggest: "Consider running /rapid:init again to start fresh if the project scope has changed significantly."
+
+**If "Start over":**
+Loop back to Step 4B and restart the discovery conversation. Clear all previously collected answers.
+
 ---
 
 ## Step 5: Scaffold
