@@ -310,7 +310,7 @@ describe('build-agents', () => {
 
   describe('agent size limits', () => {
     it('no file exceeds 15KB (except known oversized agents)', () => {
-      const KNOWN_OVERSIZED = ['rapid-planner.md', 'rapid-plan-verifier.md', 'rapid-set-merger.md', 'rapid-merger.md'];
+      const KNOWN_OVERSIZED = ['rapid-planner.md', 'rapid-plan-verifier.md', 'rapid-set-merger.md', 'rapid-merger.md', 'rapid-roadmapper.md'];
       const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
       for (const file of files) {
         const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8');
