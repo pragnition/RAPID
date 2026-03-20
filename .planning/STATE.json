@@ -242,7 +242,7 @@
         },
         {
           "id": "branding-system",
-          "status": "pending",
+          "status": "complete",
           "waves": [],
           "name": "Branding System",
           "branch": "rapid/branding-system"
@@ -250,6 +250,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-20T03:23:22.722Z",
+  "lastUpdatedAt": "2026-03-20T06:37:18.918Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
