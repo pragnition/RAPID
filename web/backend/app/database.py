@@ -37,6 +37,8 @@ class Project(SQLModel, table=True):
     registered_at: datetime = Field(default_factory=_utcnow)
     last_seen_commit: str | None = None
     status: str = Field(default="active")
+    last_seen_at: datetime | None = None
+    metadata_json: str = Field(default="{}")
 
 
 class Note(SQLModel, table=True):
