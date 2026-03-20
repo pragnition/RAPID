@@ -353,6 +353,16 @@
       "status": "active",
       "wave": null,
       "createdAt": "2026-03-20T01:03:34.324Z"
+    },
+    "branding-system": {
+      "setName": "branding-system",
+      "branch": "rapid/branding-system",
+      "path": ".rapid-worktrees/branding-system",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-20T05:14:52.095Z",
+      "mergeStatus": "resolving"
     }
   }
 }

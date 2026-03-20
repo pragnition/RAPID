@@ -1,0 +1,25 @@
+{
+  "setId": "branding-system",
+  "status": "detecting",
+  "startedAt": "2026-03-20T06:45:12.448Z",
+  "detection": {
+    "textual": {
+      "ran": true,
+      "conflicts": []
+    },
+    "structural": {
+      "ran": true,
+      "conflicts": []
+    },
+    "dependency": {
+      "ran": true,
+      "conflicts": []
+    },
+    "api": {
+      "ran": true,
+      "conflicts": []
+    }
+  },
+  "agentPhase1": "spawned",
+  "lastUpdatedAt": "2026-03-20T06:45:12.569Z"
+}
