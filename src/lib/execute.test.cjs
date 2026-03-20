@@ -1325,6 +1325,48 @@ function addQualityContext(tmpDir) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Helper: add branding context files to a mock project tmpDir
+// ────────────────────────────────────────────────────────────────
+function addBrandingContext(tmpDir) {
+  const brandingDir = path.join(tmpDir, '.planning', 'branding');
+  fs.mkdirSync(brandingDir, { recursive: true });
+
+  fs.writeFileSync(path.join(brandingDir, 'BRANDING.md'), [
+    '# Project Branding Guidelines',
+    '',
+    '<identity>',
+    '## Project Identity',
+    'A developer-focused CLI tool with a professional, precise tone.',
+    '</identity>',
+    '',
+    '<tone>',
+    '## Tone & Voice',
+    'Use direct, technical language. Avoid marketing speak.',
+    '</tone>',
+    '',
+    '<terminology>',
+    '## Terminology & Naming',
+    '',
+    '| Preferred Term | Instead Of | Context |',
+    '|---------------|-----------|---------|',
+    '| set | module | RAPID work unit |',
+    '| wave | phase | Parallel execution group |',
+    '</terminology>',
+    '',
+    '<output>',
+    '## Output Style',
+    'Concise bullet points. Code examples over prose.',
+    '</output>',
+    '',
+    '<anti-patterns>',
+    '## Anti-Patterns (Do NOT)',
+    '- Never use emojis in documentation',
+    '- Avoid filler words like "simply", "just", "easily"',
+    '</anti-patterns>',
+  ].join('\n'), 'utf-8');
+}
+
+// ────────────────────────────────────────────────────────────────
 // assembleExecutorPrompt with quality context
 // ────────────────────────────────────────────────────────────────
 describe('assembleExecutorPrompt with quality context', () => {
@@ -1465,5 +1507,174 @@ describe('enrichedPrepareSetContext', () => {
     assert.equal(enrichedResult.setName, baseResult.setName, 'setName should match');
     assert.equal(enrichedResult.definition, baseResult.definition, 'definition should match');
     assert.equal(enrichedResult.contractStr, baseResult.contractStr, 'contractStr should match');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// buildBrandingContext
+// ────────────────────────────────────────────────────────────────
+describe('buildBrandingContext', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-branding-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns empty string when .planning/branding/BRANDING.md does not exist', () => {
+    const result = executeModule.buildBrandingContext(tmpDir);
+    assert.equal(result, '', 'should return empty string when no BRANDING.md');
+  });
+
+  it('returns formatted branding context when BRANDING.md exists', () => {
+    addBrandingContext(tmpDir);
+    const result = executeModule.buildBrandingContext(tmpDir);
+    assert.ok(result.includes('## Branding Context'), 'should have Branding Context heading');
+    assert.ok(result.includes('Project Identity'), 'should contain identity section');
+    assert.ok(result.includes('Tone & Voice'), 'should contain tone section');
+    assert.ok(result.includes('Do NOT apply branding to commit messages'), 'should include scope instructions');
+  });
+
+  it('returns empty string for empty BRANDING.md file', () => {
+    const brandingDir = path.join(tmpDir, '.planning', 'branding');
+    fs.mkdirSync(brandingDir, { recursive: true });
+    fs.writeFileSync(path.join(brandingDir, 'BRANDING.md'), '', 'utf-8');
+    const result = executeModule.buildBrandingContext(tmpDir);
+    assert.equal(result, '', 'should return empty string for empty BRANDING.md');
+  });
+
+  it('reads from .planning/branding/BRANDING.md path (not .planning/BRANDING.md)', () => {
+    // Put BRANDING.md at wrong path -- should NOT be found
+    fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'BRANDING.md'), '# Wrong path', 'utf-8');
+    const result = executeModule.buildBrandingContext(tmpDir);
+    assert.equal(result, '', 'should not read from .planning/BRANDING.md');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// enrichedPrepareSetContext with branding
+// ────────────────────────────────────────────────────────────────
+describe('enrichedPrepareSetContext with branding', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createMockProject();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('should return brandingContext field', () => {
+    const result = executeModule.enrichedPrepareSetContext(tmpDir, 'auth-core');
+    assert.ok('brandingContext' in result, 'should have brandingContext field');
+    assert.ok(typeof result.brandingContext === 'string', 'brandingContext should be a string');
+  });
+
+  it('should include branding context when BRANDING.md exists', () => {
+    addBrandingContext(tmpDir);
+    const result = executeModule.enrichedPrepareSetContext(tmpDir, 'auth-core');
+    assert.ok(result.brandingContext.length > 0, 'brandingContext should be non-empty');
+    assert.ok(result.brandingContext.includes('Branding Context'), 'should include section header');
+  });
+
+  it('should return empty brandingContext when no branding files exist', () => {
+    const result = executeModule.enrichedPrepareSetContext(tmpDir, 'auth-core');
+    assert.equal(result.brandingContext, '', 'brandingContext should be empty string');
+  });
+
+  it('should not modify existing prepareSetContext fields when branding is added', () => {
+    addBrandingContext(tmpDir);
+    const baseResult = executeModule.prepareSetContext(tmpDir, 'auth-core');
+    const enrichedResult = executeModule.enrichedPrepareSetContext(tmpDir, 'auth-core');
+    assert.equal(enrichedResult.setName, baseResult.setName, 'setName should match');
+    assert.equal(enrichedResult.definition, baseResult.definition, 'definition should match');
+    assert.equal(enrichedResult.contractStr, baseResult.contractStr, 'contractStr should match');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// assembleExecutorPrompt with branding context
+// ────────────────────────────────────────────────────────────────
+describe('assembleExecutorPrompt with branding context', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createMockProject();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('should inject branding context in discuss phase prompt', () => {
+    addBrandingContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'discuss');
+    assert.ok(prompt.includes('## Branding Context'), 'discuss phase should contain Branding Context');
+    assert.ok(prompt.includes('Project Identity'), 'discuss phase should include branding content');
+  });
+
+  it('should inject branding context in plan phase prompt', () => {
+    addBrandingContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'plan');
+    assert.ok(prompt.includes('## Branding Context'), 'plan phase should contain Branding Context');
+  });
+
+  it('should inject branding context in execute phase prompt', () => {
+    addBrandingContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'execute');
+    assert.ok(prompt.includes('## Branding Context'), 'execute phase should contain Branding Context');
+  });
+
+  it('should gracefully skip branding context when BRANDING.md does not exist', () => {
+    // No addBrandingContext call
+    let prompt;
+    assert.doesNotThrow(() => {
+      prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'execute');
+    }, 'should not throw when BRANDING.md is absent');
+    assert.ok(typeof prompt === 'string', 'should still return a valid prompt string');
+    assert.ok(!prompt.includes('## Branding Context'), 'should NOT include Branding Context when absent');
+  });
+
+  it('should place branding context after quality context in execute phase', () => {
+    addBrandingContext(tmpDir);
+    addQualityContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'execute');
+
+    const qualIdx = prompt.indexOf('## Quality Context');
+    const brandIdx = prompt.indexOf('## Branding Context');
+    const implIdx = prompt.indexOf('## Implementation Plan');
+
+    assert.ok(qualIdx !== -1, 'should have Quality Context');
+    assert.ok(brandIdx !== -1, 'should have Branding Context');
+    assert.ok(implIdx !== -1, 'should have Implementation Plan');
+    assert.ok(brandIdx > qualIdx, 'Branding Context should appear after Quality Context');
+    assert.ok(brandIdx < implIdx, 'Branding Context should appear before Implementation Plan');
+  });
+
+  it('should place branding context after quality context in plan phase', () => {
+    addBrandingContext(tmpDir);
+    addQualityContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'plan');
+
+    const qualIdx = prompt.indexOf('## Quality Context');
+    const brandIdx = prompt.indexOf('## Branding Context');
+
+    if (qualIdx !== -1) {
+      assert.ok(brandIdx > qualIdx, 'Branding Context should appear after Quality Context in plan phase');
+    }
+  });
+
+  it('should include scope instructions in branding context', () => {
+    addBrandingContext(tmpDir);
+    const prompt = executeModule.assembleExecutorPrompt(tmpDir, 'auth-core', 'execute');
+    assert.ok(
+      prompt.includes('Do NOT apply branding to commit messages'),
+      'should include anti-application guidance in branding context'
+    );
   });
 });
