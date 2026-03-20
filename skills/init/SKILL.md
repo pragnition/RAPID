@@ -212,18 +212,37 @@ Use AskUserQuestion with:
 
 After receiving the responses, analyze them. If the user's vision or target audience is vague (e.g., "a task management app" with no differentiation), ask ONE targeted follow-up before proceeding to the next batch. Otherwise, continue.
 
-**Batch 2: Features and Technical (Areas 3-4)**
+**Batch 2: Features and Technical**
 
-Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+This batch uses a hybrid approach: one freeform question for features (inherently open-ended), then two structured questions for tech stack and starting point.
 
-> "Now let's talk features and technical approach:
->
-> 1. **Must-have features for v1?** What does a first usable version need? Walk me through the primary user journey from start to finish.
-> 2. **Nice-to-have features?** What can wait for later versions? Anything you explicitly do NOT want?
-> 3. **Tech stack preferences or constraints?** Languages, frameworks, databases, deployment target (cloud, self-hosted, serverless, mobile, desktop)?
-> 4. **Existing dependencies?** Any existing code, APIs, or services this integrates with?"
+**Area 4 (Must-have features) -- freeform:**
 
-After receiving the response, analyze for gaps. If any must-have feature is unclear or the tech approach is contradictory, ask ONE targeted follow-up.
+Use AskUserQuestion (freeform) with:
+
+> "What are the must-have features for v1? Walk me through the primary user journey from start to finish. Also mention any nice-to-have features that can wait, and anything you explicitly do NOT want."
+
+**Area 5 (Tech stack) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What is your primary tech stack preference?"
+- Options:
+  - "React/Next.js + Node" -- "JavaScript/TypeScript full stack with React frontend"
+  - "Python + FastAPI/Django" -- "Python backend with your choice of framework"
+  - "Go/Rust backend" -- "Systems-oriented backend language"
+  - "No preference" -- "Let research determine the best stack for this project"
+
+**Area 6 (Existing dependencies) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What is the starting point for this project?"
+- Options:
+  - "Greenfield" -- "Starting from scratch, no existing code"
+  - "Brownfield" -- "Building on or modifying an existing codebase"
+  - "Integration" -- "New code that integrates with existing external APIs/services"
+  - "Migration" -- "Porting or rewriting an existing system"
+
+After receiving the responses, analyze for gaps. If any must-have feature is unclear or the tech approach is contradictory, ask ONE targeted follow-up.
 
 **Batch 3: Scale and Integrations (Areas 5-6)**
 
