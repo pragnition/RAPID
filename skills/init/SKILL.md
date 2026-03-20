@@ -173,12 +173,12 @@ Store the selection as `opus` or `sonnet`.
 **This is a thorough requirements interview, NOT a form fill.** You must conduct an in-depth conversational discovery session to understand EVERYTHING about the project before proceeding to research and roadmapping. The quality of the entire pipeline depends on the depth of understanding gained here.
 
 **Ground rules:**
-- Ask questions in TOPIC BATCHES using AskUserQuestion (freeform mode). Each batch covers 2-3 related discovery areas in a SINGLE prompt.
+- Ask questions in TOPIC BATCHES using AskUserQuestion. Each batch uses a hybrid approach: freeform AskUserQuestion for open-ended areas (vision, features, experience) and structured AskUserQuestion with pre-filled options for areas with well-defined option spaces (target users, scale, tech stack, compliance, etc.).
 - LISTEN carefully to each batch response. After each batch, analyze the response for follow-up needs. Only ask follow-up questions for genuinely ambiguous or vague responses. Do NOT re-ask areas already covered.
 - Continue asking until you have a comprehensive understanding. This should take 3-4 batch questions plus 0-2 targeted follow-ups depending on project complexity.
 - Mentally track what you know and what gaps remain. Only proceed when no significant gaps exist.
 
-**Discovery must cover these 10 areas, grouped into 4 topic batches:**
+**Discovery must cover these areas, grouped into 4 topic batches:**
 
 **Batch 1: Vision and Users**
 
