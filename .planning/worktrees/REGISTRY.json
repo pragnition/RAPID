@@ -385,6 +385,17 @@
       "startCommit": "83002048c0be9651953cff59c1dfd32c3df9a885",
       "wave": null,
       "createdAt": "2026-03-20T15:54:00.524Z"
+    },
+    "frontend-shell": {
+      "setName": "frontend-shell",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "10649e769f73b8a142aabcc4bc3d68e07dbcfd9e",
+      "wave": null,
+      "createdAt": "2026-03-20T17:05:27.579Z"
     }
   }
 }

@@ -269,7 +269,7 @@
         },
         {
           "id": "frontend-shell",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Frontend Shell & Theme",
           "branch": "rapid/frontend-shell"
@@ -298,6 +298,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-20T17:15:31.256Z",
+  "lastUpdatedAt": "2026-03-20T18:04:34.845Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
