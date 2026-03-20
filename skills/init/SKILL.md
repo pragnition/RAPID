@@ -180,19 +180,37 @@ Store the selection as `opus` or `sonnet`.
 
 **Discovery must cover these 10 areas, grouped into 4 topic batches:**
 
-**Batch 1: Vision and Users (Areas 1-2)**
+**Batch 1: Vision and Users**
 
-Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+This batch uses a hybrid approach: one freeform question for the open-ended vision, then two structured questions for target users and scale.
 
-> "Tell me about this project. I'd like to understand the big picture in one go:
->
-> 1. **What are you building and why?** What problem does it solve? What makes this different from existing solutions?
-> 2. **Who are the target users?** Primary and secondary users, their technical sophistication, B2B/B2C/internal/open-source?
-> 3. **What scale are you targeting?** How many users initially and at scale?
->
-> Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
+**Area 1 (Vision/problem statement) -- freeform:**
 
-After receiving the response, analyze it. If the user's vision or target audience is vague (e.g., "a task management app" with no differentiation), ask ONE targeted follow-up before proceeding to the next batch. Otherwise, continue.
+Use AskUserQuestion (freeform) with:
+
+> "What are you building and why? What problem does it solve? What makes this different from existing solutions? Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
+
+**Area 2 (Target users) -- structured:**
+
+Use AskUserQuestion with:
+- question: "Who are the primary target users?"
+- Options:
+  - "B2C consumers" -- "End users interacting through web or mobile apps"
+  - "B2B enterprise" -- "Business customers with team/org structures"
+  - "Internal team tools" -- "Internal company tools for employees"
+  - "Developer/open-source" -- "Developers, CLI users, or open-source community"
+
+**Area 3 (Scale targets) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What scale are you targeting initially?"
+- Options:
+  - "Prototype (<100 users)" -- "Proof of concept or personal project"
+  - "Startup (100-10K users)" -- "Early product with growing user base"
+  - "Growth (10K-100K users)" -- "Scaling product with significant traffic"
+  - "Scale (100K+ users)" -- "High-scale production system"
+
+After receiving the responses, analyze them. If the user's vision or target audience is vague (e.g., "a task management app" with no differentiation), ask ONE targeted follow-up before proceeding to the next batch. Otherwise, continue.
 
 **Batch 2: Features and Technical (Areas 3-4)**
 
