@@ -741,13 +741,23 @@ Generate the project roadmap from synthesized research.
 {content of .planning/research/SUMMARY.md}
 
 ## Project Brief
-{full project brief from Step 4B -- includes description, features, constraints, scale, and all discovery context}
+{full project brief from Step 4B -- includes description, features, constraints, scale, and all discovery context -- compiled from structured discovery in Step 4B}
 
 ## Team Size
 {team size from Step 4A}
 
 ## Model Selection
 {opus or sonnet from Step 4A}
+
+## Target Set Count
+{targetSetCount from Step 4C -- e.g., "6-10" or "auto"}
+
+Aim for roughly this number of sets. You may deviate if the project structure demands it, but note why in the roadmap output.
+
+## Acceptance Criteria
+{content of .planning/REQUIREMENTS.md written in Step 4D}
+
+Use these formal acceptance criteria to inform set boundaries. Each criterion should be traceable to at least one set.
 
 ## Working Directory
 {projectRoot}
