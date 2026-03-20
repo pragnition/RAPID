@@ -219,3 +219,5 @@ For each set, generate a contract:
 - If the research summary is insufficient for a particular area, note the gap rather than guessing
 - Use the propose-then-approve pattern: your output is a proposal, expect user feedback
 - Complete the proposal in a single pass; the orchestrator handles the feedback loop
+- If targetSetCount is provided and is not "auto", include a note in the roadmap output confirming the target range and whether the actual set count falls within it. If it does not, explain why.
+- If REQUIREMENTS.md acceptance criteria are provided, ensure every criterion is covered by at least one set's scope. Include a traceability note in the roadmap: "Criterion X is addressed by Set Y." If a criterion cannot be traced to any set, flag it as an uncovered requirement.
