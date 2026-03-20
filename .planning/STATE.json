@@ -255,7 +255,7 @@
       "sets": [
         {
           "id": "service-infrastructure",
-          "status": "discussed",
+          "status": "planned",
           "waves": [],
           "name": "Service Infrastructure",
           "branch": "rapid/service-infrastructure"
@@ -298,6 +298,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-20T15:06:17.494Z",
+  "lastUpdatedAt": "2026-03-20T15:21:31.996Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
