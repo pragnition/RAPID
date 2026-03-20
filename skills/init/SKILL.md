@@ -927,6 +927,7 @@ Display a final summary:
 **Description:** {description}
 **Model:** {opus/sonnet}
 **Team Size:** {team size description}
+**Granularity:** {targetSetCount label, e.g., "Standard (6-10 sets)"}
 
 **Roadmap:**
 - {N} sets planned
