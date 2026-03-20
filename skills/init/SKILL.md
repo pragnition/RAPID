@@ -383,6 +383,26 @@ This project brief replaces the simple "one-sentence description" in all downstr
 
 Store the first sentence of "Vision" as the short project description for CLI commands that require `--description`.
 
+### 4C: Granularity Preference
+
+After the project brief is compiled, ask the user about their preferred level of decomposition granularity.
+
+Use AskUserQuestion with:
+- question: "How granular should the project be decomposed into parallel sets?"
+- Options:
+  - "Compact (3-5 sets)" -- "Fewer, larger sets. Less coordination overhead, but less parallelism."
+  - "Standard (6-10 sets)" -- "Balanced decomposition. Recommended for most projects."
+  - "Granular (11-15 sets)" -- "Many smaller sets. Maximum parallelism, but more merge coordination."
+  - "Let Claude decide" -- "The roadmapper will determine the optimal set count based on project complexity and team size."
+
+Map the selection to a `targetSetCount` value:
+- "Compact (3-5 sets)" -> targetSetCount = "3-5"
+- "Standard (6-10 sets)" -> targetSetCount = "6-10"
+- "Granular (11-15 sets)" -> targetSetCount = "11-15"
+- "Let Claude decide" -> targetSetCount = "auto"
+
+Store `targetSetCount` in memory for passing to the roadmapper in Step 9. Do NOT persist this value in config.json -- it is a runtime parameter only.
+
 ---
 
 ## Step 5: Scaffold
