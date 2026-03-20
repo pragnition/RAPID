@@ -255,14 +255,14 @@
       "sets": [
         {
           "id": "service-infrastructure",
-          "status": "planned",
+          "status": "merged",
           "waves": [],
           "name": "Service Infrastructure",
           "branch": "rapid/service-infrastructure"
         },
         {
           "id": "project-registry",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Project Registry & Data Pipeline",
           "branch": "rapid/project-registry"
@@ -298,6 +298,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-20T15:21:31.996Z",
+  "lastUpdatedAt": "2026-03-20T16:07:12.037Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
