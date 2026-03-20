@@ -27,6 +27,28 @@ const compaction = require('./compaction.cjs');
 const VALID_PHASES = ['discuss', 'plan', 'execute'];
 
 /**
+ * Read .planning/branding/BRANDING.md and return formatted branding context string.
+ * Returns empty string when BRANDING.md does not exist (branding is fully optional).
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {string} Formatted branding context string, or empty string if absent
+ */
+function buildBrandingContext(cwd) {
+  const brandingPath = path.join(cwd, '.planning', 'branding', 'BRANDING.md');
+  try {
+    const content = fs.readFileSync(brandingPath, 'utf-8').trim();
+    if (!content) return '';
+    return '## Branding Context\n\n' +
+      'The following project branding guidelines should influence documentation, ' +
+      'READMEs, and code comments/naming. Do NOT apply branding to commit messages, ' +
+      'CLI output, or RAPID internal output.\n\n' +
+      content;
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Prepare execution context for a named set.
  *
  * Gathers scoped CLAUDE.md, definition content, and stringified contract
@@ -77,10 +99,18 @@ function enrichedPrepareSetContext(cwd, setName) {
     // Graceful -- UI context is optional
   }
 
+  let brandingContext = '';
+  try {
+    brandingContext = buildBrandingContext(cwd);
+  } catch {
+    // Graceful -- branding context is optional
+  }
+
   return {
     ...ctx,
     qualityContext,
     uiContext,
+    brandingContext,
   };
 }
 
@@ -170,6 +200,14 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
 
   const ctx = prepareSetContext(cwd, setName);
 
+  // Load branding context for all phases (branding applies to discuss, plan, and execute)
+  let brandingContext = '';
+  try {
+    brandingContext = buildBrandingContext(cwd);
+  } catch {
+    // Graceful -- skip branding if module not available or errors
+  }
+
   // Load memory context for plan and execute phases
   let memoryContext = '';
   if (phase === 'plan' || phase === 'execute') {
@@ -218,6 +256,7 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
         '- Integration points with other sets that need clarification',
         '',
         'If everything is clear, state that you have no questions and summarize the implementation approach you would take.',
+        ...(brandingContext ? ['', brandingContext] : []),
       ].join('\n');
       break;
 
@@ -240,6 +279,7 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
         priorContext || 'No prior discussion -- proceed with contract and definition as given.',
         ...(memoryContext ? ['', memoryContext] : []),
         ...(qualityContext ? ['', qualityContext] : []),
+        ...(brandingContext ? ['', brandingContext] : []),
         '',
         '## Instructions',
         'Create a step-by-step implementation plan. For each step:',
@@ -280,6 +320,11 @@ function assembleExecutorPrompt(cwd, setName, phase, priorContext, activeWave = 
       if (qualityContext) {
         parts.push('');
         parts.push(qualityContext);
+      }
+
+      if (brandingContext) {
+        parts.push('');
+        parts.push(brandingContext);
       }
 
       parts.push('');
@@ -1231,6 +1276,7 @@ function parseJobHandoff(handoffContent) {
 module.exports = {
   prepareSetContext,
   enrichedPrepareSetContext,
+  buildBrandingContext,
   assembleExecutorPrompt,
   assembleCompactedWaveContext,
   verifySetExecution,
