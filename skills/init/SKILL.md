@@ -290,16 +290,35 @@ Use AskUserQuestion with:
 
 If the user has already addressed some of these areas in previous batches, note that and skip the already-covered items. Do NOT re-ask what's already been answered.
 
-**Batch 4: Context and Success (Areas 7-10)**
+**Batch 4: Context and Success**
 
-Ask ALL of the following in a SINGLE AskUserQuestion freeform call:
+This batch uses a hybrid approach: one freeform question for experience and inspiration (contextual narratives), then two structured questions for non-functional requirements and success criteria.
 
-> "Last batch -- context and success criteria:
->
-> 1. **Team experience?** What's your experience with the likely tech stack? Any lessons from similar projects?
-> 2. **Inspiration?** Are there existing products that do something similar? What do they do well or poorly?
-> 3. **Non-functional requirements?** Security beyond basics, accessibility, internationalization, monitoring/observability?
-> 4. **Success criteria?** What does 'done' look like for v1? Any hard deadlines?"
+**Area 11 (Team experience and inspiration) -- freeform:**
+
+Use AskUserQuestion (freeform) with:
+
+> "What is your team's experience with the likely tech stack? Any lessons learned from similar projects? Are there existing products that do something similar -- what do they do well or poorly?"
+
+**Area 12 (Non-functional requirements) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What non-functional requirements are important?"
+- Options:
+  - "Security beyond basics" -- "Encryption at rest, audit logging, penetration testing"
+  - "Accessibility (a11y)" -- "WCAG compliance, screen reader support"
+  - "Internationalization (i18n)" -- "Multi-language, multi-locale support"
+  - "Monitoring/observability" -- "APM, distributed tracing, alerting"
+
+**Area 13 (Success criteria) -- structured:**
+
+Use AskUserQuestion with:
+- question: "What does 'done' look like for v1?"
+- Options:
+  - "Working MVP" -- "Core features functional, rough edges acceptable"
+  - "Production-ready with tests" -- "Fully tested, deployment pipeline, monitoring"
+  - "Specific deadline target" -- "Must ship by a particular date"
+  - "Feature-complete per spec" -- "All specified features implemented and polished"
 
 **Adaptive behavior:**
 - If a batch response thoroughly covers areas from upcoming batches, acknowledge what you learned and SKIP those items in the next batch.
