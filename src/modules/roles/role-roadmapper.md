@@ -97,7 +97,14 @@ Set 3 --> Set 1 (needs Set 1's API contracts)
 | Set | Exports | Imports |
 |-----|---------|---------|
 | Set 1 | [what it provides to other sets] | [what it needs from other sets] |
+
+## Requirements Traceability
+| Criterion | Covered By |
+|-----------|-----------|
+| {acceptance criterion from REQUIREMENTS.md} | {set name(s)} |
 ```
+
+The Requirements Traceability section is only included when `.planning/REQUIREMENTS.md` exists. If no acceptance criteria were provided, omit this section entirely.
 
 ### STATE.json Structure
 
