@@ -56,7 +56,7 @@ def _project_to_summary(project: Project) -> ProjectSummary:
 
 
 @router.post("", status_code=201, response_model=ProjectStatusResponse)
-def register_project(body: ProjectCreate, session: Session = Depends(get_db)):
+def register_project(body: ProjectCreate, request: Request, session: Session = Depends(get_db)):
     """Register a project by its filesystem path."""
     try:
         project = project_service.register_project(session, body.path, body.name)
@@ -70,6 +70,10 @@ def register_project(body: ProjectCreate, session: Session = Depends(get_db)):
         sync.update_sync_state(str(project.id))
     except Exception:
         logger.warning("SyncEngine write failed for project %s", project.id, exc_info=True)
+
+    # Notify file watcher to start monitoring this project
+    if hasattr(request.app.state, "file_watcher") and request.app.state.file_watcher:
+        request.app.state.file_watcher.add_project(project.id, project.path)
 
     return ProjectStatusResponse(
         id=project.id, status=project.status, message="registered"
@@ -98,7 +102,7 @@ def get_project_detail(project_id: UUID, session: Session = Depends(get_db)):
 
 
 @router.delete("/{project_id}", response_model=ProjectStatusResponse)
-def deregister_project(project_id: UUID, session: Session = Depends(get_db)):
+def deregister_project(project_id: UUID, request: Request, session: Session = Depends(get_db)):
     """Deregister (delete) a project."""
     project = project_service.get_project(session, project_id)
     if project is None:
@@ -115,6 +119,10 @@ def deregister_project(project_id: UUID, session: Session = Depends(get_db)):
         sync.delete_from_disk("project", project_id_str)
     except Exception:
         logger.warning("SyncEngine delete failed for project %s", project_id_str, exc_info=True)
+
+    # Notify file watcher to stop monitoring this project
+    if hasattr(request.app.state, "file_watcher") and request.app.state.file_watcher:
+        request.app.state.file_watcher.remove_project(project_id)
 
     return ProjectStatusResponse(
         id=project_id, status="deregistered", message="deregistered"

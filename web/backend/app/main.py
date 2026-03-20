@@ -91,12 +91,22 @@ async def lifespan(app: FastAPI):
     run_migrations(engine)
     app.state.engine = engine
     app.state.start_time = time.time()
+
+    # Start file watcher for project monitoring
+    from app.services.file_watcher import FileWatcherService
+
+    watcher = FileWatcherService(engine)
+    watcher.start()
+    app.state.file_watcher = watcher
+
     logger.info(
         "RAPID Web service started",
         extra={"port": settings.rapid_web_port, "db_path": str(settings.rapid_web_db_path)},
     )
     yield
     # Shutdown
+    if hasattr(app.state, "file_watcher") and app.state.file_watcher:
+        app.state.file_watcher.stop()
     app.state.engine.dispose()
     logger.info("RAPID Web service stopped")
 
