@@ -23,6 +23,8 @@ const NODE_COLORS: Record<string, string> = {
   merged: "#4b5563",
 };
 
+const DEFAULT_NODE_COLOR = "#6b7280";
+
 function darken(hex: string): string {
   // Darken by roughly 20% for border
   const num = parseInt(hex.slice(1), 16);
@@ -135,12 +137,12 @@ export function KnowledgeGraphPage() {
             color: "#ffffff",
             "background-color": (ele: cytoscape.NodeSingular) => {
               const status = ele.data("status") as string;
-              return NODE_COLORS[status] ?? NODE_COLORS.pending;
+              return NODE_COLORS[status] ?? DEFAULT_NODE_COLOR;
             },
             "border-width": 2,
             "border-color": (ele: cytoscape.NodeSingular) => {
               const status = ele.data("status") as string;
-              return darken(NODE_COLORS[status] ?? NODE_COLORS.pending);
+              return darken(NODE_COLORS[status] ?? DEFAULT_NODE_COLOR);
             },
           } as cytoscape.Css.Node,
         },
