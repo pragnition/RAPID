@@ -276,14 +276,14 @@
         },
         {
           "id": "read-only-views",
-          "status": "complete",
+          "status": "merged",
           "waves": [],
           "name": "Read-Only Views",
           "branch": "rapid/read-only-views"
         },
         {
           "id": "interactive-features",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Interactive Features",
           "branch": "rapid/interactive-features"
@@ -298,6 +298,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-21T04:31:04.211Z",
+  "lastUpdatedAt": "2026-03-21T04:45:59.429Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
