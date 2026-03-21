@@ -1,5 +1,8 @@
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProjects } from "@/hooks/useProjects";
 import { useProjectStore } from "@/stores/projectStore";
+import { apiClient } from "@/lib/apiClient";
 
 export function ProjectsPage() {
   const { data, isLoading, isError, error, refetch } = useProjects();
@@ -9,6 +12,8 @@ export function ProjectsPage() {
     <div className="p-6">
       <h1 className="text-3xl font-bold text-fg mb-2">Projects</h1>
       <p className="text-muted mb-6">Registered RAPID projects</p>
+
+      <AddProjectForm />
 
       {isLoading && <LoadingSkeleton />}
 
@@ -35,7 +40,7 @@ export function ProjectsPage() {
         <div className="bg-surface-1 border border-border rounded-lg p-8 text-center">
           <p className="text-muted text-lg">No projects registered yet</p>
           <p className="text-muted text-sm mt-2">
-            Register a project via the CLI to get started
+            Add a project using the form above
           </p>
         </div>
       )}
@@ -89,6 +94,64 @@ export function ProjectsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function AddProjectForm() {
+  const [path, setPath] = useState("");
+  const [name, setName] = useState("");
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (body: { path: string; name?: string }) =>
+      apiClient.post<{ id: string; status: string }>("/projects", body),
+    onSuccess: () => {
+      setPath("");
+      setName("");
+      void queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!path.trim()) return;
+    mutation.mutate({ path: path.trim(), name: name.trim() || undefined });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-surface-1 border border-border rounded-lg p-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          placeholder="Absolute project path (e.g. /home/user/my-project)"
+          className="flex-1 px-3 py-2 text-sm bg-surface-0 border border-border rounded text-fg placeholder:text-muted focus:outline-none focus:border-accent"
+        />
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name (optional)"
+          className="sm:w-48 px-3 py-2 text-sm bg-surface-0 border border-border rounded text-fg placeholder:text-muted focus:outline-none focus:border-accent"
+        />
+        <button
+          type="submit"
+          disabled={!path.trim() || mutation.isPending}
+          className="px-4 py-2 text-sm font-medium bg-accent text-bg-0 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {mutation.isPending ? "Adding..." : "Add Project"}
+        </button>
+      </div>
+      {mutation.isError && (
+        <p className="text-error text-sm mt-2">
+          {mutation.error instanceof Error ? mutation.error.message : "Failed to register project"}
+        </p>
+      )}
+      {mutation.isSuccess && (
+        <p className="text-accent text-sm mt-2">Project registered successfully</p>
+      )}
+    </form>
   );
 }
 
