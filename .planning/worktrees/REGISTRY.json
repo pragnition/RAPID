@@ -396,6 +396,15 @@
       "startCommit": "10649e769f73b8a142aabcc4bc3d68e07dbcfd9e",
       "wave": null,
       "createdAt": "2026-03-20T17:05:27.579Z"
+    },
+    "read-only-views": {
+      "setName": "read-only-views",
+      "branch": "rapid/read-only-views",
+      "path": ".rapid-worktrees/read-only-views",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-21T03:12:27.883Z"
     }
   }
 }

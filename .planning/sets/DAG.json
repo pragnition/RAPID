@@ -1,24 +1,61 @@
 {
   "nodes": [
-    { "id": "state-execution", "wave": 0, "status": "complete" },
-    { "id": "agent-prompts", "wave": 0, "status": "pending" },
-    { "id": "init-config", "wave": 0, "status": "pending" },
-    { "id": "planning-refinement", "wave": 0, "status": "pending" }
+    { "id": "service-infrastructure", "wave": 0, "status": "complete" },
+    { "id": "project-registry", "wave": 1, "status": "complete" },
+    { "id": "frontend-shell", "wave": 1, "status": "complete" },
+    { "id": "read-only-views", "wave": 2, "status": "complete" },
+    { "id": "interactive-features", "wave": 3, "status": "pending" },
+    { "id": "cli-integration", "wave": 4, "status": "pending" }
   ],
-  "edges": [],
+  "edges": [
+    { "from": "service-infrastructure", "to": "project-registry" },
+    { "from": "service-infrastructure", "to": "frontend-shell" },
+    { "from": "project-registry", "to": "read-only-views" },
+    { "from": "frontend-shell", "to": "read-only-views" },
+    { "from": "read-only-views", "to": "interactive-features" },
+    { "from": "interactive-features", "to": "cli-integration" }
+  ],
   "waves": {
     "0": {
-      "sets": ["state-execution", "agent-prompts", "init-config", "planning-refinement"],
+      "sets": ["service-infrastructure"],
       "checkpoint": {
-        "contracts": ["rapid://contracts/state-execution", "rapid://contracts/agent-prompts", "rapid://contracts/init-config", "rapid://contracts/planning-refinement"],
-        "artifacts": [".planning/sets/state-execution/CONTRACT.json", ".planning/sets/agent-prompts/CONTRACT.json", ".planning/sets/init-config/CONTRACT.json", ".planning/sets/planning-refinement/CONTRACT.json"]
+        "contracts": ["rapid://contracts/service-infrastructure"],
+        "artifacts": [".planning/sets/service-infrastructure/CONTRACT.json"]
+      }
+    },
+    "1": {
+      "sets": ["project-registry", "frontend-shell"],
+      "checkpoint": {
+        "contracts": ["rapid://contracts/project-registry", "rapid://contracts/frontend-shell"],
+        "artifacts": [".planning/sets/project-registry/CONTRACT.json", ".planning/sets/frontend-shell/CONTRACT.json"]
+      }
+    },
+    "2": {
+      "sets": ["read-only-views"],
+      "checkpoint": {
+        "contracts": ["rapid://contracts/read-only-views"],
+        "artifacts": [".planning/sets/read-only-views/CONTRACT.json"]
+      }
+    },
+    "3": {
+      "sets": ["interactive-features"],
+      "checkpoint": {
+        "contracts": ["rapid://contracts/interactive-features"],
+        "artifacts": [".planning/sets/interactive-features/CONTRACT.json"]
+      }
+    },
+    "4": {
+      "sets": ["cli-integration"],
+      "checkpoint": {
+        "contracts": ["rapid://contracts/cli-integration"],
+        "artifacts": [".planning/sets/cli-integration/CONTRACT.json"]
       }
     }
   },
   "metadata": {
-    "created": "2026-03-18",
-    "totalSets": 4,
-    "totalWaves": 1,
-    "maxParallelism": 4
+    "created": "2026-03-21",
+    "totalSets": 6,
+    "totalWaves": 5,
+    "maxParallelism": 2
   }
 }

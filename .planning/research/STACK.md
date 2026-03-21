@@ -1,199 +1,242 @@
-# Stack Research: project-registry
+# Stack Research: read-only-views
 
 ## Core Stack Assessment
 
-### Existing Stack (from service-infrastructure)
-The service-infrastructure set has already established the core stack. All foundational dependencies are installed and configured. This assessment focuses on **new dependencies and patterns** required by project-registry.
+### Frontend: Cytoscape.js (NEW dependency)
+- **Required for:** KnowledgeGraph view (DAG visualization)
+- **Latest stable:** 3.33.1 (published ~Aug 2025)
+- **Key features relevant to this set:**
+  - Canvas-based graph rendering with built-in zoom/pan/selection
+  - First-party TypeScript support (since 3.31.0)
+  - Experimental WebGL rendering (3.31.0+) for large graphs
+  - Rich styling via CSS-like selectors with data-driven mapping (`data(field)`, `mapData()`)
+  - Event system for click-to-select interactions
+  - Performance: handles 50+ nodes and 200+ edges easily in canvas mode
+- **Performance configuration for 50-node/200-edge target:**
+  - `hideEdgesOnViewport: true` and `hideLabelsOnViewport: true` during pan/zoom
+  - `textureOnViewport: true` for texture-based rendering during interaction
+  - `curve-style: 'bezier'` with `target-arrow-shape: 'triangle'` for directed edges
+  - `wheelSensitivity: 0.5` for smoother zoom control
+- **Node coloring by status:** Use `data(status)` with style selectors like `node[status = "pending"]` for conditional coloring. All 6 status values (pending, discussed, planned, executed, complete, merged) map to distinct colors.
 
-| Technology | Installed Version | Status |
-|-----------|------------------|--------|
-| Python | 3.12.12 | Stable, matches `requires-python = ">=3.12"` |
-| FastAPI | 0.135.1 | Latest stable |
-| SQLModel | 0.0.37 | Latest stable |
-| Pydantic | 2.12.5 | Stable (2.13.0 in beta) |
-| Alembic | 1.18.4 | Latest stable |
-| Uvicorn | 0.42.0 | Latest stable |
-| pydantic-settings | 2.13.1 | Latest stable |
-| pytest | 9.0.2 | Latest stable |
-| httpx | 0.28.1 | Latest stable |
+### Frontend: cytoscape-dagre (NEW dependency)
+- **Required for:** Dagre directed-graph layout in KnowledgeGraph
+- **Latest stable:** 2.5.0 (published ~early 2023, 3 years old)
+- **Maintenance status:** Inactive -- no releases in 3 years. However, the package is stable and widely used (a layout algorithm wrapper around dagre).
+- **TypeScript types:** `@types/cytoscape-dagre` v2.3.4 (published ~Nov 2025)
+- **Usage pattern:** Register as Cytoscape extension, then use `layout: { name: 'dagre', rankDir: 'TB' }` for top-to-bottom flow.
+- **Risk:** Low. Layout algorithms are inherently stable; no active bugs reported. The underlying dagre library is also stable (v0.8.5).
 
-### watchdog (NEW DEPENDENCY -- not yet installed)
-- **Required for:** FileWatcherService (STATE.json and REGISTRY.json monitoring)
-- **Latest stable version:** 6.0.0
-- **Python requirement:** >=3.9
-- **Platform support:**
-  - Linux: inotify (kernel 2.6+)
-  - macOS: FSEvents
-  - Windows: ReadDirectoryChangesW
-  - All platforms: PollingObserver fallback
-- **Key classes for this project:**
-  - `watchdog.observers.Observer` -- platform-native watcher (inotify on Linux)
-  - `watchdog.observers.polling.PollingObserver` -- cross-platform polling fallback
-  - `watchdog.events.FileSystemEventHandler` -- base class for event callbacks
-  - `watchdog.events.FileModifiedEvent`, `FileCreatedEvent`, `FileDeletedEvent`
-- **Critical finding:** watchdog does NOT automatically fall back to polling when inotify watch limit is exhausted. It raises `OSError`. The FileWatcherService must catch this error explicitly and switch to `PollingObserver` manually.
-- **inotify watch limit:** Default is 8192 per user on most Linux systems (`/proc/sys/fs/inotify/max_user_watches`). Each watched directory consumes one watch. For this project, we watch 1-2 files per project (STATE.json, REGISTRY.json), so the limit is unlikely to be hit unless the user has many inotify consumers running.
-- **Thread safety:** Observer runs in its own daemon thread. File event callbacks execute in that thread. Database writes from callbacks must use their own Session (not share with request handlers).
-- **Confirmed via:** PyPI, GitHub, watchdog API docs
+### Frontend: react-cytoscapejs (EVALUATE -- may skip)
+- **Latest stable:** 2.0.0 (last published >12 months ago)
+- **Maintenance status:** Inactive. Has not been updated for React 19.
+- **Peer dependencies:** `react ^16.0.0 || ^17.0.0 || ^18.0.0` -- does NOT list React 19.
+- **Recommendation:** SKIP this wrapper. Instead, use Cytoscape.js directly via `useRef` + `useEffect` pattern. Reasons:
+  1. react-cytoscapejs does not declare React 19 peer compatibility
+  2. The wrapper is thin (~200 lines) and adds no significant value over direct integration
+  3. Direct Cytoscape.js usage provides full API control for layout, events, and styling
+  4. Eliminates a dependency with uncertain maintenance future
 
-### Existing Project Model (already in database.py)
-The `Project` SQLModel is already defined in `web/backend/app/database.py`:
-```
-class Project(SQLModel, table=True):
-    id: UUID (PK, auto-generated)
-    name: str
-    path: str (unique constraint)
-    registered_at: datetime (auto UTC)
-    last_seen_commit: str | None
-    status: str (default "active")
-```
+### Backend: tree-sitter + tree-sitter-language-pack (NEW dependencies)
+- **tree-sitter:** v0.25.2 (published Sep 2025). Python >=3.10 required. Project uses Python >=3.12 -- satisfied.
+- **tree-sitter-language-pack:** v0.13.0 (published Nov 2025). Bundles 165+ language grammars as pre-compiled wheels.
+- **Supported languages for this set:** Python, JavaScript/TypeScript, Go, Rust -- all included in language-pack.
+- **API pattern:**
+  ```python
+  from tree_sitter_language_pack import get_parser
+  parser = get_parser("python")
+  tree = parser.parse(source_bytes)
+  root = tree.root_node
+  # Walk tree via root.children, node.type, node.start_point, node.end_point
+  ```
+- **Performance notes:**
+  - `walk()` method preferred over recursive `.children` traversal for large files
+  - Parsing is fast (C-native); a 10K-line file parses in ~5ms
+  - No built-in caching -- application must implement its own (mtime-based recommended)
+- **Alternative considered:** `tree-sitter-languages` (grantjenks) -- older, fewer languages, less maintained. `tree-sitter-language-pack` is the better choice.
 
-**Gap analysis vs CONTRACT.json:**
-- CONTRACT.json specifies `metadata_json` field -- this does NOT exist in the current model
-- CONTRACT.json specifies `last_seen_at` -- the model has `last_seen_commit` instead
-- CONTEXT.md specifies storing summary fields: current milestone ID, milestone name, total set count, active set count
-- **Decision needed:** Either add `last_seen_at` and `metadata_json` columns via Alembic migration, or store STATE.json summary data in the existing fields creatively. Adding columns is the cleaner approach and aligns with the contract.
+### Backend: FastAPI (existing)
+- **Current version:** >=0.135,<1.0 (pinned in pyproject.toml)
+- **Latest stable:** ~0.115.x (FastAPI versioning is pre-1.0)
+- **Relevant for this set:** GET-only endpoints use standard `@router.get()` pattern. No new middleware or lifecycle hooks needed.
+- **Confirmed:** Python 3.12+ required, satisfied.
 
-### Alembic Migration Status
-- One migration exists: `0001_initial_schema.py` -- creates all tables (project, note, kanbanitem, syncstate, appconfig)
-- The `project` table schema matches the current `Project` SQLModel
-- A new migration (0002) will be needed if columns are added to the Project model
-- Batch mode (`render_as_batch=True`) is already configured in `env.py`
-- Naming convention is already set on `SQLModel.metadata`
+### Frontend: TanStack Query (existing)
+- **Current version:** ^5.91.3
+- **Auto-refresh via `refetchInterval`:**
+  - Set `refetchInterval: 2000` (2 seconds) per-hook for polling
+  - `refetchIntervalInBackground: false` (default) -- pauses polling when tab is backgrounded (saves resources)
+  - v5 callback signature: `refetchInterval: number | false | ((query: Query) => number | false | undefined)`
+  - Can conditionally adjust interval based on query state
+- **Interaction with existing queryClient defaults:** Global `staleTime: 30000` and `gcTime: 300000` remain. Per-hook `refetchInterval: 2000` overrides the stale-then-refetch behavior by forcing refetch every 2s regardless of staleness.
 
 ## Dependency Health
 
 | Package | Current | Latest | Status | Notes |
 |---------|---------|--------|--------|-------|
-| fastapi[standard] | 0.135.1 | 0.135.1 | Current | No action needed |
-| sqlmodel | 0.0.37 | 0.0.37 | Current | No action needed |
-| pydantic | 2.12.5 | 2.12.5 stable / 2.13.0b2 beta | Current | Stay on stable |
-| alembic | 1.18.4 | 1.18.4 | Current | No action needed |
-| pydantic-settings | 2.13.1 | 2.13.1 | Current | No action needed |
-| uvicorn | 0.42.0 | 0.42.0 | Current | No action needed |
-| watchdog | NOT INSTALLED | 6.0.0 | **Must add** | Required for FileWatcherService |
-| pytest | 9.0.2 | 9.0.2 | Current | No action needed |
-| httpx | 0.28.1 | 0.28.1 | Current | No action needed |
-| pytest-asyncio | 0.25.x | 0.25.x | Current | No action needed |
+| cytoscape | n/a (new) | 3.33.1 | Active | TS support since 3.31.0, ~monthly releases |
+| cytoscape-dagre | n/a (new) | 2.5.0 | Stable/Inactive | No releases in 3y, but layout algos are inherently stable |
+| @types/cytoscape-dagre | n/a (new) | 2.3.4 | Active | Recently updated Nov 2025 |
+| tree-sitter (Python) | n/a (new) | 0.25.2 | Active | Sep 2025 release, pre-compiled wheels |
+| tree-sitter-language-pack | n/a (new) | 0.13.0 | Active | Nov 2025, 165+ languages bundled |
+| react-cytoscapejs | n/a (skip) | 2.0.0 | Inactive | No React 19 support, recommend direct integration |
+| fastapi | >=0.135 | ~0.115 | Active | Pre-1.0, rapid releases |
+| @tanstack/react-query | ^5.91.3 | 5.91.3 | Active | Already installed, very frequent releases |
+| react | ^19.2.4 | 19.2.4 | Active | Already installed |
+| zustand | ^5.0.12 | 5.0.12 | Active | Already installed |
 
 ## Compatibility Matrix
 
-| Constraint | Requirement | Status |
-|------------|-------------|--------|
-| watchdog + Python 3.12 | watchdog 6.0.0 requires >=3.9 | Compatible |
-| watchdog + SQLite threading | Watcher thread needs own Session | Manual wiring required |
-| watchdog + FastAPI lifespan | Start in lifespan startup, stop in shutdown | Manual wiring required |
-| SQLModel + Alembic batch mode | Already configured | Compatible |
-| Pydantic v2 schemas + SQLModel models | Use separate Pydantic models for API, SQLModel for DB | Compatible |
+| Constraint | Requirement | Satisfied |
+|-----------|-------------|-----------|
+| cytoscape requires no peer deps | Standalone library | Yes |
+| cytoscape-dagre requires cytoscape | ^3.2.0 | Yes (3.33.1) |
+| tree-sitter requires Python | >=3.10 | Yes (3.12) |
+| tree-sitter-language-pack requires Python | >=3.10 | Yes (3.12) |
+| TanStack Query refetchInterval requires | v5 API | Yes (5.91.3) |
+| Cytoscape TS types | Built-in since 3.31.0 | Yes |
+| Keyboard shortcut "gg" conflict | Already bound to "Scroll to top" in AppLayout | CONFLICT -- see risks |
+| Keyboard shortcut "gs", "gw", "gc" | Not bound | Available |
 
-## Key Implementation Patterns
+## Upgrade Paths
 
-### 1. Pydantic Schemas (API layer) vs SQLModel (DB layer)
-The existing codebase uses SQLModel for the database. For the API layer, the project-registry needs separate Pydantic `BaseModel` schemas for request/response validation. This is the FastAPI-recommended pattern:
-- `ProjectCreate(BaseModel)` for POST request body
-- `ProjectRead(BaseModel)` for list responses (lightweight summary)
-- `ProjectDetail(BaseModel)` for detail responses (includes STATE.json data)
-- `PaginatedResponse(BaseModel, Generic[T])` for paginated list wrapper
-
-### 2. Pagination Pattern
-SQLModel/SQLAlchemy pagination uses `.offset()` and `.limit()`:
-```python
-statement = select(Project).offset((page - 1) * per_page).limit(per_page)
-count_statement = select(func.count()).select_from(Project)
-```
-The CONTEXT.md specifies default `page=1, per_page=20` with total count in response.
-
-### 3. FileWatcherService Threading Model
-- watchdog Observer runs as a daemon thread (auto-stops when main thread exits)
-- Event handler callbacks run in the observer thread
-- Database writes from callbacks need a fresh Session (not the request-scoped one)
-- Use `get_engine()` to get the cached engine, create a new `Session(engine)` per callback
-- **Race condition mitigation:** SQLite WAL mode (already configured) allows concurrent reads while writing
-
-### 4. STATE.json Parsing
-From the actual STATE.json structure observed in this project:
-```json
-{
-  "version": 1,
-  "projectName": "RAPID",
-  "currentMilestone": "v4.0.0",
-  "milestones": [
-    {
-      "id": "v4.0.0",
-      "name": "Mission Control",
-      "sets": [
-        {"id": "service-infrastructure", "status": "merged", ...},
-        {"id": "project-registry", "status": "discussed", ...}
-      ]
-    }
-  ]
-}
-```
-Summary extraction logic:
-- `projectName` -> project name (fallback to directory name)
-- Find milestone matching `currentMilestone` -> milestone ID and name
-- Count sets in current milestone -> total set count
-- Count sets with status != "merged" and != "pending" -> active set count
-
-### 5. Router Wiring Pattern
-The existing `main.py` uses `app.include_router(health_router)`. The projects router should follow the same pattern:
-```python
-from app.routers.projects import router as projects_router
-app.include_router(projects_router)
-```
-
-### 6. Dependency Injection Pattern
-The existing `get_db()` function in `main.py` yields a request-scoped Session from `app.state.engine`. The projects router should use `Depends(get_db)` for all endpoints. This is already established in the codebase.
-
-### 7. SyncEngine Integration
-The SyncEngine expects `(project_path: Path, session: Session)`. For the project-registry:
-- On register: call `sync_to_disk("project", str(project.id), project.model_dump())`
-- On deregister: call `delete_from_disk("project", str(project.id))`
-- On update (from file watcher): call `sync_to_disk(...)` after updating DB
+No outdated dependencies requiring upgrade for this set. All new dependencies are at their latest stable versions. Existing dependencies (React, TanStack Query, Zustand) are already current.
 
 ## Tooling Assessment
 
-### Build & Package Management
-- `uv` is the package manager (per pyproject.toml structure)
-- watchdog must be added to `[project].dependencies` in pyproject.toml
-- Run: `uv add watchdog` or manually add `"watchdog>=6.0,<7.0"` to dependencies
+### Build Tools
+- **Frontend:** Vite 8.0.1 -- no changes needed. Cytoscape.js is a standard ESM/CJS package that bundles without issues.
+- **Backend:** pip/uv with pyproject.toml -- add tree-sitter and tree-sitter-language-pack to dependencies.
 
-### Testing
-- Existing test patterns use `pytest` with sync tests and `@pytest.mark.asyncio` for async endpoint tests
-- `conftest.py` provides `db_path`, `engine`, `tables`, `session` fixtures
-- `test_main.py` provides pattern for `test_engine`, `test_app`, `async_client` fixtures
-- FileWatcherService tests will need `tmp_path` for creating fake project directories with STATE.json files
-- Consider `unittest.mock.patch` for mocking inotify failures to test polling fallback
+### Test Framework
+- **Backend:** pytest + httpx for endpoint testing (already configured in dev dependencies)
+- **Frontend:** No test framework installed yet. Vitest recommended for future. For this set, behavioral contracts (read-only enforcement, graph performance) can be verified via backend pytest tests and manual verification.
 
-### Linting
-- `ruff` is configured in pyproject.toml: `line-length = 100`, `target-version = "py312"`
+### Linting/Formatting
+- **Backend:** ruff 0.11 (configured, line-length=100, target py312)
+- **Frontend:** No ESLint configured yet. TypeScript strict mode provides type checking via `tsc -b --noEmit`.
 
 ## Stack Risks
 
-1. **watchdog inotify limit exhaustion:** Impact: Medium -- FileWatcherService crashes if not handled. Mitigation: Catch `OSError` from Observer.start(), fall back to `PollingObserver(timeout=5)`. Log the fallback clearly.
+1. **Keyboard shortcut conflict: "gg" is already bound to "Scroll to top"** in AppLayout.tsx (line 69). The CONTEXT.md specifies `gg=graph` for the KnowledgeGraph route. This conflicts directly. **Resolution options:**
+   - (a) Change graph shortcut to a different key (e.g., `gk` for knowledge graph, or `gG` with shift)
+   - (b) Remove the "scroll to top" binding (vim-style `gg`) and reassign to graph navigation
+   - **Recommendation:** Use `gk` for graph (knowledge), keeping `gg` for scroll-to-top which is a more standard vim convention. Impact: low.
 
-2. **File watcher thread database session lifecycle:** Impact: High -- sharing a Session between threads causes SQLAlchemy `DetachedInstanceError` or `ProgrammingError`. Mitigation: Create a new `Session(engine)` inside each event handler callback, commit and close immediately. Never pass Session objects across threads.
+2. **react-cytoscapejs lacks React 19 support.** The wrapper has not been updated in >12 months and does not declare React 19 as a peer dependency. **Mitigation:** Use Cytoscape.js directly with a `useRef`/`useEffect` pattern. This is actually the recommended approach in the Cytoscape.js docs for framework integration.
 
-3. **Race between file watcher and API requests:** Impact: Medium -- watcher thread and request thread may try to update the same Project row simultaneously. Mitigation: SQLite WAL mode (already enabled) allows concurrent reads. For writes, the `busy_timeout=5000` pragma (already configured) handles lock contention. Session-per-operation pattern prevents stale state.
+3. **cytoscape-dagre is unmaintained (3 years without release).** **Mitigation:** The package wraps the stable dagre algorithm. No API changes expected. If issues arise, the dagre layout can be applied manually via `cytoscape.use(dagre)` registration. The package has 0 open security advisories.
 
-4. **STATE.json missing or malformed at registration:** Impact: Low -- user registers a path without valid STATE.json. Mitigation: CONTEXT.md says to reject paths without STATE.json. Return 422 with clear error message. Validate JSON structure before persisting.
+4. **tree-sitter parsing can be slow on very large codebases.** Parsing every file in a large project (1000+ files) on each API request would be expensive. **Mitigation:** Implement mtime-based caching in the codebase service. Only re-parse files whose modification time has changed. Cache the AST summary (not the full tree) as JSON. Consider limiting tree depth to 3-4 levels for the API response.
 
-5. **Project path disappears after registration:** Impact: Low -- directory deleted or unmounted. Mitigation: FileWatcherService detects the disappearance, marks project status as "unreachable". Keep record for user visibility per CONTEXT.md decision.
+5. **tree-sitter-language-pack is a large dependency (~200MB installed).** It bundles 165+ grammars when only 4 are needed (Python, JS/TS, Go, Rust). **Mitigation:** This is acceptable for a server-side dependency. Alternatively, install individual grammar packages (`tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-go`, `tree-sitter-rust`) for a smaller footprint. Individual packages total ~20MB. **Recommendation:** Use individual grammar packages to reduce install size.
 
-6. **Project model schema gap (CONTRACT.json vs actual model):** Impact: Medium -- CONTRACT.json specifies `metadata_json` and `last_seen_at` fields not present in current model. Mitigation: Add these fields via Alembic migration 0002. Use nullable columns with defaults to avoid breaking existing data.
+6. **2-second polling interval generates significant HTTP traffic.** Four views polling at 2s = up to 2 requests/second per active tab. For a local dashboard this is fine, but could strain resources if multiple tabs are open. **Mitigation:** `refetchIntervalInBackground: false` (default) pauses polling on backgrounded tabs. Consider adding `enabled: !!projectId` to prevent polling when no project is selected.
+
+7. **Backend reads .planning/ files directly from disk on every request.** The existing `parse_state_json` pattern reads and parses JSON on each call. With 2s polling across 4 endpoints, that is 2 file reads/second. **Mitigation:** For STATE.json, DAG.json, and REGISTRY.json this is negligible (small files, OS-level page cache). For codebase tree-sitter parsing, implement explicit caching (see risk #4).
 
 ## Recommendations
 
-1. **Add watchdog dependency:** Add `"watchdog>=6.0,<7.0"` to `pyproject.toml` dependencies. Priority: critical.
+1. **Use Cytoscape.js directly (no react-cytoscapejs wrapper):** Create a `<CytoscapeGraph>` component using `useRef` for the container div and `useEffect` for Cytoscape instance lifecycle. This avoids the unmaintained React wrapper and gives full API control. Priority: critical.
 
-2. **Create Alembic migration for Project model changes:** Add `last_seen_at` (DateTime, nullable) and `metadata_json` (String, default "{}") columns to the project table. Priority: critical.
+2. **Use individual tree-sitter grammar packages instead of language-pack:** Install `tree-sitter`, `tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-go`, `tree-sitter-rust` individually. Saves ~180MB and makes dependencies explicit. Priority: high.
 
-3. **Implement explicit inotify-to-polling fallback:** Do not rely on watchdog auto-detection. Catch `OSError` on `Observer.start()` and switch to `PollingObserver`. Priority: high.
+3. **Implement mtime-based caching for tree-sitter parsing:** Cache parsed AST summaries keyed by `(file_path, mtime)`. Invalidate when mtime changes. This prevents re-parsing unchanged files on every 2s poll. Priority: high.
 
-4. **Use separate Pydantic schemas for API layer:** Do not return SQLModel instances directly from endpoints. Create dedicated request/response schemas for clean API boundaries. Priority: high.
+4. **Resolve keyboard shortcut conflict for graph route:** Use `gk` (knowledge graph) instead of `gg` (conflicts with scroll-to-top). Register `gs`=state, `gw`=worktrees, `gk`=graph, `gc`=codebase. Priority: high.
 
-5. **Create per-callback database sessions in FileWatcherService:** Never share the request-scoped Session with the watcher thread. Use `Session(engine)` as a context manager inside each event handler. Priority: high.
+5. **Add `refetchInterval: 2000` per-hook, not globally:** Each view hook (useProjectState, useWorktrees, useDag, useCodebaseTree) should set its own `refetchInterval: 2000`. Do NOT change the global queryClient defaults. Priority: medium.
 
-6. **Follow existing test patterns:** Use the established `conftest.py` fixtures, the `test_app`/`async_client` pattern from `test_main.py`, and class-based test organization. Priority: medium.
+6. **Limit tree-sitter API response depth:** Cap the codebase tree at 3-4 levels of nesting to prevent oversized responses. Allow an optional `depth` query parameter for clients that need more. Priority: medium.
 
-7. **Wire FileWatcherService into FastAPI lifespan:** Start watcher in the lifespan startup phase (after engine and migrations), stop in shutdown. Store on `app.state.file_watcher` for access. Priority: medium.
+7. **Guard polling with `enabled: !!projectId`:** All four view hooks should only poll when an active project is selected. This prevents unnecessary requests and 404 errors. Priority: medium.
+
+8. **Register cytoscape-dagre extension at app startup, not per-render:** Call `cytoscape.use(dagre)` once at module load time (e.g., in a setup file or at the top of the KnowledgeGraph module). Calling it per-render throws warnings. Priority: medium.
+
+## New Dependencies Summary
+
+### Frontend (package.json additions)
+```json
+{
+  "dependencies": {
+    "cytoscape": "^3.33.1",
+    "cytoscape-dagre": "^2.5.0"
+  },
+  "devDependencies": {
+    "@types/cytoscape-dagre": "^2.3.4"
+  }
+}
+```
+Note: `cytoscape` has built-in TypeScript types since 3.31.0; no `@types/cytoscape` needed.
+
+### Backend (pyproject.toml additions)
+```toml
+dependencies = [
+    # ... existing deps ...
+    "tree-sitter>=0.25,<1.0",
+    "tree-sitter-python>=0.23,<1.0",
+    "tree-sitter-javascript>=0.23,<1.0",
+    "tree-sitter-go>=0.23,<1.0",
+    "tree-sitter-rust>=0.23,<1.0",
+]
+```
+
+## Data Format Reference
+
+### STATE.json shape (for state view)
+```json
+{
+  "version": 1,
+  "projectName": "string",
+  "currentMilestone": "string",
+  "milestones": [
+    {
+      "id": "string",
+      "name": "string",
+      "sets": [
+        {
+          "id": "string",
+          "status": "pending|discussed|planned|executed|complete|merged",
+          "waves": [{ "id": "string", "status": "pending|executing|complete", "jobs": [] }],
+          "name": "string (optional)",
+          "branch": "string (optional)"
+        }
+      ]
+    }
+  ],
+  "lastUpdatedAt": "ISO8601",
+  "createdAt": "ISO8601"
+}
+```
+
+### DAG.json shape (for knowledge graph)
+```json
+{
+  "nodes": [{ "id": "string", "wave": 0, "status": "string" }],
+  "edges": [{ "from": "string", "to": "string" }],
+  "waves": { "0": { "sets": ["string"], "checkpoint": {} } },
+  "metadata": { "created": "date", "totalSets": 4, "totalWaves": 1, "maxParallelism": 4 }
+}
+```
+Note: Edge convention is `from` = dependency, `to` = dependent. This maps to Cytoscape `source`/`target`.
+
+### REGISTRY.json shape (for worktree view)
+```json
+{
+  "version": 1,
+  "worktrees": {
+    "set-name": {
+      "setName": "string",
+      "branch": "string",
+      "path": "string",
+      "phase": "string",
+      "status": "string",
+      "wave": "number|null",
+      "createdAt": "ISO8601",
+      "mergeStatus": "string (optional)",
+      "mergedAt": "ISO8601 (optional)",
+      "mergeCommit": "string (optional)"
+    }
+  }
+}
+```
