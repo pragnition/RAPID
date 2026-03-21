@@ -4,6 +4,7 @@
     "version": "4.0.0"
   },
   "model": "opus",
+  "solo": true,
   "planning": {
     "max_parallel_sets": 3
   }
