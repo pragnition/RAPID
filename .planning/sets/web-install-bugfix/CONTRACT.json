@@ -4,5 +4,11 @@
   "created": "2026-03-21",
   "exports": { "functions": [], "types": [] },
   "imports": { "functions": [], "types": [] },
-  "fileOwnership": []
+  "fileOwnership": [
+    "web/backend/app/database.py",
+    "web/backend/service/rapid-web.service",
+    "web/frontend/src/hooks/useKanban.ts",
+    "web/frontend/src/pages/KnowledgeGraphPage.tsx",
+    "setup.sh"
+  ]
 }
