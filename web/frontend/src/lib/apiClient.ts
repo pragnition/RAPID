@@ -59,6 +59,22 @@ function apiDelete<T>(path: string): Promise<T> {
   return apiClient<T>(path, { method: "DELETE" });
 }
 
+function apiPut<T>(path: string, body: unknown): Promise<T> {
+  return apiClient<T>(path, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  return apiClient<T>(path, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
 apiClient.get = apiGet;
 apiClient.post = apiPost;
 apiClient.delete = apiDelete;
+apiClient.put = apiPut;
+apiClient.patch = apiPatch;

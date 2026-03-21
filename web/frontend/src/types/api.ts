@@ -144,3 +144,49 @@ export interface CodebaseTree {
   total_files: number;
   parse_errors: string[];
 }
+
+// ---------------------------------------------------------------------------
+// Kanban
+// ---------------------------------------------------------------------------
+
+export interface KanbanCardResponse {
+  id: string;
+  column_id: string;
+  title: string;
+  description: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KanbanColumnResponse {
+  id: string;
+  project_id: string;
+  title: string;
+  position: number;
+  created_at: string;
+  cards: KanbanCardResponse[];
+}
+
+export interface KanbanBoardResponse {
+  project_id: string;
+  columns: KanbanColumnResponse[];
+}
+
+// ---------------------------------------------------------------------------
+// Notes
+// ---------------------------------------------------------------------------
+
+export interface NoteResponse {
+  id: string;
+  project_id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteListResponse {
+  items: NoteResponse[];
+  total: number;
+}
