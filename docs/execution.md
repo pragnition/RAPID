@@ -28,10 +28,15 @@ On every invocation, the skill scans planning artifacts to classify each wave:
 
 Re-running `/rapid:execute-set` after an interruption picks up exactly where things left off. No manual state recovery is needed.
 
+### Solo mode
+
+When a set is configured for solo mode (no worktree), execution works directly on main. The diff base is the `startCommit` hash recorded when the set was started. After all waves complete and verification passes, solo sets auto-transition to `merged` since there is no branch to merge separately.
+
 ### State transitions
 
-- `planning` --> `executing` (when execution starts)
-- `executing` --> `complete` (after verification passes)
+- `planned` → `executed` (when execution starts)
+- `executed` → `complete` (after verification passes)
+- `complete` → `merged` (automatic for solo sets)
 
 ### Agents spawned
 

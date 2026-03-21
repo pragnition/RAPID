@@ -1,6 +1,6 @@
 # Configuration
 
-This reference covers environment setup, the state schema, and the project directory layout for RAPID v3.0.
+This reference covers environment setup, the state schema, and the project directory layout.
 
 ## Environment Variables
 
@@ -38,13 +38,14 @@ Located at `.planning/config.json`. Created by `/rapid:init` during project setu
 | `workflow.plan_check` | boolean | `true` / `false` | _(none)_ | Enable plan verification after planning |
 | `workflow.verifier` | boolean | `true` / `false` | _(none)_ | Enable post-execution verification |
 | `granularity` | string | `"fine"` / `"coarse"` | _(none)_ | Task sizing granularity |
+| `solo` | boolean | `true` / `false` | `true` if teamSize=1 | Enable solo mode (no worktrees, work on main) |
 | `lock_timeout_ms` | number | milliseconds | `300000` (5 min) | Stale lock file expiration |
 
-The `lock_timeout_ms` key is the only one with a built-in default in `loadConfig()`. All other keys are project-specific and set during initialization.
+The `lock_timeout_ms` key is the only one with a built-in default in `loadConfig()`. Solo mode defaults to `true` when team size is 1. All other keys are project-specific and set during initialization.
 
 ## State Schema (`STATE.json`)
 
-Located at `.planning/STATE.json`. This is the machine-readable project state. In v3.0, state tracks at the set level only -- there is no wave or task state.
+Located at `.planning/STATE.json`. This is the machine-readable project state. State tracks at three levels: sets, waves (within sets), and jobs (within waves).
 
 ### Schema
 
@@ -57,10 +58,20 @@ Located at `.planning/STATE.json`. This is the machine-readable project state. I
       "version": "string",
       "sets": [
         {
-          "name": "string",
-          "status": "pending | discussing | planning | executing | complete | merged",
-          "branch": "string",
-          "worktree": "string"
+          "id": "string",
+          "status": "pending | discussed | planned | executed | complete | merged",
+          "waves": [
+            {
+              "id": "string",
+              "status": "pending | executing | complete",
+              "jobs": [
+                {
+                  "id": "string",
+                  "status": "pending | executing | complete"
+                }
+              ]
+            }
+          ]
         }
       ]
     }
@@ -70,7 +81,11 @@ Located at `.planning/STATE.json`. This is the machine-readable project state. I
 
 ### SetStatus Enum
 
-`pending`, `discussing`, `planning`, `executing`, `complete`, `merged`
+`pending`, `discussed`, `planned`, `executed`, `complete`, `merged`
+
+### WaveStatus / JobStatus Enum
+
+`pending`, `executing`, `complete`
 
 See [State Machines](state-machines.md) for transition rules and crash recovery details.
 
@@ -91,6 +106,22 @@ See [State Machines](state-machines.md) for transition rules and crash recovery 
 | `.planning/sets/{set-name}/` | Per-set artifacts: SET-OVERVIEW.md, PLAN.md files |
 | `.planning/worktrees/` | Worktree registry |
 | `.rapid-worktrees/` | Git worktree checkout directories (one per started set) |
+| `.rapid-web/` | Per-project web dashboard data (kanban, notes) -- created when RAPID_WEB=true |
+| `web/` | Web dashboard source (FastAPI backend + React frontend) |
+
+## Solo Mode
+
+When `solo: true` in config.json (default for team size 1), sets work directly on main without creating worktrees or branches. The registry entry records `solo: true` and a `startCommit` hash used as the diff base for review scoping. Solo sets auto-transition from `complete` to `merged` since there is no branch to merge.
+
+## Web Dashboard (v4.0.0)
+
+An optional locally-hosted web dashboard at `http://127.0.0.1:8998`. Gated by `RAPID_WEB=true` in the environment.
+
+| Variable | Purpose |
+|----------|---------|
+| `RAPID_WEB` | Set to `true` to enable web dashboard features |
+
+The dashboard provides read-only project visualization: state views, worktree tracking, knowledge graph (DAG), codebase mapping, kanban board, and markdown notes. Data is stored in SQLite at `~/.rapid/rapid.db` with `.rapid-web/` per-project directories for portability.
 
 ---
 

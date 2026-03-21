@@ -1,6 +1,6 @@
 # Setup
 
-Three commands handle everything from first install to project initialization and codebase analysis. Run them once at the start of a new project.
+Four commands handle everything from first install to project initialization, codebase analysis, and optional web dashboard setup. Run them once at the start of a new project.
 
 ## `/rapid:install`
 
@@ -21,6 +21,10 @@ See [skills/init/SKILL.md](../skills/init/SKILL.md) for full details.
 Analyzes an existing codebase and generates context documents that downstream agents use to understand project conventions, architecture, and style. Spawns a `rapid-context-generator` subagent that reads sample source files, identifies patterns (architecture, naming, error handling, test infrastructure), and writes the results. Generates CLAUDE.md (under 80 lines) at the project root plus CODEBASE.md, ARCHITECTURE.md, CONVENTIONS.md, and STYLE_GUIDE.md in `.planning/context/`. Re-running regenerates all files from scratch -- the current codebase is always the source of truth.
 
 See [skills/context/SKILL.md](../skills/context/SKILL.md) for full details.
+
+## `/rapid:register-web`
+
+Registers an existing project with the RAPID web dashboard. Only needed for projects initialized before v4.0.0. New projects auto-register during `/rapid:init` when `RAPID_WEB=true` is set.
 
 ---
 

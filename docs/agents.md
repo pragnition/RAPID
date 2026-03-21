@@ -1,12 +1,12 @@
 # Agent Reference
 
-RAPID v3.0 uses 26 specialized agents across the development lifecycle. Each agent has a narrow focus, receives structured inputs, and returns structured outputs. Skills dispatch agents directly -- there is no central coordination agent.
+RAPID uses 26 specialized agents across the development lifecycle. Each agent has a narrow focus, receives structured inputs, and returns structured outputs. Skills dispatch agents directly -- there is no central coordination agent.
 
 ## Agent Types
 
 | Type | Description |
 |------|-------------|
-| **Core** | Hand-written agents that define the v3.0 user experience. Never overwritten by the build pipeline. |
+| **Core** | Hand-written agents that define the user experience. Never overwritten by the build pipeline. |
 | **Research** | Uses WebSearch/WebFetch to gather external knowledge before synthesis |
 | **Pipeline** | Runs multi-step pipelines and may trigger further agent dispatch |
 | **Leaf** | Terminal agent that does focused work and returns results directly |
@@ -73,14 +73,20 @@ User
   |     +-- rapid-roadmapper
   |
   +-- /rapid:context
-        +-- rapid-context-generator
+  |     +-- rapid-context-generator
+  |
+  +-- /rapid:bug-fix
+  |     +-- rapid-bugfix
+  |
+  +-- /rapid:documentation
+        (skill-level orchestration, no subagent)
 ```
 
 ## Agent Catalog by Category
 
 ### Core (4 agents)
 
-Hand-written agents that define the v3.0 user experience. Marked with `SKIP_GENERATION` in the build pipeline.
+Hand-written agents that define the user experience. Marked with `SKIP_GENERATION` in the build pipeline.
 
 #### rapid-planner
 **Core** | blue

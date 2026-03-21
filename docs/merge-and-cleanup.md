@@ -1,6 +1,6 @@
 # Merge and Cleanup
 
-Three commands handle merging completed sets into main, removing worktrees, and advancing to the next version.
+Several commands handle merging completed sets into main, removing worktrees, managing workflow state, and advancing to the next version.
 
 ## `/rapid:merge` or `/rapid:merge <set-id>`
 
@@ -35,6 +35,10 @@ API-signature conflicts always require human direction regardless of confidence 
 
 Mid-confidence conflicts (T3) are dispatched to dedicated `rapid-conflict-resolver` agents for deep semantic analysis. Results with confidence above 0.7 are auto-accepted; below 0.7, they escalate to the developer with the resolver's analysis attached.
 
+### Solo mode handling
+
+Solo sets (working directly on main without a branch) are detected automatically. Since their work is already on main, the merge pipeline skips them and auto-transitions the set to `merged` status.
+
 ### Contract validation
 
 Before executing the merge, the pipeline validates that interface contracts defined in CONTRACT.json are satisfied. Contract violations block the merge.
@@ -56,6 +60,30 @@ See [skills/cleanup/SKILL.md](../skills/cleanup/SKILL.md) for full details.
 Completes the current milestone and starts a new planning cycle. Reads current state, gathers new milestone details (version, name, goals) through structured prompts, and handles unfinished sets with carry-forward options (Archive or Keep -- user-chosen, not forced). Re-runs the full 6-researcher pipeline (stack, features, architecture, pitfalls, oversights, UX) scoped to the new milestone's goals, then the roadmapper proposes a new roadmap with sets. Goes through propose-then-approve before writing to state.
 
 See [skills/new-version/SKILL.md](../skills/new-version/SKILL.md) for full details.
+
+## `/rapid:pause`
+
+Saves the current set's state for later resumption. Creates a checkpoint with enough context to restore work in a future session. Useful when switching between sets or taking breaks.
+
+See [skills/pause/SKILL.md](../skills/pause/SKILL.md) for full details.
+
+## `/rapid:resume`
+
+Resumes a previously paused set from its last checkpoint. Restores full context including the set's worktree state, planning artifacts, and execution progress.
+
+See [skills/resume/SKILL.md](../skills/resume/SKILL.md) for full details.
+
+## `/rapid:migrate`
+
+Migrates `.planning/` state from older RAPID versions to the current version. Handles schema changes, status renames (e.g., `discussing` → `discussed`), and structural updates.
+
+See [skills/migrate/SKILL.md](../skills/migrate/SKILL.md) for full details.
+
+## `/rapid:bug-fix <description>`
+
+Investigates and fixes bugs. The user describes a bug, and the skill dispatches a `rapid-bugfix` agent to investigate the codebase and apply a targeted fix with atomic commits.
+
+See [skills/bug-fix/SKILL.md](../skills/bug-fix/SKILL.md) for full details.
 
 ---
 

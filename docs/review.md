@@ -35,7 +35,7 @@ A consolidated REVIEW-SUMMARY.md is generated after all stages complete with fin
 
 ### Prerequisites
 
-The set must be in `complete` status before review can begin.
+The set must be in `complete` status before review can begin. Solo sets that have auto-transitioned to `merged` use `--post-merge` mode automatically.
 
 See [skills/review/SKILL.md](../skills/review/SKILL.md) for full details.
 

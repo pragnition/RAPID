@@ -16,7 +16,7 @@ Captures implementation vision for a set before autonomous planning begins. The 
 
 **`--skip` flag:** Spawns a `rapid-research-stack` agent that auto-generates CONTEXT.md from the roadmap and codebase scan without user interaction. Use this for full delegation.
 
-**State transition:** `pending` --> `discussing`
+**State transition:** `pending` → `discussed`
 
 See [skills/discuss-set/SKILL.md](../skills/discuss-set/SKILL.md) for full details.
 
@@ -30,7 +30,7 @@ Runs a 3-step planning pipeline that produces per-wave PLAN.md files in 2-4 tota
 
 Contract enforcement runs after verification to validate that planned work respects interface boundaries defined in CONTRACT.json.
 
-**State transition:** `discussing` --> `planning`
+**State transition:** `discussed` → `planned` (or `pending` → `planned` if discuss was skipped)
 
 See [skills/plan-set/SKILL.md](../skills/plan-set/SKILL.md) for full details.
 
@@ -53,6 +53,18 @@ Surfaces Claude's mental model about how a set will be implemented so you can ca
 **Note:** This is a utility command that does not advance set state. If assumptions are wrong, re-run `/rapid:plan-set` to re-plan.
 
 See [skills/assumptions/SKILL.md](../skills/assumptions/SKILL.md) for full details.
+
+## `/rapid:branding`
+
+Optional skill that conducts a structured branding interview and generates a BRANDING.md artifact with project tone, style guidelines, and visual direction. Use before frontend-heavy sets for consistent UI guidance.
+
+See [skills/branding/SKILL.md](../skills/branding/SKILL.md) for full details.
+
+## `/rapid:scaffold`
+
+Generates project-type-aware foundation files for the target codebase. Detects the project type (Node.js, Python, etc.) and scaffolds appropriate directory structure, config files, and boilerplate.
+
+See [skills/scaffold/SKILL.md](../skills/scaffold/SKILL.md) for full details.
 
 ---
 

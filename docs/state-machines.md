@@ -1,21 +1,29 @@
 # State Machines
 
-RAPID v3.0 tracks one entity type -- sets -- with a single lifecycle. Every state transition is validated against a strict transition map before it can take effect. The canonical source of truth is `src/lib/state-transitions.cjs`.
+RAPID tracks three entity types -- sets, waves, and jobs -- each with their own lifecycle. Every state transition is validated against a strict transition map before it can take effect. The canonical source of truth is `src/lib/state-transitions.cjs`.
 
 ## SetStatus Lifecycle
 
 A set progresses through six stages, advancing as skills complete their work.
 
 ```
-pending --> discussing --> planning --> executing --> complete --> merged
+pending --> discussed --> planned --> executed --> complete --> merged
+              ^                        ^
+              |                        |
+              +-- (self-loop)          +-- (self-loop)
 ```
+
+The `pending` → `planned` shortcut allows skipping the discuss step when delegation is preferred.
 
 | Transition | Triggered By | Description |
 |------------|-------------|-------------|
-| pending --> discussing | `/rapid:discuss-set` | Discussion begins to capture implementation vision |
-| discussing --> planning | `/rapid:plan-set` | Planning pipeline starts producing PLAN.md files |
-| planning --> executing | `/rapid:execute-set` | Execution begins with per-wave executor agents |
-| executing --> complete | `/rapid:execute-set` | All waves complete and verification passes |
+| pending --> discussed | `/rapid:discuss-set` | Discussion captures implementation vision |
+| pending --> planned | `/rapid:plan-set` | Skip discuss, go straight to planning |
+| discussed --> planned | `/rapid:plan-set` | Planning pipeline produces PLAN.md files |
+| discussed --> discussed | `/rapid:discuss-set` | Re-discussion with updated context |
+| planned --> executed | `/rapid:execute-set` | Execution begins with per-wave executor agents |
+| executed --> complete | `/rapid:execute-set` | All waves complete and verification passes |
+| executed --> executed | `/rapid:execute-set` | Re-execution after crash recovery |
 | complete --> merged | `/rapid:merge` | Set branch merged into main |
 
 `merged` is the terminal state -- no transitions out.
@@ -23,14 +31,27 @@ pending --> discussing --> planning --> executing --> complete --> merged
 ### Key Properties
 
 - **Independence:** Sets are fully independent. No state transition rejects based on another set's status. Sets can be started, executed, reviewed, and merged in any order.
-- **No derived status:** In v3.0, set status is explicit -- it is set directly by the skill that advances the lifecycle. There is no status derivation from children.
-- **Validation:** Every transition is checked against the transition map. Invalid transitions (e.g., `pending` --> `executing`) are rejected with an error.
+- **Self-loops:** `discussed` and `executed` allow self-transitions for re-discussion and crash recovery.
+- **Skip discuss:** The `pending` → `planned` transition lets you skip discussion entirely.
+- **Solo mode:** Solo sets auto-transition from `complete` → `merged` since there is no branch to merge.
+- **Validation:** Every transition is checked against the transition map. Invalid transitions (e.g., `pending` → `executed`) are rejected with an error.
 
 ## SetStatus Enum
 
-The valid status values for sets:
+**SetStatus:** `pending`, `discussed`, `planned`, `executed`, `complete`, `merged`
 
-**SetStatus:** `pending`, `discussing`, `planning`, `executing`, `complete`, `merged`
+## Wave and Job Lifecycles
+
+Waves and jobs follow a simpler three-state lifecycle:
+
+```
+pending --> executing --> complete
+```
+
+| Entity | Statuses | Triggered By |
+|--------|----------|-------------|
+| Wave | `pending`, `executing`, `complete` | `/rapid:execute-set` advances waves sequentially |
+| Job | `pending`, `executing`, `complete` | Executor agent advances jobs within a wave |
 
 ## State Persistence
 

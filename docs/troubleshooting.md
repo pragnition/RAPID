@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common issues you may encounter while using RAPID v3.0 and how to resolve them.
+Common issues you may encounter while using RAPID and how to resolve them.
 
 ---
 
@@ -97,10 +97,13 @@ This is destructive and will lose any uncommitted changes in that worktree.
 
 **Fix:** Follow the merge pipeline prompts. RAPID routes conflicts by confidence level:
 
-- **High confidence (> 0.8):** Auto-resolved without intervention
+- **High confidence (> 0.9):** Auto-resolved without intervention
+- **Flagged (0.7 - 0.9):** Auto-resolved, flagged for review
 - **Mid confidence (0.3 - 0.7):** Dispatched to `rapid-conflict-resolver` agent for deep analysis
 - **Low confidence (< 0.3):** Escalated directly to you for manual resolution
 - **API-signature conflicts:** Always require human direction
+
+**Note:** Solo mode sets skip merge entirely -- their work is already on main.
 
 ---
 
