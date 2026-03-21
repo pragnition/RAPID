@@ -8,7 +8,7 @@ from uuid import UUID
 
 from sqlmodel import Session, select
 
-from app.database import KanbanItem, Note, Project, SyncState
+from app.database import KanbanColumn, KanbanCard, Note, Project, SyncState
 from app.logging_config import get_logger
 
 logger = get_logger("sync_engine")
@@ -17,7 +17,8 @@ logger = get_logger("sync_engine")
 _ENTITY_MAP: dict[str, tuple[str, type]] = {
     "project": ("projects", Project),
     "note": ("notes", Note),
-    "kanban": ("kanban", KanbanItem),
+    "kanban_column": ("kanban", KanbanColumn),
+    "kanban_card": ("kanban", KanbanCard),
 }
 
 
