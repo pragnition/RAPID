@@ -79,6 +79,30 @@ export function AppLayout() {
         category: "navigation",
         action: () => navigate("/"),
       },
+      {
+        key: "gs",
+        description: "Go to State",
+        category: "navigation",
+        action: () => navigate("/state"),
+      },
+      {
+        key: "gw",
+        description: "Go to Worktrees",
+        category: "navigation",
+        action: () => navigate("/worktrees"),
+      },
+      {
+        key: "gk",
+        description: "Go to Graph",
+        category: "navigation",
+        action: () => navigate("/graph"),
+      },
+      {
+        key: "gc",
+        description: "Go to Codebase",
+        category: "navigation",
+        action: () => navigate("/codebase"),
+      },
     ],
     [cycleSidebarForward, cycleSidebarBack, closeAllOverlays, toggleShortcuts, navigate],
   );
