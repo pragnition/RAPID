@@ -15,6 +15,8 @@ from pydantic import BaseModel
 from sqlmodel import Session, text
 
 from app import __version__
+from app.routers.kanban import router as kanban_router
+from app.routers.notes import router as notes_router
 from app.routers.projects import router as projects_router
 from app.routers.views import router as views_router
 from app.config import settings
@@ -148,6 +150,8 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(projects_router)
     app.include_router(views_router)
+    app.include_router(kanban_router)
+    app.include_router(notes_router)
     return app
 
 
