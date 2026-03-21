@@ -5,7 +5,8 @@ Documentation=https://github.com/fishjojo1/RAPID
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/rapid-web
+WorkingDirectory=__RAPID_ROOT__/web/backend
+ExecStart=__RAPID_ROOT__/web/backend/.venv/bin/rapid-web
 Environment=RAPID_WEB=true
 Environment=RAPID_WEB_PORT=8998
 Environment=RAPID_WEB_HOST=127.0.0.1
