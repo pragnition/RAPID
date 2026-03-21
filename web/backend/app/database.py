@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Generator
@@ -9,6 +10,8 @@ from sqlmodel import Field, Session, SQLModel, create_engine
 from sqlmodel.main import SQLModelMetaclass
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Naming convention for Alembic batch mode compatibility
 convention = {
@@ -148,6 +151,19 @@ def run_migrations(engine: sqlalchemy.Engine) -> None:
     from alembic.config import Config
 
     alembic_ini = Path(__file__).resolve().parent.parent / "alembic.ini"
+    if not alembic_ini.exists():
+        cwd_ini = Path.cwd() / "alembic.ini"
+        if cwd_ini.exists():
+            logger.warning(
+                "alembic.ini not found relative to __file__, "
+                "falling back to cwd-relative path"
+            )
+            alembic_ini = cwd_ini
+        else:
+            raise FileNotFoundError(
+                f"alembic.ini not found at either path: "
+                f"{alembic_ini} or {cwd_ini}"
+            )
     cfg = Config(str(alembic_ini))
     cfg.attributes["engine"] = engine
     command.upgrade(cfg, "head")
