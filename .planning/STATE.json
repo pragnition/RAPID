@@ -297,12 +297,12 @@
         },
         {
           "id": "web-install-bugfix",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-21T10:35:15.709Z",
+  "lastUpdatedAt": "2026-03-21T10:58:12.627Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
