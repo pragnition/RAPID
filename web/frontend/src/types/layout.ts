@@ -15,6 +15,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "worktrees", label: "Worktrees", icon: "\u2442", path: "/worktrees", shortcut: "gw" },
   { id: "graph", label: "Graph", icon: "\u25CB", path: "/graph", shortcut: "gk" },
   { id: "codebase", label: "Codebase", icon: "\u2630", path: "/codebase", shortcut: "gc" },
+  { id: "kanban", label: "Kanban", icon: "\u25A6", path: "/kanban", shortcut: "gb" },
   { id: "notes", label: "Notes", icon: "\u270E", path: "/notes" },
   { id: "settings", label: "Settings", icon: "\u2699", path: "/settings" },
 ];
