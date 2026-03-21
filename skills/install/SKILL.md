@@ -225,6 +225,104 @@ node ~/path/to/rapid/src/bin/rapid-tools.cjs prereqs
 
 If "Cancel": end with "Installation cancelled."
 
+---
+
+## Step 4.5: Optional Web Dashboard Setup
+
+After successful verification, offer the user the option to enable the RAPID Mission Control web dashboard.
+
+Use AskUserQuestion with:
+- Header: "Enable RAPID Mission Control web dashboard?"
+- Text: "RAPID Mission Control provides a web-based project dashboard at http://127.0.0.1:8998 with kanban boards, project overview, and real-time sync."
+- Options:
+  - "Yes, enable Mission Control" -- description: "Set up the web dashboard service (systemd) and enable RAPID_WEB integration"
+  - "No, skip for now" -- description: "You can enable it later by adding RAPID_WEB=true to your config"
+
+**If "No, skip for now":**
+Display "Skipped web dashboard setup. You can enable it later by adding `RAPID_WEB=true` to your shell config and running `/rapid:register-web`."
+Proceed to Step 5.
+
+**If "Yes, enable Mission Control":**
+
+1. **Check if `rapid-web` binary exists:**
+
+```bash
+if command -v rapid-web &>/dev/null; then
+    echo "RAPID_WEB_BINARY=found"
+    which rapid-web
+elif [ -f ~/.local/bin/rapid-web ]; then
+    echo "RAPID_WEB_BINARY=found"
+    echo "$HOME/.local/bin/rapid-web"
+else
+    echo "RAPID_WEB_BINARY=missing"
+fi
+```
+
+If the binary is missing, display:
+
+> The `rapid-web` binary was not found. Install the web backend first:
+> ```
+> cd {RAPID_ROOT}/web/backend
+> pip install -e .
+> ```
+> After installing, run `/rapid:install` again to complete web dashboard setup.
+
+Proceed to Step 5 (skip remaining web setup).
+
+2. **Write RAPID_WEB=true to RAPID .env file:**
+
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+if grep -q "RAPID_WEB=" "$RAPID_ROOT/.env" 2>/dev/null; then
+    sed -i 's/^RAPID_WEB=.*/RAPID_WEB=true/' "$RAPID_ROOT/.env"
+else
+    echo "" >> "$RAPID_ROOT/.env"
+    echo "# RAPID Mission Control web dashboard" >> "$RAPID_ROOT/.env"
+    echo "RAPID_WEB=true" >> "$RAPID_ROOT/.env"
+fi
+echo "Written RAPID_WEB=true to $RAPID_ROOT/.env"
+```
+
+3. **Write RAPID_WEB=true to shell config:**
+
+Use the same shell detection from Step 2 (SHELL_NAME, config file). Append the RAPID_WEB export to the same shell config file that already has RAPID_TOOLS:
+
+For fish:
+```bash
+echo "set -gx RAPID_WEB true" >> ~/.config/fish/config.fish
+```
+
+For bash/zsh/posix:
+```bash
+echo 'export RAPID_WEB=true' >> {chosen_config_file}
+```
+
+4. **Enable and start the systemd user service:**
+
+```bash
+# Copy service file if not already in place
+mkdir -p ~/.config/systemd/user
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+cp "$RAPID_ROOT/web/backend/service/rapid-web.service" ~/.config/systemd/user/rapid-web.service
+systemctl --user daemon-reload
+systemctl --user enable rapid-web
+systemctl --user start rapid-web
+sleep 2
+systemctl --user status rapid-web --no-pager
+```
+
+If the service starts successfully, display:
+
+> Mission Control enabled. The web dashboard is running at http://127.0.0.1:8998
+> Service: `systemctl --user status rapid-web`
+
+If it fails to start, display the status output and suggest troubleshooting:
+
+> Mission Control service failed to start. Check logs with:
+> `journalctl --user -u rapid-web -n 20`
+
+Proceed to Step 5 regardless of service start outcome.
+
 ## Step 5: Post-Install Next Actions
 
 Use AskUserQuestion:
@@ -234,9 +332,11 @@ Use AskUserQuestion:
   - "Run /rapid:help" -- description: "See all available RAPID commands and workflow guidance"
   - "Run /rapid:init" -- description: "Initialize planning infrastructure for a new project"
   - "Run /rapid:status" -- description: "Check project status if already initialized"
+  - "Run /rapid:register-web" -- description: "Register this project with Mission Control web dashboard"
   - "Done" -- description: "Exit installer"
 
 If "Run /rapid:help": invoke the /rapid:help skill.
 If "Run /rapid:init": invoke the /rapid:init skill.
 If "Run /rapid:status": invoke the /rapid:status skill.
+If "Run /rapid:register-web": invoke the /rapid:register-web skill.
 If "Done": display "RAPID v3.6.0 is ready. Happy building!"

@@ -916,6 +916,35 @@ If the commit fails for any reason, warn the user but do NOT fail the entire ini
 
 ---
 
+## Step 10.5: Web Dashboard Registration
+
+If `RAPID_WEB=true` is set, automatically register this project with Mission Control.
+
+```bash
+RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
+if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
+node -e "
+const { isWebEnabled, registerProjectWithWeb } = require('${RAPID_TOOLS}/../lib/web-client.cjs');
+if (!isWebEnabled()) {
+  console.log(JSON.stringify({ skipped: true }));
+  process.exit(0);
+}
+registerProjectWithWeb(process.cwd()).then(result => {
+  console.log(JSON.stringify(result));
+});
+"
+```
+
+Parse the JSON result:
+
+- If `skipped` is `true`: silently continue to Step 11. Do NOT display anything about web registration.
+- If `success` is `true`: display "Registered with Mission Control."
+- If `success` is `false`: display "Mission Control unavailable. Run `/rapid:register-web` later to register this project."
+
+This step must NEVER fail the init process. Any error is informational only.
+
+---
+
 ## Step 11: Completion
 
 Display a final summary:
