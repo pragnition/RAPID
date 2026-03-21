@@ -50,14 +50,23 @@ class Note(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_utcnow)
 
 
-class KanbanItem(SQLModel, table=True):
-    __tablename__ = "kanbanitem"
+class KanbanColumn(SQLModel, table=True):
+    __tablename__ = "kanbancolumn"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     project_id: UUID = Field(foreign_key="project.id")
     title: str
+    position: int = Field(default=0)
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
+class KanbanCard(SQLModel, table=True):
+    __tablename__ = "kanbancard"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    column_id: UUID = Field(foreign_key="kanbancolumn.id")
+    title: str
     description: str = Field(default="")
-    status: str = Field(default="backlog")
     position: int = Field(default=0)
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
@@ -92,6 +101,7 @@ def _set_sqlite_pragmas(dbapi_conn, connection_record):  # noqa: ARG001
     cursor = dbapi_conn.cursor()
     cursor.execute("PRAGMA journal_mode=WAL")
     cursor.execute("PRAGMA busy_timeout=5000")
+    cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
 
 
