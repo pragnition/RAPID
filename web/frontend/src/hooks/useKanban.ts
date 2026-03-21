@@ -124,7 +124,8 @@ export function useMoveCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { cardId: string; column_id: string; position: number }
+    { cardId: string; column_id: string; position: number },
+    { previous: KanbanBoardResponse | undefined }
   >({
     mutationFn: ({ cardId, ...body }) =>
       apiClient.put<KanbanCardResponse>(
