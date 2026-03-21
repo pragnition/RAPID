@@ -283,7 +283,7 @@
         },
         {
           "id": "interactive-features",
-          "status": "planned",
+          "status": "merged",
           "waves": [],
           "name": "Interactive Features",
           "branch": "rapid/interactive-features"
@@ -298,6 +298,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-21T05:04:28.134Z",
+  "lastUpdatedAt": "2026-03-21T05:37:59.855Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
