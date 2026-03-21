@@ -404,7 +404,42 @@
       "phase": "Created",
       "status": "active",
       "wave": null,
-      "createdAt": "2026-03-21T03:12:27.883Z"
+      "createdAt": "2026-03-21T03:12:27.883Z",
+      "mergeStatus": "merged",
+      "mergedAt": "2026-03-21T04:34:30.671Z",
+      "mergeCommit": "eba717745d97d67a8968e7f8a9babade7dfa3a24"
+    },
+    "interactive-features": {
+      "setName": "interactive-features",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "eba717745d97d67a8968e7f8a9babade7dfa3a24",
+      "wave": null,
+      "createdAt": "2026-03-21T04:38:44.667Z"
+    },
+    "cli-integration": {
+      "setName": "cli-integration",
+      "branch": "rapid/cli-integration",
+      "path": ".rapid-worktrees/cli-integration",
+      "phase": "Created",
+      "status": "active",
+      "wave": null,
+      "createdAt": "2026-03-21T06:09:47.527Z",
+      "mergeStatus": "complete"
+    },
+    "web-install-bugfix": {
+      "setName": "web-install-bugfix",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "51b7889acb55ca758178fcc0f1510f14a3d2cc14",
+      "wave": null,
+      "createdAt": "2026-03-21T10:40:32.646Z"
     }
   }
 }

@@ -1,61 +1,79 @@
 {
   "nodes": [
-    { "id": "service-infrastructure", "wave": 0, "status": "complete" },
-    { "id": "project-registry", "wave": 1, "status": "complete" },
-    { "id": "frontend-shell", "wave": 1, "status": "complete" },
-    { "id": "read-only-views", "wave": 2, "status": "complete" },
-    { "id": "interactive-features", "wave": 3, "status": "pending" },
-    { "id": "cli-integration", "wave": 4, "status": "pending" }
+    {
+      "id": "service-infrastructure",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "project-registry",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "frontend-shell",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "read-only-views",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "interactive-features",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "cli-integration",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "web-install-bugfix",
+      "wave": 1,
+      "status": "pending"
+    }
   ],
-  "edges": [
-    { "from": "service-infrastructure", "to": "project-registry" },
-    { "from": "service-infrastructure", "to": "frontend-shell" },
-    { "from": "project-registry", "to": "read-only-views" },
-    { "from": "frontend-shell", "to": "read-only-views" },
-    { "from": "read-only-views", "to": "interactive-features" },
-    { "from": "interactive-features", "to": "cli-integration" }
-  ],
+  "edges": [],
   "waves": {
-    "0": {
-      "sets": ["service-infrastructure"],
-      "checkpoint": {
-        "contracts": ["rapid://contracts/service-infrastructure"],
-        "artifacts": [".planning/sets/service-infrastructure/CONTRACT.json"]
-      }
-    },
     "1": {
-      "sets": ["project-registry", "frontend-shell"],
+      "sets": [
+        "service-infrastructure",
+        "project-registry",
+        "frontend-shell",
+        "read-only-views",
+        "interactive-features",
+        "cli-integration",
+        "web-install-bugfix"
+      ],
       "checkpoint": {
-        "contracts": ["rapid://contracts/project-registry", "rapid://contracts/frontend-shell"],
-        "artifacts": [".planning/sets/project-registry/CONTRACT.json", ".planning/sets/frontend-shell/CONTRACT.json"]
-      }
-    },
-    "2": {
-      "sets": ["read-only-views"],
-      "checkpoint": {
-        "contracts": ["rapid://contracts/read-only-views"],
-        "artifacts": [".planning/sets/read-only-views/CONTRACT.json"]
-      }
-    },
-    "3": {
-      "sets": ["interactive-features"],
-      "checkpoint": {
-        "contracts": ["rapid://contracts/interactive-features"],
-        "artifacts": [".planning/sets/interactive-features/CONTRACT.json"]
-      }
-    },
-    "4": {
-      "sets": ["cli-integration"],
-      "checkpoint": {
-        "contracts": ["rapid://contracts/cli-integration"],
-        "artifacts": [".planning/sets/cli-integration/CONTRACT.json"]
+        "contracts": [
+          "rapid://contracts/service-infrastructure",
+          "rapid://contracts/project-registry",
+          "rapid://contracts/frontend-shell",
+          "rapid://contracts/read-only-views",
+          "rapid://contracts/interactive-features",
+          "rapid://contracts/cli-integration",
+          "rapid://contracts/web-install-bugfix"
+        ],
+        "artifacts": [
+          ".planning/sets/service-infrastructure/CONTRACT.json",
+          ".planning/sets/project-registry/CONTRACT.json",
+          ".planning/sets/frontend-shell/CONTRACT.json",
+          ".planning/sets/read-only-views/CONTRACT.json",
+          ".planning/sets/interactive-features/CONTRACT.json",
+          ".planning/sets/cli-integration/CONTRACT.json",
+          ".planning/sets/web-install-bugfix/CONTRACT.json"
+        ]
       }
     }
   },
   "metadata": {
     "created": "2026-03-21",
-    "totalSets": 6,
-    "totalWaves": 5,
-    "maxParallelism": 2
+    "totalSets": 7,
+    "totalWaves": 1,
+    "maxParallelism": 7
   }
 }
