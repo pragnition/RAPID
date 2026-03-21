@@ -29,7 +29,7 @@ echo "Installation method: $INSTALL_METHOD"
 echo ""
 
 # Step 1: Check prerequisites
-echo "[1/5] Checking prerequisites..."
+echo "[1/8] Checking prerequisites..."
 
 if ! command -v node &>/dev/null; then
     echo "  ERROR: Node.js is required (v18+). Install from https://nodejs.org"
@@ -48,8 +48,21 @@ if ! command -v git &>/dev/null; then
 fi
 echo "  OK: git $(git --version | awk '{print $3}')"
 
+if ! command -v npm &>/dev/null; then
+    echo "  ERROR: npm is required for frontend build. Install from https://nodejs.org"
+    exit 1
+fi
+echo "  OK: npm $(npm -v)"
+
+if command -v uv &>/dev/null; then
+    echo "  OK: uv $(uv --version | awk '{print $2}')"
+else
+    echo "  INFO: uv not found (optional, needed for web backend)"
+    echo "  Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+fi
+
 # Step 2: Install npm dependencies
-echo "[2/5] Installing dependencies..."
+echo "[2/8] Installing dependencies..."
 
 if [[ -d "$SCRIPT_DIR/node_modules" ]]; then
     echo "  [skip] node_modules already exists"
@@ -62,7 +75,7 @@ else
 fi
 
 # Step 3: Validate rapid-tools.cjs
-echo "[3/5] Validating RAPID tools..."
+echo "[3/8] Validating RAPID tools..."
 
 if [[ ! -f "$RAPID_TOOLS_PATH" ]]; then
     echo "  ERROR: rapid-tools.cjs not found at $RAPID_TOOLS_PATH"
@@ -76,7 +89,7 @@ fi
 echo "  OK: RAPID tools functional"
 
 # Step 4: Build agent files
-echo "[4/5] Building agent files..."
+echo "[4/8] Building agent files..."
 if node "$RAPID_TOOLS_PATH" build-agents 2>&1; then
     echo "  OK: Agent files generated"
 else
@@ -84,7 +97,7 @@ else
 fi
 
 # Step 5: Write .env and register plugin
-echo "[5/5] Writing .env and registering plugin..."
+echo "[5/8] Writing .env and registering plugin..."
 
 export RAPID_TOOLS="$RAPID_TOOLS_PATH"
 
@@ -112,6 +125,49 @@ if command -v claude &>/dev/null; then
 else
     echo "  [skip] Claude Code CLI not found"
     echo "  Register manually later with: claude plugin add $SCRIPT_DIR"
+fi
+
+# Step 6: Set up web backend virtual environment
+echo "[6/8] Setting up web backend..."
+BACKEND_DIR="$SCRIPT_DIR/web/backend"
+if [[ -d "$BACKEND_DIR" ]]; then
+    if command -v uv &>/dev/null; then
+        (cd "$BACKEND_DIR" && uv venv .venv && uv pip install -e . 2>&1) || {
+            echo "  WARNING: Backend setup failed (non-fatal)"
+            echo "  You can set up manually with: cd $BACKEND_DIR && uv venv .venv && uv pip install -e ."
+        }
+        echo "  OK: Backend venv created"
+    else
+        echo "  [skip] uv not found -- install uv, then run: cd $BACKEND_DIR && uv venv .venv && uv pip install -e ."
+    fi
+else
+    echo "  [skip] Backend directory not found at $BACKEND_DIR"
+fi
+
+# Step 7: Build web frontend
+echo "[7/8] Building web frontend..."
+FRONTEND_DIR="$SCRIPT_DIR/web/frontend"
+if [[ -d "$FRONTEND_DIR" ]]; then
+    (cd "$FRONTEND_DIR" && npm install && npm run build 2>&1) || {
+        echo "  WARNING: Frontend build failed (non-fatal)"
+        echo "  You can build manually with: cd $FRONTEND_DIR && npm install && npm run build"
+    }
+    echo "  OK: Frontend built"
+else
+    echo "  [skip] Frontend directory not found at $FRONTEND_DIR"
+fi
+
+# Step 8: Generate systemd service file
+echo "[8/8] Generating systemd service file..."
+SERVICE_TEMPLATE="$SCRIPT_DIR/web/backend/service/rapid-web.service"
+SERVICE_OUTPUT="$SCRIPT_DIR/web/backend/service/rapid-web.generated.service"
+if [[ -f "$SERVICE_TEMPLATE" ]]; then
+    sed "s|__RAPID_ROOT__|$SCRIPT_DIR|g" "$SERVICE_TEMPLATE" > "$SERVICE_OUTPUT"
+    echo "  OK: Service file generated at $SERVICE_OUTPUT"
+    echo "  To install: cp $SERVICE_OUTPUT ~/.config/systemd/user/rapid-web.service"
+    echo "  To enable:  systemctl --user enable --now rapid-web"
+else
+    echo "  [skip] Service template not found"
 fi
 
 echo ""
