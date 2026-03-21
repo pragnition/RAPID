@@ -1,242 +1,237 @@
-# Stack Research: read-only-views
+# Stack Research: cli-integration
 
 ## Core Stack Assessment
 
-### Frontend: Cytoscape.js (NEW dependency)
-- **Required for:** KnowledgeGraph view (DAG visualization)
-- **Latest stable:** 3.33.1 (published ~Aug 2025)
-- **Key features relevant to this set:**
-  - Canvas-based graph rendering with built-in zoom/pan/selection
-  - First-party TypeScript support (since 3.31.0)
-  - Experimental WebGL rendering (3.31.0+) for large graphs
-  - Rich styling via CSS-like selectors with data-driven mapping (`data(field)`, `mapData()`)
-  - Event system for click-to-select interactions
-  - Performance: handles 50+ nodes and 200+ edges easily in canvas mode
-- **Performance configuration for 50-node/200-edge target:**
-  - `hideEdgesOnViewport: true` and `hideLabelsOnViewport: true` during pan/zoom
-  - `textureOnViewport: true` for texture-based rendering during interaction
-  - `curve-style: 'bezier'` with `target-arrow-shape: 'triangle'` for directed edges
-  - `wheelSensitivity: 0.5` for smoother zoom control
-- **Node coloring by status:** Use `data(status)` with style selectors like `node[status = "pending"]` for conditional coloring. All 6 status values (pending, discussed, planned, executed, complete, merged) map to distinct colors.
+### Node.js (Runtime)
+- **Detected version:** v25.8.0 (system), minimum enforced: 18+ (prereqs.cjs)
+- **Latest stable:** v25.x (current LTS track)
+- **Key features relevant:** Native `fetch()` (stable since Node 18), `AbortController` and `AbortSignal.timeout()` (stable since Node 18), `net.Socket` for TCP port checks, `node:test` built-in test runner with `mock` support, `node:fs` for .env file parsing
+- **Known limitations at this version:** None relevant. All required APIs are stable and unflagged.
+- **Confirmed:** `typeof fetch === 'function'`, `typeof AbortController === 'function'`, `typeof AbortSignal.timeout === 'function'` -- all verified on the running system.
 
-### Frontend: cytoscape-dagre (NEW dependency)
-- **Required for:** Dagre directed-graph layout in KnowledgeGraph
-- **Latest stable:** 2.5.0 (published ~early 2023, 3 years old)
-- **Maintenance status:** Inactive -- no releases in 3 years. However, the package is stable and widely used (a layout algorithm wrapper around dagre).
-- **TypeScript types:** `@types/cytoscape-dagre` v2.3.4 (published ~Nov 2025)
-- **Usage pattern:** Register as Cytoscape extension, then use `layout: { name: 'dagre', rankDir: 'TB' }` for top-to-bottom flow.
-- **Risk:** Low. Layout algorithms are inherently stable; no active bugs reported. The underlying dagre library is also stable (v0.8.5).
+### RAPID CLI (Node.js CJS Modules)
+- **Version:** 4.0.0 (package.json)
+- **Module format:** CommonJS (.cjs files throughout src/lib/)
+- **Test framework:** `node:test` built-in (no external test runner)
+- **Dependencies:** ajv ^8.17.1, ajv-formats ^3.0.1, proper-lockfile ^4.1.2, zod ^3.25.76
+- **No external HTTP client needed:** Native `fetch` eliminates the need for `node-fetch`, `axios`, or `got`. Zero new dependencies required for web-client.cjs.
 
-### Frontend: react-cytoscapejs (EVALUATE -- may skip)
-- **Latest stable:** 2.0.0 (last published >12 months ago)
-- **Maintenance status:** Inactive. Has not been updated for React 19.
-- **Peer dependencies:** `react ^16.0.0 || ^17.0.0 || ^18.0.0` -- does NOT list React 19.
-- **Recommendation:** SKIP this wrapper. Instead, use Cytoscape.js directly via `useRef` + `useEffect` pattern. Reasons:
-  1. react-cytoscapejs does not declare React 19 peer compatibility
-  2. The wrapper is thin (~200 lines) and adds no significant value over direct integration
-  3. Direct Cytoscape.js usage provides full API control for layout, events, and styling
-  4. Eliminates a dependency with uncertain maintenance future
+### FastAPI Web Backend
+- **Version:** 4.0.0 (confirmed via `GET /api/health` response: `{"status":"ok","version":"4.0.0","uptime":...}`)
+- **Host/Port:** 127.0.0.1:8998 (from config.py defaults and systemd service file)
+- **Health endpoint:** `GET /api/health` returns `{status: "ok", version: "4.0.0", uptime: <float>}` -- lightweight liveness probe, no DB access
+- **Ready endpoint:** `GET /api/ready` returns `{status: "ready", database: "connected"}` or `{status: "not_ready", database: "disconnected"}` with HTTP 503 -- includes DB connectivity check
+- **Register endpoint:** `POST /api/projects` accepts `{path: <absolute_path>, name?: <string>}`, returns `{id: <uuid>, status: "active"|"registered", message: "registered"}` with HTTP 201. Returns HTTP 422 if path is not absolute or `.planning/STATE.json` is missing.
+- **Idempotent registration:** The `register_project` service function checks for existing project by path and upserts (updates metadata + last_seen_at) rather than creating duplicates. Confirmed in `project_service.py:84-96`.
 
-### Backend: tree-sitter + tree-sitter-language-pack (NEW dependencies)
-- **tree-sitter:** v0.25.2 (published Sep 2025). Python >=3.10 required. Project uses Python >=3.12 -- satisfied.
-- **tree-sitter-language-pack:** v0.13.0 (published Nov 2025). Bundles 165+ language grammars as pre-compiled wheels.
-- **Supported languages for this set:** Python, JavaScript/TypeScript, Go, Rust -- all included in language-pack.
-- **API pattern:**
-  ```python
-  from tree_sitter_language_pack import get_parser
-  parser = get_parser("python")
-  tree = parser.parse(source_bytes)
-  root = tree.root_node
-  # Walk tree via root.children, node.type, node.start_point, node.end_point
-  ```
-- **Performance notes:**
-  - `walk()` method preferred over recursive `.children` traversal for large files
-  - Parsing is fast (C-native); a 10K-line file parses in ~5ms
-  - No built-in caching -- application must implement its own (mtime-based recommended)
-- **Alternative considered:** `tree-sitter-languages` (grantjenks) -- older, fewer languages, less maintained. `tree-sitter-language-pack` is the better choice.
-
-### Backend: FastAPI (existing)
-- **Current version:** >=0.135,<1.0 (pinned in pyproject.toml)
-- **Latest stable:** ~0.115.x (FastAPI versioning is pre-1.0)
-- **Relevant for this set:** GET-only endpoints use standard `@router.get()` pattern. No new middleware or lifecycle hooks needed.
-- **Confirmed:** Python 3.12+ required, satisfied.
-
-### Frontend: TanStack Query (existing)
-- **Current version:** ^5.91.3
-- **Auto-refresh via `refetchInterval`:**
-  - Set `refetchInterval: 2000` (2 seconds) per-hook for polling
-  - `refetchIntervalInBackground: false` (default) -- pauses polling when tab is backgrounded (saves resources)
-  - v5 callback signature: `refetchInterval: number | false | ((query: Query) => number | false | undefined)`
-  - Can conditionally adjust interval based on query state
-- **Interaction with existing queryClient defaults:** Global `staleTime: 30000` and `gcTime: 300000` remain. Per-hook `refetchInterval: 2000` overrides the stale-then-refetch behavior by forcing refetch every 2s regardless of staleness.
+### systemd User Service
+- **Service file:** `web/backend/service/rapid-web.service`
+- **ExecStart:** `%h/.local/bin/rapid-web` (user-local pip-installed entry point)
+- **Environment vars:** `RAPID_WEB=true`, `RAPID_WEB_PORT=8998`, `RAPID_WEB_HOST=127.0.0.1`
+- **Restart policy:** `on-failure` with 5-second delay
+- **Install target:** `default.target` (starts on user login via `systemctl --user`)
 
 ## Dependency Health
 
-| Package | Current | Latest | Status | Notes |
-|---------|---------|--------|--------|-------|
-| cytoscape | n/a (new) | 3.33.1 | Active | TS support since 3.31.0, ~monthly releases |
-| cytoscape-dagre | n/a (new) | 2.5.0 | Stable/Inactive | No releases in 3y, but layout algos are inherently stable |
-| @types/cytoscape-dagre | n/a (new) | 2.3.4 | Active | Recently updated Nov 2025 |
-| tree-sitter (Python) | n/a (new) | 0.25.2 | Active | Sep 2025 release, pre-compiled wheels |
-| tree-sitter-language-pack | n/a (new) | 0.13.0 | Active | Nov 2025, 165+ languages bundled |
-| react-cytoscapejs | n/a (skip) | 2.0.0 | Inactive | No React 19 support, recommend direct integration |
-| fastapi | >=0.135 | ~0.115 | Active | Pre-1.0, rapid releases |
-| @tanstack/react-query | ^5.91.3 | 5.91.3 | Active | Already installed, very frequent releases |
-| react | ^19.2.4 | 19.2.4 | Active | Already installed |
-| zustand | ^5.0.12 | 5.0.12 | Active | Already installed |
+### No New Dependencies Required
+
+The cli-integration set requires **zero new npm packages**. All functionality is built on Node.js built-ins:
+
+| Capability | Node.js Built-in | Status | Notes |
+|------------|------------------|--------|-------|
+| HTTP client | `globalThis.fetch` | Stable (Node 18+) | Undici-powered, browser-compatible API |
+| Request timeout | `AbortSignal.timeout(ms)` | Stable (Node 18+) | Returns AbortSignal that auto-aborts after delay |
+| TCP port check | `net.Socket` | Stable | Connect + destroy pattern for port availability |
+| .env parsing | `fs.readFileSync` | Stable | Simple line-by-line key=value parsing |
+| Unit tests | `node:test` + `node:assert/strict` | Stable | Built-in describe/it/mock/beforeEach/afterEach |
+
+### Existing Dependencies (Unmodified)
+
+| Package | Current | Status | Impact on This Set |
+|---------|---------|--------|--------------------|
+| ajv ^8.17.1 | Active | None -- not used by web-client |
+| proper-lockfile ^4.1.2 | Active | None -- not used by web-client |
+| zod ^3.25.76 | Active | None -- not used by web-client |
 
 ## Compatibility Matrix
 
-| Constraint | Requirement | Satisfied |
-|-----------|-------------|-----------|
-| cytoscape requires no peer deps | Standalone library | Yes |
-| cytoscape-dagre requires cytoscape | ^3.2.0 | Yes (3.33.1) |
-| tree-sitter requires Python | >=3.10 | Yes (3.12) |
-| tree-sitter-language-pack requires Python | >=3.10 | Yes (3.12) |
-| TanStack Query refetchInterval requires | v5 API | Yes (5.91.3) |
-| Cytoscape TS types | Built-in since 3.31.0 | Yes |
-| Keyboard shortcut "gg" conflict | Already bound to "Scroll to top" in AppLayout | CONFLICT -- see risks |
-| Keyboard shortcut "gs", "gw", "gc" | Not bound | Available |
+### Node.js fetch + AbortSignal.timeout
+
+The recommended timeout pattern for native `fetch` in Node.js:
+
+```javascript
+const response = await fetch(url, {
+  signal: AbortSignal.timeout(2000), // 2-second timeout
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+});
+```
+
+When `AbortSignal.timeout()` fires, `fetch` throws a `DOMException` with `name === 'TimeoutError'`. When the server is unreachable, `fetch` throws a `TypeError` with `cause.code === 'ECONNREFUSED'`. Both must be caught for graceful failure.
+
+**Confirmed via docs:** `AbortSignal.timeout(delay)` is a static factory that creates an auto-aborting signal. It is simpler and more reliable than manually wiring `AbortController` + `setTimeout` + `clearTimeout`, because it handles cleanup automatically and avoids timer leaks.
+
+### CJS Module Compatibility
+
+The web-client.cjs must be CommonJS (`.cjs` extension, `require()`/`module.exports`). Native `fetch` is a global in Node 18+ and does not need to be `require()`'d. `AbortSignal` and `AbortController` are also globals.
+
+However, `fetch` returns a `Promise`, so all HTTP functions in web-client.cjs must be `async`. The callers (install skill, init skill, register-web skill) invoke these via Bash `node -e "..."` one-liners, which naturally support `await` at the top level.
+
+### .env File Loading Pattern
+
+The existing RAPID pattern for loading environment variables from `.env`:
+
+```bash
+# In skill preamble (bash):
+if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then
+  export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs)
+fi
+```
+
+For the CJS module (web-client.cjs), the equivalent must be done in JavaScript since skills call `node -e "const { isWebEnabled } = require('./web-client.cjs'); ..."`. The module must read `.env` at require-time or at function call time. **Recommendation:** Read `.env` lazily at function call time (inside `isWebEnabled()`) to avoid side effects on `require()`.
+
+The `.env` file currently contains only `RAPID_TOOLS=...`. The install skill will append `RAPID_WEB=true` to this file when the user opts in.
+
+### Doctor Check Integration
+
+Existing `prereqs.cjs` pattern for check results:
+
+```javascript
+{ name, status, version, minVersion, required, reason, message }
+```
+
+Where `status` is one of: `'pass'`, `'fail'`, `'warn'`, `'error'`.
+
+Web doctor checks should return the same shape. The three web checks are:
+1. **Service running:** `GET /api/health` succeeds -> `{name: 'RAPID Web', status: 'pass', version: '4.0.0', ...}`
+2. **Database accessible:** `GET /api/ready` returns `database: 'connected'` -> `{name: 'RAPID Web DB', status: 'pass', ...}`
+3. **Port available/in-use:** TCP connect to 127.0.0.1:8998 -> reports whether port is in use (expected when service is running)
+
+**Important nuance:** The port check semantics differ from other prereqs. When the service is running, the port being "in use" is the *expected* state (pass). When the service is NOT running but the port is in use by something else, that is a conflict (warn). When the service is not running and the port is free, that is informational (pass -- port available for service start).
 
 ## Upgrade Paths
 
-No outdated dependencies requiring upgrade for this set. All new dependencies are at their latest stable versions. Existing dependencies (React, TanStack Query, Zustand) are already current.
+### No Upgrades Required
+
+All technologies used by this set are current:
+- Node.js v25.8.0 is well above the minimum 18+ requirement
+- The `fetch` API has been stable since Node 18 and requires no polyfill
+- The systemd service template uses standard systemd user service conventions
+- The FastAPI backend endpoints are already deployed and tested
+
+### Future Consideration: RAPID_WEB Auto-Discovery
+
+Currently, web integration requires explicit `RAPID_WEB=true`. A future enhancement could auto-discover the web service by probing `127.0.0.1:8998/api/health` and caching the result. This would eliminate the need for the env var flag. **Deferred** per CONTEXT.md decisions.
 
 ## Tooling Assessment
 
 ### Build Tools
-- **Frontend:** Vite 8.0.1 -- no changes needed. Cytoscape.js is a standard ESM/CJS package that bundles without issues.
-- **Backend:** pip/uv with pyproject.toml -- add tree-sitter and tree-sitter-language-pack to dependencies.
+- **No build step needed for web-client.cjs:** CJS modules are loaded directly by Node.js. No transpilation, bundling, or compilation required.
+- **Test runner:** `node --test 'src/**/*.test.cjs'` (configured in package.json `scripts.test`). The new `web-client.test.cjs` will be automatically picked up by the glob pattern.
 
-### Test Framework
-- **Backend:** pytest + httpx for endpoint testing (already configured in dev dependencies)
-- **Frontend:** No test framework installed yet. Vitest recommended for future. For this set, behavioral contracts (read-only enforcement, graph performance) can be verified via backend pytest tests and manual verification.
+### Test Strategy for HTTP Client
 
-### Linting/Formatting
-- **Backend:** ruff 0.11 (configured, line-length=100, target py312)
-- **Frontend:** No ESLint configured yet. TypeScript strict mode provides type checking via `tsc -b --noEmit`.
+Testing `web-client.cjs` presents a challenge: the functions make real HTTP calls to `127.0.0.1:8998`. For unit tests, we need to mock `fetch` without depending on the web service being running.
+
+**Available mocking approaches in `node:test`:**
+
+1. **`mock.method(globalThis, 'fetch', fn)`** -- Mock the global `fetch`. Available in Node 20+ via `node:test` mock API. Confirmed the project already uses `mock` from `node:test` (see `errors.test.cjs:3`).
+
+2. **Environment variable manipulation** -- Set/unset `RAPID_WEB` via `process.env` in `beforeEach`/`afterEach` to test gating behavior. Confirmed pattern used in `worktree.test.cjs:1725-1733`.
+
+**Recommended test structure:**
+- `isWebEnabled()` tests: manipulate `process.env.RAPID_WEB` and mock `.env` file reads
+- `registerProjectWithWeb()` tests: mock `globalThis.fetch` to simulate success, failure, timeout, and service-down scenarios
+- `doctorWebChecks()` tests: mock both `fetch` and `net.Socket` for health/ready/port check scenarios
+- Timeout tests: mock `fetch` with a delayed promise to verify 2-second timeout fires
+
+### Shell Config Modification (Install Skill)
+
+The install skill already handles shell detection for bash/zsh/fish and writes to the appropriate rc file. Extending it to write `RAPID_WEB=true` follows the exact same pattern:
+
+- **bash/zsh:** `export RAPID_WEB=true` appended to `~/.bashrc` / `~/.zshrc`
+- **fish:** `set -gx RAPID_WEB true` appended to `~/.config/fish/config.fish`
+- **.env file:** `RAPID_WEB=true` appended to `$RAPID_ROOT/.env`
+
+The existing install skill already does shell detection, file selection via AskUserQuestion, and rc file writing. The web setup flow should reuse these patterns.
+
+### systemd Service Management
+
+The install skill needs to:
+1. Copy `rapid-web.service` to `~/.config/systemd/user/`
+2. Run `systemctl --user daemon-reload`
+3. Run `systemctl --user enable --now rapid-web`
+
+**Edge cases to handle:**
+- `systemctl` not available (non-Linux or containerized): skip systemd setup, inform user to start service manually
+- `~/.config/systemd/user/` directory doesn't exist: create it with `mkdir -p`
+- Service already enabled: `enable --now` is idempotent, safe to re-run
+- `rapid-web` binary not installed: `pip install` of the backend package must happen first. The ExecStart path is `%h/.local/bin/rapid-web` which requires `pip install --user` or `pipx install`.
+
+**Important:** The systemd service file's `ExecStart=%h/.local/bin/rapid-web` assumes the backend was installed via `pip install --user` from `web/backend/`. The install skill should verify this binary exists before enabling the service.
 
 ## Stack Risks
 
-1. **Keyboard shortcut conflict: "gg" is already bound to "Scroll to top"** in AppLayout.tsx (line 69). The CONTEXT.md specifies `gg=graph` for the KnowledgeGraph route. This conflicts directly. **Resolution options:**
-   - (a) Change graph shortcut to a different key (e.g., `gk` for knowledge graph, or `gG` with shift)
-   - (b) Remove the "scroll to top" binding (vim-style `gg`) and reassign to graph navigation
-   - **Recommendation:** Use `gk` for graph (knowledge), keeping `gg` for scroll-to-top which is a more standard vim convention. Impact: low.
+1. **fetch timeout error handling across Node versions** (Low): `AbortSignal.timeout()` throws `DOMException` with `name === 'TimeoutError'` in newer Node versions but may throw `AbortError` in older Node 18.x builds. Since RAPID requires Node 18+ but doesn't pin to a specific minor, the catch block should handle both error names. **Mitigation:** Catch all errors generically (any thrown error = `{success: false, error: err.message}`), don't rely on specific error class checks.
 
-2. **react-cytoscapejs lacks React 19 support.** The wrapper has not been updated in >12 months and does not declare React 19 as a peer dependency. **Mitigation:** Use Cytoscape.js directly with a `useRef`/`useEffect` pattern. This is actually the recommended approach in the Cytoscape.js docs for framework integration.
+2. **Race condition: init registration before STATE.json exists** (Medium): The `POST /api/projects` endpoint requires `.planning/STATE.json` to exist (returns 422 otherwise). During `/rapid:init`, registration must happen AFTER the roadmap is written (Step 9) and STATE.json is committed (Step 10). **Mitigation:** Place the `registerProjectWithWeb()` call after STATE.json is confirmed written, between Steps 10 and 11 of the init skill.
 
-3. **cytoscape-dagre is unmaintained (3 years without release).** **Mitigation:** The package wraps the stable dagre algorithm. No API changes expected. If issues arise, the dagre layout can be applied manually via `cytoscape.use(dagre)` registration. The package has 0 open security advisories.
+3. **Shell rc file pollution** (Low): Appending `RAPID_WEB=true` to shell rc adds another line. If the user reinstalls, duplicate lines may accumulate. **Mitigation:** Check if `RAPID_WEB` is already present in the rc file before appending (same pattern used for `RAPID_TOOLS` in the existing install skill, line 86-91).
 
-4. **tree-sitter parsing can be slow on very large codebases.** Parsing every file in a large project (1000+ files) on each API request would be expensive. **Mitigation:** Implement mtime-based caching in the codebase service. Only re-parse files whose modification time has changed. Cache the AST summary (not the full tree) as JSON. Consider limiting tree depth to 3-4 levels for the API response.
+4. **.env file vs shell env precedence** (Low): If `RAPID_WEB=false` is in .env but `RAPID_WEB=true` is in the shell environment (or vice versa), behavior could be confusing. **Mitigation:** Document that `process.env` takes precedence over `.env` file values. In `isWebEnabled()`, check `process.env.RAPID_WEB` first, fall back to `.env` file parsing only if the env var is not set.
 
-5. **tree-sitter-language-pack is a large dependency (~200MB installed).** It bundles 165+ grammars when only 4 are needed (Python, JS/TS, Go, Rust). **Mitigation:** This is acceptable for a server-side dependency. Alternatively, install individual grammar packages (`tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-go`, `tree-sitter-rust`) for a smaller footprint. Individual packages total ~20MB. **Recommendation:** Use individual grammar packages to reduce install size.
+5. **rapid-web binary not installed** (Medium): The systemd service assumes `~/.local/bin/rapid-web` exists. If the Python backend package was not installed (e.g., user skipped `pip install`), the service will fail to start. **Mitigation:** The install skill should check for the binary before enabling the service, and guide the user through `pip install` if needed.
 
-6. **2-second polling interval generates significant HTTP traffic.** Four views polling at 2s = up to 2 requests/second per active tab. For a local dashboard this is fine, but could strain resources if multiple tabs are open. **Mitigation:** `refetchIntervalInBackground: false` (default) pauses polling on backgrounded tabs. Consider adding `enabled: !!projectId` to prevent polling when no project is selected.
-
-7. **Backend reads .planning/ files directly from disk on every request.** The existing `parse_state_json` pattern reads and parses JSON on each call. With 2s polling across 4 endpoints, that is 2 file reads/second. **Mitigation:** For STATE.json, DAG.json, and REGISTRY.json this is negligible (small files, OS-level page cache). For codebase tree-sitter parsing, implement explicit caching (see risk #4).
+6. **Port 8998 conflicts** (Low): Another local service could occupy port 8998. **Mitigation:** Doctor check detects this case (port in use but health endpoint not responding). The install skill should also check port availability before enabling the service.
 
 ## Recommendations
 
-1. **Use Cytoscape.js directly (no react-cytoscapejs wrapper):** Create a `<CytoscapeGraph>` component using `useRef` for the container div and `useEffect` for Cytoscape instance lifecycle. This avoids the unmaintained React wrapper and gives full API control. Priority: critical.
+1. **Use `AbortSignal.timeout(2000)` for all fetch calls:** Simpler than manual `AbortController` + `setTimeout` wiring. Auto-cleans up, no timer leaks. Available in Node 18+. -- **Priority: critical**
 
-2. **Use individual tree-sitter grammar packages instead of language-pack:** Install `tree-sitter`, `tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-go`, `tree-sitter-rust` individually. Saves ~180MB and makes dependencies explicit. Priority: high.
+2. **Catch all errors generically in HTTP helpers:** Do not rely on specific error types (`TimeoutError`, `TypeError`, `DOMException`). Any thrown error from `fetch` should result in `{success: false, error: err.message}`. This handles timeout, connection refused, DNS failure, and unexpected errors uniformly. -- **Priority: critical**
 
-3. **Implement mtime-based caching for tree-sitter parsing:** Cache parsed AST summaries keyed by `(file_path, mtime)`. Invalidate when mtime changes. This prevents re-parsing unchanged files on every 2s poll. Priority: high.
+3. **Load `.env` lazily in `isWebEnabled()`:** Parse the `.env` file only when `isWebEnabled()` is called, not at `require()` time. Check `process.env.RAPID_WEB` first (takes precedence), then fall back to `.env` file. This avoids side effects on module load and respects the existing env preamble pattern. -- **Priority: high**
 
-4. **Resolve keyboard shortcut conflict for graph route:** Use `gk` (knowledge graph) instead of `gg` (conflicts with scroll-to-top). Register `gs`=state, `gw`=worktrees, `gk`=graph, `gc`=codebase. Priority: high.
+4. **Place registration call after STATE.json is written in init skill:** The backend requires `.planning/STATE.json` to exist. In the init skill, the registration call should go between Step 10 (auto-commit) and Step 11 (completion summary). This ensures all planning artifacts exist before the HTTP call. -- **Priority: high**
 
-5. **Add `refetchInterval: 2000` per-hook, not globally:** Each view hook (useProjectState, useWorktrees, useDag, useCodebaseTree) should set its own `refetchInterval: 2000`. Do NOT change the global queryClient defaults. Priority: medium.
+5. **Use `GET /api/ready` (not `/api/health`) for DB accessibility check:** The `/api/health` endpoint is a liveness probe only (no DB access). The `/api/ready` endpoint verifies database connectivity and returns `database: "connected"` or `"disconnected"`. Use both endpoints in doctor checks: health for service liveness, ready for DB status. -- **Priority: high**
 
-6. **Limit tree-sitter API response depth:** Cap the codebase tree at 3-4 levels of nesting to prevent oversized responses. Allow an optional `depth` query parameter for clients that need more. Priority: medium.
+6. **Mock `globalThis.fetch` in unit tests using `node:test` mock API:** Use `mock.method(globalThis, 'fetch', mockFn)` for HTTP tests. Use `process.env` manipulation for env-gating tests. Both patterns are already established in the existing test suite. -- **Priority: high**
 
-7. **Guard polling with `enabled: !!projectId`:** All four view hooks should only poll when an active project is selected. This prevents unnecessary requests and 404 errors. Priority: medium.
+7. **Check for `rapid-web` binary before enabling systemd service:** Verify `~/.local/bin/rapid-web` exists. If not, guide user through installation (`cd web/backend && pip install --user .`). -- **Priority: medium**
 
-8. **Register cytoscape-dagre extension at app startup, not per-render:** Call `cytoscape.use(dagre)` once at module load time (e.g., in a setup file or at the top of the KnowledgeGraph module). Calling it per-render throws warnings. Priority: medium.
+8. **Guard against duplicate rc file entries:** Before appending `RAPID_WEB=true` to shell rc, check if it already exists (grep pattern). Same deduplication pattern used for `RAPID_TOOLS` in the existing install skill. -- **Priority: medium**
 
-## New Dependencies Summary
+9. **Use TCP `net.Socket` connect for port check, not `execSync('lsof ...')`:** A direct TCP connect to 127.0.0.1:8998 is cross-platform, requires no external tools, and completes in milliseconds. Pattern: create socket, set 500ms timeout, attempt connect, interpret result. -- **Priority: medium**
 
-### Frontend (package.json additions)
-```json
-{
-  "dependencies": {
-    "cytoscape": "^3.33.1",
-    "cytoscape-dagre": "^2.5.0"
-  },
-  "devDependencies": {
-    "@types/cytoscape-dagre": "^2.3.4"
-  }
-}
+## API Contract Reference
+
+For implementer convenience, the exact HTTP contracts:
+
+### GET /api/health
 ```
-Note: `cytoscape` has built-in TypeScript types since 3.31.0; no `@types/cytoscape` needed.
-
-### Backend (pyproject.toml additions)
-```toml
-dependencies = [
-    # ... existing deps ...
-    "tree-sitter>=0.25,<1.0",
-    "tree-sitter-python>=0.23,<1.0",
-    "tree-sitter-javascript>=0.23,<1.0",
-    "tree-sitter-go>=0.23,<1.0",
-    "tree-sitter-rust>=0.23,<1.0",
-]
+Request: GET http://127.0.0.1:8998/api/health
+Response 200: {"status": "ok", "version": "4.0.0", "uptime": 2337.42}
+Response (unreachable): fetch throws TypeError (ECONNREFUSED)
 ```
 
-## Data Format Reference
-
-### STATE.json shape (for state view)
-```json
-{
-  "version": 1,
-  "projectName": "string",
-  "currentMilestone": "string",
-  "milestones": [
-    {
-      "id": "string",
-      "name": "string",
-      "sets": [
-        {
-          "id": "string",
-          "status": "pending|discussed|planned|executed|complete|merged",
-          "waves": [{ "id": "string", "status": "pending|executing|complete", "jobs": [] }],
-          "name": "string (optional)",
-          "branch": "string (optional)"
-        }
-      ]
-    }
-  ],
-  "lastUpdatedAt": "ISO8601",
-  "createdAt": "ISO8601"
-}
+### GET /api/ready
+```
+Request: GET http://127.0.0.1:8998/api/ready
+Response 200: {"status": "ready", "database": "connected"}
+Response 503: {"status": "not_ready", "database": "disconnected"}
 ```
 
-### DAG.json shape (for knowledge graph)
-```json
-{
-  "nodes": [{ "id": "string", "wave": 0, "status": "string" }],
-  "edges": [{ "from": "string", "to": "string" }],
-  "waves": { "0": { "sets": ["string"], "checkpoint": {} } },
-  "metadata": { "created": "date", "totalSets": 4, "totalWaves": 1, "maxParallelism": 4 }
-}
+### POST /api/projects
 ```
-Note: Edge convention is `from` = dependency, `to` = dependent. This maps to Cytoscape `source`/`target`.
+Request: POST http://127.0.0.1:8998/api/projects
+Headers: Content-Type: application/json
+Body: {"path": "/absolute/path/to/project", "name": "optional-name"}
+Response 201: {"id": "uuid-string", "status": "active", "message": "registered"}
+Response 422: {"detail": "path must be an absolute path (starts with '/')"}
+Response 422: {"detail": "No .planning/STATE.json found at /path"}
+```
 
-### REGISTRY.json shape (for worktree view)
-```json
-{
-  "version": 1,
-  "worktrees": {
-    "set-name": {
-      "setName": "string",
-      "branch": "string",
-      "path": "string",
-      "phase": "string",
-      "status": "string",
-      "wave": "number|null",
-      "createdAt": "ISO8601",
-      "mergeStatus": "string (optional)",
-      "mergedAt": "ISO8601 (optional)",
-      "mergeCommit": "string (optional)"
-    }
-  }
-}
-```
+### Idempotency Note
+Re-POSTing the same path updates `metadata_json`, `last_seen_at`, and `name` on the existing record rather than creating a duplicate. This makes `/rapid:register-web` safe to run multiple times.

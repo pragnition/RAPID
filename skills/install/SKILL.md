@@ -1,12 +1,12 @@
 ---
-description: Install and configure RAPID v3.6.0 plugin for Claude Code
+description: Install and configure RAPID v4.0.0 plugin for Claude Code
 disable-model-invocation: true
 allowed-tools: Read, Bash, AskUserQuestion
 ---
 
-# /rapid:install -- v3.6.0 Plugin Installation and Setup
+# /rapid:install -- v4.0.0 Plugin Installation and Setup
 
-You are the RAPID installer. This skill bootstraps RAPID v3.6.0 by running the non-interactive setup script, then handles shell detection, config file selection via AskUserQuestion, auto-sourcing with verification, and fallback guidance. It works for both marketplace and git clone installations.
+You are the RAPID installer. This skill bootstraps RAPID v4.0.0 by running the non-interactive setup script, then handles shell detection, config file selection via AskUserQuestion, auto-sourcing with verification, and fallback guidance. It works for both marketplace and git clone installations.
 
 ## Step 0: Detect Installation Location
 
@@ -26,7 +26,7 @@ fi
 echo "RAPID_ROOT=$RAPID_ROOT"
 ```
 
-There is a caveat: if the user has previously installed RAPID via marketplace, there may be old versions in ~/.claude/plugins/cache. You are on version 3.0, so your install location should contain some sort of reference to v3.6.0.0! So you need to make sure to update the RAPID_TOOLS path in the shell config if it points to an old version. You can detect this by checking if RAPID_TOOLS is already configured in any shell config file and if it points to a path within ~/.claude/plugins/cache. If so, prompt the user to update their config to point to the new RAPID_ROOT path.
+There is a caveat: if the user has previously installed RAPID via marketplace, there may be old versions in ~/.claude/plugins/cache. You are on version 3.0, so your install location should contain some sort of reference to v4.0.0.0! So you need to make sure to update the RAPID_TOOLS path in the shell config if it points to an old version. You can detect this by checking if RAPID_TOOLS is already configured in any shell config file and if it points to a path within ~/.claude/plugins/cache. If so, prompt the user to update their config to point to the new RAPID_ROOT path.
 
 ## Step 1: Run Non-Interactive Bootstrap
 
@@ -93,7 +93,7 @@ done
 If RAPID_TOOLS is already configured, it might be an old version that requires updating, user AskUserQuestion:
 
 - Header: "RAPID_TOOLS already configured"
-- Text: "RAPID_TOOLS is already configured in {config_file}. Do you want to update it to the new path for RAPID v3.6.0?"
+- Text: "RAPID_TOOLS is already configured in {config_file}. Do you want to update it to the new path for RAPID v4.0.0?"
 - Options:
   - "Yes, update config" -- description: "Update the existing config file with the new RAPID_TOOLS path"
   - "No, keep existing config" -- description: "Keep the existing RAPID_TOOLS configuration (you may need to update it manually if it's an old version)"
@@ -327,7 +327,7 @@ Proceed to Step 5 regardless of service start outcome.
 
 Use AskUserQuestion:
 
-- Header: "RAPID v3.6.0 installation complete"
+- Header: "RAPID v4.0.0 installation complete"
 - Options:
   - "Run /rapid:help" -- description: "See all available RAPID commands and workflow guidance"
   - "Run /rapid:init" -- description: "Initialize planning infrastructure for a new project"
@@ -339,4 +339,4 @@ If "Run /rapid:help": invoke the /rapid:help skill.
 If "Run /rapid:init": invoke the /rapid:init skill.
 If "Run /rapid:status": invoke the /rapid:status skill.
 If "Run /rapid:register-web": invoke the /rapid:register-web skill.
-If "Done": display "RAPID v3.6.0 is ready. Happy building!"
+If "Done": display "RAPID v4.0.0 is ready. Happy building!"
