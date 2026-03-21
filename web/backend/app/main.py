@@ -16,6 +16,7 @@ from sqlmodel import Session, text
 
 from app import __version__
 from app.routers.projects import router as projects_router
+from app.routers.views import router as views_router
 from app.config import settings
 from app.database import get_engine, run_migrations
 from app.logging_config import get_logger, setup_logging
@@ -146,6 +147,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(projects_router)
+    app.include_router(views_router)
     return app
 
 
