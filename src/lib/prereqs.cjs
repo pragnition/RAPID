@@ -191,10 +191,70 @@ function formatPrereqSummary(results) {
   return { table, hasBlockers, hasWarnings };
 }
 
+/**
+ * Validate web service prerequisites (only when RAPID_WEB=true).
+ * Returns check results in the same shape as checkTool() for unified display.
+ *
+ * @returns {Promise<Array>} Array of 3 result objects (service, database, port), or empty if web disabled
+ */
+async function validateWebPrereqs() {
+  const { isWebEnabled, checkWebService } = require('./web-client.cjs');
+
+  if (!isWebEnabled()) {
+    return []; // Return empty array -- no web rows in doctor output
+  }
+
+  const checks = await checkWebService();
+
+  const results = [];
+
+  // Service running check
+  results.push({
+    name: 'Web Service',
+    status: checks.service_running ? 'pass' : 'warn',
+    version: checks.version || null,
+    minVersion: '-',
+    required: false,
+    reason: 'Mission Control dashboard',
+    message: checks.service_running
+      ? `Web service running (v${checks.version})`
+      : 'Web service not running (start with: systemctl --user start rapid-web)',
+  });
+
+  // Database check
+  results.push({
+    name: 'Web Database',
+    status: checks.db_accessible ? 'pass' : 'warn',
+    version: null,
+    minVersion: '-',
+    required: false,
+    reason: 'Mission Control data store',
+    message: checks.db_accessible
+      ? 'Database connected'
+      : 'Database not accessible',
+  });
+
+  // Port check
+  results.push({
+    name: 'Port 8998',
+    status: checks.port_available ? 'pass' : 'warn',
+    version: null,
+    minVersion: '-',
+    required: false,
+    reason: 'Mission Control endpoint',
+    message: checks.port_available
+      ? 'Port 8998 responding'
+      : 'Port 8998 not responding',
+  });
+
+  return results;
+}
+
 module.exports = {
   compareVersions,
   checkTool,
   validatePrereqs,
+  validateWebPrereqs,
   checkGitRepo,
   formatPrereqSummary,
 };
