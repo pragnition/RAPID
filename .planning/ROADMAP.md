@@ -14,7 +14,7 @@
 - **v3.4.0 Agent Intelligence** — 6 sets (shipped 2026-03-18)
 - **v3.5.0 Robustness & Fixes** — 4 sets (shipped 2026-03-19)
 - **v3.6.0 Workflow & UX Polish** — 5 sets (shipped 2026-03-20)
-- **v4.0.0 Mission Control** — 6 sets (in progress)
+- **v4.0.0 Mission Control** — 7 sets (in progress)
 
 ## Completed Milestone Details
 
@@ -198,6 +198,9 @@ Kanban Board (dnd-kit drag-drop, CRUD) and Markdown Note Editor (CodeMirror 6, v
 
 ### Set 6: CLI Integration (`cli-integration`) [Medium]
 Non-blocking web-client.cjs helper, /install web service setup, /init auto-registration, /register-web for legacy projects, doctor health checks. Depends on service-infrastructure, project-registry.
+
+### Set 7: Web Install Bugfix (`web-install-bugfix`) [Small]
+Fix 5 web installation issues: pyproject.toml package discovery, Alembic migration path resolution, backend static file serving + SPA fallback, frontend build integration in install workflow, TypeScript build errors. Depends on service-infrastructure, frontend-shell.
 
 ### Dependency Graph
 ```

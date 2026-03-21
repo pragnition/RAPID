@@ -1,0 +1,8 @@
+{
+  "setId": "web-install-bugfix",
+  "milestone": "v4.0.0",
+  "created": "2026-03-21",
+  "exports": { "functions": [], "types": [] },
+  "imports": { "functions": [], "types": [] },
+  "fileOwnership": []
+}
