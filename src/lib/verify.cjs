@@ -98,13 +98,140 @@ function verifyHeavy(artifacts, testCommand) {
 }
 
 /**
+ * Parse encoded criteria from REQUIREMENTS.md.
+ *
+ * Looks for lines matching: - [ ] CATEGORY-NNN: description
+ * or: - [x] CATEGORY-NNN: description
+ *
+ * @param {string} requirementsPath - Absolute path to REQUIREMENTS.md
+ * @returns {{ criteria: Array<{id: string, description: string, checked: boolean}>, warning: string|null }}
+ */
+function parseCriteriaFromRequirements(requirementsPath) {
+  if (!fs.existsSync(requirementsPath)) {
+    return { criteria: [], warning: 'REQUIREMENTS.md not found' };
+  }
+
+  let content;
+  try {
+    content = fs.readFileSync(requirementsPath, 'utf-8');
+  } catch (err) {
+    return { criteria: [], warning: 'REQUIREMENTS.md not found' };
+  }
+
+  const criteria = [];
+  const pattern = /^- \[( |x)\] ([A-Z]+-\d{3}): (.+)$/gm;
+  let match;
+  while ((match = pattern.exec(content)) !== null) {
+    criteria.push({
+      id: match[2],
+      description: match[3],
+      checked: match[1] === 'x',
+    });
+  }
+
+  if (criteria.length === 0 && content.length > 50) {
+    return { criteria: [], warning: 'No encoded criteria found. Consider re-running /rapid:init to generate encoded criteria with CATEGORY-NNN format.' };
+  }
+
+  if (criteria.length === 0) {
+    return { criteria: [], warning: null };
+  }
+
+  return { criteria, warning: null };
+}
+
+/**
+ * Generate a Markdown criteria coverage report by cross-referencing
+ * encoded criteria from REQUIREMENTS.md against plan files.
+ *
+ * @param {string} requirementsPath - Absolute path to REQUIREMENTS.md
+ * @param {string[]} [planPaths] - Array of absolute paths to PLAN.md files
+ * @returns {string} Markdown section starting with ## Criteria Coverage
+ */
+function generateCriteriaCoverageReport(requirementsPath, planPaths) {
+  const { criteria, warning } = parseCriteriaFromRequirements(requirementsPath);
+  const plans = Array.isArray(planPaths) ? planPaths : [];
+
+  if (warning) {
+    return `## Criteria Coverage\n\n> ${warning}\n`;
+  }
+
+  if (criteria.length === 0) {
+    return '## Criteria Coverage\n\nNo criteria found.\n';
+  }
+
+  // Read plan file contents (skip missing files silently)
+  const planContents = [];
+  for (const planPath of plans) {
+    try {
+      if (fs.existsSync(planPath)) {
+        const text = fs.readFileSync(planPath, 'utf-8');
+        planContents.push({ name: path.basename(planPath), text });
+      }
+    } catch (err) {
+      // skip missing/unreadable files
+    }
+  }
+
+  // Check coverage for each criterion
+  const rows = [];
+  const uncovered = [];
+  let coveredCount = 0;
+
+  for (const criterion of criteria) {
+    const matchingPlans = [];
+    for (const plan of planContents) {
+      if (plan.text.includes(criterion.id)) {
+        matchingPlans.push(plan.name);
+      }
+    }
+    const isCovered = matchingPlans.length > 0;
+    if (isCovered) coveredCount++;
+    rows.push({
+      id: criterion.id,
+      description: criterion.description,
+      covered: isCovered ? 'Yes' : 'No',
+      plans: isCovered ? matchingPlans.join(', ') : '-',
+    });
+    if (!isCovered) {
+      uncovered.push(criterion);
+    }
+  }
+
+  const total = criteria.length;
+  const pct = Math.round((coveredCount / total) * 100);
+
+  const lines = [];
+  lines.push('## Criteria Coverage');
+  lines.push('');
+  lines.push('| ID | Description | Covered | Plan(s) |');
+  lines.push('|----|-------------|---------|---------|');
+  for (const row of rows) {
+    lines.push(`| ${row.id} | ${row.description} | ${row.covered} | ${row.plans} |`);
+  }
+  lines.push('');
+  lines.push(`**Coverage:** ${coveredCount}/${total} (${pct}%)`);
+
+  if (uncovered.length > 0) {
+    lines.push('');
+    lines.push('### Uncovered Criteria');
+    for (const c of uncovered) {
+      lines.push(`- ${c.id}: ${c.description}`);
+    }
+  }
+
+  lines.push('');
+  return lines.join('\n');
+}
+
+/**
  * Generate a Markdown verification report from results.
  *
  * @param {{ passed: Array, failed: Array }} results - Verification results
  * @param {'light'|'heavy'} tier - Verification tier
  * @returns {string} Markdown report content
  */
-function generateVerificationReport(results, tier) {
+function generateVerificationReport(results, tier, options = {}) {
   const passCount = results.passed.length;
   const failCount = results.failed.length;
   const timestamp = new Date().toISOString();
@@ -155,7 +282,13 @@ function generateVerificationReport(results, tier) {
   lines.push(`**Result:** ${overallResult}`);
   lines.push('');
 
+  // Criteria coverage (optional)
+  if (options.requirementsPath) {
+    const coverageSection = generateCriteriaCoverageReport(options.requirementsPath, options.planPaths || []);
+    lines.push(coverageSection);
+  }
+
   return lines.join('\n');
 }
 
-module.exports = { verifyLight, verifyHeavy, generateVerificationReport };
+module.exports = { verifyLight, verifyHeavy, generateVerificationReport, parseCriteriaFromRequirements, generateCriteriaCoverageReport };
