@@ -131,6 +131,10 @@ If the `--skip` flag is set:
    - decisions section: All items marked as "Claude's Discretion" (no user decisions captured)
    - code_context section: Patterns discovered from codebase scan
    - deferred section: Empty (no discussion to defer ideas from)
+
+   Also write an empty DEFERRED.md to .planning/sets/{SET_ID}/DEFERRED.md:
+   - Use the standard DEFERRED.md format with an empty table
+   - Add note: "No deferred items identified (auto-skip mode)."
    ```
 
 3. After agent completes, verify CONTEXT.md was written:
@@ -146,70 +150,205 @@ If the `--skip` flag is NOT set, continue to Step 5.
 
 ---
 
-## Step 5: Identify 4 Gray Areas (Interactive Mode)
+## Step 5: Identify Gray Areas (Interactive Mode)
 
-Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, source files) and identify exactly 4 gray areas. Gray areas may be architectural facets or UI/UX considerations where:
+### Complexity Heuristic
 
-- Multiple valid approaches exist
-- Integration points are ambiguous
-- User experience decisions are needed
-- Performance/quality tradeoffs exist
-- UI/UX decisions need to be made
+Before identifying gray areas, determine how many to present. Read `CONTRACT.json` `definition.tasks` array length as the primary signal:
 
-Questions should be about high level architectural/design details rather than specific implementation details. (eg. ask about HOW this should look rather than should I code it this way or that way?). 
+| Task Count | Gray Areas (n) | Total |
+|-----------|----------------|-------|
+| 1-3 tasks | n=1 | 4 gray areas |
+| 4-6 tasks | n=2 | 8 gray areas |
+| 7+ tasks  | n=3 | 12 gray areas |
 
-When the set's context (SET-OVERVIEW.md, CONTRACT.json, ROADMAP.md description) indicates user-facing components, frontend work, or UI changes, weave UI/UX considerations naturally into the relevant gray areas. For example, a "state management" gray area for a frontend set should include UI state questions; . You may reserve dedicated gray area slots exclusively for UI/UX if you wish, or blend UI/UX elements in details that will shape the user experience. For sets with no user-facing components (pure backend, CLI internals, infrastructure), UI/UX gray areas are unnecessary and should not be forced.
+The model has discretion to adjust n by +/-1 based on overall set complexity. For example, a 3-task set with complex integration boundaries could warrant 8 areas (n=2), or a simple 5-task set could use 4 areas (n=1). The total gray area count MUST always be a multiple of 4.
 
-Present gray areas using AskUserQuestion:
+### Gray Area Categories
+
+Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, source files) and identify gray areas. Gray areas are **architect-level decisions** where multiple valid approaches exist:
+
+- **System architecture decisions:** Data flow, component boundaries, integration strategy
+- **API/interface design:** Contract shapes, versioning, error handling strategy
+- **State management approach:** Where state lives, sync strategy, persistence
+- **UI/UX decisions:** Layout, interaction patterns, visual hierarchy, user flows -- only when the set has user-facing components
+- **Performance/scaling tradeoffs:** At the architecture level, not micro-optimization
+
+**Explicitly excluded from gray areas:** Library choices, coding patterns, function signatures, variable naming, file organization within a module. These are implementation details, not architectural decisions.
+
+When the set's context (SET-OVERVIEW.md, CONTRACT.json, ROADMAP.md description) indicates user-facing components, frontend work, or UI changes, weave UI/UX considerations naturally into the relevant gray areas. For sets with no user-facing components (pure backend, CLI internals, infrastructure), UI/UX gray areas are unnecessary and should not be forced.
+
+Each gray area MUST have a title and a 1-sentence description.
+
+### Presenting Gray Areas in Batches
+
+Present gray areas using AskUserQuestion in batches of 4 (one batch per n):
+
+**For n=1 (4 gray areas):** One AskUserQuestion call:
 
 ```
 "I've analyzed set '{SET_ID}' and identified 4 areas that would benefit from your input.
 Select which areas you'd like to discuss (unselected areas default to Claude's discretion):"
-Options:
+Options (multiSelect: true):
 1. "{Gray area 1 title}" -- "{1-sentence description}"
 2. "{Gray area 2 title}" -- "{1-sentence description}"
 3. "{Gray area 3 title}" -- "{1-sentence description}"
 4. "{Gray area 4 title}" -- "{1-sentence description}"
 ```
 
-**Handling responses:**
+**For n=2 (8 gray areas):** Two AskUserQuestion calls, each with 4 options:
 
-- If the user selects no areas (empty selection): Record all 4 areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
-- If the user selects specific areas: Record selected areas for Step 6. Unselected areas are recorded as Claude's discretion.
+```
+"Gray Areas (1 of 2) -- I've analyzed set '{SET_ID}' and identified 8 areas that would benefit from your input.
+Select which areas you'd like to discuss (unselected areas default to Claude's discretion):"
+Options (multiSelect: true):
+1-4. {first 4 gray areas}
+```
+
+Then:
+
+```
+"Gray Areas (2 of 2) -- Select additional areas to discuss:"
+Options (multiSelect: true):
+1-4. {next 4 gray areas}
+```
+
+**For n=3 (12 gray areas):** Three AskUserQuestion calls, each with 4 options. Use headers "Gray Areas (1 of 3)", "Gray Areas (2 of 3)", "Gray Areas (3 of 3)".
+
+### Handling Responses Across Batches
+
+- Collect selections across all batches.
+- If the user selects no areas across ALL batches (empty selection in every batch): Record all areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
+- If the user selects specific areas in any batch: Record selected areas for Step 6. Unselected areas across all batches are recorded as Claude's discretion.
 
 ---
 
-## Step 6: Deep-Dive Selected Areas (Batched Per Area)
+## Step 6: Deep-Dive Selected Areas (Rich Question Format)
 
-For EACH selected gray area (in order):
+For EACH selected gray area (in order), ask a SEPARATE AskUserQuestion for EACH question within the gray area. EACH question should only ask the user about ONE thing. The user should not be thinking about multiple decisions within the same question.
 
-1. Use ONE AskUserQuestion prompt and for EACH question within the gray area, ask a SEPARATE question with a header, with prefilled options (if you have a recommendation, tag your recommeded option with "(recommended)"). EACH question should only ask the user about ONE thing. The user should not be thinking about multiple decisions within the same question.:
+Choose the most appropriate question format per question from the three formats below:
 
-   ```
-   "{Gray area title} -- {Question about approach}
+### Format A -- Option Descriptions
 
-   Context: {1-2 sentences explaining this specific tradeoff}
-   "
-   Options:
-   1. "{Option A}" -- "{Brief explanation of approach A}"
-   2. "{Option B}" -- "{Brief explanation of approach B}"
-   3. "{Option C}" -- "{Brief explanation of approach C, if applicable}"
-   4. "Claude decides" -- "Let Claude pick the best approach"
-   ```
+Best for straightforward choices between distinct approaches:
 
-   If you have more questions within the area, just make another "batch" of questions.
+```
+"{Gray area title} -- {Question}
 
-2. Record the user's selected option for each question.
+Context: {2-5 sentences explaining the tradeoff, constraints, and implications}
 
-3. If user selected "Claude decides" for a question: Record that specific question as Claude's discretion.
+| Option | Pros | Cons |
+|--------|------|------|
+| A: {name} | {pros} | {cons} |
+| B: {name} | {pros} | {cons} |
+| C: {name} (Recommended) | {pros} | {cons} |
+"
+Options:
+1. "{Option A name}" -- "{1-sentence summary}"
+2. "{Option B name}" -- "{1-sentence summary}"
+3. "{Option C name} (Recommended)" -- "{1-sentence summary}"
+4. "Claude decides" -- "Let Claude pick the best approach"
+```
 
-### Follow-Up 
+### Format B -- Preview Panels
+
+Best for visual/UI layout questions where visual comparison adds value. **Single-select only** (not multiSelect) -- preview panels do not work with multiSelect:
+
+```
+"{Gray area title} -- {Question}
+
+Context: {2-5 sentences explaining the visual tradeoff}
+"
+Options (with preview field):
+1. "{Layout A}" -- preview: "{ASCII/text mockup of layout A}"
+2. "{Layout B}" -- preview: "{ASCII/text mockup of layout B}"
+3. "Claude decides" -- "Let Claude pick"
+```
+
+Use this format only for questions where visual comparison adds clear value (e.g., layout arrangements, component positioning, navigation structure).
+
+### Format C -- Question Context Block
+
+Best for complex multi-factor tradeoffs where a table does not capture the nuances:
+
+```
+"{Gray area title} -- {Question}
+
+Context: {3-5 sentences covering the tradeoff dimensions}
+
+Key factors:
+- {Factor 1}: {implication}
+- {Factor 2}: {implication}
+- {Factor 3}: {implication}
+
+Recommendation: {Option X} because {1-sentence rationale}
+"
+Options:
+1. "{Option A}" -- "{1-sentence summary}"
+2. "{Option B}" -- "{1-sentence summary}"
+3. "{Option C}" -- "{1-sentence summary}"
+4. "Claude decides" -- "Let Claude pick the best approach"
+```
+
+### Tagging Recommendations
+
+When the model has a clear recommendation, tag the option with `(Recommended)` in both the description body and the option label. If no clear recommendation exists, omit the tag entirely.
+
+### Context Length Guardrail
+
+Each question's context block (the text inside the AskUserQuestion prompt) should be 2-5 sentences. Tables and key-factor lists do not count toward this limit but should be kept concise.
+
+### Recording Responses
+
+1. Record the user's selected option for each question.
+2. If user selected "Claude decides" for a question: Record that specific question as Claude's discretion.
+
+### Follow-Up
 
 After ALL selected areas are discussed:
 
-- Compile follow-up questions if gaps in your understanding of the user's intentions remain after all 4 areas were covered.
+- Compile follow-up questions if gaps in your understanding of the user's intentions remain after all areas were covered.
 - If gaps exist: Continue to prompt the user using AskUserQuestion with remaining questions until you are FULLY satisfied.
 - If no gaps: Skip follow-up entirely.
+
+---
+
+## Step 6.5: Capture Deferred Decisions
+
+After all gray area deep-dives and follow-ups are complete, review the entire discussion for ideas, questions, or decisions that were raised but fall outside the current set's scope.
+
+1. **Determine scope boundary:** Read `CONTRACT.json` `definition.scope` to determine what is in-scope vs. out-of-scope for this set.
+
+2. **Identify deferred items:** Scan the discussion for any ideas, suggestions, or decision threads that:
+   - Were raised during gray area discussion or follow-ups
+   - Fall outside this set's defined scope
+   - Would be valuable for future sets or milestones
+
+3. **Write DEFERRED.md:** Always write `.planning/sets/${SET_ID}/DEFERRED.md` using the Write tool:
+
+```markdown
+# DEFERRED: {SET_ID}
+
+**Set:** {SET_ID}
+**Generated:** {date}
+
+## Deferred Decisions
+
+Items raised during discussion that fall outside this set's scope.
+
+| # | Decision/Idea | Source | Suggested Target |
+|---|--------------|--------|-----------------|
+| 1 | {description} | {which gray area or follow-up raised it} | {suggested future set or milestone} |
+| 2 | ... | ... | ... |
+
+## Notes
+- These items should be reviewed during `/rapid:new-version` planning
+- Items may be promoted to backlog entries or new sets in future milestones
+```
+
+- If no deferred items exist, still write DEFERRED.md with an empty table and add a note: "No deferred items identified during this discussion."
+- DEFERRED.md is always written -- it is not optional.
 
 ---
 
@@ -235,17 +374,17 @@ Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 ## Implementation Decisions
 
 ### {Area 1 Title}
-
 - {Decision from discussion or "Claude's Discretion"}
+- **Rationale:** {1-2 sentences explaining WHY this decision was made -- what factors drove it}
 
 ### {Area 2 Title}
-
 - ...
+- **Rationale:** ...
 
 ### Claude's Discretion
-
 - {Areas where user selected "Let Claude decide"}
-  </decisions>
+- {Specific gray area identification prompts left to Claude}
+</decisions>
 
 <specifics>
 ## Specific Ideas
@@ -253,17 +392,21 @@ Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 </specifics>
 
 <code_context>
-
 ## Existing Code Insights
-
-{Patterns, integration points, reusable code discovered during context gathering}
+- {Patterns, integration points, reusable code discovered during context gathering}
 </code_context>
 
 <deferred>
 ## Deferred Ideas
-- {Ideas mentioned but out of set scope}
+- {Summary of items from DEFERRED.md -- brief one-liner per item}
+- {If no deferred items: "No deferred items identified."}
 </deferred>
 ```
+
+Key elements of CONTEXT.md:
+- **Rationale field** under each decision: 1-2 sentences explaining the reasoning behind the decision
+- **Deferred section** references content from DEFERRED.md as brief one-liners
+- All 5 XML tags (`<domain>`, `<decisions>`, `<specifics>`, `<code_context>`, `<deferred>`) are preserved -- plan-set parses these
 
 ---
 
@@ -286,7 +429,7 @@ Commit BOTH CONTEXT.md AND STATE.json together to ensure the state transition is
 
 ```bash
 # (env preamble here)
-git add ".planning/sets/${SET_ID}/CONTEXT.md" ".planning/STATE.json"
+git add ".planning/sets/${SET_ID}/CONTEXT.md" ".planning/sets/${SET_ID}/DEFERRED.md" ".planning/STATE.json"
 git commit -m "discuss-set(${SET_ID}): capture set implementation vision"
 ```
 
@@ -327,24 +470,30 @@ Show what is done, what failed, and what to run next.
 ## Key Principles
 
 - **Set-scoped discussion:** Discussion captures vision at the set level, not per-wave. CONTEXT.md is the output artifact.
-- **Exactly 4 gray areas:** Always identify exactly 4 gray areas. This matches AskUserQuestion's 4-option constraint and ensures consistent coverage.
-- **Batched questions with options:** Present each gray area as a separate AskUserQuestion with SEPERATE questionns contaiig prefilled options including "Claude decides".
+- **Variable gray area count (4n):** Gray area count scales with set complexity in multiples of 4. The task count in CONTRACT.json drives the heuristic; the model may adjust based on overall complexity.
+- **Architect-level focus:** Gray areas target system architecture, integration boundaries, and UI/UX decisions. Never ask about specific coding patterns, library choices, or implementation details.
+- **Rich question context:** Each question provides 2-5 sentences of context with pros/cons or key factors. Use the most appropriate format (option descriptions, preview panels, or context blocks) per question.
+- **Batched questions with options:** Present each gray area as a separate AskUserQuestion with prefilled options including "Claude decides".
 - **"Claude decides" option:** Available as a prefilled option per question. Unselected gray areas in Step 5 automatically default to Claude's discretion.
-- **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md without user interaction.
+- **Deferred decisions:** Out-of-scope ideas raised during discussion are captured in DEFERRED.md, never silently dropped.
+- **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md and an empty DEFERRED.md without user interaction.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
-- **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set.
+- **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set. Includes decision rationale and deferred items summary.
 - **Set-level state transitions:** Only use `state transition set` to move from pending to discussed. Never use wave-level transitions.
-- **State transition is the final mutation:** Happens AFTER CONTEXT.md is written, ensuring artifacts exist before status changes. STATE.json is committed alongside CONTEXT.md in the same git commit.
+- **State transition is the final mutation:** Happens AFTER CONTEXT.md and DEFERRED.md are written, ensuring artifacts exist before status changes. STATE.json is committed alongside artifacts in the same git commit.
 - **Progress breadcrumb:** Always show the workflow breadcrumb at completion and in error messages.
 
 ## Anti-Patterns
 
 - This skill operates at set level only. Use `resolve set` for resolution.
-- Output artifact is CONTEXT.md in `.planning/sets/{set-id}/` -- not any per-wave file.
-- Write CONTEXT.md using the Write tool directly -- do not call wave-planning.cjs helpers.
+- Output artifacts are CONTEXT.md and DEFERRED.md in `.planning/sets/{set-id}/` -- not any per-wave file.
+- Write CONTEXT.md and DEFERRED.md using the Write tool directly -- do not call wave-planning.cjs helpers.
 - Do not reference or resolve individual waves anywhere in this skill.
 - Use `state transition set` for all state changes. No per-wave transitions.
-- Do NOT ask about fewer or more than 4 gray areas -- always present exactly 4.
+- Do NOT ask a non-multiple-of-4 number of gray areas -- the count must be 4, 8, or 12.
+- Do NOT ask implementation-level questions (library choices, coding patterns, function signatures) -- keep gray areas at the architecture and UX level.
+- Do NOT present questions without inline context -- every question must include 2-5 sentences of context explaining the tradeoff.
+- Do NOT silently drop out-of-scope ideas -- capture them in DEFERRED.md.
 - Do NOT batch multiple questions into a single freeform AskUserQuestion -- each question gets its own AskUserQuestion with prefilled options.
 - Do NOT present "Let Claude decide all" as a checkbox option -- use the implicit unselected model instead.
 - Do NOT prompt for every implementation detail -- capture vision/what, not implementation/how.
