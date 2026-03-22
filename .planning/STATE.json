@@ -1,7 +1,7 @@
 {
   "version": 1,
   "projectName": "RAPID",
-  "currentMilestone": "v4.0.0",
+  "currentMilestone": "v4.1.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -290,7 +290,7 @@
         },
         {
           "id": "cli-integration",
-          "status": "complete",
+          "status": "merged",
           "waves": [],
           "name": "CLI Integration",
           "branch": "rapid/cli-integration"
@@ -301,8 +301,70 @@
           "waves": []
         }
       ]
+    },
+    {
+      "id": "v4.1.0",
+      "name": "Polish & Fixes",
+      "sets": [
+        {
+          "id": "hygiene-sweep",
+          "status": "discussed",
+          "waves": [],
+          "name": "Hygiene Sweep",
+          "branch": "rapid/hygiene-sweep"
+        },
+        {
+          "id": "init-criteria",
+          "status": "pending",
+          "waves": [],
+          "name": "Init Fixes & Encoded Criteria",
+          "branch": "rapid/init-criteria"
+        },
+        {
+          "id": "review-cli-fix",
+          "status": "pending",
+          "waves": [],
+          "name": "Review CLI Fix",
+          "branch": "rapid/review-cli-fix"
+        },
+        {
+          "id": "dag-readdition",
+          "status": "pending",
+          "waves": [],
+          "name": "DAG Re-addition",
+          "branch": "rapid/dag-readdition"
+        },
+        {
+          "id": "discuss-overhaul",
+          "status": "pending",
+          "waves": [],
+          "name": "Discuss Phase Overhaul",
+          "branch": "rapid/discuss-overhaul"
+        },
+        {
+          "id": "unit-test-improvements",
+          "status": "pending",
+          "waves": [],
+          "name": "Unit Test Improvements",
+          "branch": "rapid/unit-test-improvements"
+        },
+        {
+          "id": "branding-refocus",
+          "status": "pending",
+          "waves": [],
+          "name": "Branding Refocus",
+          "branch": "rapid/branding-refocus"
+        },
+        {
+          "id": "new-version-comprehensive",
+          "status": "pending",
+          "waves": [],
+          "name": "New-Version Comprehensiveness",
+          "branch": "rapid/new-version-comprehensive"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-21T12:21:16.585Z",
+  "lastUpdatedAt": "2026-03-22T07:13:25.184Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
