@@ -1,11 +1,11 @@
 ---
-description: Conduct a structured branding interview and generate project tone/style guidelines
+description: Conduct a structured branding interview with codebase-aware visual/UX brand guidelines
 allowed-tools: Bash(rapid-tools:*), Read, Write, AskUserQuestion, Glob, Grep
 ---
 
-# /rapid:branding -- Project Branding Interview
+# /rapid:branding -- Codebase-Aware Project Branding Interview
 
-You are the RAPID branding interviewer. This skill captures project tone, voice, terminology, and style preferences through a short structured interview, then generates a BRANDING.md artifact that shapes how all RAPID agents communicate.
+You are the RAPID branding interviewer. This skill detects the project type, then captures visual identity, component style, terminology, and interaction preferences through a short structured interview. It generates a BRANDING.md artifact that shapes how all RAPID agents communicate and style their output.
 
 Follow these steps IN ORDER. Do not skip steps.
 
@@ -29,7 +29,48 @@ node "${RAPID_TOOLS}" display banner branding
 
 ---
 
-## Step 2: Check Existing Branding
+## Step 2: Codebase Detection -- Project Type Analysis
+
+Detect the project type to tailor the interview and output. Use multiple signals for high confidence.
+
+### Detection logic:
+
+1. **Read `package.json`** if it exists:
+   - Check `dependencies`/`devDependencies` for webapp signals: `react`, `vue`, `angular`, `svelte`, `next`, `nuxt`, `vite`, `webpack`, `@angular/core`
+   - Check for CLI signals: `commander`, `yargs`, `inquirer`, `chalk`, `ora`, `meow`, `cac`
+   - Check `bin` field presence (CLI indicator)
+   - Check if `main`/`exports` exists without `bin` (library indicator)
+
+2. **Use Glob to check directory structure:**
+   - `src/components/`, `app/`, `pages/`, `frontend/`, `public/` = webapp signals
+   - `bin/`, `cli/` = CLI signals
+   - `src/lib/`, `lib/` with no webapp/CLI signals = library signals
+
+3. **Check for framework config files:**
+   - `next.config.*`, `vite.config.*`, `nuxt.config.*`, `angular.json`, `svelte.config.*` = webapp
+   - `Cargo.toml` with `[[bin]]` = CLI, without = library
+   - `pyproject.toml` with `[project.scripts]` = CLI
+
+4. **Read RAPID artifacts** if present (`PROJECT.md`, `ROADMAP.md`) for project description context.
+
+5. **Assign project type** as one of: `webapp`, `cli`, `library`, `hybrid`, `unknown`.
+
+6. **If confidence is low or type is `hybrid`/`unknown`**, use AskUserQuestion to confirm:
+   ```
+   "I detected your project might be a {detected_type}. What best describes your project?"
+   Options:
+   - "Web application" -- "Frontend/fullstack app with visual UI (React, Vue, etc.)"
+   - "CLI tool" -- "Command-line tool with terminal output"
+   - "Library / SDK" -- "Package consumed by other projects, no direct UI"
+   - "Other" -- "Describe your project type"
+   ```
+   This AskUserQuestion counts toward the 5-call budget. When type detection is high-confidence, skip this question to save budget.
+
+Store the detected type as a reference used by all subsequent steps.
+
+---
+
+## Step 3: Check Existing Branding
 
 Check if `.planning/branding/BRANDING.md` already exists:
 
@@ -41,7 +82,9 @@ Check if `.planning/branding/BRANDING.md` already exists:
 
 1. Read and display the current BRANDING.md summary (first 20 lines or section headers).
 
-2. Use AskUserQuestion to ask:
+2. Read the `> Project type:` line from the existing BRANDING.md to determine the current type.
+
+3. Use AskUserQuestion to ask:
    ```
    "BRANDING.md already exists. What would you like to do?"
    Options:
@@ -50,8 +93,30 @@ Check if `.planning/branding/BRANDING.md` already exists:
    - "View current and exit" -- "Display the full BRANDING.md contents and stop"
    ```
 
-3. Handle each response:
-   - **"Update specific sections":** Use AskUserQuestion to ask which sections to update:
+4. Handle each response:
+   - **"Update specific sections":** Use AskUserQuestion to ask which sections to update. The section list is project-type-aware:
+
+     For **webapp** projects (or when `> Project type: webapp` is found):
+     ```
+     "Which sections would you like to update?"
+     Options:
+     - "Visual Identity" -- "Update color palette, typography, and spacing tokens"
+     - "Component Style" -- "Update border-radius, shadows, and layout approach"
+     - "Terminology & Naming" -- "Update preferred terms and naming conventions"
+     - "Interaction Patterns" -- "Update feedback timing, animations, and loading states"
+     ```
+
+     For **CLI/library** projects (or when `> Project type: cli` or `library` is found):
+     ```
+     "Which sections would you like to update?"
+     Options:
+     - "Output Formatting" -- "Update terminal color usage and output verbosity"
+     - "Error & Status Style" -- "Update error format and context level"
+     - "Terminology & Naming" -- "Update preferred terms and naming conventions"
+     - "Log & Progress Style" -- "Update progress indicators and log format"
+     ```
+
+     For **legacy format** (no `> Project type:` line found):
      ```
      "Which sections would you like to update?"
      Options:
@@ -60,47 +125,70 @@ Check if `.planning/branding/BRANDING.md` already exists:
      - "Terminology & Naming" -- "Update preferred terms and naming conventions"
      - "Output Style" -- "Update documentation and code comment preferences"
      ```
-     Then only run interview rounds for the selected sections. After the interview rounds, also ask the anti-patterns question (Step 3, final question). Preserve all unchanged sections from the existing BRANDING.md when writing the updated file in Step 4.
-   - **"Start fresh":** Continue to Step 3 (full interview).
+
+     Then only run interview rounds for the selected sections. After the interview rounds, also ask the anti-patterns question (Step 4, final question). Preserve all unchanged sections from the existing BRANDING.md when writing the updated file in Step 5.
+   - **"Start fresh":** Continue to Step 4 (full interview).
    - **"View current and exit":** Read and display the full `.planning/branding/BRANDING.md`, then STOP.
 
 ### If BRANDING.md does not exist:
 
-Continue to Step 3.
+Continue to Step 4.
 
 ---
 
-## Step 3: Branding Interview
+## Step 4: Branding Interview
 
-Conduct the interview in 4 rounds, one per dimension. For each dimension, use ONE AskUserQuestion call with 3-4 prefilled options plus "Other" for custom input.
+Conduct the interview in 4 rounds, one per dimension. Each round is adapted to the detected project type. For each round, use ONE AskUserQuestion call with 3-4 prefilled options plus "Other" for custom input.
 
-### Round 1 -- Project Identity
+**Budget note:** If the type-confirmation question was asked in Step 2, combine Rounds 1 and 2 into a single AskUserQuestion with the most critical question for that project type, to stay within the 5-call budget.
 
-Use AskUserQuestion:
+### Round 1 -- Visual Identity / Output Identity
+
+**For webapp projects**, use AskUserQuestion:
 ```
-"How would you describe your project's personality?"
+"What visual identity direction fits your project?"
 Options:
-- "Professional & authoritative" -- "Confident, expert tone. Think enterprise documentation."
-- "Friendly & approachable" -- "Warm, conversational. Think open-source community project."
-- "Technical & precise" -- "Exact, specification-grade. Think protocol documentation."
-- "Other" -- "Describe your project's personality in your own words"
+- "Modern & minimal" -- "Clean lines, generous whitespace, monochrome with one accent color"
+- "Bold & colorful" -- "Vibrant palette, strong contrast, energetic feel"
+- "Corporate & polished" -- "Refined, professional palette, subtle gradients, enterprise-grade"
+- "Other" -- "Describe your visual direction"
 ```
 
-### Round 2 -- Tone & Voice
-
-Use AskUserQuestion:
+**For CLI/library projects**, use AskUserQuestion:
 ```
-"What communication style should agents use in documentation and code comments?"
+"How should your tool's terminal output look and feel?"
 Options:
-- "Formal / third-person" -- "The system processes requests. Avoids 'you' and 'we'."
-- "Conversational / second-person" -- "You can configure this by... We recommend..."
-- "Terse / minimal" -- "Short sentences. No filler. Just facts."
-- "Other" -- "Describe your preferred tone in your own words"
+- "Minimal & clean" -- "Plain text, sparse color, no decorations. Think Go CLI tools."
+- "Rich & informative" -- "Colors, icons/symbols, progress bars. Think npm/yarn output."
+- "Structured & parseable" -- "Machine-friendly output, JSON mode, minimal decoration"
+- "Other" -- "Describe your output style preferences"
+```
+
+### Round 2 -- Component Style / Error & Status Style
+
+**For webapp projects**, use AskUserQuestion:
+```
+"What component and layout style do you prefer?"
+Options:
+- "Rounded & soft" -- "Rounded corners, soft shadows, gentle transitions"
+- "Sharp & structured" -- "Square corners, defined borders, grid-aligned layouts"
+- "Fluid & organic" -- "Flowing shapes, gradients, smooth animations"
+- "Other" -- "Describe your UI component style"
+```
+
+**For CLI/library projects**, use AskUserQuestion:
+```
+"How should errors and status messages be formatted?"
+Options:
+- "Contextual with fix suggestions" -- "Show the error, point to the line, suggest a fix. Think Rust compiler."
+- "Concise one-liners" -- "Short error messages, error codes for lookup. Think Unix tradition."
+- "Verbose with stack traces" -- "Full context, debug info, trace output for diagnosing issues"
+- "Other" -- "Describe your error formatting preferences"
 ```
 
 ### Round 3 -- Terminology & Naming
 
-Use AskUserQuestion:
+Use AskUserQuestion (same for all project types):
 ```
 "Do you have specific naming conventions or domain terminology agents should follow?"
 Options:
@@ -118,16 +206,26 @@ Options:
 ```
 Record whatever the user provides for the terminology table.
 
-### Round 4 -- Output Style
+### Round 4 -- Interaction Patterns / Log & Progress Style
 
-Use AskUserQuestion:
+**For webapp projects**, use AskUserQuestion:
 ```
-"How should documentation and code comments be structured?"
+"What interaction and feedback patterns should your UI follow?"
 Options:
-- "Detailed with examples" -- "Thorough explanations with code samples and usage examples"
-- "Concise bullet points" -- "Scannable lists, minimal prose, get to the point"
-- "Code-first, minimal prose" -- "Let the code speak. Comments only where behavior is non-obvious"
-- "Other" -- "Describe your output style preferences"
+- "Instant & reactive" -- "Immediate feedback, optimistic updates, micro-animations"
+- "Deliberate & confirmed" -- "Explicit confirmations, loading states, step-by-step flows"
+- "Ambient & passive" -- "Subtle notifications, non-blocking updates, quiet success"
+- "Other" -- "Describe your interaction patterns"
+```
+
+**For CLI/library projects**, use AskUserQuestion:
+```
+"How should progress and logging be displayed?"
+Options:
+- "Progress bars & spinners" -- "Visual progress indicators for long operations"
+- "Streaming log lines" -- "Real-time log output with timestamps and levels"
+- "Silent unless error" -- "No output on success, only report failures"
+- "Other" -- "Describe your progress/logging preferences"
 ```
 
 ### Final Question -- Anti-Patterns
@@ -144,7 +242,7 @@ Options:
 
 ---
 
-## Step 4: Generate BRANDING.md
+## Step 5: Generate BRANDING.md
 
 Create the `.planning/branding/` directory if it does not exist:
 
@@ -152,38 +250,119 @@ Create the `.planning/branding/` directory if it does not exist:
 mkdir -p .planning/branding
 ```
 
-Write `.planning/branding/BRANDING.md` using the Write tool. Use the interview responses to fill each section. Format:
+Write `.planning/branding/BRANDING.md` using the Write tool. Use the interview responses to fill each section. The format depends on the detected project type.
+
+### Webapp BRANDING.md format:
 
 ```markdown
 # Project Branding Guidelines
 
-<identity>
-## Project Identity
-{Synthesize the user's Round 1 response into 2-4 sentences describing the project's personality and character}
-</identity>
+> Project type: webapp
 
-<tone>
-## Tone & Voice
-{Synthesize the user's Round 2 response into concrete guidelines: perspective (first/second/third person), formality level, example phrases}
-</tone>
+<visual-identity>
+## Visual Identity
+
+### Color Palette
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| primary | #XXXXXX | Primary actions, key UI elements |
+| secondary | #XXXXXX | Supporting elements, secondary actions |
+| accent | #XXXXXX | Highlights, notifications, badges |
+| background | #XXXXXX | Page/card backgrounds |
+| surface | #XXXXXX | Elevated surfaces, modals, dropdowns |
+| text-primary | #XXXXXX | Headings, body text |
+| text-secondary | #XXXXXX | Captions, placeholder text |
+| error | #XXXXXX | Error states, destructive actions |
+| success | #XXXXXX | Success states, confirmations |
+
+### Typography Scale
+
+| Token | Size | Weight | Usage |
+|-------|------|--------|-------|
+| heading-1 | Xrem | bold | Page titles |
+| heading-2 | Xrem | semibold | Section headers |
+| body | Xrem | regular | Body text, descriptions |
+| caption | Xrem | regular | Labels, helper text |
+| mono | Xrem | regular | Code, technical values |
+
+### Spacing
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| xs | Xpx | Inline element gaps |
+| sm | Xpx | Compact component padding |
+| md | Xpx | Standard component padding |
+| lg | Xpx | Section gaps |
+| xl | Xpx | Page-level margins |
+</visual-identity>
+
+<component-style>
+## Component Style
+{Synthesize Round 2 response: border-radius values, shadow style, transition preferences, layout approach}
+</component-style>
 
 <terminology>
 ## Terminology & Naming
-
 | Preferred Term | Instead Of | Context |
 |---------------|-----------|---------|
-{Build terminology table from Round 3 responses. Include 3-8 rows of project-specific terms. If user selected "Use existing codebase conventions", scan the codebase for naming patterns and populate the table from those.}
+{Populated from Round 3}
 </terminology>
 
-<output>
-## Output Style
-{Synthesize the user's Round 4 response into concrete guidelines: documentation structure, comment density, example formatting preferences}
-</output>
+<interaction-patterns>
+## Interaction Patterns
+{Synthesize Round 4 response: feedback timing, animation approach, notification style, loading state design}
+</interaction-patterns>
 
 <anti-patterns>
 ## Anti-Patterns (Do NOT)
-- {Each anti-pattern from the final question as a bullet point}
-- {Add 2-3 more inferred from the tone/style selections}
+- {From final question}
+</anti-patterns>
+```
+
+### CLI/Library BRANDING.md format:
+
+```markdown
+# Project Branding Guidelines
+
+> Project type: cli
+
+<output-formatting>
+## Output Formatting
+{Synthesize Round 1 response: output verbosity, decoration level, color usage philosophy}
+
+### Terminal Colors
+
+| Purpose | Color | ANSI | Usage |
+|---------|-------|------|-------|
+| error | red | \033[31m | Error messages, fatal failures |
+| warning | yellow | \033[33m | Warnings, deprecation notices |
+| success | green | \033[32m | Success confirmations |
+| info | blue | \033[34m | Informational output |
+| dim | gray | \033[90m | Secondary info, timestamps |
+| highlight | bold | \033[1m | Key values, emphasis |
+</output-formatting>
+
+<error-style>
+## Error & Status Style
+{Synthesize Round 2 response: error format, context level, fix suggestions, error codes}
+</error-style>
+
+<terminology>
+## Terminology & Naming
+| Preferred Term | Instead Of | Context |
+|---------------|-----------|---------|
+{Populated from Round 3}
+</terminology>
+
+<log-style>
+## Log & Progress Style
+{Synthesize Round 4 response: progress indicator type, log format, verbosity levels, silent mode}
+</log-style>
+
+<anti-patterns>
+## Anti-Patterns (Do NOT)
+- {From final question}
 </anti-patterns>
 ```
 
@@ -201,28 +380,43 @@ wc -l .planning/branding/BRANDING.md
 
 ---
 
-## Step 5: Generate Static HTML Branding Page
+## Step 6: Generate Static HTML Branding Page
 
 Write `.planning/branding/index.html` using the Write tool. Create a single self-contained HTML file with inline CSS and JS.
 
-**Content requirements:**
-- Project identity summary at the top
-- Tone & voice section with example do/don't comparisons
-- Terminology table (rendered as an HTML table)
-- Output style guidelines
-- Anti-patterns displayed in a prominent "danger" or "warning" callout box
-- Clean, readable design with good typography
-- Uses a neutral color palette (or matches project preferences if captured)
+The HTML content is project-type-conditional:
 
-**Constraints:**
-- No external dependencies (no CDN links, no external CSS/JS, no images from URLs)
+### For webapp projects:
+
+- Color palette rendered as swatches (colored divs with hex labels)
+- Typography scale rendered with actual font size demonstrations
+- Spacing tokens visualized as bars/blocks at each size
+- Component style rendered as sample card/button mockups using the defined tokens
+- Interaction pattern notes in a sidebar or footer section
+- Clean, readable design matching the project's configured palette
+
+### For CLI/library projects:
+
+- Terminal mockup: a dark-background div styled as a terminal window
+- Show sample CLI output demonstrating the project's:
+  - Error message formatting (with configured colors)
+  - Success/info message formatting
+  - Progress indicator style (if configured)
+  - Help text formatting
+- Use CSS classes to apply the configured terminal colors
+- Include a legend mapping ANSI color names to their usage
+
+### Both types:
+
+- Self-contained HTML, no external dependencies (no CDN links, no external CSS/JS, no images from URLs)
 - No build step required
 - Must render correctly when opened directly in a browser via `file://` protocol
 - All CSS must be in a `<style>` tag, all JS (if any) in a `<script>` tag
+- Clean, readable design with good typography
 
 ---
 
-## Step 6: Auto-Open HTML Page
+## Step 7: Auto-Open HTML Page
 
 Detect platform and open the HTML file in the default browser:
 
@@ -241,7 +435,7 @@ Do not fail if the browser cannot open. The HTML file is still available for man
 
 ---
 
-## Step 7: Commit and Summary
+## Step 8: Commit and Summary
 
 Commit the branding artifacts:
 
@@ -278,6 +472,7 @@ Branding context will be automatically injected into all future RAPID execution 
 - **BRANDING.md is the authoritative artifact.** `index.html` is for human review and sharing. Agents consume BRANDING.md, not the HTML page.
 - **Each AskUserQuestion must have 3-4 prefilled options with clear descriptions.** The "Other" option on every question allows full customization.
 - **50-150 line budget.** BRANDING.md must be concise enough to inject into prompts without blowing context limits.
+- **Project type detection drives everything.** The detected type determines which interview questions are asked, what BRANDING.md sections are generated, and how the HTML preview renders.
 
 ## Anti-Patterns for This Skill
 
