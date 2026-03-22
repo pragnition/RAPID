@@ -14,16 +14,20 @@ function ensureDagre() {
   }
 }
 
-const NODE_COLORS: Record<string, string> = {
-  pending: "#6b7280",
-  discussed: "#eab308",
-  planned: "#3b82f6",
-  executing: "#f97316",
-  complete: "#22c55e",
-  merged: "#4b5563",
-};
-
-const DEFAULT_NODE_COLOR = "#6b7280";
+function getNodeColor(status: string): string {
+  const root = document.documentElement;
+  const style = getComputedStyle(root);
+  const themeColors: Record<string, string> = {
+    pending: style.getPropertyValue('--th-muted').trim() || '#859289',
+    discussed: style.getPropertyValue('--th-warning').trim() || '#DBBC7F',
+    planned: style.getPropertyValue('--th-info').trim() || '#7FBBB3',
+    executing: style.getPropertyValue('--th-orange').trim() || '#E69875',
+    executed: style.getPropertyValue('--th-orange').trim() || '#E69875',
+    complete: style.getPropertyValue('--th-accent').trim() || '#A7C080',
+    merged: style.getPropertyValue('--th-muted').trim() || '#859289',
+  };
+  return themeColors[status] || style.getPropertyValue('--th-muted').trim() || '#859289';
+}
 
 function darken(hex: string): string {
   // Darken by roughly 20% for border
@@ -137,12 +141,12 @@ export function KnowledgeGraphPage() {
             color: "#ffffff",
             "background-color": (ele: cytoscape.NodeSingular) => {
               const status = ele.data("status") as string;
-              return NODE_COLORS[status] ?? DEFAULT_NODE_COLOR;
+              return getNodeColor(status);
             },
             "border-width": 2,
             "border-color": (ele: cytoscape.NodeSingular) => {
               const status = ele.data("status") as string;
-              return darken(NODE_COLORS[status] ?? DEFAULT_NODE_COLOR);
+              return darken(getNodeColor(status));
             },
           } as cytoscape.Css.Node,
         },
