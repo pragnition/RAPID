@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { verifyLight, verifyHeavy, generateVerificationReport } = require('./verify.cjs');
+const { verifyLight, verifyHeavy, generateVerificationReport, parseCriteriaFromRequirements, generateCriteriaCoverageReport } = require('./verify.cjs');
 
 // Helper: create a temp file with content
 function createTempFile(name, content) {
@@ -165,5 +165,153 @@ describe('generateVerificationReport', () => {
     };
     const report = generateVerificationReport(results, 'heavy');
     assert.ok(report.includes('Exit code 1'));
+  });
+
+  it('appends criteria coverage when requirementsPath option is provided', () => {
+    const { dir, filePath } = createTempFile('REQUIREMENTS.md', '- [x] FUNC-001: Login works\n- [ ] FUNC-002: Logout works\n');
+    try {
+      const results = { passed: [{ type: 'file_exists', target: 'a.js' }], failed: [] };
+      const report = generateVerificationReport(results, 'light', { requirementsPath: filePath });
+      assert.ok(report.includes('## Criteria Coverage'));
+      assert.ok(report.includes('FUNC-001'));
+      assert.ok(report.includes('FUNC-002'));
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('produces normal report without options (backward compatible)', () => {
+    const results = { passed: [{ type: 'file_exists', target: 'a.js' }], failed: [] };
+    const report = generateVerificationReport(results, 'light');
+    assert.ok(report.includes('**Result:** PASS'));
+    assert.ok(!report.includes('## Criteria Coverage'));
+  });
+});
+
+describe('parseCriteriaFromRequirements', () => {
+  it('parses valid encoded criteria', () => {
+    const content = '# Requirements\n\n- [x] FUNC-001: User can log in\n- [ ] FUNC-002: Password reset\n- [x] UIUX-001: Responsive layout\n';
+    const { dir, filePath } = createTempFile('REQUIREMENTS.md', content);
+    try {
+      const result = parseCriteriaFromRequirements(filePath);
+      assert.equal(result.criteria.length, 3);
+      assert.equal(result.warning, null);
+      assert.equal(result.criteria[0].id, 'FUNC-001');
+      assert.equal(result.criteria[0].description, 'User can log in');
+      assert.equal(result.criteria[0].checked, true);
+      assert.equal(result.criteria[1].id, 'FUNC-002');
+      assert.equal(result.criteria[2].id, 'UIUX-001');
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('correctly distinguishes checked and unchecked items', () => {
+    const content = '- [x] FUNC-001: done thing\n- [ ] FUNC-002: pending thing\n';
+    const { dir, filePath } = createTempFile('REQUIREMENTS.md', content);
+    try {
+      const result = parseCriteriaFromRequirements(filePath);
+      assert.equal(result.criteria.length, 2);
+      assert.equal(result.criteria[0].checked, true);
+      assert.equal(result.criteria[1].checked, false);
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('returns warning for old-format freeform file with no encoded IDs', () => {
+    const content = 'This is a requirements document with lots of prose about what the system should do. It has no encoded criteria IDs at all.';
+    const { dir, filePath } = createTempFile('REQUIREMENTS.md', content);
+    try {
+      const result = parseCriteriaFromRequirements(filePath);
+      assert.equal(result.criteria.length, 0);
+      assert.ok(result.warning.includes('No encoded criteria found'));
+      assert.ok(result.warning.includes('re-running'));
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('returns warning for missing file', () => {
+    const result = parseCriteriaFromRequirements('/tmp/nonexistent-rapid-requirements-test.md');
+    assert.equal(result.criteria.length, 0);
+    assert.equal(result.warning, 'REQUIREMENTS.md not found');
+  });
+
+  it('ignores non-matching lines and parses only encoded criteria', () => {
+    const content = '# Requirements\n\nSome freeform text here.\n\n- [x] FUNC-001: Valid criterion\n- This is not a criterion\n- [ ] PERF-001: Another valid one\n\nMore prose.\n';
+    const { dir, filePath } = createTempFile('REQUIREMENTS.md', content);
+    try {
+      const result = parseCriteriaFromRequirements(filePath);
+      assert.equal(result.criteria.length, 2);
+      assert.equal(result.criteria[0].id, 'FUNC-001');
+      assert.equal(result.criteria[1].id, 'PERF-001');
+      assert.equal(result.warning, null);
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+});
+
+describe('generateCriteriaCoverageReport', () => {
+  it('shows full coverage when all criteria are in plan files', () => {
+    const reqContent = '- [x] FUNC-001: Login\n- [ ] FUNC-002: Logout\n';
+    const planContent = 'This plan covers FUNC-001 and FUNC-002 implementation.';
+    const { dir: reqDir, filePath: reqPath } = createTempFile('REQUIREMENTS.md', reqContent);
+    const { dir: planDir, filePath: planPath } = createTempFile('wave-1-PLAN.md', planContent);
+    try {
+      const report = generateCriteriaCoverageReport(reqPath, [planPath]);
+      assert.ok(report.includes('2/2 (100%)'));
+      assert.ok(!report.includes('### Uncovered Criteria'));
+    } finally {
+      fs.rmSync(reqDir, { recursive: true });
+      fs.rmSync(planDir, { recursive: true });
+    }
+  });
+
+  it('shows partial coverage with uncovered criteria section', () => {
+    const reqContent = '- [x] FUNC-001: Login\n- [ ] FUNC-002: Logout\n';
+    const planContent = 'This plan covers FUNC-001 only.';
+    const { dir: reqDir, filePath: reqPath } = createTempFile('REQUIREMENTS.md', reqContent);
+    const { dir: planDir, filePath: planPath } = createTempFile('wave-1-PLAN.md', planContent);
+    try {
+      const report = generateCriteriaCoverageReport(reqPath, [planPath]);
+      assert.ok(report.includes('1/2 (50%)'));
+      assert.ok(report.includes('### Uncovered Criteria'));
+      assert.ok(report.includes('FUNC-002: Logout'));
+    } finally {
+      fs.rmSync(reqDir, { recursive: true });
+      fs.rmSync(planDir, { recursive: true });
+    }
+  });
+
+  it('marks all criteria uncovered when no plan files provided', () => {
+    const reqContent = '- [x] FUNC-001: Login\n- [ ] FUNC-002: Logout\n';
+    const { dir, filePath: reqPath } = createTempFile('REQUIREMENTS.md', reqContent);
+    try {
+      const report = generateCriteriaCoverageReport(reqPath, []);
+      assert.ok(report.includes('0/2 (0%)'));
+      assert.ok(report.includes('### Uncovered Criteria'));
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('returns warning section for freeform requirements without encoded criteria', () => {
+    const content = 'This is a freeform requirements document without any encoded IDs. It has lots of text but no CATEGORY-NNN patterns.';
+    const { dir, filePath: reqPath } = createTempFile('REQUIREMENTS.md', content);
+    try {
+      const report = generateCriteriaCoverageReport(reqPath, []);
+      assert.ok(report.includes('## Criteria Coverage'));
+      assert.ok(report.includes('No encoded criteria found'));
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('returns warning section for missing REQUIREMENTS.md', () => {
+    const report = generateCriteriaCoverageReport('/tmp/nonexistent-rapid-req.md', []);
+    assert.ok(report.includes('## Criteria Coverage'));
+    assert.ok(report.includes('REQUIREMENTS.md not found'));
   });
 });
