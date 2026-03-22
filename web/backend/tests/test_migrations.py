@@ -99,3 +99,31 @@ def test_alembic_env_target_metadata():
     table_names = set(SQLModel.metadata.tables.keys())
     expected = {"project", "note", "kanbanitem", "syncstate", "appconfig"}
     assert expected.issubset(table_names)
+
+
+# ---------------------------------------------------------------------------
+# Fallback when alembic.ini is missing
+# ---------------------------------------------------------------------------
+
+
+def test_run_migrations_fallback_without_alembic_ini(tmp_path: Path, monkeypatch):
+    """run_migrations() should fall back to create_all when alembic.ini is missing."""
+    db_file = tmp_path / "fallback.db"
+    eng = get_engine(db_path=db_file)
+
+    # Point __file__ resolution to tmp_path so alembic.ini is not found there
+    import app.database as db_mod
+
+    monkeypatch.setattr(db_mod, "__file__", str(tmp_path / "fake_database.py"))
+    monkeypatch.chdir(tmp_path)  # cwd also has no alembic.ini
+
+    run_migrations(eng)
+
+    # Verify tables were created via create_all fallback
+    from sqlalchemy import inspect as sa_inspect
+
+    insp = sa_inspect(eng)
+    table_names = set(insp.get_table_names())
+    assert "project" in table_names
+    assert "note" in table_names
+    assert "appconfig" in table_names

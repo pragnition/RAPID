@@ -146,10 +146,7 @@ def get_session(engine: sqlalchemy.Engine | None = None) -> Generator[Session, N
 
 
 def run_migrations(engine: sqlalchemy.Engine) -> None:
-    """Apply Alembic migrations up to head."""
-    from alembic import command
-    from alembic.config import Config
-
+    """Apply Alembic migrations up to head, falling back to create_all."""
     alembic_ini = Path(__file__).resolve().parent.parent / "alembic.ini"
     if not alembic_ini.exists():
         cwd_ini = Path.cwd() / "alembic.ini"
@@ -160,10 +157,16 @@ def run_migrations(engine: sqlalchemy.Engine) -> None:
             )
             alembic_ini = cwd_ini
         else:
-            raise FileNotFoundError(
-                f"alembic.ini not found at either path: "
-                f"{alembic_ini} or {cwd_ini}"
+            logger.warning(
+                "alembic.ini not found — using SQLModel.metadata.create_all() "
+                "as fallback (this is expected in installed packages)"
             )
+            SQLModel.metadata.create_all(engine)
+            return
+
+    from alembic import command
+    from alembic.config import Config
+
     cfg = Config(str(alembic_ini))
     cfg.attributes["engine"] = engine
     command.upgrade(cfg, "head")
