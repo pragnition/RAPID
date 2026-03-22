@@ -343,14 +343,14 @@
         },
         {
           "id": "unit-test-improvements",
-          "status": "planned",
+          "status": "merged",
           "waves": [],
           "name": "Unit Test Improvements",
           "branch": "rapid/unit-test-improvements"
         },
         {
           "id": "branding-refocus",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Branding Refocus",
           "branch": "rapid/branding-refocus"
@@ -365,6 +365,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-22T17:12:40.415Z",
+  "lastUpdatedAt": "2026-03-22T17:39:40.395Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
