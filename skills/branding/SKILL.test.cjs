@@ -50,20 +50,28 @@ describe('skills/branding/SKILL.md -- structural validation', () => {
     );
   });
 
-  it('6. contains 4 branding interview rounds (Project Identity, Tone & Voice, Terminology & Naming, Output Style)', () => {
-    const rounds = [
-      'Project Identity',
-      'Tone & Voice',
-      'Terminology & Naming',
-      'Output Style',
-    ];
-    for (const round of rounds) {
-      assert.ok(
-        content.includes(round),
-        `Must contain interview round: ${round}`
-      );
-    }
-    // Verify there are exactly 4 round headings (### Round N --)
+  it('6. contains 4 branding interview rounds with project-type-aware names', () => {
+    // Round 1: Visual Identity or Output Identity
+    assert.ok(
+      content.includes('Visual Identity') || content.includes('Output Identity'),
+      'Must contain Visual Identity or Output Identity for Round 1'
+    );
+    // Round 2: Component Style or Error
+    assert.ok(
+      content.includes('Component Style') || content.includes('Error'),
+      'Must contain Component Style or Error for Round 2'
+    );
+    // Round 3: Terminology (unchanged)
+    assert.ok(
+      content.includes('Terminology'),
+      'Must contain Terminology for Round 3'
+    );
+    // Round 4: Interaction Patterns or Log
+    assert.ok(
+      content.includes('Interaction Patterns') || content.includes('Log'),
+      'Must contain Interaction Patterns or Log for Round 4'
+    );
+    // Verify there are exactly 4 round headings (### Round N)
     const roundHeadings = content.match(/###\s+Round\s+\d+/g);
     assert.ok(roundHeadings, 'Must have ### Round N headings');
     assert.equal(roundHeadings.length, 4, 'Must have exactly 4 interview round headings');
@@ -188,7 +196,7 @@ describe('skills/branding/SKILL.md -- structural validation', () => {
     }
   });
 
-  it('15. step ordering is sequential (Step 1 through Step 7)', () => {
+  it('15. step ordering is sequential (Step 1 through Step 8)', () => {
     const stepPattern = /##\s+Step\s+(\d+)/g;
     const steps = [];
     let match;
@@ -199,5 +207,45 @@ describe('skills/branding/SKILL.md -- structural validation', () => {
     for (let i = 0; i < steps.length; i++) {
       assert.equal(steps[i], i + 1, `Step ${i + 1} must be in order, found Step ${steps[i]}`);
     }
+  });
+
+  it('16. codebase detection step exists with multi-signal heuristic', () => {
+    // Verify a step heading references codebase/project type detection
+    assert.ok(
+      /##\s+Step\s+\d+.*(?:Codebase Detection|Project Type|detect)/i.test(content),
+      'Must have a step heading referencing codebase detection or project type detection'
+    );
+    // Verify it references reading package.json
+    assert.ok(
+      content.includes('package.json'),
+      'Detection step must reference reading package.json'
+    );
+    // Verify it references checking directory structure
+    assert.ok(
+      content.includes('directory structure') || content.includes('Glob'),
+      'Detection step must reference checking directory structure'
+    );
+  });
+
+  it('17. contains project-type-conditional content for both webapp and CLI', () => {
+    // Check for both webapp and CLI/library conditional content
+    assert.ok(
+      content.includes('webapp'),
+      'Must contain webapp project type references'
+    );
+    assert.ok(
+      content.includes('cli') || content.includes('CLI'),
+      'Must contain CLI project type references'
+    );
+    // Check for visual identity keywords
+    assert.ok(
+      content.includes('color') || content.includes('typography') || content.includes('palette'),
+      'Must contain visual identity keywords (color, typography, or palette)'
+    );
+    // Check for CLI-specific keywords
+    assert.ok(
+      content.includes('terminal') || content.includes('error') || content.includes('output formatting'),
+      'Must contain CLI keywords (terminal, error, or output formatting)'
+    );
   });
 });
