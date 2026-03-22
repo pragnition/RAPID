@@ -360,11 +360,11 @@ These rows go after the existing Deferred row. All other content (Accepted/Dismi
 
 **2. Log all accepted findings**
 
-For every finding in `allAcceptedBugs`, log an issue using the same command as Step 4:
+For every finding in `allAcceptedBugs`, log an issue using the same command as Step 4.
 
+**CLI Flags (recommended):**
 ```bash
-node "${RAPID_TOOLS}" review log-issue \
-  --set-id "{setId}" \
+node "${RAPID_TOOLS}" review log-issue "{setId}" \
   --type "bug" \
   --severity "{severity}" \
   --file "{file}" \
@@ -372,6 +372,14 @@ node "${RAPID_TOOLS}" review log-issue \
   --description "{description}" \
   --source "bug-hunt"
 ```
+
+**Stdin JSON alternative:**
+```bash
+echo '{"id":"<uuid>","type":"bug","severity":"{severity}","file":"{file}","line":{line},"description":"{description}","source":"bug-hunt","createdAt":"<iso-timestamp>"}' | \
+  node "${RAPID_TOOLS}" review log-issue "{setId}"
+```
+
+The CLI flag interface auto-generates `id` and `createdAt`. The stdin JSON interface requires all fields including `id` and `createdAt`.
 
 These are real bugs found in completed cycles -- they must be logged regardless of whether all cycles ran.
 
@@ -416,11 +424,11 @@ Next steps:
 ---------------------------------
 ```
 
-Log each accepted finding as an issue:
+Log each accepted finding as an issue.
 
+**CLI Flags (recommended):**
 ```bash
-node "${RAPID_TOOLS}" review log-issue \
-  --set-id "{setId}" \
+node "${RAPID_TOOLS}" review log-issue "{setId}" \
   --type "bug" \
   --severity "{severity}" \
   --file "{file}" \
@@ -428,6 +436,14 @@ node "${RAPID_TOOLS}" review log-issue \
   --description "{description}" \
   --source "bug-hunt"
 ```
+
+**Stdin JSON alternative:**
+```bash
+echo '{"id":"<uuid>","type":"bug","severity":"{severity}","file":"{file}","line":{line},"description":"{description}","source":"bug-hunt","createdAt":"<iso-timestamp>"}' | \
+  node "${RAPID_TOOLS}" review log-issue "{setId}"
+```
+
+The CLI flag interface auto-generates `id` and `createdAt`. The stdin JSON interface requires all fields including `id` and `createdAt`.
 
 If in post-merge mode, issues are logged to `.planning/post-merge/{setId}/REVIEW-ISSUES.json`.
 
