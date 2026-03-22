@@ -343,17 +343,25 @@ Format:
 
 ## Step 9: Log Failed Steps
 
-For each failed UAT scenario, log an issue:
+For each failed UAT scenario, log an issue.
 
+**CLI Flags (recommended):**
 ```bash
-node "${RAPID_TOOLS}" review log-issue \
-  --set-id "{setId}" \
+node "${RAPID_TOOLS}" review log-issue "{setId}" \
   --type "uat" \
   --severity "{severity based on criterion importance}" \
   --file "{primary relevant file}" \
   --description "UAT failure: {scenario name} -- {failure detail}" \
   --source "uat"
 ```
+
+**Stdin JSON alternative:**
+```bash
+echo '{"id":"<uuid>","type":"uat","severity":"{severity}","file":"{primary relevant file}","description":"UAT failure: {scenario name} -- {failure detail}","source":"uat","createdAt":"<iso-timestamp>"}' | \
+  node "${RAPID_TOOLS}" review log-issue "{setId}"
+```
+
+The CLI flag interface auto-generates `id` and `createdAt`. The stdin JSON interface requires all fields including `id` and `createdAt`.
 
 Severity heuristic:
 - Failed criterion from wave-1 (core functionality) -> high
