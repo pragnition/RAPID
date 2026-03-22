@@ -349,6 +349,32 @@ Where `{setIndex}` is the numeric index of the set resolved at Step 0.
 
 Then exit. Do NOT prompt for selection.
 
+## Log Issue Command
+
+The `review log-issue` command logs a review issue for a set. It supports two input methods:
+
+**CLI Flags (recommended for agents):**
+```bash
+node "${RAPID_TOOLS}" review log-issue <set-id> \
+  --type <artifact|static|contract|test|bug|uat> \
+  --severity <critical|high|medium|low> \
+  --file <file-path> \
+  --description "<description>" \
+  --source <lean-review|unit-test|bug-hunt|uat> \
+  [--line <line-number>] \
+  [--wave <wave-id>] \
+  [--post-merge]
+```
+
+Fields `id` and `createdAt` are auto-generated. `status` defaults to `open`.
+
+**Stdin JSON:**
+```bash
+echo '<json>' | node "${RAPID_TOOLS}" review log-issue <set-id> [<wave-id>] [--post-merge]
+```
+
+The JSON object must include all required fields: `id`, `type`, `severity`, `file`, `description`, `source`, `createdAt`.
+
 ## Important Notes
 
 - **This skill produces REVIEW-SCOPE.md as its sole output.** It does not run unit tests, bug hunts, or UAT. Those are separate skills that consume REVIEW-SCOPE.md.
