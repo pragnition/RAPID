@@ -187,6 +187,9 @@ function generateConfigJson(opts = {}) {
     },
     solo: soloValue,
   };
+  if (opts.testFrameworks && opts.testFrameworks.length > 0) {
+    config.testFrameworks = opts.testFrameworks;
+  }
   return JSON.stringify(config, null, 2);
 }
 
