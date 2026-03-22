@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import cytoscape from "cytoscape";
 import cytoscapeDagre from "cytoscape-dagre";
 import { useProjectStore } from "@/stores/projectStore";
@@ -64,7 +64,17 @@ function buildElements(data: DagGraph): cytoscape.ElementDefinition[] {
   return elements;
 }
 
-function GraphControls({ onFit, onReset }: { onFit: () => void; onReset: () => void }) {
+function GraphControls({
+  onFit,
+  onReset,
+  layoutDir,
+  onToggleLayout,
+}: {
+  onFit: () => void;
+  onReset: () => void;
+  layoutDir: "TB" | "LR";
+  onToggleLayout: () => void;
+}) {
   return (
     <div className="absolute top-3 right-3 flex gap-1 z-10">
       <button
@@ -73,6 +83,13 @@ function GraphControls({ onFit, onReset }: { onFit: () => void; onReset: () => v
         className="bg-surface-1 border border-border rounded px-2 py-1 text-xs text-fg hover:bg-surface-2 transition-colors"
       >
         Fit
+      </button>
+      <button
+        type="button"
+        onClick={onToggleLayout}
+        className="bg-surface-1 border border-border rounded px-2 py-1 text-xs text-fg hover:bg-surface-2 transition-colors"
+      >
+        {layoutDir === "TB" ? "Horizontal" : "Vertical"}
       </button>
       <button
         type="button"
@@ -91,6 +108,7 @@ export function KnowledgeGraphPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  const [layoutDir, setLayoutDir] = useState<"TB" | "LR">("TB");
 
   // Update graph when data changes
   useEffect(() => {
@@ -216,6 +234,25 @@ export function KnowledgeGraphPage() {
     cyRef.current?.reset();
   }, []);
 
+  const toggleLayout = useCallback(() => {
+    setLayoutDir((prev) => {
+      const next = prev === "TB" ? "LR" : "TB";
+      if (cyRef.current) {
+        cyRef.current
+          .layout({
+            name: next === "TB" ? "dagre" : "breadthfirst",
+            ...(next === "TB"
+              ? { rankDir: "TB", nodeSep: 60, rankSep: 80, padding: 30 }
+              : { directed: true, padding: 30, spacingFactor: 1.5 }),
+            animate: true,
+            animationDuration: 300,
+          } as cytoscape.LayoutOptions)
+          .run();
+      }
+      return next;
+    });
+  }, []);
+
   if (!activeProjectId) {
     return (
       <div className="p-6">
@@ -267,7 +304,7 @@ export function KnowledgeGraphPage() {
         {data.edges.length} edge{data.edges.length !== 1 ? "s" : ""}
       </p>
       <div className="relative">
-        <GraphControls onFit={handleFit} onReset={handleReset} />
+        <GraphControls onFit={handleFit} onReset={handleReset} layoutDir={layoutDir} onToggleLayout={toggleLayout} />
         <div
           ref={containerRef}
           className="h-[calc(100vh-12rem)] border border-border rounded-lg bg-surface-0"
