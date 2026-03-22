@@ -419,25 +419,28 @@ Granularity Preference: {targetSetCount value and label}
 
 **Generate formal acceptance criteria:**
 
-Based on the discovery answers, generate formal acceptance criteria. These should be specific, testable statements derived from the user's requirements. Format them as:
+Based on the discovery answers, generate formal acceptance criteria using encoded category prefixes. Each criterion MUST follow the format `CATEGORY-NNN: description` where:
+
+- **CATEGORY** is one of: FUNC, UIUX, PERF, SEC, DATA, INTEG, COMPAT, A11Y, MAINT
+- **NNN** is a zero-padded three-digit number, sequential per category (001, 002, ...)
+- Only use categories relevant to the project -- not every category needs criteria
+
+The criteria regex pattern is: `/^[A-Z]+-\d{3}:/`
+
+Format them as:
 
 ```markdown
 # Acceptance Criteria
 
-## Functional Requirements
-- [ ] {criterion derived from must-have features}
-- [ ] {criterion derived from user journey}
-...
-
-## Non-Functional Requirements
-- [ ] {criterion derived from scale/performance answers}
-- [ ] {criterion derived from compliance answers}
-...
-
-## Success Criteria
-- [ ] {criterion derived from success criteria answer}
-...
+- [ ] FUNC-001: User can create an account with email and password
+- [ ] FUNC-002: User can log in and receive a session token
+- [ ] FUNC-003: User can reset their password via email link
+- [ ] UIUX-001: All pages render correctly on mobile viewports (320px-768px)
+- [ ] PERF-001: API responses complete within 200ms at p95 under expected load
+- [ ] SEC-001: All user passwords are hashed with bcrypt before storage
 ```
+
+**Post-generation validation:** Before writing REQUIREMENTS.md, verify that EVERY generated criterion line matches the regex `/^- \[ \] [A-Z]+-\d{3}: .+/`. If any line does not match, fix it before writing. This is a hard requirement -- do not skip validation.
 
 Display the acceptance criteria to the user alongside the project brief.
 
@@ -451,7 +454,12 @@ Use AskUserQuestion with:
   - "Start over" -- "Restart the discovery conversation from the beginning"
 
 **If "Looks good, proceed":**
-Write the acceptance criteria to `.planning/REQUIREMENTS.md` using the Write tool. Then continue to Step 5.
+
+Before writing, check if `.planning/REQUIREMENTS.md` already exists using the Read tool:
+- **If the file exists and contains non-trivial content** (more than empty headers or whitespace): Use the Edit tool to APPEND the new criteria below the existing content, separated by a `## Updated Criteria ({current ISO date})` header. This preserves user-written criteria from previous runs.
+- **If the file does not exist or is empty/trivial**: Write the full criteria to `.planning/REQUIREMENTS.md` using the Write tool.
+
+Then continue to Step 5.
 
 **If "Need to change something":**
 Ask freeform: "Which section needs changes? (e.g., Vision, Target Users, Features, Tech Stack, Scale, Compliance, Integrations, Auth, Non-functional, Success Criteria, Granularity)"
@@ -755,7 +763,7 @@ Aim for roughly this number of sets. You may deviate if the project structure de
 ## Acceptance Criteria
 {content of .planning/REQUIREMENTS.md written in Step 4D}
 
-Use these formal acceptance criteria to inform set boundaries. Each criterion should be traceable to at least one set.
+Use these formal acceptance criteria to inform set boundaries. Each criterion should be traceable to at least one set. Reference criteria by their encoded ID (e.g., FUNC-001) when mapping criteria to sets.
 
 ## Working Directory
 {projectRoot}
