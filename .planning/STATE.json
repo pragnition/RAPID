@@ -315,14 +315,14 @@
         },
         {
           "id": "init-criteria",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Init Fixes & Encoded Criteria",
           "branch": "rapid/init-criteria"
         },
         {
           "id": "review-cli-fix",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Review CLI Fix",
           "branch": "rapid/review-cli-fix"
@@ -365,6 +365,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-22T09:01:15.464Z",
+  "lastUpdatedAt": "2026-03-22T13:07:39.329Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
