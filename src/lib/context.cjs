@@ -245,6 +245,89 @@ function detectCodebase(cwd) {
 }
 
 /**
+ * Detect test frameworks in a project directory.
+ *
+ * Detection priority: config files > dependency declarations > language defaults.
+ * Uses a Map keyed by language so the highest-priority signal wins.
+ *
+ * @param {string} cwd - Directory to analyze
+ * @returns {Array<{ lang: string, framework: string, runner: string }>}
+ */
+function detectTestFrameworks(cwd) {
+  const detected = new Map();
+
+  // 1. Config file scan (highest priority)
+  let topEntries;
+  try {
+    topEntries = fs.readdirSync(cwd, { withFileTypes: true });
+  } catch {
+    topEntries = [];
+  }
+
+  for (const entry of topEntries) {
+    if (!entry.isFile()) continue;
+    for (const cfg of TEST_FRAMEWORK_CONFIGS) {
+      let matches = false;
+      if (cfg.exact && entry.name === cfg.exact) matches = true;
+      if (cfg.prefix && entry.name.startsWith(cfg.prefix)) matches = true;
+      if (matches && !detected.has(cfg.lang)) {
+        detected.set(cfg.lang, { lang: cfg.lang, framework: cfg.framework, runner: cfg.runner });
+      }
+    }
+  }
+
+  // 2. Dependency scan (JS) -- package.json
+  const pkgPath = path.join(cwd, 'package.json');
+  if (fs.existsSync(pkgPath) && !detected.has('javascript')) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+      for (const entry of JS_TEST_FRAMEWORKS) {
+        if (allDeps && entry.dep in allDeps) {
+          detected.set('javascript', { lang: 'javascript', framework: entry.framework, runner: entry.runner });
+          break;
+        }
+      }
+    } catch {
+      // Graceful failure
+    }
+  }
+
+  // 3. Dependency scan (Python) -- requirements.txt or pyproject.toml
+  if (!detected.has('python')) {
+    const pyFiles = ['requirements.txt', 'pyproject.toml'];
+    for (const pyFile of pyFiles) {
+      const pyPath = path.join(cwd, pyFile);
+      if (fs.existsSync(pyPath)) {
+        try {
+          const content = fs.readFileSync(pyPath, 'utf-8').toLowerCase();
+          for (const entry of PY_TEST_FRAMEWORKS) {
+            if (content.includes(entry.dep)) {
+              detected.set('python', { lang: 'python', framework: entry.framework, runner: entry.runner });
+              break;
+            }
+          }
+        } catch {
+          // Graceful failure
+        }
+        if (detected.has('python')) break;
+      }
+    }
+  }
+
+  // 4. Language defaults -- fall back for detected languages not yet covered
+  const codebase = detectCodebase(cwd);
+  for (const lang of codebase.languages) {
+    if (!detected.has(lang) && LANG_DEFAULT_TEST_FRAMEWORKS[lang]) {
+      const def = LANG_DEFAULT_TEST_FRAMEWORKS[lang];
+      detected.set(lang, { lang, framework: def.framework, runner: def.runner });
+    }
+  }
+
+  return Array.from(detected.values());
+}
+
+/**
  * Config file detection patterns.
  * Each pattern defines: a matching rule, its category, and whether it's in a subdirectory.
  */
@@ -544,6 +627,7 @@ function buildScanManifest(cwd) {
 
 module.exports = {
   detectCodebase,
+  detectTestFrameworks,
   detectConfigFiles,
   mapDirectoryStructure,
   buildScanManifest,
