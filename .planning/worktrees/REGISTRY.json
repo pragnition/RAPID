@@ -402,7 +402,7 @@
       "branch": "rapid/read-only-views",
       "path": ".rapid-worktrees/read-only-views",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-21T03:12:27.883Z",
       "mergeStatus": "merged",
@@ -425,7 +425,7 @@
       "branch": "rapid/cli-integration",
       "path": ".rapid-worktrees/cli-integration",
       "phase": "Created",
-      "status": "active",
+      "status": "orphaned",
       "wave": null,
       "createdAt": "2026-03-21T06:09:47.527Z",
       "mergeStatus": "complete"

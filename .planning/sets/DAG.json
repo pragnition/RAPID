@@ -1,37 +1,42 @@
 {
   "nodes": [
     {
-      "id": "service-infrastructure",
+      "id": "hygiene-sweep",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "project-registry",
+      "id": "init-criteria",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "frontend-shell",
+      "id": "review-cli-fix",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "read-only-views",
+      "id": "dag-readdition",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "interactive-features",
+      "id": "discuss-overhaul",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "cli-integration",
+      "id": "unit-test-improvements",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "web-install-bugfix",
+      "id": "branding-refocus",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "new-version-comprehensive",
       "wave": 1,
       "status": "pending"
     }
@@ -40,40 +45,43 @@
   "waves": {
     "1": {
       "sets": [
-        "service-infrastructure",
-        "project-registry",
-        "frontend-shell",
-        "read-only-views",
-        "interactive-features",
-        "cli-integration",
-        "web-install-bugfix"
+        "hygiene-sweep",
+        "init-criteria",
+        "review-cli-fix",
+        "dag-readdition",
+        "discuss-overhaul",
+        "unit-test-improvements",
+        "branding-refocus",
+        "new-version-comprehensive"
       ],
       "checkpoint": {
         "contracts": [
-          "rapid://contracts/service-infrastructure",
-          "rapid://contracts/project-registry",
-          "rapid://contracts/frontend-shell",
-          "rapid://contracts/read-only-views",
-          "rapid://contracts/interactive-features",
-          "rapid://contracts/cli-integration",
-          "rapid://contracts/web-install-bugfix"
+          "rapid://contracts/hygiene-sweep",
+          "rapid://contracts/init-criteria",
+          "rapid://contracts/review-cli-fix",
+          "rapid://contracts/dag-readdition",
+          "rapid://contracts/discuss-overhaul",
+          "rapid://contracts/unit-test-improvements",
+          "rapid://contracts/branding-refocus",
+          "rapid://contracts/new-version-comprehensive"
         ],
         "artifacts": [
-          ".planning/sets/service-infrastructure/CONTRACT.json",
-          ".planning/sets/project-registry/CONTRACT.json",
-          ".planning/sets/frontend-shell/CONTRACT.json",
-          ".planning/sets/read-only-views/CONTRACT.json",
-          ".planning/sets/interactive-features/CONTRACT.json",
-          ".planning/sets/cli-integration/CONTRACT.json",
-          ".planning/sets/web-install-bugfix/CONTRACT.json"
+          ".planning/sets/hygiene-sweep/CONTRACT.json",
+          ".planning/sets/init-criteria/CONTRACT.json",
+          ".planning/sets/review-cli-fix/CONTRACT.json",
+          ".planning/sets/dag-readdition/CONTRACT.json",
+          ".planning/sets/discuss-overhaul/CONTRACT.json",
+          ".planning/sets/unit-test-improvements/CONTRACT.json",
+          ".planning/sets/branding-refocus/CONTRACT.json",
+          ".planning/sets/new-version-comprehensive/CONTRACT.json"
         ]
       }
     }
   },
   "metadata": {
-    "created": "2026-03-21",
-    "totalSets": 7,
+    "created": "2026-03-22",
+    "totalSets": 8,
     "totalWaves": 1,
-    "maxParallelism": 7
+    "maxParallelism": 8
   }
 }
