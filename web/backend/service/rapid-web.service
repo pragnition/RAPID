@@ -1,7 +1,7 @@
 [Unit]
 Description=RAPID Web Dashboard Service
 After=network.target
-Documentation=https://github.com/fishjojo1/RAPID
+Documentation=https://github.com/pragnition/RAPID
 
 [Service]
 Type=simple

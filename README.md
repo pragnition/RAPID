@@ -19,7 +19,7 @@ RAPID solves this.
 ## Install
 
 ```
-claude plugin add fishjojo1/RAPID
+claude plugin add pragnition/RAPID
 ```
 
 Then run `/rapid:install` inside Claude Code to configure your environment.

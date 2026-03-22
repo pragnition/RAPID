@@ -22,7 +22,7 @@ For the full technical deep-dive covering all 26 agents, the state machine, conf
 ### Plugin Marketplace (Primary)
 
 ```
-claude plugin add fishjojo1/RAPID
+claude plugin add pragnition/RAPID
 ```
 
 Then run `/rapid:install` from within Claude Code to complete setup. This configures the `RAPID_TOOLS` environment variable needed by all RAPID commands.
@@ -30,7 +30,7 @@ Then run `/rapid:install` from within Claude Code to complete setup. This config
 ### Git Clone
 
 ```bash
-git clone https://github.com/fishjojo1/RAPID.git
+git clone https://github.com/pragnition/RAPID.git
 cd RAPID
 ./setup.sh
 ```
