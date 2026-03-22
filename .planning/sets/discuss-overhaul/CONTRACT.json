@@ -1,0 +1,66 @@
+{
+  "setId": "discuss-overhaul",
+  "version": "1.0.0",
+  "exports": {
+    "architect-level-questions": {
+      "type": "file",
+      "signature": "discuss-set SKILL.md with system-architect and UI/UX focused gray areas",
+      "description": "Gray areas focus on architectural decisions and UI/UX specifics rather than implementation coding details"
+    },
+    "variable-gray-areas": {
+      "type": "function",
+      "signature": "4n gray areas (n >= 1) with n AskUserQuestion selection prompts",
+      "description": "Number of gray areas scales to set complexity in multiples of 4, each batch presented as one AskUserQuestion"
+    },
+    "rich-question-format": {
+      "type": "file",
+      "signature": "Each question includes 3-5 sentence context, pros/cons table, tagged (Recommended) option",
+      "description": "Questions provide enough inline context for informed decisions without external research"
+    },
+    "deferred-decisions": {
+      "type": "file",
+      "signature": ".planning/sets/{set-id}/DEFERRED.md",
+      "description": "Out-of-scope questions and decisions are captured in a deferred decisions file for future milestone consideration"
+    },
+    "richer-context-md": {
+      "type": "file",
+      "signature": "CONTEXT.md with architectural vision, UI/UX specifics, deferred items summary, and decision rationale",
+      "description": "Enhanced CONTEXT.md output with structured sections covering all discussed dimensions"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "multiples-of-four": {
+      "description": "Total gray area count is always a multiple of 4 to match AskUserQuestion's 4-option constraint",
+      "enforced_by": "runtime"
+    },
+    "no-coding-questions": {
+      "description": "Gray areas never ask about specific implementation patterns, libraries, or coding approaches -- only architecture and UX",
+      "enforced_by": "test"
+    },
+    "deferred-not-lost": {
+      "description": "Every out-of-scope decision raised during discussion is captured in DEFERRED.md, never silently dropped",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Major overhaul of the discuss-set skill to ask architect-level and UI/UX questions, support variable gray area counts (multiples of 4), provide richer inline context per question (pros/cons, recommendations), produce enhanced CONTEXT.md, and manage deferred decisions in a dedicated file.",
+    "ownedFiles": [
+      "skills/discuss-set/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Restructure gray area identification to focus on architecture and UI/UX", "acceptance": "Generated gray areas cover system architecture, data flow, integration boundaries, and UI/UX specifics" },
+      { "description": "Implement variable gray area count (4n) with n selection prompts", "acceptance": "Complex sets generate 8 or 12 gray areas; simple sets generate 4" },
+      { "description": "Enrich question format with context, pros/cons, and recommendations", "acceptance": "Each question includes 3-5 sentence context, pros/cons table, and (Recommended) tag" },
+      { "description": "Add deferred decisions capture to DEFERRED.md", "acceptance": "Out-of-scope items written to .planning/sets/{set-id}/DEFERRED.md" },
+      { "description": "Enhance CONTEXT.md output with richer structured sections", "acceptance": "CONTEXT.md includes architectural vision, UI/UX specifics, decision rationale, and deferred items summary" }
+    ],
+    "acceptance": [
+      "Gray areas focus on architecture and UI/UX, not coding details",
+      "Gray area count is variable (multiples of 4) based on set complexity",
+      "Each question provides rich inline context with pros/cons and recommendations",
+      "Deferred decisions captured and managed",
+      "CONTEXT.md output is significantly richer than current version"
+    ]
+  }
+}

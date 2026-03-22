@@ -1,0 +1,45 @@
+{
+  "setId": "init-criteria",
+  "version": "1.0.0",
+  "exports": {
+    "encoded-criteria-format": {
+      "type": "file",
+      "signature": "REQUIREMENTS.md with {CATEGORY}-{NNN} encoded criteria",
+      "description": "Acceptance criteria are tagged with category-encoded identifiers for verifier cross-referencing"
+    },
+    "requirements-safe-write": {
+      "type": "function",
+      "signature": "existsSync guard in scaffold preventing REQUIREMENTS.md overwrite",
+      "description": "Scaffold step checks for existing REQUIREMENTS.md content before writing template"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "no-data-loss": {
+      "description": "Running /rapid:init never overwrites user-written REQUIREMENTS.md content with a blank template",
+      "enforced_by": "test"
+    },
+    "criteria-encoding-consistency": {
+      "description": "All generated criteria follow the pattern {CATEGORY}-{NNN} where CATEGORY is one of: FUNC, UIUX, PERF, SEC, DATA, INTEG, COMPAT, A11Y, MAINT",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Fixes the REQUIREMENTS.md overwrite bug in init and enhances the acceptance criteria system to use encoded category prefixes that the verifier can programmatically check against.",
+    "ownedFiles": [
+      "skills/init/SKILL.md (Steps 4D and 5)",
+      "src/lib/scaffold.cjs",
+      "src/lib/verify.cjs"
+    ],
+    "tasks": [
+      { "description": "Add existsSync guard in scaffold to prevent REQUIREMENTS.md overwrite", "acceptance": "Running scaffold after Step 4D preserves REQUIREMENTS.md content" },
+      { "description": "Update init Step 4D to generate encoded criteria with category prefixes", "acceptance": "Generated REQUIREMENTS.md contains criteria like FUNC-001, UIUX-001" },
+      { "description": "Update verifier to cross-reference encoded criteria", "acceptance": "Plan verification reports which encoded criteria are covered and which are gaps" }
+    ],
+    "acceptance": [
+      "Bug #7 verified fixed: scaffold no longer overwrites REQUIREMENTS.md",
+      "Encoded criteria format documented and consistently generated",
+      "Verifier produces criteria coverage report during plan verification"
+    ]
+  }
+}

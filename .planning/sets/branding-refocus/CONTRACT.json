@@ -1,0 +1,44 @@
+{
+  "setId": "branding-refocus",
+  "version": "1.0.0",
+  "exports": {
+    "codebase-aware-branding": {
+      "type": "file",
+      "signature": "BRANDING.md with project-type-aware visual/UX guidelines",
+      "description": "Branding skill adapts its interview questions and output based on detected project type (webapp, CLI, library, etc.)"
+    },
+    "visual-brand-guidelines": {
+      "type": "file",
+      "signature": "BRANDING.md with color palette, typography, spacing, component style, interaction patterns (webapp) or output formatting, error style (CLI)",
+      "description": "Output covers visual brand identity appropriate to the project's interface type"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "no-webapp-assumptions": {
+      "description": "Non-webapp projects (CLI tools, libraries) receive appropriate brand questions -- never asked about color palettes or component styles",
+      "enforced_by": "runtime"
+    },
+    "codebase-detection": {
+      "description": "Project type auto-detected from codebase analysis (package.json, Cargo.toml, presence of frontend/ directory, etc.)",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Refocuses the branding skill from documentation tone to visual UI/UX brand guidelines, with codebase awareness to adapt questions and output based on project type (webapp vs CLI vs library).",
+    "ownedFiles": [
+      "skills/branding/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Add codebase detection to identify project type (webapp, CLI, library, etc.)", "acceptance": "Branding skill correctly identifies project type from codebase analysis" },
+      { "description": "Restructure interview questions for visual UI/UX focus", "acceptance": "Webapp projects asked about color palette, typography, component style; CLI projects asked about output formatting" },
+      { "description": "Update BRANDING.md output format with visual brand sections", "acceptance": "Generated BRANDING.md includes project-type-appropriate visual identity guidelines" }
+    ],
+    "acceptance": [
+      "Branding skill detects project type and adapts accordingly",
+      "Webapp projects get visual brand guidelines (colors, typography, components)",
+      "Non-webapp projects get appropriate brand guidelines (CLI formatting, error style)",
+      "BRANDING.md output is actionable for development, not just documentation tone"
+    ]
+  }
+}

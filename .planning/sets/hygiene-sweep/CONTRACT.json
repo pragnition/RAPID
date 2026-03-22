@@ -1,0 +1,46 @@
+{
+  "setId": "hygiene-sweep",
+  "version": "1.0.0",
+  "exports": {
+    "clean-repo-references": {
+      "type": "file",
+      "signature": "DOCS.md, README.md with pragnition/RAPID URLs",
+      "description": "All repository references point to the correct pragnition org repo"
+    },
+    "rapid-root-removal": {
+      "type": "file",
+      "signature": "All skill preambles without RAPID_ROOT computation",
+      "description": "RAPID_ROOT references removed from all 26 skill preambles and any source files"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "no-broken-preambles": {
+      "description": "Every skill SKILL.md preamble still correctly loads RAPID_TOOLS from .env and validates its presence",
+      "enforced_by": "test"
+    },
+    "no-fishjojo1-references": {
+      "description": "No file in the codebase references fishjojo1/RAPID as a clone or installation URL",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Corrects the clone URL from fishjojo1 to pragnition across documentation files, and sweeps/removes all unused RAPID_ROOT references from every skill preamble and source file in the codebase.",
+    "ownedFiles": [
+      "DOCS.md",
+      "README.md",
+      "skills/*/SKILL.md (preamble sections only)",
+      "src/modules/roles/*.md"
+    ],
+    "tasks": [
+      { "description": "Replace fishjojo1/RAPID with pragnition/RAPID in DOCS.md and README.md", "acceptance": "No fishjojo1 references remain in any .md file" },
+      { "description": "Remove RAPID_ROOT computation from all 26 skill preambles", "acceptance": "grep -r RAPID_ROOT skills/ returns zero matches" },
+      { "description": "Remove RAPID_ROOT from src/modules/roles/ files", "acceptance": "grep -r RAPID_ROOT src/ returns zero matches" }
+    ],
+    "acceptance": [
+      "Zero fishjojo1 references in codebase (excluding git history and archives)",
+      "Zero RAPID_ROOT references in skills/ and src/ directories",
+      "All skill preambles still correctly load and validate RAPID_TOOLS"
+    ]
+  }
+}

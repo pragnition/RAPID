@@ -14,7 +14,8 @@
 - **v3.4.0 Agent Intelligence** — 6 sets (shipped 2026-03-18)
 - **v3.5.0 Robustness & Fixes** — 4 sets (shipped 2026-03-19)
 - **v3.6.0 Workflow & UX Polish** — 5 sets (shipped 2026-03-20)
-- **v4.0.0 Mission Control** — 7 sets (in progress)
+- **v4.0.0 Mission Control** — 7 sets (shipped 2026-03-22)
+- **v4.1.0 Polish & Fixes** — 8 sets (in progress)
 
 ## Completed Milestone Details
 

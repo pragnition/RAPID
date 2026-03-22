@@ -1,0 +1,44 @@
+{
+  "setId": "review-cli-fix",
+  "version": "1.0.0",
+  "exports": {
+    "dual-interface-log-issue": {
+      "type": "function",
+      "signature": "review log-issue <set-id> --type <type> --severity <severity> --title <title> --description <desc> | echo '{...}' | review log-issue <set-id>",
+      "description": "Supports both CLI flag interface and stdin JSON interface for logging review issues"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "backward-compatible": {
+      "description": "Existing stdin JSON format continues to work unchanged",
+      "enforced_by": "test"
+    },
+    "cli-flags-work": {
+      "description": "CLI flag interface (--type, --severity, --title, --description) correctly creates and logs issues",
+      "enforced_by": "test"
+    },
+    "auto-generated-fields": {
+      "description": "id and createdAt are auto-generated when using CLI flags",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Aligns the review log-issue CLI with its documentation by supporting both CLI flags and stdin JSON input, and updates all skill docs to reflect correct usage patterns.",
+    "ownedFiles": [
+      "src/commands/review.cjs",
+      "skills/unit-test/SKILL.md (log-issue docs section)",
+      "skills/review/SKILL.md (log-issue docs section)"
+    ],
+    "tasks": [
+      { "description": "Update review.cjs log-issue handler to parse CLI flags as alternative to stdin JSON", "acceptance": "Both CLI flags and stdin JSON produce identical logged issues" },
+      { "description": "Auto-generate id and createdAt when using CLI flags", "acceptance": "CLI flag usage produces valid issue objects with generated fields" },
+      { "description": "Update skill docs to show both interfaces", "acceptance": "Skill docs accurately reflect both stdin JSON and CLI flag usage" }
+    ],
+    "acceptance": [
+      "Both CLI flag and stdin JSON interfaces work correctly",
+      "Backward compatibility: existing stdin JSON callers unaffected",
+      "Updated documentation in all referencing skills"
+    ]
+  }
+}

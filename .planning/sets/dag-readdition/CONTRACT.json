@@ -1,0 +1,67 @@
+{
+  "setId": "dag-readdition",
+  "version": "1.0.0",
+  "exports": {
+    "dag-generation": {
+      "type": "function",
+      "signature": "node \"${RAPID_TOOLS}\" dag generate -> DAG.json",
+      "description": "CLI command that reads set dependencies from STATE.json/ROADMAP.md and generates .planning/sets/DAG.json"
+    },
+    "dag-display": {
+      "type": "function",
+      "signature": "node \"${RAPID_TOOLS}\" dag show -> formatted DAG output",
+      "description": "CLI command that displays the current DAG with execution order and wave grouping"
+    },
+    "dag-ordered-status": {
+      "type": "function",
+      "signature": "Sets displayed in dependency-wave order in /status output",
+      "description": "Status command displays sets grouped by DAG waves rather than alphabetically"
+    },
+    "graph-page-visualization": {
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/dag -> { nodes, edges }; React GraphPage with cytoscape-dagre",
+      "description": "Web dashboard GraphPage renders interactive DAG using cytoscape-dagre with set status coloring"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "dag-state-sync": {
+      "description": "DAG.json is regenerated atomically whenever set dependencies change (add-set, init roadmap)",
+      "enforced_by": "runtime"
+    },
+    "no-dag-required": {
+      "description": "Projects without set dependencies work normally -- DAG is optional enhancement, not gate",
+      "enforced_by": "test"
+    },
+    "consistent-order": {
+      "description": "DAG wave ordering matches topological sort output from dag.cjs toposort()",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Wires the existing DAG library into the RAPID workflow by adding CLI commands for generation/display, DAG-ordered set display in /status, and a real interactive dependency graph visualization on the web dashboard GraphPage.",
+    "ownedFiles": [
+      "src/commands/dag.cjs",
+      "src/lib/dag.cjs",
+      "skills/init/SKILL.md (DAG generation after roadmap)",
+      "skills/status/SKILL.md (DAG-ordered display)",
+      "skills/add-set/SKILL.md (DAG regeneration)",
+      "web/frontend/src/pages/GraphPage.tsx",
+      "web/backend/app/routers/dag.py",
+      "web/backend/app/services/dag_service.py"
+    ],
+    "tasks": [
+      { "description": "Create dag CLI command with generate and show subcommands", "acceptance": "dag generate creates DAG.json; dag show prints formatted output" },
+      { "description": "Wire DAG generation into init roadmap step and add-set", "acceptance": "DAG.json is created/updated when sets are defined or added" },
+      { "description": "Update /status to display sets in DAG wave order", "acceptance": "Sets appear grouped by dependency wave, not alphabetically" },
+      { "description": "Build GraphPage with cytoscape-dagre visualization", "acceptance": "GraphPage renders interactive DAG with set nodes colored by status" },
+      { "description": "Add backend DAG API endpoint", "acceptance": "GET /api/projects/{id}/dag returns nodes and edges" }
+    ],
+    "acceptance": [
+      "DAG.json generated correctly from set dependencies",
+      "CLI dag command works for generation and display",
+      "Web dashboard GraphPage renders interactive dependency graph",
+      "Status command shows DAG-ordered sets"
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "setId": "unit-test-improvements",
+  "version": "1.0.0",
+  "exports": {
+    "unlimited-concern-groups": {
+      "type": "function",
+      "signature": "Unit test dispatching with no artificial group limit, batched approval gate",
+      "description": "Concern groups are dispatched without the 5-group cap, using batched execution with approval gate"
+    },
+    "framework-agnostic-runner": {
+      "type": "function",
+      "signature": "Auto-detected test runner from project config (node --test, cargo test, pytest, go test, etc.)",
+      "description": "Test runner is auto-detected from project codebase or configured via testFramework field"
+    },
+    "test-framework-config": {
+      "type": "file",
+      "signature": ".planning/config.json with testFramework and testRunner fields",
+      "description": "New config fields for specifying test framework and runner command"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "backward-compatible-node-test": {
+      "description": "Node.js projects with node:test continue to work identically -- auto-detection defaults to node --test",
+      "enforced_by": "test"
+    },
+    "token-budget-awareness": {
+      "description": "Large concern group counts use batched execution to avoid context window exhaustion",
+      "enforced_by": "runtime"
+    },
+    "detection-in-init": {
+      "description": "Test framework detection runs during /rapid:init research phase and stores result in config",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Removes the 5-concern-group limit from the unit-test skill and makes the test runner framework-agnostic by auto-detecting the project's native test tooling during init research.",
+    "ownedFiles": [
+      "skills/unit-test/SKILL.md",
+      "src/lib/context.cjs (test framework detection additions)",
+      "skills/init/SKILL.md (test framework research addition)"
+    ],
+    "tasks": [
+      { "description": "Remove 5-group limit and implement batched dispatch with approval gate", "acceptance": "Sets with 10+ concern groups dispatch correctly with user approval between batches" },
+      { "description": "Make test runner auto-detected from project config files", "acceptance": "Python projects use pytest, Rust uses cargo test, Go uses go test, Node uses node --test" },
+      { "description": "Add testFramework detection to init research pipeline", "acceptance": "After init, config.json contains testFramework and testRunner fields" },
+      { "description": "Update unit-test skill to use detected/configured runner", "acceptance": "Generated test commands use the configured runner, not hardcoded node --test" }
+    ],
+    "acceptance": [
+      "No artificial group limit -- dispatches as many groups as scoper produces",
+      "Test runner correctly auto-detected for Node.js, Python, Rust, Go projects",
+      "testFramework config field populated during init",
+      "Backward compatible: existing Node.js projects work identically"
+    ]
+  }
+}

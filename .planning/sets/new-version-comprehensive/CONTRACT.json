@@ -1,0 +1,51 @@
+{
+  "setId": "new-version-comprehensive",
+  "version": "1.0.0",
+  "exports": {
+    "comprehensive-goal-gathering": {
+      "type": "function",
+      "signature": "Structured prompts covering features, bugs, tech debt, UX improvements, and deferred decisions",
+      "description": "Goal-gathering phase systematically covers all requirement categories to prevent missed requirements"
+    },
+    "deferred-decisions-import": {
+      "type": "function",
+      "signature": "Reads .planning/sets/*/DEFERRED.md and surfaces deferred items for new milestone consideration",
+      "description": "Previously deferred decisions from discuss-set are imported as candidate goals for the new version"
+    }
+  },
+  "imports": {
+    "deferred-decisions-format": {
+      "fromSet": "discuss-overhaul",
+      "type": "file",
+      "signature": ".planning/sets/{set-id}/DEFERRED.md",
+      "description": "Reads deferred decisions files produced by the overhauled discuss-set skill"
+    }
+  },
+  "behavioral": {
+    "no-missed-requirements": {
+      "description": "Goal-gathering prompts systematically cover features, bugs, tech debt, UX, and deferred decisions -- user explicitly confirms completeness",
+      "enforced_by": "runtime"
+    },
+    "deferred-surfacing": {
+      "description": "All deferred decisions from the previous milestone are presented to the user for inclusion/exclusion in the new milestone",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Makes /new-version comprehensive by adding structured goal-gathering prompts across all requirement categories and importing deferred decisions from the previous milestone's discuss-set outputs.",
+    "ownedFiles": [
+      "skills/new-version/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Add structured goal-gathering with systematic category coverage", "acceptance": "Goal prompts cover features, bugs, tech debt, UX, and deferred decisions" },
+      { "description": "Import and surface deferred decisions from previous milestone", "acceptance": "Deferred items from .planning/sets/*/DEFERRED.md are presented for consideration" },
+      { "description": "Add completeness confirmation step", "acceptance": "User explicitly confirms all requirements captured before proceeding to research" }
+    ],
+    "acceptance": [
+      "Structured prompts systematically cover all requirement categories",
+      "Deferred decisions from previous milestone surfaced for consideration",
+      "User confirms completeness before research pipeline begins",
+      "No missed requirements in generated milestone scope"
+    ]
+  }
+}

@@ -440,6 +440,39 @@
       "startCommit": "51b7889acb55ca758178fcc0f1510f14a3d2cc14",
       "wave": null,
       "createdAt": "2026-03-21T10:40:32.646Z"
+    },
+    "hygiene-sweep": {
+      "setName": "hygiene-sweep",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "a7ed8e1c18f480fba8ac5270601935079d53b182",
+      "wave": null,
+      "createdAt": "2026-03-22T07:05:37.508Z"
+    },
+    "init-criteria": {
+      "setName": "init-criteria",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "8b67b002726e1b9da44e08da5e75bb3d6d3f2b24",
+      "wave": null,
+      "createdAt": "2026-03-22T07:43:00.214Z"
+    },
+    "review-cli-fix": {
+      "setName": "review-cli-fix",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "d3f8775d7b3e9a3e9160f5c6a2685ac0a1f43f43",
+      "wave": null,
+      "createdAt": "2026-03-22T12:55:49.549Z"
     }
   }
 }
