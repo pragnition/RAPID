@@ -329,7 +329,7 @@
         },
         {
           "id": "dag-readdition",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "DAG Re-addition",
           "branch": "rapid/dag-readdition"
@@ -365,6 +365,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-22T13:30:31.219Z",
+  "lastUpdatedAt": "2026-03-22T16:02:22.971Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
