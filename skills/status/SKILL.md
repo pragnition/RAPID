@@ -27,6 +27,20 @@ echo "$STATE_JSON"
 
 Parse the JSON output. The state contains the current milestone with its sets. Each set has a `name` and `status` field. The set statuses are: `pending`, `discussed`, `planned`, `executed`, `complete`, `merged`.
 
+Also attempt to load DAG.json for wave-ordered display:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+DAG_JSON=$(node "${RAPID_TOOLS}" dag show 2>/dev/null)
+DAG_EXIT=$?
+echo "DAG_EXIT=$DAG_EXIT"
+if [ $DAG_EXIT -eq 0 ]; then
+  echo "$DAG_JSON"
+fi
+```
+
+If `DAG_EXIT` is 0, the DAG was loaded successfully. Parse the output to determine wave groupings for display ordering. If `DAG_EXIT` is non-zero, fall back to canonical insertion order from STATE.json (the existing behavior).
+
 **If STATE.json is missing or invalid** (exit code non-zero or empty output), display:
 
 > "STATE.json not found. Run `/rapid:init` to initialize."
@@ -68,7 +82,26 @@ Using the parsed state and git activity data, display a compact set-level dashbo
    | 3 | third-set | merged | 1d ago: "final fix" | rapid/third-set |
    ```
 
-   - **#**: Do NOT list the sets based on alphabetical order. List the set in their canonical order.
+   - **Set ordering:** If DAG.json was loaded successfully in Step 2:
+     - Group sets under wave headers: `**Wave 1:**`, `**Wave 2:**`, etc.
+     - Within each wave, list sets in the order they appear in the DAG
+     - The table format remains the same but rows are grouped under wave headers:
+
+     ```
+     **Wave 1:**
+     | # | Set | Status | Last Activity | Branch |
+     |---|-----|--------|---------------|--------|
+     | 1 | foundation | merged | 2d ago: "final" | rapid/foundation |
+     | 2 | core-lib | complete | 1d ago: "tests" | rapid/core-lib |
+
+     **Wave 2:**
+     | # | Set | Status | Last Activity | Branch |
+     |---|-----|--------|---------------|--------|
+     | 3 | api-layer | executing | 2h ago: "endpoints" | rapid/api-layer |
+     | 4 | ui-shell | planned | no branch | -- |
+     ```
+
+     If DAG.json was NOT loaded (DAG_EXIT non-zero or DAG not available), fall back to canonical insertion order from STATE.json (NOT alphabetical). Use a single table without wave headers -- this is the existing behavior.
    - **Set**: The set name
    - **Status**: Set status from STATE.json (pending, discussed, planned, executed, complete, merged)
    - **Last Activity**: Relative time + commit message from the set's git branch, or "no branch" if no branch exists
