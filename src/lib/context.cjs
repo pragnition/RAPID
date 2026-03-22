@@ -72,6 +72,45 @@ const JS_FRAMEWORKS = [
 const PY_FRAMEWORKS = ['django', 'flask', 'fastapi'];
 
 /**
+ * JS test framework indicators found in package.json devDependencies.
+ */
+const JS_TEST_FRAMEWORKS = [
+  { dep: 'jest', framework: 'jest', runner: 'npx jest' },
+  { dep: 'vitest', framework: 'vitest', runner: 'npx vitest run' },
+  { dep: 'mocha', framework: 'mocha', runner: 'npx mocha' },
+];
+
+/**
+ * Python test framework indicators found in dependency files.
+ */
+const PY_TEST_FRAMEWORKS = [
+  { dep: 'pytest', framework: 'pytest', runner: 'pytest' },
+];
+
+/**
+ * Config file patterns mapped to test frameworks.
+ */
+const TEST_FRAMEWORK_CONFIGS = [
+  { prefix: 'jest.config', framework: 'jest', lang: 'javascript', runner: 'npx jest' },
+  { prefix: 'vitest.config', framework: 'vitest', lang: 'javascript', runner: 'npx vitest run' },
+  { prefix: '.mocharc', framework: 'mocha', lang: 'javascript', runner: 'npx mocha' },
+  { exact: 'pytest.ini', framework: 'pytest', lang: 'python', runner: 'pytest' },
+  { exact: 'setup.cfg', framework: 'pytest', lang: 'python', runner: 'pytest' },
+  { exact: 'tox.ini', framework: 'pytest', lang: 'python', runner: 'pytest' },
+];
+
+/**
+ * Fallback test frameworks for languages with intrinsic test runners.
+ */
+const LANG_DEFAULT_TEST_FRAMEWORKS = {
+  go: { framework: 'go-test', runner: 'go test ./...' },
+  rust: { framework: 'cargo-test', runner: 'cargo test' },
+  javascript: { framework: 'node:test', runner: 'node --test' },
+  typescript: { framework: 'node:test', runner: 'node --test' },
+  python: { framework: 'unittest', runner: 'python -m unittest discover' },
+};
+
+/**
  * Walk directory entries up to maxDepth levels, skipping excluded directories.
  * Returns an array of { relativePath, isDirectory, depth } objects.
  *
