@@ -315,7 +315,7 @@
         },
         {
           "id": "init-criteria",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Init Fixes & Encoded Criteria",
           "branch": "rapid/init-criteria"
@@ -365,6 +365,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-22T07:39:03.159Z",
+  "lastUpdatedAt": "2026-03-22T09:01:15.464Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
