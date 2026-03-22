@@ -108,7 +108,16 @@ Extract criteria from the `## Acceptance Criteria` numbered list.
 Determine the agent dispatch strategy based on scope:
 
 ### If concern scoping is active (`useConcernScoping = true`):
-- Spawn one `rapid-unit-tester` agent per concern group (up to 5 concern groups maximum)
+- Dispatch concern groups in batches. Batch size = `ceil(totalGroups / 3)` (always approximately 3 batches regardless of group count).
+- For each batch:
+  1. Spawn one `rapid-unit-tester` agent per concern group in the batch
+  2. Collect results from all agents in the batch
+  3. If all tests in the batch passed, auto-continue to the next batch
+  4. If any test in the batch failed, use AskUserQuestion:
+     - **question:** "Batch {N}/{totalBatches} has {failedCount} test failure(s). Continue to next batch or stop to review?"
+     - **options:** ["Continue to next batch", "Stop and review failures"]
+     - If "Stop": proceed to Step 5a retry flow with the failures so far
+  5. After the final batch completes, merge all batch results and continue to Step 4
 - Each agent receives the concern group's files (concern files + cross-cutting files)
 - Agent ID format: `unit-test-{concernName}` (kebab-case concern name)
 
