@@ -14,8 +14,7 @@ Follow these steps IN ORDER. Do not skip steps.
 Load environment variables before any CLI calls:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 ```
 
@@ -24,8 +23,7 @@ Use this environment preamble in ALL subsequent Bash commands within this skill.
 ## Display Stage Banner
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 node "${RAPID_TOOLS}" display banner init
 ```
@@ -921,8 +919,7 @@ If the commit fails for any reason, warn the user but do NOT fail the entire ini
 If `RAPID_WEB=true` is set, automatically register this project with Mission Control.
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
 node -e "
 const { isWebEnabled, registerProjectWithWeb } = require('${RAPID_TOOLS}/../lib/web-client.cjs');
 if (!isWebEnabled()) {

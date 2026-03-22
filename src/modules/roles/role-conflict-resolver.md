@@ -16,12 +16,13 @@ Before running any commands, ensure the RAPID tools path is available:
 
 ```bash
 if [ -z "${RAPID_TOOLS:-}" ]; then
-  RAPID_ROOT="$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)"
-  if [ -f "$RAPID_ROOT/.env" ]; then
+  _rapid_env="$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)/.env"
+  if [ -f "$_rapid_env" ]; then
     set -a
-    . "$RAPID_ROOT/.env"
+    . "$_rapid_env"
     set +a
   fi
+  unset _rapid_env
 fi
 ```
 

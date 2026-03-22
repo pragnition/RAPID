@@ -14,8 +14,7 @@ Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion at every dec
 Load environment variables before any CLI calls:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs); fi
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
 if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
 ```
 
@@ -149,7 +148,7 @@ If the `--skip` flag is NOT set, continue to Step 5.
 
 ## Step 5: Identify 4 Gray Areas (Interactive Mode)
 
-Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, source files) and identify exactly 4 gray areas. Gray areas may be implementation facets or UI/UX consideratons where:
+Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, source files) and identify exactly 4 gray areas. Gray areas may be architectural facets or UI/UX considerations where:
 
 - Multiple valid approaches exist
 - Integration points are ambiguous
@@ -157,7 +156,9 @@ Analyze set context (CONTRACT.json, DEFINITION.md, SET-OVERVIEW.md, ROADMAP.md, 
 - Performance/quality tradeoffs exist
 - UI/UX decisions need to be made
 
-When the set's context (SET-OVERVIEW.md, CONTRACT.json, ROADMAP.md description) indicates user-facing components, frontend work, or UI changes, weave UI/UX considerations naturally into the relevant gray areas. For example, a "state management" gray area for a frontend set should include UI state questions; an "API design" gray area should consider how the API shapes the user experience. Do NOT reserve a dedicated gray area slot exclusively for UI/UX -- instead, let UI/UX concerns enrich the gray areas that naturally touch user-facing behavior. For sets with no user-facing components (pure backend, CLI internals, infrastructure), UI/UX gray areas are unnecessary and should not be forced.
+Questions should be about high level architectural/design details rather than specific implementation details. (eg. ask about HOW this should look rather than should I code it this way or that way?). 
+
+When the set's context (SET-OVERVIEW.md, CONTRACT.json, ROADMAP.md description) indicates user-facing components, frontend work, or UI changes, weave UI/UX considerations naturally into the relevant gray areas. For example, a "state management" gray area for a frontend set should include UI state questions; . You may reserve dedicated gray area slots exclusively for UI/UX if you wish, or blend UI/UX elements in details that will shape the user experience. For sets with no user-facing components (pure backend, CLI internals, infrastructure), UI/UX gray areas are unnecessary and should not be forced.
 
 Present gray areas using AskUserQuestion:
 
@@ -182,7 +183,7 @@ Options:
 
 For EACH selected gray area (in order):
 
-1. Use ONE AskUserQuestion prompt and for EACH question within the gray area, ask a SEPERATE question wth a header, with prefilled options (if you have a recommendation, tag your recommeded option with "(recommended)"). EACH question should only ask the user about ONE thng. The user should not be thinkiing about multiple decisions within the same question.:
+1. Use ONE AskUserQuestion prompt and for EACH question within the gray area, ask a SEPARATE question with a header, with prefilled options (if you have a recommendation, tag your recommeded option with "(recommended)"). EACH question should only ask the user about ONE thing. The user should not be thinking about multiple decisions within the same question.:
 
    ```
    "{Gray area title} -- {Question about approach}
@@ -202,11 +203,11 @@ For EACH selected gray area (in order):
 
 3. If user selected "Claude decides" for a question: Record that specific question as Claude's discretion.
 
-### Follow-Up (Only If Needed)
+### Follow-Up 
 
 After ALL selected areas are discussed:
 
-- Compile follow-up questions ONLY if genuine gaps remain after all 4 areas were covered.
+- Compile follow-up questions if gaps in your understanding of the user's intentions remain after all 4 areas were covered.
 - If gaps exist: Continue to prompt the user using AskUserQuestion with remaining questions until you are FULLY satisfied.
 - If no gaps: Skip follow-up entirely.
 

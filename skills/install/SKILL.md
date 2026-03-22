@@ -14,27 +14,25 @@ Determine where RAPID is installed:
 
 1. Check if `${CLAUDE_SKILL_DIR}` path contains `.claude/plugins` -- this indicates a marketplace install
 2. Otherwise assume git clone installation
-3. Set `RAPID_ROOT` to 2 directories up from the skill directory: `${CLAUDE_SKILL_DIR}/../..`
+3. Compute the plugin root as 2 directories up from the skill directory: `${CLAUDE_SKILL_DIR}/../..`
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 if [[ "${CLAUDE_SKILL_DIR}" == *".claude/plugins"* ]]; then
     echo "Detected: marketplace installation"
 else
     echo "Detected: git clone installation"
 fi
-echo "RAPID_ROOT=$RAPID_ROOT"
+echo "RAPID_PLUGIN_DIR=${CLAUDE_SKILL_DIR}/../.."
 ```
 
-There is a caveat: if the user has previously installed RAPID via marketplace, there may be old versions in ~/.claude/plugins/cache. You are on version 3.0, so your install location should contain some sort of reference to v4.0.0.0! So you need to make sure to update the RAPID_TOOLS path in the shell config if it points to an old version. You can detect this by checking if RAPID_TOOLS is already configured in any shell config file and if it points to a path within ~/.claude/plugins/cache. If so, prompt the user to update their config to point to the new RAPID_ROOT path.
+There is a caveat: if the user has previously installed RAPID via marketplace, there may be old versions in ~/.claude/plugins/cache. You are on version 3.0, so your install location should contain some sort of reference to v4.0.0.0! So you need to make sure to update the RAPID_TOOLS path in the shell config if it points to an old version. You can detect this by checking if RAPID_TOOLS is already configured in any shell config file and if it points to a path within ~/.claude/plugins/cache. If so, prompt the user to update their config to point to the new plugin root path.
 
 ## Step 1: Run Non-Interactive Bootstrap
 
 Run setup.sh to handle prereqs, npm install, validation, .env writing, plugin registration, and `build-agents` (generates all agent .md files from source modules):
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-bash "$RAPID_ROOT/setup.sh"
+bash "${CLAUDE_SKILL_DIR}/../../setup.sh"
 ```
 
 If setup.sh fails, use AskUserQuestion:
@@ -49,7 +47,7 @@ If "Retry setup": re-run the bash command above.
 If "Show manual steps": display these commands:
 
 ```
-cd $RAPID_ROOT
+cd "${CLAUDE_SKILL_DIR}/../.."
 npm install --production
 node src/bin/rapid-tools.cjs prereqs
 ```
@@ -64,7 +62,6 @@ Read the user's shell and present config options.
 First, detect the shell:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 SHELL_NAME=$(basename "${SHELL:-/bin/bash}")
 echo "Detected shell: $SHELL_NAME ($SHELL)"
 ```
@@ -81,7 +78,6 @@ Map the shell to its config file:
 Check if RAPID_TOOLS is already configured in any shell config:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 for f in ~/.bashrc ~/.bash_profile ~/.zshrc ~/.config/fish/config.fish ~/.profile; do
     if grep -qF "RAPID_TOOLS" "$f" 2>/dev/null; then
         echo "ALREADY_CONFIGURED=$f"
@@ -120,14 +116,13 @@ Write the RAPID_TOOLS export to the chosen config file, then auto-source and ver
 
 Determine the export line based on shell type:
 
-- fish: `set -gx RAPID_TOOLS "{RAPID_ROOT}/src/bin/rapid-tools.cjs"`
-- All others (bash, zsh, posix): `export RAPID_TOOLS="{RAPID_ROOT}/src/bin/rapid-tools.cjs"`
+- fish: `set -gx RAPID_TOOLS "{PLUGIN_ROOT}/src/bin/rapid-tools.cjs"`
+- All others (bash, zsh, posix): `export RAPID_TOOLS="{PLUGIN_ROOT}/src/bin/rapid-tools.cjs"`
 
 Append the export line to the chosen config file:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-RAPID_TOOLS_PATH="$RAPID_ROOT/src/bin/rapid-tools.cjs"
+RAPID_TOOLS_PATH="${CLAUDE_SKILL_DIR}/../../src/bin/rapid-tools.cjs"
 # For fish:
 echo "" >> ~/.config/fish/config.fish
 echo "# RAPID plugin for Claude Code" >> ~/.config/fish/config.fish
@@ -145,21 +140,18 @@ Then auto-source and verify in ONE Bash tool call. The source + verify must happ
 For fish:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 fish -c "source ~/.config/fish/config.fish; echo RAPID_TOOLS=\$RAPID_TOOLS; node \$RAPID_TOOLS prereqs"
 ```
 
 For bash:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 bash -c "source ~/.bashrc && echo RAPID_TOOLS=\$RAPID_TOOLS && node \"\$RAPID_TOOLS\" prereqs"
 ```
 
 For zsh:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
 zsh -c "source ~/.zshrc && echo RAPID_TOOLS=\$RAPID_TOOLS && node \"\$RAPID_TOOLS\" prereqs"
 ```
 
@@ -192,9 +184,8 @@ If "Cancel installation": end with "Installation cancelled."
 Load RAPID_TOOLS from .env if not already set, then verify the full tool chain:
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-if [ -z "${RAPID_TOOLS:-}" ] && [ -f "$RAPID_ROOT/.env" ]; then
-    export $(grep -v '^#' "$RAPID_ROOT/.env" | xargs)
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then
+    export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs)
 fi
 node "${RAPID_TOOLS}" prereqs
 ```
@@ -217,7 +208,7 @@ If "Show manual fix steps": display:
 node -v  # Must be v18+
 
 # Check RAPID_TOOLS path
-cat $RAPID_ROOT/.env
+cat "${CLAUDE_SKILL_DIR}/../../.env"
 
 # Run prereqs manually
 node ~/path/to/rapid/src/bin/rapid-tools.cjs prereqs
@@ -262,7 +253,7 @@ If the binary is missing, display:
 
 > The `rapid-web` binary was not found. Install the web backend first:
 > ```
-> cd {RAPID_ROOT}/web/backend
+> cd {PLUGIN_ROOT}/web/backend
 > pip install -e .
 > ```
 > After installing, run `/rapid:install` again to complete web dashboard setup.
@@ -272,15 +263,14 @@ Proceed to Step 5 (skip remaining web setup).
 2. **Write RAPID_WEB=true to RAPID .env file:**
 
 ```bash
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-if grep -q "RAPID_WEB=" "$RAPID_ROOT/.env" 2>/dev/null; then
-    sed -i 's/^RAPID_WEB=.*/RAPID_WEB=true/' "$RAPID_ROOT/.env"
+if grep -q "RAPID_WEB=" "${CLAUDE_SKILL_DIR}/../../.env" 2>/dev/null; then
+    sed -i 's/^RAPID_WEB=.*/RAPID_WEB=true/' "${CLAUDE_SKILL_DIR}/../../.env"
 else
-    echo "" >> "$RAPID_ROOT/.env"
-    echo "# RAPID Mission Control web dashboard" >> "$RAPID_ROOT/.env"
-    echo "RAPID_WEB=true" >> "$RAPID_ROOT/.env"
+    echo "" >> "${CLAUDE_SKILL_DIR}/../../.env"
+    echo "# RAPID Mission Control web dashboard" >> "${CLAUDE_SKILL_DIR}/../../.env"
+    echo "RAPID_WEB=true" >> "${CLAUDE_SKILL_DIR}/../../.env"
 fi
-echo "Written RAPID_WEB=true to $RAPID_ROOT/.env"
+echo "Written RAPID_WEB=true to ${CLAUDE_SKILL_DIR}/../../.env"
 ```
 
 3. **Write RAPID_WEB=true to shell config:**
@@ -302,8 +292,7 @@ echo 'export RAPID_WEB=true' >> {chosen_config_file}
 ```bash
 # Copy service file if not already in place
 mkdir -p ~/.config/systemd/user
-RAPID_ROOT="${CLAUDE_SKILL_DIR}/../.."
-cp "$RAPID_ROOT/web/backend/service/rapid-web.service" ~/.config/systemd/user/rapid-web.service
+cp "${CLAUDE_SKILL_DIR}/../../web/backend/service/rapid-web.service" ~/.config/systemd/user/rapid-web.service
 systemctl --user daemon-reload
 systemctl --user enable rapid-web
 systemctl --user start rapid-web
