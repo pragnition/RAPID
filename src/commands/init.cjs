@@ -76,6 +76,7 @@ function handleInit(args) {
     let teamSize = null;
     let name = null;
     let solo = undefined;
+    let testFrameworks = undefined;
 
     for (let i = 1; i < args.length; i++) {
       switch (args[i]) {
@@ -91,6 +92,9 @@ function handleInit(args) {
         case '--solo':
           solo = true;
           break;
+        case '--test-frameworks':
+          testFrameworks = JSON.parse(args[++i]);
+          break;
       }
     }
 
@@ -99,6 +103,7 @@ function handleInit(args) {
     if (teamSize) opts.teamSize = teamSize;
     if (name) opts.name = name;
     if (solo !== undefined) opts.solo = solo;
+    if (testFrameworks) opts.testFrameworks = testFrameworks;
 
     const configContent = generateConfigJson(opts);
     const configPath = path.join(process.cwd(), '.planning', 'config.json');
@@ -109,7 +114,35 @@ function handleInit(args) {
       fs.mkdirSync(planningDir, { recursive: true });
     }
 
-    fs.writeFileSync(configPath, configContent);
+    // Merge with existing config to preserve user overrides for testFrameworks
+    let finalConfig = JSON.parse(configContent);
+    if (fs.existsSync(configPath)) {
+      try {
+        const existing = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        if (existing.testFrameworks && finalConfig.testFrameworks) {
+          const existingByLang = new Map(existing.testFrameworks.map(e => [e.lang, e]));
+          const mergedFrameworks = [];
+          // Preserve existing entries (user overrides win)
+          for (const entry of finalConfig.testFrameworks) {
+            if (existingByLang.has(entry.lang)) {
+              mergedFrameworks.push(existingByLang.get(entry.lang));
+              existingByLang.delete(entry.lang);
+            } else {
+              mergedFrameworks.push(entry);
+            }
+          }
+          // Keep any existing entries for langs not in new config
+          for (const entry of existingByLang.values()) {
+            mergedFrameworks.push(entry);
+          }
+          finalConfig.testFrameworks = mergedFrameworks;
+        }
+      } catch {
+        // Graceful failure -- use generated config as-is
+      }
+    }
+
+    fs.writeFileSync(configPath, JSON.stringify(finalConfig, null, 2));
     process.stdout.write(JSON.stringify({ written: true, configPath }) + '\n');
     return;
   }
