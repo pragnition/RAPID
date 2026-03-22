@@ -8,6 +8,7 @@ const os = require('os');
 
 const {
   detectCodebase,
+  detectTestFrameworks,
   detectConfigFiles,
   mapDirectoryStructure,
   buildScanManifest,
@@ -651,5 +652,94 @@ describe('buildScanManifest', () => {
   it('returns empty sampleFiles for greenfield project', () => {
     const result = buildScanManifest(tmpDir);
     assert.deepStrictEqual(result.sampleFiles, []);
+  });
+});
+
+// ── detectTestFrameworks Tests ──
+
+describe('detectTestFrameworks', () => {
+  it('returns empty array for empty directory', () => {
+    const result = detectTestFrameworks(tmpDir);
+    assert.ok(Array.isArray(result));
+    assert.equal(result.length, 0);
+  });
+
+  it('detects jest from package.json devDependencies', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({
+      name: 'test-app',
+      devDependencies: { jest: '^29.0.0' },
+    }));
+
+    const result = detectTestFrameworks(tmpDir);
+    const jsEntry = result.find(e => e.lang === 'javascript');
+    assert.ok(jsEntry, 'should detect javascript test framework');
+    assert.equal(jsEntry.framework, 'jest');
+    assert.equal(jsEntry.runner, 'npx jest');
+  });
+
+  it('defaults to node:test for JS project with no test deps', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({
+      name: 'test-app',
+      dependencies: { express: '^4.0.0' },
+    }));
+    fs.mkdirSync(path.join(tmpDir, 'src'));
+    fs.writeFileSync(path.join(tmpDir, 'src', 'app.js'), '// app');
+
+    const result = detectTestFrameworks(tmpDir);
+    const jsEntry = result.find(e => e.lang === 'javascript');
+    assert.ok(jsEntry, 'should detect javascript with default framework');
+    assert.equal(jsEntry.framework, 'node:test');
+    assert.equal(jsEntry.runner, 'node --test');
+  });
+
+  it('detects pytest from pytest.ini config file', () => {
+    fs.writeFileSync(path.join(tmpDir, 'pyproject.toml'), '[project]\nname = "myapp"\n');
+    fs.writeFileSync(path.join(tmpDir, 'pytest.ini'), '[pytest]\naddopts = -v\n');
+
+    const result = detectTestFrameworks(tmpDir);
+    const pyEntry = result.find(e => e.lang === 'python');
+    assert.ok(pyEntry, 'should detect python test framework');
+    assert.equal(pyEntry.framework, 'pytest');
+    assert.equal(pyEntry.runner, 'pytest');
+  });
+
+  it('config file takes priority over deps', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({
+      name: 'test-app',
+      devDependencies: { jest: '^29.0.0' },
+    }));
+    fs.writeFileSync(path.join(tmpDir, 'vitest.config.js'), 'export default {};');
+
+    const result = detectTestFrameworks(tmpDir);
+    const jsEntry = result.find(e => e.lang === 'javascript');
+    assert.ok(jsEntry, 'should detect javascript test framework');
+    assert.equal(jsEntry.framework, 'vitest', 'config file (vitest) should win over dep (jest)');
+    assert.equal(jsEntry.runner, 'npx vitest run');
+  });
+
+  it('defaults to go test for Go project', () => {
+    fs.writeFileSync(path.join(tmpDir, 'go.mod'), 'module example.com/test\n\ngo 1.21\n');
+
+    const result = detectTestFrameworks(tmpDir);
+    const goEntry = result.find(e => e.lang === 'go');
+    assert.ok(goEntry, 'should detect go test framework');
+    assert.equal(goEntry.framework, 'go-test');
+    assert.equal(goEntry.runner, 'go test ./...');
+  });
+
+  it('returns multiple entries for multi-language project', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({
+      name: 'test-app',
+      devDependencies: { jest: '^29.0.0' },
+    }));
+    fs.writeFileSync(path.join(tmpDir, 'go.mod'), 'module example.com/test\n\ngo 1.21\n');
+
+    const result = detectTestFrameworks(tmpDir);
+    const jsEntry = result.find(e => e.lang === 'javascript');
+    const goEntry = result.find(e => e.lang === 'go');
+    assert.ok(jsEntry, 'should have javascript entry');
+    assert.ok(goEntry, 'should have go entry');
+    assert.equal(jsEntry.framework, 'jest');
+    assert.equal(goEntry.framework, 'go-test');
   });
 });
