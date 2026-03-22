@@ -64,20 +64,67 @@ async function handleReview(cwd, subcommand, args) {
     }
 
     case 'log-issue': {
-      const setId = args[0];
+      const crypto = require('crypto');
+      const { flags: logFlags, positional: logPos } = parseArgs(args, {
+        type: 'string', severity: 'string', file: 'string',
+        description: 'string', source: 'string', line: 'string',
+        wave: 'string', 'post-merge': 'boolean',
+      });
+      const setId = logPos[0];
       if (!setId) {
-        throw new CliError('Usage: rapid-tools review log-issue <set-id> [<wave-id>] [--post-merge]  (reads JSON issue from stdin)');
+        throw new CliError('Usage: rapid-tools review log-issue <set-id> --type <type> --severity <severity> --file <file> --description <desc> --source <source> [--line <line>] [--wave <wave>] [--post-merge]');
       }
-      const logPostMerge = args.includes('--post-merge');
-      // Detect mode: if args[1] present and not a flag, it is the wave-id (lean compat)
-      const waveId = (args[1] && !args[1].startsWith('--')) ? args[1] : null;
+      const logPostMerge = !!logFlags['post-merge'];
+
+      let issue;
       try {
+        // Try stdin first (backward compat)
         const stdinData = readStdinSync();
-        const issue = JSON.parse(stdinData);
-        // If wave-id provided (lean compat), add originatingWave to issue
+        issue = JSON.parse(stdinData);
+        // Detect positional wave-id: logPos[1] if present and not a flag
+        const waveId = (logPos[1] && !logPos[1].startsWith('--')) ? logPos[1] : null;
         if (waveId) {
           issue.originatingWave = waveId;
         }
+      } catch (err) {
+        if (err instanceof CliError && err.message.includes('No data on stdin')) {
+          // Fall back to CLI flags
+          const required = ['type', 'severity', 'file', 'description', 'source'];
+          const missing = required.filter(f => !logFlags[f]);
+          if (missing.length > 0) {
+            throw new CliError(
+              `Missing required flags: ${missing.join(', ')}\n` +
+              'Usage: rapid-tools review log-issue <set-id> --type <type> --severity <severity> --file <file> --description <desc> --source <source> [--line <line>] [--wave <wave>] [--post-merge]'
+            );
+          }
+          issue = {
+            id: crypto.randomUUID(),
+            type: logFlags.type,
+            severity: logFlags.severity,
+            file: logFlags.file,
+            description: logFlags.description,
+            source: logFlags.source,
+            status: 'open',
+            autoFixAttempted: false,
+            autoFixSucceeded: false,
+            createdAt: new Date().toISOString(),
+          };
+          if (logFlags.line !== undefined) {
+            const parsed = parseInt(logFlags.line, 10);
+            if (!isNaN(parsed)) {
+              issue.line = parsed;
+            }
+          }
+          if (logFlags.wave !== undefined) {
+            issue.originatingWave = logFlags.wave;
+          }
+        } else {
+          if (err instanceof CliError) throw err;
+          throw new CliError(err.message);
+        }
+      }
+
+      try {
         if (logPostMerge) {
           review.logIssuePostMerge(cwd, setId, issue);
         } else {
