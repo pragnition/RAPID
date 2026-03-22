@@ -287,17 +287,25 @@ Format:
 
 ## Step 7: Log Issues
 
-For each failed test, log an issue using the `review log-issue` CLI command:
+For each failed test, log an issue using the `review log-issue` CLI command.
 
+**CLI Flags (recommended):**
 ```bash
-node "${RAPID_TOOLS}" review log-issue \
-  --set-id "{setId}" \
+node "${RAPID_TOOLS}" review log-issue "{setId}" \
   --type "test" \
   --severity "{severity}" \
   --file "{testFile}" \
   --description "{test failure description}" \
   --source "unit-test"
 ```
+
+**Stdin JSON alternative:**
+```bash
+echo '{"id":"<uuid>","type":"test","severity":"{severity}","file":"{testFile}","description":"{test failure description}","source":"unit-test","createdAt":"<iso-timestamp>"}' | \
+  node "${RAPID_TOOLS}" review log-issue "{setId}"
+```
+
+The CLI flag interface auto-generates `id` and `createdAt`. The stdin JSON interface requires all fields including `id` and `createdAt`.
 
 If in post-merge mode, issues are logged to `.planning/post-merge/{setId}/REVIEW-ISSUES.json`.
 
