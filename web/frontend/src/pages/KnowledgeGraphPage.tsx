@@ -109,6 +109,12 @@ export function KnowledgeGraphPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const [layoutDir, setLayoutDir] = useState<"TB" | "LR">("TB");
+  const [selectedNode, setSelectedNode] = useState<{
+    id: string;
+    status: string;
+    wave: number;
+    deps: string[];
+  } | null>(null);
 
   // Update graph when data changes
   useEffect(() => {
@@ -203,18 +209,24 @@ export function KnowledgeGraphPage() {
       } as cytoscape.LayoutOptions,
     });
 
-    // Node click: select node and connected edges
+    // Node click: select node and connected edges, show details
     cy.on("tap", "node", (evt) => {
       cy.elements().unselect();
       const node = evt.target as cytoscape.NodeSingular;
       node.select();
       node.connectedEdges().select();
+      const id = node.data("id") as string;
+      const status = node.data("status") as string;
+      const wave = (node.data("wave") as number) ?? 0;
+      const deps = node.incomers("edge").map((e) => e.data("source") as string);
+      setSelectedNode({ id, status, wave, deps });
     });
 
     // Background click: deselect all
     cy.on("tap", (evt) => {
       if (evt.target === cy) {
         cy.elements().unselect();
+        setSelectedNode(null);
       }
     });
 
@@ -309,6 +321,27 @@ export function KnowledgeGraphPage() {
           ref={containerRef}
           className="h-[calc(100vh-12rem)] border border-border rounded-lg bg-surface-0"
         />
+        {selectedNode && (
+          <div className="absolute bottom-3 left-3 z-10 bg-surface-1 border border-border rounded-lg p-4 min-w-[200px] shadow-lg">
+            <h3 className="text-sm font-bold text-fg mb-2">{selectedNode.id}</h3>
+            <dl className="text-xs text-muted space-y-1">
+              <div>
+                <dt className="inline font-medium">Status:</dt>{" "}
+                <dd className="inline">{selectedNode.status}</dd>
+              </div>
+              <div>
+                <dt className="inline font-medium">Wave:</dt>{" "}
+                <dd className="inline">{selectedNode.wave}</dd>
+              </div>
+              {selectedNode.deps.length > 0 && (
+                <div>
+                  <dt className="inline font-medium">Depends on:</dt>{" "}
+                  <dd className="inline">{selectedNode.deps.join(", ")}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
       </div>
     </div>
   );
