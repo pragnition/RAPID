@@ -554,6 +554,45 @@ Set a flag noting this is greenfield -- research agents will receive a note that
 
 ---
 
+## Step 6a: Test Framework Detection
+
+Detect the project's test framework(s) and store them in config.json. This enables framework-agnostic test execution in `/rapid:unit-test`.
+
+```bash
+# Run test framework detection
+node -e "
+  const { detectTestFrameworks } = require('${RAPID_TOOLS}/../lib/context.cjs');
+  const result = detectTestFrameworks(process.cwd());
+  console.log(JSON.stringify(result));
+" > /tmp/rapid-test-frameworks.json
+```
+
+Read the detection result. If the array is non-empty, write it to config:
+
+```bash
+FRAMEWORKS=$(cat /tmp/rapid-test-frameworks.json)
+node "${RAPID_TOOLS}" init write-config --name "{name}" --model {model} --team-size {N} --test-frameworks "${FRAMEWORKS}"
+```
+
+**Important:** The `write-config` command preserves manual overrides. If the user has already edited `testFrameworks` entries in config.json, those entries are kept and detection only fills in missing language entries.
+
+Display the detected frameworks:
+
+```
+Test frameworks detected:
+  - {lang}: {framework} ({runner})
+```
+
+If no frameworks were detected, display:
+
+```
+No test frameworks detected. Test runner will be selected autonomously per language during unit testing.
+```
+
+**On error:** Non-fatal. If detection fails, log a warning and continue. Unit-test skill falls back to autonomous framework selection per language.
+
+---
+
 ## Step 7: Parallel Research Agents
 
 Ensure `.planning/research/` exists (already created in Step 5).
