@@ -24,6 +24,24 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 node "${RAPID_TOOLS}" display banner unit-test
 ```
 
+### 0c: Load test runner config
+
+```bash
+# Load testFrameworks from config.json
+CONFIG_PATH=".planning/config.json"
+if [ -f "$CONFIG_PATH" ]; then
+  TEST_FRAMEWORKS=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_PATH','utf-8')); console.log(JSON.stringify(c.testFrameworks || []))")
+else
+  TEST_FRAMEWORKS="[]"
+fi
+```
+
+The skill uses `TEST_FRAMEWORKS` to select the appropriate runner for each file being tested. Runner selection logic:
+1. Determine the file's language from its extension (.js/.cjs/.mjs/.ts/.tsx -> javascript/typescript, .py -> python, .go -> go, .rs -> rust)
+2. Find the matching entry in `TEST_FRAMEWORKS` by `lang`
+3. If found, use that entry's `runner` and `framework`
+4. If not found (no config entry for this language), the agent autonomously picks the best test framework for that language
+
 ### 0b: Parse arguments
 
 The user invokes this skill with: `/rapid:unit-test <set-id>` or numeric shorthand like `/rapid:unit-test 1`.
@@ -197,9 +215,9 @@ Execute unit tests for set '{setId}' -- {concern/chunk description}.
 {worktreePath or cwd}
 
 ## Instructions
-1. Write test files using `node --test` framework (node:test + node:assert/strict)
-2. Test file naming: `{originalFile}.test.cjs` in the same directory
-3. Run tests with: node --test {testFile}
+1. Write test files using the `{framework}` framework
+2. Test file naming: `{originalFile}.test.{ext}` in the same directory (use the appropriate extension for the language: .cjs for JS, .test.py for Python, _test.go for Go, etc.)
+3. Run tests with: {runner} {testFile}
 4. Return results via:
 <!-- RAPID:RETURN {"status":"COMPLETE","phase":"execute","data":{"results":[{"file":"...","testFile":"...","passed":N,"failed":N,"errors":[]}]}} -->
 ```
@@ -241,7 +259,7 @@ Fix failing unit tests for set '{setId}' -- Retry attempt {retryCount + 1}.
 1. Read each failing test file
 2. Fix the TEST CODE ONLY -- do NOT modify the source code under test
 3. Common fixes: incorrect assertions, wrong mock setup, missing test fixtures, async handling errors
-4. Re-run each fixed test with: node --test {testFile}
+4. Re-run each fixed test with: {runner} {testFile}
 5. Return via:
 <!-- RAPID:RETURN {"status":"COMPLETE","data":{"results":[{"file":"...","testFile":"...","passed":N,"failed":N,"errors":[]}]}} -->
 ```
@@ -345,7 +363,7 @@ Then exit. Do NOT prompt for stage selection.
 - **Each agent runs in its own context.** Agents do not share state -- each receives its file list and returns structured results. The skill merges results across agents.
 - **Concern groups include cross-cutting files.** When concern scoping is active, each concern group's file list includes the concern's own files PLUS all cross-cutting files from the scoper output.
 - **Idempotent overwrite.** Re-running `/rapid:unit-test` overwrites REVIEW-UNIT.md and any test files. Previous results are not accumulated.
-- **Uses `node --test` framework.** All tests use Node.js built-in test runner (`node:test`) with `node:assert/strict`. No external test frameworks.
+- **Framework-agnostic test runner.** The test framework is auto-detected during `/rapid:init` and stored in `.planning/config.json` under `testFrameworks`. Each language uses its configured runner (e.g., `node --test` for JS, `pytest` for Python, `cargo test` for Rust, `go test` for Go). If no configuration exists for a language, the agent autonomously selects the best framework for that language.
 - **REVIEW-SCOPE.md is the sole input.** This skill does not scope files itself -- it reads the scope produced by `/rapid:review`. If the scope is stale, re-run `/rapid:review` first.
 - **No stage selection.** This skill runs unit tests only. It does not prompt the user to select bug hunt or UAT.
 - **Retry on failure with confirmation.** When test execution produces failures, the user is prompted to retry or accept. Retries spawn a fixer agent that modifies test code only (never source code under test). Maximum 2 retries (3 total attempts). The user can accept results at any point to proceed to REVIEW-UNIT.md writing.
