@@ -25,6 +25,7 @@ const { handleScaffold } = require('../commands/scaffold.cjs');
 const { handleCompact } = require('../commands/compact.cjs');
 const { handleUiContract } = require('../commands/ui-contract.cjs');
 const { handleDocs } = require('../commands/docs.cjs');
+const { handleDag } = require('../commands/dag.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
@@ -131,6 +132,8 @@ Commands:
   docs generate [--scope <s>]      Generate documentation templates (scope: full|changelog|api|architecture)
   docs list                         List existing documentation files
   docs diff <milestone>             Show changelog entries for a milestone
+  dag generate                     Generate DAG.json from set dependencies
+  dag show                         Display DAG with wave grouping and status colors
   migrate detect                   Detect current RAPID version from .planning/ state
   migrate is-latest                Check if .planning/ state is at the latest version
   migrate backup                   Create pre-migration backup of .planning/
@@ -288,6 +291,10 @@ async function main() {
 
       case 'docs':
         handleDocs(cwd, subcommand, args.slice(2));
+        break;
+
+      case 'dag':
+        await handleDag(cwd, subcommand, args.slice(2));
         break;
 
       default:
