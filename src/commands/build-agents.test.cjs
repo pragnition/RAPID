@@ -63,13 +63,13 @@ const roleColorsKeys = extractKeys(roleColorsBlock);
 const roleDescriptionsKeys = extractKeys(roleDescriptionsBlock);
 
 // ---------------------------------------------------------------------------
-// Test 8: ROLE_CORE_MAP covers exactly 26 roles
+// Test 8: ROLE_CORE_MAP covers exactly 27 roles
 // ---------------------------------------------------------------------------
 describe('ROLE_CORE_MAP', () => {
-  it('covers exactly 26 roles', () => {
+  it('covers exactly 27 roles', () => {
     assert.equal(
-      roleCoreMapKeys.length, 26,
-      `Expected 26 roles in ROLE_CORE_MAP, got ${roleCoreMapKeys.length}: ${roleCoreMapKeys.join(', ')}`
+      roleCoreMapKeys.length, 27,
+      `Expected 27 roles in ROLE_CORE_MAP, got ${roleCoreMapKeys.length}: ${roleCoreMapKeys.join(', ')}`
     );
   });
 });
@@ -267,10 +267,10 @@ describe('assembleAgentPrompt section ordering', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Test 18: build-agents produces 22 generated + 4 skipped
+// Test 18: build-agents produces 23 generated + 4 skipped
 // ---------------------------------------------------------------------------
 describe('build-agents output', () => {
-  it('produces 22 generated + 4 skipped agent files', () => {
+  it('produces 23 generated + 4 skipped agent files', () => {
     const agentsDir = path.join(__dirname, '..', '..', 'agents');
     const files = fs.readdirSync(agentsDir).filter(f => f.startsWith('rapid-') && f.endsWith('.md'));
 
@@ -285,7 +285,7 @@ describe('build-agents output', () => {
       }
     }
 
-    assert.equal(generated, 22, `Expected 22 generated agents, got ${generated}`);
+    assert.equal(generated, 23, `Expected 23 generated agents, got ${generated}`);
     assert.ok(handWritten >= 4, `Expected at least 4 hand-written/stub agents, got ${handWritten}`);
   });
 });

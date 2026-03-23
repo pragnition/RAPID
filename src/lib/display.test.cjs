@@ -14,9 +14,9 @@ describe('display', () => {
   });
 
   describe('STAGE_VERBS', () => {
-    it('maps all 16 stages to uppercase verb strings', () => {
+    it('maps all 17 stages to uppercase verb strings', () => {
       const display = require(displayPath);
-      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding'];
+      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version'];
       for (const stage of expectedStages) {
         assert.ok(
           typeof display.STAGE_VERBS[stage] === 'string',
@@ -51,9 +51,9 @@ describe('display', () => {
   });
 
   describe('STAGE_BG', () => {
-    it('maps all 16 stages to ANSI background escape codes', () => {
+    it('maps all 17 stages to ANSI background escape codes', () => {
       const display = require(displayPath);
-      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding'];
+      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version'];
       for (const stage of expectedStages) {
         assert.ok(
           typeof display.STAGE_BG[stage] === 'string',
@@ -218,9 +218,9 @@ describe('display', () => {
       );
     });
 
-    it('all 16 stages produce valid banner strings', () => {
+    it('all 17 stages produce valid banner strings', () => {
       const display = require(displayPath);
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding'];
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version'];
       for (const stage of stages) {
         const result = display.renderBanner(stage);
         assert.ok(typeof result === 'string', `renderBanner("${stage}") should return a string`);

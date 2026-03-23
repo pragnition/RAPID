@@ -21,6 +21,7 @@ const ANSI = {
  * Legacy (8): init, set-init, discuss, wave-plan, plan-set, execute, review, merge
  * v3.0  (7): start-set, discuss-set, execute-set, new-version, add-set, quick, scaffold
  * Branding (1): branding
+ * Audit   (1): audit-version
  */
 const STAGE_VERBS = {
   'init': 'INITIALIZING',
