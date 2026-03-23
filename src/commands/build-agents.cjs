@@ -40,6 +40,7 @@ function handleBuildAgents(cwd, args) {
     'scoper':                'Read, Grep, Glob',
     'set-merger':            'Read, Write, Edit, Bash, Grep, Glob',
     'conflict-resolver':     'Read, Write, Edit, Bash, Grep, Glob',
+    'auditor':               'Read, Grep, Glob, Bash',
   };
 
   /**
@@ -72,6 +73,7 @@ function handleBuildAgents(cwd, args) {
     'scoper': 'blue',
     'set-merger': 'green',
     'conflict-resolver': 'yellow',
+    'auditor': 'blue',
   };
 
   /**
@@ -104,6 +106,7 @@ function handleBuildAgents(cwd, args) {
     'scoper':                'RAPID scoper agent -- categorizes files by concern area for focused review scoping',
     'set-merger':            'RAPID set merger agent -- runs detection, resolution, and gate for a single set merge',
     'conflict-resolver':     'RAPID conflict resolver agent -- deep analysis and resolution of mid-confidence merge conflicts',
+    'auditor':               'RAPID auditor agent -- cross-references requirements against delivery for gap analysis',
   };
 
   /**
@@ -138,6 +141,7 @@ function handleBuildAgents(cwd, args) {
     'scoper':               ['core-identity.md', 'core-returns.md'],
     'set-merger':           ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
     'conflict-resolver':    ['core-identity.md', 'core-conventions.md', 'core-returns.md'],
+    'auditor':              ['core-identity.md', 'core-returns.md'],
   };
 
   function generateFrontmatter(role) {
