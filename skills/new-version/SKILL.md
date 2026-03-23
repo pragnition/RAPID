@@ -145,7 +145,66 @@ Use AskUserQuestion with:
 
 Store selected items in goals.deferredDecisions.
 
-Store these values for use in subsequent steps.
+**Step 2C-vi: Completeness Confirmation**
+
+Display a consolidated summary of all captured goals, grouped by category:
+
+```
+## Goal Summary for {milestoneName}
+
+### Features
+{goals.features or "-- none --"}
+
+### Bug Fixes
+{goals.bugFixes or "-- none --"}
+
+### Tech Debt
+{goals.techDebt or "-- none --"}
+
+### UX Improvements
+{goals.uxImprovements or "-- none --"}
+
+### Deferred Decisions (Carried Forward)
+{goals.deferredDecisions formatted as bullet list, or "-- none --"}
+```
+
+Use AskUserQuestion with:
+- question: "Is this complete? Review the goals above."
+- Options:
+  - "Yes, proceed" -- "All requirements captured. Continue to research pipeline."
+  - "Add more" -- "Add additional goals (freeform, no category constraints)"
+
+**If "Add more":**
+Ask freeform: "What additional goals should be included? (These will be added as general goals without a specific category.)"
+Store the response as goals.additionalGoals.
+Redisplay the updated summary with a new section "### Additional Goals" and re-prompt the completeness confirmation. Loop until user selects "Yes, proceed".
+
+**If "Yes, proceed":**
+Continue to Step 3.
+
+**Store the final goals:** After confirmation, compose the category-tagged goals string for downstream use. Format as:
+
+```
+## Features
+{goals.features}
+
+## Bug Fixes
+{goals.bugFixes}
+
+## Tech Debt
+{goals.techDebt}
+
+## UX Improvements
+{goals.uxImprovements}
+
+## Deferred Decisions
+{goals.deferredDecisions}
+
+## Additional Goals
+{goals.additionalGoals}
+```
+
+This category-tagged string replaces `{goals from Step 2}` in all downstream references (Steps 5, 6, 7). Empty categories are omitted from the output.
 
 ## Step 3: Handle Unfinished Sets
 
