@@ -119,6 +119,32 @@ Use AskUserQuestion with:
 If "Enter UX improvements": Ask freeform: "Describe the UX or developer experience improvements to make."
 Store response in goals.uxImprovements.
 
+**Step 2C-v: Deferred Decisions from Previous Milestone**
+
+Read all DEFERRED.md files from previous milestone sets:
+
+```bash
+# Find all DEFERRED.md files
+DEFERRED_FILES=$(find .planning/sets/*/DEFERRED.md 2>/dev/null)
+```
+
+**If no DEFERRED.md files exist (or all contain empty tables):**
+Display: "Category 5/5: Deferred Decisions -- No deferred decisions found from previous milestone."
+Set goals.deferredDecisions to empty.
+
+**If DEFERRED.md files exist with content:**
+Parse each DEFERRED.md file. The format is a markdown table with columns: #, Decision/Idea, Source, Suggested Target.
+
+Collect all non-empty deferred items into a list. For each item, format as: "{Decision/Idea} (from set: {source set ID})".
+
+Use AskUserQuestion with:
+- question: "Category 5/5: Deferred Decisions -- Select which deferred items to include as goals for this milestone"
+- multiSelect: true
+- Options: one option per deferred item, formatted as "{Decision/Idea} (from set: {source set ID})" with description "{Suggested Target}"
+- Plus a final option: "None of these" -- "Skip all deferred items"
+
+Store selected items in goals.deferredDecisions.
+
 Store these values for use in subsequent steps.
 
 ## Step 3: Handle Unfinished Sets
