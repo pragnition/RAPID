@@ -2,7 +2,7 @@
   "version": 1,
   "rapidVersion": "4.1.0",
   "projectName": "RAPID",
-  "currentMilestone": "v4.1.0",
+  "currentMilestone": "v4.2.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -364,8 +364,35 @@
           "branch": "rapid/new-version-comprehensive"
         }
       ]
+    },
+    {
+      "id": "v4.2.0",
+      "name": "Discuss & Audit",
+      "sets": [
+        {
+          "id": "path-resolution-fix",
+          "status": "discussed",
+          "waves": [],
+          "name": "Path Resolution Fix",
+          "branch": "rapid/path-resolution-fix"
+        },
+        {
+          "id": "discuss-ux",
+          "status": "pending",
+          "waves": [],
+          "name": "Discuss UX Improvements",
+          "branch": "rapid/discuss-ux"
+        },
+        {
+          "id": "audit-version",
+          "status": "pending",
+          "waves": [],
+          "name": "Audit Version Command",
+          "branch": "rapid/audit-version"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-23T04:56:03.101Z",
+  "lastUpdatedAt": "2026-03-23T15:12:51.444Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
