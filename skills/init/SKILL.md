@@ -897,12 +897,41 @@ c) Write STATE.json with the project > milestone > sets structure:
    Each set has only `{ id, name, status: "pending", branch }` -- no waves or jobs arrays.
 
 d) Generate DAG.json and OWNERSHIP.json from the newly written STATE.json and CONTRACT.json files:
-   ```bash
-   node -e "const { recalculateDAG } = require('${RAPID_TOOLS}/../lib/add-set.cjs'); recalculateDAG(process.cwd(), '{milestoneId}').then(() => console.log('DAG.json created.')).catch(e => console.error('Warning: DAG generation failed:', e.message))"
-   ```
-   Where `{milestoneId}` is the milestone ID from the roadmapper's `state.currentMilestone` field.
 
-   If this command fails (prints a warning), do NOT fail init. The DAG will be generated automatically by the first `state add-set` call or can be triggered manually later.
+   ```bash
+   if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+   node "${RAPID_TOOLS}" dag generate
+   ```
+
+   Where the CLI reads STATE.json to find the current milestone and generates DAG.json and OWNERSHIP.json from the set contracts.
+
+   Verify DAG.json was created:
+
+   ```bash
+   if [ -f .planning/sets/DAG.json ]; then
+     echo "DAG.json created successfully."
+   else
+     echo "DAG.json NOT found after generation."
+     exit 1
+   fi
+   ```
+
+   If the verification fails (DAG.json does not exist), retry the generation command once:
+
+   ```bash
+   if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+   node "${RAPID_TOOLS}" dag generate
+   ```
+
+   If the second attempt also fails, use AskUserQuestion with:
+   - question: "DAG.json generation failed after two attempts. The project was initialized but the dependency graph is missing."
+   - Options:
+     - "Retry" -- "Try generating DAG.json again"
+     - "Skip" -- "Continue without DAG.json. Run /rapid:status then `dag generate` manually later."
+     - "Cancel" -- "Exit initialization. Planning files are preserved on disk."
+   - If "Retry": Loop back and attempt DAG generation again.
+   - If "Skip": Log a warning "WARNING: DAG.json was not generated. Run `dag generate` before starting sets." and continue to Step 10.
+   - If "Cancel": End the skill with "Cancelled. Planning files preserved."
 
 **If "Request changes":**
 
