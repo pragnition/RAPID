@@ -15,17 +15,17 @@ const RAPID_DIR = path.resolve(__dirname, '..', '..');
 const AGENTS_DIR = path.join(RAPID_DIR, 'agents');
 
 describe('handleBuildAgents integration', () => {
-  it('build-agents CLI command generates all 26 agent files', () => {
+  it('build-agents CLI command generates all 27 agent files', () => {
     const stdout = execSync(`node "${CLI_PATH}" build-agents`, {
       encoding: 'utf-8',
       timeout: 15000,
     });
 
-    assert.ok(stdout.includes('Built 22 agents'), 'Should report 22 agents built (4 core skipped)');
+    assert.ok(stdout.includes('Built 23 agents'), 'Should report 23 agents built (4 core skipped)');
 
-    // Verify agents directory has 26 .md files
+    // Verify agents directory has 27 .md files
     const mdFiles = fs.readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md'));
-    assert.equal(mdFiles.length, 26, `Expected 26 .md files in agents/, got ${mdFiles.length}`);
+    assert.equal(mdFiles.length, 27, `Expected 27 .md files in agents/, got ${mdFiles.length}`);
   });
 
   it('generated planner agent has correct frontmatter', () => {
