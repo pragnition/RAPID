@@ -19,7 +19,7 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 ```bash
 if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
 node -e "
-const { isWebEnabled } = require('${RAPID_TOOLS}/../lib/web-client.cjs');
+const path=require('path'); const { isWebEnabled } = require(path.join(path.dirname('${RAPID_TOOLS}'), '..', 'lib', 'web-client.cjs'));
 if (!isWebEnabled()) {
   console.log(JSON.stringify({ enabled: false }));
 } else {
@@ -41,7 +41,7 @@ End the skill.
 ```bash
 if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
 node -e "
-const { registerProjectWithWeb } = require('${RAPID_TOOLS}/../lib/web-client.cjs');
+const path=require('path'); const { registerProjectWithWeb } = require(path.join(path.dirname('${RAPID_TOOLS}'), '..', 'lib', 'web-client.cjs'));
 registerProjectWithWeb(process.cwd()).then(result => {
   console.log(JSON.stringify(result));
 });

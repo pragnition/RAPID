@@ -561,7 +561,7 @@ Detect the project's test framework(s) and store them in config.json. This enabl
 ```bash
 # Run test framework detection
 node -e "
-  const { detectTestFrameworks } = require('${RAPID_TOOLS}/../lib/context.cjs');
+  const path=require('path'); const { detectTestFrameworks } = require(path.join(path.dirname('${RAPID_TOOLS}'), '..', 'lib', 'context.cjs'));
   const result = detectTestFrameworks(process.cwd());
   console.log(JSON.stringify(result));
 " > /tmp/rapid-test-frameworks.json
@@ -997,7 +997,7 @@ If `RAPID_WEB=true` is set, automatically register this project with Mission Con
 ```bash
 if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
 node -e "
-const { isWebEnabled, registerProjectWithWeb } = require('${RAPID_TOOLS}/../lib/web-client.cjs');
+const path=require('path'); const { isWebEnabled, registerProjectWithWeb } = require(path.join(path.dirname('${RAPID_TOOLS}'), '..', 'lib', 'web-client.cjs'));
 if (!isWebEnabled()) {
   console.log(JSON.stringify({ skipped: true }));
   process.exit(0);
