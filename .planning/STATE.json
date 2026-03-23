@@ -378,14 +378,14 @@
         },
         {
           "id": "discuss-ux",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Discuss UX Improvements",
           "branch": "rapid/discuss-ux"
         },
         {
           "id": "audit-version",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Audit Version Command",
           "branch": "rapid/audit-version"
@@ -393,6 +393,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-23T15:47:07.747Z",
+  "lastUpdatedAt": "2026-03-23T16:10:34.451Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
