@@ -71,9 +71,53 @@ If "Other" is selected, ask freeform: "What version/ID should the new milestone 
 
 Ask freeform: "Give a short name or description for this milestone (e.g., 'Mark III', 'API Rewrite', 'Performance Overhaul')."
 
-**Question C: Milestone Goals**
+**Question C: Milestone Goals (Structured Categories)**
 
-Ask freeform: "Describe the goals for this milestone. What should be achieved? What features, improvements, or changes are in scope? Be as specific as possible -- this will guide the research and roadmap generation."
+Gather goals across 5 categories using sequential AskUserQuestion prompts. Each category collects freeform input. Initialize an empty goals collection object with keys: features, bugFixes, techDebt, uxImprovements, deferredDecisions.
+
+**Step 2C-i: Features**
+
+Use AskUserQuestion with:
+- question: "Category 1/5: New Features -- What new features or capabilities should this milestone deliver?"
+- Options:
+  - "Nothing for this category" -- "Skip -- no new features planned"
+  - "Enter features" -- "Describe new features for this milestone"
+
+If "Enter features": Ask freeform: "Describe the new features for this milestone. Be specific about what each feature should do."
+Store response in goals.features.
+
+**Step 2C-ii: Bug Fixes**
+
+Use AskUserQuestion with:
+- question: "Category 2/5: Bug Fixes -- Are there known bugs or issues to address in this milestone?"
+- Options:
+  - "Nothing for this category" -- "Skip -- no bug fixes planned"
+  - "Enter bug fixes" -- "Describe bugs to fix in this milestone"
+
+If "Enter bug fixes": Ask freeform: "Describe the bugs or issues to fix. Include reproduction steps or symptoms if known."
+Store response in goals.bugFixes.
+
+**Step 2C-iii: Tech Debt**
+
+Use AskUserQuestion with:
+- question: "Category 3/5: Tech Debt -- Any refactoring, cleanup, or infrastructure improvements?"
+- Options:
+  - "Nothing for this category" -- "Skip -- no tech debt work planned"
+  - "Enter tech debt items" -- "Describe tech debt to address in this milestone"
+
+If "Enter tech debt items": Ask freeform: "Describe the tech debt or infrastructure improvements to tackle."
+Store response in goals.techDebt.
+
+**Step 2C-iv: UX Improvements**
+
+Use AskUserQuestion with:
+- question: "Category 4/5: UX Improvements -- Any user experience, developer experience, or workflow improvements?"
+- Options:
+  - "Nothing for this category" -- "Skip -- no UX improvements planned"
+  - "Enter UX improvements" -- "Describe UX improvements for this milestone"
+
+If "Enter UX improvements": Ask freeform: "Describe the UX or developer experience improvements to make."
+Store response in goals.uxImprovements.
 
 Store these values for use in subsequent steps.
 
