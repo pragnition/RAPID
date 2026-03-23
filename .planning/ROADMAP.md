@@ -16,6 +16,23 @@
 - **v3.6.0 Workflow & UX Polish** — 5 sets (shipped 2026-03-20)
 - **v4.0.0 Mission Control** — 7 sets (shipped 2026-03-22)
 - **v4.1.0 Polish & Fixes** — 8 sets (shipped 2026-03-23)
+- **v4.2.0 Discuss & Audit** — 3 sets (in progress)
+
+## Active Milestone: v4.2.0 — Discuss & Audit
+
+### Set 1: path-resolution-fix
+**Branch:** `rapid/path-resolution-fix` | **Size:** S
+Fix `require('${RAPID_TOOLS}/../lib/...')` path resolution in `skills/init/SKILL.md` and `skills/register-web/SKILL.md` where Node.js treats the `.cjs` filename as a directory component.
+
+### Set 2: discuss-ux
+**Branch:** `rapid/discuss-ux` | **Size:** M
+Two coordinated UX improvements to `skills/discuss-set/SKILL.md`: (1) Consolidate gray area prompts into fewer multiSelect prompts (max 8 checkboxes each), (2) Replace markdown pros/cons table with structured list format. Includes coordinated test suite updates.
+
+### Set 3: audit-version
+**Branch:** `rapid/audit-version` | **Size:** L
+New `/rapid:audit-version` command that reads milestone artifacts, cross-references requirements vs. delivery, produces `.planning/v{version}-AUDIT.md` gap report, and offers remediation via `/rapid:add-set`. Read-only — never mutates STATE.json.
+
+**Dependency graph:** All 3 sets are fully independent.
 
 ## Completed Milestone Details
 

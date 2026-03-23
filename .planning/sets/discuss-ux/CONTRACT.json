@@ -1,0 +1,29 @@
+{
+  "setId": "discuss-ux",
+  "version": "1.0.0",
+  "exports": {},
+  "imports": {},
+  "behavioral": {
+    "gray-area-consolidation": {
+      "description": "When n>1, gray areas are presented in consolidated multiSelect prompts rather than multiple separate batched prompts. Maximum 8 checkboxes per prompt.",
+      "enforced_by": "test"
+    },
+    "table-format-replacement": {
+      "description": "Step 6 Format A uses structured list format instead of markdown table for pros/cons, ensuring reliable rendering across all terminal widths",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Two coordinated UX improvements to discuss-set: consolidate gray area presentation into fewer AskUserQuestion prompts (Step 5), and replace markdown pros/cons tables with structured list format (Step 6 Format A). Both require test suite updates.",
+    "ownedFiles": [
+      "skills/discuss-set/SKILL.md",
+      "skills/discuss-set/SKILL.test.cjs"
+    ],
+    "tasks": [
+      { "description": "Rewrite Step 5 gray area presentation to use consolidated multiSelect format", "acceptance": "8 gray areas presented as 1 prompt with 8 checkboxes instead of 2 prompts with 4 each" },
+      { "description": "Rewrite Step 6 Format A to use structured list instead of markdown table", "acceptance": "Pros/cons render correctly at any terminal width" },
+      { "description": "Update SKILL.test.cjs assertions for new gray area count and format", "acceptance": "All discuss-set tests pass" }
+    ],
+    "acceptance": ["Gray areas presented in consolidated prompts (max 8 per prompt)", "Format A uses list format, not tables", "All discuss-set tests pass"]
+  }
+}

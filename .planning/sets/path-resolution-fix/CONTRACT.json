@@ -1,0 +1,24 @@
+{
+  "setId": "path-resolution-fix",
+  "version": "1.0.0",
+  "exports": {},
+  "imports": {},
+  "behavioral": {
+    "path-resolution": {
+      "description": "All require() calls using RAPID_TOOLS path must use path.dirname() to resolve from the directory containing rapid-tools.cjs, not from the filename itself",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Fix require() path resolution in skills/init/SKILL.md and skills/register-web/SKILL.md where ${RAPID_TOOLS}/../lib/ fails because Node treats the .cjs filename as a directory component. Establish path.dirname() convention for all RAPID_TOOLS-relative requires.",
+    "ownedFiles": [
+      "skills/init/SKILL.md",
+      "skills/register-web/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Fix require() path patterns in skills/init/SKILL.md (2 affected lines)", "acceptance": "Module resolution succeeds during /rapid:init" },
+      { "description": "Fix require() path patterns in skills/register-web/SKILL.md (2 affected lines)", "acceptance": "Module resolution succeeds during /rapid:register-web" }
+    ],
+    "acceptance": ["All require() paths using RAPID_TOOLS resolve correctly", "No regression in /rapid:init or /rapid:register-web workflows"]
+  }
+}

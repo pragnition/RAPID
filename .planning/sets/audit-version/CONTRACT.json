@@ -1,0 +1,78 @@
+{
+  "setId": "audit-version",
+  "version": "1.0.0",
+  "exports": {
+    "audit-version-command": {
+      "type": "endpoint",
+      "signature": "/rapid:audit-version [version]",
+      "description": "CLI command that audits a completed milestone for gaps between planned requirements and actual delivery. Produces .planning/v{version}-AUDIT.md."
+    },
+    "audit-report-artifact": {
+      "type": "file",
+      "signature": ".planning/v{version}-AUDIT.md",
+      "description": "Markdown gap report listing covered requirements, uncovered requirements, partially completed items, and recommended remediation actions."
+    }
+  },
+  "imports": {
+    "state-json": {
+      "fromSet": "baseline",
+      "type": "file",
+      "signature": ".planning/STATE.json",
+      "description": "Read milestone and set status to determine completion state"
+    },
+    "roadmap": {
+      "fromSet": "baseline",
+      "type": "file",
+      "signature": ".planning/ROADMAP.md",
+      "description": "Read planned scope per set for comparison against delivery"
+    },
+    "requirements": {
+      "fromSet": "baseline",
+      "type": "file",
+      "signature": ".planning/REQUIREMENTS.md",
+      "description": "Read acceptance criteria for traceability verification"
+    },
+    "add-set-command": {
+      "fromSet": "baseline",
+      "type": "endpoint",
+      "signature": "/rapid:add-set",
+      "description": "Existing command used for remediation when gaps are found"
+    }
+  },
+  "behavioral": {
+    "read-only-state": {
+      "description": "Audit-version NEVER mutates STATE.json. It is a read-only analysis command. Remediation is deferred to /rapid:add-set invoked by the user.",
+      "enforced_by": "test"
+    },
+    "milestone-completion-check": {
+      "description": "Milestone completion is derived from sets.every(s => s.status === 'merged'), not from a milestone-level status field",
+      "enforced_by": "runtime"
+    },
+    "context-limit-safety": {
+      "description": "For milestones with 5+ sets, use a two-pass approach: summary scan first, then targeted deep-dive on flagged sets",
+      "enforced_by": "runtime"
+    }
+  },
+  "definition": {
+    "scope": "New /rapid:audit-version command that reads milestone artifacts, cross-references planned requirements against actual delivery, produces a gap report (.planning/v{version}-AUDIT.md), and offers to plan remediation sets via /rapid:add-set or defer items to next version with written context. Read-only against state; never mutates STATE.json.",
+    "ownedFiles": [
+      "skills/audit-version/SKILL.md",
+      "src/agents/roles/role-auditor.md"
+    ],
+    "tasks": [
+      { "description": "Create skills/audit-version/SKILL.md with full audit workflow", "acceptance": "Skill registered and invocable via /rapid:audit-version" },
+      { "description": "Create role-auditor.md agent role module", "acceptance": "Agent builds successfully with build-agents" },
+      { "description": "Add display.cjs banner entry for audit stage", "acceptance": "Audit stage displays branded banner" },
+      { "description": "Implement gap analysis logic (requirements vs delivery)", "acceptance": "Audit correctly identifies covered, uncovered, and partial requirements" },
+      { "description": "Implement remediation offer via /rapid:add-set or defer to next version", "acceptance": "User can choose to create remediation sets for gaps or defer items with written context" }
+    ],
+    "acceptance": [
+      "/rapid:audit-version produces accurate gap report",
+      "Report artifact written to .planning/v{version}-AUDIT.md",
+      "STATE.json is never mutated by audit",
+      "Remediation offered via /rapid:add-set for identified gaps",
+      "Deferral option writes carry-forward context for next version",
+      "Two-pass approach used for milestones with 5+ sets"
+    ]
+  }
+}

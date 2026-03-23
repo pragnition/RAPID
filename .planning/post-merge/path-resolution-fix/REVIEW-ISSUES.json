@@ -1,0 +1,45 @@
+{
+  "setId": "path-resolution-fix",
+  "issues": [
+    {
+      "id": "8aacd19c-f4db-4cac-ab1f-9b4acf09dbda",
+      "type": "bug",
+      "severity": "medium",
+      "file": ".planning/sets/path-resolution-fix/CONTEXT.md",
+      "line": 45,
+      "description": "CONTEXT.md claimed phantom 5th require() occurrence (add-set.cjs) that did not exist",
+      "autoFixAttempted": false,
+      "autoFixSucceeded": false,
+      "source": "bug-hunt",
+      "status": "open",
+      "createdAt": "2026-03-23T15:34:35.050Z"
+    },
+    {
+      "id": "0689b482-c4a1-4a0d-a3e5-601ed5c295d5",
+      "type": "bug",
+      "severity": "low",
+      "file": ".planning/sets/path-resolution-fix/CONTEXT.md",
+      "line": 16,
+      "description": "CONTEXT.md scope count (5 occurrences) contradicted SET-OVERVIEW.md and actual count (4)",
+      "autoFixAttempted": false,
+      "autoFixSucceeded": false,
+      "source": "bug-hunt",
+      "status": "open",
+      "createdAt": "2026-03-23T15:34:37.916Z"
+    },
+    {
+      "id": "c22e8e72-33c0-483c-9664-07abf13923ca",
+      "type": "bug",
+      "severity": "medium",
+      "file": ".planning/sets/path-resolution-fix/WAVE-1-COMPLETE.md",
+      "line": 8,
+      "description": "WAVE-1-COMPLETE.md branch field (main) inconsistent with STATE.json (rapid/path-resolution-fix)",
+      "autoFixAttempted": false,
+      "autoFixSucceeded": false,
+      "source": "bug-hunt",
+      "status": "open",
+      "createdAt": "2026-03-23T15:34:39.531Z"
+    }
+  ],
+  "lastUpdatedAt": "2026-03-23T15:34:39.532Z"
+}

@@ -1,106 +1,151 @@
-# Stack Research: new-version-comprehensive
+# Stack Research: audit-version
 
 ## Core Stack Assessment
 
-### Technology: SKILL.md (Prompt-instructional file)
-- **Type:** Markdown prompt file consumed by Claude Code agent runtime
-- **No runtime dependencies:** SKILL.md is not executed as code -- it is interpreted by the Claude Code agent. There are no package imports, no compilation step, and no runtime version constraints.
-- **Modification scope:** All changes are textual/instructional modifications to a single file (`skills/new-version/SKILL.md`, currently 506 lines).
+### Node.js Runtime
+- **Detected version:** 18+ (package.json engines constraint)
+- **Latest stable:** 22.x LTS (as of March 2026)
+- **Relevant features:** CommonJS used throughout (.cjs), built-in `node:test` for tests, `fs` and `child_process` for filesystem and git operations
+- **No upgrade needed:** The audit-version command uses only standard Node.js APIs (fs, path, child_process) that are stable across 18-22.x
 
-### AskUserQuestion Tool
-- **Version:** Built into Claude Code runtime (not a project dependency)
-- **Capabilities confirmed in codebase:**
-  - Single-select with named options and descriptions
-  - `multiSelect: true` for checkbox-style selection (used in discuss-set/SKILL.md)
-  - `preview` field on options for visual panels (single-select only)
-  - Freeform text input via follow-up questions
-- **Constraint:** multiSelect and preview panels are mutually exclusive
-- **Relevance:** The deferred-decisions checklist will use `multiSelect: true` for batch selection
+### Zod 3.25.76
+- **Role:** State schema validation (STATE.json parsing)
+- **Relevance to audit:** The auditor must READ state via `node "${RAPID_TOOLS}" state get --all`, which returns Zod-validated JSON. The auditor never mutates state, so no schema interaction needed in the new code itself.
+- **No direct dependency:** The role-auditor.md and SKILL.md are markdown files -- they consume CLI output, not library APIs directly.
 
-### RAPID Tools CLI (`rapid-tools.cjs`)
-- **Relevant commands:** `state get --all`, `state add-milestone`, `display banner`
-- **No new CLI commands needed:** The set reads DEFERRED.md files via the Read tool and glob patterns, not via rapid-tools.cjs
-- **State format:** STATE.json contains `milestones[id].sets[]` with `{ id, name, status, branch }` -- no changes needed
+### Ajv 8.17.1
+- **Role:** JSON Schema validation for CONTRACT.json files
+- **Relevance to audit:** The auditor reads CONTRACT.json files to extract acceptance criteria. These are plain JSON reads -- no Ajv validation needed in the audit flow (Ajv validates at planning/execution/merge gates, not at audit time).
 
 ## Dependency Health
 
-| Component | Current | Status | Notes |
-|-----------|---------|--------|-------|
-| skills/new-version/SKILL.md | 506 lines, 9 steps | Active | Target file for all modifications |
-| skills/discuss-set/SKILL.md | ~480 lines | Active | Produces DEFERRED.md files consumed by this feature |
-| AskUserQuestion | Claude Code built-in | Active | multiSelect confirmed working |
-| Read tool | Claude Code built-in | Active | Used to read DEFERRED.md files |
-| Glob tool | Claude Code built-in | Active | Used to find `.planning/sets/*/DEFERRED.md` |
-| Agent tool | Claude Code built-in | Active | Used to spawn 6 research agents |
+| Package | Current | Latest | Status | Notes |
+|---------|---------|--------|--------|-------|
+| zod | 3.25.76 | 3.25.x | Current | No action needed |
+| ajv | 8.17.1 | 8.17.x | Current | No action needed |
+| ajv-formats | 3.0.1 | 3.0.x | Current | No action needed |
+| proper-lockfile | 4.1.2 | 4.1.x | Current | No action needed |
+
+**Assessment:** All 4 production dependencies are current. No CVEs or upgrade concerns.
 
 ## Compatibility Matrix
 
-### DEFERRED.md Format (Cross-set dependency)
-- **Producer:** `discuss-set` skill (from `discuss-overhaul` set, planned but not yet executed)
-- **Consumer:** This feature (new-version-comprehensive)
-- **Format:** Markdown table with columns: `#`, `Decision/Idea`, `Source`, `Suggested Target`
-- **Header:** `# DEFERRED: {SET_ID}` with metadata lines (`**Set:**`, `**Generated:**`)
-- **Empty state:** DEFERRED.md is always written, even when empty (contains empty table + note)
-- **Current state:** Zero DEFERRED.md files exist in the codebase today
-- **Compatibility risk:** LOW -- the format is defined in discuss-set/SKILL.md and this feature must parse it. The format is simple markdown; regex or line-based parsing is sufficient.
+No compatibility issues identified for this set. The audit-version command:
+- Creates only markdown files (.planning/v{version}-AUDIT.md, .planning/v{version}-DEFERRED.md)
+- Reads existing JSON files (STATE.json, CONTRACT.json) via the CLI
+- Does not introduce new dependencies
+- Does not require new Node.js APIs beyond what the project already uses
 
-### Goal Output Compatibility (Downstream)
-- **Consumer:** 6 research agent prompts in Step 5 + roadmapper in Step 7
-- **Current interpolation:** `{goals from Step 2}` -- a single string substitution
-- **New format:** Category-tagged markdown with headers (`## Features`, `## Bug Fixes`, etc.)
-- **Compatibility risk:** NONE -- the interpolation is plain text substitution. Adding markdown headers and bullet points under each category is fully compatible with the existing `{goals from Step 2}` placeholder. Research agents already receive freeform text.
+## Implementation-Specific Stack Analysis
 
-### Carry-forward Context (Downstream)
-- **Source:** Step 3 `carryForwardSets` array
-- **Current usage:** Only passed to `state add-milestone` as JSON stdin
-- **New usage:** Also included in research agent prompts as a separate section
-- **Compatibility risk:** NONE -- additive change to the agent prompt templates
+### Files to Create
 
-## Upgrade Paths
+1. **`skills/audit-version/SKILL.md`** -- Markdown skill definition
+   - Pattern: Follows existing skill structure (YAML frontmatter + step-by-step instructions)
+   - Frontmatter needs: `description`, `allowed-tools`
+   - Required tools: `Bash(rapid-tools:*)`, `Agent`, `AskUserQuestion`, `Read`, `Write`, `Glob`, `Grep`
+   - The SKILL.md orchestrates: version resolution, state reading, artifact loading, agent spawning, user prompts for remediation
 
-No upgrades needed. This set modifies a single prompt file and introduces no new dependencies.
+2. **`src/modules/roles/role-auditor.md`** -- Agent role module
+   - Pattern: Plain markdown, no code execution
+   - Gets assembled into `agents/rapid-auditor.md` by `build-agents` command
+   - Requires registration in `src/commands/build-agents.cjs` (4 maps: ROLE_TOOLS, ROLE_COLORS, ROLE_DESCRIPTIONS, ROLE_CORE_MAP)
+
+3. **`src/lib/display.cjs`** -- Existing file, needs 2 additions:
+   - `STAGE_VERBS['audit-version'] = 'AUDITING'`
+   - `STAGE_BG['audit-version'] = '\x1b[101m'` (bright red -- review/analysis stage)
+
+### Build System Registration (build-agents.cjs)
+
+The auditor agent needs entries in 4 maps within `src/commands/build-agents.cjs`:
+
+| Map | Key | Value | Rationale |
+|-----|-----|-------|-----------|
+| `ROLE_TOOLS` | `'auditor'` | `'Read, Grep, Glob, Write'` | Reads artifacts, writes report -- no Bash needed (read-only) |
+| `ROLE_COLORS` | `'auditor'` | `'red'` | Review/analysis category |
+| `ROLE_DESCRIPTIONS` | `'auditor'` | `'RAPID auditor agent -- analyzes milestone delivery against planned requirements'` | Follows existing description format |
+| `ROLE_CORE_MAP` | `'auditor'` | `['core-identity.md', 'core-returns.md']` | No conventions (doesn't commit code) |
+
+After adding these, running `node src/bin/rapid-tools.cjs build-agents` will generate `agents/rapid-auditor.md`.
+
+### CLI Integration
+
+No new CLI command needed in `rapid-tools.cjs`. The audit workflow is entirely skill-driven:
+- SKILL.md uses existing CLI commands: `state get --all`, `display banner`, `resolve set`, `state add-set`
+- The role-auditor agent is spawned via the `Agent` tool from SKILL.md
+
+### Artifact Reading Patterns
+
+The auditor needs to read these artifacts per milestone:
+
+| Artifact | Path | Read Method | Notes |
+|----------|------|-------------|-------|
+| STATE.json | `.planning/STATE.json` | `node "${RAPID_TOOLS}" state get --all` | CLI returns Zod-validated JSON |
+| ROADMAP.md | `.planning/ROADMAP.md` | Read tool | Parse milestone sections |
+| REQUIREMENTS.md | `.planning/REQUIREMENTS.md` | Read tool | May not exist -- fallback to ROADMAP.md |
+| CONTRACT.json | `.planning/sets/{setId}/CONTRACT.json` | Read tool | Per-set acceptance criteria in `definition.acceptance` |
+| VERIFICATION-REPORT.md | `.planning/sets/{setId}/VERIFICATION-REPORT.md` | Read tool | Delivery evidence per wave |
+| WAVE-*-COMPLETE.md | `.planning/sets/{setId}/WAVE-*-COMPLETE.md` | Glob + Read | Completion markers |
+
+### Milestone Completion Detection
+
+STATE.json has no milestone-level status field. Completion must be derived:
+
+```javascript
+// Pseudocode for the skill's logic
+const milestone = state.milestones.find(m => m.id === targetVersion);
+const allMerged = milestone.sets.every(s => s.status === 'merged');
+```
+
+For version resolution (defaulting to most recently completed milestone), iterate milestones in reverse order and find the first where all sets are merged.
+
+### Two-Pass Architecture for Large Milestones
+
+For milestones with 5+ sets, the agent should use a two-pass approach to avoid context limits:
+
+- **Pass 1:** Structured field parsing -- read CONTRACT.json `definition.acceptance` arrays and STATE.json set statuses. Build a coverage matrix.
+- **Pass 2:** Semantic matching -- for items flagged as ambiguous in Pass 1, read VERIFICATION-REPORT.md and WAVE-*-COMPLETE.md to verify delivery.
+
+This keeps within the Agent tool's context budget by loading verification artifacts only for disputed items.
 
 ## Tooling Assessment
 
-### File Discovery for DEFERRED.md
-- **Approach:** Use Glob with pattern `.planning/sets/*/DEFERRED.md` to find all deferred files
-- **Parsing:** Read each file, extract table rows between the `|---|` separator line and the `## Notes` section
-- **Edge cases:**
-  - No DEFERRED.md files found: skip deferred category with brief note
-  - DEFERRED.md exists but table is empty: skip with "No deferred items found"
-  - Multiple DEFERRED.md files: aggregate all items with source set ID annotation
+### Build Tools
+- Agent build: `node src/bin/rapid-tools.cjs build-agents` -- must be run after adding role-auditor.md
+- No changes to build pipeline needed beyond adding the 4 map entries
 
-### AskUserQuestion Patterns
-- **Sequential category prompts (5x):** Each is a single-select AskUserQuestion with freeform follow-up
-  - Option 1: "Nothing for this category" (skip)
-  - Option 2+: Category-specific starter suggestions (optional)
-  - If not skipped: follow-up freeform question for goals in that category
-- **Deferred batch checklist (1x):** multiSelect AskUserQuestion listing all deferred items
-- **Completeness confirmation (1x):** Single-select with "Yes, complete" / "Add more"
-- **Freeform additions (0-1x):** If "Add more" selected, freeform text input
+### Test Framework
+- Node.js built-in `node:test` with co-located `.test.cjs` files
+- The audit-version set has no library code to unit test (SKILL.md and role-auditor.md are markdown)
+- Testing would be integration-level: run the skill against a test project and verify output
+
+### Linting/Formatting
+- No linter configured in the project
+- Code style follows existing conventions (strict mode, JSDoc comments, CommonJS)
 
 ## Stack Risks
 
-1. **DEFERRED.md format drift:** If the discuss-overhaul set changes the DEFERRED.md table format before or after this set lands, parsing could break. **Impact:** Low -- format is simple. **Mitigation:** Parse defensively (handle missing columns, unexpected headers). Document expected format inline.
+1. **Context budget overflow on large milestones:** Milestones with 8+ sets (e.g., v4.1.0 had 8 sets) could exceed agent context when loading all CONTRACT.json + VERIFICATION-REPORT.md files simultaneously.
+   - **Impact:** Agent truncation or missed gaps
+   - **Mitigation:** Two-pass architecture (Pass 1 structured, Pass 2 selective semantic)
 
-2. **No DEFERRED.md files exist for testing:** Since discuss-overhaul hasn't produced any DEFERRED.md files yet, the deferred import feature cannot be integration-tested end-to-end. **Impact:** Low -- the skip path (no files found) is the default. **Mitigation:** The skip path is tested by the current empty state. Full integration testing happens after discuss-overhaul merges.
+2. **REQUIREMENTS.md format instability:** The requirements file uses markdown checkboxes with ad-hoc IDs (STATE-01, AGENT-01, etc.). Parsing relies on pattern matching.
+   - **Impact:** Missed requirements in gap analysis
+   - **Mitigation:** Fall back to ROADMAP.md + CONTRACT.json when REQUIREMENTS.md parsing is unreliable; note reduced confidence in report
 
-3. **Goal string length growth:** Structured 5-category output + carry-forward context could produce significantly longer goal strings than the current freeform approach, potentially affecting research agent prompt token budgets. **Impact:** Low -- research agents have large context windows. **Mitigation:** Keep category prompts focused; the user naturally provides concise per-category input.
+3. **Older milestones have empty sets arrays in STATE.json:** Milestones v1.0 through v3.0 have `"sets": []` in the current STATE.json.
+   - **Impact:** Cannot audit these milestones -- no set data to cross-reference
+   - **Mitigation:** Detect empty sets array and report "Insufficient state data for milestone {version}. Set-level tracking was not available for this milestone."
 
-4. **Step numbering stability:** The current SKILL.md uses Steps 0-9. Expanding Step 2C into multiple sub-steps must not break the step numbering or references elsewhere in the file. **Impact:** Medium if done incorrectly. **Mitigation:** Use sub-step numbering (2C-1 through 2C-5, 2C-6 for deferred, 2C-7 for completeness gate) rather than inserting new top-level steps.
+4. **CONTRACT.json path discrepancy:** The CONTEXT.md notes that CONTRACT.json references `src/agents/roles/` but actual roles live at `src/modules/roles/`. This affects only the audit-version set's own CONTRACT.json `ownedFiles` array, not the audit logic itself.
+   - **Impact:** Low -- only affects self-referential accuracy
+   - **Mitigation:** Use correct path `src/modules/roles/role-auditor.md` during implementation
 
 ## Recommendations
 
-1. **Use sub-step numbering under Step 2C:** Replace the single "Question C" with sub-steps 2C-1 through 2C-7. This preserves the existing step numbering (Steps 3-9 unchanged) and avoids cascading renumbering. **Priority: critical**
-
-2. **Parse DEFERRED.md defensively:** Use line-by-line reading with regex matching for table rows (`| N |`), not strict format assumptions. Handle gracefully: empty tables, missing columns, malformed rows. **Priority: high**
-
-3. **Annotate deferred items with source set ID:** When presenting the deferred batch checklist, include the set ID from the DEFERRED.md header (`**Set:** {SET_ID}`) alongside each item for traceability. **Priority: high**
-
-4. **Build category-tagged goals as a single markdown string:** Concatenate all non-empty category outputs under markdown headers (`## Features`, `## Bug Fixes`, `## Tech Debt`, `## UX Improvements`, `## Deferred Decisions`) into a single string that replaces the current `{goals from Step 2}` placeholder. Empty categories should be omitted entirely. **Priority: high**
-
-5. **Include carry-forward context in research prompts:** Add a `## Carry-Forward Sets` section to the research agent prompt template, listing set IDs and descriptions from Step 3. Only include if carryForwardSets is non-empty. **Priority: medium**
-
-6. **Keep the completeness gate lightweight:** The summary should be a bulleted list grouped by category (not a table) for readability. The "Add more" path should accept freeform text appended to an "## Additional Goals" section. **Priority: medium**
-
-7. **Document the DEFERRED.md format expectation inline:** Add a comment in the SKILL.md explaining the expected DEFERRED.md table format so future maintainers understand the cross-skill dependency. **Priority: low**
+1. **Add display.cjs banner entry first:** Trivial change, unblocks all other work. Priority: critical.
+2. **Register auditor in build-agents.cjs maps:** 4 map entries required before the agent can be built. Priority: critical.
+3. **Use `state get --all` for all state reads:** Never read STATE.json directly -- the CLI provides Zod-validated output. Priority: high.
+4. **Implement REQUIREMENTS.md parser with graceful degradation:** Parse `- [x]` and `- [ ]` lines with ID prefixes; if parsing yields < 3 items, fall back to ROADMAP.md scope descriptions. Priority: high.
+5. **Cap per-set artifact loading at ~20KB:** For the semantic pass, read only the first 100 lines of each VERIFICATION-REPORT.md to stay within context budget. Priority: medium.
+6. **Fix CONTRACT.json ownedFiles path:** Update from `src/agents/roles/role-auditor.md` to `src/modules/roles/role-auditor.md`. Priority: low.
