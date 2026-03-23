@@ -638,6 +638,9 @@ new-version [done] > start-set > discuss-set > plan-set > execute-set > review >
 - **Roadmapper uses propose-then-approve.** The roadmapper returns a proposal; the user must explicitly accept before any files are written.
 - **Sets only in state.** STATE.json contains project > milestone > sets hierarchy. Do NOT include waves or jobs in STATE.json -- wave decomposition happens later during /plan-set.
 - **Archive is optional.** The user chooses whether to archive. Do NOT force archiving.
+- **Goal-gathering is sequential by category.** Each of the 5 categories (features, bugs, tech debt, UX, deferred) is presented as a separate AskUserQuestion. Users can skip any category.
+- **Completeness gate is mandatory.** Users must explicitly confirm "Yes, proceed" before the research pipeline starts. The confirmation loop continues until the user approves.
+- **Deferred import is graceful.** If no DEFERRED.md files exist, the deferred category is silently skipped with a brief message. Graceful skip is the expected default.
 
 ## Anti-Patterns -- Do NOT Do These
 
@@ -650,3 +653,7 @@ new-version [done] > start-set > discuss-set > plan-set > execute-set > review >
 - Do NOT spawn only 5 researchers -- MUST spawn all 6 (stack, features, architecture, pitfalls, oversights, ux).
 - Do NOT skip the UX researcher (rapid-research-ux) -- it is required for complete research coverage matching /init.
 - Do NOT force archiving -- user explicitly chooses via AskUserQuestion.
+- Do NOT ask a single freeform question for all goals -- use the structured 5-category prompt sequence.
+- Do NOT skip the completeness confirmation -- it is the final gate before research begins.
+- Do NOT fail when DEFERRED.md files are missing -- graceful skip is the expected default.
+- Do NOT allow category re-entry from the completeness gate -- "Add more" is freeform only.
