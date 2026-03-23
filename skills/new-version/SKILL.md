@@ -330,10 +330,13 @@ Research technology stack implications for this milestone.
 
 ## Milestone Brief
 Name: {milestoneName}
-Goals: {goals from Step 2}
+Goals: {category-tagged goals from Step 2C-vi}
 
 ## Brownfield Context
 Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Carry-Forward Context
+{If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
 ## Working Directory
 {projectRoot}
@@ -349,10 +352,13 @@ Research feature implementation approach for this milestone.
 
 ## Milestone Brief
 Name: {milestoneName}
-Goals: {goals from Step 2}
+Goals: {category-tagged goals from Step 2C-vi}
 
 ## Brownfield Context
 Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Carry-Forward Context
+{If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
 ## Working Directory
 {projectRoot}
@@ -368,10 +374,13 @@ Research architecture patterns and design decisions for this milestone.
 
 ## Milestone Brief
 Name: {milestoneName}
-Goals: {goals from Step 2}
+Goals: {category-tagged goals from Step 2C-vi}
 
 ## Brownfield Context
 Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Carry-Forward Context
+{If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
 ## Working Directory
 {projectRoot}
@@ -387,10 +396,13 @@ Research potential pitfalls and anti-patterns to avoid for this milestone.
 
 ## Milestone Brief
 Name: {milestoneName}
-Goals: {goals from Step 2}
+Goals: {category-tagged goals from Step 2C-vi}
 
 ## Brownfield Context
 Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Carry-Forward Context
+{If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
 ## Working Directory
 {projectRoot}
@@ -406,10 +418,13 @@ Research overlooked concerns, edge cases, and blind spots for this milestone.
 
 ## Milestone Brief
 Name: {milestoneName}
-Goals: {goals from Step 2}
+Goals: {category-tagged goals from Step 2C-vi}
 
 ## Brownfield Context
 Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Carry-Forward Context
+{If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
 ## Working Directory
 {projectRoot}
@@ -425,10 +440,13 @@ Research domain conventions and UX patterns for this milestone.
 
 ## Milestone Brief
 Name: {milestoneName}
-Goals: {goals from Step 2}
+Goals: {category-tagged goals from Step 2C-vi}
 
 ## Brownfield Context
 Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase analysis. If it does not exist, treat this as building on the existing codebase.
+
+## Carry-Forward Context
+{If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
 ## Working Directory
 {projectRoot}
@@ -492,7 +510,7 @@ Create a roadmap for milestone '{milestoneId}'.
 {Full synthesis content from Step 6}
 
 ## Milestone Goals
-{goals from Step 2}
+{category-tagged goals from Step 2C-vi}
 
 ## Milestone Name
 {milestoneName}
