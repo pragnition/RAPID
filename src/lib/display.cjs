@@ -39,6 +39,7 @@ const STAGE_VERBS = {
   'quick': 'QUICK TASK',
   'scaffold': 'SCAFFOLDING',
   'branding': 'BRANDING',
+  'audit-version': 'AUDITING',
 };
 
 /**
@@ -67,6 +68,7 @@ const STAGE_BG = {
   'quick': '\x1b[102m',      // bright green (execution stage)
   'scaffold': '\x1b[104m',  // bright blue (planning stage)
   'branding': '\x1b[104m',  // bright blue (planning stage)
+  'audit-version': '\x1b[101m',   // bright red (review/analysis stage)
 };
 
 /**
