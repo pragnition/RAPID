@@ -371,14 +371,14 @@
       "sets": [
         {
           "id": "path-resolution-fix",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Path Resolution Fix",
           "branch": "rapid/path-resolution-fix"
         },
         {
           "id": "discuss-ux",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Discuss UX Improvements",
           "branch": "rapid/discuss-ux"
@@ -393,6 +393,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-23T15:12:51.444Z",
+  "lastUpdatedAt": "2026-03-23T15:47:07.747Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
