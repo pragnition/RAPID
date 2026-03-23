@@ -1,3 +1,4 @@
 {"id":1,"timestamp":"2026-03-19T05:37:00.682Z","description":"Fix merge clobber bug: downgrade ownership/DAG heuristic signals from auto-resolve to advisory-only, update agent prompts to require semantic analysis","outcome":"COMPLETE","slug":"fix-merge-clobber-protection","branch":"main"}
 {"id":2,"timestamp":"2026-03-19T05:56:37.064Z","description":"Post-merge feature regression check: snapshot exports from both branches, flag missing symbols, auto-revert on regression","outcome":"COMPLETE","slug":"post-merge-feature-regression-check","branch":"main"}
 {"id":3,"timestamp":"2026-03-21T10:39:35.594Z","description":"Put this project into solo mode","outcome":"COMPLETE","slug":"enable-solo-mode","branch":"main"}
+{"id":4,"timestamp":"2026-03-23T11:42:23.498Z","description":"Currently the init process doesn't generate the DAG every time. We should fix this.","outcome":"COMPLETE","slug":"fix-init-dag-generation","branch":"main"}
