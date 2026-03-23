@@ -121,9 +121,9 @@ function SidebarContent({
       {/* Bottom version text */}
       <div className="px-3 py-3 border-t border-border">
         {isFull ? (
-          <span className="text-muted text-xs">RAPID v4.0.0</span>
+          <span className="text-muted text-xs">RAPID v4.1.0</span>
         ) : isCompact ? (
-          <span className="text-muted text-xs flex justify-center" title="RAPID v4.0.0">
+          <span className="text-muted text-xs flex justify-center" title="RAPID v4.1.0">
             v4
           </span>
         ) : null}

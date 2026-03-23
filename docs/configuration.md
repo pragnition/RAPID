@@ -113,7 +113,7 @@ See [State Machines](state-machines.md) for transition rules and crash recovery 
 
 When `solo: true` in config.json (default for team size 1), sets work directly on main without creating worktrees or branches. The registry entry records `solo: true` and a `startCommit` hash used as the diff base for review scoping. Solo sets auto-transition from `complete` to `merged` since there is no branch to merge.
 
-## Web Dashboard (v4.0.0)
+## Web Dashboard (v4.1.0)
 
 An optional locally-hosted web dashboard at `http://127.0.0.1:8998`. Gated by `RAPID_WEB=true` in the environment.
 

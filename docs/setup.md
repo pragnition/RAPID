@@ -24,7 +24,7 @@ See [skills/context/SKILL.md](../skills/context/SKILL.md) for full details.
 
 ## `/rapid:register-web`
 
-Registers an existing project with the RAPID web dashboard. Only needed for projects initialized before v4.0.0. New projects auto-register during `/rapid:init` when `RAPID_WEB=true` is set.
+Registers an existing project with the RAPID web dashboard. Only needed for projects initialized before v4.1.0. New projects auto-register during `/rapid:init` when `RAPID_WEB=true` is set.
 
 ---
 

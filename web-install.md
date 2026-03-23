@@ -1,4 +1,4 @@
-# Web Install Issues — v4.0.0
+# Web Install Issues — v4.1.0
 
 ## Issue 1: `pyproject.toml` missing package discovery config
 
@@ -32,8 +32,8 @@ alembic.util.exc.CommandError: No 'script_location' key found in configuration.
 
 **Service file change needed** (either way):
 ```ini
-WorkingDirectory=%h/.claude/plugins/cache/joey-plugins/rapid/4.0.0/web/backend
-ExecStart=%h/.claude/plugins/cache/joey-plugins/rapid/4.0.0/web/backend/.venv/bin/rapid-web
+WorkingDirectory=%h/.claude/plugins/cache/joey-plugins/rapid/4.1.0/web/backend
+ExecStart=%h/.claude/plugins/cache/joey-plugins/rapid/4.1.0/web/backend/.venv/bin/rapid-web
 ```
 
 ---
