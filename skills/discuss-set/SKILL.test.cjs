@@ -39,35 +39,35 @@ describe('discuss-set SKILL.md structural assertions', () => {
 
   // ── Test 3: Key Principles says "Exactly 4 gray areas" ──────
 
-  it('Key Principles says "Exactly 4 gray areas"', () => {
+  it('Key Principles mentions variable gray area count (4n)', () => {
     const principlesMatch = content.match(/## Key Principles[\s\S]*?(?=## Anti-Patterns|$)/);
     assert.ok(principlesMatch, 'Should find Key Principles section');
     assert.ok(
-      principlesMatch[0].includes('Exactly 4 gray areas'),
-      'Key Principles should contain literal phrase "Exactly 4 gray areas"',
+      principlesMatch[0].includes('Variable gray area count (4n)'),
+      'Key Principles should contain literal phrase "Variable gray area count (4n)"',
     );
   });
 
   // ── Test 4: Anti-Patterns says "fewer or more than 4" ───────
 
-  it('Anti-Patterns says "fewer or more than 4"', () => {
+  it('Anti-Patterns warns against non-multiple-of-4 gray area counts', () => {
     const antiMatch = content.match(/## Anti-Patterns[\s\S]*$/);
     assert.ok(antiMatch, 'Should find Anti-Patterns section');
     assert.ok(
-      antiMatch[0].includes('fewer or more than 4'),
-      'Anti-Patterns should contain literal phrase "fewer or more than 4"',
+      antiMatch[0].includes('non-multiple-of-4'),
+      'Anti-Patterns should contain literal phrase "non-multiple-of-4"',
     );
   });
 
   // ── Test 5: Step 5 heading mentions "4 Gray Areas" ──────────
 
-  it('Step 5 heading mentions "4 Gray Areas"', () => {
+  it('Step 5 heading mentions Gray Areas', () => {
     // Match the ## Step 5 heading line
     const headingMatch = content.match(/^## Step 5:.*$/m);
     assert.ok(headingMatch, 'Should find Step 5 heading');
     assert.ok(
-      headingMatch[0].includes('4'),
-      `Step 5 heading should contain "4", got: "${headingMatch[0]}"`,
+      headingMatch[0].includes('Gray Areas'),
+      `Step 5 heading should contain "Gray Areas", got: "${headingMatch[0]}"`,
     );
   });
 
@@ -123,13 +123,13 @@ describe('discuss-set SKILL.md structural assertions', () => {
     const guidanceIdx = step5.indexOf('When the set\'s context');
     assert.ok(guidanceIdx !== -1, 'Step 5 should contain UI/UX conditional guidance starting with "When the set\'s context"');
 
-    // The last bullet criterion before the guidance (e.g., "UI/UX decisions need to be made")
-    const lastCriterionIdx = step5.indexOf('UI/UX decisions need to be made');
-    assert.ok(lastCriterionIdx !== -1, 'Step 5 should contain the "UI/UX decisions need to be made" criterion');
+    // The last bullet criterion before the guidance (e.g., "UI/UX decisions:")
+    const lastCriterionIdx = step5.indexOf('UI/UX decisions:');
+    assert.ok(lastCriterionIdx !== -1, 'Step 5 should contain the "UI/UX decisions:" criterion');
 
     // The AskUserQuestion block reference
-    const askUserIdx = step5.indexOf('Present gray areas using AskUserQuestion');
-    assert.ok(askUserIdx !== -1, 'Step 5 should contain "Present gray areas using AskUserQuestion"');
+    const askUserIdx = step5.indexOf('Presenting Gray Areas');
+    assert.ok(askUserIdx !== -1, 'Step 5 should contain "Presenting Gray Areas"');
 
     // Verify ordering: criteria < guidance < AskUserQuestion
     assert.ok(
@@ -157,6 +157,41 @@ describe('discuss-set SKILL.md structural assertions', () => {
     assert.ok(
       step5.includes('should not be forced'),
       'Step 5 should state that UI/UX gray areas "should not be forced" for non-UI sets',
+    );
+  });
+
+  // ── Test 12: Step 5 uses consolidated AskUserQuestion calls for n=2 ──
+
+  it('Step 5 uses consolidated AskUserQuestion calls for n=2', () => {
+    const step5Match = content.match(/## Step 5[\s\S]*?(?=## Step 6)/);
+    assert.ok(step5Match, 'Should find Step 5 section');
+    const step5 = step5Match[0];
+    // n=2 should say "One AskUserQuestion call" not "Two AskUserQuestion calls"
+    assert.ok(
+      step5.includes('One AskUserQuestion call with 2 questions'),
+      'n=2 should use one consolidated AskUserQuestion call with 2 questions',
+    );
+  });
+
+  // ── Test 13: Step 6 Format A uses labeled-block list, not markdown table ──
+
+  it('Step 6 Format A uses labeled-block list, not markdown table', () => {
+    const step6Match = content.match(/### Format A[\s\S]*?(?=### Format B)/);
+    assert.ok(step6Match, 'Should find Format A section');
+    const formatA = step6Match[0];
+    // Should NOT contain table syntax
+    assert.ok(
+      !formatA.includes('| Option | Pros | Cons |'),
+      'Format A should not contain markdown table header',
+    );
+    // Should contain labeled blocks
+    assert.ok(
+      formatA.includes('**Pros:**'),
+      'Format A should use **Pros:** labeled blocks',
+    );
+    assert.ok(
+      formatA.includes('**Cons:**'),
+      'Format A should use **Cons:** labeled blocks',
     );
   });
 });

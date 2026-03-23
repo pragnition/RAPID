@@ -180,11 +180,11 @@ When the set's context (SET-OVERVIEW.md, CONTRACT.json, ROADMAP.md description) 
 
 Each gray area MUST have a title and a 1-sentence description.
 
-### Presenting Gray Areas in Batches
+### Presenting Gray Areas (Consolidated)
 
-Present gray areas using AskUserQuestion in batches of 4 (one batch per n):
+Present gray areas using AskUserQuestion. All batches are packed into a SINGLE AskUserQuestion call with multiple questions (one question per batch of 4):
 
-**For n=1 (4 gray areas):** One AskUserQuestion call:
+**For n=1 (4 gray areas):** One AskUserQuestion call with 1 question:
 
 ```
 "I've analyzed set '{SET_ID}' and identified 4 areas that would benefit from your input.
@@ -196,30 +196,24 @@ Options (multiSelect: true):
 4. "{Gray area 4 title}" -- "{1-sentence description}"
 ```
 
-**For n=2 (8 gray areas):** Two AskUserQuestion calls, each with 4 options:
+**For n=2 (8 gray areas):** One AskUserQuestion call with 2 questions:
 
 ```
-"Gray Areas (1 of 2) -- I've analyzed set '{SET_ID}' and identified 8 areas that would benefit from your input.
+"I've analyzed set '{SET_ID}' and identified 8 areas that would benefit from your input.
 Select which areas you'd like to discuss (unselected areas default to Claude's discretion):"
-Options (multiSelect: true):
-1-4. {first 4 gray areas}
+Question 1 (multiSelect: true): "Core Architecture"
+Options 1-4: {first 4 gray areas}
+Question 2 (multiSelect: true): "Integration & Boundaries"
+Options 1-4: {next 4 gray areas}
 ```
 
-Then:
+**For n=3 (12 gray areas):** One AskUserQuestion call with 3 questions. Use descriptive category labels for each question (e.g., "Core Architecture", "Integration & Boundaries", "UX & Presentation").
 
-```
-"Gray Areas (2 of 2) -- Select additional areas to discuss:"
-Options (multiSelect: true):
-1-4. {next 4 gray areas}
-```
+### Handling Responses
 
-**For n=3 (12 gray areas):** Three AskUserQuestion calls, each with 4 options. Use headers "Gray Areas (1 of 3)", "Gray Areas (2 of 3)", "Gray Areas (3 of 3)".
-
-### Handling Responses Across Batches
-
-- Collect selections across all batches.
-- If the user selects no areas across ALL batches (empty selection in every batch): Record all areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
-- If the user selects specific areas in any batch: Record selected areas for Step 6. Unselected areas across all batches are recorded as Claude's discretion.
+- Collect selections across all questions.
+- If the user selects no areas across ALL questions (empty selection across all questions): Record all areas as Claude's discretion. Skip to Step 7 (Write CONTEXT.md).
+- If the user selects specific areas in any question: Record selected areas for Step 6. Unselected areas across all questions are recorded as Claude's discretion.
 
 ---
 
@@ -238,11 +232,17 @@ Best for straightforward choices between distinct approaches:
 
 Context: {2-5 sentences explaining the tradeoff, constraints, and implications}
 
-| Option | Pros | Cons |
-|--------|------|------|
-| A: {name} | {pros} | {cons} |
-| B: {name} | {pros} | {cons} |
-| C: {name} (Recommended) | {pros} | {cons} |
+**A: {name}**
+**Pros:** {pros}
+**Cons:** {cons}
+
+**B: {name}**
+**Pros:** {pros}
+**Cons:** {cons}
+
+**C: {name} (Recommended)**
+**Pros:** {pros}
+**Cons:** {cons}
 "
 Options:
 1. "{Option A name}" -- "{1-sentence summary}"
@@ -473,7 +473,7 @@ Show what is done, what failed, and what to run next.
 - **Variable gray area count (4n):** Gray area count scales with set complexity in multiples of 4. The task count in CONTRACT.json drives the heuristic; the model may adjust based on overall complexity.
 - **Architect-level focus:** Gray areas target system architecture, integration boundaries, and UI/UX decisions. Never ask about specific coding patterns, library choices, or implementation details.
 - **Rich question context:** Each question provides 2-5 sentences of context with pros/cons or key factors. Use the most appropriate format (option descriptions, preview panels, or context blocks) per question.
-- **Batched questions with options:** Present each gray area as a separate AskUserQuestion with prefilled options including "Claude decides".
+- **Consolidated questions with options:** Present all gray area batches as questions within a single AskUserQuestion call. Each question has prefilled options including "Claude decides".
 - **"Claude decides" option:** Available as a prefilled option per question. Unselected gray areas in Step 5 automatically default to Claude's discretion.
 - **Deferred decisions:** Out-of-scope ideas raised during discussion are captured in DEFERRED.md, never silently dropped.
 - **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md and an empty DEFERRED.md without user interaction.
@@ -494,6 +494,6 @@ Show what is done, what failed, and what to run next.
 - Do NOT ask implementation-level questions (library choices, coding patterns, function signatures) -- keep gray areas at the architecture and UX level.
 - Do NOT present questions without inline context -- every question must include 2-5 sentences of context explaining the tradeoff.
 - Do NOT silently drop out-of-scope ideas -- capture them in DEFERRED.md.
-- Do NOT batch multiple questions into a single freeform AskUserQuestion -- each question gets its own AskUserQuestion with prefilled options.
+- Do NOT use freeform text in AskUserQuestion -- each question must have prefilled multiSelect options. Gray area batches are packed as structured questions within a single call, not as freeform prompts.
 - Do NOT present "Let Claude decide all" as a checkbox option -- use the implicit unselected model instead.
 - Do NOT prompt for every implementation detail -- capture vision/what, not implementation/how.
