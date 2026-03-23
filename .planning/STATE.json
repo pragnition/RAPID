@@ -385,7 +385,7 @@
         },
         {
           "id": "audit-version",
-          "status": "executed",
+          "status": "merged",
           "waves": [],
           "name": "Audit Version Command",
           "branch": "rapid/audit-version"
@@ -393,6 +393,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-23T16:22:43.888Z",
+  "lastUpdatedAt": "2026-03-23T16:36:25.132Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
