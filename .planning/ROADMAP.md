@@ -15,7 +15,7 @@
 - **v3.5.0 Robustness & Fixes** — 4 sets (shipped 2026-03-19)
 - **v3.6.0 Workflow & UX Polish** — 5 sets (shipped 2026-03-20)
 - **v4.0.0 Mission Control** — 7 sets (shipped 2026-03-22)
-- **v4.1.0 Polish & Fixes** — 8 sets (in progress)
+- **v4.1.0 Polish & Fixes** — 8 sets (shipped 2026-03-23)
 
 ## Completed Milestone Details
 
@@ -174,48 +174,31 @@
 
 </details>
 
-## Current Milestone: v4.0.0 Mission Control (6 sets)
+<details>
+<summary>v4.0.0 Mission Control (7 sets) — shipped 2026-03-22</summary>
 
-A greenfield web dashboard companion to the RAPID CLI plugin. Provides knowledge management, project visualization, and task tracking through a locally-hosted web service at `http://127.0.0.1:8998`. Purely optional (gated by `RAPID_WEB=true`), read-only in v4.0.
+- [x] service-infrastructure — FastAPI shell, SQLite WAL, Alembic migrations, SyncEngine, systemd/launchd templates
+- [x] project-registry — Project CRUD, FileWatcherService, .rapid-web/ sync layer
+- [x] frontend-shell — React 19 + Vite 8 SPA, Everforest theme, vim navigation, command palette
+- [x] read-only-views — State, Worktree, Knowledge Graph, Codebase views
+- [x] interactive-features — Kanban Board, Markdown Note Editor
+- [x] cli-integration — Web client helper, /register-web, doctor checks
+- [x] web-install-bugfix — pyproject.toml, Alembic paths, SPA fallback, TS build fixes
 
-**Stack:** Python 3.12+ (FastAPI + SQLModel + SQLite) backend, React 19 + Vite 8 frontend SPA, Tailwind CSS 4.2 with Everforest dark theme.
+</details>
 
-**Data Model:** Hybrid storage -- SQLite at `~/.rapid/rapid.db` for fast queries + `.rapid-web/` directory per project for portability and version control.
+<details>
+<summary>v4.1.0 Polish & Fixes (8 sets) — shipped 2026-03-23</summary>
 
-### Set 1: Service Infrastructure (`service-infrastructure`) [Large]
-FastAPI application shell, SQLite database with WAL mode and Alembic migrations, SyncEngine for bidirectional SQLite <-> .rapid-web/ sync, systemd/launchd service templates, structured JSON logging, health endpoints, security defaults (127.0.0.1, CORS).
+- [x] hygiene-sweep — Hygiene Sweep
+- [x] init-criteria — Init Fixes & Encoded Criteria
+- [x] review-cli-fix — Review CLI Fix
+- [x] dag-readdition — DAG Re-addition
+- [x] discuss-overhaul — Discuss Phase Overhaul
+- [x] unit-test-improvements — Unit Test Improvements
+- [x] branding-refocus — Branding Refocus
+- [x] new-version-comprehensive — New-Version Comprehensiveness
 
-### Set 2: Project Registry & Data Pipeline (`project-registry`) [Medium-Large]
-Project CRUD endpoints with pagination, FileWatcherService for STATE.json/REGISTRY.json changes, Project SQLModel, .rapid-web/ sync layer. Depends on service-infrastructure.
-
-### Set 3: Frontend Shell & Theme (`frontend-shell`) [Large]
-React 19 + Vite 8 + TypeScript SPA skeleton, Everforest dark/light theme with CSS custom properties, vim-style keyboard navigation (hjkl, /, :, ?, Esc, Tab), sidebar layout (3 states), TanStack Query + Zustand stores, command palette, typed API client.
-
-### Set 4: Read-Only Views (`read-only-views`) [Large]
-Four dashboard views: Project State View (STATE.json), Worktree Tracking (REGISTRY.json), Knowledge Graph (Cytoscape.js + DAG.json), Codebase Mapping (tree-sitter). All GET-only endpoints + React components. Depends on project-registry, frontend-shell.
-
-### Set 5: Interactive Features (`interactive-features`) [Large]
-Kanban Board (dnd-kit drag-drop, CRUD) and Markdown Note Editor (CodeMirror 6, vim mode, autosave). Both project-scoped with SQLite tables and .rapid-web/ sync. Depends on project-registry, frontend-shell.
-
-### Set 6: CLI Integration (`cli-integration`) [Medium]
-Non-blocking web-client.cjs helper, /install web service setup, /init auto-registration, /register-web for legacy projects, doctor health checks. Depends on service-infrastructure, project-registry.
-
-### Set 7: Web Install Bugfix (`web-install-bugfix`) [Small]
-Fix 5 web installation issues: pyproject.toml package discovery, Alembic migration path resolution, backend static file serving + SPA fallback, frontend build integration in install workflow, TypeScript build errors. Depends on service-infrastructure, frontend-shell.
-
-### Dependency Graph
-```
-service-infrastructure   (independent — foundational)
-frontend-shell           (independent — no backend needed)
-project-registry        --> service-infrastructure
-cli-integration         --> service-infrastructure, project-registry
-read-only-views         --> project-registry, frontend-shell
-interactive-features    --> project-registry, frontend-shell
-```
-
-### DAG Waves
-- **Wave 1:** service-infrastructure + frontend-shell (parallel)
-- **Wave 2:** project-registry + cli-integration (parallel, depend on Wave 1)
-- **Wave 3:** read-only-views + interactive-features (parallel, depend on Waves 1+2)
+</details>
 
 Historical phase details archived to `.planning/archive/`.
