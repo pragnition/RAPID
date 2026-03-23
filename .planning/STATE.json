@@ -350,14 +350,14 @@
         },
         {
           "id": "branding-refocus",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Branding Refocus",
           "branch": "rapid/branding-refocus"
         },
         {
           "id": "new-version-comprehensive",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "New-Version Comprehensiveness",
           "branch": "rapid/new-version-comprehensive"
@@ -365,6 +365,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-22T17:39:40.395Z",
+  "lastUpdatedAt": "2026-03-23T04:39:42.006Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
