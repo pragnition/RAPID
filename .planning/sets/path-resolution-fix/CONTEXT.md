@@ -13,24 +13,19 @@ Fix all `require('${RAPID_TOOLS}/../lib/...')` path resolution bugs in `skills/i
 ## Implementation Decisions
 
 ### Fix Scope Boundary
-- Fix all 5 occurrences across both files (3 in init/SKILL.md, 2 in register-web/SKILL.md), not just the 4 specified in CONTRACT.json
-- Update CONTRACT.json to reflect the true count (3 affected lines in init, not 2)
-- **Rationale:** Leaving a known broken require unfixed would be counterproductive. The CONTRACT should accurately reflect actual work.
+- Fix all 4 occurrences across both files (2 in init/SKILL.md, 2 in register-web/SKILL.md)
+- **Rationale:** All known broken requires should be fixed in one pass.
 
 ### Resolution Pattern Consistency
 - Use `path.dirname()` consistently in all contexts -- both multi-line JS code blocks and bash `node -e` one-liners
 - **Rationale:** A single consistent pattern is easier to grep for and maintain, even if it adds slight verbosity to one-liners.
 
 ### Repo-Wide Sweep
-- Fix only the 5 known occurrences. No additional sweep task or preventive comments.
+- Fix only the 4 known occurrences. No additional sweep task or preventive comments.
 - **Rationale:** Grep already confirmed no other occurrences exist beyond the 2 owned files. Adding comments to dense SKILL.md files is low-value noise.
 
-### Contract Accuracy
-- Update CONTRACT.json task 1 from "2 affected lines" to "3 affected lines"
-- **Rationale:** Keeps the planning artifact accurate and consistent with the expanded fix scope decision.
-
 ### Claude's Discretion
-- No areas were left to Claude's discretion -- all 4 gray areas were discussed.
+- No areas were left to Claude's discretion -- all gray areas were discussed.
 </decisions>
 
 <specifics>
@@ -42,9 +37,8 @@ Fix all `require('${RAPID_TOOLS}/../lib/...')` path resolution bugs in `skills/i
 
 <code_context>
 ## Existing Code Insights
-- init/SKILL.md has 3 broken requires: context.cjs (line ~564), add-set.cjs (line ~901, inside `node -e`), web-client.cjs (line ~971)
+- init/SKILL.md has 2 broken requires: context.cjs (line ~564), web-client.cjs (line ~971)
 - register-web/SKILL.md has 2 broken requires: web-client.cjs (lines ~22 and ~44)
-- The `node -e` one-liner on line ~901 is a bash command, not a JS code block -- path must be required inline
 - `RAPID_TOOLS` points to `src/bin/rapid-tools.cjs`, so `path.dirname()` yields `src/bin/` and `../lib/` correctly resolves to `src/lib/`
 </code_context>
 
