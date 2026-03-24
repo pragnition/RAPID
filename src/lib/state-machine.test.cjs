@@ -24,6 +24,10 @@ const {
   detectCorruption,
   recoverFromGit,
   commitState,
+  STATE_FILE_MISSING,
+  STATE_PARSE_ERROR,
+  STATE_VALIDATION_ERROR,
+  createStateError,
 } = require('./state-machine.cjs');
 
 const { isLocked } = require('./lock.cjs');
@@ -274,11 +278,104 @@ describe('withStateTransaction', () => {
     assert.equal(isLocked(tmpDir, 'state'), false);
   });
 
-  it('throws for missing STATE.json', async () => {
+  it('throws STATE_FILE_MISSING when STATE.json does not exist', async () => {
     await assert.rejects(
       () => withStateTransaction(tmpDir, () => {}),
-      /missing or invalid/
+      (err) => {
+        assert.equal(err.code, 'STATE_FILE_MISSING');
+        assert.ok(err.message.includes('STATE.json not found'));
+        assert.ok(err.message.includes('Remediation'));
+        return true;
+      }
     );
+  });
+
+  it('throws STATE_PARSE_ERROR for corrupt JSON', async () => {
+    const stateFile = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(stateFile, '{bad json!!!}', 'utf-8');
+    await assert.rejects(
+      () => withStateTransaction(tmpDir, () => {}),
+      (err) => {
+        assert.equal(err.code, 'STATE_PARSE_ERROR');
+        assert.ok(err.message.toLowerCase().includes('invalid json'));
+        return true;
+      }
+    );
+  });
+
+  it('throws STATE_VALIDATION_ERROR for invalid schema', async () => {
+    writeTestState(tmpDir, { version: 999, bad: true });
+    await assert.rejects(
+      () => withStateTransaction(tmpDir, () => {}),
+      (err) => {
+        assert.equal(err.code, 'STATE_VALIDATION_ERROR');
+        assert.ok(err.message.includes('schema validation'));
+        return true;
+      }
+    );
+  });
+
+  it('throws STATE_VALIDATION_ERROR when mutation produces invalid state', async () => {
+    const state = makeStateWithSet();
+    writeTestState(tmpDir, state);
+    await assert.rejects(
+      () => withStateTransaction(tmpDir, (s) => { delete s.projectName; }),
+      (err) => {
+        assert.equal(err.code, 'STATE_VALIDATION_ERROR');
+        assert.ok(err.message.includes('Mutation produced invalid state'));
+        return true;
+      }
+    );
+  });
+
+  it('cleans orphaned .tmp files older than 30s before transaction', async () => {
+    const state = makeStateWithSet();
+    writeTestState(tmpDir, state);
+
+    const tmpFile = path.join(tmpDir, '.planning', 'orphan.tmp');
+    fs.writeFileSync(tmpFile, 'stale data', 'utf-8');
+    // Set mtime to 60 seconds ago
+    const pastTime = new Date(Date.now() - 60000);
+    fs.utimesSync(tmpFile, pastTime, pastTime);
+
+    await withStateTransaction(tmpDir, (s) => { s.projectName = 'cleaned'; });
+    assert.equal(fs.existsSync(tmpFile), false);
+  });
+
+  it('does NOT clean .tmp files younger than 30s', async () => {
+    const state = makeStateWithSet();
+    writeTestState(tmpDir, state);
+
+    const tmpFile = path.join(tmpDir, '.planning', 'fresh.tmp');
+    fs.writeFileSync(tmpFile, 'fresh data', 'utf-8');
+
+    await withStateTransaction(tmpDir, (s) => { s.projectName = 'kept'; });
+    assert.equal(fs.existsSync(tmpFile), true);
+  });
+
+  it('updates lock target PID on every acquisition', async () => {
+    const state = makeStateWithSet();
+    writeTestState(tmpDir, state);
+
+    // Write a fake lock target with wrong PID
+    const lockTarget = path.join(tmpDir, '.planning', '.locks', 'state.target');
+    fs.mkdirSync(path.dirname(lockTarget), { recursive: true });
+    fs.writeFileSync(lockTarget, JSON.stringify({ pid: 99999, timestamp: Date.now() }), 'utf-8');
+
+    await withStateTransaction(tmpDir, (s) => { s.projectName = 'pid-test'; });
+
+    const lockData = JSON.parse(fs.readFileSync(lockTarget, 'utf-8'));
+    assert.equal(lockData.pid, process.pid);
+  });
+
+  it('accepts onCompromised option without error', async () => {
+    const state = makeStateWithSet();
+    writeTestState(tmpDir, state);
+
+    const result = await withStateTransaction(tmpDir, (s) => {
+      s.projectName = 'opt-test';
+    }, { onCompromised: 'continue' });
+    assert.equal(result.projectName, 'opt-test');
   });
 
   it('releases lock even on mutation error', async () => {
@@ -356,6 +453,13 @@ describe('export availability', () => {
 
   it('deriveSetStatus is not exported', () => {
     assert.equal(sm.deriveSetStatus, undefined);
+  });
+
+  it('exports error code constants', () => {
+    assert.equal(sm.STATE_FILE_MISSING, 'STATE_FILE_MISSING');
+    assert.equal(sm.STATE_PARSE_ERROR, 'STATE_PARSE_ERROR');
+    assert.equal(sm.STATE_VALIDATION_ERROR, 'STATE_VALIDATION_ERROR');
+    assert.equal(typeof sm.createStateError, 'function');
   });
 });
 
