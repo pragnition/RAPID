@@ -159,10 +159,10 @@ Before identifying gray areas, determine how many to present. Read `CONTRACT.jso
 | Task Count | Gray Areas (n) | Total |
 |-----------|----------------|-------|
 | 1-3 tasks | n=1 | 4 gray areas |
-| 4-6 tasks | n=2 | 8 gray areas |
-| 7+ tasks  | n=3 | 12 gray areas |
+| 4-6 tasks | n=2 | 5-8 gray areas |
+| 7+ tasks  | n=3 | 9+ gray areas |
 
-The model has discretion to adjust n by +/-1 based on overall set complexity. For example, a 3-task set with complex integration boundaries could warrant 8 areas (n=2), or a simple 5-task set could use 4 areas (n=1). The total gray area count MUST always be a multiple of 4.
+The model has discretion to adjust n by +/-1 based on overall set complexity. For example, a 3-task set with complex integration boundaries could warrant 8 areas (n=2), or a simple 5-task set could use 4 areas (n=1). The total gray area count need not always be a multiple of 4 but it must minimally be 4.
 
 ### Gray Area Categories
 
@@ -196,7 +196,7 @@ Options (multiSelect: true):
 4. "{Gray area 4 title}" -- "{1-sentence description}"
 ```
 
-**For n=2 (8 gray areas):** One AskUserQuestion call with 2 questions:
+**For n=2 (5-8 gray areas):** One AskUserQuestion call with 2 questions:
 
 ```
 "I've analyzed set '{SET_ID}' and identified 8 areas that would benefit from your input.
@@ -207,7 +207,7 @@ Question 2 (multiSelect: true): "Integration & Boundaries"
 Options 1-4: {next 4 gray areas}
 ```
 
-**For n=3 (12 gray areas):** One AskUserQuestion call with 3 questions. Use descriptive category labels for each question (e.g., "Core Architecture", "Integration & Boundaries", "UX & Presentation").
+**For n=3 (9+ gray areas):** One AskUserQuestion call with 3 questions. Use descriptive category labels for each question (e.g., "Core Architecture", "Integration & Boundaries", "UX & Presentation").
 
 ### Handling Responses
 
@@ -219,7 +219,9 @@ Options 1-4: {next 4 gray areas}
 
 ## Step 6: Deep-Dive Selected Areas (Rich Question Format)
 
-For EACH selected gray area (in order), ask a SEPARATE AskUserQuestion for EACH question within the gray area. EACH question should only ask the user about ONE thing. The user should not be thinking about multiple decisions within the same question.
+For EACH selected gray area (in order), prepare minimally 2 questions. For each batch of 4 questions, ask a SEPARATE AskUserQuestion with the batch of questions. EACH question should only ask the user about ONE thing. The user should not be thinking about multiple decisions within the same question.
+
+For example, if we have a gray area with 3 questions, we should ask one AskUserQuestion with the 3 questions within the same prompt. If we had 7 questions, then we would ask 2 AskUserQuestions, with 4 and 3 questions respectively.
 
 Choose the most appropriate question format per question from the three formats below:
 
