@@ -1,6 +1,6 @@
 'use strict';
 
-const { output } = require('../lib/core.cjs');
+const { output, ensureDagExists, DAG_SUBPATH } = require('../lib/core.cjs');
 const { CliError } = require('../lib/errors.cjs');
 const { parseArgs } = require('../lib/args.cjs');
 const { readStdinSync } = require('../lib/stdin.cjs');
@@ -87,10 +87,10 @@ async function handleExecute(cwd, subcommand, args) {
       // Load DAG.json
       let dagJson = null;
       try {
-        const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
+        const dagPath = ensureDagExists(cwd);
         dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
       } catch (err) {
-        throw new CliError('No DAG.json found. Run /rapid:plan first to create sets and DAG.');
+        throw new CliError(err.message);
       }
       // Load and reconcile registry
       const registry = await wt.reconcileRegistry(cwd);
@@ -260,10 +260,10 @@ async function handleExecute(cwd, subcommand, args) {
       // Load DAG.json and registry
       let dagJson;
       try {
-        const dagPath = path.join(cwd, '.planning', 'sets', 'DAG.json');
+        const dagPath = ensureDagExists(cwd);
         dagJson = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
       } catch (err) {
-        throw new CliError(`Cannot read DAG.json: ${err.message}`);
+        throw new CliError(err.message);
       }
       const registry = wt.readRegistry(cwd);
       // Run reconciliation
