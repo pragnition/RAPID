@@ -405,14 +405,14 @@
         },
         {
           "id": "state-reliability",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "State Transaction Reliability",
           "branch": "rapid/state-reliability"
         },
         {
           "id": "gap-closure",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Gap-Closure Workflow",
           "branch": "rapid/gap-closure"
@@ -427,6 +427,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-24T07:33:43.679Z",
+  "lastUpdatedAt": "2026-03-24T08:36:03.387Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
