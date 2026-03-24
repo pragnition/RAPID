@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { output, error, findProjectRoot } = require('../lib/core.cjs');
+const { output, error, resolveProjectRoot } = require('../lib/core.cjs');
 const { CliError, exitWithError } = require('../lib/errors.cjs');
 const { handleDisplay } = require('../commands/display.cjs');
 const { handleLock } = require('../commands/lock.cjs');
@@ -197,7 +197,7 @@ async function main() {
     // All other commands need project root
     let cwd;
     try {
-      cwd = findProjectRoot();
+      cwd = resolveProjectRoot();
     } catch (err) {
       throw new CliError(`Cannot find project root: ${err.message}`);
     }
