@@ -60,7 +60,11 @@ If `<set-id>` was not provided, use AskUserQuestion to ask:
 
 ### Check for --gaps Flag
 
-Parse the user's input for the `--gaps` flag. If present, only execute waves without WAVE-COMPLETE.md markers (gap closure mode). This is used after gap resolution planning to execute only the newly planned gap-closure waves.
+Parse the user's input for the `--gaps` flag. If present, set `GAPS_MODE=true`. Gap-closure mode:
+- Relaxes status validation to accept `complete` and `merged` sets
+- Only executes gap-closure waves (those with `<!-- gap-closure: true -->` header or waves numbered higher than the last WAVE-COMPLETE.md marker from the original execution)
+- Skips ALL state transitions (the set remains in its current status)
+- Does NOT trigger solo auto-merge
 
 ### Load Full State
 
@@ -83,7 +87,13 @@ Parse the JSON to find the resolved set within the current milestone. Extract `M
   init [done] > start-set [done] > discuss-set > plan-set > execute-set [FAILED: set not ready] > review > merge
   ```
   STOP.
-- **If `complete` or `merged`:** Already done.
+- **If `complete` or `merged` AND `--gaps` flag IS present:**
+  - Validate that `.planning/sets/${SET_ID}/GAPS.md` exists. If missing, display error: "No GAPS.md found for set '{SET_ID}'. Run /rapid:plan-set {SET_INDEX} --gaps first to plan gap-closure waves." STOP.
+  - Validate that gap-closure wave PLAN.md files exist (waves numbered higher than existing WAVE-COMPLETE markers, or containing `<!-- gap-closure: true -->` header). If none found, display: "No gap-closure wave plans found. Run /rapid:plan-set {SET_INDEX} --gaps first." STOP.
+  - Display: "Gap-closure mode: executing gap-closure waves for set '{SET_ID}' (status: {status})."
+  - Continue.
+
+- **If `complete` or `merged` AND `--gaps` flag is NOT present:** Already done.
   Display: "Set '{SET_ID}' is already '{status}'."
   Suggest: `/rapid:review {SET_INDEX}`
   Show breadcrumb:
@@ -140,6 +150,8 @@ Wave 2: pending (will execute)
 Wave 3: pending (will execute)
 ```
 
+**Gap-closure mode note:** In gap-closure mode, previously completed waves (from original execution) are skipped via their WAVE-COMPLETE.md markers. Only newly planned gap-closure waves (without markers) are executed.
+
 If ALL waves complete:
   Display: "All waves in set '{SET_ID}' already complete."
   Suggest: `/rapid:review {SET_INDEX}`
@@ -151,6 +163,10 @@ If not first run (some waves complete):
 ---
 
 ## Step 3: State Transition
+
+**If `GAPS_MODE=true`:** Skip entirely. Display: "Gap-closure mode: skipping state transition (set remains in '{status}' status)."
+
+**If `GAPS_MODE=false`:**
 
 If set is in `planned` state:
 ```bash
@@ -342,6 +358,8 @@ This sequential commit approach prevents git index corruption. Even though waves
 
 After ALL waves complete:
 
+**If `GAPS_MODE=false` (normal mode):**
+
 1. Read success criteria from ROADMAP.md for this set (parse the set description and success criteria section).
 
 2. Spawn the **rapid-verifier** agent:
@@ -374,9 +392,72 @@ After ALL waves complete:
    - Display: "To close gaps: /rapid:plan-set {SET_INDEX} --gaps then /rapid:execute-set {SET_INDEX} --gaps"
    - Continue to Step 6 (verification is non-blocking).
 
+**If `GAPS_MODE=true` (gap-closure mode):**
+
+1. Read the existing `.planning/sets/${SET_ID}/GAPS.md` as verification input.
+
+2. Spawn the **rapid-verifier** agent:
+
+   ```
+   Verify gap-closure execution for set '{SET_ID}'.
+
+   ## Gap-Closure Verification
+   Verify that the specific gaps listed in GAPS.md have been resolved by the gap-closure wave implementations.
+
+   ## GAPS.md (verification input)
+   {full GAPS.md contents}
+
+   ## Gap-Closure Wave Plans and Objectives
+   {For each gap-closure wave-N-PLAN.md: wave N objective summary}
+
+   ## Working Directory
+   {worktreePath}
+
+   ## Instructions
+   For each gap listed in GAPS.md, check whether the gap-closure waves resolved it.
+   Return COMPLETE with a `resolved_gaps` and `unresolved_gaps` array.
+   ```
+
+3. Parse RAPID:RETURN from verifier.
+
+4. Update GAPS.md in-place: for each resolved gap, add a `**Status:** Resolved` marker. For unresolved gaps, add `**Status:** Unresolved` with details.
+
+5. Continue to Step 6.
+
 ---
 
 ## Step 6: Complete Set
+
+**If `GAPS_MODE=true`:** Skip state transition AND solo auto-merge entirely. Display: "Gap-closure mode: skipping completion transition (set remains in '{status}' status)."
+
+Still commit marker files (WAVE-COMPLETE.md for gap-closure waves, updated GAPS.md):
+
+```bash
+git add ".planning/sets/${SET_ID}/WAVE-*-COMPLETE.md" 2>/dev/null || true
+git add ".planning/sets/${SET_ID}/GAPS.md" 2>/dev/null || true
+if ! git diff --cached --quiet 2>/dev/null; then
+  git commit -m "execute-set(${SET_ID}): gap-closure execution complete"
+else
+  echo "No marker files to commit (already committed in wave execution)."
+fi
+```
+
+Display gap-closure summary: "Gap-closure for set '{SET_ID}' complete. {N} gap-closure waves executed."
+
+Adjust the next-step suggestion based on verification results:
+- If all gaps resolved: `> **Next step:** /rapid:review {SET_INDEX}` (or note that set is already merged)
+- If gaps remain: `> **Next step:** /rapid:plan-set {SET_INDEX} --gaps` (plan another round)
+
+Display progress breadcrumb:
+```
+init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge [done] > gap-closure [done]
+```
+
+**Skip the rest of Step 6 below** (state transition, solo auto-merge, normal commit, normal summary).
+
+---
+
+**If `GAPS_MODE=false`:**
 
 Transition set to complete. Use the project root (not the worktree) for state commands:
 
