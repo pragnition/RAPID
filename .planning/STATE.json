@@ -398,14 +398,14 @@
       "sets": [
         {
           "id": "path-and-dag",
-          "status": "executed",
+          "status": "merged",
           "waves": [],
           "name": "Path Resolution & DAG Reliability",
           "branch": "rapid/path-and-dag"
         },
         {
           "id": "state-reliability",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "State Transaction Reliability",
           "branch": "rapid/state-reliability"
@@ -427,6 +427,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-24T06:56:48.948Z",
+  "lastUpdatedAt": "2026-03-24T07:33:43.679Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
