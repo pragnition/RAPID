@@ -2,7 +2,7 @@
   "version": 1,
   "rapidVersion": "4.2.1",
   "projectName": "RAPID",
-  "currentMilestone": "v4.2.1",
+  "currentMilestone": "v4.3.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -391,8 +391,42 @@
           "branch": "rapid/audit-version"
         }
       ]
+    },
+    {
+      "id": "v4.3.0",
+      "name": "Reliability & State",
+      "sets": [
+        {
+          "id": "path-and-dag",
+          "status": "discussed",
+          "waves": [],
+          "name": "Path Resolution & DAG Reliability",
+          "branch": "rapid/path-and-dag"
+        },
+        {
+          "id": "state-reliability",
+          "status": "pending",
+          "waves": [],
+          "name": "State Transaction Reliability",
+          "branch": "rapid/state-reliability"
+        },
+        {
+          "id": "gap-closure",
+          "status": "pending",
+          "waves": [],
+          "name": "Gap-Closure Workflow",
+          "branch": "rapid/gap-closure"
+        },
+        {
+          "id": "new-version-ux",
+          "status": "pending",
+          "waves": [],
+          "name": "New-Version UX Improvements",
+          "branch": "rapid/new-version-ux"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-23T16:36:25.132Z",
+  "lastUpdatedAt": "2026-03-24T06:32:37.000Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
