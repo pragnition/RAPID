@@ -17,62 +17,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const dag = require('./dag.cjs');
-const { DAG_CANONICAL_SUBPATH } = require('./dag.cjs');
+const { resolveProjectRoot, DAG_SUBPATH } = require('./core.cjs');
 const contract = require('./contract.cjs');
-
-// ────────────────────────────────────────────────────────────────
-// Project Root Resolution
-// ────────────────────────────────────────────────────────────────
-
-/**
- * Resolve the true project root from any working directory, including
- * git worktrees. Uses `git rev-parse --path-format=absolute --git-common-dir`
- * to find the shared .git directory, then derives the project root from it.
- *
- * Falls back to `cwd` when:
- * - Not inside a git repository (e.g., unit test temp dirs)
- * - The resolved root does not contain `.planning/sets/`
- *
- * @param {string} cwd - Current working directory (may be a worktree path)
- * @returns {string} Resolved project root path
- */
-function resolveProjectRoot(cwd) {
-  try {
-    const gitCommonDir = execSync(
-      'git rev-parse --path-format=absolute --git-common-dir',
-      { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    ).trim();
-
-    // gitCommonDir points to the .git directory (e.g., /path/to/project/.git)
-    // Strip the trailing /.git to get the project root
-    let projectRoot;
-    if (gitCommonDir.endsWith(`${path.sep}.git`) || gitCommonDir.endsWith('/.git')) {
-      projectRoot = gitCommonDir.slice(0, -path.sep.length - '.git'.length);
-    } else if (gitCommonDir === '.git') {
-      // Relative .git (shouldn't happen with --path-format=absolute, but handle it)
-      projectRoot = cwd;
-    } else {
-      // Unexpected format -- try stripping /.git anyway
-      const idx = gitCommonDir.lastIndexOf('/.git');
-      if (idx !== -1) {
-        projectRoot = gitCommonDir.slice(0, idx);
-      } else {
-        projectRoot = cwd;
-      }
-    }
-
-    // Verify the resolved root contains .planning/sets/
-    if (fs.existsSync(path.join(projectRoot, '.planning', 'sets'))) {
-      return projectRoot;
-    }
-
-    // Fallback to cwd if .planning/sets/ not found at resolved root
-    return cwd;
-  } catch {
-    // git rev-parse failed (not a git repo, etc.) -- fall back to cwd
-    return cwd;
-  }
-}
 
 // ────────────────────────────────────────────────────────────────
 // Set Creation
@@ -256,7 +202,7 @@ function listSets(cwd) {
  * @param {Object} dagObj - DAG object from createDAG
  */
 function writeDAG(cwd, dagObj) {
-  const dagPath = path.join(cwd, DAG_CANONICAL_SUBPATH);
+  const dagPath = path.join(cwd, DAG_SUBPATH);
   fs.writeFileSync(dagPath, JSON.stringify(dagObj, null, 2), 'utf-8');
 }
 
