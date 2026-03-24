@@ -65,6 +65,7 @@ describe('snapshotExports - real repo files', () => {
     assert.ok(Array.isArray(exports), 'should return an array of exports');
     assert.ok(exports.includes('output'), 'should find output export');
     assert.ok(exports.includes('findProjectRoot'), 'should find findProjectRoot export');
+    assert.ok(exports.includes('resolveProjectRoot'), 'should find resolveProjectRoot export');
   });
 
   it('should return empty array for non-existent file', () => {
