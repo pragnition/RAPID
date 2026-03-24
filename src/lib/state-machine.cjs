@@ -11,6 +11,35 @@ const { assignWaves } = require('./dag.cjs');
 const PLANNING_DIR = '.planning';
 const STATE_FILE = 'STATE.json';
 
+// Error code constants for granular state error diagnostics
+const STATE_FILE_MISSING = 'STATE_FILE_MISSING';
+const STATE_PARSE_ERROR = 'STATE_PARSE_ERROR';
+const STATE_VALIDATION_ERROR = 'STATE_VALIDATION_ERROR';
+
+const REMEDIATION_HINTS = {
+  [STATE_FILE_MISSING]: '\nRemediation: Run /rapid:init',
+  [STATE_PARSE_ERROR]: '\nRemediation: Run `git checkout HEAD -- .planning/STATE.json`',
+  [STATE_VALIDATION_ERROR]: '\nRemediation: Run /rapid:health',
+};
+
+/**
+ * Create a state error with a code, message, and optional details.
+ *
+ * @param {string} code - One of STATE_FILE_MISSING, STATE_PARSE_ERROR, STATE_VALIDATION_ERROR
+ * @param {string} message - Human-readable error message
+ * @param {*} [details] - Optional additional details (e.g., Zod issues)
+ * @returns {Error} Error with .code and optional .details properties
+ */
+function createStateError(code, message, details) {
+  const hint = REMEDIATION_HINTS[code] || '';
+  const err = new Error(message + hint);
+  err.code = code;
+  if (details !== undefined) {
+    err.details = details;
+  }
+  return err;
+}
+
 /**
  * Create an initial ProjectState for a new project.
  *
@@ -451,4 +480,8 @@ module.exports = {
   detectCorruption,
   recoverFromGit,
   commitState,
+  STATE_FILE_MISSING,
+  STATE_PARSE_ERROR,
+  STATE_VALIDATION_ERROR,
+  createStateError,
 };
