@@ -113,7 +113,7 @@ function handleVerifyArtifacts(args) {
 function handleContext(args) {
   const fs = require('fs');
   const path = require('path');
-  const { findProjectRoot } = require('../lib/core.cjs');
+  const { resolveProjectRoot } = require('../lib/core.cjs');
 
   const subcommand = args[0];
   if (!subcommand) {
@@ -137,7 +137,7 @@ function handleContext(args) {
     // Needs project root -- writes to .planning/context/
     let cwd;
     try {
-      cwd = findProjectRoot();
+      cwd = resolveProjectRoot();
     } catch (err) {
       throw new CliError(`Cannot find project root: ${err.message}`);
     }
