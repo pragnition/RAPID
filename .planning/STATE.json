@@ -412,14 +412,14 @@
         },
         {
           "id": "gap-closure",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Gap-Closure Workflow",
           "branch": "rapid/gap-closure"
         },
         {
           "id": "new-version-ux",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "New-Version UX Improvements",
           "branch": "rapid/new-version-ux"
@@ -427,6 +427,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-24T08:36:03.387Z",
+  "lastUpdatedAt": "2026-03-24T09:39:36.001Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
