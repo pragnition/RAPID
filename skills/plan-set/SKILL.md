@@ -174,7 +174,7 @@ Decompose and plan set '{SET_ID}'.
 
 ## Gap-Closure Mode (only include if GAPS_MODE=true)
 This is gap-closure planning. Only plan waves to address the gaps listed in GAPS.md.
-- Determine the next wave number by globbing existing `wave-*-PLAN.md` files and incrementing past the highest number found.
+- Determine the next wave number by globbing existing `wave-*-PLAN.md` files and incrementing past the highest number found. Example: if `wave-1-PLAN.md` and `wave-2-PLAN.md` exist, gap-closure plans start at `wave-3-PLAN.md`.
 - Mark each gap-closure PLAN.md with a metadata header: `<!-- gap-closure: true -->`
 - Each gap-closure wave should target specific gaps from GAPS.md.
 - GAPS.md contents: {full GAPS.md contents}

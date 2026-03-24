@@ -87,6 +87,9 @@ Parse the JSON to find the resolved set within the current milestone. Extract `M
   init [done] > start-set [done] > discuss-set > plan-set > execute-set [FAILED: set not ready] > review > merge
   ```
   STOP.
+- **If `--gaps` flag IS present but status is NOT `complete` or `merged`:**
+  Display error: "The --gaps flag is only valid for sets in 'complete' or 'merged' status (current: {status}). Gap-closure is for addressing gaps in already-completed sets."
+  STOP.
 - **If `complete` or `merged` AND `--gaps` flag IS present:**
   - Validate that `.planning/sets/${SET_ID}/GAPS.md` exists. If missing, display error: "No GAPS.md found for set '{SET_ID}'. Run /rapid:plan-set {SET_INDEX} --gaps first to plan gap-closure waves." STOP.
   - Validate that gap-closure wave PLAN.md files exist (waves numbered higher than existing WAVE-COMPLETE markers, or containing `<!-- gap-closure: true -->` header). If none found, display: "No gap-closure wave plans found. Run /rapid:plan-set {SET_INDEX} --gaps first." STOP.
@@ -153,9 +156,8 @@ Wave 3: pending (will execute)
 **Gap-closure mode note:** In gap-closure mode, previously completed waves (from original execution) are skipped via their WAVE-COMPLETE.md markers. Only newly planned gap-closure waves (without markers) are executed.
 
 If ALL waves complete:
-  Display: "All waves in set '{SET_ID}' already complete."
-  Suggest: `/rapid:review {SET_INDEX}`
-  STOP.
+  **If `GAPS_MODE=true`:** Display: "All gap-closure waves for set '{SET_ID}' already complete. Gaps may be resolved -- check GAPS.md." Suggest: `/rapid:review {SET_INDEX}`. STOP.
+  **If `GAPS_MODE=false`:** Display: "All waves in set '{SET_ID}' already complete." Suggest: `/rapid:review {SET_INDEX}`. STOP.
 
 If not first run (some waves complete):
   Display: "Resuming execution from wave {N}..."
