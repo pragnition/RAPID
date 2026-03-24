@@ -409,6 +409,9 @@ Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase 
 ## Carry-Forward Context
 {If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
+## Deferred Context
+{If any DEFERRED.md items were discovered in Step 2C-v (from either active sets or archive), list them here as a bullet list with source attribution: "- {Decision/Idea} (from: {source set ID}, suggested target: {Suggested Target})". If no deferred items exist, state "No deferred items from previous work."}
+
 ## Working Directory
 {projectRoot}
 
@@ -430,6 +433,9 @@ Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase 
 
 ## Carry-Forward Context
 {If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
+
+## Deferred Context
+{If any DEFERRED.md items were discovered in Step 2C-v (from either active sets or archive), list them here as a bullet list with source attribution: "- {Decision/Idea} (from: {source set ID}, suggested target: {Suggested Target})". If no deferred items exist, state "No deferred items from previous work."}
 
 ## Working Directory
 {projectRoot}
@@ -453,6 +459,9 @@ Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase 
 ## Carry-Forward Context
 {If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
+## Deferred Context
+{If any DEFERRED.md items were discovered in Step 2C-v (from either active sets or archive), list them here as a bullet list with source attribution: "- {Decision/Idea} (from: {source set ID}, suggested target: {Suggested Target})". If no deferred items exist, state "No deferred items from previous work."}
+
 ## Working Directory
 {projectRoot}
 
@@ -474,6 +483,9 @@ Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase 
 
 ## Carry-Forward Context
 {If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
+
+## Deferred Context
+{If any DEFERRED.md items were discovered in Step 2C-v (from either active sets or archive), list them here as a bullet list with source attribution: "- {Decision/Idea} (from: {source set ID}, suggested target: {Suggested Target})". If no deferred items exist, state "No deferred items from previous work."}
 
 ## Working Directory
 {projectRoot}
@@ -497,6 +509,9 @@ Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase 
 ## Carry-Forward Context
 {If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
 
+## Deferred Context
+{If any DEFERRED.md items were discovered in Step 2C-v (from either active sets or archive), list them here as a bullet list with source attribution: "- {Decision/Idea} (from: {source set ID}, suggested target: {Suggested Target})". If no deferred items exist, state "No deferred items from previous work."}
+
 ## Working Directory
 {projectRoot}
 
@@ -518,6 +533,9 @@ Read .planning/research/CODEBASE-ANALYSIS.md if it exists for existing codebase 
 
 ## Carry-Forward Context
 {If carryForwardSets is non-empty, list each carried-forward set with its ID, status, and description. If empty, state "No carry-forward sets from previous milestone."}
+
+## Deferred Context
+{If any DEFERRED.md items were discovered in Step 2C-v (from either active sets or archive), list them here as a bullet list with source attribution: "- {Decision/Idea} (from: {source set ID}, suggested target: {Suggested Target})". If no deferred items exist, state "No deferred items from previous work."}
 
 ## Working Directory
 {projectRoot}
