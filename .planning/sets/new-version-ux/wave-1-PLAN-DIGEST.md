@@ -1,12 +1,7 @@
-# PLAN DIGEST: new-version-ux / Wave 1
+# Wave 1 Plan Digest
 
-**Tasks:** 5
-**File:** `skills/new-version/SKILL.md` (sole owned file)
-
-| # | Task | Summary |
-|---|------|---------|
-| 1 | `--spec` argument parsing | Add Step 0.5 to parse optional spec file path and load content |
-| 2 | Spec-aware goal pre-population | Conditional branch in Step 2C: LLM semantic extraction + Accept/Augment/Replace UX |
-| 3 | Expanded DEFERRED.md discovery | Scan both active sets and previous milestone archive for deferred items |
-| 4 | Deferred context in researcher briefs | Add `## Deferred Context` section to all 6 researcher agent templates in Step 5 |
-| 5 | Backward compatibility verification | End-to-end review confirming no-argument path is unchanged |
+**Objective:** Enhance new-version SKILL.md with spec file argument support, spec-aware goal pre-population, and expanded DEFERRED.md auto-discovery
+**Tasks:** 5 tasks completed
+**Key files:** skills/new-version/SKILL.md
+**Approach:** Added Step 0.5 for --spec argument parsing, conditional spec-aware/interactive flow branching in Step 2C, expanded DEFERRED.md discovery to include archive, added Deferred Context to all 6 researcher briefs, verified backward compatibility
+**Status:** Complete
