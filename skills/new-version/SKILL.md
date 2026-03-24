@@ -92,6 +92,38 @@ Ask freeform: "Give a short name or description for this milestone (e.g., 'Mark 
 
 Gather goals across 5 categories using sequential AskUserQuestion prompts. Each category collects freeform input. Initialize an empty goals collection object with keys: features, bugFixes, techDebt, uxImprovements, deferredDecisions.
 
+**If `specContent` is not null, execute the Spec-Aware Goal Extraction flow instead of Steps 2C-i through 2C-v:**
+
+#### Spec-Aware Goal Extraction
+
+1. **Semantic Category Extraction:** Read `specContent` and semantically map its content to the 5 goal categories: `features`, `bugFixes`, `techDebt`, `uxImprovements`, `deferredDecisions`. The spec file uses structured Markdown with category headings (e.g., `## Features`, `## Bug Fixes`, `## Technical Debt`, etc.). Use LLM understanding to match headings to categories even if the exact heading text differs (e.g., "## New Capabilities" maps to features, "## Cleanup" maps to techDebt). Content under unrecognized headings should be placed in `additionalGoals`.
+
+2. **Deferred Items Injection:** Before presenting the extracted goals, also run the DEFERRED.md auto-discovery from Step 2C-v (including the expanded archive discovery). Append any discovered deferred items to the `deferredDecisions` category automatically.
+
+3. **Single Confirmation Prompt:** Display the extracted goals in the same summary format as Step 2C-vi (the category-grouped summary). Then use AskUserQuestion with:
+   - question: "Goals extracted from spec file. Review and confirm."
+   - Options:
+     - "Accept all" -- "Proceed with these goals as-is"
+     - "Review individually" -- "Step through each category with Accept/Augment/Replace options"
+     - "Add more" -- "Add additional goals beyond what the spec contains"
+
+4. **If "Accept all":** Set all goal categories from extracted content. Skip to Step 2C-vi completeness confirmation (the "Yes, proceed" gate).
+
+5. **If "Review individually":** For each of the 5 categories, display the extracted content (or "-- empty --" if spec had nothing for that category) and use AskUserQuestion with:
+   - question: "Category {N}/5: {categoryName}"
+   - Options:
+     - "Accept" -- "Keep extracted content as-is"
+     - "Augment" -- "Add to the extracted content"
+     - "Replace" -- "Discard extracted content and enter new content"
+   - If "Augment": Ask freeform "What would you like to add to this category?" and append the response to the extracted content.
+   - If "Replace": Ask freeform "Enter new content for this category." and replace the extracted content entirely.
+   - If the category was empty in the spec, fall back to the original interactive prompt for that category (the existing Step 2C-i through 2C-v behavior for that single category).
+   After all 5 categories reviewed, proceed to Step 2C-vi completeness confirmation.
+
+6. **If "Add more":** Same behavior as the existing "Add more" in Step 2C-vi -- ask freeform and append to additionalGoals, then re-display and re-prompt.
+
+**If `specContent` is null, proceed with the original Steps 2C-i through 2C-v as written below.**
+
 **Step 2C-i: Features**
 
 Use AskUserQuestion with:
