@@ -740,6 +740,7 @@ new-version [done] > start-set > discuss-set > plan-set > execute-set > review >
 - **Goal-gathering is sequential by category.** Each of the 5 categories (features, bugs, tech debt, UX, deferred) is presented as a separate AskUserQuestion. Users can skip any category.
 - **Completeness gate is mandatory.** Users must explicitly confirm "Yes, proceed" before the research pipeline starts. The confirmation loop continues until the user approves.
 - **Deferred import is graceful.** If no DEFERRED.md files exist, the deferred category is silently skipped with a brief message. Graceful skip is the expected default.
+- **Spec file is optional.** The `--spec` argument is never required. Omitting it produces identical behavior to the pre-spec implementation.
 
 ## Anti-Patterns -- Do NOT Do These
 
