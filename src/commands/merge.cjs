@@ -1,6 +1,6 @@
 'use strict';
 
-const { output } = require('../lib/core.cjs');
+const { output, DAG_SUBPATH } = require('../lib/core.cjs');
 const { CliError } = require('../lib/errors.cjs');
 const { parseArgs } = require('../lib/args.cjs');
 
@@ -271,7 +271,7 @@ async function handleMerge(cwd, subcommand, args) {
         }
       } catch { /* no ownership data */ }
       try {
-        const dagPath = path.join(cwd, '.planning', 'DAG.json');
+        const dagPath = path.join(cwd, DAG_SUBPATH);
         if (fs.existsSync(dagPath)) {
           const dagData = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
           dagOrder = dagData.order || dagData.edges || [];
