@@ -17,7 +17,7 @@ Output this content now:
 
 ---
 
-## RAPID v4.2.1 Workflow
+## RAPID v4.3.0 Workflow
 
 ```
   INIT -> START-SET -> DISCUSS-SET -> PLAN-SET -> EXECUTE-SET -> REVIEW -> MERGE
@@ -105,4 +105,4 @@ Start next cycle:
 
 ---
 
-RAPID v4.2.1 | 7+3+4 commands | Rapid Agentic Parallelizable and Isolatable Development
+RAPID v4.3.0 | 7+3+4 commands | Rapid Agentic Parallelizable and Isolatable Development

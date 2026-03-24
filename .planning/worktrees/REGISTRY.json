@@ -561,6 +561,50 @@
       "startCommit": "3665b33610eccf37e630d4f2d328bf2a225203ec",
       "wave": null,
       "createdAt": "2026-03-23T16:00:48.731Z"
+    },
+    "path-and-dag": {
+      "setName": "path-and-dag",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "03ede206421fd9fbd7fcb2708e6d8c2f0e0bb792",
+      "wave": null,
+      "createdAt": "2026-03-24T05:33:36.361Z"
+    },
+    "state-reliability": {
+      "setName": "state-reliability",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "cc92c969feeef3235ad1b060ebce1b274de34436",
+      "wave": null,
+      "createdAt": "2026-03-24T07:10:00.378Z"
+    },
+    "gap-closure": {
+      "setName": "gap-closure",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "c165a2fe8e2b233a3f7aca813e99199684986ff3",
+      "wave": null,
+      "createdAt": "2026-03-24T08:05:16.558Z"
+    },
+    "new-version-ux": {
+      "setName": "new-version-ux",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "6fbb23e32d02da8061555425a9d39fc27b7614b5",
+      "wave": null,
+      "createdAt": "2026-03-24T09:19:50.752Z"
     }
   }
 }

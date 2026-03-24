@@ -1,11 +1,55 @@
 {
-  "wave_count": 1,
-  "waves": [
+  "nodes": [
     {
+      "id": "path-and-dag",
       "wave": 1,
-      "plan_file": "wave-1-PLAN.md",
-      "tasks": 5,
-      "description": "Structured goal-gathering categories, deferred import, completeness gate, carry-forward context, constraints update"
+      "status": "pending"
+    },
+    {
+      "id": "state-reliability",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "gap-closure",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "new-version-ux",
+      "wave": 1,
+      "status": "pending"
     }
-  ]
+  ],
+  "edges": [],
+  "waves": {
+    "1": {
+      "sets": [
+        "path-and-dag",
+        "state-reliability",
+        "gap-closure",
+        "new-version-ux"
+      ],
+      "checkpoint": {
+        "contracts": [
+          "rapid://contracts/path-and-dag",
+          "rapid://contracts/state-reliability",
+          "rapid://contracts/gap-closure",
+          "rapid://contracts/new-version-ux"
+        ],
+        "artifacts": [
+          ".planning/sets/path-and-dag/CONTRACT.json",
+          ".planning/sets/state-reliability/CONTRACT.json",
+          ".planning/sets/gap-closure/CONTRACT.json",
+          ".planning/sets/new-version-ux/CONTRACT.json"
+        ]
+      }
+    }
+  },
+  "metadata": {
+    "created": "2026-03-24",
+    "totalSets": 4,
+    "totalWaves": 1,
+    "maxParallelism": 4
+  }
 }

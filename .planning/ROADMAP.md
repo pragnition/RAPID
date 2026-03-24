@@ -16,23 +16,37 @@
 - **v3.6.0 Workflow & UX Polish** — 5 sets (shipped 2026-03-20)
 - **v4.0.0 Mission Control** — 7 sets (shipped 2026-03-22)
 - **v4.1.0 Polish & Fixes** — 8 sets (shipped 2026-03-23)
-- **v4.2.1 Discuss & Audit** — 3 sets (in progress)
+- **v4.2.1 Discuss & Audit** — 3 sets (shipped 2026-03-24)
+- **v4.3.0 Reliability & State** — 4 sets (in progress)
 
-## Active Milestone: v4.2.1 — Discuss & Audit
+## Active Milestone: v4.3.0 — Reliability & State
 
-### Set 1: path-resolution-fix
-**Branch:** `rapid/path-resolution-fix` | **Size:** S
-Fix `require('${RAPID_TOOLS}/../lib/...')` path resolution in `skills/init/SKILL.md` and `skills/register-web/SKILL.md` where Node.js treats the `.cjs` filename as a directory component.
+This milestone addresses three reliability bugs and two UX improvements to the /new-version workflow. All bug fixes are independent and parallelizable.
 
-### Set 2: discuss-ux
-**Branch:** `rapid/discuss-ux` | **Size:** M
-Two coordinated UX improvements to `skills/discuss-set/SKILL.md`: (1) Consolidate gray area prompts into fewer multiSelect prompts (max 8 checkboxes each), (2) Replace markdown pros/cons table with structured list format. Includes coordinated test suite updates.
+### Set 1: path-and-dag — Path Resolution & DAG Reliability
+**Branch:** `rapid/path-and-dag` | **Size:** M
+Consolidate project root resolution to a single worktree-aware function in core.cjs, fix hardcoded DAG.json path in merge.cjs, add DAG generation to /new-version skill.
 
-### Set 3: audit-version
-**Branch:** `rapid/audit-version` | **Size:** L
-New `/rapid:audit-version` command that reads milestone artifacts, cross-references requirements vs. delivery, produces `.planning/v{version}-AUDIT.md` gap report, and offers remediation via `/rapid:add-set`. Read-only — never mutates STATE.json.
+### Set 2: state-reliability — State Transaction Reliability
+**Branch:** `rapid/state-reliability` | **Size:** M
+Harden withStateTransaction() with granular error diagnostics, orphaned .tmp file cleanup, onCompromised abort behavior, and concurrency tests.
 
-**Dependency graph:** All 3 sets are fully independent.
+### Set 3: gap-closure — Gap-Closure Workflow
+**Branch:** `rapid/gap-closure` | **Size:** M
+Implement --gaps flag in plan-set and execute-set skills so merged sets with remaining gaps can be re-planned.
+
+### Set 4: new-version-ux — New-Version UX Improvements
+**Branch:** `rapid/new-version-ux` | **Size:** S
+Spec-aware goal gathering and auto-discovery of DEFERRED.md items for researcher briefs.
+
+**Dependency graph:** All 4 sets are fully independent.
+
+### Deferred from v4.3.0
+The following items were identified during audit and deferred:
+- dag.test.cjs DAG_CANONICAL_SUBPATH references not updated to DAG_SUBPATH (severity: low)
+- Retry warning log on first lock contention attempt (severity: low)
+- 1-4 wave limit for gap-closure waves not explicitly enforced (severity: low)
+- Sequential pre-filled category prompts for goal pre-population (severity: low)
 
 ## Completed Milestone Details
 

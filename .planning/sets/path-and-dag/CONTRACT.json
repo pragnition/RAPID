@@ -1,0 +1,49 @@
+{
+  "setId": "path-and-dag",
+  "version": "1.0.0",
+  "exports": {
+    "resolveProjectRoot": {
+      "type": "function",
+      "signature": "resolveProjectRoot(): string",
+      "description": "Worktree-aware project root resolution, extracted from plan.cjs to core.cjs as the single canonical resolver."
+    },
+    "dagExistenceCheck": {
+      "type": "function",
+      "signature": "ensureDagExists(projectRoot: string): void",
+      "description": "Validates DAG.json exists at the project root before merge operations. Throws descriptive error with remediation steps if missing."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "worktree-transparent-root": {
+      "description": "resolveProjectRoot() returns identical path whether called from main repo, a worktree, or a nested subdirectory of either",
+      "enforced_by": "test"
+    },
+    "dag-generated-on-new-version": {
+      "description": "/new-version skill calls dag generate after STATE.json is written, ensuring DAG.json always exists for subsequent merge operations",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Consolidate project root resolution to a single worktree-aware function in core.cjs, fix DAG.json path resolution in merge operations, and ensure DAG generation happens during /new-version.",
+    "ownedFiles": [
+      "src/lib/core.cjs",
+      "src/lib/core.test.cjs",
+      "src/lib/dag.cjs",
+      "src/lib/dag.test.cjs",
+      "src/lib/merge.cjs",
+      "src/lib/merge.test.cjs",
+      "src/commands/merge.cjs",
+      "skills/new-version/SKILL.md"
+    ],
+    "tasks": [
+      {"description": "Extract resolveProjectRoot() from plan.cjs to core.cjs", "acceptance": "Function exists in core.cjs and plan.cjs imports from core.cjs"},
+      {"description": "Replace all findProjectRoot() calls with resolveProjectRoot()", "acceptance": "No remaining calls to findProjectRoot in codebase"},
+      {"description": "Fix merge.cjs:274 hardcoded DAG path", "acceptance": "getMergeOrder uses dynamic project root"},
+      {"description": "Add DAG generation to /new-version skill", "acceptance": "DAG.json created after STATE.json write"},
+      {"description": "Add DAG existence validation before merge", "acceptance": "Descriptive error when DAG.json missing"},
+      {"description": "Unit tests for path resolution and DAG scenarios", "acceptance": "Tests cover worktree, non-worktree, and missing-DAG cases"}
+    ],
+    "acceptance": ["All merge operations find DAG.json regardless of working directory", "resolveProjectRoot() is the single path resolver across the codebase"]
+  }
+}

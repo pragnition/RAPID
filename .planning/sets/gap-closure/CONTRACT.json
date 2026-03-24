@@ -1,0 +1,48 @@
+{
+  "setId": "gap-closure",
+  "version": "1.0.0",
+  "exports": {
+    "gapsPlanFlag": {
+      "type": "function",
+      "signature": "handlePlanSetGaps(setId: string, projectRoot: string): Promise<void>",
+      "description": "Plan-set handler for --gaps flag that produces gap-closure PLAN.md files for a merged set with remaining gaps."
+    },
+    "gapsExecuteFlag": {
+      "type": "function",
+      "signature": "handleExecuteSetGaps(setId: string, projectRoot: string): Promise<void>",
+      "description": "Execute-set handler for --gaps flag that runs only gap-closure waves."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "merged-status-preserved": {
+      "description": "Gap-closure workflow never changes a set's status from 'merged' -- it operates as an overlay on the existing lifecycle",
+      "enforced_by": "test"
+    },
+    "gap-waves-numbered-after-existing": {
+      "description": "Gap-closure waves are numbered sequentially after the last existing wave",
+      "enforced_by": "test"
+    },
+    "no-re-execution-of-completed-waves": {
+      "description": "execute-set --gaps only executes gap-closure waves, never re-executes previously completed waves",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Implement the --gaps flag in plan-set and execute-set skills so merged sets with remaining gaps can undergo targeted gap-closure planning and execution.",
+    "ownedFiles": [
+      "skills/plan-set/SKILL.md",
+      "skills/execute-set/SKILL.md",
+      "src/commands/plan.cjs",
+      "src/commands/execute.cjs"
+    ],
+    "tasks": [
+      {"description": "Implement --gaps flag parsing in plan-set SKILL.md", "acceptance": "Flag recognized and routed to gap-closure handler"},
+      {"description": "Allow merged status in plan-set when --gaps is present", "acceptance": "No 'planning is complete' error for merged sets with --gaps"},
+      {"description": "Generate gap-closure PLAN.md files with correct wave numbering", "acceptance": "Gap waves numbered after existing waves"},
+      {"description": "Implement --gaps handling in execute-set", "acceptance": "Only gap-closure waves executed"},
+      {"description": "End-to-end test for gap-closure workflow", "acceptance": "Merged set with gaps -> plan -> execute -> gaps resolved"}
+    ],
+    "acceptance": ["Merged sets with gaps can be re-planned and re-executed via --gaps flag", "Existing plan-set and execute-set behavior unchanged without --gaps"]
+  }
+}

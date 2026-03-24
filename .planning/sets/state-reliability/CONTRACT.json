@@ -1,0 +1,46 @@
+{
+  "setId": "state-reliability",
+  "version": "1.0.0",
+  "exports": {
+    "withStateTransaction": {
+      "type": "function",
+      "signature": "withStateTransaction(projectRoot: string, mutator: (state: State) => State, options?: { onCompromised?: 'abort' | 'continue' }): Promise<State>",
+      "description": "Enhanced state transaction with granular error diagnostics, orphan cleanup, and configurable compromised-lock behavior."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "granular-error-messages": {
+      "description": "withStateTransaction produces distinct error types: STATE_FILE_MISSING, STATE_PARSE_ERROR, STATE_VALIDATION_ERROR -- each with actionable remediation in the error message",
+      "enforced_by": "test"
+    },
+    "orphan-tmp-cleanup": {
+      "description": "On transaction start, any .tmp files older than 30 seconds in the .planning directory are removed with a warning log",
+      "enforced_by": "test"
+    },
+    "compromised-abort": {
+      "description": "When onCompromised is 'abort' (new default), a compromised lock causes the transaction to throw rather than proceed with stale state",
+      "enforced_by": "test"
+    },
+    "concurrent-safety": {
+      "description": "Two simultaneous withStateTransaction calls on the same STATE.json never corrupt the file -- one succeeds, one retries or fails cleanly",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Harden withStateTransaction() with granular error diagnostics, orphan .tmp file cleanup, onCompromised abort behavior, and concurrency tests.",
+    "ownedFiles": [
+      "src/lib/state-machine.cjs",
+      "src/lib/state-machine.test.cjs",
+      "src/commands/state.test.cjs"
+    ],
+    "tasks": [
+      {"description": "Implement granular error classification in withStateTransaction", "acceptance": "Three distinct error types with actionable messages"},
+      {"description": "Add orphaned .tmp file detection and cleanup", "acceptance": "Stale .tmp files cleaned on transaction start with warning"},
+      {"description": "Implement onCompromised abort behavior", "acceptance": "Compromised lock aborts transaction by default"},
+      {"description": "Fix lock target PID update on acquisition", "acceptance": "PID updated correctly on every lock acquire"},
+      {"description": "Add concurrency tests", "acceptance": "Tests prove two simultaneous transactions do not corrupt state"}
+    ],
+    "acceptance": ["No opaque 'Cannot mutate' errors -- all failures produce actionable diagnostics", "Concurrent state access is safe"]
+  }
+}

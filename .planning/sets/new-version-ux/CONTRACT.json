@@ -1,0 +1,44 @@
+{
+  "setId": "new-version-ux",
+  "version": "1.0.0",
+  "exports": {
+    "specAwareGoals": {
+      "type": "function",
+      "signature": "parseSpecFile(specPath: string): { goals: GoalCategory[], context: string }",
+      "description": "Parses a spec file and extracts goal categories and context for pre-populating /new-version goal-gathering."
+    },
+    "deferredAutoDiscovery": {
+      "type": "function",
+      "signature": "discoverDeferredItems(projectRoot: string): DeferredItem[]",
+      "description": "Scans all DEFERRED.md files in the project and returns structured deferred items for researcher briefs."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "backward-compatible": {
+      "description": "/new-version without a spec argument behaves identically to the current implementation",
+      "enforced_by": "test"
+    },
+    "spec-reduces-prompts": {
+      "description": "When a spec file is provided, the 5-prompt goal-gathering sequence is collapsed to a single confirmation prompt",
+      "enforced_by": "runtime"
+    },
+    "deferred-items-included": {
+      "description": "All DEFERRED.md contents are automatically included in researcher briefs without user having to manually select them",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Enhance /new-version to accept a spec file for pre-populating goals and auto-discover DEFERRED.md items for researcher briefs.",
+    "ownedFiles": [
+      "skills/new-version/SKILL.md"
+    ],
+    "tasks": [
+      {"description": "Add spec file argument parsing to /new-version", "acceptance": "Spec path accepted and file contents loaded"},
+      {"description": "Implement spec-aware goal pre-population", "acceptance": "Goal categories extracted from spec and presented for confirmation"},
+      {"description": "Implement DEFERRED.md auto-discovery", "acceptance": "All deferred items found and included in briefs"},
+      {"description": "Preserve backward compatibility for no-argument invocation", "acceptance": "Existing behavior unchanged without spec argument"}
+    ],
+    "acceptance": ["Spec-aware /new-version reduces interactive prompts to 1", "Deferred items always included in research pipeline"]
+  }
+}

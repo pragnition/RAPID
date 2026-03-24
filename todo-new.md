@@ -24,3 +24,5 @@ after you run /execute and then there are gaps (in solo mode) and you try to /pl
 
   init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review [done] > merge [done]
 
+
+during /new-version when I already specify a spec, the agent often goes through the new-features, ui/ux loop even though the spec already considers this. when the agent asks the questions, it should take the provided spec into context 

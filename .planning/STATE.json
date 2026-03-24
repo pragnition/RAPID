@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rapidVersion": "4.2.1",
+  "rapidVersion": "4.3.0",
   "projectName": "RAPID",
   "currentMilestone": "v4.3.0",
   "milestones": [
@@ -419,7 +419,7 @@
         },
         {
           "id": "new-version-ux",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "New-Version UX Improvements",
           "branch": "rapid/new-version-ux"
@@ -427,6 +427,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-24T09:39:36.001Z",
+  "lastUpdatedAt": "2026-03-24T09:54:35.132Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
