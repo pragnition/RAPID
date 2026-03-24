@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { DAG_SUBPATH } = require('./core.cjs');
 
 /**
  * dag.cjs - Directed Acyclic Graph operations for RAPID set dependencies.
@@ -14,15 +15,8 @@ const path = require('path');
  *   means "auth" is a dependency of "api" -- auth must complete before api starts.
  *   "from" = dependency (no incoming constraint), "to" = dependent (depends on "from").
  *
- * No external dependencies -- uses only Node.js built-ins.
+ * No external dependencies -- uses only Node.js built-ins (plus core.cjs for DAG_SUBPATH).
  */
-
-/**
- * Canonical subpath for DAG.json within a project root.
- * All DAG consumers must use this path (or tryLoadDAG) instead of
- * constructing paths manually.
- */
-const DAG_CANONICAL_SUBPATH = path.join('.planning', 'sets', 'DAG.json');
 
 /**
  * Topological sort using Kahn's algorithm (BFS-based).
@@ -292,7 +286,7 @@ function getExecutionOrder(dag) {
  * @throws {Error} If the file cannot be read for reasons other than ENOENT
  */
 function tryLoadDAG(cwd) {
-  const canonicalPath = path.join(cwd, DAG_CANONICAL_SUBPATH);
+  const canonicalPath = path.join(cwd, DAG_SUBPATH);
   let raw;
   try {
     raw = fs.readFileSync(canonicalPath, 'utf-8');
@@ -499,7 +493,8 @@ module.exports = {
   validateDAG,
   getExecutionOrder,
   tryLoadDAG,
-  DAG_CANONICAL_SUBPATH,
+  DAG_SUBPATH,
+  DAG_CANONICAL_SUBPATH: DAG_SUBPATH, // backward-compat alias
   createDAGv2,
   validateDAGv2,
 };
