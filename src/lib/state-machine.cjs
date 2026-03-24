@@ -169,6 +169,40 @@ function findJob(state, milestoneId, setId, waveId, jobId) {
   return job;
 }
 
+// ---- Orphan cleanup (internal) ----
+
+/**
+ * Clean orphaned .tmp files in .planning/ directory that are older than 30 seconds.
+ * Called internally before lock acquisition in withStateTransaction.
+ *
+ * @param {string} cwd - Project root directory
+ */
+function cleanOrphanedTmpFiles(cwd) {
+  const planningDir = path.join(cwd, PLANNING_DIR);
+  let entries;
+  try {
+    entries = fs.readdirSync(planningDir);
+  } catch {
+    return; // Directory doesn't exist or unreadable -- skip
+  }
+
+  const now = Date.now();
+  for (const entry of entries) {
+    if (!entry.endsWith('.tmp')) continue;
+    const filePath = path.join(planningDir, entry);
+    try {
+      const stat = fs.statSync(filePath);
+      if (!stat.isFile()) continue;
+      if (now - stat.mtimeMs > 30000) {
+        fs.unlinkSync(filePath);
+        process.stderr.write(`[RAPID] Cleaned orphaned tmp file: ${entry}\n`);
+      }
+    } catch {
+      // ENOENT or other error from concurrent delete -- ignore
+    }
+  }
+}
+
 // ---- Transaction helper ----
 
 /**
@@ -183,20 +217,44 @@ function findJob(state, milestoneId, setId, waveId, jobId) {
  * @param {Function} mutationFn - Function that receives state and mutates in-place
  * @returns {Promise<object>} The validated state after mutation
  */
-async function withStateTransaction(cwd, mutationFn) {
-  const release = await acquireLock(cwd, 'state');
+async function withStateTransaction(cwd, mutationFn, options = {}) {
+  const { onCompromised = 'abort' } = options;
+
+  // Clean orphaned .tmp files before acquiring lock
+  cleanOrphanedTmpFiles(cwd);
+
+  const release = await acquireLock(cwd, 'state', { onCompromised });
   try {
+    const stateFilePath = path.join(cwd, PLANNING_DIR, STATE_FILE);
     const readResult = await readState(cwd);
-    if (!readResult || !readResult.valid) {
-      throw new Error('Cannot mutate: STATE.json is missing or invalid');
+
+    if (readResult === null) {
+      throw createStateError(STATE_FILE_MISSING, `STATE.json not found at ${stateFilePath}`);
     }
+
+    if (!readResult.valid) {
+      const firstError = readResult.errors && readResult.errors[0];
+      if (firstError && firstError.message && firstError.message.startsWith('Invalid JSON')) {
+        throw createStateError(STATE_PARSE_ERROR, `STATE.json contains invalid JSON: ${firstError.message}`);
+      }
+      throw createStateError(STATE_VALIDATION_ERROR, 'STATE.json failed schema validation', readResult.errors);
+    }
+
     const state = readResult.state;
 
     // mutationFn receives state, mutates in-place, returns nothing
     mutationFn(state);
 
     // Validate + atomic write
-    const validated = ProjectState.parse(state);
+    let validated;
+    try {
+      validated = ProjectState.parse(state);
+    } catch (zodError) {
+      if (zodError.name === 'ZodError') {
+        throw createStateError(STATE_VALIDATION_ERROR, `Mutation produced invalid state: ${zodError.message}`, zodError.issues);
+      }
+      throw zodError;
+    }
     validated.lastUpdatedAt = new Date().toISOString();
     const stateFile = path.join(cwd, PLANNING_DIR, STATE_FILE);
     const tmpFile = stateFile + '.tmp';
