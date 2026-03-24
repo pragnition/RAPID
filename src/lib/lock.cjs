@@ -39,7 +39,8 @@ function ensureLocksDir(cwd) {
  * @param {string} lockName - Lock identifier (e.g., 'state', 'config')
  * @returns {Promise<Function>} Release function to call when done
  */
-async function acquireLock(cwd, lockName) {
+async function acquireLock(cwd, lockName, options = {}) {
+  const { onCompromised: onCompromisedMode = 'continue' } = options;
   ensureLocksDir(cwd);
   const lockTarget = path.join(cwd, LOCKS_DIR, `${lockName}.target`);
 
@@ -51,6 +52,8 @@ async function acquireLock(cwd, lockName) {
     }), 'utf-8');
   }
 
+  let compromised = false;
+
   const release = await lockfile.lock(lockTarget, {
     stale: STALE_THRESHOLD,
     update: Math.floor(STALE_THRESHOLD / 2),
@@ -58,9 +61,39 @@ async function acquireLock(cwd, lockName) {
     realpath: false,
     onCompromised: (err) => {
       process.stderr.write(`[RAPID] Lock "${lockName}" compromised: ${err.message}\n`);
-      // Log but don't crash -- let the operation complete
+      if (onCompromisedMode === 'abort') {
+        compromised = true;
+      }
+      // In 'continue' mode, log but don't crash -- let the operation complete
     },
   });
+
+  // Update lock target with current PID after acquisition
+  fs.writeFileSync(lockTarget, JSON.stringify({
+    pid: process.pid,
+    timestamp: Date.now(),
+  }), 'utf-8');
+
+  // Check if compromise happened during lock acquisition (race condition)
+  if (onCompromisedMode === 'abort' && compromised) {
+    await release();
+    const err = new Error('Lock compromised during state transaction');
+    err.code = 'LOCK_COMPROMISED';
+    throw err;
+  }
+
+  if (onCompromisedMode === 'abort') {
+    // Return wrapper that checks compromised flag before releasing
+    return async () => {
+      if (compromised) {
+        try { await release(); } catch { /* best effort */ }
+        const err = new Error('Lock compromised during state transaction');
+        err.code = 'LOCK_COMPROMISED';
+        throw err;
+      }
+      return release();
+    };
+  }
 
   return release;
 }
