@@ -14,57 +14,9 @@
 const Ajv = require('ajv').default;
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 const { estimateTokens } = require('./tool-docs.cjs');
 const { listSets } = require('./plan.cjs');
-
-// ────────────────────────────────────────────────────────────────
-// Project Root Resolution
-// ────────────────────────────────────────────────────────────────
-
-/**
- * Resolve the RAPID project root from a working directory.
- *
- * Uses `git rev-parse --git-common-dir` to find the true root (works from
- * worktrees). Falls back to `cwd` when not inside a git repo or when the
- * resolved root does not contain `.planning/sets/`.
- *
- * This is a local copy of plan.cjs's internal resolveProjectRoot (which is
- * not exported). Duplicated here to avoid modifying plan.cjs.
- *
- * @param {string} cwd - Current working directory
- * @returns {string} Resolved project root path
- */
-function resolveProjectRoot(cwd) {
-  try {
-    const gitCommonDir = execSync(
-      'git rev-parse --path-format=absolute --git-common-dir',
-      { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    ).trim();
-
-    let projectRoot;
-    if (gitCommonDir.endsWith(`${path.sep}.git`) || gitCommonDir.endsWith('/.git')) {
-      projectRoot = gitCommonDir.slice(0, -path.sep.length - '.git'.length);
-    } else if (gitCommonDir === '.git') {
-      projectRoot = cwd;
-    } else {
-      const idx = gitCommonDir.lastIndexOf('/.git');
-      if (idx !== -1) {
-        projectRoot = gitCommonDir.slice(0, idx);
-      } else {
-        projectRoot = cwd;
-      }
-    }
-
-    if (fs.existsSync(path.join(projectRoot, '.planning', 'sets'))) {
-      return projectRoot;
-    }
-
-    return cwd;
-  } catch {
-    return cwd;
-  }
-}
+const { resolveProjectRoot } = require('./core.cjs');
 
 // ────────────────────────────────────────────────────────────────
 // Schema Validation
