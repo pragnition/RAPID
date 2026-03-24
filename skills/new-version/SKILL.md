@@ -28,6 +28,23 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 node "${RAPID_TOOLS}" display banner new-version
 ```
 
+### Step 0.5: Parse Optional Arguments
+
+If the user invoked `/new-version` with arguments, parse them here. The supported argument is `--spec <path>` which provides a structured Markdown file to pre-populate milestone goals.
+
+**Argument parsing instructions:**
+
+1. Check if the skill was invoked with arguments (the user's input after `/rapid:new-version`).
+2. If the input contains a file path argument (with or without the `--spec` prefix), treat it as a spec file path.
+   - With prefix: `/rapid:new-version --spec path/to/spec.md`
+   - Without prefix: `/rapid:new-version path/to/spec.md`
+3. Read the spec file using the Read tool.
+   - If the file does not exist or cannot be read, display a warning: **"Spec file not found at {path}. Falling back to interactive goal-gathering."** and set `specContent = null`.
+   - If the file is read successfully, store its full content as `specContent` for use in Step 2C.
+4. If no arguments were provided, set `specContent = null`. This is the backward-compatible default.
+
+When `specContent` is null, all subsequent steps behave identically to the original flow.
+
 ---
 
 ## Step 1: Read Current State
