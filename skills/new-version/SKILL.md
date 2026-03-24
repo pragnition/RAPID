@@ -576,7 +576,17 @@ Use AskUserQuestion with:
    Use the Write tool to update `.planning/STATE.json` with the roadmapper's `state` content.
    Each set has only `{ id, name, status: "pending", branch }` -- no waves or jobs arrays.
 
-Confirm: "Roadmap written and state updated."
+4. Generate DAG.json from the new set definitions:
+   ```bash
+   node "${RAPID_TOOLS}" dag generate
+   ```
+   Verify DAG.json was created:
+   ```bash
+   test -f .planning/sets/DAG.json && echo "DAG.json exists" || echo "WARNING: DAG.json not created"
+   ```
+   If DAG.json was not created, warn the user: "DAG.json generation failed. You can generate it manually with `dag generate` or during `/rapid:plan-set`."
+
+Confirm: "Roadmap written, DAG generated, and state updated."
 
 **If "Revise":**
 
