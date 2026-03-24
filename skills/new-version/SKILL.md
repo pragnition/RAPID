@@ -170,12 +170,34 @@ Store response in goals.uxImprovements.
 
 **Step 2C-v: Deferred Decisions from Previous Milestone**
 
-Read all DEFERRED.md files from previous milestone sets:
+Read all DEFERRED.md files from both active sets and the previous milestone's archive:
 
 ```bash
-# Find all DEFERRED.md files
-DEFERRED_FILES=$(find .planning/sets/*/DEFERRED.md 2>/dev/null)
+# Find DEFERRED.md files from active sets
+DEFERRED_ACTIVE=$(find .planning/sets/*/DEFERRED.md 2>/dev/null)
+
+# Find previous milestone ID from STATE.json for archive scanning
+PREV_MILESTONE=$(node "${RAPID_TOOLS}" state get --all 2>/dev/null | node -e "
+  const s = require('fs').readFileSync('/dev/stdin','utf8');
+  const j = JSON.parse(s);
+  const ms = j.milestones || [];
+  const ci = ms.findIndex(m => m.id === j.currentMilestone);
+  if (ci > 0) console.log(ms[ci-1].id);
+" 2>/dev/null)
+
+# Find DEFERRED.md files from previous milestone archive (if it exists)
+DEFERRED_ARCHIVE=""
+if [ -n "${PREV_MILESTONE}" ]; then
+  DEFERRED_ARCHIVE=$(find .planning/archive/${PREV_MILESTONE}/sets/*/DEFERRED.md 2>/dev/null)
+fi
+
+# Combine both sources
+DEFERRED_FILES="${DEFERRED_ACTIVE}
+${DEFERRED_ARCHIVE}"
+DEFERRED_FILES=$(echo "${DEFERRED_FILES}" | grep -v '^$')
 ```
+
+This discovers deferred items from both active sets in the current milestone and the immediately previous milestone's archive. If this is the first-ever milestone (no previous milestone exists), only active sets are scanned.
 
 **If no DEFERRED.md files exist (or all contain empty tables):**
 Display: "Category 5/5: Deferred Decisions -- No deferred decisions found from previous milestone."
