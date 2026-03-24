@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "rapidVersion": "4.2.0",
+  "rapidVersion": "4.2.1",
   "projectName": "RAPID",
-  "currentMilestone": "v4.2.0",
+  "currentMilestone": "v4.2.1",
   "milestones": [
     {
       "id": "v1.0",
@@ -366,7 +366,7 @@
       ]
     },
     {
-      "id": "v4.2.0",
+      "id": "v4.2.1",
       "name": "Discuss & Audit",
       "sets": [
         {

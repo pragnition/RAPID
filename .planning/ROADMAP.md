@@ -16,9 +16,9 @@
 - **v3.6.0 Workflow & UX Polish** — 5 sets (shipped 2026-03-20)
 - **v4.0.0 Mission Control** — 7 sets (shipped 2026-03-22)
 - **v4.1.0 Polish & Fixes** — 8 sets (shipped 2026-03-23)
-- **v4.2.0 Discuss & Audit** — 3 sets (in progress)
+- **v4.2.1 Discuss & Audit** — 3 sets (in progress)
 
-## Active Milestone: v4.2.0 — Discuss & Audit
+## Active Milestone: v4.2.1 — Discuss & Audit
 
 ### Set 1: path-resolution-fix
 **Branch:** `rapid/path-resolution-fix` | **Size:** S
