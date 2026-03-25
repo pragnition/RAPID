@@ -439,14 +439,14 @@
         },
         {
           "id": "review-state",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Review State Management",
           "branch": "set/review-state"
         },
         {
           "id": "documentation",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Documentation for Open-Sourcing",
           "branch": "set/documentation"
@@ -454,6 +454,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-25T04:34:59.651Z",
+  "lastUpdatedAt": "2026-03-25T05:30:36.129Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
