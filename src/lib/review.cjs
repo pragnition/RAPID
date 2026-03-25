@@ -79,6 +79,28 @@ const ReviewIssues = z.object({
 });
 
 // ────────────────────────────────────────────────────────────────
+// Review State Schemas
+// ────────────────────────────────────────────────────────────────
+
+const REVIEW_STAGES = ['scope', 'unit-test', 'bug-hunt', 'uat'];
+
+const ReviewStageSchema = z.object({
+  completed: z.boolean(),
+  verdict: z.enum(['pass', 'fail', 'partial']),
+});
+
+const ReviewStateSchema = z.object({
+  setId: z.string(),
+  stages: z.object({
+    scope: ReviewStageSchema.optional(),
+    'unit-test': ReviewStageSchema.optional(),
+    'bug-hunt': ReviewStageSchema.optional(),
+    uat: ReviewStageSchema.optional(),
+  }),
+  lastUpdatedAt: z.string(),
+});
+
+// ────────────────────────────────────────────────────────────────
 // Scoping Functions
 // ────────────────────────────────────────────────────────────────
 
@@ -1058,6 +1080,116 @@ function extractAcceptanceCriteria(cwd, setId) {
 }
 
 // ────────────────────────────────────────────────────────────────
+// Review State I/O
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Read REVIEW-STATE.json for a set. Returns null if missing or invalid.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @returns {Object|null}
+ */
+function readReviewState(cwd, setId) {
+  const statePath = path.join(cwd, '.planning', 'sets', setId, 'REVIEW-STATE.json');
+  try {
+    const raw = fs.readFileSync(statePath, 'utf-8');
+    return ReviewStateSchema.parse(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write REVIEW-STATE.json for a set with atomic temp-file-then-rename.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {Object} state - ReviewState object to write
+ */
+function writeReviewState(cwd, setId, state) {
+  const validated = ReviewStateSchema.parse(state);
+  const setDir = path.join(cwd, '.planning', 'sets', setId);
+  fs.mkdirSync(setDir, { recursive: true });
+  const statePath = path.join(setDir, 'REVIEW-STATE.json');
+  const tmpPath = statePath + '.tmp';
+  fs.writeFileSync(tmpPath, JSON.stringify(validated, null, 2), 'utf-8');
+  fs.renameSync(tmpPath, statePath);
+}
+
+/**
+ * Check that prerequisites for a review stage are satisfied.
+ * Throws with a descriptive error if not.
+ *
+ * @param {Object} state - Current ReviewState object (never null)
+ * @param {string} stage - Stage name to check prerequisites for
+ */
+function checkStagePrerequisites(state, stage) {
+  const scopeDone = state.stages.scope && state.stages.scope.completed;
+  const unitTestDone = state.stages['unit-test'] && state.stages['unit-test'].completed;
+
+  if (stage === 'scope') {
+    // No prerequisites
+    return;
+  }
+
+  if (stage === 'unit-test') {
+    if (!scopeDone) {
+      throw new Error('Cannot run unit-test: scope stage has not been completed. Run /rapid:review <set-id> first.');
+    }
+    return;
+  }
+
+  if (stage === 'bug-hunt') {
+    if (!scopeDone) {
+      throw new Error('Cannot run bug-hunt: scope stage has not been completed. Run /rapid:review <set-id> first.');
+    }
+    return;
+  }
+
+  if (stage === 'uat') {
+    if (!scopeDone) {
+      throw new Error('Cannot run uat: scope stage has not been completed. Run /rapid:review <set-id> first.');
+    }
+    if (!unitTestDone) {
+      throw new Error('Cannot run uat: unit-test stage has not been completed. Run /rapid:unit-test <set-id> first.');
+    }
+    return;
+  }
+}
+
+/**
+ * Mark a review stage as complete with a verdict.
+ * Creates state from scratch if no REVIEW-STATE.json exists.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} setId - Set identifier
+ * @param {string} stage - One of REVIEW_STAGES
+ * @param {string} verdict - One of 'pass', 'fail', 'partial'
+ * @returns {Object} The updated ReviewState
+ */
+function markStageComplete(cwd, setId, stage, verdict) {
+  if (!REVIEW_STAGES.includes(stage)) {
+    throw new Error(`Invalid stage "${stage}". Must be one of: ${REVIEW_STAGES.join(', ')}`);
+  }
+  if (!['pass', 'fail', 'partial'].includes(verdict)) {
+    throw new Error(`Invalid verdict "${verdict}". Must be one of: pass, fail, partial`);
+  }
+
+  let state = readReviewState(cwd, setId);
+  if (!state) {
+    state = { setId, stages: {}, lastUpdatedAt: new Date().toISOString() };
+  }
+
+  checkStagePrerequisites(state, stage);
+
+  state.stages[stage] = { completed: true, verdict };
+  state.lastUpdatedAt = new Date().toISOString();
+  writeReviewState(cwd, setId, state);
+  return state;
+}
+
+// ────────────────────────────────────────────────────────────────
 // Module Exports
 // ────────────────────────────────────────────────────────────────
 
@@ -1105,4 +1237,13 @@ module.exports = {
 
   // Constants
   REVIEW_CONSTANTS,
+
+  // Review state
+  ReviewStageSchema,
+  ReviewStateSchema,
+  REVIEW_STAGES,
+  readReviewState,
+  writeReviewState,
+  markStageComplete,
+  checkStagePrerequisites,
 };

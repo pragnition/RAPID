@@ -18,6 +18,13 @@ const {
   extractAcceptanceCriteria,
   generateReviewSummary,
   REVIEW_CONSTANTS,
+  ReviewStageSchema,
+  ReviewStateSchema,
+  REVIEW_STAGES,
+  readReviewState,
+  writeReviewState,
+  markStageComplete,
+  checkStagePrerequisites,
 } = require('./review.cjs');
 
 // ---------------------------------------------------------------------------
@@ -301,5 +308,243 @@ describe('generateReviewSummary', () => {
     ];
     const summary = generateReviewSummary('test-set', issues);
     assert.ok(!summary.includes('WARNING'));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ReviewStateSchema validation
+// ---------------------------------------------------------------------------
+describe('ReviewStateSchema', () => {
+  it('validates a complete review state', () => {
+    const state = {
+      setId: 'my-set',
+      stages: {
+        scope: { completed: true, verdict: 'pass' },
+        'unit-test': { completed: true, verdict: 'fail' },
+        'bug-hunt': { completed: true, verdict: 'partial' },
+        uat: { completed: true, verdict: 'pass' },
+      },
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    const result = ReviewStateSchema.parse(state);
+    assert.equal(result.setId, 'my-set');
+    assert.equal(result.stages.scope.verdict, 'pass');
+    assert.equal(result.stages['unit-test'].verdict, 'fail');
+    assert.equal(result.stages['bug-hunt'].verdict, 'partial');
+    assert.equal(result.stages.uat.verdict, 'pass');
+  });
+
+  it('validates a partial review state', () => {
+    const state = {
+      setId: 'partial-set',
+      stages: {
+        scope: { completed: true, verdict: 'pass' },
+      },
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    const result = ReviewStateSchema.parse(state);
+    assert.equal(result.stages.scope.completed, true);
+    assert.equal(result.stages['unit-test'], undefined);
+  });
+
+  it('rejects invalid verdict', () => {
+    const state = {
+      setId: 'bad-set',
+      stages: {
+        scope: { completed: true, verdict: 'unknown' },
+      },
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    assert.throws(() => ReviewStateSchema.parse(state));
+  });
+
+  it('rejects missing setId', () => {
+    const state = {
+      stages: {},
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    assert.throws(() => ReviewStateSchema.parse(state));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readReviewState / writeReviewState roundtrip
+// ---------------------------------------------------------------------------
+describe('readReviewState', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  after(() => {
+    rmDir(tmpDir);
+  });
+
+  it('returns null when no REVIEW-STATE.json exists', () => {
+    const result = readReviewState(tmpDir, 'nonexistent-set');
+    assert.equal(result, null);
+  });
+
+  it('returns null for invalid JSON', () => {
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'bad-json-set');
+    fs.mkdirSync(setDir, { recursive: true });
+    fs.writeFileSync(path.join(setDir, 'REVIEW-STATE.json'), '{not valid json!!!}', 'utf-8');
+    const result = readReviewState(tmpDir, 'bad-json-set');
+    assert.equal(result, null);
+  });
+
+  it('roundtrips valid state through write then read', () => {
+    const state = {
+      setId: 'roundtrip-set',
+      stages: {
+        scope: { completed: true, verdict: 'pass' },
+        'unit-test': { completed: true, verdict: 'fail' },
+      },
+      lastUpdatedAt: '2025-06-15T12:00:00Z',
+    };
+    writeReviewState(tmpDir, 'roundtrip-set', state);
+    const read = readReviewState(tmpDir, 'roundtrip-set');
+    assert.deepStrictEqual(read, state);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// writeReviewState atomic write
+// ---------------------------------------------------------------------------
+describe('writeReviewState atomic write', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  after(() => {
+    rmDir(tmpDir);
+  });
+
+  it('does not leave .tmp file after successful write', () => {
+    const state = {
+      setId: 'atomic-set',
+      stages: {},
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    writeReviewState(tmpDir, 'atomic-set', state);
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'atomic-set');
+    const tmpFile = path.join(setDir, 'REVIEW-STATE.json.tmp');
+    assert.equal(fs.existsSync(tmpFile), false);
+    assert.equal(fs.existsSync(path.join(setDir, 'REVIEW-STATE.json')), true);
+  });
+
+  it('creates parent directories if missing', () => {
+    const state = {
+      setId: 'deep-set',
+      stages: {},
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    writeReviewState(tmpDir, 'deep-set', state);
+    const statePath = path.join(tmpDir, '.planning', 'sets', 'deep-set', 'REVIEW-STATE.json');
+    assert.equal(fs.existsSync(statePath), true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// markStageComplete
+// ---------------------------------------------------------------------------
+describe('markStageComplete', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  after(() => {
+    rmDir(tmpDir);
+  });
+
+  it('creates state from scratch when marking scope', () => {
+    const result = markStageComplete(tmpDir, 'fresh-set', 'scope', 'pass');
+    assert.equal(result.setId, 'fresh-set');
+    assert.equal(result.stages.scope.completed, true);
+    assert.equal(result.stages.scope.verdict, 'pass');
+  });
+
+  it('marks unit-test after scope is complete', () => {
+    markStageComplete(tmpDir, 'progress-set', 'scope', 'pass');
+    const result = markStageComplete(tmpDir, 'progress-set', 'unit-test', 'fail');
+    assert.equal(result.stages.scope.completed, true);
+    assert.equal(result.stages['unit-test'].completed, true);
+    assert.equal(result.stages['unit-test'].verdict, 'fail');
+  });
+
+  it('marks bug-hunt after scope without requiring unit-test', () => {
+    markStageComplete(tmpDir, 'bughunt-set', 'scope', 'pass');
+    const result = markStageComplete(tmpDir, 'bughunt-set', 'bug-hunt', 'partial');
+    assert.equal(result.stages['bug-hunt'].completed, true);
+    assert.equal(result.stages['bug-hunt'].verdict, 'partial');
+    assert.equal(result.stages['unit-test'], undefined);
+  });
+
+  it('marks uat after scope and unit-test are complete', () => {
+    markStageComplete(tmpDir, 'uat-set', 'scope', 'pass');
+    markStageComplete(tmpDir, 'uat-set', 'unit-test', 'pass');
+    const result = markStageComplete(tmpDir, 'uat-set', 'uat', 'pass');
+    assert.equal(result.stages.uat.completed, true);
+    assert.equal(result.stages.uat.verdict, 'pass');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// checkStagePrerequisites
+// ---------------------------------------------------------------------------
+describe('checkStagePrerequisites', () => {
+  it('allows scope with empty state', () => {
+    const state = { setId: 'test', stages: {}, lastUpdatedAt: '2025-01-01T00:00:00Z' };
+    assert.doesNotThrow(() => checkStagePrerequisites(state, 'scope'));
+  });
+
+  it('blocks unit-test without scope', () => {
+    const state = { setId: 'test', stages: {}, lastUpdatedAt: '2025-01-01T00:00:00Z' };
+    assert.throws(() => checkStagePrerequisites(state, 'unit-test'), /Cannot run unit-test: scope stage has not been completed/);
+  });
+
+  it('blocks bug-hunt without scope', () => {
+    const state = { setId: 'test', stages: {}, lastUpdatedAt: '2025-01-01T00:00:00Z' };
+    assert.throws(() => checkStagePrerequisites(state, 'bug-hunt'), /Cannot run bug-hunt: scope stage has not been completed/);
+  });
+
+  it('blocks uat without scope', () => {
+    const state = { setId: 'test', stages: {}, lastUpdatedAt: '2025-01-01T00:00:00Z' };
+    assert.throws(() => checkStagePrerequisites(state, 'uat'), /Cannot run uat: scope stage has not been completed/);
+  });
+
+  it('blocks uat without unit-test even if scope complete', () => {
+    const state = {
+      setId: 'test',
+      stages: { scope: { completed: true, verdict: 'pass' } },
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    assert.throws(() => checkStagePrerequisites(state, 'uat'), /Cannot run uat: unit-test stage has not been completed/);
+  });
+
+  it('allows uat when scope and unit-test complete', () => {
+    const state = {
+      setId: 'test',
+      stages: {
+        scope: { completed: true, verdict: 'pass' },
+        'unit-test': { completed: true, verdict: 'fail' },
+      },
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    assert.doesNotThrow(() => checkStagePrerequisites(state, 'uat'));
+  });
+
+  it('allows bug-hunt without unit-test when scope complete', () => {
+    const state = {
+      setId: 'test',
+      stages: { scope: { completed: true, verdict: 'pass' } },
+      lastUpdatedAt: '2025-01-01T00:00:00Z',
+    };
+    assert.doesNotThrow(() => checkStagePrerequisites(state, 'bug-hunt'));
   });
 });
