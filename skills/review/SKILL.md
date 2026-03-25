@@ -149,6 +149,28 @@ Exit.
 
 The set must be in `complete` or `executed` state to proceed. No state transition is performed -- review is a non-mutating operation on set status.
 
+### 0e: Check Review State
+
+**If `POST_MERGE=true`:** Skip this step. Post-merge reviews do not track pipeline state.
+
+Check if a review has already been started for this set:
+
+```bash
+REVIEW_STATE=$(node "${RAPID_TOOLS}" review state "${SET_NAME}" 2>&1)
+```
+
+Parse the JSON output. If the response contains a `stages` array (not the "no review state" message), check if the `scope` stage has `status: "complete"`:
+
+If scope is already complete, use **AskUserQuestion** to prompt:
+- **question:** "Review scope has already been completed for this set (verdict: {verdict}). What would you like to do?"
+- **options:** ["Re-run scope (overwrites existing)", "Skip scope and exit"]
+
+If user chooses "Skip scope and exit": print "Scope already complete. Use /rapid:unit-test, /rapid:bug-hunt, or /rapid:uat to continue the review pipeline." and exit.
+
+If user chooses "Re-run scope": continue to Step 1.
+
+If no review state exists or scope is not complete: continue to Step 1 (no prompt).
+
 ## Step 1: Scope Set Files
 
 **If `POST_MERGE=true`:**
@@ -302,6 +324,18 @@ Write the markdown to:
 - **Standard path:** `.planning/sets/{setId}/REVIEW-SCOPE.md`
 
 This write is idempotent -- if REVIEW-SCOPE.md already exists, overwrite it.
+
+### Step 4b: Record Scope Completion
+
+**If `POST_MERGE=true`:** Skip this step. Post-merge reviews do not track pipeline state.
+
+Mark the scope stage as complete:
+
+```bash
+node "${RAPID_TOOLS}" review mark-stage "${SET_NAME}" scope pass
+```
+
+The scope stage always records verdict `pass` because scoping itself cannot fail -- if we reached this point, the scope was successfully generated.
 
 ## Step 5: Completion Banner
 
