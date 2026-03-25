@@ -1,0 +1,57 @@
+{
+  "setId": "documentation",
+  "version": "1.0.0",
+  "exports": {
+    "readme": {
+      "type": "file",
+      "signature": "README.md",
+      "description": "Open-source front door with quickstart, features, and installation"
+    },
+    "docs": {
+      "type": "file",
+      "signature": "DOCS.md",
+      "description": "Comprehensive workflow documentation covering all commands"
+    },
+    "docsDirectory": {
+      "type": "file",
+      "signature": "docs/*",
+      "description": "Updated reference documentation files"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "commandCoverage": {
+      "description": "Every skill in skills/ directory has corresponding documentation in DOCS.md or docs/",
+      "enforced_by": "test"
+    },
+    "noStaleReferences": {
+      "description": "No documentation references commands or features that do not exist in the current codebase",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Create comprehensive documentation for open-sourcing including an updated README.md, rewritten DOCS.md covering the full canonical workflow, and updated docs/ reference files for all commands.",
+    "ownedFiles": [
+      "README.md",
+      "DOCS.md",
+      "docs/setup.md",
+      "docs/planning.md",
+      "docs/execution.md",
+      "docs/review.md",
+      "docs/merge-and-cleanup.md",
+      "docs/agents.md",
+      "docs/state-machines.md",
+      "docs/troubleshooting.md",
+      "docs/configuration.md",
+      "docs/CHANGELOG.md"
+    ],
+    "tasks": [
+      { "description": "Rewrite README.md as open-source front door", "acceptance": "Includes quickstart, feature overview, installation, and architecture diagram" },
+      { "description": "Rewrite DOCS.md with canonical workflow documentation", "acceptance": "Covers /install through /new-version in order" },
+      { "description": "Add documentation for missing commands (/branding, /scaffold, /audit-version, /new-version, /quick, /bug-fix, /add-set)", "acceptance": "Each command has a docs section" },
+      { "description": "Update all existing docs/ files to reflect current state", "acceptance": "No stale references to removed features" },
+      { "description": "Cross-reference verification: every skill has documentation", "acceptance": "Audit confirms 100% coverage" }
+    ],
+    "acceptance": ["README.md ready for open-source", "All commands documented", "No stale references", "Cross-reference audit passes"]
+  }
+}

@@ -17,36 +17,30 @@
 - **v4.0.0 Mission Control** — 7 sets (shipped 2026-03-22)
 - **v4.1.0 Polish & Fixes** — 8 sets (shipped 2026-03-23)
 - **v4.2.1 Discuss & Audit** — 3 sets (shipped 2026-03-24)
-- **v4.3.0 Reliability & State** — 4 sets (in progress)
+- **v4.3.0 Reliability & State** — 4 sets (shipped 2026-03-25)
+- **v4.4.0 Polish & Documentation** — 3 sets (in progress)
 
-## Active Milestone: v4.3.0 — Reliability & State
-
-This milestone addresses three reliability bugs and two UX improvements to the /new-version workflow. All bug fixes are independent and parallelizable.
-
-### Set 1: path-and-dag — Path Resolution & DAG Reliability
-**Branch:** `rapid/path-and-dag` | **Size:** M
-Consolidate project root resolution to a single worktree-aware function in core.cjs, fix hardcoded DAG.json path in merge.cjs, add DAG generation to /new-version skill.
-
-### Set 2: state-reliability — State Transaction Reliability
-**Branch:** `rapid/state-reliability` | **Size:** M
-Harden withStateTransaction() with granular error diagnostics, orphaned .tmp file cleanup, onCompromised abort behavior, and concurrency tests.
-
-### Set 3: gap-closure — Gap-Closure Workflow
-**Branch:** `rapid/gap-closure` | **Size:** M
-Implement --gaps flag in plan-set and execute-set skills so merged sets with remaining gaps can be re-planned.
-
-### Set 4: new-version-ux — New-Version UX Improvements
-**Branch:** `rapid/new-version-ux` | **Size:** S
-Spec-aware goal gathering and auto-discovery of DEFERRED.md items for researcher briefs.
-
-**Dependency graph:** All 4 sets are fully independent.
-
-### Deferred from v4.3.0
+### Deferred from v4.4.0
 The following items were identified during audit and deferred:
-- dag.test.cjs DAG_CANONICAL_SUBPATH references not updated to DAG_SUBPATH (severity: low)
-- Retry warning log on first lock contention attempt (severity: low)
-- 1-4 wave limit for gap-closure waves not explicitly enforced (severity: low)
-- Sequential pre-filled category prompts for goal pre-population (severity: low)
+- docs/auxiliary.md tracked in CONTRACT.json ownedFiles (severity: low)
+
+## Active Milestone: v4.4.0 — Polish & Documentation
+
+This milestone delivers three independent polish features: improved terminal colouring, review pipeline state persistence, and comprehensive human-readable documentation for open-sourcing. All three sets have zero file overlap and can execute fully in parallel.
+
+### Set 1: colouring — Better Colouring
+**Branch:** `set/colouring` | **Size:** S
+Switch bright ANSI background colours (10Xm range) to dark backgrounds (4Xm range) for better readability on dark terminals. Add missing banner registrations for unit-test, bug-hunt, uat, and bug-fix stages. Implement NO_COLOR environment variable support.
+
+### Set 2: review-state — Review State Management
+**Branch:** `set/review-state` | **Size:** M
+Implement persistent review pipeline state so that the review skill tracks which stages (scope, unit-test, bug-hunt, uat) have been completed for each set. Uses a standalone REVIEW-STATE.json file per set (following the MERGE-STATE.json precedent), enabling downstream commands to skip already-completed stages and resume interrupted review pipelines.
+
+### Set 3: documentation — Documentation for Open-Sourcing
+**Branch:** `set/documentation` | **Size:** M
+Prepare comprehensive human-readable documentation for open-sourcing. Update README.md as the open-source front door. Rewrite DOCS.md to cover the canonical workflow from /install through /merge and beyond. Add or update docs/ files for all commands including /branding, /scaffold, /audit-version, /new-version, /quick, /bug-fix, and /add-set.
+
+**Dependency graph:** All 3 sets are fully independent (zero file overlap).
 
 ## Completed Milestone Details
 

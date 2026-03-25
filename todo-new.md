@@ -1,28 +1,21 @@
- Bash(export RAPID_TOOLS=/home/kek/.claude/plugins/cache/joey-plugins/rapid/4.1.0/src/bin/rapid-tools.cjs
-      node "${RAPID_TOOLS}" merge order)
-  ⎿  Error: Exit code 1
-     [RAPID ERROR] DAG.json not found at /home/kek/Projects/ABBA/.planning/sets/DAG.json. Run /rapid:plan first to create sets and DAG.
+1. Review state management. We ought to store the state of the review (eg. if bug hunt has been done etc. so that if we do bughunt and uat, then the uat command will not ask the user to do bughunt again)
 
-this error happens often. I am not sure if it is a failure of the init command in creating the dag or something else. 
+2. Better human readable documentation. We are about to opensource this and push to the public. Lets touch up our documentation. Here is the canonical workflow. Our agents should also be aware of this
+- /install (if not already installed)
+- /init 
+- /branding (optional)
+- /scaffold (optional)
+- /start-set [--solo]
+  - /discuss-set
+  - /plan-set
+  - /execute-set
+  - /review (optional, the author believes that the user should be smart about what they review, and the author recommends to review after merge if there are many dependencies on other sets. not all review stages are required)
+  - /merge (not necessary if solo mode)
 
-
-● Bash(if [ -z "${RAPID_TOOLS:-}" ] && [ -f "/home/kek/.claude/plugins/cache/joey-plugins/rapid/4.1.0/skills/execute-set/../../.env" ];
-      then export $(grep -v '^#' "/home/kek/.claude/plugins/cache/joey-plugins/rapid/4.1.0/skills/execute-set/../../.env" | xargs); fi
-      node "${RAPID_TOOLS}" state transition set "v1.0" "core-infrastructure" complete)
-  ⎿  Error: Exit code 1
-     {"error":"Cannot mutate: STATE.json is missing or invalid"}
-     [RAPID ERROR] Cannot mutate: STATE.json is missing or invalid
-
-this one also happens sometimes``
-
-
-
-after you run /execute and then there are gaps (in solo mode) and you try to /plan-set --gaps, since the set is merged, the agent thinks that there are no more gaps and says something like this
-● Set 'audit-version' is already in 'merged' state. Planning is complete.
-
-  Next step: This set has already been merged. No further action needed.
-
-  init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review [done] > merge [done]
+- /audit-version
+- /new-version
 
 
-during /new-version when I already specify a spec, the agent often goes through the new-features, ui/ux loop even though the spec already considers this. when the agent asks the questions, it should take the provided spec into context 
+Additionally, documentation should be provided for /quick, /bug-fix and /add-set
+
+3. Better colouring. Currently, many of the agents colours are very bright colours. This doesn't play well with white text on a dark terminal. Channge them all to dark colours.

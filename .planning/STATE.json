@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rapidVersion": "4.3.0",
+  "rapidVersion": "4.4.0",
   "projectName": "RAPID",
   "currentMilestone": "v4.4.0",
   "milestones": [
@@ -446,7 +446,7 @@
         },
         {
           "id": "documentation",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Documentation for Open-Sourcing",
           "branch": "set/documentation"
@@ -454,6 +454,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-25T05:30:36.129Z",
+  "lastUpdatedAt": "2026-03-25T06:04:47.788Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

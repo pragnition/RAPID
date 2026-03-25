@@ -1,0 +1,38 @@
+{
+  "setId": "colouring",
+  "version": "1.0.0",
+  "exports": {
+    "displayModule": {
+      "type": "file",
+      "signature": "src/lib/display.cjs",
+      "description": "Updated display module with dark ANSI backgrounds (4Xm range) and NO_COLOR support"
+    },
+    "bannerRegistrations": {
+      "type": "function",
+      "signature": "registerBanner(stage: 'unit-test' | 'bug-hunt' | 'uat' | 'bug-fix'): void",
+      "description": "Banner registrations for previously missing review stages"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "noColorSupport": {
+      "description": "When process.env.NO_COLOR is set (any non-empty value), all ANSI escape sequences must be suppressed",
+      "enforced_by": "test"
+    },
+    "darkBackgrounds": {
+      "description": "All background colour codes use the 40-47 range (dark), never the 100-107 range (bright)",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Switch bright ANSI background colours to dark backgrounds for better terminal readability. Add missing banner registrations and NO_COLOR support.",
+    "ownedFiles": ["src/lib/display.cjs", "src/lib/display.test.cjs"],
+    "tasks": [
+      { "description": "Replace all 10Xm ANSI background codes with 4Xm equivalents", "acceptance": "No bright background codes remain in display.cjs" },
+      { "description": "Add missing banner registrations for unit-test, bug-hunt, uat, bug-fix", "acceptance": "All four stages have registered banners" },
+      { "description": "Implement NO_COLOR environment variable support", "acceptance": "Setting NO_COLOR suppresses all ANSI output" },
+      { "description": "Update display.test.cjs assertions for new colour codes", "acceptance": "All tests pass with updated assertions" }
+    ],
+    "acceptance": ["All background codes use dark (4Xm) range", "NO_COLOR respected", "All tests passing"]
+  }
+}

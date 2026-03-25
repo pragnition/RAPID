@@ -1,0 +1,62 @@
+{
+  "setId": "review-state",
+  "version": "1.0.0",
+  "exports": {
+    "reviewStateSchema": {
+      "type": "file",
+      "signature": "REVIEW-STATE.json (per-set, at .planning/sets/{setId}/REVIEW-STATE.json)",
+      "description": "Persistent review pipeline state tracking which stages are complete"
+    },
+    "readReviewState": {
+      "type": "function",
+      "signature": "readReviewState(setId: string): ReviewState | null",
+      "description": "Reads the review state for a set, returns null if no review has started"
+    },
+    "writeReviewState": {
+      "type": "function",
+      "signature": "writeReviewState(setId: string, state: ReviewState): void",
+      "description": "Atomically writes updated review state for a set"
+    },
+    "markStageComplete": {
+      "type": "function",
+      "signature": "markStageComplete(setId: string, stage: 'scope' | 'unit-test' | 'bug-hunt' | 'uat', verdict: string): void",
+      "description": "Records a review stage as completed with its verdict"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "atomicWrites": {
+      "description": "REVIEW-STATE.json is written using temp-file-then-rename pattern consistent with STATE.json and MERGE-STATE.json",
+      "enforced_by": "test"
+    },
+    "prerequisiteEnforcement": {
+      "description": "UAT stage refuses to run if unit-test stage has not completed; bug-hunt and unit-test can run in any order after scope",
+      "enforced_by": "runtime"
+    },
+    "idempotentReEntry": {
+      "description": "If a review stage has already been completed, the skill prompts to re-run or skip rather than failing",
+      "enforced_by": "runtime"
+    }
+  },
+  "definition": {
+    "scope": "Implement persistent review state so the review pipeline tracks which stages have been completed per set, enabling skip and resume behavior across separate command invocations.",
+    "ownedFiles": [
+      "src/lib/review.cjs",
+      "src/lib/review.test.cjs",
+      "src/commands/review.cjs",
+      "src/commands/review.test.cjs",
+      "skills/review/SKILL.md",
+      "skills/unit-test/SKILL.md",
+      "skills/bug-hunt/SKILL.md",
+      "skills/uat/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Define REVIEW-STATE.json Zod schema and read/write functions", "acceptance": "Schema validates correctly with roundtrip tests" },
+      { "description": "Implement stage completion recording in review library", "acceptance": "markStageComplete writes valid REVIEW-STATE.json" },
+      { "description": "Add prerequisite checking logic", "acceptance": "UAT blocked without unit-test; scope required first" },
+      { "description": "Update review skill and downstream skills to read/write state", "acceptance": "Skills detect completed stages and offer skip/re-run" },
+      { "description": "Add CLI subcommand for review state inspection", "acceptance": "User can view review progress per set" }
+    ],
+    "acceptance": ["REVIEW-STATE.json created and managed per set", "Stage prerequisites enforced", "Interrupted reviews resumable", "All tests passing"]
+  }
+}

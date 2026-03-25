@@ -1,22 +1,17 @@
 {
   "nodes": [
     {
-      "id": "path-and-dag",
+      "id": "colouring",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "state-reliability",
+      "id": "review-state",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "gap-closure",
-      "wave": 1,
-      "status": "pending"
-    },
-    {
-      "id": "new-version-ux",
+      "id": "documentation",
       "wave": 1,
       "status": "pending"
     }
@@ -25,31 +20,28 @@
   "waves": {
     "1": {
       "sets": [
-        "path-and-dag",
-        "state-reliability",
-        "gap-closure",
-        "new-version-ux"
+        "colouring",
+        "review-state",
+        "documentation"
       ],
       "checkpoint": {
         "contracts": [
-          "rapid://contracts/path-and-dag",
-          "rapid://contracts/state-reliability",
-          "rapid://contracts/gap-closure",
-          "rapid://contracts/new-version-ux"
+          "rapid://contracts/colouring",
+          "rapid://contracts/review-state",
+          "rapid://contracts/documentation"
         ],
         "artifacts": [
-          ".planning/sets/path-and-dag/CONTRACT.json",
-          ".planning/sets/state-reliability/CONTRACT.json",
-          ".planning/sets/gap-closure/CONTRACT.json",
-          ".planning/sets/new-version-ux/CONTRACT.json"
+          ".planning/sets/colouring/CONTRACT.json",
+          ".planning/sets/review-state/CONTRACT.json",
+          ".planning/sets/documentation/CONTRACT.json"
         ]
       }
     }
   },
   "metadata": {
-    "created": "2026-03-24",
-    "totalSets": 4,
+    "created": "2026-03-25",
+    "totalSets": 3,
     "totalWaves": 1,
-    "maxParallelism": 4
+    "maxParallelism": 3
   }
 }
