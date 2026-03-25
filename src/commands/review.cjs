@@ -278,8 +278,50 @@ async function handleReview(cwd, subcommand, args) {
       break;
     }
 
+    case 'state': {
+      const { positional: statePos } = parseArgs(args, {});
+      const setId = statePos[0];
+      if (!setId) {
+        throw new CliError('Usage: rapid-tools review state <set-id>');
+      }
+      const state = review.readReviewState(cwd, setId);
+      if (!state) {
+        output(JSON.stringify({ setId, message: 'No review state found. Run /rapid:review to start.' }));
+        break;
+      }
+      // Build table-friendly output
+      const stages = ['scope', 'unit-test', 'bug-hunt', 'uat'];
+      const table = stages.map(s => {
+        const entry = state.stages[s];
+        return {
+          stage: s,
+          status: entry && entry.completed ? 'complete' : 'pending',
+          verdict: entry && entry.completed ? entry.verdict : '-',
+        };
+      });
+      output(JSON.stringify({ setId, stages: table, lastUpdatedAt: state.lastUpdatedAt }));
+      break;
+    }
+
+    case 'mark-stage': {
+      const { positional: markPos } = parseArgs(args, {});
+      const setId = markPos[0];
+      const stage = markPos[1];
+      const verdict = markPos[2];
+      if (!setId || !stage || !verdict) {
+        throw new CliError('Usage: rapid-tools review mark-stage <set-id> <stage> <verdict>');
+      }
+      try {
+        const updated = review.markStageComplete(cwd, setId, stage, verdict);
+        output(JSON.stringify({ marked: true, stage, verdict, setId }));
+      } catch (err) {
+        throw new CliError(err.message);
+      }
+      break;
+    }
+
     default:
-      throw new CliError(`Unknown review subcommand: ${subcommand}. Use: scope, log-issue, list-issues, update-issue, lean, summary`);
+      throw new CliError(`Unknown review subcommand: ${subcommand}. Use: scope, log-issue, list-issues, update-issue, lean, summary, state, mark-stage`);
   }
 }
 
