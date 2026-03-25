@@ -2,7 +2,7 @@
 
 **Rapid Agentic Parallelizable and Isolatable Development**
 
-A Claude Code plugin for coordinated parallel AI-assisted development. RAPID v3.0 gives each developer an isolated worktree with strict file ownership, connects workstreams through machine-verifiable interface contracts, and merges everything back through a multi-level conflict detection and resolution pipeline. 26 specialized agents handle the automation so developers focus on decisions, not coordination.
+A Claude Code plugin for coordinated parallel AI-assisted development. RAPID v4.4.0 gives each developer an isolated worktree with strict file ownership, connects workstreams through machine-verifiable interface contracts, and merges everything back through a multi-level conflict detection and resolution pipeline. 27 specialized agents handle the automation so developers focus on decisions, not coordination.
 
 ---
 
@@ -32,7 +32,10 @@ Then run `/rapid:install` inside Claude Code to configure your environment.
 /rapid:discuss-set 1     # Capture your implementation vision
 /rapid:plan-set 1        # Research, plan all waves, validate contracts
 /rapid:execute-set 1     # Execute all waves (parallel agents per wave)
-/rapid:review 1          # Unit tests + adversarial bug hunt + UAT
+/rapid:review 1          # Scope review targets
+/rapid:unit-test 1       # Generate and run unit tests
+/rapid:bug-hunt 1        # Adversarial bug hunting
+/rapid:uat 1             # Acceptance testing
 /rapid:merge             # Integrate completed sets to main
 ```
 
@@ -50,11 +53,21 @@ RAPID structures parallel work around **sets** -- independent workstreams that e
 
 **Execution with per-wave agents.** `/rapid:execute-set` runs one executor agent per wave, sequentially through the wave dependency order. Each executor implements the planned work, commits atomically, and reports results. A verification agent checks objectives after all waves complete. If interrupted, re-running detects completed work from planning artifacts and resumes where it left off.
 
-**Adversarial review.** `/rapid:review` runs a multi-stage pipeline: a scoper identifies what to test, unit tests are generated and executed, a three-stage bug hunt (hunter finds issues, devil's advocate challenges findings, judge rules) iterates up to 3 cycles, and UAT runs acceptance testing with browser automation.
+**4-stage review pipeline.** Review is split into four independent skills that run sequentially after execution:
+
+- `/rapid:review` scopes the review -- identifies changed files, categorizes them by concern area, and produces a REVIEW-SCOPE.md that downstream skills consume.
+- `/rapid:unit-test` generates and runs unit tests against each concern group identified by the scoper.
+- `/rapid:bug-hunt` runs the adversarial bug-hunt cycle: a hunter finds issues, a devil's advocate challenges the findings, and a judge rules on each dispute. Confirmed bugs are fixed automatically. This cycle iterates up to 3 times.
+- `/rapid:uat` runs acceptance testing with browser automation to verify end-to-end behavior.
 
 **Multi-level merge.** `/rapid:merge` detects conflicts at 5 levels (textual, structural, dependency, API, semantic) and resolves them through a 4-tier confidence cascade. High-confidence resolutions are auto-accepted, mid-confidence conflicts go to dedicated resolver agents, and low-confidence conflicts escalate to the developer. Clean merges skip detection entirely via a fast-path `git merge-tree` check.
 
 ## Architecture
+
+```mermaid
+flowchart LR
+    init["/init\nROADMAP.md"] --> start["/start-set\nWorktree"] --> discuss["/discuss-set\nCONTEXT.md"] --> plan["/plan-set\nPLAN.md"] --> execute["/execute-set\nCode"] --> review["/review\nREVIEW-SCOPE.md"] --> merge["/merge\nMain branch"]
+```
 
 ```
 Milestone (v1.0, v2.0, ...)
@@ -86,20 +99,26 @@ Skills dispatch agents directly -- each command spawns exactly the agents it nee
   └── verifier                     -- checks objectives post-execution
 
 /rapid:review
-  ├── scoper                       -- identifies review targets
-  ├── unit-tester                  -- generates and runs tests
+  └── scoper                       -- identifies review targets, produces REVIEW-SCOPE.md
+
+/rapid:unit-test
+  └── unit-tester (per concern)    -- generates and runs tests
+
+/rapid:bug-hunt
   ├── bug-hunter                   -- finds issues
   ├── devils-advocate              -- challenges findings
   ├── judge                        -- rules on disputes
-  ├── bugfix                       -- fixes confirmed bugs
-  └── uat                          -- acceptance testing
+  └── bugfix                       -- fixes confirmed bugs
+
+/rapid:uat
+  └── uat                          -- acceptance testing with browser automation
 
 /rapid:merge
   ├── set-merger (per set)         -- 5-level conflict detection
   └── conflict-resolver (per conflict) -- resolves mid-confidence conflicts
 ```
 
-26 agents total: 5 core hand-written agents with full control over their domain, 21 generated agents with embedded tool documentation.
+27 agents total: 4 core hand-written agents with full control over their domain, 23 generated agents with embedded tool documentation.
 
 ## Command Reference
 
@@ -112,8 +131,16 @@ Skills dispatch agents directly -- each command spawns exactly the agents it nee
 | `/rapid:discuss-set` | Capture developer implementation vision before planning |
 | `/rapid:plan-set` | Plan all waves in a set -- research, plan, validate |
 | `/rapid:execute-set` | Execute all waves with per-wave executor agents |
-| `/rapid:review` | Unit test + adversarial bug hunt + UAT pipeline |
+| `/rapid:review` | Scope review targets and produce REVIEW-SCOPE.md |
 | `/rapid:merge` | Merge completed sets to main with conflict detection |
+
+### 3 Review Pipeline Commands
+
+| Command | Description |
+|---------|-------------|
+| `/rapid:unit-test` | Generate and run unit tests per concern group |
+| `/rapid:bug-hunt` | Adversarial bug hunt -- hunter, devil's advocate, judge, bugfix |
+| `/rapid:uat` | Acceptance testing with browser automation |
 
 ### 4 Auxiliary Commands
 
@@ -124,17 +151,24 @@ Skills dispatch agents directly -- each command spawns exactly the agents it nee
 | `/rapid:new-version` | Start new milestone/version cycle |
 | `/rapid:add-set` | Add sets mid-milestone with contract updates |
 
-### Utilities
+### 14 Utilities
 
 | Command | Description |
 |---------|-------------|
 | `/rapid:assumptions` | Surface Claude's assumptions about a set before execution |
-| `/rapid:pause` | Save set state for later resumption |
-| `/rapid:resume` | Resume a paused set from where it left off |
-| `/rapid:context` | Generate codebase context files for brownfield projects |
+| `/rapid:audit-version` | Audit completed milestone for gaps between plan and delivery |
+| `/rapid:branding` | Structured branding interview with codebase-aware guidelines |
+| `/rapid:bug-fix` | Investigate and fix a reported bug |
 | `/rapid:cleanup` | Remove worktrees for merged sets |
-| `/rapid:quick` | Ad-hoc changes without requiring set structure |
+| `/rapid:context` | Generate codebase context files for brownfield projects |
+| `/rapid:documentation` | Generate and maintain project documentation from history |
 | `/rapid:help` | Command reference and workflow guide |
+| `/rapid:migrate` | Migrate .planning/ state from older RAPID versions |
+| `/rapid:pause` | Save set state for later resumption |
+| `/rapid:quick` | Ad-hoc changes without requiring set structure |
+| `/rapid:register-web` | Register project with RAPID Mission Control dashboard |
+| `/rapid:resume` | Resume a paused set from where it left off |
+| `/rapid:scaffold` | Generate project-type-aware foundation files |
 
 **Note:** Commands accepting set IDs support both string names (e.g., `auth-system`) and numeric shorthand (e.g., `1`).
 
@@ -157,7 +191,10 @@ RAPID researches the project, identifies two independent workstreams, and genera
 /rapid:discuss-set 1         # "I want JWT with refresh token rotation"
 /rapid:plan-set 1            # Plans 2 waves: models+middleware, then routes
 /rapid:execute-set 1         # Agents implement both waves
-/rapid:review 1              # Unit tests pass, bug hunt finds no issues
+/rapid:review 1              # Scope review targets
+/rapid:unit-test 1           # Generate and run unit tests
+/rapid:bug-hunt 1            # Adversarial bug hunting
+/rapid:uat 1                 # Acceptance testing
 ```
 
 **Dev B (dashboard), at the same time:**
@@ -167,7 +204,10 @@ RAPID researches the project, identifies two independent workstreams, and genera
 /rapid:discuss-set 2          # "React with server components, charts with Recharts"
 /rapid:plan-set 2             # Plans 3 waves: layout, data fetching, charts
 /rapid:execute-set 2          # Agents implement all waves
-/rapid:review 2               # UAT confirms pages render correctly
+/rapid:review 2               # Scope review targets
+/rapid:unit-test 2            # Generate and run unit tests
+/rapid:bug-hunt 2             # Adversarial bug hunting
+/rapid:uat 2                  # Acceptance testing
 ```
 
 Dev A and Dev B work simultaneously in separate worktrees. The contract ensures Dev B's dashboard code calls `getCurrentUser()` with the exact signature Dev A's auth system exports.
@@ -189,7 +229,7 @@ Worktrees removed. Both sets are on main.
 
 ## Further Reading
 
-For the full technical reference -- agent details, state machine documentation, contract format, and configuration -- see [technical_documentation.md](technical_documentation.md).
+For the full technical reference -- all 28 commands with detailed usage, agent architecture, state machines, and configuration -- see [DOCS.md](DOCS.md).
 
 ## License
 
