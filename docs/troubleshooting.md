@@ -1,3 +1,5 @@
+[DOCS.md](../DOCS.md) > Troubleshooting
+
 # Troubleshooting
 
 Common issues you may encounter while using RAPID and how to resolve them.
@@ -120,6 +122,16 @@ This is destructive and will lose any uncommitted changes in that worktree.
 - **Boundary violations:** Move the violating code into the correct set's scope
 
 After fixing, re-run the blocked command.
+
+---
+
+### Review skills report "REVIEW-SCOPE.md not found"
+
+**Symptom:** `/rapid:unit-test`, `/rapid:bug-hunt`, or `/rapid:uat` fails with a missing scope artifact error.
+
+**Cause:** The review pipeline requires `/rapid:review` to run first and produce `REVIEW-SCOPE.md`. The downstream skills consume this artifact as their input.
+
+**Fix:** Run `/rapid:review <set-id>` first to scope the set, then run the individual review skills.
 
 ---
 
