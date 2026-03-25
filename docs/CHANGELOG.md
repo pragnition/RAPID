@@ -68,7 +68,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 - Execute-to-complete state transition fix, merge untracked file handling (`state-execution`)
-- CLI command reference sweep across 26 agents and 24 skills, discuss-set option limit fix (`agent-prompts`)
+- CLI command reference sweep across all agents and skills, discuss-set option limit fix (`agent-prompts`)
 
 ### Changed
 - DEFINITION.md generation, graceful loadSet(), solo mode config, worktree package management (`init-config`)
