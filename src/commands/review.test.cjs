@@ -203,3 +203,176 @@ describe('review log-issue', () => {
     assert.ok(!fs.existsSync(setsPath), 'sets REVIEW-ISSUES.json should NOT exist');
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// review state CLI integration tests
+// ────────────────────────────────────────────────────────────────
+describe('review state', () => {
+  let tmpDir;
+  const SET_ID = 'test-set';
+
+  beforeEach(() => {
+    tmpDir = setupTestProject(SET_ID);
+  });
+
+  afterEach(() => {
+    cleanupTestProject(tmpDir);
+  });
+
+  it('returns no-state message when REVIEW-STATE.json does not exist', () => {
+    const result = execSync(
+      `node "${CLI_PATH}" review state ${SET_ID}`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const parsed = parseOutput(result);
+    assert.strictEqual(parsed.setId, SET_ID);
+    assert.ok(parsed.message.includes('No review state found'));
+  });
+
+  it('returns stage table when REVIEW-STATE.json exists', () => {
+    const stateData = {
+      setId: SET_ID,
+      stages: {
+        scope: { completed: true, verdict: 'pass' },
+        'unit-test': { completed: true, verdict: 'partial' },
+      },
+      lastUpdatedAt: '2025-06-01T00:00:00.000Z',
+    };
+    const statePath = path.join(tmpDir, '.planning', 'sets', SET_ID, 'REVIEW-STATE.json');
+    fs.writeFileSync(statePath, JSON.stringify(stateData, null, 2), 'utf-8');
+
+    const result = execSync(
+      `node "${CLI_PATH}" review state ${SET_ID}`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const parsed = parseOutput(result);
+    assert.strictEqual(parsed.setId, SET_ID);
+    assert.strictEqual(parsed.stages.length, 4);
+    // scope should be complete
+    const scope = parsed.stages.find(s => s.stage === 'scope');
+    assert.strictEqual(scope.status, 'complete');
+    assert.strictEqual(scope.verdict, 'pass');
+    // unit-test should be complete
+    const ut = parsed.stages.find(s => s.stage === 'unit-test');
+    assert.strictEqual(ut.status, 'complete');
+    assert.strictEqual(ut.verdict, 'partial');
+    // bug-hunt should be pending
+    const bh = parsed.stages.find(s => s.stage === 'bug-hunt');
+    assert.strictEqual(bh.status, 'pending');
+    assert.strictEqual(bh.verdict, '-');
+    // uat should be pending
+    const uat = parsed.stages.find(s => s.stage === 'uat');
+    assert.strictEqual(uat.status, 'pending');
+    assert.strictEqual(uat.verdict, '-');
+    // lastUpdatedAt should be present
+    assert.ok(parsed.lastUpdatedAt);
+  });
+
+  it('errors on missing set-id', () => {
+    try {
+      execSync(
+        `node "${CLI_PATH}" review state`,
+        { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+      );
+      assert.fail('should have exited with non-zero');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// review mark-stage CLI integration tests
+// ────────────────────────────────────────────────────────────────
+describe('review mark-stage', () => {
+  let tmpDir;
+  const SET_ID = 'test-set';
+
+  beforeEach(() => {
+    tmpDir = setupTestProject(SET_ID);
+  });
+
+  afterEach(() => {
+    cleanupTestProject(tmpDir);
+  });
+
+  it('creates state and marks scope complete', () => {
+    const result = execSync(
+      `node "${CLI_PATH}" review mark-stage ${SET_ID} scope pass`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const parsed = parseOutput(result);
+    assert.strictEqual(parsed.marked, true);
+    assert.strictEqual(parsed.stage, 'scope');
+    assert.strictEqual(parsed.verdict, 'pass');
+    assert.strictEqual(parsed.setId, SET_ID);
+
+    // Verify REVIEW-STATE.json was created
+    const statePath = path.join(tmpDir, '.planning', 'sets', SET_ID, 'REVIEW-STATE.json');
+    assert.ok(fs.existsSync(statePath), 'REVIEW-STATE.json should exist');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    assert.strictEqual(state.stages.scope.completed, true);
+    assert.strictEqual(state.stages.scope.verdict, 'pass');
+  });
+
+  it('rejects mark-stage with missing args', () => {
+    try {
+      execSync(
+        `node "${CLI_PATH}" review mark-stage ${SET_ID} scope`,
+        { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+      );
+      assert.fail('should have exited with non-zero');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+    }
+  });
+
+  it('rejects uat without unit-test prerequisite', () => {
+    // First mark scope complete
+    execSync(
+      `node "${CLI_PATH}" review mark-stage ${SET_ID} scope pass`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    // Attempt to mark uat without unit-test
+    try {
+      execSync(
+        `node "${CLI_PATH}" review mark-stage ${SET_ID} uat pass`,
+        { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+      );
+      assert.fail('should have exited with non-zero');
+    } catch (err) {
+      assert.ok(err.status !== 0, 'should exit non-zero');
+      const stdout = (err.stdout || '').trim();
+      if (stdout) {
+        const parsed = parseOutput(stdout);
+        assert.ok(parsed.error.includes('unit-test'), 'error should mention unit-test prerequisite');
+      }
+    }
+  });
+
+  it('marks multiple stages in sequence', () => {
+    // scope -> unit-test -> uat
+    execSync(
+      `node "${CLI_PATH}" review mark-stage ${SET_ID} scope pass`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    execSync(
+      `node "${CLI_PATH}" review mark-stage ${SET_ID} unit-test pass`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const result = execSync(
+      `node "${CLI_PATH}" review mark-stage ${SET_ID} uat pass`,
+      { cwd: tmpDir, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const parsed = parseOutput(result);
+    assert.strictEqual(parsed.marked, true);
+    assert.strictEqual(parsed.stage, 'uat');
+
+    // Verify all three stages in state
+    const statePath = path.join(tmpDir, '.planning', 'sets', SET_ID, 'REVIEW-STATE.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    assert.strictEqual(state.stages.scope.completed, true);
+    assert.strictEqual(state.stages['unit-test'].completed, true);
+    assert.strictEqual(state.stages.uat.completed, true);
+  });
+});
