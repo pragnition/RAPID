@@ -432,14 +432,14 @@
       "sets": [
         {
           "id": "colouring",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Better Colouring",
           "branch": "set/colouring"
         },
         {
           "id": "review-state",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Review State Management",
           "branch": "set/review-state"
@@ -454,6 +454,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-25T04:11:10.599Z",
+  "lastUpdatedAt": "2026-03-25T04:34:59.651Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
