@@ -14,9 +14,9 @@ describe('display', () => {
   });
 
   describe('STAGE_VERBS', () => {
-    it('maps all 17 stages to uppercase verb strings', () => {
+    it('maps all 21 stages to uppercase verb strings', () => {
       const display = require(displayPath);
-      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version'];
+      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version', 'unit-test', 'bug-hunt', 'uat', 'bug-fix'];
       for (const stage of expectedStages) {
         assert.ok(
           typeof display.STAGE_VERBS[stage] === 'string',
@@ -47,13 +47,18 @@ describe('display', () => {
       assert.equal(display.STAGE_VERBS['quick'], 'QUICK TASK');
       assert.equal(display.STAGE_VERBS['scaffold'], 'SCAFFOLDING');
       assert.equal(display.STAGE_VERBS['branding'], 'BRANDING');
+      assert.equal(display.STAGE_VERBS['audit-version'], 'AUDITING');
+      assert.equal(display.STAGE_VERBS['unit-test'], 'UNIT TESTING');
+      assert.equal(display.STAGE_VERBS['bug-hunt'], 'BUG HUNTING');
+      assert.equal(display.STAGE_VERBS['uat'], 'UAT TESTING');
+      assert.equal(display.STAGE_VERBS['bug-fix'], 'BUG FIXING');
     });
   });
 
   describe('STAGE_BG', () => {
-    it('maps all 17 stages to ANSI background escape codes', () => {
+    it('maps all 21 stages to ANSI background escape codes', () => {
       const display = require(displayPath);
-      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version'];
+      const expectedStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version', 'unit-test', 'bug-hunt', 'uat', 'bug-fix'];
       for (const stage of expectedStages) {
         assert.ok(
           typeof display.STAGE_BG[stage] === 'string',
@@ -66,38 +71,38 @@ describe('display', () => {
       }
     });
 
-    it('planning stages (init, set-init, discuss, wave-plan, plan-set, start-set, discuss-set, new-version, add-set) use blue background ANSI code', () => {
+    it('planning stages (init, set-init, discuss, wave-plan, plan-set, start-set, discuss-set, new-version, add-set) use dark blue background ANSI code', () => {
       const display = require(displayPath);
       const planningStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'start-set', 'discuss-set', 'new-version', 'add-set', 'scaffold', 'branding'];
       for (const stage of planningStages) {
         assert.equal(
           display.STAGE_BG[stage],
-          '\x1b[104m',
-          `Planning stage "${stage}" should use bright blue background (\\x1b[104m), got: "${display.STAGE_BG[stage]}"`
+          '\x1b[44m',
+          `Planning stage "${stage}" should use dark blue background (\\x1b[44m), got: "${display.STAGE_BG[stage]}"`
         );
       }
     });
 
-    it('execution stages (execute, execute-set, quick) use green background ANSI code', () => {
+    it('execution stages (execute, execute-set, quick) use dark green background ANSI code', () => {
       const display = require(displayPath);
       const executionStages = ['execute', 'execute-set', 'quick'];
       for (const stage of executionStages) {
         assert.equal(
           display.STAGE_BG[stage],
-          '\x1b[102m',
-          `Execution stage "${stage}" should use bright green background (\\x1b[102m)`
+          '\x1b[42m',
+          `Execution stage "${stage}" should use dark green background (\\x1b[42m)`
         );
       }
     });
 
-    it('review stages (review, merge) use red background ANSI code', () => {
+    it('review stages (review, merge, audit-version, unit-test, bug-hunt, uat, bug-fix) use dark red background ANSI code', () => {
       const display = require(displayPath);
-      const reviewStages = ['review', 'merge'];
+      const reviewStages = ['review', 'merge', 'audit-version', 'unit-test', 'bug-hunt', 'uat', 'bug-fix'];
       for (const stage of reviewStages) {
         assert.equal(
           display.STAGE_BG[stage],
-          '\x1b[101m',
-          `Review stage "${stage}" should use bright red background (\\x1b[101m), got: "${display.STAGE_BG[stage]}"`
+          '\x1b[41m',
+          `Review stage "${stage}" should use dark red background (\\x1b[41m), got: "${display.STAGE_BG[stage]}"`
         );
       }
     });
@@ -218,9 +223,9 @@ describe('display', () => {
       );
     });
 
-    it('all 17 stages produce valid banner strings', () => {
+    it('all 21 stages produce valid banner strings', () => {
       const display = require(displayPath);
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version'];
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version', 'unit-test', 'bug-hunt', 'uat', 'bug-fix'];
       for (const stage of stages) {
         const result = display.renderBanner(stage);
         assert.ok(typeof result === 'string', `renderBanner("${stage}") should return a string`);
@@ -240,7 +245,7 @@ describe('display', () => {
 
     it('renderBanner output ends with ANSI reset code', () => {
       const display = require(displayPath);
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding'];
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version', 'unit-test', 'bug-hunt', 'uat', 'bug-fix'];
       for (const stage of stages) {
         const result = display.renderBanner(stage);
         assert.ok(
@@ -254,7 +259,7 @@ describe('display', () => {
       const display = require(displayPath);
       // Strip ANSI codes to measure visible width
       const stripAnsi = (str) => str.replace(/\x1b\[[0-9;]*m/g, '');
-      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding'];
+      const stages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'execute', 'review', 'merge', 'start-set', 'discuss-set', 'execute-set', 'new-version', 'add-set', 'quick', 'scaffold', 'branding', 'audit-version', 'unit-test', 'bug-hunt', 'uat', 'bug-fix'];
       const widths = stages.map(stage => stripAnsi(display.renderBanner(stage)).length);
       // All widths should be the same (50 chars padded)
       const targetWidth = widths[0];
@@ -268,38 +273,38 @@ describe('display', () => {
       assert.ok(targetWidth >= 50, `Padded width should be at least 50, got ${targetWidth}`);
     });
 
-    it('planning stages use blue background ANSI code in banner', () => {
+    it('planning stages use dark blue background ANSI code in banner', () => {
       const display = require(displayPath);
       const planningStages = ['init', 'set-init', 'discuss', 'wave-plan', 'plan-set', 'start-set', 'discuss-set', 'new-version', 'add-set', 'scaffold', 'branding'];
       for (const stage of planningStages) {
         const result = display.renderBanner(stage);
         assert.ok(
-          result.includes('\x1b[104m'),
-          `Planning stage "${stage}" banner should contain bright blue background code (\\x1b[104m)`
+          result.includes('\x1b[44m'),
+          `Planning stage "${stage}" banner should contain dark blue background code (\\x1b[44m)`
         );
       }
     });
 
-    it('execution stages use green background ANSI code in banner', () => {
+    it('execution stages use dark green background ANSI code in banner', () => {
       const display = require(displayPath);
       const executionStages = ['execute', 'execute-set', 'quick'];
       for (const stage of executionStages) {
         const result = display.renderBanner(stage);
         assert.ok(
-          result.includes('\x1b[102m'),
-          `Execution stage "${stage}" banner should contain bright green background code (\\x1b[102m)`
+          result.includes('\x1b[42m'),
+          `Execution stage "${stage}" banner should contain dark green background code (\\x1b[42m)`
         );
       }
     });
 
-    it('review stages use red background ANSI code in banner', () => {
+    it('review stages use dark red background ANSI code in banner', () => {
       const display = require(displayPath);
-      const reviewStages = ['review', 'merge'];
+      const reviewStages = ['review', 'merge', 'audit-version', 'unit-test', 'bug-hunt', 'uat', 'bug-fix'];
       for (const stage of reviewStages) {
         const result = display.renderBanner(stage);
         assert.ok(
-          result.includes('\x1b[101m'),
-          `Review stage "${stage}" banner should contain bright red background code (\\x1b[101m)`
+          result.includes('\x1b[41m'),
+          `Review stage "${stage}" banner should contain dark red background code (\\x1b[41m)`
         );
       }
     });
@@ -317,6 +322,86 @@ describe('display', () => {
       const result = display.renderBanner('branding', 'my-project');
       assert.ok(result.includes('BRANDING'), 'Banner should contain "BRANDING"');
       assert.ok(result.includes('my-project'), 'Banner should contain "my-project"');
+    });
+
+    it('renderBanner("unit-test") returns string containing "UNIT TESTING"', () => {
+      const display = require(displayPath);
+      const result = display.renderBanner('unit-test');
+      assert.ok(result.includes('RAPID'), 'Banner should contain "RAPID"');
+      assert.ok(result.includes('UNIT TESTING'), 'Banner should contain "UNIT TESTING"');
+      assert.ok(result.includes('\x1b['), 'Banner should contain ANSI escape codes');
+    });
+
+    it('renderBanner("bug-hunt") returns string containing "BUG HUNTING"', () => {
+      const display = require(displayPath);
+      const result = display.renderBanner('bug-hunt');
+      assert.ok(result.includes('RAPID'), 'Banner should contain "RAPID"');
+      assert.ok(result.includes('BUG HUNTING'), 'Banner should contain "BUG HUNTING"');
+      assert.ok(result.includes('\x1b['), 'Banner should contain ANSI escape codes');
+    });
+
+    it('renderBanner("uat") returns string containing "UAT TESTING"', () => {
+      const display = require(displayPath);
+      const result = display.renderBanner('uat');
+      assert.ok(result.includes('RAPID'), 'Banner should contain "RAPID"');
+      assert.ok(result.includes('UAT TESTING'), 'Banner should contain "UAT TESTING"');
+      assert.ok(result.includes('\x1b['), 'Banner should contain ANSI escape codes');
+    });
+
+    it('renderBanner("bug-fix") returns string containing "BUG FIXING"', () => {
+      const display = require(displayPath);
+      const result = display.renderBanner('bug-fix');
+      assert.ok(result.includes('RAPID'), 'Banner should contain "RAPID"');
+      assert.ok(result.includes('BUG FIXING'), 'Banner should contain "BUG FIXING"');
+      assert.ok(result.includes('\x1b['), 'Banner should contain ANSI escape codes');
+    });
+  });
+
+  describe('NO_COLOR support', () => {
+    it('suppresses ANSI when NO_COLOR is set', () => {
+      process.env.NO_COLOR = '1';
+      delete require.cache[require.resolve(displayPath)];
+      const display = require(displayPath);
+      const result = display.renderBanner('init');
+      assert.ok(!result.includes('\x1b['), 'Banner should NOT contain ANSI escape codes when NO_COLOR is set');
+      assert.ok(result.includes('--- RAPID >'), 'Banner should contain "--- RAPID >" prefix');
+      assert.ok(result.includes('INITIALIZING'), 'Banner should contain "INITIALIZING"');
+      delete process.env.NO_COLOR;
+    });
+
+    it('uses decorated ASCII format', () => {
+      process.env.NO_COLOR = '1';
+      delete require.cache[require.resolve(displayPath)];
+      const display = require(displayPath);
+      const result = display.renderBanner('execute', 'auth-system');
+      assert.equal(result, '--- RAPID > EXECUTING  auth-system ---');
+      delete process.env.NO_COLOR;
+    });
+
+    it('does NOT suppress when NO_COLOR is empty string', () => {
+      process.env.NO_COLOR = '';
+      delete require.cache[require.resolve(displayPath)];
+      const display = require(displayPath);
+      const result = display.renderBanner('init');
+      assert.ok(result.includes('\x1b['), 'Banner SHOULD contain ANSI escape codes when NO_COLOR is empty string');
+      delete process.env.NO_COLOR;
+    });
+
+    it('does NOT suppress when NO_COLOR is undefined', () => {
+      delete process.env.NO_COLOR;
+      delete require.cache[require.resolve(displayPath)];
+      const display = require(displayPath);
+      const result = display.renderBanner('init');
+      assert.ok(result.includes('\x1b['), 'Banner SHOULD contain ANSI escape codes when NO_COLOR is undefined');
+    });
+
+    it('unknown stage fallback unaffected by NO_COLOR', () => {
+      process.env.NO_COLOR = '1';
+      delete require.cache[require.resolve(displayPath)];
+      const display = require(displayPath);
+      const result = display.renderBanner('nonexistent');
+      assert.ok(result.includes('Unknown stage'), 'Fallback should mention "Unknown stage"');
+      delete process.env.NO_COLOR;
     });
   });
 });
