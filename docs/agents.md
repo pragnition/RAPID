@@ -1,6 +1,8 @@
+[DOCS.md](../DOCS.md) > Agents
+
 # Agent Reference
 
-RAPID uses 26 specialized agents across the development lifecycle. Each agent has a narrow focus, receives structured inputs, and returns structured outputs. Skills dispatch agents directly -- there is no central coordination agent.
+RAPID uses 27 specialized agents across the development lifecycle. Each agent has a narrow focus, receives structured inputs, and returns structured outputs. Skills dispatch agents directly -- there is no central coordination agent.
 
 ## Agent Types
 
@@ -45,12 +47,18 @@ User
   |     +-- rapid-verifier
   |
   +-- /rapid:review
-  |     |-- rapid-scoper
-  |     |-- rapid-unit-tester (x concern groups)
+  |     +-- rapid-scoper
+  |
+  +-- /rapid:unit-test
+  |     +-- rapid-unit-tester (x concern groups)
+  |
+  +-- /rapid:bug-hunt
   |     |-- rapid-bug-hunter (x concern groups)
   |     |-- rapid-devils-advocate
   |     |-- rapid-judge
-  |     |-- rapid-bugfix
+  |     +-- rapid-bugfix
+  |
+  +-- /rapid:uat
   |     +-- rapid-uat
   |
   +-- /rapid:merge
@@ -219,7 +227,7 @@ Combines findings from all 6 parallel research agents into coherent recommendati
 
 ### Review (7 agents)
 
-Run the adversarial review pipeline during `/rapid:review`.
+Run the review pipeline across `/rapid:review`, `/rapid:unit-test`, `/rapid:bug-hunt`, and `/rapid:uat`.
 
 #### rapid-scoper
 **Leaf** | blue
@@ -230,7 +238,7 @@ Categorizes files by concern area for focused review scoping across the review p
 |---|---|
 | Spawned by | `/rapid:review` |
 | Inputs | Set file list, change summary |
-| Outputs | Concern groups with file assignments for parallel review dispatch |
+| Outputs | REVIEW-SCOPE.md with concern groups and file assignments |
 
 #### rapid-unit-tester
 **Leaf** | cyan
@@ -239,7 +247,7 @@ Generates test plans and writes/runs tests against the set's implementation.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:review` |
+| Spawned by | `/rapid:unit-test` |
 | Inputs | Concern group files, acceptance criteria |
 | Outputs | Test plan, test files, pass/fail results |
 
@@ -250,7 +258,7 @@ Performs static analysis and identifies bugs across concern groups.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:review` |
+| Spawned by | `/rapid:bug-hunt` |
 | Inputs | Concern group files, codebase context |
 | Outputs | Bug findings with severity, file locations, evidence |
 
@@ -261,7 +269,7 @@ Challenges bug hunter findings with counter-evidence to reduce false positives.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:review` |
+| Spawned by | `/rapid:bug-hunt` |
 | Inputs | Merged bug findings from all bug hunters |
 | Outputs | Advocate assessments (agree/disagree with evidence for each finding) |
 
@@ -272,7 +280,7 @@ Rules on contested findings with ACCEPTED/DISMISSED/DEFERRED verdicts.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:review` |
+| Spawned by | `/rapid:bug-hunt` |
 | Inputs | Bug findings + advocate assessments |
 | Outputs | Final rulings with rationale |
 
@@ -283,7 +291,7 @@ Fixes accepted bugs from the review pipeline with atomic commits.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:review` |
+| Spawned by | `/rapid:bug-hunt` |
 | Inputs | Accepted bug findings with file paths and descriptions |
 | Outputs | Targeted fix commits |
 
@@ -294,7 +302,7 @@ Generates and executes acceptance test plans to validate user-facing behavior.
 
 | | |
 |---|---|
-| Spawned by | `/rapid:review` |
+| Spawned by | `/rapid:uat` |
 | Inputs | Full set scope, acceptance criteria from plans |
 | Outputs | UAT results (pass/fail per acceptance criterion) |
 
@@ -328,9 +336,9 @@ Deep analysis and resolution of mid-confidence merge conflicts escalated by the 
 
 ---
 
-### Utility (5 agents)
+### Utility (6 agents)
 
-Support planning, verification, and project setup.
+Support planning, verification, project setup, and auditing.
 
 #### rapid-roadmapper
 **Leaf** | blue
@@ -386,6 +394,17 @@ Analyzes existing codebase structure and patterns to inform project planning.
 | Spawned by | `/rapid:init`, `/rapid:context` |
 | Inputs | Project root directory, file tree |
 | Outputs | Codebase analysis document (structure, patterns, conventions) |
+
+#### rapid-auditor
+**Leaf** | blue
+
+Audits a completed milestone by cross-referencing planned requirements against actual delivery to identify gaps.
+
+| | |
+|---|---|
+| Spawned by | `/rapid:audit-version` |
+| Inputs | ROADMAP.md, REQUIREMENTS.md, STATE.json, set completion artifacts |
+| Outputs | Gap report at `.planning/v{version}-AUDIT.md` |
 
 ---
 
