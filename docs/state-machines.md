@@ -1,3 +1,5 @@
+[DOCS.md](../DOCS.md) > State Machines
+
 # State Machines
 
 RAPID tracks three entity types -- sets, waves, and jobs -- each with their own lifecycle. Every state transition is validated against a strict transition map before it can take effect. The canonical source of truth is `src/lib/state-transitions.cjs`.
