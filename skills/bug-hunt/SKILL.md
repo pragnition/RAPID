@@ -58,6 +58,33 @@ Check if the user invoked with `--post-merge` flag: `/rapid:bug-hunt <set-id> --
 
 If `--post-merge` is present, set `POST_MERGE=true`. Post-merge mode reads REVIEW-SCOPE.md from the post-merge artifact directory.
 
+### 0d: Check Review State
+
+**If `POST_MERGE=true`:** Skip this step. Post-merge reviews do not track pipeline state.
+
+Check if bug-hunt has already been completed for this set:
+
+```bash
+REVIEW_STATE=$(node "${RAPID_TOOLS}" review state "${SET_NAME}" 2>&1)
+```
+
+Parse the JSON output. If the response contains a `stages` array, find the `bug-hunt` entry.
+
+**If bug-hunt is already complete** (status: "complete"), use **AskUserQuestion** to prompt:
+- **question:** "Bug hunt stage has already been completed for this set (verdict: {verdict}). What would you like to do?"
+- **options:** ["Re-run bug hunt", "Skip and exit"]
+
+If user chooses "Skip and exit": print "Bug hunt stage already complete." and exit.
+If user chooses "Re-run bug hunt": continue to Step 1.
+
+**If scope is not complete** (scope entry missing or status not "complete") and `POST_MERGE` is not set:
+- Print error: "Cannot run bug hunt: scope stage has not been completed. Run /rapid:review {set-id} first."
+- Exit. Do NOT continue.
+
+If no review state exists and `POST_MERGE` is not set:
+- Print error: "Cannot run bug hunt: no review state found. Run /rapid:review {set-id} first."
+- Exit.
+
 ## Step 1: Load REVIEW-SCOPE.md
 
 Determine the scope file path:
@@ -448,6 +475,22 @@ The CLI flag interface auto-generates `id` and `createdAt`. The stdin JSON inter
 If in post-merge mode, issues are logged to `.planning/post-merge/{setId}/REVIEW-ISSUES.json`.
 
 Then exit. Do NOT prompt for stage selection.
+
+### Record Bug Hunt Completion
+
+**If `POST_MERGE=true`:** Skip this step. Post-merge reviews do not track pipeline state.
+
+Determine the verdict based on bug hunt results:
+- No accepted bugs found: verdict is `pass`
+- Accepted bugs found but all auto-fixed: verdict is `pass`
+- Accepted bugs found, some unfixed: verdict is `partial`
+- Critical bugs found and unfixed: verdict is `fail`
+
+Mark the bug-hunt stage as complete:
+
+```bash
+node "${RAPID_TOOLS}" review mark-stage "${SET_NAME}" bug-hunt {verdict}
+```
 
 ## Important Notes
 
