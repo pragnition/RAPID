@@ -2,7 +2,7 @@
   "version": 1,
   "rapidVersion": "4.3.0",
   "projectName": "RAPID",
-  "currentMilestone": "v4.3.0",
+  "currentMilestone": "v4.4.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -425,8 +425,35 @@
           "branch": "rapid/new-version-ux"
         }
       ]
+    },
+    {
+      "id": "v4.4.0",
+      "name": "Polish & Documentation",
+      "sets": [
+        {
+          "id": "colouring",
+          "status": "discussed",
+          "waves": [],
+          "name": "Better Colouring",
+          "branch": "set/colouring"
+        },
+        {
+          "id": "review-state",
+          "status": "pending",
+          "waves": [],
+          "name": "Review State Management",
+          "branch": "set/review-state"
+        },
+        {
+          "id": "documentation",
+          "status": "pending",
+          "waves": [],
+          "name": "Documentation for Open-Sourcing",
+          "branch": "set/documentation"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-24T09:54:35.132Z",
+  "lastUpdatedAt": "2026-03-25T04:11:10.599Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
