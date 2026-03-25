@@ -1,3 +1,5 @@
+[DOCS.md](../DOCS.md) > Configuration
+
 # Configuration
 
 This reference covers environment setup, the state schema, and the project directory layout.
@@ -9,6 +11,8 @@ RAPID uses one environment variable and supports `.env` file loading as a fallba
 | Variable | Purpose | Set By |
 |----------|---------|--------|
 | `RAPID_TOOLS` | Absolute path to `src/bin/rapid-tools.cjs`. Required for all commands. | `/rapid:install` |
+| `NO_COLOR` | When set, suppresses ANSI color codes in banner output. | User |
+| `RAPID_WEB` | Set to `true` to enable Mission Control web dashboard features. | User |
 
 Every skill loads `RAPID_TOOLS` from both the shell environment and the project's `.env` file (whichever is available). The `.env` file is created automatically by `/rapid:install` in the plugin root directory. If the shell config fails during install, the `.env` fallback ensures RAPID works inside Claude Code sessions regardless.
 
