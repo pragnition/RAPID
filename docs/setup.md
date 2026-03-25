@@ -1,10 +1,38 @@
+[DOCS.md](../DOCS.md) > Setup
+
 # Setup
 
 Four commands handle everything from first install to project initialization, codebase analysis, and optional web dashboard setup. Run them once at the start of a new project.
 
+## Requirements
+
+- **Node.js 18+** (runtime for tool libraries)
+- **git 2.30+** (required for worktree support)
+- **RAPID_TOOLS env var** must be set (both installation methods handle this)
+
+## Installation Methods
+
+### Plugin Marketplace (Primary)
+
+```
+claude plugin add pragnition/RAPID
+```
+
+Then run `/rapid:install` from within Claude Code to complete setup.
+
+### Git Clone
+
+```bash
+git clone https://github.com/pragnition/RAPID.git
+cd RAPID
+./setup.sh
+```
+
+The `setup.sh` script installs dependencies, configures `RAPID_TOOLS`, and runs `build-agents` to generate agent definition files.
+
 ## `/rapid:install`
 
-Bootstraps the RAPID plugin by detecting your shell (bash, zsh, fish, or POSIX), writing the `RAPID_TOOLS` environment variable to your shell config, creating a `.env` fallback, validating the toolchain, and running agent file generation. If shell config fails, the `.env` fallback ensures RAPID works inside Claude Code sessions regardless.
+Bootstraps the RAPID plugin by detecting your shell (bash, zsh, fish, or POSIX), writing the `RAPID_TOOLS` environment variable to your shell config, creating a `.env` fallback, validating the toolchain, and running agent file generation. If shell config fails, the `.env` fallback ensures RAPID works inside Claude Code sessions regardless. Handles both marketplace and git clone installations.
 
 See [skills/install/SKILL.md](../skills/install/SKILL.md) for full details.
 
