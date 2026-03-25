@@ -1,6 +1,8 @@
+[DOCS.md](../DOCS.md) > Planning
+
 # Planning
 
-Four primary commands handle set lifecycle setup, discussion, and planning. Two additional commands support ad-hoc tasks and mid-milestone set additions.
+These commands handle set lifecycle setup, discussion, and planning. The init command runs the 6-researcher pipeline, discuss-set captures implementation vision with 4-gray-area discovery, and plan-set runs the 3-step researcher-planner-verifier pipeline.
 
 ## `/rapid:start-set <set-id>`
 
@@ -16,11 +18,11 @@ Captures implementation vision for a set before autonomous planning begins. The 
 
 **`--skip` flag:** Spawns a `rapid-research-stack` agent that auto-generates CONTEXT.md from the roadmap and codebase scan without user interaction. Use this for full delegation.
 
-**State transition:** `pending` → `discussed`
+**State transition:** `pending` -> `discussed`
 
 See [skills/discuss-set/SKILL.md](../skills/discuss-set/SKILL.md) for full details.
 
-## `/rapid:plan-set <set-id>`
+## `/rapid:plan-set <set-id> [--gaps]`
 
 Runs a 3-step planning pipeline that produces per-wave PLAN.md files in 2-4 total agent spawns:
 
@@ -30,7 +32,9 @@ Runs a 3-step planning pipeline that produces per-wave PLAN.md files in 2-4 tota
 
 Contract enforcement runs after verification to validate that planned work respects interface boundaries defined in CONTRACT.json.
 
-**State transition:** `discussed` → `planned` (or `pending` → `planned` if discuss was skipped)
+The `--gaps` flag enables gap-closure mode, allowing re-planning for merged sets that had PASS_WITH_GAPS verification results. Gap-closure waves are numbered sequentially after existing waves.
+
+**State transition:** `discussed` -> `planned` (or `pending` -> `planned` if discuss was skipped)
 
 See [skills/plan-set/SKILL.md](../skills/plan-set/SKILL.md) for full details.
 
@@ -42,7 +46,7 @@ See [skills/quick/SKILL.md](../skills/quick/SKILL.md) for full details.
 
 ## `/rapid:add-set <set-name>`
 
-Adds new sets to an existing milestone mid-stream. Writes directly to STATE.json using the same pattern as `/rapid:init` -- no separate CLI command needed. Useful when scope expands after initial planning.
+Adds new sets to an existing milestone mid-stream through a lightweight interactive discovery flow. Creates DEFINITION.md and CONTRACT.json, updates STATE.json and ROADMAP.md. No subagent spawns.
 
 See [skills/add-set/SKILL.md](../skills/add-set/SKILL.md) for full details.
 
@@ -53,18 +57,6 @@ Surfaces Claude's mental model about how a set will be implemented so you can ca
 **Note:** This is a utility command that does not advance set state. If assumptions are wrong, re-run `/rapid:plan-set` to re-plan.
 
 See [skills/assumptions/SKILL.md](../skills/assumptions/SKILL.md) for full details.
-
-## `/rapid:branding`
-
-Optional skill that conducts a structured branding interview and generates a BRANDING.md artifact with project tone, style guidelines, and visual direction. Use before frontend-heavy sets for consistent UI guidance.
-
-See [skills/branding/SKILL.md](../skills/branding/SKILL.md) for full details.
-
-## `/rapid:scaffold`
-
-Generates project-type-aware foundation files for the target codebase. Detects the project type (Node.js, Python, etc.) and scaffolds appropriate directory structure, config files, and boilerplate.
-
-See [skills/scaffold/SKILL.md](../skills/scaffold/SKILL.md) for full details.
 
 ---
 
