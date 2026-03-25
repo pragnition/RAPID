@@ -76,6 +76,33 @@ Check if the user invoked with `--post-merge` flag: `/rapid:unit-test <set-id> -
 
 If `--post-merge` is present, set `POST_MERGE=true`. Post-merge mode reads REVIEW-SCOPE.md from the post-merge artifact directory.
 
+### 0d: Check Review State
+
+**If `POST_MERGE=true`:** Skip this step. Post-merge reviews do not track pipeline state.
+
+Check if unit-test has already been completed for this set:
+
+```bash
+REVIEW_STATE=$(node "${RAPID_TOOLS}" review state "${SET_NAME}" 2>&1)
+```
+
+Parse the JSON output. If the response contains a `stages` array, find the `unit-test` entry.
+
+**If unit-test is already complete** (status: "complete"), use **AskUserQuestion** to prompt:
+- **question:** "Unit test stage has already been completed for this set (verdict: {verdict}). What would you like to do?"
+- **options:** ["Re-run unit tests", "Skip and exit"]
+
+If user chooses "Skip and exit": print "Unit test stage already complete." and exit.
+If user chooses "Re-run unit tests": continue to Step 1.
+
+**If scope is not complete** (scope entry missing or status not "complete") and `POST_MERGE` is not set:
+- Print error: "Cannot run unit tests: scope stage has not been completed. Run /rapid:review {set-id} first."
+- Exit. Do NOT continue.
+
+If no review state exists and `POST_MERGE` is not set:
+- Print error: "Cannot run unit tests: no review state found. Run /rapid:review {set-id} first."
+- Exit.
+
 ## Step 1: Load REVIEW-SCOPE.md
 
 Determine the scope file path:
@@ -335,6 +362,23 @@ echo '{"id":"<uuid>","type":"test","severity":"{severity}","file":"{testFile}","
 The CLI flag interface auto-generates `id` and `createdAt`. The stdin JSON interface requires all fields including `id` and `createdAt`.
 
 If in post-merge mode, issues are logged to `.planning/post-merge/{setId}/REVIEW-ISSUES.json`.
+
+### Step 7b: Record Unit Test Completion
+
+**If `POST_MERGE=true`:** Skip this step. Post-merge reviews do not track pipeline state.
+
+Determine the verdict based on test results:
+- All tests passed: verdict is `pass`
+- Some tests failed: verdict is `partial`
+- All tests failed or critical failures: verdict is `fail`
+
+Mark the unit-test stage as complete:
+
+```bash
+node "${RAPID_TOOLS}" review mark-stage "${SET_NAME}" unit-test {verdict}
+```
+
+Where `{verdict}` is one of `pass`, `fail`, or `partial` based on the test results above.
 
 ## Step 8: Completion Banner
 
