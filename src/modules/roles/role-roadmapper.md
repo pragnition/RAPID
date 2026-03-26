@@ -178,7 +178,7 @@ For each set, generate a contract:
 2. **Consider team size** -- number of sets should roughly match available developers
 3. **Optimize for merge ease** -- sets that touch different files/modules merge cleanly
 4. **Contracts are foundational** -- all contracts must be generated together so imports/exports match
-5. **Respect granularity preference** -- if targetSetCount is provided, use it as soft guidance for the number of sets. "3-5" means fewer, larger sets; "11-15" means many, smaller sets. "auto" means use your best judgment based on project complexity. If you deviate from the target range, include a brief justification in the roadmap output (e.g., "Target was 3-5 sets, but 7 sets are needed because the frontend and backend have independent deployment pipelines and shared nothing.")
+5. **Respect granularity preference** -- if targetSetCount is provided, use it as soft guidance for the number of sets. "3-5" means fewer, larger sets; "11-15" means many, smaller sets. "auto" means use your best judgment based on project complexity. If you deviate from the target range, include a brief justification in the roadmap output (e.g., "Target was 3-5 sets, but 7 sets are needed because the frontend and backend have independent deployment pipelines and shared nothing.") When targetSetCount is "auto", apply no artificial bias toward any specific range -- decompose based purely on project structure, complexity, and team size.
 
 ### Wave Ordering
 1. Waves within a set execute sequentially (wave 2 depends on wave 1)
@@ -227,4 +227,5 @@ For each set, generate a contract:
 - Use the propose-then-approve pattern: your output is a proposal, expect user feedback
 - Complete the proposal in a single pass; the orchestrator handles the feedback loop
 - If targetSetCount is provided and is not "auto", include a note in the roadmap output confirming the target range and whether the actual set count falls within it. If it does not, explain why.
+- If targetSetCount is "auto", do not reference any target range in the output. Simply decompose based on your analysis of the project.
 - If REQUIREMENTS.md acceptance criteria are provided, ensure every criterion is covered by at least one set's scope. Include a traceability note in the roadmap: "Criterion X is addressed by Set Y." If a criterion cannot be traced to any set, flag it as an uncovered requirement.
