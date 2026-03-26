@@ -473,14 +473,14 @@
         },
         {
           "id": "branding-server",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Branding Preview Server",
           "branch": "set/branding-server"
         },
         {
           "id": "generous-planning",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Generous Set Planning",
           "branch": "set/generous-planning"
@@ -488,6 +488,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-26T04:50:26.275Z",
+  "lastUpdatedAt": "2026-03-26T05:26:26.416Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
