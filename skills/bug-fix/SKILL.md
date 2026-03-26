@@ -5,7 +5,7 @@ allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, G
 
 # /rapid:bug-fix -- Bug Investigation and Fix
 
-You are the RAPID bug-fix skill. The user describes a bug they are facing, you investigate the codebase to find the root cause, and apply a fix using the executor agent. This is a general-purpose debugging tool that works from any branch or directory -- no set association required.
+You are the RAPID bug-fix skill. The user describes a bug they are facing, you investigate the codebase to find the root cause, and apply a fix using the executor agent. This is a general-purpose debugging tool that works from any branch or directory -- no set association required. When invoked with `--uat <set-id>`, it reads UAT failure reports and fixes them automatically without manual investigation.
 
 Follow these steps IN ORDER. Do not skip steps.
 
@@ -27,6 +27,141 @@ Display a banner:
 Investigating and fixing bugs in the current working tree.
 ---------------------
 ```
+
+## Step 0b: Parse --uat Flag
+
+Check if the user's invocation includes `--uat`. The argument immediately after `--uat` is the set-id (e.g., `/rapid:bug-fix --uat my-set`).
+
+1. **Flag detection:** If `--uat` is present but no set-id follows, display:
+   ```
+   Usage: /rapid:bug-fix --uat <set-id>
+   ```
+   and exit.
+
+2. **Set resolution:** When `--uat` is detected, resolve the set-id:
+   ```bash
+   node "${RAPID_TOOLS}" resolve set "<set-id>"
+   ```
+   Extract the resolved `setId` from the JSON output. If resolution fails, display the error and exit.
+
+3. **Flow branching:**
+   - If `--uat` is detected: skip Steps 1-3 entirely and proceed directly to **Step UAT**.
+   - If `--uat` is NOT present: continue to Step 1 as normal (no behavior change).
+
+## Step UAT: Read Failures and Dispatch Fixes
+
+> This step is ONLY reached when the `--uat` flag is detected in Step 0b.
+
+### UAT-a: Read and validate UAT-FAILURES.md
+
+1. **File existence check:** Check if `.planning/sets/{setId}/UAT-FAILURES.md` exists. If NOT, display:
+   ```
+   No UAT-FAILURES.md found for set "{setId}". Run /rapid:uat first.
+   ```
+   and exit.
+
+2. **Read file contents:** Read the entire UAT-FAILURES.md file.
+
+3. **Extract JSON metadata:** Use the regex pattern `<!-- UAT-FAILURES-META ([\s\S]*?) -->` to extract the embedded JSON block. Parse the JSON to obtain the `failures` array.
+
+4. **Validate format marker:** Confirm the file contains `<!-- UAT-FORMAT:v2 -->`. If missing, display a warning: `"Warning: UAT-FAILURES.md missing v2 format marker. Proceeding anyway."` but continue (do not hard-fail on format version).
+
+5. **Check for empty failures:** If the `failures` array is empty or has length 0, display:
+   ```
+   All UAT tests passed for set "{setId}". Nothing to fix.
+   ```
+   and exit cleanly.
+
+### UAT-b: Sort failures by severity
+
+Sort the failures array by severity in descending order: `critical` first, `low` last.
+
+Use a lookup map for sort ordering:
+```
+{ critical: 0, high: 1, medium: 2, low: 3 }
+```
+
+### UAT-c: Display failure summary banner
+
+Display a summary before processing:
+
+```
+--- RAPID Bug Fix (UAT Mode) ---
+Set: {setId}
+Failures: {count} ({critical}C / {high}H / {medium}M / {low}L)
+Processing in severity order...
+---------------------------------
+```
+
+### UAT-d: Iterate and dispatch executor for each failure
+
+For each failure in the sorted array, spawn the **rapid-executor** agent with this task:
+
+```
+Fix a UAT failure in the codebase.
+
+## Your PLAN
+### Task 1: Fix {failure.id} -- {failure.criterion}
+
+**Files:**
+- {each file from failure.relevantFiles, one per line}
+
+**Action:**
+A UAT verification found this failure:
+- **Criterion:** {failure.criterion}
+- **Step:** {failure.step}
+- **Expected behavior:** {failure.expectedBehavior}
+- **Actual behavior:** {failure.actualBehavior}
+- **Severity:** {failure.severity}
+- **Description:** {failure.description}
+
+Investigate the relevant files and fix the code so that the expected behavior is achieved. The relevantFiles list is a starting point -- expand your search if the root cause is not found there.
+
+**Verification:**
+{If failure has a step field, include: "Manually verify that the following step now succeeds: {failure.step}"}
+{Otherwise: "Verify the fix addresses the criterion: {failure.criterion}"}
+
+**Done when:** The code change makes the expected behavior ({failure.expectedBehavior}) occur instead of the actual behavior ({failure.actualBehavior}).
+
+## Commit Convention
+After applying the fix, commit with: fix(bug-fix): {failure.id} -- {brief description}
+
+## Working Directory
+{current working directory}
+```
+
+After each executor dispatch:
+- Parse the `RAPID:RETURN` from the executor's output.
+- **If COMPLETE:** Record the commit hash and continue to the next failure.
+- **If BLOCKED:** Record the blocker, display it, and continue to the next failure (do NOT stop the entire batch).
+- **If CHECKPOINT:** Record it and continue to the next failure.
+
+### UAT-e: Proceed to results
+
+After all failures have been processed, proceed to **Step UAT-Results**. Do NOT fall through to Step 1.
+
+## Step UAT-Results: Display Combined Results
+
+Display a combined results summary:
+
+```
+--- RAPID Bug Fix (UAT Mode) Complete ---
+Set: {setId}
+Total failures: {count}
+Fixed: {number of COMPLETE results}
+Blocked: {number of BLOCKED results}
+Partial: {number of CHECKPOINT results}
+
+Results:
+| # | Failure ID | Severity | Status  | Commit/Detail |
+|---|-----------|----------|---------|---------------|
+| 1 | {id}      | {sev}    | FIXED   | {hash}        |
+| 2 | {id}      | {sev}    | BLOCKED | {blocker}     |
+...
+------------------------------------------
+```
+
+Exit. Do NOT fall through to Step 1 or any subsequent step. The `--uat` path terminates here.
 
 ## Step 1: Gather Bug Description
 
@@ -156,3 +291,4 @@ Exit. Do NOT prompt for further action.
 - **Commits to current branch.** Fixes are committed directly to whatever branch is currently checked out.
 - **Uses the executor agent.** The rapid-executor agent handles the actual code changes and commits, ensuring atomic commits and verification.
 - **General-purpose.** Works for any kind of bug -- runtime errors, incorrect behavior, test failures, build issues, etc.
+- **UAT mode (`--uat`).** When invoked with `--uat <set-id>`, the skill reads `.planning/sets/{setId}/UAT-FAILURES.md` and fixes each reported failure sequentially (severity-descending). Steps 1-3 are skipped entirely -- the UAT metadata replaces manual bug description and investigation. Without `--uat`, the skill works identically to its normal flow.
