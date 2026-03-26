@@ -277,6 +277,24 @@ Continue to Step 3.
 
 This category-tagged string replaces `{goals from Step 2}` in all downstream references (Steps 5, 6, 7). Empty categories are omitted from the output.
 
+### Step 2D: Set Count Granularity
+
+Use AskUserQuestion with:
+- question: "Set count granularity -- How many sets should the roadmapper target for this milestone?"
+- Options (4 total):
+  - "Compact (3-5 sets)" -- "Fewer, larger sets. Good for small milestones or solo developers."
+  - "Standard (6-10 sets)" -- "Balanced decomposition. Good for most projects."
+  - "Granular (11-15 sets)" -- "Many small sets. Good for large teams or highly parallel work."
+  - "Auto" -- "Let the roadmapper decide based on project complexity and scope."
+
+**Value mapping:**
+- "Compact (3-5 sets)" maps to `targetSetCount = "3-5"`
+- "Standard (6-10 sets)" maps to `targetSetCount = "6-10"`
+- "Granular (11-15 sets)" maps to `targetSetCount = "11-15"`
+- "Auto" maps to `targetSetCount = "auto"`
+
+Store the result as `targetSetCount` for use in Step 7.
+
 ## Step 3: Handle Unfinished Sets
 
 Check the current milestone for sets that are NOT in "complete" or "merged" status.
