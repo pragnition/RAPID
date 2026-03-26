@@ -480,7 +480,7 @@
         },
         {
           "id": "generous-planning",
-          "status": "discussed",
+          "status": "executed",
           "waves": [],
           "name": "Generous Set Planning",
           "branch": "set/generous-planning"
@@ -488,6 +488,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-26T05:26:26.416Z",
+  "lastUpdatedAt": "2026-03-26T05:37:48.455Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
