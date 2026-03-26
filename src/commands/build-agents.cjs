@@ -89,7 +89,7 @@ function handleBuildAgents(cwd, args) {
     'devils-advocate': 'RAPID devils advocate agent -- challenges bug hunter findings with evidence',
     'judge': 'RAPID judge agent -- rules on contested findings with ACCEPTED/DISMISSED/DEFERRED',
     'bugfix': 'RAPID bugfix agent -- fixes accepted bugs with atomic commits',
-    'uat': 'RAPID UAT agent -- generates and executes acceptance test plans',
+    'uat': 'RAPID UAT agent -- generates detailed step-by-step acceptance test plans for human verification',
     'merger': 'RAPID merger agent -- performs semantic conflict detection and AI-assisted resolution',
     'research-stack':        'RAPID research agent -- investigates technology stack options and recommendations',
     'research-features':     'RAPID research agent -- analyzes feature requirements and implementation approaches',
