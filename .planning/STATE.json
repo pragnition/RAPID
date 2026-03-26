@@ -459,14 +459,14 @@
       "sets": [
         {
           "id": "uat-workflow",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Human-Only UAT Workflow",
           "branch": "set/uat-workflow"
         },
         {
           "id": "bugfix-uat",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Bug-Fix --uat Flag",
           "branch": "set/bugfix-uat"
@@ -488,6 +488,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-26T02:39:57.393Z",
+  "lastUpdatedAt": "2026-03-26T04:25:32.128Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
