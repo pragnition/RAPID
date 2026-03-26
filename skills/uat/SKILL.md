@@ -135,32 +135,12 @@ The acceptance criteria extracted in Step 2 are the primary test basis. Each cri
 ### Optional Context
 If the set has a CONTEXT.md file (`.planning/sets/{setId}/CONTEXT.md`), read it to understand the set's implementation decisions and domain context. This helps the UAT agent generate more targeted test scenarios.
 
-## Step 4: Determine Browser Automation Tool
-
-Check if a browser automation tool is configured:
-
-```bash
-# Check .planning/config.json for browser automation preference
-if [ -f ".planning/config.json" ]; then
-  BROWSER_TOOL=$(node -e "try{const c=JSON.parse(require('fs').readFileSync('.planning/config.json','utf-8'));console.log(c.browserAutomation||'')}catch{console.log('')}")
-fi
-```
-
-If `BROWSER_TOOL` is not set or empty, use AskUserQuestion:
-- **question:** "Which browser automation tool should UAT use for automated UI tests (if applicable)?"
-- **options:** ["Chrome DevTools MCP", "Playwright MCP", "Skip automated browser tests"]
-
-Store the choice as `browserConfig`:
-- `"chrome-devtools"` -- Use Chrome DevTools Protocol via MCP
-- `"playwright"` -- Use Playwright browser automation via MCP
-- `"none"` -- Skip browser-based automated tests; all UI tests are tagged as human verification
-
-## Step 5: Spawn UAT Agent -- Test Plan Phase
+## Step 4: Spawn UAT Agent -- Test Plan Generation
 
 Spawn a single `rapid-uat` agent with the full scope:
 
 ```
-User acceptance testing for set '{setId}' -- Test Plan Phase.
+User acceptance testing for set '{setId}' -- Test Plan Generation.
 
 ## All Changed Files
 {complete list of changed files}
@@ -174,153 +154,113 @@ User acceptance testing for set '{setId}' -- Test Plan Phase.
 ## Set Context
 {CONTEXT.md content if available, or 'No additional context available.'}
 
-## Browser Automation
-{browserConfig: chrome-devtools | playwright | none}
-
 ## Working Directory
 {worktreePath from SCOPE-META, or cwd if post-merge}
 
 ## Instructions
-Generate a comprehensive UAT test plan based on the acceptance criteria.
+Generate a comprehensive UAT test plan with detailed step-by-step human verification instructions for each acceptance criterion.
 
 For each acceptance criterion:
 1. Create one or more test scenarios
 2. For each scenario, specify:
    - name: descriptive test name
    - criterion: which acceptance criterion it validates (e.g., "[wave-1] Criterion text")
-   - type: "automated" or "human" (use "human" for subjective or visual tests, or if browser automation is "none" for UI tests)
-   - steps: ordered list of test steps
-   - expected: expected outcome
+   - steps: array of objects, each with:
+     - instruction: specific human-actionable instruction (e.g., "Navigate to http://localhost:3000/login in your web portal")
+     - expected: specific observable outcome (e.g., "The page displays a login form with email and password fields")
    - files: which source files are relevant
 
+Group scenarios under the acceptance criterion they validate. Duplicate cross-cutting scenarios under each criterion they touch.
+
 Return via:
-<!-- RAPID:RETURN {"status":"COMPLETE","phase":"plan","data":{"testPlan":[{"name":"...","criterion":"...","type":"automated|human","steps":["..."],"expected":"...","files":["..."]}]}} -->
+<!-- RAPID:RETURN {"status":"COMPLETE","data":{"testPlan":[{"name":"...","criterion":"[wave-N] ...","steps":[{"instruction":"...","expected":"..."}],"files":["..."]}]}} -->
 ```
 
-## Step 6: Present Test Plan for Approval
+## Step 5: Present Test Plan for Approval
 
-Display the test plan with automated/human tags:
+Display the test plan summary:
 
 ```
 --- UAT Test Plan ---
 Set: {setId}
 Total Scenarios: {count}
-Automated: {autoCount} | Human Verification: {humanCount}
+Total Steps: {totalSteps}
 
-[automated] Scenario 1: {name}
+Scenario 1: {name}
   Criterion: {criterion}
   Steps: {step count} steps
   Files: {file list}
 
-[human] Scenario 2: {name}
+Scenario 2: {name}
   Criterion: {criterion}
   Steps: {step count} steps
+  Files: {file list}
 
 ---------------------
 ```
 
 Use AskUserQuestion to present the plan:
 - **question:** "Approve the UAT test plan?"
-- **options:** ["Approve", "Modify tags", "Skip"]
+- **options:** ["Approve", "Modify", "Skip"]
 
-- **Approve:** Proceed to Step 7
-- **Modify tags:** Allow user to change automated/human tags on specific scenarios. Re-display and re-ask.
-- **Skip:** Skip to Step 8 with empty results
+- **Approve:** Proceed to Step 6
+- **Modify:** Allow user to request changes, re-spawn agent with modifications, re-display
+- **Skip:** Skip to Step 7 (artifact writing) with empty results
 
-## Step 7: Spawn UAT Agent -- Execution Phase
+## Step 6: Human Verification Loop
 
-Spawn a single `rapid-uat` agent for execution:
+This is the core interaction loop. The skill drives a sequential walk through ALL steps of ALL scenarios, collecting human verdicts one at a time.
 
-```
-User acceptance testing for set '{setId}' -- Execution Phase.
+### Implementation
 
-## Approved Test Plan
-{JSON of approved test plan}
+1. Flatten all scenarios' steps into a sequential list with metadata:
+   ```
+   {scenarioName, criterion, stepIndex, totalSteps, instruction, expected, files}
+   ```
 
-## Browser Automation
-{browserConfig}
+2. Initialize counters: `passed = 0`, `failed = 0`, `skipped = 0`, `failures = []`
 
-## Working Directory
-{worktreePath or cwd}
+3. For each step in the flattened list:
 
-## Instructions
-Execute the approved test plan:
+   a. Use AskUserQuestion:
+      - **question:** `"Step {globalIndex}/{totalGlobalSteps} -- {criterion}\n\n**Scenario:** {scenarioName}\n\n**{instruction}**\n\nExpected: {expected}\n\nDoes this pass?"`
+      - **options:** `["Pass", "Fail", "Skip", "Pass all remaining"]`
 
-For AUTOMATED scenarios:
-1. Execute the test steps programmatically
-2. If browser automation is configured, use it for UI-related tests
-3. Record pass/fail for each step
-4. Capture error details for failures
+   b. On **Pass**: increment `passed`, continue to next step.
 
-For HUMAN verification scenarios:
-1. Describe what the human tester should verify
-2. Return with status CHECKPOINT for each human verification step
-3. Wait for the skill to relay the human's response
+   c. On **Fail**: increment `failed`, then prompt for severity:
+      - Use AskUserQuestion:
+        - **question:** `"Step {globalIndex} FAILED.\n\nWhat severity level?"`
+        - **options:** `["Critical", "High", "Medium", "Low"]`
+      - Record the severity from the user's choice.
+      - Build the failure object:
+        ```json
+        {
+          "id": "<setId>-uat-<globalIndex>",
+          "criterion": "<criterion text>",
+          "step": "<instruction>",
+          "description": "Expected: <expected>. Step: <instruction>",
+          "severity": "<userChoice lowercase>",
+          "relevantFiles": ["<files array>"],
+          "userNotes": "",
+          "expectedBehavior": "<expected>",
+          "actualBehavior": "Failed (human reported)"
+        }
+        ```
+      - Push the failure object to `failures` array.
+      - Continue to next step.
 
-Return via:
-<!-- RAPID:RETURN {"status":"COMPLETE|CHECKPOINT","data":{"results":[{"name":"...","criterion":"...","type":"...","status":"pass|fail|pending-human","steps":[{"step":"...","status":"pass|fail|skipped","error":"..."}],"notes":"..."}],"pendingHuman":[{"name":"...","description":"..."}]}} -->
-```
+   d. On **Skip**: increment `skipped`, continue to next step.
 
-### Handle CHECKPOINT Returns
+   e. On **Pass all remaining**: set all remaining steps to passed (add remaining count to `passed`), break the loop. This is the escape hatch for large test plans.
 
-If the agent returns with `CHECKPOINT` status and `pendingHuman` entries:
-- For each pending human verification:
-  - Use AskUserQuestion:
-    - **question:** "Human verification needed:\n\n**{scenario name}**\n{description}\n\nDoes this pass acceptance?"
-    - **options:** ["Pass", "Fail", "Skip"]
-  - Record the human's response
-- Resume the agent with human verification results, or compile final results if all human steps are resolved
+### Notes on AskUserQuestion
+- AskUserQuestion only supports predefined options, not freeform text input.
+- The `userNotes` field is set to empty string because freeform input is not available.
+- The `description` field is auto-populated from the step's `instruction` and `expected` fields.
+- The `actualBehavior` is set to `"Failed (human reported)"` as the default.
 
-## Step 7a: Retry on Failure Confirmation
-
-**This step fires only if there are automated scenario failures** in the execution results from Step 7. Human verification failures (scenarios where the user marked "Fail" during CHECKPOINT resolution) are NOT eligible for retry -- those verdicts are final. If all automated scenarios passed (or there are only human failures), skip directly to Step 8.
-
-**Retry limit:** Up to 2 retries after the initial execution (3 total attempts maximum). Track `retryCount` starting at 0.
-
-**Display failure summary:**
-
-```
---- UAT Automated Failures ---
-Passed: {passed} | Failed (automated): {failedAuto} | Failed (human): {failedHuman}
-Failed automated scenarios:
-  - {scenario name}: {failure detail}
-```
-
-Use AskUserQuestion:
-- **question:** "UAT execution has {failedAuto} automated scenario failure(s) (attempt {retryCount + 1} of 3).\n\n{failedHuman > 0 ? failedHuman + ' human-verified failure(s) are final and will not be retried.\n\n' : ''}Retrying will attempt to fix test code and re-run failed automated scenarios."
-- **options:** ["Retry (fix test code and re-run)", "Accept results as-is"]
-
-**If user chooses "Retry...":**
-1. Spawn a `rapid-uat-fixer` agent with the failed automated scenario details:
-
-```
-Fix failing UAT automated scenarios for set '{setId}' -- Retry attempt {retryCount + 1}.
-
-## Failed Automated Scenarios
-{JSON array of failed automated scenario results}
-
-## Working Directory
-{worktreePath or cwd}
-
-## Browser Automation
-{browserConfig}
-
-## Instructions
-1. Review each failing automated scenario
-2. Fix the TEST CODE ONLY -- do NOT modify the source code under test
-3. Re-run the fixed scenarios
-4. Return via:
-<!-- RAPID:RETURN {"status":"COMPLETE","data":{"results":[{"name":"...","criterion":"...","type":"automated","status":"pass|fail","steps":[...],"notes":"..."}]}} -->
-```
-
-2. Merge the retry results with the previous results (replace entries for retried scenarios; keep human-verified results unchanged)
-3. Increment `retryCount`
-4. If automated failures remain and `retryCount < 2`, loop back to the top of Step 7a
-5. If automated failures remain and `retryCount >= 2`, proceed to Step 8 with the best results achieved
-
-**If user chooses "Accept results as-is":** Proceed to Step 8 with the current results.
-
-## Step 8: Write REVIEW-UAT.md
+## Step 7: Write REVIEW-UAT.md
 
 Write the UAT results to:
 
@@ -341,8 +281,7 @@ Format:
 | Passed | {passed} |
 | Failed | {failed} |
 | Skipped | {skipped} |
-| Human Verified | {humanCount} |
-| Browser Automation | {browserConfig} |
+| Human Verified | {passed + failed + skipped} |
 
 ## Criteria Coverage
 | Criterion | Scenarios | Status |
@@ -354,12 +293,10 @@ Format:
 
 ### PASS: {scenario name}
 - **Criterion:** {criterion}
-- **Type:** automated
 - **Steps:** {passed}/{total}
 
 ### FAIL: {scenario name}
 - **Criterion:** {criterion}
-- **Type:** human
 - **Steps:** {passed}/{total}
 - **Failed Steps:**
   - Step 3: {step description} -- {error}
@@ -372,7 +309,46 @@ Format:
 - **Relevant Files:** {file list}
 ```
 
-## Step 9: Log Failed Steps
+### Step 7b: Write UAT-FAILURES.md
+
+**Only if `failures.length > 0`.** If there are no failures, do NOT write UAT-FAILURES.md (no file = no failures).
+
+Write to:
+- **Standard mode:** `.planning/sets/{setId}/UAT-FAILURES.md`
+- **Post-merge mode:** `.planning/post-merge/{setId}/UAT-FAILURES.md`
+
+If re-running and a previous UAT-FAILURES.md exists, overwrite it (clean overwrite).
+
+The content follows the format locked in Wave 1:
+
+```markdown
+# UAT-FAILURES
+
+<!-- UAT-FORMAT:v2 -->
+
+<!-- UAT-FAILURES-META {JSON object with "failures" array} -->
+
+## Failures
+
+### {id}: {criterion}
+- **Step:** {step instruction}
+- **Severity:** {severity}
+- **Description:** {description}
+- **User Notes:** {userNotes, if non-empty}
+```
+
+The `<!-- UAT-FAILURES-META -->` block contains a JSON object with a `failures` array. Each failure object has these fields:
+- `id`: Unique identifier (`<setId>-uat-<stepIndex>`)
+- `criterion`: The acceptance criterion text
+- `step`: The step instruction that failed
+- `description`: Combined description (`"Expected: {expected}. Step: {instruction}"`)
+- `severity`: One of `critical`, `high`, `medium`, `low`
+- `relevantFiles`: Array of relevant source file paths
+- `userNotes`: Empty string (freeform input not available via AskUserQuestion)
+- `expectedBehavior`: The `expected` field from the step
+- `actualBehavior`: `"Failed (human reported)"`
+
+## Step 8: Log Failed Steps
 
 For each failed UAT scenario, log an issue.
 
@@ -380,7 +356,7 @@ For each failed UAT scenario, log an issue.
 ```bash
 node "${RAPID_TOOLS}" review log-issue "{setId}" \
   --type "uat" \
-  --severity "{severity based on criterion importance}" \
+  --severity "{severity from human's choice in Step 6}" \
   --file "{primary relevant file}" \
   --description "UAT failure: {scenario name} -- {failure detail}" \
   --source "uat"
@@ -394,14 +370,11 @@ echo '{"id":"<uuid>","type":"uat","severity":"{severity}","file":"{primary relev
 
 The CLI flag interface auto-generates `id` and `createdAt`. The stdin JSON interface requires all fields including `id` and `createdAt`.
 
-Severity heuristic:
-- Failed criterion from wave-1 (core functionality) -> high
-- Failed criterion from later waves -> medium
-- Skipped scenarios -> low
+Use the severity the human selected in Step 6 for each failure. Do not apply a heuristic -- the human's verdict is authoritative.
 
 If in post-merge mode, issues are logged to `.planning/post-merge/{setId}/REVIEW-ISSUES.json`.
 
-### Step 9b: Record UAT Completion
+### Step 8b: Record UAT Completion
 
 **If `POST_MERGE=true`:** Skip this step. Post-merge reviews do not track pipeline state.
 
@@ -416,7 +389,7 @@ Mark the UAT stage as complete:
 node "${RAPID_TOOLS}" review mark-stage "${SET_NAME}" uat {verdict}
 ```
 
-## Step 10: Completion Banner
+## Step 9: Completion Banner
 
 Print the completion banner:
 
@@ -425,14 +398,15 @@ Print the completion banner:
 Set: {setId}{postMerge ? ' (post-merge)' : ''}
 Scenarios: {passed}/{total} passed
 Failed: {failed}
-Human Verified: {humanCount}
+Skipped: {skipped}
+Human Verified: {passed + failed + skipped}
 Criteria Coverage: {coveredCriteria}/{totalCriteria}
 Issues Logged: {issueCount}
+Failures Logged: {failures.length}
 
 Output: {path to REVIEW-UAT.md}
 
 Next steps:
-  /rapid:unit-test {setIndex}  -- Run unit tests
   /rapid:bug-hunt {setIndex}   -- Run adversarial bug hunt
   /rapid:review summary {setIndex} -- Generate review summary
 ----------------------------
@@ -444,9 +418,7 @@ Then exit. Do NOT prompt for stage selection.
 
 - **UAT runs ONCE on full scope.** Unlike unit tests and bug hunt, UAT is never chunked or concern-scoped. It evaluates the entire set holistically against acceptance criteria. This is by design -- acceptance criteria span the whole set.
 - **Acceptance criteria are the primary input.** The test plan is generated from the acceptance criteria extracted from wave PLAN.md files. Each criterion maps to one or more test scenarios.
-- **Human verification is first-class.** Some acceptance criteria require subjective evaluation. The skill supports CHECKPOINT returns from the UAT agent to pause for human verification.
-- **Browser automation is optional.** The skill asks for browser tool preference on first run. If no browser tool is configured, all UI tests are tagged as human verification.
-- **Idempotent overwrite.** Re-running `/rapid:uat` overwrites REVIEW-UAT.md. Previous UAT results are not accumulated.
+- **All testing is human-driven.** Each step is presented individually via AskUserQuestion. The "Pass all remaining" option provides an escape hatch for large test plans.
+- **Idempotent overwrite.** Re-running `/rapid:uat` overwrites REVIEW-UAT.md and UAT-FAILURES.md. Previous results are not accumulated. Git history preserves previous versions.
 - **REVIEW-SCOPE.md is the sole input.** This skill does not scope files itself -- it reads the scope produced by `/rapid:review`. If the scope is stale, re-run `/rapid:review` first.
 - **No stage selection.** This skill runs UAT only. It does not prompt the user to select unit test or bug hunt stages.
-- **Retry on failure with confirmation.** When automated scenario execution produces failures, the user is prompted to retry or accept. Retries spawn a fixer agent that modifies test code only (never source code under test). Maximum 2 retries (3 total attempts). Human verification failures (user marked "Fail" during CHECKPOINT) are final and never retried. The user can accept results at any point to proceed to REVIEW-UAT.md writing.
