@@ -466,14 +466,14 @@
         },
         {
           "id": "bugfix-uat",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Bug-Fix --uat Flag",
           "branch": "set/bugfix-uat"
         },
         {
           "id": "branding-server",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Branding Preview Server",
           "branch": "set/branding-server"
@@ -488,6 +488,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-26T04:25:32.128Z",
+  "lastUpdatedAt": "2026-03-26T04:50:26.275Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
