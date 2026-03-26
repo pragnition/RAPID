@@ -410,32 +410,86 @@ The HTML content is project-type-conditional:
 
 - Self-contained HTML, no external dependencies (no CDN links, no external CSS/JS, no images from URLs)
 - No build step required
-- Must render correctly when opened directly in a browser via `file://` protocol
 - All CSS must be in a `<style>` tag, all JS (if any) in a `<script>` tag
 - Clean, readable design with good typography
 
----
+### Start Branding Server
 
-## Step 7: Auto-Open HTML Page
-
-Detect platform and open the HTML file in the default browser:
+After writing `index.html`, start the branding server to serve the artifacts:
 
 ```bash
-OS_TYPE=$(uname -s)
-if [ "$OS_TYPE" = "Linux" ]; then
-  xdg-open .planning/branding/index.html 2>/dev/null || echo "Could not auto-open browser"
-elif [ "$OS_TYPE" = "Darwin" ]; then
-  open .planning/branding/index.html 2>/dev/null || echo "Could not auto-open browser"
-else
-  echo "Platform not supported for auto-open, please open .planning/branding/index.html manually"
-fi
+# (env preamble here)
+node -e "
+const server = require('./src/lib/branding-server.cjs');
+(async () => {
+  const result = await server.start(process.cwd());
+  if (result.error === 'already_running') {
+    console.log('Branding server already running at http://localhost:' + result.port);
+  } else if (result.error === 'port_in_use') {
+    console.log('PORT_CONFLICT:' + 3141);
+  } else if (result.error) {
+    console.log('SERVER_ERROR:' + result.error);
+  } else {
+    console.log('Branding server started at http://localhost:' + result.port);
+  }
+})();
+"
 ```
 
-Do not fail if the browser cannot open. The HTML file is still available for manual viewing.
+**Handle server start results:**
+- If output contains `PORT_CONFLICT`: Use AskUserQuestion to prompt the user for an alternative port:
+  ```
+  "Port 3141 is already in use. Which port should the branding server use?"
+  Options:
+  - "3142" -- "Try the next port"
+  - "8080" -- "Use common alternative port"
+  - "Other" -- "Enter a custom port number"
+  ```
+  Then retry `server.start(process.cwd(), <chosen_port>)`.
+- If output contains `SERVER_ERROR`: Display the error message clearly: `"[RAPID ERROR] Branding server failed to start: {error}. The branding artifacts are still available at .planning/branding/ but cannot be served via HTTP."` Do NOT attempt a file:// fallback.
+- If output contains `already running`: Display the URL and continue.
+- If server started successfully: Display `"Branding preview available at http://localhost:{port}"`.
 
 ---
 
-## Step 8: Commit and Summary
+## Step 7: Display Server URL
+
+Display the branding server URL for the user. Do NOT auto-open the browser.
+
+```
+Branding preview available at: http://localhost:{port}
+
+Open this URL in your browser to view the branding guidelines.
+The server will remain running until you stop it.
+```
+
+---
+
+## Step 8: Server Lifecycle
+
+After the user has reviewed the branding preview, use AskUserQuestion to ask:
+
+```
+"Would you like to stop the branding server?"
+Options:
+- "Yes, stop it" -- "Shut down the branding preview server"
+- "No, keep it running" -- "Leave the server running for continued preview"
+```
+
+If the user chooses to stop:
+
+```bash
+node -e "
+const server = require('./src/lib/branding-server.cjs');
+server.stop(process.cwd()).then(r => console.log(JSON.stringify(r)));
+"
+```
+
+If the user chooses to keep running, note in the summary that the server is still active.
+
+---
+
+## Step 9: Commit and Summary
 
 Commit the branding artifacts:
 
@@ -450,6 +504,7 @@ Display a summary of what was generated:
 Branding artifacts generated:
 - .planning/branding/BRANDING.md -- Authoritative branding guidelines ({line_count} lines)
 - .planning/branding/index.html -- Visual branding reference page
+- Branding server: {running|stopped} (http://localhost:{port})
 
 Branding context will be automatically injected into all future RAPID execution prompts.
 ```
