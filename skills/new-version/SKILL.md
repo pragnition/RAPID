@@ -622,6 +622,9 @@ Create a roadmap for milestone '{milestoneId}'.
 ## Milestone Name
 {milestoneName}
 
+## Target Set Count
+{targetSetCount from Step 2D}
+
 ## Working Directory
 {projectRoot}
 
