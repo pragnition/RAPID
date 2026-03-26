@@ -2,7 +2,7 @@
   "version": 1,
   "rapidVersion": "4.4.0",
   "projectName": "RAPID",
-  "currentMilestone": "v4.4.0",
+  "currentMilestone": "v4.5",
   "milestones": [
     {
       "id": "v1.0",
@@ -452,8 +452,42 @@
           "branch": "set/documentation"
         }
       ]
+    },
+    {
+      "id": "v4.5",
+      "name": "Developer Experience II",
+      "sets": [
+        {
+          "id": "uat-workflow",
+          "status": "discussed",
+          "waves": [],
+          "name": "Human-Only UAT Workflow",
+          "branch": "set/uat-workflow"
+        },
+        {
+          "id": "bugfix-uat",
+          "status": "pending",
+          "waves": [],
+          "name": "Bug-Fix --uat Flag",
+          "branch": "set/bugfix-uat"
+        },
+        {
+          "id": "branding-server",
+          "status": "pending",
+          "waves": [],
+          "name": "Branding Preview Server",
+          "branch": "set/branding-server"
+        },
+        {
+          "id": "generous-planning",
+          "status": "pending",
+          "waves": [],
+          "name": "Generous Set Planning",
+          "branch": "set/generous-planning"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-25T06:04:47.788Z",
+  "lastUpdatedAt": "2026-03-26T02:39:57.393Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
