@@ -20,7 +20,7 @@
 - **v4.3.0 Reliability & State** — 4 sets (shipped 2026-03-25)
 - **v4.4.0 Polish & Documentation** — 3 sets (shipped 2026-03-26)
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
-- **v5.0 OSS Presentation** — 3 sets (in progress)
+- **v5.0 OSS Presentation** — 4 sets (in progress)
 
 ## Active Milestone: v5.0 — OSS Presentation
 
@@ -38,7 +38,11 @@ Create community infrastructure: CONTRIBUTING.md (dev install, bug reports, feat
 **Branch:** `set/readme-migration` | **Size:** M
 Restructure README.md with centered banner header stack, badges, collapsible architecture with SVG diagrams, tip callout install, and arrow-prefix doc links. Migrate all active fishjojo1/RAPID references to pragnition/RAPID (archives untouched). Bump version from 4.4.0 to 5.0.0.
 
-**Dependency graph:** `{branding-assets, community-infra}` → `{readme-migration}`
+### Set 4: readme-polish — README Polish
+**Branch:** `set/readme-polish` | **Size:** M
+Condense and restructure the RAPID README using the OpenSpec README as a style reference. Make content less wordy, more scannable with tables and diagrams. Enlarge existing SVG diagrams that are too small and hard to read.
+
+**Dependency graph:** `{branding-assets, community-infra}` → `{readme-migration}` → `{readme-polish}`
 
 ## Completed Milestone Details
 
