@@ -5,7 +5,7 @@
 **RAPID** = Rapid Agentic Parallelizable and Isolatable Development (recursive acronym)
 - Claude Code plugin (v3.0.0) for coordinated parallel AI-assisted development
 - 26 specialized agents, strict file ownership via git worktrees, 5-level conflict detection
-- MIT licensed, hosted at github.com/fishjojo1/RAPID
+- MIT licensed, hosted at github.com/pragnition/RAPID
 
 ## Tech Stack
 

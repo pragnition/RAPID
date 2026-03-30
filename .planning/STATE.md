@@ -68,7 +68,7 @@ Latest:
 
 | # | Description | Date | Commit |
 |---|-------------|------|--------|
-| 1 | Commit and push to fishjojo1/RAPID | 2026-03-03 | 68dc648 |
+| 1 | Commit and push to pragnition/RAPID | 2026-03-03 | 68dc648 |
 | 2 | Flatten rapid/ plugin to repo root | 2026-03-05 | 39350ed |
 | 3 | Fix agent tool calling to use RAPID_TOOLS env var | 2026-03-05 | 1a497a9 |
 | 4 | Make /rapid:install a valid command | 2026-03-05 | 46ac072 |

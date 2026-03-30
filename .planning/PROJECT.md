@@ -84,7 +84,7 @@ Multiple developers using Claude Code can work on the same project simultaneousl
 Shipped v2.0 Mark II with ~26,829 LOC (JavaScript/CommonJS + JSON).
 Tech stack: Node.js, Zod 3.24.4, git worktrees, Claude Code plugin API.
 17 skills, 21 runtime libraries, 14 agent role modules.
-Hosted at github.com/fishjojo1/RAPID.
+Hosted at github.com/pragnition/RAPID.
 
 v1.0 established core plugin infrastructure (agent framework, state, worktrees, merge).
 v1.1 polished UX with structured prompts and error recovery.

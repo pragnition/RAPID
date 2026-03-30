@@ -1,12 +1,12 @@
 {
   "name": "rapid",
-  "version": "4.4.0",
+  "version": "5.0.0",
   "description": "RAPID - Rapid Agentic Parallelizable and Isolatable Development for Claude Code",
   "author": {
-    "name": "fishjojo1"
+    "name": "pragnition"
   },
-  "homepage": "https://github.com/fishjojo1/RAPID",
-  "repository": "https://github.com/fishjojo1/RAPID",
+  "homepage": "https://github.com/pragnition/RAPID",
+  "repository": "https://github.com/pragnition/RAPID",
   "license": "MIT",
   "keywords": [
     "rapid",
