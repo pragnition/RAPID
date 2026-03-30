@@ -500,14 +500,14 @@
         },
         {
           "id": "community-infra",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Community Infrastructure",
           "branch": "set/community-infra"
         },
         {
           "id": "readme-migration",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "README Overhaul & Reference Migration",
           "branch": "set/readme-migration"
@@ -515,6 +515,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-30T10:46:25.233Z",
+  "lastUpdatedAt": "2026-03-30T11:59:52.450Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
