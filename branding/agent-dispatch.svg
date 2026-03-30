@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 600" width="1280" height="600">
-  <rect fill="#2d353b" width="1280" height="600" rx="8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 575">
+  <rect fill="#2d353b" width="1280" height="575" rx="8"/>
 
   <!-- Title -->
   <text x="640" y="32" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" font-weight="bold">Agent Dispatch Architecture</text>
