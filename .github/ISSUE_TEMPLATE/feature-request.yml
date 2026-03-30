@@ -1,0 +1,60 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for RAPID
+labels: ["enhancement", "human-authored"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: RAPID Version
+      placeholder: "e.g., v4.4.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Affected Skill
+      description: Optional. Which existing skill does this relate to?
+      options:
+        - init
+        - start-set
+        - discuss-set
+        - plan-set
+        - execute-set
+        - review
+        - unit-test
+        - bug-hunt
+        - uat
+        - merge
+        - status
+        - quick
+        - resume
+        - pause
+        - "N/A (new skill)"
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: "What's painful, missing, or limiting? Describe a concrete scenario."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: What would the feature look like? Include example input/output if applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current Workaround
+      description: Optional. How do you handle this today?
+    validations:
+      required: false
