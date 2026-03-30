@@ -2,33 +2,33 @@
   <rect fill="#2d353b" width="1280" height="320" rx="12"/>
 
   <!-- Command text -->
-  <text x="640" y="110" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="13" letter-spacing="4">/rapid:init</text>
+  <text x="640" y="74" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="22" letter-spacing="5">/rapid:init</text>
 
   <!-- Decorative rule above title -->
-  <rect fill="#859289" opacity="0.3" x="480" y="134" width="320" height="1"/>
+  <rect fill="#859289" opacity="0.3" x="380" y="96" width="520" height="1"/>
 
-  <!-- Title: RAPID as glyph paths -->
+  <!-- Title: RAPID as glyph paths (scale 0.08, ~1.74x larger) -->
   <g>
-    <g transform="translate(544.77, 127.25) scale(0.046)">
+    <g transform="translate(474, 93) scale(0.08)">
       <path d="M28 1069V1016H56Q80 1016 100.5 1006.0Q121 996 121 956V469Q121 442 111.0 429.0Q101 416 86.0 412.0Q71 408 56 408H28V355H351Q502 355 567.5 405.5Q633 456 633 546Q633 601 612.5 638.0Q592 675 559.0 696.5Q526 718 489 729L613 932Q639 976 660.5 996.0Q682 1016 709 1016H715V1069H682Q622 1069 580.5 1062.0Q539 1055 511.0 1036.0Q483 1017 463 979L345 759H280V956Q280 996 298.0 1006.0Q316 1016 343 1016H362V1069ZM335 701Q406 701 435.5 664.5Q465 628 465 554Q465 478 433.0 446.0Q401 414 333 414H280V701Z" fill="#d3c6aa"/>
     </g>
-    <g transform="translate(587.52, 127.25) scale(0.046)">
+    <g transform="translate(549, 93) scale(0.08)">
       <path d="M4 1069V1016H16Q43 1016 61.0 1002.0Q79 988 96 943L313 355H451L664 955Q676 989 694.5 1002.5Q713 1016 741 1016H753V1069H423V1016H456Q478 1016 491.5 1007.5Q505 999 505 978Q505 966 502.0 954.0Q499 942 496 934L461 834H218L189 920Q185 932 181.0 948.5Q177 965 177 977Q177 1016 226 1016H264V1069ZM239 773H441L382 589Q371 555 360.5 521.5Q350 488 343 454Q335 488 325.5 519.0Q316 550 304 584Z" fill="#d3c6aa"/>
     </g>
-    <g transform="translate(632.16, 127.25) scale(0.046)">
+    <g transform="translate(626, 93) scale(0.08)">
       <path d="M28 1069V1016H57Q83 1016 102.0 1005.0Q121 994 121 951V469Q121 429 102.0 418.5Q83 408 60 408H28V355H341Q484 355 552.0 409.5Q620 464 620 567Q620 630 590.5 682.5Q561 735 495.0 765.5Q429 796 319 796H280V956Q280 996 298.0 1006.0Q316 1016 341 1016H394V1069ZM310 738Q386 738 420.0 699.5Q454 661 454 571Q454 491 423.5 452.5Q393 414 324 414H279V738Z" fill="#d3c6aa"/>
     </g>
-    <g transform="translate(671.50, 127.25) scale(0.046)">
+    <g transform="translate(695, 93) scale(0.08)">
       <path d="M28 1069V1016H64Q86 1016 103.5 1003.5Q121 991 121 958V469Q121 433 103.5 420.5Q86 408 64 408H28V355H374V408H336Q312 408 296.0 421.0Q280 434 280 470V957Q280 990 296.5 1003.0Q313 1016 336 1016H374V1069Z" fill="#d3c6aa"/>
     </g>
-    <g transform="translate(699.95, 127.25) scale(0.046)">
+    <g transform="translate(744, 93) scale(0.08)">
       <path d="M28 1069V1016H64Q89 1016 105.0 1001.5Q121 987 121 954V468Q121 433 103.5 420.5Q86 408 60 408H28V355H359Q524 355 618.0 442.0Q712 529 712 699Q712 808 672.0 891.5Q632 975 553.5 1022.0Q475 1069 359 1069ZM335 1007Q438 1007 490.5 924.5Q543 842 543 699Q543 556 490.5 486.0Q438 416 336 416H279V1007Z" fill="#d3c6aa"/>
     </g>
   </g>
 
   <!-- Decorative rule below title -->
-  <rect fill="#859289" opacity="0.3" x="480" y="186" width="320" height="1"/>
+  <rect fill="#859289" opacity="0.3" x="380" y="196" width="520" height="1"/>
 
   <!-- Tagline -->
-  <text x="640" y="210" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" font-style="italic">Agentic Parallelisable and Isolatable Development</text>
+  <text x="640" y="228" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="22" font-style="italic">Agentic Parallelisable and Isolatable Development</text>
 </svg>

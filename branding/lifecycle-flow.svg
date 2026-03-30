@@ -1,92 +1,92 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 195">
-  <rect fill="#2d353b" width="1280" height="195" rx="8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 260">
+  <rect fill="#2d353b" width="1280" height="260" rx="8"/>
 
   <!-- Title -->
-  <text x="640" y="28" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" font-weight="bold">RAPID Lifecycle</text>
+  <text x="640" y="36" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="26" font-weight="bold">RAPID Lifecycle</text>
 
   <!-- Node 1: init (Setup) -->
-  <rect fill="#859289" x="84" y="52" width="140" height="48" rx="8"/>
-  <text x="154" y="72" text-anchor="middle" fill="#d3c6aa" font-family="'Courier New', 'Liberation Mono', monospace" font-size="13">init</text>
-  <text x="154" y="88" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="9" opacity="0.75">Research &amp; Plan</text>
+  <rect fill="#859289" x="40" y="60" width="155" height="60" rx="8"/>
+  <text x="117" y="86" text-anchor="middle" fill="#d3c6aa" font-family="'Courier New', 'Liberation Mono', monospace" font-size="21">init</text>
+  <text x="117" y="107" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" opacity="0.75">Research &amp; Plan</text>
 
   <!-- Arrow 1-2 -->
-  <line x1="224" y1="76" x2="240" y2="76" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
-  <polygon points="240,72 248,76 240,80" fill="#d3c6aa" opacity="0.5"/>
+  <line x1="195" y1="90" x2="204" y2="90" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
+  <polygon points="204,84 214,90 204,96" fill="#d3c6aa" opacity="0.5"/>
 
   <!-- Node 2: start-set (Setup) -->
-  <rect fill="#859289" x="246" y="52" width="140" height="48" rx="8"/>
-  <text x="316" y="72" text-anchor="middle" fill="#d3c6aa" font-family="'Courier New', 'Liberation Mono', monospace" font-size="13">start-set</text>
-  <text x="316" y="88" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="9" opacity="0.75">Create Worktree</text>
+  <rect fill="#859289" x="214" y="60" width="155" height="60" rx="8"/>
+  <text x="291" y="86" text-anchor="middle" fill="#d3c6aa" font-family="'Courier New', 'Liberation Mono', monospace" font-size="21">start-set</text>
+  <text x="291" y="107" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" opacity="0.75">Create Worktree</text>
 
   <!-- Arrow 2-3 -->
-  <line x1="386" y1="76" x2="402" y2="76" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
-  <polygon points="402,72 410,76 402,80" fill="#d3c6aa" opacity="0.5"/>
+  <line x1="369" y1="90" x2="378" y2="90" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
+  <polygon points="378,84 388,90 378,96" fill="#d3c6aa" opacity="0.5"/>
 
   <!-- Node 3: discuss (Planning) -->
-  <rect fill="#a7c080" x="408" y="52" width="140" height="48" rx="8"/>
-  <text x="478" y="72" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="13">discuss</text>
-  <text x="478" y="88" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="9" opacity="0.75">Capture Vision</text>
+  <rect fill="#a7c080" x="388" y="60" width="155" height="60" rx="8"/>
+  <text x="465" y="86" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="21">discuss</text>
+  <text x="465" y="107" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" opacity="0.75">Capture Vision</text>
 
   <!-- Arrow 3-4 -->
-  <line x1="548" y1="76" x2="564" y2="76" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
-  <polygon points="564,72 572,76 564,80" fill="#d3c6aa" opacity="0.5"/>
+  <line x1="543" y1="90" x2="552" y2="90" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
+  <polygon points="552,84 562,90 552,96" fill="#d3c6aa" opacity="0.5"/>
 
   <!-- Node 4: plan (Planning) -->
-  <rect fill="#a7c080" x="570" y="52" width="140" height="48" rx="8"/>
-  <text x="640" y="72" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="13">plan</text>
-  <text x="640" y="88" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="9" opacity="0.75">Write Tasks</text>
+  <rect fill="#a7c080" x="562" y="60" width="155" height="60" rx="8"/>
+  <text x="639" y="86" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="21">plan</text>
+  <text x="639" y="107" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" opacity="0.75">Write Tasks</text>
 
   <!-- Arrow 4-5 -->
-  <line x1="710" y1="76" x2="726" y2="76" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
-  <polygon points="726,72 734,76 726,80" fill="#d3c6aa" opacity="0.5"/>
+  <line x1="717" y1="90" x2="726" y2="90" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
+  <polygon points="726,84 736,90 726,96" fill="#d3c6aa" opacity="0.5"/>
 
   <!-- Node 5: execute (Execution) -->
-  <rect fill="#7fbbb3" x="732" y="52" width="140" height="48" rx="8"/>
-  <text x="802" y="72" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="13">execute</text>
-  <text x="802" y="88" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="9" opacity="0.75">Implement</text>
+  <rect fill="#7fbbb3" x="736" y="60" width="155" height="60" rx="8"/>
+  <text x="813" y="86" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="21">execute</text>
+  <text x="813" y="107" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" opacity="0.75">Implement</text>
 
   <!-- Arrow 5-6 -->
-  <line x1="872" y1="76" x2="888" y2="76" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
-  <polygon points="888,72 896,76 888,80" fill="#d3c6aa" opacity="0.5"/>
+  <line x1="891" y1="90" x2="900" y2="90" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
+  <polygon points="900,84 910,90 900,96" fill="#d3c6aa" opacity="0.5"/>
 
   <!-- Node 6: review (Execution) -->
-  <rect fill="#7fbbb3" x="894" y="52" width="140" height="48" rx="8"/>
-  <text x="964" y="72" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="13">review</text>
-  <text x="964" y="88" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="9" opacity="0.75">Verify Quality</text>
+  <rect fill="#7fbbb3" x="910" y="60" width="155" height="60" rx="8"/>
+  <text x="987" y="86" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="21">review</text>
+  <text x="987" y="107" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" opacity="0.75">Verify Quality</text>
 
   <!-- Arrow 6-7 -->
-  <line x1="1034" y1="76" x2="1050" y2="76" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
-  <polygon points="1050,72 1058,76 1050,80" fill="#d3c6aa" opacity="0.5"/>
+  <line x1="1065" y1="90" x2="1074" y2="90" stroke="#d3c6aa" stroke-width="1.5" opacity="0.5"/>
+  <polygon points="1074,84 1084,90 1074,96" fill="#d3c6aa" opacity="0.5"/>
 
   <!-- Node 7: merge (Execution) -->
-  <rect fill="#7fbbb3" x="1056" y="52" width="140" height="48" rx="8"/>
-  <text x="1126" y="72" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="13">merge</text>
-  <text x="1126" y="88" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="9" opacity="0.75">Integrate</text>
+  <rect fill="#7fbbb3" x="1084" y="60" width="155" height="60" rx="8"/>
+  <text x="1161" y="86" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="21">merge</text>
+  <text x="1161" y="107" text-anchor="middle" fill="#2d353b" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" opacity="0.75">Integrate</text>
 
   <!-- Phase labels -->
-  <text x="154" y="118" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="9" opacity="0.6">Setup</text>
-  <line x1="104" y1="122" x2="204" y2="122" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
+  <text x="117" y="142" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="15" opacity="0.6">Setup</text>
+  <line x1="57" y1="147" x2="177" y2="147" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
 
-  <text x="316" y="118" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="9" opacity="0.6">Setup</text>
-  <line x1="266" y1="122" x2="366" y2="122" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
+  <text x="291" y="142" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="15" opacity="0.6">Setup</text>
+  <line x1="231" y1="147" x2="351" y2="147" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
 
-  <text x="478" y="118" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="9" opacity="0.6">Planning</text>
-  <line x1="428" y1="122" x2="528" y2="122" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
+  <text x="465" y="142" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="15" opacity="0.6">Planning</text>
+  <line x1="405" y1="147" x2="525" y2="147" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
 
-  <text x="640" y="118" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="9" opacity="0.6">Planning</text>
-  <line x1="590" y1="122" x2="690" y2="122" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
+  <text x="639" y="142" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="15" opacity="0.6">Planning</text>
+  <line x1="579" y1="147" x2="699" y2="147" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
 
-  <text x="802" y="118" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="9" opacity="0.6">Execution</text>
-  <line x1="752" y1="122" x2="852" y2="122" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
+  <text x="813" y="142" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="15" opacity="0.6">Execution</text>
+  <line x1="753" y1="147" x2="873" y2="147" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
 
-  <text x="964" y="118" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="9" opacity="0.6">Execution</text>
-  <line x1="914" y1="122" x2="1014" y2="122" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
+  <text x="987" y="142" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="15" opacity="0.6">Execution</text>
+  <line x1="927" y1="147" x2="1047" y2="147" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
 
-  <text x="1126" y="118" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="9" opacity="0.6">Execution</text>
-  <line x1="1076" y1="122" x2="1176" y2="122" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
+  <text x="1161" y="142" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="15" opacity="0.6">Execution</text>
+  <line x1="1101" y1="147" x2="1221" y2="147" stroke="#859289" stroke-width="0.5" opacity="0.3"/>
 
   <!-- Loop arc: merge back to start-set ("repeat per set") -->
-  <path d="M1126,100 L1126,155 Q1126,175 1106,175 L336,175 Q316,175 316,155 L316,100" stroke="#d3c6aa" stroke-width="1" opacity="0.3" fill="none"/>
-  <polygon points="312,104 316,96 320,104" fill="#d3c6aa" opacity="0.3"/>
-  <text x="721" y="183" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="8" opacity="0.5">repeat per set</text>
+  <path d="M1161,120 L1161,200 Q1161,216 1141,216 L311,216 Q291,216 291,200 L291,120" stroke="#d3c6aa" stroke-width="1" opacity="0.3" fill="none"/>
+  <polygon points="287,126 291,116 295,126" fill="#d3c6aa" opacity="0.3"/>
+  <text x="726" y="238" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="14" opacity="0.5">repeat per set</text>
 </svg>
