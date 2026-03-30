@@ -60,6 +60,10 @@ RAPID structures parallel work around **sets** -- independent workstreams that e
 
 **Research pipeline.** `/rapid:init` spawns 6 parallel researchers (stack, features, architecture, pitfalls, oversights, UX) to analyze your project. A synthesizer combines their findings, and a roadmapper decomposes work into sets with clear boundaries.
 
+**Isolation.** `/rapid:start-set` creates a dedicated git worktree per set so each agent works in its own copy of the repo with no cross-contamination.
+
+**Discussion.** `/rapid:discuss-set` captures the developer's implementation vision and design decisions into CONTEXT.md before any planning begins.
+
 **Interface contracts.** Sets connect through `CONTRACT.json` -- machine-verifiable specs defining which functions, types, and endpoints each set exposes. Contracts are validated after planning, during execution, and before merge.
 
 **Planning.** `/rapid:plan-set` runs a researcher to investigate implementation specifics, a planner to produce wave-level plans, and a verifier to check for coverage gaps and contract violations.
