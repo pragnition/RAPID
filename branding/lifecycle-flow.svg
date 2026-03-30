@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 200" width="1280" height="200">
-  <rect fill="#2d353b" width="1280" height="200" rx="8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 195">
+  <rect fill="#2d353b" width="1280" height="195" rx="8"/>
 
   <!-- Title -->
   <text x="640" y="28" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" font-weight="bold">RAPID Lifecycle</text>
