@@ -493,14 +493,14 @@
       "sets": [
         {
           "id": "branding-assets",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Branding Assets",
           "branch": "set/branding-assets"
         },
         {
           "id": "community-infra",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Community Infrastructure",
           "branch": "set/community-infra"
@@ -515,6 +515,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-30T09:52:39.646Z",
+  "lastUpdatedAt": "2026-03-30T10:46:25.233Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
