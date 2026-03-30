@@ -1,55 +1,43 @@
-# VERIFICATION-REPORT: readme-polish
+# VERIFICATION-REPORT: wave-3 (gap-closure)
 
 **Set:** readme-polish
-**Waves:** wave-1, wave-2
+**Wave:** wave-3 (gap-closure)
 **Verified:** 2026-03-30
-**Verdict:** PASS_WITH_GAPS
+**Verdict:** PASS
 
 ## Coverage
 
 | Requirement | Covered By | Status | Notes |
 |-------------|------------|--------|-------|
-| Replace dense intro with bold one-liner + 3-4 bullet points | Wave 2, Task 1 (Section 2) | PASS | Exact bullet content specified in plan |
-| Keep 7 commands in table, link to DOCS.md for full reference | Wave 2, Task 1 (Section 7, unchanged) | PASS | Explicitly marked as unchanged |
-| Promote SVG diagrams out of collapsed details block | Wave 2, Task 1 (Section 5) | PASS | New `## Architecture` section with both diagrams |
-| Render diagrams at full container width (remove width="800") | Wave 2, Task 1 (Sections 1, 5) | PASS | All three img tags lose width="800" |
-| Tighten SVG viewBox dimensions to crop whitespace | Wave 1, Tasks 1 & 2 | PASS | lifecycle-flow.svg 200->195, agent-dispatch.svg 600->575 |
-| Shorten How It Works to 1-2 sentences per phase | Wave 2, Task 1 (Section 6) | PASS | All 6 subsections listed with condensation targets |
-| Condense review pipeline to single summary sentence | Wave 2, Task 1 (Section 6) | PASS | Must mention adversarial bug-hunt (hunter/devil's-advocate/judge) |
-| Replace italic tagline with blockquote philosophy statement | Wave 2, Task 1 (Section 1) | PASS | Two-line blockquote specified verbatim |
-| Merge License section into arrow-prefix links | Wave 2, Task 1 (Section 8) | PASS | Remove `## License` heading, link already in Links section |
-| Blockquote captures RAPID core thesis (from Specifics) | Wave 2, Task 1 (Section 1) | PASS | Blockquote text covers isolation/ownership/contracts/merge |
-| Review sentence mentions adversarial bug-hunt (from Specifics) | Wave 2, Task 1 (Section 6) | PASS | Explicitly called out in condensation targets |
+| Gap 1: How It Works line count below target (17 lines, target 20-25) | Wave 3, Task 1 | PASS | Adding Isolation and Discussion subsections brings section from 16 content lines to 20 (or 17->21 using sed boundary-inclusive measurement), squarely within target |
+| Isolation phase visible in Quickstart/diagram but absent from prose | Wave 3, Task 1 | PASS | New **Isolation.** subsection covers `/rapid:start-set` worktree creation |
+| Discussion phase visible in Quickstart/diagram but absent from prose | Wave 3, Task 1 | PASS | New **Discussion.** subsection covers `/rapid:discuss-set` vision capture |
+| CONTEXT.md decision: bold-titled paragraph structure with 1-2 sentences per phase | Wave 3, Task 1 | PASS | Both new subsections are exactly one sentence in bold-titled paragraph format |
+| Subsection order matches lifecycle flow | Wave 3, Task 1 | PASS | Insertion between Research pipeline and Interface contracts matches the lifecycle sequence: init -> start-set -> discuss-set -> contracts -> plan -> execute -> review -> merge |
 
 ## Implementability
 
 | File | Job | Action | Status | Notes |
 |------|-----|--------|--------|-------|
-| `branding/lifecycle-flow.svg` | Wave 1, Task 1 | Modify | PASS | File exists; line 1 matches expected `viewBox="0 0 1280 200" width="1280" height="200"` |
-| `branding/agent-dispatch.svg` | Wave 1, Task 2 | Modify | PASS | File exists; line 1 matches expected `viewBox="0 0 1280 600" width="1280" height="600"` |
-| `branding/lifecycle-flow.svg` line 2 rect | Wave 1, Task 2 | Modify | PASS | File exists; line 2 has `height="200"` as expected |
-| `branding/agent-dispatch.svg` line 2 rect | Wave 1, Task 2 | Modify | PASS | File exists; line 2 has `height="600"` as expected |
-| `README.md` | Wave 2, Task 1 | Rewrite | PASS | File exists (105 lines); structure matches plan assumptions |
-| `DOCS.md` | Wave 2 (referenced link) | N/A | PASS | File exists; link target is valid |
-| `CONTRIBUTING.md` | Wave 2 (referenced link) | N/A | PASS | File exists; link target is valid |
-| `LICENSE` | Wave 2 (referenced link) | N/A | PASS | File exists; link target is valid |
+| `README.md` | Wave 3, Task 1 | Modify | PASS | File exists (93 lines). Insertion point verified: line 61 is Research pipeline, line 62 is blank, line 63 is Interface contracts -- exactly as plan describes |
 
-**ViewBox validation:** lifecycle-flow.svg lowest content at y=183 ("repeat per set" label), new viewBox height 195 provides 12px clearance. agent-dispatch.svg lowest content at y=560 ("x N" notation), new viewBox height 575 provides 15px clearance. Both are adequate.
+**Line reference validation:** The plan specifies insertion "after line 61 (Research pipeline) and before line 63 (Interface contracts)." Confirmed via `Read` that line 61 contains `**Research pipeline.**` and line 63 contains `**Interface contracts.**`. The insertion point is accurate.
+
+**Line count arithmetic:** Current How It Works section is 16 content lines (17 via sed including next-heading boundary). Adding 4 lines (blank + Isolation + blank + Discussion) yields 20 content lines (21 via sed). The plan's target of 21 lines matches the sed-based measurement and falls within the 20-25 target range. Total README increases from 93 to 97 lines (delta of 4), within the plan's stated 4-6 line increase.
+
+**No file conflicts with prior waves:** Waves 1 and 2 are complete (WAVE-1-COMPLETE.md, WAVE-2-COMPLETE.md). Wave 1 modified SVG files only. Wave 2 rewrote README.md. Wave 3 modifies the current post-wave-2 state of README.md. No stale reference issues.
 
 ## Consistency
 
 | File | Claimed By | Status | Resolution |
 |------|------------|--------|------------|
-| `branding/lifecycle-flow.svg` | Wave 1 Task 1, Wave 1 Task 2 | PASS_WITH_GAPS | See Cross-Job Dependencies below |
-| `branding/agent-dispatch.svg` | Wave 1 Task 2 only | PASS | Single owner |
-| `README.md` | Wave 2 Task 1 only | PASS | Single owner |
+| `README.md` | Wave 3, Task 1 (sole claimant) | PASS | Single job in single-task wave; no ownership conflict possible |
 
 ## Cross-Job Dependencies
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| Wave 1 Task 2 modifies lifecycle-flow.svg (Task 1's primary file) | PASS_WITH_GAPS | Task 2 adds background rect update for lifecycle-flow.svg as an afterthought. This contradicts Task 1's "Do not modify any other SVG elements" guidance. Since both tasks are within the same wave and will be executed sequentially by the same agent, this is not blocking -- but the executor must recognize that lifecycle-flow.svg changes span both tasks. |
-| Wave 2 depends on Wave 1 (SVGs must be fixed before README references them) | PASS | Waves are ordered 1 then 2; dependency is naturally satisfied by wave sequencing. |
+| Wave 3 depends on Wave 2 (README.md must be in post-restructure state) | PASS | Wave 2 marked complete (WAVE-2-COMPLETE.md exists, commit b34420d). Current README.md reflects wave-2 output with 93 lines and the restructured How It Works section |
 
 ## Edits Made
 
@@ -59,4 +47,4 @@
 
 ## Summary
 
-**Verdict: PASS_WITH_GAPS.** All CONTEXT.md requirements are fully covered across the two wave plans. All file references are valid against the actual codebase -- SVG content matches plan assumptions exactly (viewBox values, line structure, y-coordinates). No cross-wave file conflicts exist. The single gap is a task boundary ambiguity in Wave 1: Task 2 includes a modification to `lifecycle-flow.svg` (updating its background rect height) which is nominally Task 1's file, and Task 1 explicitly says "do not modify any other SVG elements." The executor should treat both tasks as a single unit of work on the two SVG files and apply all four changes (two viewBox + two background rect updates) together. This is a minor clarity issue, not a structural flaw.
+**Verdict: PASS.** The wave-3 gap-closure plan is structurally sound across all three verification dimensions. The single gap identified in GAPS.md (How It Works line count below target) is directly and completely addressed by Task 1, which inserts two lifecycle-aligned subsections (Isolation and Discussion) at the correct insertion point between Research pipeline and Interface contracts. The file reference is valid against the current codebase, line numbers match, the insertion arithmetic is correct (16->20 content lines, within 20-25 target), and there are no ownership conflicts since this is a single-task wave operating on a single file. No auto-fixes were needed.
