@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <defs>
+    <linearGradient id="bg10" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="paper1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c7d2fe"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="paper2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="paper3" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a5b4fc"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="paperdark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#3730a3"/>
+    </linearGradient>
+  </defs>
+
+  <rect fill="url(#bg10)" width="1280" height="320" rx="12"/>
+
+  <!-- Origami crane - geometric flat design -->
+  <g transform="translate(200, 140) scale(1.8)">
+    <!-- Body - main triangle -->
+    <polygon points="0,0 60,-40 80,10" fill="url(#paper1)"/>
+    <!-- Body shadow -->
+    <polygon points="0,0 60,-40 40,5" fill="url(#paper2)"/>
+
+    <!-- Left wing (up) -->
+    <polygon points="0,0 -70,-60 -20,-30" fill="url(#paper1)"/>
+    <polygon points="0,0 -70,-60 -40,-20" fill="url(#paper3)"/>
+    <!-- Wing fold line -->
+    <line x1="0" y1="0" x2="-50" y2="-42" stroke="#4f46e5" stroke-width="0.5" opacity="0.5"/>
+
+    <!-- Right wing (up) -->
+    <polygon points="60,-40 130,-80 100,-30" fill="url(#paper1)"/>
+    <polygon points="60,-40 130,-80 90,-40" fill="url(#paper3)"/>
+    <!-- Wing fold line -->
+    <line x1="60" y1="-40" x2="105" y2="-58" stroke="#4f46e5" stroke-width="0.5" opacity="0.5"/>
+
+    <!-- Tail -->
+    <polygon points="80,10 110,30 95,5" fill="url(#paper2)"/>
+    <polygon points="80,10 110,30 100,15" fill="url(#paperdark)"/>
+
+    <!-- Head/neck -->
+    <polygon points="0,0 -25,15 -15,5" fill="url(#paper1)"/>
+    <polygon points="-25,15 -35,18 -28,12" fill="url(#paper2)"/>
+
+    <!-- Fold creases -->
+    <line x1="0" y1="0" x2="60" y2="-40" stroke="#a5b4fc" stroke-width="0.5" opacity="0.3"/>
+    <line x1="0" y1="0" x2="80" y2="10" stroke="#a5b4fc" stroke-width="0.5" opacity="0.3"/>
+  </g>
+
+  <!-- Shadow under crane -->
+  <ellipse cx="320" cy="268" rx="80" ry="8" fill="#6366f1" opacity="0.08"/>
+
+  <!-- Subtle fold-paper texture lines -->
+  <g stroke="#818cf8" stroke-width="0.3" opacity="0.1">
+    <line x1="100" y1="40" x2="540" y2="40"/>
+    <line x1="80" y1="80" x2="560" y2="80"/>
+    <line x1="100" y1="280" x2="540" y2="280"/>
+    <line x1="120" y1="40" x2="120" y2="280"/>
+    <line x1="520" y1="40" x2="520" y2="280"/>
+  </g>
+
+  <!-- Small floating paper pieces -->
+  <g opacity="0.15">
+    <polygon points="480,80 490,72 496,82 486,86" fill="#a5b4fc"/>
+    <polygon points="520,240 528,234 534,244 524,246" fill="#818cf8"/>
+    <polygon points="140,260 148,254 152,262 142,264" fill="#a5b4fc"/>
+    <polygon points="560,140 566,134 572,142 564,146" fill="#c7d2fe"/>
+  </g>
+
+  <!-- RAPID text -->
+  <text fill="#c7d2fe" x="640" y="128" font-family="'SF Mono', 'Fira Code', monospace" font-weight="bold" font-size="72" letter-spacing="14">RAPID</text>
+
+  <!-- Thin separator -->
+  <line x1="644" y1="148" x2="1100" y2="148" stroke="#6366f1" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- Tagline -->
+  <text fill="#818cf8" x="644" y="176" font-family="'SF Mono', 'Fira Code', monospace" font-size="12" letter-spacing="3" opacity="0.7">RAPID AGENTIC PARALLELIZABLE &amp; ISOLATABLE DEVELOPMENT</text>
+</svg>

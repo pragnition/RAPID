@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Staggered bars icon -->
+  <rect fill="#06b6d4" x="32" y="32" width="140" height="24" rx="4" opacity="0.9"/>
+  <rect fill="#8b5cf6" x="56" y="68" width="120" height="24" rx="4" opacity="0.9"/>
+  <rect fill="#10b981" x="20" y="104" width="172" height="24" rx="4" opacity="0.9"/>
+  <rect fill="#f97316" x="48" y="140" width="100" height="24" rx="4" opacity="0.9"/>
+  <rect fill="#ec4899" x="40" y="176" width="128" height="24" rx="4" opacity="0.9"/>
+
+  <!-- Merge line -->
+  <line x1="210" y1="28" x2="210" y2="204" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.25"/>
+
+  <!-- Merge arrows pointing right to merge line -->
+  <line x1="172" y1="44" x2="210" y2="44" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+  <line x1="176" y1="80" x2="210" y2="80" stroke="#8b5cf6" stroke-width="1" opacity="0.4"/>
+  <line x1="192" y1="116" x2="210" y2="116" stroke="#10b981" stroke-width="1" opacity="0.4"/>
+  <line x1="148" y1="152" x2="210" y2="152" stroke="#f97316" stroke-width="1" opacity="0.4"/>
+  <line x1="168" y1="188" x2="210" y2="188" stroke="#ec4899" stroke-width="1" opacity="0.4"/>
+
+  <!-- Output from merge -->
+  <rect fill="#ffffff" x="210" y="110" width="24" height="12" rx="3" opacity="0.15"/>
+  <text fill="#ffffff" x="214" y="120" font-family="monospace" font-size="7" opacity="0.5">R</text>
+</svg>

@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Circuit chip icon - transparent background -->
+
+  <!-- Circuit traces radiating out -->
+  <g fill="none" stroke="#0e4d6e" stroke-width="2">
+    <line x1="48" y1="80" x2="0" y2="80"/>
+    <line x1="48" y1="128" x2="0" y2="128"/>
+    <line x1="48" y1="176" x2="0" y2="176"/>
+    <line x1="208" y1="80" x2="256" y2="80"/>
+    <line x1="208" y1="128" x2="256" y2="128"/>
+    <line x1="208" y1="176" x2="256" y2="176"/>
+    <line x1="80" y1="48" x2="80" y2="0"/>
+    <line x1="128" y1="48" x2="128" y2="0"/>
+    <line x1="176" y1="48" x2="176" y2="0"/>
+    <line x1="80" y1="208" x2="80" y2="256"/>
+    <line x1="128" y1="208" x2="128" y2="256"/>
+    <line x1="176" y1="208" x2="176" y2="256"/>
+  </g>
+
+  <!-- Trace nodes -->
+  <g fill="#1a8aaa">
+    <rect x="76" y="0" width="8" height="8"/>
+    <rect x="124" y="0" width="8" height="8"/>
+    <rect x="172" y="0" width="8" height="8"/>
+    <rect x="76" y="248" width="8" height="8"/>
+    <rect x="124" y="248" width="8" height="8"/>
+    <rect x="172" y="248" width="8" height="8"/>
+    <rect x="0" y="76" width="8" height="8"/>
+    <rect x="0" y="124" width="8" height="8"/>
+    <rect x="0" y="172" width="8" height="8"/>
+    <rect x="248" y="76" width="8" height="8"/>
+    <rect x="248" y="124" width="8" height="8"/>
+    <rect x="248" y="172" width="8" height="8"/>
+  </g>
+
+  <!-- Active nodes -->
+  <g fill="#00e5ff">
+    <rect x="124" y="0" width="8" height="8"/>
+    <rect x="248" y="124" width="8" height="8"/>
+    <rect x="124" y="248" width="8" height="8"/>
+    <rect x="0" y="124" width="8" height="8"/>
+  </g>
+
+  <!-- Chip body -->
+  <rect fill="#0d3048" x="48" y="48" width="160" height="160" rx="4"/>
+  <rect fill="#0a2438" x="56" y="56" width="144" height="144" rx="2"/>
+
+  <!-- Chip pins -->
+  <g fill="#1a8aaa">
+    <rect x="72" y="42" width="8" height="12"/>
+    <rect x="96" y="42" width="8" height="12"/>
+    <rect x="120" y="42" width="8" height="12"/>
+    <rect x="144" y="42" width="8" height="12"/>
+    <rect x="168" y="42" width="8" height="12"/>
+    <rect x="72" y="202" width="8" height="12"/>
+    <rect x="96" y="202" width="8" height="12"/>
+    <rect x="120" y="202" width="8" height="12"/>
+    <rect x="144" y="202" width="8" height="12"/>
+    <rect x="168" y="202" width="8" height="12"/>
+    <rect x="42" y="72" width="12" height="8"/>
+    <rect x="42" y="96" width="12" height="8"/>
+    <rect x="42" y="120" width="12" height="8"/>
+    <rect x="42" y="144" width="12" height="8"/>
+    <rect x="42" y="168" width="12" height="8"/>
+    <rect x="202" y="72" width="12" height="8"/>
+    <rect x="202" y="96" width="12" height="8"/>
+    <rect x="202" y="120" width="12" height="8"/>
+    <rect x="202" y="144" width="12" height="8"/>
+    <rect x="202" y="168" width="12" height="8"/>
+  </g>
+
+  <!-- Inner glow -->
+  <rect fill="#00e5ff" opacity="0.1" x="72" y="72" width="112" height="112"/>
+
+  <!-- R inside chip -->
+  <g fill="#00e5ff">
+    <rect x="88" y="88" width="8" height="64"/>
+    <rect x="96" y="88" width="32" height="8"/>
+    <rect x="128" y="96" width="8" height="20"/>
+    <rect x="96" y="116" width="32" height="8"/>
+    <rect x="120" y="124" width="8" height="8"/>
+    <rect x="128" y="132" width="8" height="20"/>
+  </g>
+
+  <!-- Active glow traces -->
+  <g fill="none" stroke="#00e5ff" stroke-width="2" opacity="0.5">
+    <line x1="128" y1="48" x2="128" y2="0"/>
+    <line x1="208" y1="128" x2="256" y2="128"/>
+    <line x1="128" y1="208" x2="128" y2="256"/>
+    <line x1="48" y1="128" x2="0" y2="128"/>
+  </g>
+</svg>

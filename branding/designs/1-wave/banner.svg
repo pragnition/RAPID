@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <defs>
+    <style>
+      .bg { fill: #0a0e27; }
+      .deep { fill: #0d2b45; }
+      .mid { fill: #1a4a6e; }
+      .wave { fill: #2878a8; }
+      .light { fill: #3ca4d8; }
+      .crest { fill: #6ecff6; }
+      .foam { fill: #e8f4fd; }
+      .spray { fill: #ffffff; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1280" height="320" rx="12"/>
+
+  <!-- Ocean floor -->
+  <rect class="deep" x="0" y="232" width="1280" height="88"/>
+  <rect class="deep" x="0" y="224" width="1200" height="8"/>
+  <rect class="deep" x="40" y="216" width="1100" height="8"/>
+
+  <!-- Far left ripples -->
+  <rect class="mid" x="16" y="208" width="80" height="8"/>
+  <rect class="mid" x="8" y="200" width="56" height="8"/>
+  <rect class="wave" x="16" y="192" width="40" height="8"/>
+  <rect class="light" x="24" y="184" width="24" height="8"/>
+
+  <!-- Small wave left -->
+  <rect class="mid" x="120" y="200" width="72" height="8"/>
+  <rect class="mid" x="128" y="192" width="56" height="8"/>
+  <rect class="wave" x="136" y="184" width="48" height="8"/>
+  <rect class="wave" x="144" y="176" width="40" height="8"/>
+  <rect class="light" x="152" y="168" width="32" height="8"/>
+  <rect class="light" x="160" y="160" width="24" height="8"/>
+  <rect class="crest" x="168" y="152" width="24" height="8"/>
+  <rect class="foam" x="176" y="144" width="16" height="8"/>
+  <rect class="foam" x="184" y="136" width="16" height="8"/>
+  <rect class="crest" x="192" y="144" width="8" height="8"/>
+  <rect class="light" x="192" y="152" width="8" height="8"/>
+  <rect class="wave" x="192" y="160" width="16" height="8"/>
+  <rect class="mid" x="192" y="168" width="24" height="8"/>
+  <rect class="spray" x="184" y="128" width="8" height="8"/>
+  <rect class="spray" x="176" y="132" width="8" height="8"/>
+  <rect class="spray" x="196" y="132" width="8" height="8"/>
+
+  <!-- Main wave -->
+  <rect class="mid" x="280" y="208" width="280" height="8"/>
+  <rect class="mid" x="296" y="200" width="256" height="8"/>
+  <rect class="mid" x="312" y="192" width="232" height="8"/>
+  <rect class="mid" x="320" y="184" width="216" height="8"/>
+  <rect class="mid" x="336" y="176" width="192" height="8"/>
+  <rect class="wave" x="344" y="168" width="176" height="8"/>
+  <rect class="wave" x="352" y="160" width="160" height="8"/>
+  <rect class="wave" x="360" y="152" width="144" height="8"/>
+  <rect class="wave" x="368" y="144" width="128" height="8"/>
+  <rect class="wave" x="376" y="136" width="112" height="8"/>
+  <rect class="wave" x="384" y="128" width="96" height="8"/>
+  <rect class="wave" x="392" y="120" width="80" height="8"/>
+  <rect class="light" x="400" y="112" width="72" height="8"/>
+  <rect class="light" x="408" y="104" width="72" height="8"/>
+  <rect class="light" x="416" y="96" width="72" height="8"/>
+  <rect class="light" x="432" y="88" width="64" height="8"/>
+  <rect class="light" x="448" y="80" width="56" height="8"/>
+  <rect class="crest" x="464" y="72" width="56" height="8"/>
+  <rect class="crest" x="480" y="64" width="48" height="8"/>
+  <rect class="crest" x="512" y="72" width="32" height="8"/>
+  <rect class="crest" x="528" y="80" width="24" height="8"/>
+  <rect class="crest" x="536" y="88" width="24" height="8"/>
+  <rect class="crest" x="544" y="96" width="16" height="8"/>
+  <rect class="crest" x="552" y="104" width="16" height="8"/>
+  <rect class="light" x="552" y="112" width="16" height="16"/>
+  <rect class="wave" x="544" y="136" width="16" height="8"/>
+  <rect class="wave" x="536" y="144" width="24" height="8"/>
+  <rect class="mid" x="536" y="152" width="32" height="8"/>
+  <rect class="mid" x="536" y="160" width="40" height="8"/>
+
+  <!-- Foam on crest -->
+  <rect class="foam" x="424" y="88" width="8" height="8"/>
+  <rect class="foam" x="440" y="80" width="8" height="8"/>
+  <rect class="foam" x="456" y="72" width="8" height="8"/>
+  <rect class="foam" x="464" y="64" width="16" height="8"/>
+  <rect class="foam" x="480" y="56" width="32" height="8"/>
+  <rect class="foam" x="512" y="56" width="16" height="8"/>
+  <rect class="foam" x="520" y="64" width="16" height="8"/>
+  <rect class="foam" x="536" y="72" width="16" height="8"/>
+  <rect class="foam" x="544" y="80" width="16" height="8"/>
+  <rect class="foam" x="552" y="88" width="16" height="8"/>
+  <rect class="foam" x="560" y="96" width="8" height="16"/>
+
+  <!-- Spray -->
+  <rect class="spray" x="472" y="56" width="8" height="8"/>
+  <rect class="spray" x="488" y="48" width="8" height="8"/>
+  <rect class="spray" x="504" y="44" width="8" height="8"/>
+  <rect class="spray" x="520" y="48" width="8" height="8"/>
+  <rect class="spray" x="536" y="56" width="8" height="8"/>
+  <rect class="spray" x="556" y="72" width="8" height="8"/>
+  <rect class="spray" x="568" y="88" width="8" height="8"/>
+  <rect class="spray" x="496" y="40" width="8" height="8"/>
+  <rect class="spray" x="512" y="40" width="8" height="8"/>
+  <rect class="spray" x="492" y="32" width="8" height="8"/>
+  <rect class="spray" x="508" y="28" width="8" height="8"/>
+  <rect class="spray" x="484" y="36" width="8" height="8"/>
+  <rect class="spray" x="516" y="36" width="8" height="8"/>
+  <rect class="foam" x="500" y="36" width="8" height="8"/>
+  <rect class="foam" x="496" y="48" width="8" height="8"/>
+
+  <!-- Medium wave right -->
+  <rect class="mid" x="600" y="200" width="120" height="8"/>
+  <rect class="mid" x="608" y="192" width="104" height="8"/>
+  <rect class="wave" x="616" y="184" width="88" height="8"/>
+  <rect class="wave" x="624" y="176" width="72" height="8"/>
+  <rect class="wave" x="632" y="168" width="56" height="8"/>
+  <rect class="light" x="640" y="160" width="48" height="8"/>
+  <rect class="light" x="648" y="152" width="40" height="8"/>
+  <rect class="crest" x="656" y="144" width="32" height="8"/>
+  <rect class="crest" x="664" y="136" width="24" height="8"/>
+  <rect class="foam" x="672" y="128" width="24" height="8"/>
+  <rect class="foam" x="680" y="120" width="16" height="8"/>
+  <rect class="crest" x="688" y="128" width="16" height="8"/>
+  <rect class="light" x="696" y="136" width="16" height="8"/>
+  <rect class="wave" x="696" y="144" width="16" height="8"/>
+  <rect class="mid" x="696" y="152" width="24" height="8"/>
+  <rect class="spray" x="680" y="112" width="8" height="8"/>
+  <rect class="spray" x="688" y="116" width="8" height="8"/>
+  <rect class="spray" x="672" y="116" width="8" height="8"/>
+
+  <!-- Surface ripples -->
+  <rect class="light" x="64" y="224" width="32" height="8"/>
+  <rect class="light" x="240" y="232" width="24" height="8"/>
+  <rect class="wave" x="580" y="216" width="16" height="8"/>
+  <rect class="light" x="736" y="224" width="24" height="8"/>
+  <rect class="mid" x="48" y="248" width="32" height="8"/>
+  <rect class="mid" x="200" y="256" width="24" height="8"/>
+  <rect class="mid" x="360" y="248" width="24" height="8"/>
+  <rect class="mid" x="500" y="256" width="32" height="8"/>
+  <rect class="mid" x="620" y="252" width="24" height="8"/>
+  <rect class="wave" x="160" y="240" width="16" height="8"/>
+  <rect class="wave" x="440" y="240" width="24" height="8"/>
+  <rect class="wave" x="680" y="240" width="16" height="8"/>
+
+  <!-- Right side ripples -->
+  <rect class="mid" x="760" y="208" width="48" height="8"/>
+  <rect class="wave" x="776" y="192" width="24" height="8"/>
+  <rect class="mid" x="840" y="216" width="40" height="8"/>
+  <rect class="mid" x="1120" y="216" width="48" height="8"/>
+  <rect class="wave" x="1136" y="200" width="24" height="8"/>
+  <rect class="mid" x="1200" y="224" width="56" height="8"/>
+  <rect class="mid" x="800" y="248" width="24" height="8"/>
+  <rect class="mid" x="920" y="252" width="32" height="8"/>
+  <rect class="mid" x="1060" y="248" width="24" height="8"/>
+  <rect class="mid" x="1180" y="256" width="32" height="8"/>
+  <rect class="wave" x="860" y="240" width="16" height="8"/>
+  <rect class="wave" x="1000" y="244" width="24" height="8"/>
+
+  <!-- RAPID pixel text -->
+  <g fill="#e8f4fd">
+    <rect x="820" y="80" width="8" height="56"/>
+    <rect x="828" y="80" width="24" height="8"/>
+    <rect x="852" y="88" width="8" height="16"/>
+    <rect x="828" y="104" width="24" height="8"/>
+    <rect x="844" y="112" width="8" height="8"/>
+    <rect x="852" y="120" width="8" height="16"/>
+
+    <rect x="872" y="88" width="8" height="48"/>
+    <rect x="880" y="80" width="24" height="8"/>
+    <rect x="904" y="88" width="8" height="48"/>
+    <rect x="880" y="108" width="24" height="8"/>
+
+    <rect x="924" y="80" width="8" height="56"/>
+    <rect x="932" y="80" width="24" height="8"/>
+    <rect x="956" y="88" width="8" height="16"/>
+    <rect x="932" y="104" width="24" height="8"/>
+
+    <rect x="976" y="80" width="24" height="8"/>
+    <rect x="984" y="88" width="8" height="40"/>
+    <rect x="976" y="128" width="24" height="8"/>
+
+    <rect x="1012" y="80" width="8" height="56"/>
+    <rect x="1020" y="80" width="16" height="8"/>
+    <rect x="1036" y="88" width="8" height="40"/>
+    <rect x="1020" y="128" width="16" height="8"/>
+  </g>
+
+  <text fill="#3ca4d8" x="960" y="160" font-family="monospace" font-size="11" text-anchor="middle" letter-spacing="3">RAPID AGENTIC PARALLELIZABLE</text>
+  <text fill="#3ca4d8" x="960" y="176" font-family="monospace" font-size="11" text-anchor="middle" letter-spacing="3">&amp; ISOLATABLE DEVELOPMENT</text>
+</svg>

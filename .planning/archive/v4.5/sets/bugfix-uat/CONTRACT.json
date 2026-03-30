@@ -1,0 +1,46 @@
+{
+  "setId": "bugfix-uat",
+  "version": "1.0.0",
+  "exports": {
+    "bugfix-uat-flag": {
+      "type": "function",
+      "signature": "/rapid:bug-fix --uat [set-id]",
+      "description": "Extends the bug-fix skill to accept --uat flag. When provided, reads UAT-FAILURES.md for the specified set and converts failures into bug investigation targets."
+    }
+  },
+  "imports": {
+    "uat-failures-format": {
+      "fromSet": "uat-workflow",
+      "type": "file",
+      "signature": ".planning/sets/{setId}/UAT-FAILURES.md",
+      "description": "Structured UAT failure artifact with embedded JSON metadata block (<!-- UAT-FAILURES-META {...} -->) containing an array of failure objects with fields: id, criterion, step, description, severity, relevantFiles."
+    }
+  },
+  "behavioral": {
+    "reads-not-modifies-failures": {
+      "description": "The --uat flag reads UAT-FAILURES.md but never modifies it. The original failure record is preserved.",
+      "enforced_by": "test"
+    },
+    "falls-back-to-interactive": {
+      "description": "When invoked without --uat, bug-fix behaves identically to its current implementation (backward compatible).",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Extend /rapid:bug-fix to accept --uat argument that reads UAT-FAILURES.md and fixes reported issues through the existing executor pipeline.",
+    "ownedFiles": [
+      "skills/bug-fix/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Add --uat flag parsing to bug-fix skill", "acceptance": "Flag is parsed from user input and set-id is resolved" },
+      { "description": "Implement UAT-FAILURES.md reader in bug-fix skill", "acceptance": "Failures are read and converted to investigation targets" },
+      { "description": "Wire failure targets into existing executor dispatch pipeline", "acceptance": "Each failure produces a fix attempt via rapid-executor" },
+      { "description": "Unit tests for --uat flag and failure file reading", "acceptance": "Tests cover flag parsing, file reading, and backward compatibility" }
+    ],
+    "acceptance": [
+      "--uat flag reads UAT-FAILURES.md and dispatches fixes",
+      "Without --uat, bug-fix works identically to current behavior",
+      "CONTRACT.json imports from uat-workflow are satisfied"
+    ]
+  }
+}

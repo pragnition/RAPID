@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320">
+  <defs>
+    <style>
+      .bg { fill: #0a0e27; }
+      .deep { fill: #0d2b45; }
+      .mid { fill: #1a4a6e; }
+      .wave { fill: #2878a8; }
+      .light { fill: #3ca4d8; }
+      .crest { fill: #6ecff6; }
+      .foam { fill: #e8f4fd; }
+      .spray { fill: #ffffff; }
+      .text { fill: #e8f4fd; font-family: monospace; font-weight: bold; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect class="bg" width="320" height="320" rx="16"/>
+
+  <!-- Pixel size: 8x8 -->
+
+  <!-- Deep water base -->
+  <rect class="deep" x="0" y="200" width="320" height="104" rx="0"/>
+  <rect class="deep" x="16" y="192" width="288" height="8"/>
+  <rect class="deep" x="32" y="184" width="264" height="8"/>
+
+  <!-- Mid water body of main wave -->
+  <rect class="mid" x="48" y="176" width="240" height="8"/>
+  <rect class="mid" x="56" y="168" width="224" height="8"/>
+  <rect class="mid" x="64" y="160" width="200" height="8"/>
+  <rect class="mid" x="72" y="152" width="176" height="8"/>
+  <rect class="mid" x="80" y="144" width="152" height="8"/>
+  <rect class="mid" x="24" y="200" width="272" height="16"/>
+
+  <!-- Main wave curl - rising body -->
+  <rect class="wave" x="88" y="136" width="128" height="8"/>
+  <rect class="wave" x="96" y="128" width="112" height="8"/>
+  <rect class="wave" x="104" y="120" width="96" height="8"/>
+  <rect class="wave" x="112" y="112" width="80" height="8"/>
+  <rect class="wave" x="120" y="104" width="64" height="8"/>
+  <rect class="wave" x="128" y="96" width="56" height="8"/>
+  <rect class="wave" x="136" y="88" width="48" height="8"/>
+
+  <!-- Wave crest - curling over -->
+  <rect class="light" x="144" y="80" width="48" height="8"/>
+  <rect class="light" x="152" y="72" width="48" height="8"/>
+  <rect class="light" x="160" y="64" width="48" height="8"/>
+  <rect class="light" x="176" y="56" width="40" height="8"/>
+  <rect class="light" x="192" y="56" width="32" height="8"/>
+
+  <!-- Curl tip falling down -->
+  <rect class="crest" x="208" y="64" width="24" height="8"/>
+  <rect class="crest" x="216" y="72" width="24" height="8"/>
+  <rect class="crest" x="224" y="80" width="24" height="8"/>
+  <rect class="crest" x="232" y="88" width="16" height="8"/>
+  <rect class="crest" x="240" y="96" width="16" height="8"/>
+  <rect class="crest" x="240" y="104" width="16" height="8"/>
+  <rect class="crest" x="240" y="112" width="8" height="8"/>
+  <rect class="crest" x="240" y="120" width="8" height="16"/>
+
+  <!-- Foam on crest -->
+  <rect class="foam" x="152" y="64" width="8" height="8"/>
+  <rect class="foam" x="160" y="56" width="16" height="8"/>
+  <rect class="foam" x="176" y="48" width="24" height="8"/>
+  <rect class="foam" x="200" y="48" width="16" height="8"/>
+  <rect class="foam" x="216" y="56" width="16" height="8"/>
+  <rect class="foam" x="224" y="64" width="16" height="8"/>
+  <rect class="foam" x="232" y="72" width="16" height="8"/>
+  <rect class="foam" x="240" y="80" width="16" height="8"/>
+  <rect class="foam" x="248" y="88" width="8" height="16"/>
+
+  <!-- Spray pixels (scattered foam droplets) -->
+  <rect class="spray" x="176" y="40" width="8" height="8"/>
+  <rect class="spray" x="192" y="40" width="8" height="8"/>
+  <rect class="spray" x="208" y="44" width="8" height="8"/>
+  <rect class="spray" x="248" y="72" width="8" height="8"/>
+  <rect class="spray" x="256" y="88" width="8" height="8"/>
+  <rect class="spray" x="256" y="104" width="8" height="8"/>
+  <rect class="spray" x="168" y="48" width="8" height="8"/>
+
+  <!-- Extra spray above -->
+  <rect class="spray" x="184" y="32" width="8" height="8"/>
+  <rect class="spray" x="200" y="36" width="8" height="8"/>
+  <rect class="spray" x="160" y="40" width="8" height="8"/>
+  <rect class="foam" x="192" y="32" width="8" height="8"/>
+
+  <!-- Secondary smaller wave in background -->
+  <rect class="mid" x="24" y="176" width="24" height="8"/>
+  <rect class="wave" x="16" y="168" width="32" height="8"/>
+  <rect class="light" x="16" y="160" width="24" height="8"/>
+  <rect class="crest" x="16" y="152" width="16" height="8"/>
+  <rect class="foam" x="16" y="144" width="8" height="8"/>
+
+  <!-- Small wave right side -->
+  <rect class="mid" x="264" y="160" width="40" height="8"/>
+  <rect class="wave" x="272" y="152" width="32" height="8"/>
+  <rect class="light" x="280" y="144" width="24" height="8"/>
+  <rect class="crest" x="288" y="136" width="16" height="8"/>
+  <rect class="foam" x="296" y="128" width="8" height="8"/>
+
+  <!-- Water surface detail lines -->
+  <rect class="light" x="40" y="208" width="24" height="8"/>
+  <rect class="light" x="80" y="216" width="32" height="8"/>
+  <rect class="light" x="160" y="208" width="24" height="8"/>
+  <rect class="light" x="224" y="216" width="32" height="8"/>
+  <rect class="wave" x="120" y="224" width="16" height="8"/>
+  <rect class="wave" x="192" y="232" width="24" height="8"/>
+  <rect class="wave" x="56" y="232" width="16" height="8"/>
+  <rect class="wave" x="264" y="224" width="16" height="8"/>
+
+  <!-- Deep ripples -->
+  <rect class="mid" x="32" y="248" width="24" height="8"/>
+  <rect class="mid" x="136" y="240" width="16" height="8"/>
+  <rect class="mid" x="240" y="248" width="24" height="8"/>
+  <rect class="mid" x="88" y="256" width="16" height="8"/>
+  <rect class="mid" x="184" y="256" width="24" height="8"/>
+
+  <!-- RAPID text -->
+  <text class="text" x="160" y="296" font-size="28" text-anchor="middle" letter-spacing="6">RAPID</text>
+</svg>

@@ -1,0 +1,68 @@
+{
+  "setId": "branding-assets",
+  "version": "1.0.0",
+  "exports": {
+    "banner-github-svg": {
+      "type": "file",
+      "signature": "branding/banner-github.svg",
+      "description": "1280x320 banner SVG with Everforest dark palette, serif title typography, inline fill/font attributes for GitHub compatibility"
+    },
+    "lifecycle-flow-svg": {
+      "type": "file",
+      "signature": "branding/lifecycle-flow.svg",
+      "description": "Horizontal flow diagram (~1280x200) showing init -> start-set -> discuss -> plan -> execute -> review -> merge pipeline"
+    },
+    "agent-dispatch-svg": {
+      "type": "file",
+      "signature": "branding/agent-dispatch.svg",
+      "description": "Vertical tree diagram (~1280x600) showing command-to-agent spawning relationships"
+    },
+    "social-preview-png": {
+      "type": "file",
+      "signature": "branding/social-preview.png",
+      "description": "1280x640 social preview PNG rasterized from banner design via rsvg-convert"
+    },
+    "gitattributes": {
+      "type": "file",
+      "signature": ".gitattributes",
+      "description": "Git attributes marking PNG as binary, SVG as text, with diff settings"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "github-svg-compat": {
+      "description": "All SVGs must use inline fill/font attributes instead of CSS classes or font declarations, because GitHub's SVG sanitizer and camo proxy strip them",
+      "enforced_by": "test"
+    },
+    "wcag-aa-compliance": {
+      "description": "Grey #859289 used only for large text (>=18px or >=14px bold) to maintain WCAG AA contrast ratio against dark backgrounds",
+      "enforced_by": "test"
+    },
+    "title-as-paths": {
+      "description": "Banner title text converted to SVG paths to avoid font rendering failures on systems without Georgia/Noto Serif",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Create all four visual branding assets (banner SVG, lifecycle flow SVG, agent dispatch SVG, social preview PNG) plus .gitattributes. All SVGs hand-crafted with inline attributes for GitHub rendering compatibility.",
+    "ownedFiles": [
+      "branding/banner-github.svg",
+      "branding/lifecycle-flow.svg",
+      "branding/agent-dispatch.svg",
+      "branding/social-preview.png",
+      ".gitattributes"
+    ],
+    "tasks": [
+      { "description": "Create 1280x320 banner SVG with Everforest dark palette and path-based title", "acceptance": "Renders correctly on GitHub without font fallback issues" },
+      { "description": "Create horizontal lifecycle flow SVG showing init-to-merge pipeline", "acceptance": "Renders correctly on GitHub at ~1280x200" },
+      { "description": "Create vertical agent dispatch SVG showing command-to-agent tree", "acceptance": "Renders correctly on GitHub at ~1280x600" },
+      { "description": "Rasterize social preview PNG from banner design", "acceptance": "1280x640 PNG with readable text, generated via rsvg-convert" },
+      { "description": "Create .gitattributes with binary/text markers", "acceptance": "PNG marked binary, SVG marked text" }
+    ],
+    "acceptance": [
+      "All 4 visual assets exist and render correctly on GitHub",
+      "SVGs survive GitHub's SVG sanitizer (no stripped attributes)",
+      ".gitattributes configured correctly"
+    ]
+  }
+}

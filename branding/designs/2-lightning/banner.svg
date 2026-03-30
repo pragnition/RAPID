@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <rect fill="#0f0a1a" width="1280" height="320" rx="12"/>
+
+  <!-- Background grid dots -->
+  <g fill="#1a1230" opacity="0.6">
+    <rect x="40" y="40" width="4" height="4" rx="2"/><rect x="80" y="40" width="4" height="4" rx="2"/><rect x="120" y="40" width="4" height="4" rx="2"/><rect x="160" y="40" width="4" height="4" rx="2"/>
+    <rect x="40" y="80" width="4" height="4" rx="2"/><rect x="80" y="80" width="4" height="4" rx="2"/><rect x="120" y="80" width="4" height="4" rx="2"/><rect x="160" y="80" width="4" height="4" rx="2"/>
+    <rect x="40" y="120" width="4" height="4" rx="2"/><rect x="80" y="120" width="4" height="4" rx="2"/><rect x="120" y="120" width="4" height="4" rx="2"/><rect x="160" y="120" width="4" height="4" rx="2"/>
+    <rect x="40" y="160" width="4" height="4" rx="2"/><rect x="80" y="160" width="4" height="4" rx="2"/><rect x="120" y="160" width="4" height="4" rx="2"/><rect x="160" y="160" width="4" height="4" rx="2"/>
+    <rect x="40" y="200" width="4" height="4" rx="2"/><rect x="80" y="200" width="4" height="4" rx="2"/><rect x="120" y="200" width="4" height="4" rx="2"/><rect x="160" y="200" width="4" height="4" rx="2"/>
+    <rect x="40" y="240" width="4" height="4" rx="2"/><rect x="80" y="240" width="4" height="4" rx="2"/><rect x="120" y="240" width="4" height="4" rx="2"/><rect x="160" y="240" width="4" height="4" rx="2"/>
+    <rect x="40" y="280" width="4" height="4" rx="2"/><rect x="80" y="280" width="4" height="4" rx="2"/><rect x="120" y="280" width="4" height="4" rx="2"/><rect x="160" y="280" width="4" height="4" rx="2"/>
+  </g>
+
+  <!-- Large pixel lightning bolt -->
+  <g>
+    <!-- Main bolt -->
+    <rect fill="#ffd700" x="200" y="24" width="40" height="8"/>
+    <rect fill="#ffd700" x="184" y="32" width="40" height="8"/>
+    <rect fill="#ffd700" x="168" y="40" width="40" height="8"/>
+    <rect fill="#ffd700" x="152" y="48" width="40" height="8"/>
+    <rect fill="#ffd700" x="136" y="56" width="40" height="8"/>
+    <rect fill="#ffd700" x="120" y="64" width="40" height="8"/>
+    <rect fill="#ffd700" x="104" y="72" width="40" height="8"/>
+
+    <!-- Horizontal jag -->
+    <rect fill="#ffec80" x="104" y="80" width="120" height="8"/>
+    <rect fill="#ffd700" x="104" y="88" width="120" height="8"/>
+
+    <!-- Lower bolt -->
+    <rect fill="#ffd700" x="184" y="96" width="40" height="8"/>
+    <rect fill="#ffd700" x="168" y="104" width="40" height="8"/>
+    <rect fill="#ffd700" x="152" y="112" width="40" height="8"/>
+    <rect fill="#ffd700" x="136" y="120" width="40" height="8"/>
+    <rect fill="#ffd700" x="120" y="128" width="40" height="8"/>
+    <rect fill="#ffd700" x="104" y="136" width="40" height="8"/>
+    <rect fill="#ffd700" x="88" y="144" width="40" height="8"/>
+
+    <!-- Second jag -->
+    <rect fill="#ffec80" x="88" y="152" width="100" height="8"/>
+    <rect fill="#ffd700" x="88" y="160" width="100" height="8"/>
+
+    <!-- Final strike -->
+    <rect fill="#ffd700" x="152" y="168" width="36" height="8"/>
+    <rect fill="#ffd700" x="136" y="176" width="36" height="8"/>
+    <rect fill="#ffd700" x="120" y="184" width="36" height="8"/>
+    <rect fill="#ffd700" x="104" y="192" width="36" height="8"/>
+    <rect fill="#ffd700" x="88" y="200" width="36" height="8"/>
+    <rect fill="#ffec80" x="80" y="208" width="24" height="8"/>
+    <rect fill="#fff4b3" x="72" y="216" width="16" height="8"/>
+
+    <!-- Glow pixels around bolt -->
+    <rect fill="#ffd700" opacity="0.3" x="96" y="64" width="8" height="8"/>
+    <rect fill="#ffd700" opacity="0.3" x="168" y="64" width="8" height="8"/>
+    <rect fill="#ffd700" opacity="0.2" x="80" y="136" width="8" height="8"/>
+    <rect fill="#ffd700" opacity="0.2" x="152" y="136" width="8" height="8"/>
+    <rect fill="#ffd700" opacity="0.3" x="72" y="200" width="8" height="8"/>
+    <rect fill="#ffd700" opacity="0.3" x="132" y="200" width="8" height="8"/>
+
+    <!-- Spark pixels -->
+    <rect fill="#ffffff" x="216" y="16" width="8" height="8"/>
+    <rect fill="#ffffff" x="232" y="24" width="8" height="8"/>
+    <rect fill="#ffffff" x="64" y="216" width="8" height="8"/>
+    <rect fill="#ffffff" x="56" y="224" width="8" height="8"/>
+    <rect fill="#ffec80" x="240" y="16" width="8" height="8"/>
+    <rect fill="#ffec80" x="48" y="228" width="8" height="8"/>
+
+    <!-- Electric scatter -->
+    <rect fill="#ffd700" opacity="0.4" x="248" y="40" width="8" height="8"/>
+    <rect fill="#ffd700" opacity="0.3" x="256" y="56" width="8" height="8"/>
+    <rect fill="#ffd700" opacity="0.4" x="40" y="192" width="8" height="8"/>
+    <rect fill="#ffd700" opacity="0.3" x="32" y="208" width="8" height="8"/>
+  </g>
+
+  <!-- Speed lines -->
+  <rect fill="#ffd700" opacity="0.15" x="280" y="100" width="160" height="4"/>
+  <rect fill="#ffd700" opacity="0.1" x="300" y="140" width="120" height="4"/>
+  <rect fill="#ffd700" opacity="0.12" x="260" y="180" width="180" height="4"/>
+  <rect fill="#ffd700" opacity="0.08" x="320" y="60" width="80" height="4"/>
+  <rect fill="#ffd700" opacity="0.1" x="280" y="220" width="100" height="4"/>
+
+  <!-- RAPID text -->
+  <text fill="#ffd700" x="760" y="140" font-family="monospace" font-weight="bold" font-size="72" letter-spacing="16">RAPID</text>
+
+  <!-- Tagline -->
+  <text fill="#ffec80" opacity="0.7" x="764" y="180" font-family="monospace" font-size="14" letter-spacing="4">RAPID AGENTIC PARALLELIZABLE &amp; ISOLATABLE DEVELOPMENT</text>
+
+  <!-- Underline accent -->
+  <rect fill="#ffd700" x="760" y="192" width="480" height="2" opacity="0.4"/>
+  <rect fill="#ffd700" x="760" y="196" width="320" height="2" opacity="0.2"/>
+</svg>

@@ -1,0 +1,74 @@
+{
+  "setId": "community-infra",
+  "version": "1.0.0",
+  "exports": {
+    "contributing-md": {
+      "type": "file",
+      "signature": "CONTRIBUTING.md",
+      "description": "Community contribution guide covering dev install, bug reports, feature proposals, and code style"
+    },
+    "bug-report-template": {
+      "type": "file",
+      "signature": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "description": "YAML issue form for bug reports with structured fields"
+    },
+    "feature-request-template": {
+      "type": "file",
+      "signature": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "description": "YAML issue form for feature requests with structured fields"
+    },
+    "template-config": {
+      "type": "file",
+      "signature": ".github/ISSUE_TEMPLATE/config.yml",
+      "description": "Template chooser configuration for GitHub issue creation"
+    },
+    "pr-template": {
+      "type": "file",
+      "signature": ".github/PULL_REQUEST_TEMPLATE.md",
+      "description": "Pull request template with what/why/testing checklist"
+    },
+    "package-json-fields": {
+      "type": "file",
+      "signature": "package.json (repository + homepage fields)",
+      "description": "Added repository and homepage fields pointing to pragnition/RAPID"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "yaml-boolean-safety": {
+      "description": "All YAML template boolean values must be quoted strings, not bare yes/no, to prevent silent parsing breakage",
+      "enforced_by": "test"
+    },
+    "public-repo-required": {
+      "description": "GitHub YAML issue forms only work on public repositories; templates must gracefully degrade to Markdown forms on private repos",
+      "enforced_by": "runtime"
+    },
+    "no-nonsense-tone": {
+      "description": "CONTRIBUTING.md uses brief, direct tone matching RAPID's existing documentation style -- no corporate boilerplate",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Create all community-facing GitHub infrastructure: CONTRIBUTING.md, YAML issue templates (bug report, feature request, config), PR template, and package.json metadata fields.",
+    "ownedFiles": [
+      "CONTRIBUTING.md",
+      ".github/ISSUE_TEMPLATE/bug_report.yml",
+      ".github/ISSUE_TEMPLATE/feature_request.yml",
+      ".github/ISSUE_TEMPLATE/config.yml",
+      ".github/PULL_REQUEST_TEMPLATE.md"
+    ],
+    "tasks": [
+      { "description": "Create CONTRIBUTING.md with dev install, bug reports, feature proposals, code style sections", "acceptance": "Concise, no-boilerplate guide matching RAPID's doc style" },
+      { "description": "Create bug_report.yml YAML issue form", "acceptance": "Valid YAML, all booleans quoted, structured fields" },
+      { "description": "Create feature_request.yml YAML issue form", "acceptance": "Valid YAML, all booleans quoted, structured fields" },
+      { "description": "Create config.yml template chooser", "acceptance": "Configures GitHub issue template selection" },
+      { "description": "Create PR template with what/why/testing checklist", "acceptance": "Short, practical checklist format" },
+      { "description": "Add repository and homepage fields to package.json", "acceptance": "Fields point to pragnition/RAPID" }
+    ],
+    "acceptance": [
+      "All community files exist and are valid",
+      "YAML forms render correctly on GitHub",
+      "package.json has repository and homepage fields"
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <defs>
+    <linearGradient id="g15bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#111111"/>
+    </linearGradient>
+  </defs>
+
+  <rect fill="url(#g15bg)" width="1280" height="320" rx="12"/>
+
+  <!-- Staggered horizontal bars - representing parallel lanes -->
+  <rect fill="#06b6d4" x="60" y="48" width="320" height="32" rx="4" opacity="0.9"/>
+  <rect fill="#8b5cf6" x="120" y="96" width="280" height="32" rx="4" opacity="0.9"/>
+  <rect fill="#10b981" x="40" y="144" width="400" height="32" rx="4" opacity="0.9"/>
+  <rect fill="#f97316" x="100" y="192" width="240" height="32" rx="4" opacity="0.9"/>
+  <rect fill="#ec4899" x="80" y="240" width="300" height="32" rx="4" opacity="0.9"/>
+
+  <!-- Bar labels -->
+  <text fill="#ffffff" x="76" y="70" font-family="'SF Mono','Fira Code',monospace" font-size="12" font-weight="bold" opacity="0.9">SET-A  ==================</text>
+  <text fill="#ffffff" x="136" y="118" font-family="'SF Mono','Fira Code',monospace" font-size="12" font-weight="bold" opacity="0.9">SET-B  ===============</text>
+  <text fill="#ffffff" x="56" y="166" font-family="'SF Mono','Fira Code',monospace" font-size="12" font-weight="bold" opacity="0.9">SET-C  ========================</text>
+  <text fill="#ffffff" x="116" y="214" font-family="'SF Mono','Fira Code',monospace" font-size="12" font-weight="bold" opacity="0.9">SET-D  ============</text>
+  <text fill="#ffffff" x="96" y="262" font-family="'SF Mono','Fira Code',monospace" font-size="12" font-weight="bold" opacity="0.9">SET-E  ================</text>
+
+  <!-- Merge line -->
+  <line x1="500" y1="40" x2="500" y2="280" stroke="#ffffff" stroke-width="2" stroke-dasharray="4,4" opacity="0.3"/>
+  <text fill="#ffffff" x="488" y="304" font-family="'SF Mono','Fira Code',monospace" font-size="9" text-anchor="middle" opacity="0.4">MERGE</text>
+
+  <!-- RAPID text -->
+  <text fill="#ffffff" x="900" y="150" font-family="'SF Mono','Fira Code',monospace" font-weight="900" font-size="96" text-anchor="middle" letter-spacing="16">RAPID</text>
+
+  <!-- Tagline -->
+  <text fill="#525252" x="900" y="190" font-family="'SF Mono','Fira Code',monospace" font-size="12" text-anchor="middle" letter-spacing="4">RAPID AGENTIC PARALLELIZABLE &amp; ISOLATABLE DEVELOPMENT</text>
+
+  <!-- Small colored dots for legend -->
+  <g font-family="'SF Mono','Fira Code',monospace" font-size="10">
+    <circle cx="720" cy="236" r="4" fill="#06b6d4"/>
+    <text fill="#a3a3a3" x="730" y="240">parallel</text>
+    <circle cx="810" cy="236" r="4" fill="#8b5cf6"/>
+    <text fill="#a3a3a3" x="820" y="240">isolated</text>
+    <circle cx="900" cy="236" r="4" fill="#10b981"/>
+    <text fill="#a3a3a3" x="910" y="240">agentic</text>
+    <circle cx="990" cy="236" r="4" fill="#f97316"/>
+    <text fill="#a3a3a3" x="1000" y="240">worktree</text>
+    <circle cx="1088" cy="236" r="4" fill="#ec4899"/>
+    <text fill="#a3a3a3" x="1098" y="240">merged</text>
+  </g>
+</svg>

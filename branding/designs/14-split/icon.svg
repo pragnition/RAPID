@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <clipPath id="si14t">
+      <rect x="0" y="0" width="256" height="128"/>
+    </clipPath>
+    <clipPath id="si14b">
+      <rect x="0" y="128" width="256" height="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Top half -->
+  <rect fill="#fafafa" width="256" height="128"/>
+  <!-- Bottom half -->
+  <rect fill="#0a0a0a" y="128" width="256" height="128"/>
+
+  <!-- R top (dark on light) -->
+  <g clip-path="url(#si14t)">
+    <text fill="#0a0a0a" x="128" y="178" font-family="'SF Mono','Fira Code',monospace" font-weight="900" font-size="160" text-anchor="middle">R</text>
+  </g>
+
+  <!-- R bottom (light on dark) -->
+  <g clip-path="url(#si14b)">
+    <text fill="#fafafa" x="128" y="178" font-family="'SF Mono','Fira Code',monospace" font-weight="900" font-size="160" text-anchor="middle">R</text>
+  </g>
+
+  <!-- Accent line -->
+  <rect fill="#06b6d4" x="0" y="127" width="256" height="2"/>
+</svg>

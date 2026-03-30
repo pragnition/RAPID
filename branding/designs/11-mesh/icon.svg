@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <radialGradient id="mig" cx="0.5" cy="0.5">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Ambient glow -->
+  <circle cx="128" cy="128" r="120" fill="url(#mig)"/>
+
+  <!-- Background connections -->
+  <g stroke="#334155" stroke-width="0.8" fill="none">
+    <line x1="40" y1="40" x2="128" y2="60"/>
+    <line x1="128" y1="60" x2="216" y2="40"/>
+    <line x1="40" y1="128" x2="128" y2="128"/>
+    <line x1="128" y1="128" x2="216" y2="128"/>
+    <line x1="40" y1="216" x2="128" y2="196"/>
+    <line x1="128" y1="196" x2="216" y2="216"/>
+    <line x1="40" y1="40" x2="40" y2="128"/>
+    <line x1="40" y1="128" x2="40" y2="216"/>
+    <line x1="128" y1="60" x2="128" y2="128"/>
+    <line x1="128" y1="128" x2="128" y2="196"/>
+    <line x1="216" y1="40" x2="216" y2="128"/>
+    <line x1="216" y1="128" x2="216" y2="216"/>
+    <!-- Diagonals -->
+    <line x1="40" y1="40" x2="128" y2="128"/>
+    <line x1="216" y1="40" x2="128" y2="128"/>
+    <line x1="40" y1="216" x2="128" y2="128"/>
+    <line x1="216" y1="216" x2="128" y2="128"/>
+    <line x1="128" y1="60" x2="40" y2="128"/>
+    <line x1="128" y1="60" x2="216" y2="128"/>
+    <line x1="128" y1="196" x2="40" y2="128"/>
+    <line x1="128" y1="196" x2="216" y2="128"/>
+  </g>
+
+  <!-- Active connections -->
+  <g stroke="#06b6d4" stroke-width="1.5" fill="none" opacity="0.6">
+    <line x1="40" y1="40" x2="128" y2="60"/>
+    <line x1="128" y1="60" x2="128" y2="128"/>
+    <line x1="216" y1="128" x2="128" y2="128"/>
+    <line x1="128" y1="128" x2="128" y2="196"/>
+  </g>
+
+  <!-- Background nodes -->
+  <g fill="#334155">
+    <circle cx="40" cy="128" r="5"/>
+    <circle cx="40" cy="216" r="5"/>
+    <circle cx="216" cy="40" r="5"/>
+    <circle cx="216" cy="216" r="5"/>
+  </g>
+
+  <!-- Active nodes -->
+  <g>
+    <circle cx="40" cy="40" r="6" fill="#06b6d4" opacity="0.8"/>
+    <circle cx="40" cy="40" r="12" fill="#06b6d4" opacity="0.08"/>
+    <circle cx="128" cy="60" r="6" fill="#06b6d4" opacity="0.8"/>
+    <circle cx="128" cy="60" r="12" fill="#06b6d4" opacity="0.08"/>
+    <circle cx="216" cy="128" r="6" fill="#06b6d4" opacity="0.7"/>
+    <circle cx="216" cy="128" r="12" fill="#06b6d4" opacity="0.06"/>
+    <circle cx="128" cy="196" r="6" fill="#8b5cf6" opacity="0.7"/>
+    <circle cx="128" cy="196" r="12" fill="#8b5cf6" opacity="0.06"/>
+  </g>
+
+  <!-- Central hub -->
+  <circle cx="128" cy="128" r="8" fill="#8b5cf6" opacity="0.9"/>
+  <circle cx="128" cy="128" r="18" fill="#8b5cf6" opacity="0.06"/>
+  <circle cx="128" cy="128" r="4" fill="#ffffff" opacity="0.8"/>
+
+  <!-- Data particles -->
+  <circle cx="84" cy="50" r="2" fill="#06b6d4" opacity="0.5"/>
+  <circle cx="128" cy="94" r="2" fill="#06b6d4" opacity="0.4"/>
+  <circle cx="172" cy="128" r="2" fill="#06b6d4" opacity="0.4"/>
+</svg>

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Parallel arrows converging - transparent background -->
+
+  <!-- Arrow 1 (top) - green -->
+  <g fill="#00d4aa">
+    <rect x="24" y="32" width="80" height="8"/>
+    <rect x="24" y="40" width="80" height="8"/>
+    <rect x="104" y="24" width="8" height="8"/>
+    <rect x="112" y="32" width="8" height="8"/>
+    <rect x="120" y="40" width="8" height="8"/>
+    <rect x="104" y="48" width="8" height="8"/>
+    <rect x="112" y="40" width="8" height="8"/>
+    <rect x="24" y="32" width="8" height="16" opacity="0.3"/>
+    <rect x="40" y="32" width="8" height="16" opacity="0.5"/>
+    <rect x="56" y="32" width="8" height="16" opacity="0.7"/>
+  </g>
+
+  <!-- Arrow 2 - blue -->
+  <g fill="#3b82f6">
+    <rect x="16" y="72" width="112" height="8"/>
+    <rect x="16" y="80" width="112" height="8"/>
+    <rect x="128" y="64" width="8" height="8"/>
+    <rect x="136" y="72" width="8" height="8"/>
+    <rect x="144" y="80" width="8" height="8"/>
+    <rect x="128" y="88" width="8" height="8"/>
+    <rect x="136" y="80" width="8" height="8"/>
+    <rect x="16" y="72" width="8" height="16" opacity="0.3"/>
+    <rect x="32" y="72" width="8" height="16" opacity="0.5"/>
+    <rect x="48" y="72" width="8" height="16" opacity="0.7"/>
+  </g>
+
+  <!-- Arrow 3 (center) - white, longest -->
+  <g fill="#e0f2fe">
+    <rect x="8" y="116" width="160" height="8"/>
+    <rect x="8" y="124" width="160" height="8"/>
+    <rect x="168" y="108" width="8" height="8"/>
+    <rect x="176" y="116" width="8" height="8"/>
+    <rect x="184" y="124" width="8" height="8"/>
+    <rect x="168" y="132" width="8" height="8"/>
+    <rect x="176" y="124" width="8" height="8"/>
+    <rect x="8" y="116" width="8" height="16" opacity="0.2"/>
+    <rect x="24" y="116" width="8" height="16" opacity="0.4"/>
+    <rect x="40" y="116" width="8" height="16" opacity="0.6"/>
+  </g>
+
+  <!-- Arrow 4 - purple -->
+  <g fill="#a855f7">
+    <rect x="24" y="160" width="104" height="8"/>
+    <rect x="24" y="168" width="104" height="8"/>
+    <rect x="128" y="152" width="8" height="8"/>
+    <rect x="136" y="160" width="8" height="8"/>
+    <rect x="144" y="168" width="8" height="8"/>
+    <rect x="128" y="176" width="8" height="8"/>
+    <rect x="136" y="168" width="8" height="8"/>
+    <rect x="24" y="160" width="8" height="16" opacity="0.3"/>
+    <rect x="40" y="160" width="8" height="16" opacity="0.5"/>
+    <rect x="56" y="160" width="8" height="16" opacity="0.7"/>
+  </g>
+
+  <!-- Arrow 5 (bottom) - pink -->
+  <g fill="#f472b6">
+    <rect x="32" y="204" width="72" height="8"/>
+    <rect x="32" y="212" width="72" height="8"/>
+    <rect x="104" y="196" width="8" height="8"/>
+    <rect x="112" y="204" width="8" height="8"/>
+    <rect x="120" y="212" width="8" height="8"/>
+    <rect x="104" y="220" width="8" height="8"/>
+    <rect x="112" y="212" width="8" height="8"/>
+    <rect x="32" y="204" width="8" height="16" opacity="0.3"/>
+    <rect x="48" y="204" width="8" height="16" opacity="0.5"/>
+    <rect x="64" y="204" width="8" height="16" opacity="0.7"/>
+  </g>
+
+  <!-- Convergence lines -->
+  <g fill="#ffffff" opacity="0.06">
+    <rect x="160" y="32" width="8" height="200"/>
+    <rect x="176" y="56" width="8" height="152"/>
+    <rect x="192" y="80" width="8" height="104"/>
+    <rect x="208" y="100" width="8" height="64"/>
+  </g>
+
+  <!-- Merge node -->
+  <rect fill="#ffffff" x="220" y="116" width="16" height="16" rx="2"/>
+  <rect fill="#e0f2fe" x="224" y="120" width="8" height="8"/>
+</svg>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <rect fill="#0a0a0a" width="1280" height="320" rx="12"/>
+
+  <!-- Terminal window chrome -->
+  <rect fill="#1a1a1a" x="40" y="24" width="1200" height="272" rx="10"/>
+  <rect fill="#262626" x="40" y="24" width="1200" height="36" rx="10"/>
+  <rect fill="#262626" x="40" y="50" width="1200" height="10"/>
+
+  <!-- Window buttons -->
+  <circle cx="68" cy="42" r="6" fill="#ef4444"/>
+  <circle cx="92" cy="42" r="6" fill="#eab308"/>
+  <circle cx="116" cy="42" r="6" fill="#22c55e"/>
+
+  <!-- Title bar text -->
+  <text fill="#737373" x="640" y="47" font-family="'SF Mono','Fira Code',monospace" font-size="12" text-anchor="middle">rapid -- fish</text>
+
+  <!-- Terminal content -->
+  <g font-family="'SF Mono','Fira Code',monospace" font-size="14">
+    <text fill="#22c55e" x="72" y="92">$</text>
+    <text fill="#e5e5e5" x="92" y="92">rapid status</text>
+
+    <text fill="#06b6d4" x="72" y="120">RAPID</text>
+    <text fill="#737373" x="130" y="120">v4.4.0</text>
+    <text fill="#737373" x="200" y="120">|</text>
+    <text fill="#22c55e" x="216" y="120">5 sets active</text>
+    <text fill="#737373" x="370" y="120">|</text>
+    <text fill="#eab308" x="386" y="120">3 executing</text>
+
+    <text fill="#737373" x="72" y="152">-------------------------------------------</text>
+
+    <text fill="#06b6d4" x="72" y="176">SET-A</text>
+    <text fill="#22c55e" x="160" y="176">████████████████████</text>
+    <text fill="#22c55e" x="410" y="176">done</text>
+
+    <text fill="#8b5cf6" x="72" y="200">SET-B</text>
+    <text fill="#8b5cf6" x="160" y="200">███████████████</text>
+    <text fill="#eab308" x="340" y="200">executing w3/4</text>
+
+    <text fill="#10b981" x="72" y="224">SET-C</text>
+    <text fill="#10b981" x="160" y="224">████████████████████████</text>
+    <text fill="#22c55e" x="470" y="224">done</text>
+
+    <text fill="#f97316" x="72" y="248">SET-D</text>
+    <text fill="#f97316" x="160" y="248">██████████</text>
+    <text fill="#eab308" x="280" y="248">executing w1/3</text>
+
+    <text fill="#ec4899" x="72" y="272">SET-E</text>
+    <text fill="#737373" x="160" y="272">░░░░░░░░░░░░░░░░░░</text>
+    <text fill="#737373" x="390" y="272">queued</text>
+  </g>
+
+  <!-- RAPID branding on right side -->
+  <text fill="#ffffff" x="1000" y="170" font-family="'SF Mono','Fira Code',monospace" font-weight="900" font-size="80" text-anchor="middle" letter-spacing="10" opacity="0.06">RAPID</text>
+</svg>

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <defs>
+    <linearGradient id="bg7" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#020618"/>
+      <stop offset="100%" stop-color="#0a1628"/>
+    </linearGradient>
+    <linearGradient id="wave7a" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6ecff6"/>
+      <stop offset="100%" stop-color="#1a4a6e"/>
+    </linearGradient>
+    <linearGradient id="wave7b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3ca4d8"/>
+      <stop offset="100%" stop-color="#0d2b45"/>
+    </linearGradient>
+    <linearGradient id="wave7c" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2878a8"/>
+      <stop offset="100%" stop-color="#091e30"/>
+    </linearGradient>
+    <linearGradient id="foam7" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#a8dff0"/>
+    </linearGradient>
+  </defs>
+
+  <rect fill="url(#bg7)" width="1280" height="320" rx="12"/>
+
+  <!-- Deep background wave -->
+  <path d="M0 260 Q80 220 180 240 T380 220 T560 240 T720 210 T900 230 T1100 220 T1280 240 L1280 320 L0 320Z" fill="url(#wave7c)" opacity="0.5"/>
+
+  <!-- Mid wave -->
+  <path d="M0 240 Q100 200 220 220 T460 180 T680 200 L680 320 L0 320Z" fill="url(#wave7b)" opacity="0.7"/>
+
+  <!-- Main wave - Hokusai curl -->
+  <path d="M0 280 Q60 260 120 250 Q200 230 280 200 Q340 170 380 130 Q410 100 430 75 Q450 55 470 50 Q500 44 520 55 Q540 65 550 85 Q560 100 565 120 Q570 145 560 170 Q550 190 530 200 Q500 215 470 210 Q440 200 430 180"
+        fill="url(#wave7a)" stroke="none"/>
+
+  <!-- Wave body extension -->
+  <path d="M0 280 Q60 260 120 250 Q200 230 280 200 Q340 170 380 130 Q380 200 350 240 Q320 270 280 285 Q200 310 120 310 Q60 310 0 300Z"
+        fill="url(#wave7b)"/>
+
+  <!-- Foam on curl -->
+  <path d="M430 75 Q450 55 470 50 Q500 44 520 55 Q540 65 550 85 Q545 75 530 68 Q510 60 490 62 Q470 65 455 72 Q440 80 435 78Z"
+        fill="url(#foam7)" opacity="0.9"/>
+
+  <!-- Spray droplets -->
+  <circle cx="480" cy="38" r="3" fill="#ffffff" opacity="0.8"/>
+  <circle cx="500" cy="30" r="2.5" fill="#ffffff" opacity="0.7"/>
+  <circle cx="515" cy="36" r="2" fill="#ffffff" opacity="0.6"/>
+  <circle cx="465" cy="42" r="2" fill="#e8f4fd" opacity="0.7"/>
+  <circle cx="530" cy="44" r="2.5" fill="#ffffff" opacity="0.5"/>
+  <circle cx="490" cy="26" r="1.5" fill="#ffffff" opacity="0.5"/>
+  <circle cx="510" cy="22" r="2" fill="#ffffff" opacity="0.4"/>
+  <circle cx="545" cy="52" r="1.5" fill="#e8f4fd" opacity="0.4"/>
+  <circle cx="555" cy="68" r="2" fill="#e8f4fd" opacity="0.3"/>
+
+  <!-- Foam lines -->
+  <path d="M380 135 Q400 125 420 128" stroke="#e8f4fd" stroke-width="1.5" fill="none" opacity="0.4"/>
+  <path d="M360 155 Q385 145 400 150" stroke="#e8f4fd" stroke-width="1" fill="none" opacity="0.3"/>
+
+  <!-- Small secondary wave -->
+  <path d="M560 220 Q620 190 660 195 Q700 200 720 220 Q740 240 730 260 L560 260Z" fill="url(#wave7b)" opacity="0.5"/>
+  <path d="M660 195 Q680 190 695 198 Q705 205 700 215" stroke="url(#foam7)" stroke-width="1.5" fill="none" opacity="0.4"/>
+
+  <!-- Surface ripples in distance -->
+  <path d="M750 250 Q800 240 850 248" stroke="#3ca4d8" stroke-width="1" fill="none" opacity="0.2"/>
+  <path d="M820 260 Q860 252 900 258" stroke="#3ca4d8" stroke-width="1" fill="none" opacity="0.15"/>
+
+  <!-- RAPID text -->
+  <text fill="#e8f4fd" x="760" y="130" font-family="'SF Mono', 'Fira Code', monospace" font-weight="bold" font-size="72" letter-spacing="14">RAPID</text>
+
+  <!-- Tagline -->
+  <text fill="#3ca4d8" x="764" y="166" font-family="'SF Mono', 'Fira Code', monospace" font-size="12" letter-spacing="3" opacity="0.8">RAPID AGENTIC PARALLELIZABLE &amp; ISOLATABLE DEVELOPMENT</text>
+
+  <!-- Subtle line -->
+  <line x1="764" y1="176" x2="1180" y2="176" stroke="#3ca4d8" stroke-width="0.5" opacity="0.3"/>
+</svg>

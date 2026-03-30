@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Pixel art katana with blood moon - transparent background -->
+
+  <!-- Blood moon -->
+  <circle cx="160" cy="80" r="48" fill="#2a0808"/>
+  <circle cx="160" cy="80" r="40" fill="#3d0c0c"/>
+  <circle cx="160" cy="80" r="32" fill="#8b1a1a"/>
+  <circle cx="160" cy="80" r="24" fill="#cc2222"/>
+  <circle cx="160" cy="80" r="52" fill="#cc2222" opacity="0.04"/>
+
+  <!-- Katana blade -->
+  <g fill="#c0c8d8">
+    <rect x="48" y="200" width="8" height="14" transform="rotate(-40 52 207)"/>
+    <rect x="62" y="188" width="8" height="14" transform="rotate(-40 66 195)"/>
+    <rect x="76" y="176" width="8" height="14" transform="rotate(-40 80 183)"/>
+    <rect x="90" y="164" width="8" height="14" transform="rotate(-40 94 171)"/>
+    <rect x="104" y="152" width="8" height="14" transform="rotate(-40 108 159)"/>
+    <rect x="118" y="140" width="8" height="14" transform="rotate(-40 122 147)"/>
+    <rect x="132" y="128" width="8" height="14" transform="rotate(-40 136 135)"/>
+    <rect x="146" y="116" width="8" height="14" transform="rotate(-40 150 123)"/>
+    <rect x="160" y="104" width="8" height="14" transform="rotate(-40 164 111)"/>
+    <rect x="174" y="92" width="8" height="14" transform="rotate(-40 178 99)"/>
+    <rect x="188" y="80" width="8" height="14" transform="rotate(-40 192 87)"/>
+    <rect x="202" y="68" width="8" height="14" transform="rotate(-40 206 75)"/>
+    <rect x="216" y="56" width="8" height="14" transform="rotate(-40 220 63)"/>
+  </g>
+
+  <!-- Edge highlight -->
+  <g fill="#e8eef8" opacity="0.7">
+    <rect x="50" y="200" width="3" height="14" transform="rotate(-40 52 207)"/>
+    <rect x="78" y="176" width="3" height="14" transform="rotate(-40 80 183)"/>
+    <rect x="106" y="152" width="3" height="14" transform="rotate(-40 108 159)"/>
+    <rect x="134" y="128" width="3" height="14" transform="rotate(-40 136 135)"/>
+    <rect x="162" y="104" width="3" height="14" transform="rotate(-40 164 111)"/>
+    <rect x="190" y="80" width="3" height="14" transform="rotate(-40 192 87)"/>
+    <rect x="218" y="56" width="3" height="14" transform="rotate(-40 220 63)"/>
+  </g>
+
+  <!-- Tsuba -->
+  <g transform="rotate(-40 40 215)">
+    <rect fill="#8b6914" x="28" y="210" width="24" height="5"/>
+    <rect fill="#c8962a" x="32" y="211" width="16" height="3"/>
+  </g>
+
+  <!-- Handle -->
+  <g fill="#2a1a0a">
+    <rect x="16" y="220" width="8" height="10" transform="rotate(-40 20 225)"/>
+    <rect x="26" y="216" width="8" height="10" transform="rotate(-40 30 221)"/>
+  </g>
+  <g fill="#3d2814">
+    <rect x="21" y="218" width="8" height="10" transform="rotate(-40 25 223)"/>
+  </g>
+
+  <!-- Cherry blossom petals -->
+  <g fill="#ffb7c5">
+    <rect x="40" y="40" width="6" height="6" rx="1" opacity="0.7"/>
+    <rect x="80" y="24" width="5" height="5" rx="1" opacity="0.5"/>
+    <rect x="64" y="72" width="5" height="5" rx="1" opacity="0.6"/>
+    <rect x="104" y="56" width="4" height="4" rx="1" opacity="0.4"/>
+    <rect x="32" y="96" width="5" height="5" rx="1" opacity="0.5"/>
+    <rect x="88" y="104" width="4" height="4" rx="1" opacity="0.3"/>
+    <rect x="48" y="136" width="5" height="5" rx="1" opacity="0.4"/>
+    <rect x="24" y="160" width="4" height="4" rx="1" opacity="0.3"/>
+  </g>
+
+  <!-- Slash trail -->
+  <g fill="#cc2222" opacity="0.12">
+    <rect x="60" y="170" width="180" height="3" transform="rotate(-40 150 172)"/>
+  </g>
+</svg>

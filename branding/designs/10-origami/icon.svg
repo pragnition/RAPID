@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="op1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c7d2fe"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="op2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="op3" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a5b4fc"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="opd" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#3730a3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Origami crane centered -->
+  <g transform="translate(108, 120) scale(2)">
+    <!-- Body -->
+    <polygon points="0,0 60,-40 80,10" fill="url(#op1)"/>
+    <polygon points="0,0 60,-40 40,5" fill="url(#op2)"/>
+
+    <!-- Left wing -->
+    <polygon points="0,0 -70,-60 -20,-30" fill="url(#op1)"/>
+    <polygon points="0,0 -70,-60 -40,-20" fill="url(#op3)"/>
+    <line x1="0" y1="0" x2="-50" y2="-42" stroke="#4f46e5" stroke-width="0.5" opacity="0.5"/>
+
+    <!-- Right wing -->
+    <polygon points="60,-40 130,-80 100,-30" fill="url(#op1)"/>
+    <polygon points="60,-40 130,-80 90,-40" fill="url(#op3)"/>
+    <line x1="60" y1="-40" x2="105" y2="-58" stroke="#4f46e5" stroke-width="0.5" opacity="0.5"/>
+
+    <!-- Tail -->
+    <polygon points="80,10 110,30 95,5" fill="url(#op2)"/>
+    <polygon points="80,10 110,30 100,15" fill="url(#opd)"/>
+
+    <!-- Head -->
+    <polygon points="0,0 -25,15 -15,5" fill="url(#op1)"/>
+    <polygon points="-25,15 -35,18 -28,12" fill="url(#op2)"/>
+
+    <!-- Fold creases -->
+    <line x1="0" y1="0" x2="60" y2="-40" stroke="#a5b4fc" stroke-width="0.5" opacity="0.3"/>
+    <line x1="0" y1="0" x2="80" y2="10" stroke="#a5b4fc" stroke-width="0.5" opacity="0.3"/>
+  </g>
+
+  <!-- Shadow -->
+  <ellipse cx="128" cy="220" rx="60" ry="6" fill="#6366f1" opacity="0.08"/>
+</svg>

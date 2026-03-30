@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="ebrush" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e0e0e0" stop-opacity="0.2"/>
+      <stop offset="20%" stop-color="#f0f0f0"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="80%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#c0c0c0" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Enso brush stroke -->
+  <g transform="translate(128, 128)">
+    <path d="M-5 -90
+             C-50 -90, -95 -50, -95 5
+             C-95 60, -50 100, 5 100
+             C60 100, 100 60, 100 5
+             C100 -45, 65 -85, 20 -92"
+          fill="none" stroke="url(#ebrush)" stroke-width="16" stroke-linecap="round"/>
+
+    <!-- Thick start -->
+    <path d="M-5 -90 C-18 -90, -35 -88, -45 -82"
+          fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round" opacity="0.9"/>
+
+    <!-- Thin tail -->
+    <path d="M16 -91 C18 -92, 20 -92, 20 -92"
+          fill="none" stroke="#b0b0b0" stroke-width="7" stroke-linecap="round" opacity="0.4"/>
+
+    <!-- Ink splatter -->
+    <circle cx="-10" cy="-96" r="2" fill="#c0c0c0" opacity="0.35"/>
+    <circle cx="-20" cy="-94" r="1.5" fill="#b0b0b0" opacity="0.25"/>
+    <circle cx="0" cy="-98" r="1" fill="#c0c0c0" opacity="0.2"/>
+  </g>
+
+  <!-- Subtle R -->
+  <text fill="#ffffff" opacity="0.04" x="100" y="158" font-family="serif" font-size="100" font-weight="bold">R</text>
+</svg>

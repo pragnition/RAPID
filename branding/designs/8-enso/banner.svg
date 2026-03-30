@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <defs>
+    <linearGradient id="bg8" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#111111"/>
+    </linearGradient>
+    <linearGradient id="brush8" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e8e8e8" stop-opacity="0.1"/>
+      <stop offset="15%" stop-color="#f0f0f0"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#e8e8e8"/>
+      <stop offset="100%" stop-color="#d0d0d0" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+
+  <rect fill="url(#bg8)" width="1280" height="320" rx="12"/>
+
+  <!-- Enso circle - brush stroke feel -->
+  <g transform="translate(280, 160)">
+    <!-- Main brush stroke circle with gap -->
+    <path d="M-10 -100
+             C-60 -100, -110 -60, -110 0
+             C-110 65, -60 110, 5 110
+             C70 110, 115 65, 115 0
+             C115 -55, 75 -95, 30 -105"
+          fill="none" stroke="url(#brush8)" stroke-width="18" stroke-linecap="round"/>
+
+    <!-- Thicker start of brush stroke -->
+    <path d="M-10 -100 C-25 -100, -45 -98, -55 -92"
+          fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" opacity="0.9"/>
+
+    <!-- Thin tail end -->
+    <path d="M25 -104 C28 -105, 30 -105, 30 -105"
+          fill="none" stroke="#c0c0c0" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- Ink splatter near start -->
+    <circle cx="-15" cy="-108" r="2" fill="#d0d0d0" opacity="0.4"/>
+    <circle cx="-25" cy="-104" r="1.5" fill="#c0c0c0" opacity="0.3"/>
+    <circle cx="-5" cy="-112" r="1" fill="#d0d0d0" opacity="0.3"/>
+
+    <!-- Texture on stroke -->
+    <path d="M-80 -70 C-82 -68, -84 -65, -83 -62"
+          fill="none" stroke="#ffffff" stroke-width="1" opacity="0.15"/>
+    <path d="M-100 20 C-102 25, -100 30, -98 32"
+          fill="none" stroke="#ffffff" stroke-width="1" opacity="0.1"/>
+    <path d="M80 70 C82 72, 85 73, 86 72"
+          fill="none" stroke="#ffffff" stroke-width="1" opacity="0.12"/>
+  </g>
+
+  <!-- R inside enso circle -->
+  <text fill="#ffffff" opacity="0.06" x="250" y="195" font-family="serif" font-size="120" font-weight="bold">R</text>
+
+  <!-- RAPID text -->
+  <text fill="#e8e8e8" x="520" y="128" font-family="'SF Mono', 'Fira Code', monospace" font-weight="300" font-size="72" letter-spacing="20">RAPID</text>
+
+  <!-- Thin separator -->
+  <line x1="524" y1="148" x2="960" y2="148" stroke="#444444" stroke-width="0.5"/>
+
+  <!-- Tagline -->
+  <text fill="#666666" x="524" y="176" font-family="'SF Mono', 'Fira Code', monospace" font-size="12" letter-spacing="4">RAPID AGENTIC PARALLELIZABLE</text>
+  <text fill="#666666" x="524" y="196" font-family="'SF Mono', 'Fira Code', monospace" font-size="12" letter-spacing="4">&amp; ISOLATABLE DEVELOPMENT</text>
+
+  <!-- Subtle texture dots -->
+  <g fill="#333333" opacity="0.3">
+    <circle cx="1100" cy="80" r="1"/>
+    <circle cx="1150" cy="120" r="1"/>
+    <circle cx="1080" cy="160" r="1"/>
+    <circle cx="1200" cy="100" r="1"/>
+    <circle cx="1120" cy="200" r="1"/>
+    <circle cx="1180" cy="240" r="1"/>
+  </g>
+</svg>

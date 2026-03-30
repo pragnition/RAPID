@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="wi1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6ecff6"/>
+      <stop offset="100%" stop-color="#1a4a6e"/>
+    </linearGradient>
+    <linearGradient id="wi2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3ca4d8"/>
+      <stop offset="100%" stop-color="#0d2b45"/>
+    </linearGradient>
+    <linearGradient id="wfoam" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#a8dff0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Deep wave -->
+  <path d="M0 200 Q40 180 80 190 T160 175 T240 185 L256 190 L256 256 L0 256Z" fill="url(#wi2)" opacity="0.5"/>
+
+  <!-- Main wave curl -->
+  <path d="M0 220 Q30 210 60 200 Q100 180 130 155 Q155 130 170 105 Q185 80 195 70 Q210 60 225 68 Q238 78 240 95 Q242 115 235 130 Q225 150 210 155 Q190 162 175 155 Q165 148 162 135"
+        fill="url(#wi1)" stroke="none"/>
+
+  <!-- Wave body -->
+  <path d="M0 220 Q30 210 60 200 Q100 180 130 155 Q140 180 135 200 Q125 225 100 240 Q70 250 40 248 Q20 245 0 240Z"
+        fill="url(#wi2)"/>
+
+  <!-- Foam on curl -->
+  <path d="M170 105 Q185 80 195 70 Q210 60 225 68 Q238 78 240 95 Q235 85 225 78 Q212 72 200 75 Q188 80 180 90 Q172 100 172 103Z"
+        fill="url(#wfoam)" opacity="0.9"/>
+
+  <!-- Spray -->
+  <circle cx="205" cy="52" r="3" fill="#ffffff" opacity="0.8"/>
+  <circle cx="220" cy="45" r="2.5" fill="#ffffff" opacity="0.6"/>
+  <circle cx="235" cy="50" r="2" fill="#ffffff" opacity="0.5"/>
+  <circle cx="192" cy="58" r="2" fill="#e8f4fd" opacity="0.6"/>
+  <circle cx="215" cy="38" r="1.5" fill="#ffffff" opacity="0.4"/>
+  <circle cx="240" cy="60" r="1.5" fill="#e8f4fd" opacity="0.4"/>
+
+  <!-- Foam detail -->
+  <path d="M130 160 Q150 148 165 152" stroke="#e8f4fd" stroke-width="1.5" fill="none" opacity="0.4"/>
+
+  <!-- Water surface -->
+  <path d="M0 240 Q40 232 80 238 T160 230 T256 238 L256 256 L0 256Z" fill="#0d2b45" opacity="0.6"/>
+</svg>

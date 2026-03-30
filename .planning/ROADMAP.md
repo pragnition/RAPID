@@ -18,29 +18,27 @@
 - **v4.1.0 Polish & Fixes** — 8 sets (shipped 2026-03-23)
 - **v4.2.1 Discuss & Audit** — 3 sets (shipped 2026-03-24)
 - **v4.3.0 Reliability & State** — 4 sets (shipped 2026-03-25)
-- **v4.4.0 Polish & Documentation** — 3 sets (in progress)
+- **v4.4.0 Polish & Documentation** — 3 sets (shipped 2026-03-26)
+- **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
+- **v5.0 OSS Presentation** — 3 sets (in progress)
 
-### Deferred from v4.4.0
-The following items were identified during audit and deferred:
-- docs/auxiliary.md tracked in CONTRACT.json ownedFiles (severity: low)
+## Active Milestone: v5.0 — OSS Presentation
 
-## Active Milestone: v4.4.0 — Polish & Documentation
+This milestone prepares RAPID for public open-source presentation. All deliverables are static assets — SVG branding graphics, community contribution files, GitHub templates, a restructured README, and reference migration from fishjojo1/RAPID to pragnition/RAPID. No runtime code changes.
 
-This milestone delivers three independent polish features: improved terminal colouring, review pipeline state persistence, and comprehensive human-readable documentation for open-sourcing. All three sets have zero file overlap and can execute fully in parallel.
+### Set 1: branding-assets — Branding Assets
+**Branch:** `set/branding-assets` | **Size:** L
+Create four core visual assets: 1280x320 banner SVG with Everforest dark palette and path-based serif title, horizontal lifecycle flow SVG (~1280x200) showing init-to-merge pipeline, vertical agent dispatch SVG (~1280x600) showing command-to-agent spawning, and 1280x640 social preview PNG. Also creates .gitattributes for binary file handling.
 
-### Set 1: colouring — Better Colouring
-**Branch:** `set/colouring` | **Size:** S
-Switch bright ANSI background colours (10Xm range) to dark backgrounds (4Xm range) for better readability on dark terminals. Add missing banner registrations for unit-test, bug-hunt, uat, and bug-fix stages. Implement NO_COLOR environment variable support.
+### Set 2: community-infra — Community Infrastructure
+**Branch:** `set/community-infra` | **Size:** M
+Create community infrastructure: CONTRIBUTING.md (dev install, bug reports, feature proposals, code style), GitHub issue templates (bug_report.yml, feature_request.yml, config.yml as YAML forms), PR template with what/why/testing checklist, and package.json repository/homepage fields pointing to pragnition/RAPID.
 
-### Set 2: review-state — Review State Management
-**Branch:** `set/review-state` | **Size:** M
-Implement persistent review pipeline state so that the review skill tracks which stages (scope, unit-test, bug-hunt, uat) have been completed for each set. Uses a standalone REVIEW-STATE.json file per set (following the MERGE-STATE.json precedent), enabling downstream commands to skip already-completed stages and resume interrupted review pipelines.
+### Set 3: readme-migration — README Overhaul & Reference Migration
+**Branch:** `set/readme-migration` | **Size:** M
+Restructure README.md with centered banner header stack, badges, collapsible architecture with SVG diagrams, tip callout install, and arrow-prefix doc links. Migrate all active fishjojo1/RAPID references to pragnition/RAPID (archives untouched). Bump version from 4.4.0 to 5.0.0.
 
-### Set 3: documentation — Documentation for Open-Sourcing
-**Branch:** `set/documentation` | **Size:** M
-Prepare comprehensive human-readable documentation for open-sourcing. Update README.md as the open-source front door. Rewrite DOCS.md to cover the canonical workflow from /install through /merge and beyond. Add or update docs/ files for all commands including /branding, /scaffold, /audit-version, /new-version, /quick, /bug-fix, and /add-set.
-
-**Dependency graph:** All 3 sets are fully independent (zero file overlap).
+**Dependency graph:** `{branding-assets, community-infra}` → `{readme-migration}`
 
 ## Completed Milestone Details
 
@@ -223,6 +221,16 @@ Prepare comprehensive human-readable documentation for open-sourcing. Update REA
 - [x] unit-test-improvements — Unit Test Improvements
 - [x] branding-refocus — Branding Refocus
 - [x] new-version-comprehensive — New-Version Comprehensiveness
+
+</details>
+
+<details>
+<summary>v4.5 Developer Experience II (4 sets) — shipped 2026-03-26</summary>
+
+- [x] uat-workflow — Human-Only UAT Workflow
+- [x] bugfix-uat — Bug-Fix --uat Flag
+- [x] branding-server — Branding Preview Server
+- [x] generous-planning — Generous Set Planning
 
 </details>
 

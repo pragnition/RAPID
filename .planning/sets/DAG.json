@@ -1,47 +1,60 @@
 {
   "nodes": [
     {
-      "id": "colouring",
+      "id": "branding-assets",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "review-state",
+      "id": "community-infra",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "documentation",
-      "wave": 1,
+      "id": "readme-migration",
+      "wave": 2,
       "status": "pending"
     }
   ],
-  "edges": [],
+  "edges": [
+    { "from": "branding-assets", "to": "readme-migration" },
+    { "from": "community-infra", "to": "readme-migration" }
+  ],
   "waves": {
     "1": {
       "sets": [
-        "colouring",
-        "review-state",
-        "documentation"
+        "branding-assets",
+        "community-infra"
       ],
       "checkpoint": {
         "contracts": [
-          "rapid://contracts/colouring",
-          "rapid://contracts/review-state",
-          "rapid://contracts/documentation"
+          "rapid://contracts/branding-assets",
+          "rapid://contracts/community-infra"
         ],
         "artifacts": [
-          ".planning/sets/colouring/CONTRACT.json",
-          ".planning/sets/review-state/CONTRACT.json",
-          ".planning/sets/documentation/CONTRACT.json"
+          ".planning/sets/branding-assets/CONTRACT.json",
+          ".planning/sets/community-infra/CONTRACT.json"
+        ]
+      }
+    },
+    "2": {
+      "sets": [
+        "readme-migration"
+      ],
+      "checkpoint": {
+        "contracts": [
+          "rapid://contracts/readme-migration"
+        ],
+        "artifacts": [
+          ".planning/sets/readme-migration/CONTRACT.json"
         ]
       }
     }
   },
   "metadata": {
-    "created": "2026-03-25",
+    "created": "2026-03-30",
     "totalSets": 3,
-    "totalWaves": 1,
-    "maxParallelism": 3
+    "totalWaves": 2,
+    "maxParallelism": 2
   }
 }

@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <rect fill="#110a0a" width="1280" height="320" rx="12"/>
+
+  <!-- Blood moon -->
+  <circle cx="240" cy="120" r="64" fill="#2a0808"/>
+  <circle cx="240" cy="120" r="56" fill="#3d0c0c"/>
+  <circle cx="240" cy="120" r="48" fill="#8b1a1a"/>
+  <circle cx="240" cy="120" r="40" fill="#cc2222"/>
+  <!-- Moon glow -->
+  <circle cx="240" cy="120" r="72" fill="#cc2222" opacity="0.05"/>
+  <circle cx="240" cy="120" r="80" fill="#cc2222" opacity="0.03"/>
+
+  <!-- Pixel katana blade (diagonal slash across banner) -->
+  <g fill="#c0c8d8">
+    <!-- Blade body -->
+    <rect x="80" y="240" width="8" height="16" transform="rotate(-35 84 248)"/>
+    <rect x="96" y="228" width="8" height="16" transform="rotate(-35 100 236)"/>
+    <rect x="112" y="216" width="8" height="16" transform="rotate(-35 116 224)"/>
+    <rect x="128" y="204" width="8" height="16" transform="rotate(-35 132 212)"/>
+    <rect x="144" y="192" width="8" height="16" transform="rotate(-35 148 200)"/>
+    <rect x="160" y="180" width="8" height="16" transform="rotate(-35 164 188)"/>
+    <rect x="176" y="168" width="8" height="16" transform="rotate(-35 180 176)"/>
+    <rect x="192" y="156" width="8" height="16" transform="rotate(-35 196 164)"/>
+    <rect x="208" y="144" width="8" height="16" transform="rotate(-35 212 152)"/>
+    <rect x="224" y="132" width="8" height="16" transform="rotate(-35 228 140)"/>
+    <rect x="240" y="120" width="8" height="16" transform="rotate(-35 244 128)"/>
+    <rect x="256" y="108" width="8" height="16" transform="rotate(-35 260 116)"/>
+    <rect x="272" y="96" width="8" height="16" transform="rotate(-35 276 104)"/>
+    <rect x="288" y="84" width="8" height="16" transform="rotate(-35 292 92)"/>
+    <rect x="304" y="72" width="8" height="16" transform="rotate(-35 308 80)"/>
+    <rect x="320" y="60" width="8" height="16" transform="rotate(-35 324 68)"/>
+    <rect x="336" y="48" width="8" height="16" transform="rotate(-35 340 56)"/>
+    <rect x="352" y="36" width="8" height="16" transform="rotate(-35 356 44)"/>
+    <rect x="368" y="24" width="8" height="16" transform="rotate(-35 372 32)"/>
+  </g>
+
+  <!-- Blade edge highlight -->
+  <g fill="#e8eef8" opacity="0.8">
+    <rect x="82" y="240" width="4" height="16" transform="rotate(-35 84 248)"/>
+    <rect x="114" y="216" width="4" height="16" transform="rotate(-35 116 224)"/>
+    <rect x="146" y="192" width="4" height="16" transform="rotate(-35 148 200)"/>
+    <rect x="178" y="168" width="4" height="16" transform="rotate(-35 180 176)"/>
+    <rect x="210" y="144" width="4" height="16" transform="rotate(-35 212 152)"/>
+    <rect x="242" y="120" width="4" height="16" transform="rotate(-35 244 128)"/>
+    <rect x="274" y="96" width="4" height="16" transform="rotate(-35 276 104)"/>
+    <rect x="306" y="72" width="4" height="16" transform="rotate(-35 308 80)"/>
+    <rect x="338" y="48" width="4" height="16" transform="rotate(-35 340 56)"/>
+    <rect x="370" y="24" width="4" height="16" transform="rotate(-35 372 32)"/>
+  </g>
+
+  <!-- Tsuba (guard) -->
+  <g transform="rotate(-35 72 256)">
+    <rect fill="#8b6914" x="56" y="248" width="32" height="6"/>
+    <rect fill="#a07818" x="60" y="246" width="24" height="10"/>
+    <rect fill="#c8962a" x="64" y="248" width="16" height="6"/>
+  </g>
+
+  <!-- Handle wrap -->
+  <g fill="#2a1a0a">
+    <rect x="32" y="264" width="8" height="12" transform="rotate(-35 36 270)"/>
+    <rect x="44" y="258" width="8" height="12" transform="rotate(-35 48 264)"/>
+    <rect x="56" y="252" width="8" height="12" transform="rotate(-35 60 258)"/>
+  </g>
+  <g fill="#3d2814">
+    <rect x="38" y="261" width="8" height="12" transform="rotate(-35 42 267)"/>
+    <rect x="50" y="255" width="8" height="12" transform="rotate(-35 54 261)"/>
+  </g>
+
+  <!-- Slash trail effect -->
+  <g fill="#cc2222" opacity="0.15">
+    <rect x="100" y="200" width="300" height="4" transform="rotate(-35 250 202)"/>
+  </g>
+  <g fill="#cc2222" opacity="0.08">
+    <rect x="120" y="210" width="280" height="4" transform="rotate(-35 260 212)"/>
+  </g>
+
+  <!-- Pixel cherry blossom petals scattered -->
+  <g fill="#ffb7c5">
+    <rect x="420" y="60" width="6" height="6" rx="1" opacity="0.7"/>
+    <rect x="460" y="120" width="5" height="5" rx="1" opacity="0.5"/>
+    <rect x="500" y="40" width="6" height="6" rx="1" opacity="0.6"/>
+    <rect x="380" y="160" width="5" height="5" rx="1" opacity="0.4"/>
+    <rect x="540" y="180" width="6" height="6" rx="1" opacity="0.5"/>
+    <rect x="440" y="200" width="5" height="5" rx="1" opacity="0.3"/>
+    <rect x="480" y="80" width="4" height="4" rx="1" opacity="0.6"/>
+    <rect x="520" y="140" width="4" height="4" rx="1" opacity="0.4"/>
+    <rect x="400" y="100" width="5" height="5" rx="1" opacity="0.5"/>
+    <rect x="560" y="100" width="5" height="5" rx="1" opacity="0.4"/>
+    <rect x="490" y="240" width="4" height="4" rx="1" opacity="0.3"/>
+    <rect x="430" y="260" width="5" height="5" rx="1" opacity="0.2"/>
+  </g>
+
+  <!-- Falling petals (darker) -->
+  <g fill="#ff8fa3" opacity="0.3">
+    <rect x="470" y="160" width="4" height="6"/>
+    <rect x="510" y="220" width="4" height="6"/>
+    <rect x="390" y="240" width="4" height="6"/>
+    <rect x="550" y="260" width="4" height="6"/>
+  </g>
+
+  <!-- RAPID text - Japanese brush style feel with monospace -->
+  <text fill="#cc2222" x="660" y="120" font-family="monospace" font-weight="bold" font-size="80" letter-spacing="16">RAPID</text>
+
+  <!-- Subtle red underline -->
+  <rect fill="#cc2222" x="660" y="136" width="520" height="3" opacity="0.4"/>
+
+  <!-- Tagline -->
+  <text fill="#8b4444" x="664" y="172" font-family="monospace" font-size="13" letter-spacing="3">RAPID AGENTIC PARALLELIZABLE</text>
+  <text fill="#8b4444" x="664" y="190" font-family="monospace" font-size="13" letter-spacing="3">&amp; ISOLATABLE DEVELOPMENT</text>
+
+  <!-- Japanese-inspired decorative element -->
+  <text fill="#cc2222" opacity="0.08" x="1080" y="280" font-family="serif" font-size="120">速</text>
+</svg>

@@ -1,0 +1,46 @@
+{
+  "setId": "branding-server",
+  "version": "1.0.0",
+  "exports": {
+    "branding-server-module": {
+      "type": "function",
+      "signature": "{ start(port?: number): Promise<{pid: number, port: number}>, stop(): Promise<void>, status(): {running: boolean, pid?: number, port?: number} }",
+      "description": "Node.js HTTP server module for serving branding artifacts. Manages lifecycle via PID file at .planning/branding/.server.pid."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "node-only": {
+      "description": "Server must use node:http module only. No Python, no new npm dependencies.",
+      "enforced_by": "test"
+    },
+    "pid-lifecycle": {
+      "description": "PID file at .planning/branding/.server.pid must be created on start, removed on stop, and checked on status. Stale PIDs (process not running) must be detected and cleaned up.",
+      "enforced_by": "test"
+    },
+    "graceful-port-conflict": {
+      "description": "If the configured port is in use, the server must report the conflict clearly rather than crashing.",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Replace standalone HTML file generation with a lightweight Node.js HTTP server that serves branding artifacts as a directory index, with PID-based lifecycle management.",
+    "ownedFiles": [
+      "src/lib/branding-server.cjs",
+      "src/lib/branding-server.test.cjs",
+      "skills/branding/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Create src/lib/branding-server.cjs with start/stop/status API", "acceptance": "Server starts on configured port, serves .planning/branding/ as directory" },
+      { "description": "Implement PID file management for server lifecycle", "acceptance": "PID file created on start, removed on stop, stale PIDs detected" },
+      { "description": "Update skills/branding/SKILL.md to spawn server instead of generating standalone HTML", "acceptance": "Branding skill starts server and opens browser to localhost URL" },
+      { "description": "Write unit tests for server lifecycle", "acceptance": "Tests cover start, stop, status, stale PID cleanup, and port conflict" }
+    ],
+    "acceptance": [
+      "Branding server starts and serves artifacts on localhost",
+      "PID lifecycle management works correctly (start/stop/status/stale detection)",
+      "No new npm dependencies introduced",
+      "CONTRACT.json behavioral constraints satisfied"
+    ]
+  }
+}

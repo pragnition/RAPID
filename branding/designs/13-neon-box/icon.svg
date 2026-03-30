@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="ni13">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="ni13s">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Neon box -->
+  <rect x="32" y="32" width="192" height="192" rx="8" fill="none" stroke="#06b6d4" stroke-width="1.5" filter="url(#ni13)" opacity="0.7"/>
+
+  <!-- Corner accents -->
+  <rect x="28" y="28" width="20" height="3" rx="1.5" fill="#06b6d4" filter="url(#ni13s)"/>
+  <rect x="28" y="28" width="3" height="20" rx="1.5" fill="#06b6d4" filter="url(#ni13s)"/>
+  <rect x="208" y="28" width="20" height="3" rx="1.5" fill="#06b6d4" filter="url(#ni13s)"/>
+  <rect x="225" y="28" width="3" height="20" rx="1.5" fill="#06b6d4" filter="url(#ni13s)"/>
+  <rect x="28" y="225" width="20" height="3" rx="1.5" fill="#06b6d4" filter="url(#ni13s)"/>
+  <rect x="28" y="208" width="3" height="20" rx="1.5" fill="#06b6d4" filter="url(#ni13s)"/>
+  <rect x="208" y="225" width="20" height="3" rx="1.5" fill="#06b6d4" filter="url(#ni13s)"/>
+  <rect x="225" y="208" width="3" height="20" rx="1.5" fill="#06b6d4" filter="url(#ni13s)"/>
+
+  <!-- R -->
+  <text fill="#06b6d4" x="128" y="164" font-family="'SF Mono','Fira Code',monospace" font-weight="bold" font-size="100" text-anchor="middle" filter="url(#ni13)">R</text>
+</svg>

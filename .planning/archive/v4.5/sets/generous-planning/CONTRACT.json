@@ -1,0 +1,39 @@
+{
+  "setId": "generous-planning",
+  "version": "1.0.0",
+  "exports": {
+    "granularity-prompt": {
+      "type": "function",
+      "signature": "AskUserQuestion for targetSetCount in new-version Step 7",
+      "description": "Adds a user-facing granularity selection prompt before roadmapper spawning. Options: Compact (3-5), Standard (6-10), Granular (11-15), Auto."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "backward-compatible-default": {
+      "description": "If the user does not select a granularity (or selects Auto), the roadmapper defaults to a more generous decomposition (6-10 range) rather than the current minimal tendency.",
+      "enforced_by": "test"
+    },
+    "parameter-passthrough": {
+      "description": "The selected targetSetCount value must be passed verbatim to the roadmapper agent spawn task string.",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Add a user-facing set count granularity prompt to the new-version skill and make the roadmapper default to a more generous decomposition.",
+    "ownedFiles": [
+      "skills/new-version/SKILL.md",
+      "src/modules/roles/role-roadmapper.md"
+    ],
+    "tasks": [
+      { "description": "Add AskUserQuestion for targetSetCount in new-version Step 7", "acceptance": "User can choose Compact/Standard/Granular/Auto before roadmapper runs" },
+      { "description": "Pass targetSetCount to roadmapper agent spawn", "acceptance": "Roadmapper receives the parameter in its task string" },
+      { "description": "Update role-roadmapper.md default behavior to prefer 6-10 range", "acceptance": "Auto mode produces more generous decomposition than current behavior" }
+    ],
+    "acceptance": [
+      "New-version skill prompts for granularity before roadmapper",
+      "targetSetCount is passed to roadmapper agent",
+      "Roadmapper default is more generous (6-10 range for Auto)"
+    ]
+  }
+}

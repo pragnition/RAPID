@@ -627,6 +627,83 @@
       "startCommit": "6d224d3021007182f3da05fc7fea1f7f57fe2d29",
       "wave": null,
       "createdAt": "2026-03-25T04:26:19.434Z"
+    },
+    "uat-workflow": {
+      "setName": "uat-workflow",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "2740cd5061097f01093135f688547e052aa3d6eb",
+      "wave": null,
+      "createdAt": "2026-03-26T02:09:47.749Z"
+    },
+    "bugfix-uat": {
+      "setName": "bugfix-uat",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "3b258022932c52912a05cb005a73a8a500f7b857",
+      "wave": null,
+      "createdAt": "2026-03-26T04:10:59.588Z"
+    },
+    "branding-server": {
+      "setName": "branding-server",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "f07707739e110dfa83bb47fe32b0436473b0cba3",
+      "wave": null,
+      "createdAt": "2026-03-26T04:42:26.448Z"
+    },
+    "generous-planning": {
+      "setName": "generous-planning",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "d67b2644c8d44dae9ab45867300edccd258979bb",
+      "wave": null,
+      "createdAt": "2026-03-26T05:17:46.664Z"
+    },
+    "branding-assets": {
+      "setName": "branding-assets",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "7861aa11b9eeb3045a00ac95a9ae080e83ccb185",
+      "wave": null,
+      "createdAt": "2026-03-30T09:34:12.989Z"
+    },
+    "community-infra": {
+      "setName": "community-infra",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "76760415097cf91859ccb25f9ddbb6cde7f1d092",
+      "wave": null,
+      "createdAt": "2026-03-30T10:28:41.596Z"
+    },
+    "readme-migration": {
+      "setName": "readme-migration",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "6a291679c1cd0b4927cd094298801e4df771421d",
+      "wave": null,
+      "createdAt": "2026-03-30T11:48:05.363Z"
     }
   }
 }

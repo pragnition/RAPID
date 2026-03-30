@@ -1,0 +1,81 @@
+{
+  "setId": "readme-migration",
+  "version": "1.0.0",
+  "exports": {
+    "readme-md": {
+      "type": "file",
+      "signature": "README.md",
+      "description": "Restructured README with centered banner header stack, badge row, collapsible architecture with SVG diagrams, tip callout install, arrow-prefix doc links"
+    },
+    "reference-migration": {
+      "type": "file",
+      "signature": "multiple active files",
+      "description": "All fishjojo1/RAPID references in active files changed to pragnition/RAPID"
+    },
+    "version-bump": {
+      "type": "file",
+      "signature": "multiple files with hardcoded version",
+      "description": "Version references updated from 4.4.0 to 5.0.0"
+    }
+  },
+  "imports": {
+    "banner-svg": {
+      "fromSet": "branding-assets",
+      "type": "file",
+      "signature": "branding/banner-github.svg",
+      "description": "Banner SVG for README header"
+    },
+    "lifecycle-flow-svg": {
+      "fromSet": "branding-assets",
+      "type": "file",
+      "signature": "branding/lifecycle-flow.svg",
+      "description": "Lifecycle flow SVG for architecture section"
+    },
+    "agent-dispatch-svg": {
+      "fromSet": "branding-assets",
+      "type": "file",
+      "signature": "branding/agent-dispatch.svg",
+      "description": "Agent dispatch SVG for architecture section"
+    },
+    "contributing-md": {
+      "fromSet": "community-infra",
+      "type": "file",
+      "signature": "CONTRIBUTING.md",
+      "description": "Contributing guide path for doc links section"
+    }
+  },
+  "behavioral": {
+    "details-blank-lines": {
+      "description": "All <details> blocks must include blank lines before and after inner content to prevent Markdown rendering breakage",
+      "enforced_by": "test"
+    },
+    "active-files-only": {
+      "description": "Reference migration scoped to active files only -- .planning/archive/ and .planning/milestones/ directories are excluded from fishjojo1 -> pragnition changes",
+      "enforced_by": "test"
+    },
+    "version-consistency": {
+      "description": "All 4 hardcoded version locations updated atomically to 5.0.0",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Restructure README.md with new branding assets and modern GitHub formatting, then migrate all fishjojo1/RAPID references to pragnition/RAPID across active files and bump version to 5.0.0.",
+    "ownedFiles": [
+      "README.md",
+      ".claude-plugin/plugin.json",
+      ".planning/context/CODEBASE.md",
+      ".planning/PROJECT.md"
+    ],
+    "tasks": [
+      { "description": "Restructure README.md with centered banner header, badges, collapsible architecture, SVG embeds, tip callout, arrow-prefix links", "acceptance": "README renders correctly on GitHub with all sections" },
+      { "description": "Migrate fishjojo1/RAPID to pragnition/RAPID in all active files", "acceptance": "No fishjojo1 references in active files (excluding archive/milestones)" },
+      { "description": "Bump hardcoded version from 4.4.0 to 5.0.0", "acceptance": "Version 5.0.0 in all 4 locations" }
+    ],
+    "acceptance": [
+      "README.md fully restructured with branding assets embedded",
+      "Zero fishjojo1 references in active files",
+      "Version 5.0.0 across all hardcoded locations",
+      "All imports from branding-assets and community-infra correctly referenced"
+    ]
+  }
+}

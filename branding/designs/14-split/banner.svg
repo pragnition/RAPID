@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <defs>
+    <clipPath id="topclip">
+      <rect x="0" y="0" width="1280" height="160"/>
+    </clipPath>
+    <clipPath id="botclip">
+      <rect x="0" y="160" width="1280" height="160"/>
+    </clipPath>
+  </defs>
+
+  <!-- Top half - white -->
+  <rect fill="#fafafa" width="1280" height="160"/>
+  <!-- Bottom half - dark -->
+  <rect fill="#0a0a0a" y="160" width="1280" height="160"/>
+
+  <!-- Rounded corners overlay -->
+  <rect fill="#fafafa" width="1280" height="320" rx="12" opacity="0"/>
+
+  <!-- Top half text (dark) -->
+  <g clip-path="url(#topclip)">
+    <text fill="#0a0a0a" x="640" y="210" font-family="'SF Mono','Fira Code',monospace" font-weight="900" font-size="140" text-anchor="middle" letter-spacing="20">RAPID</text>
+  </g>
+
+  <!-- Bottom half text (white) -->
+  <g clip-path="url(#botclip)">
+    <text fill="#fafafa" x="640" y="210" font-family="'SF Mono','Fira Code',monospace" font-weight="900" font-size="140" text-anchor="middle" letter-spacing="20">RAPID</text>
+  </g>
+
+  <!-- Thin colored accent line at split -->
+  <rect fill="#06b6d4" x="0" y="159" width="1280" height="2"/>
+
+  <!-- Tagline - top half -->
+  <text fill="#64748b" x="640" y="60" font-family="'SF Mono','Fira Code',monospace" font-size="11" text-anchor="middle" letter-spacing="6">RAPID AGENTIC PARALLELIZABLE &amp; ISOLATABLE DEVELOPMENT</text>
+
+  <!-- Tagline - bottom half -->
+  <text fill="#64748b" x="640" y="296" font-family="'SF Mono','Fira Code',monospace" font-size="11" text-anchor="middle" letter-spacing="6">RAPID AGENTIC PARALLELIZABLE &amp; ISOLATABLE DEVELOPMENT</text>
+
+  <!-- Corner radius mask -->
+  <rect fill="none" width="1280" height="320" rx="12" stroke="#00000000" stroke-width="0"/>
+</svg>

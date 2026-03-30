@@ -1,0 +1,50 @@
+{
+  "setId": "uat-workflow",
+  "version": "1.0.0",
+  "exports": {
+    "uat-failures-format": {
+      "type": "file",
+      "signature": ".planning/sets/{setId}/UAT-FAILURES.md",
+      "description": "Structured UAT failure artifact with embedded JSON metadata block (<!-- UAT-FAILURES-META {...} -->) containing an array of failure objects with fields: id, criterion, step, description, severity, relevantFiles. Written by the UAT skill after human-driven testing."
+    },
+    "uat-skill-rewrite": {
+      "type": "file",
+      "signature": "skills/uat/SKILL.md",
+      "description": "Rewritten UAT skill implementing human-driven step-by-step workflow via AskUserQuestion loop. Removes automated browser execution. Produces UAT-FAILURES.md on failures."
+    },
+    "uat-role-rewrite": {
+      "type": "file",
+      "signature": "src/modules/roles/role-uat.md",
+      "description": "Rewritten UAT role that generates test plans only (no execution). Agent produces step-by-step human verification checklist."
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "human-driven-loop": {
+      "description": "Each UAT step must pause for human pass/fail input via AskUserQuestion. No automated browser execution occurs during UAT.",
+      "enforced_by": "test"
+    },
+    "failure-file-parseable": {
+      "description": "UAT-FAILURES.md must contain an embedded JSON metadata block that can be parsed by JSON.parse() after extraction from the HTML comment wrapper.",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Replace the automation+human hybrid UAT with a fully human-driven step-by-step workflow. Define the UAT-FAILURES.md format as a shared contract for downstream consumers.",
+    "ownedFiles": [
+      "skills/uat/SKILL.md",
+      "src/modules/roles/role-uat.md"
+    ],
+    "tasks": [
+      { "description": "Rewrite skills/uat/SKILL.md for human-driven step-by-step loop", "acceptance": "UAT skill presents each step via AskUserQuestion and records pass/fail" },
+      { "description": "Rewrite src/modules/roles/role-uat.md to generate plans only", "acceptance": "UAT role produces test plan without executing browser automation" },
+      { "description": "Define and implement UAT-FAILURES.md format with embedded JSON", "acceptance": "Failure file is parseable by JSON.parse on extracted metadata block" },
+      { "description": "Write unit tests for UAT failure file format parsing", "acceptance": "Tests verify round-trip write/parse of UAT-FAILURES.md" }
+    ],
+    "acceptance": [
+      "UAT workflow is fully human-driven with no automated browser execution",
+      "UAT-FAILURES.md is produced with parseable embedded JSON metadata",
+      "CONTRACT.json exports are satisfied"
+    ]
+  }
+}

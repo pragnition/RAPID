@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Terminal prompt icon -->
+
+  <!-- Terminal window -->
+  <rect fill="#1a1a1a" x="16" y="16" width="224" height="224" rx="12"/>
+  <rect fill="#262626" x="16" y="16" width="224" height="32" rx="12"/>
+  <rect fill="#262626" x="16" y="40" width="224" height="8"/>
+
+  <!-- Window buttons -->
+  <circle cx="38" cy="32" r="5" fill="#ef4444"/>
+  <circle cx="58" cy="32" r="5" fill="#eab308"/>
+  <circle cx="78" cy="32" r="5" fill="#22c55e"/>
+
+  <!-- Terminal content -->
+  <g font-family="'SF Mono','Fira Code',monospace">
+    <text fill="#22c55e" x="32" y="80" font-size="14">$</text>
+    <text fill="#e5e5e5" x="48" y="80" font-size="14">rapid</text>
+
+    <text fill="#06b6d4" x="32" y="120" font-size="36" font-weight="bold">RAPID</text>
+
+    <!-- Progress bars -->
+    <text fill="#06b6d4" x="32" y="152" font-size="11">████████</text>
+    <text fill="#22c55e" x="120" y="152" font-size="10">done</text>
+
+    <text fill="#8b5cf6" x="32" y="170" font-size="11">██████</text>
+    <text fill="#eab308" x="100" y="170" font-size="10">w3/4</text>
+
+    <text fill="#10b981" x="32" y="188" font-size="11">████████████</text>
+    <text fill="#22c55e" x="160" y="188" font-size="10">done</text>
+
+    <text fill="#f97316" x="32" y="206" font-size="11">████</text>
+    <text fill="#eab308" x="76" y="206" font-size="10">w1/3</text>
+
+    <!-- Cursor -->
+    <rect fill="#22c55e" x="32" y="220" width="8" height="14" opacity="0.8"/>
+  </g>
+</svg>

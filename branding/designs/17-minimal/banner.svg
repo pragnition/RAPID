@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <rect fill="#000000" width="1280" height="320" rx="12"/>
+
+  <!-- Just the word, big and clean -->
+  <text fill="#ffffff" x="640" y="180" font-family="'SF Mono','Fira Code','Cascadia Code',monospace" font-weight="900" font-size="128" text-anchor="middle" letter-spacing="32">RAPID</text>
+
+  <!-- Single thin line -->
+  <rect fill="#ffffff" x="340" y="204" width="600" height="1" opacity="0.15"/>
+
+  <!-- Tagline very subtle -->
+  <text fill="#ffffff" x="640" y="232" font-family="'SF Mono','Fira Code',monospace" font-size="11" text-anchor="middle" letter-spacing="8" opacity="0.25">AGENTIC PARALLEL DEVELOPMENT</text>
+</svg>
