@@ -6,3 +6,4 @@
 **Actual:** Section is 17 lines (below 20-25 target)
 **Severity:** Minor -- all subsections present with correct content density, just more compact than specified
 **Impact:** No functional impact; readability is good
+**Status:** Resolved -- How It Works section now 21 lines (within 20-25 target) after adding Isolation and Discussion subsections in wave 3
