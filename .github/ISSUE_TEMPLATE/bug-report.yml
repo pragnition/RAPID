@@ -1,0 +1,69 @@
+name: Bug Report
+description: Report a bug in RAPID
+labels: ["bug", "human-authored"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: RAPID Version
+      placeholder: "e.g., v4.4.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Affected Skill
+      options:
+        - init
+        - start-set
+        - discuss-set
+        - plan-set
+        - execute-set
+        - review
+        - unit-test
+        - bug-hunt
+        - uat
+        - merge
+        - status
+        - quick
+        - resume
+        - pause
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: What happened vs what should have happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: root-cause
+    attributes:
+      label: Root Cause / Suggested Fix
+      description: Optional. If you've dug into the code, share what you found.
+    validations:
+      required: false
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Optional. How are you working around this currently?
+    validations:
+      required: false
