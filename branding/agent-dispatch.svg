@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 600" width="1280" height="600">
+  <rect fill="#2d353b" width="1280" height="600" rx="8"/>
+
+  <!-- Title -->
+  <text x="640" y="32" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif', Georgia, 'Times New Roman', serif" font-size="14" font-weight="bold">Agent Dispatch Architecture</text>
+
+  <!-- Column headers -->
+  <text x="120" y="56" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="10" opacity="0.6">Command</text>
+  <text x="700" y="56" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="10" opacity="0.6">Dispatched Agents</text>
+
+  <!-- Divider below header -->
+  <rect fill="#859289" opacity="0.15" x="40" y="62" width="1200" height="1"/>
+
+  <!-- ============================================ -->
+  <!-- Row 1: /rapid:init (Setup) — 9 agents       -->
+  <!-- Row y-start: 68, row height: 100            -->
+  <!-- ============================================ -->
+
+  <!-- Command pill -->
+  <rect fill="#859289" x="35" y="82" width="170" height="32" rx="6"/>
+  <text x="120" y="103" text-anchor="middle" fill="#d3c6aa" font-family="'Courier New', 'Liberation Mono', monospace" font-size="12">/rapid:init</text>
+
+  <!-- Count badge -->
+  <circle cx="222" cy="98" r="10" fill="none" stroke="#859289" stroke-width="1" opacity="0.6"/>
+  <text x="222" y="102" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="9" opacity="0.8">9</text>
+
+  <!-- Connector line -->
+  <line x1="240" y1="98" x2="268" y2="98" stroke="#859289" stroke-width="1" opacity="0.4"/>
+
+  <!-- Agent pills row 1 (5 agents) -->
+  <rect fill="#343f44" x="272" y="78" width="148" height="26" rx="4"/>
+  <text x="346" y="95" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">codebase-synthesizer</text>
+
+  <rect fill="#343f44" x="428" y="78" width="118" height="26" rx="4"/>
+  <text x="487" y="95" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-stack</text>
+
+  <rect fill="#343f44" x="554" y="78" width="130" height="26" rx="4"/>
+  <text x="619" y="95" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-features</text>
+
+  <rect fill="#343f44" x="692" y="78" width="152" height="26" rx="4"/>
+  <text x="768" y="95" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-architecture</text>
+
+  <rect fill="#343f44" x="852" y="78" width="126" height="26" rx="4"/>
+  <text x="915" y="95" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-pitfalls</text>
+
+  <!-- Agent pills row 2 (4 agents) -->
+  <rect fill="#343f44" x="272" y="112" width="140" height="26" rx="4"/>
+  <text x="342" y="129" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-oversights</text>
+
+  <rect fill="#343f44" x="420" y="112" width="100" height="26" rx="4"/>
+  <text x="470" y="129" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-ux</text>
+
+  <rect fill="#343f44" x="528" y="112" width="142" height="26" rx="4"/>
+  <text x="599" y="129" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-synthesizer</text>
+
+  <rect fill="#343f44" x="678" y="112" width="100" height="26" rx="4"/>
+  <text x="728" y="129" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">roadmapper</text>
+
+  <!-- Row divider -->
+  <rect fill="#859289" opacity="0.1" x="40" y="150" width="1200" height="1"/>
+
+  <!-- ============================================ -->
+  <!-- Row 2: /rapid:start-set (Setup) — 1 agent   -->
+  <!-- Row y-start: 155                             -->
+  <!-- ============================================ -->
+
+  <!-- Command pill -->
+  <rect fill="#859289" x="35" y="165" width="170" height="32" rx="6"/>
+  <text x="120" y="186" text-anchor="middle" fill="#d3c6aa" font-family="'Courier New', 'Liberation Mono', monospace" font-size="12">/rapid:start-set</text>
+
+  <!-- Count badge -->
+  <circle cx="222" cy="181" r="10" fill="none" stroke="#859289" stroke-width="1" opacity="0.6"/>
+  <text x="222" y="185" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="9" opacity="0.8">1</text>
+
+  <!-- Connector line -->
+  <line x1="240" y1="181" x2="268" y2="181" stroke="#859289" stroke-width="1" opacity="0.4"/>
+
+  <!-- Agent pill -->
+  <rect fill="#343f44" x="272" y="168" width="100" height="26" rx="4"/>
+  <text x="322" y="185" text-anchor="middle" fill="#859289" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">set-planner</text>
+
+  <!-- Row divider -->
+  <rect fill="#859289" opacity="0.1" x="40" y="208" width="1200" height="1"/>
+
+  <!-- ============================================ -->
+  <!-- Row 3: /rapid:discuss-set (Planning) — 1     -->
+  <!-- Row y-start: 213                             -->
+  <!-- ============================================ -->
+
+  <!-- Command pill -->
+  <rect fill="#a7c080" x="35" y="223" width="170" height="32" rx="6"/>
+  <text x="120" y="244" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="12">/rapid:discuss</text>
+
+  <!-- Count badge -->
+  <circle cx="222" cy="239" r="10" fill="none" stroke="#a7c080" stroke-width="1" opacity="0.6"/>
+  <text x="222" y="243" text-anchor="middle" fill="#a7c080" font-family="'Courier New', 'Liberation Mono', monospace" font-size="9" opacity="0.8">1</text>
+
+  <!-- Connector line -->
+  <line x1="240" y1="239" x2="268" y2="239" stroke="#a7c080" stroke-width="1" opacity="0.4"/>
+
+  <!-- Agent pill -->
+  <rect fill="#343f44" x="272" y="226" width="118" height="26" rx="4"/>
+  <text x="331" y="243" text-anchor="middle" fill="#a7c080" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-stack</text>
+
+  <!-- Row divider -->
+  <rect fill="#859289" opacity="0.1" x="40" y="266" width="1200" height="1"/>
+
+  <!-- ============================================ -->
+  <!-- Row 4: /rapid:plan-set (Planning) — 3        -->
+  <!-- Row y-start: 271                             -->
+  <!-- ============================================ -->
+
+  <!-- Command pill -->
+  <rect fill="#a7c080" x="35" y="281" width="170" height="32" rx="6"/>
+  <text x="120" y="302" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="12">/rapid:plan</text>
+
+  <!-- Count badge -->
+  <circle cx="222" cy="297" r="10" fill="none" stroke="#a7c080" stroke-width="1" opacity="0.6"/>
+  <text x="222" y="301" text-anchor="middle" fill="#a7c080" font-family="'Courier New', 'Liberation Mono', monospace" font-size="9" opacity="0.8">3</text>
+
+  <!-- Connector line -->
+  <line x1="240" y1="297" x2="268" y2="297" stroke="#a7c080" stroke-width="1" opacity="0.4"/>
+
+  <!-- Agent pills -->
+  <rect fill="#343f44" x="272" y="284" width="118" height="26" rx="4"/>
+  <text x="331" y="301" text-anchor="middle" fill="#a7c080" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">research-stack</text>
+
+  <rect fill="#343f44" x="398" y="284" width="80" height="26" rx="4"/>
+  <text x="438" y="301" text-anchor="middle" fill="#a7c080" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">planner</text>
+
+  <rect fill="#343f44" x="486" y="284" width="104" height="26" rx="4"/>
+  <text x="538" y="301" text-anchor="middle" fill="#a7c080" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">plan-verifier</text>
+
+  <!-- Row divider -->
+  <rect fill="#859289" opacity="0.1" x="40" y="324" width="1200" height="1"/>
+
+  <!-- ============================================ -->
+  <!-- Row 5: /rapid:execute-set (Execution) — 2    -->
+  <!-- Row y-start: 329                             -->
+  <!-- ============================================ -->
+
+  <!-- Command pill -->
+  <rect fill="#7fbbb3" x="35" y="339" width="170" height="32" rx="6"/>
+  <text x="120" y="360" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="12">/rapid:execute</text>
+
+  <!-- Count badge -->
+  <circle cx="222" cy="355" r="10" fill="none" stroke="#7fbbb3" stroke-width="1" opacity="0.6"/>
+  <text x="222" y="359" text-anchor="middle" fill="#7fbbb3" font-family="'Courier New', 'Liberation Mono', monospace" font-size="9" opacity="0.8">2</text>
+
+  <!-- Connector line -->
+  <line x1="240" y1="355" x2="268" y2="355" stroke="#7fbbb3" stroke-width="1" opacity="0.4"/>
+
+  <!-- Agent pills -->
+  <rect fill="#343f44" x="272" y="342" width="110" height="26" rx="4"/>
+  <text x="327" y="359" text-anchor="middle" fill="#7fbbb3" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">executor x N</text>
+
+  <rect fill="#343f44" x="390" y="342" width="80" height="26" rx="4"/>
+  <text x="430" y="359" text-anchor="middle" fill="#7fbbb3" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">verifier</text>
+
+  <!-- Row divider -->
+  <rect fill="#859289" opacity="0.1" x="40" y="382" width="1200" height="1"/>
+
+  <!-- ============================================ -->
+  <!-- Row 6: /rapid:review (Execution) — 1         -->
+  <!-- Row y-start: 387                             -->
+  <!-- ============================================ -->
+
+  <!-- Command pill -->
+  <rect fill="#7fbbb3" x="35" y="397" width="170" height="32" rx="6"/>
+  <text x="120" y="418" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="12">/rapid:review</text>
+
+  <!-- Count badge -->
+  <circle cx="222" cy="413" r="10" fill="none" stroke="#7fbbb3" stroke-width="1" opacity="0.6"/>
+  <text x="222" y="417" text-anchor="middle" fill="#7fbbb3" font-family="'Courier New', 'Liberation Mono', monospace" font-size="9" opacity="0.8">1</text>
+
+  <!-- Connector line -->
+  <line x1="240" y1="413" x2="268" y2="413" stroke="#7fbbb3" stroke-width="1" opacity="0.4"/>
+
+  <!-- Agent pill -->
+  <rect fill="#343f44" x="272" y="400" width="72" height="26" rx="4"/>
+  <text x="308" y="417" text-anchor="middle" fill="#7fbbb3" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">scoper</text>
+
+  <!-- Row divider -->
+  <rect fill="#859289" opacity="0.1" x="40" y="440" width="1200" height="1"/>
+
+  <!-- ============================================ -->
+  <!-- Row 7: /rapid:merge (Execution) — 2          -->
+  <!-- Row y-start: 445                             -->
+  <!-- ============================================ -->
+
+  <!-- Command pill -->
+  <rect fill="#7fbbb3" x="35" y="455" width="170" height="32" rx="6"/>
+  <text x="120" y="476" text-anchor="middle" fill="#2d353b" font-family="'Courier New', 'Liberation Mono', monospace" font-size="12">/rapid:merge</text>
+
+  <!-- Count badge -->
+  <circle cx="222" cy="471" r="10" fill="none" stroke="#7fbbb3" stroke-width="1" opacity="0.6"/>
+  <text x="222" y="475" text-anchor="middle" fill="#7fbbb3" font-family="'Courier New', 'Liberation Mono', monospace" font-size="9" opacity="0.8">2</text>
+
+  <!-- Connector line -->
+  <line x1="240" y1="471" x2="268" y2="471" stroke="#7fbbb3" stroke-width="1" opacity="0.4"/>
+
+  <!-- Agent pills -->
+  <rect fill="#343f44" x="272" y="458" width="126" height="26" rx="4"/>
+  <text x="335" y="475" text-anchor="middle" fill="#7fbbb3" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">set-merger x N</text>
+
+  <rect fill="#343f44" x="406" y="458" width="130" height="26" rx="4"/>
+  <text x="471" y="475" text-anchor="middle" fill="#7fbbb3" font-family="'Courier New', 'Liberation Mono', monospace" font-size="10">conflict-resolver</text>
+
+  <!-- Bottom padding / legend -->
+  <rect fill="#859289" opacity="0.1" x="40" y="500" width="1200" height="1"/>
+
+  <!-- Phase legend -->
+  <rect fill="#859289" x="420" y="520" width="12" height="12" rx="2"/>
+  <text x="438" y="531" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="10" opacity="0.7">Setup</text>
+
+  <rect fill="#a7c080" x="500" y="520" width="12" height="12" rx="2"/>
+  <text x="518" y="531" fill="#a7c080" font-family="'Noto Serif', Georgia, serif" font-size="10" opacity="0.7">Planning</text>
+
+  <rect fill="#7fbbb3" x="596" y="520" width="12" height="12" rx="2"/>
+  <text x="614" y="531" fill="#7fbbb3" font-family="'Noto Serif', Georgia, serif" font-size="10" opacity="0.7">Execution</text>
+
+  <!-- Notation for "x N" -->
+  <text x="640" y="560" text-anchor="middle" fill="#859289" font-family="'Noto Serif', Georgia, serif" font-size="9" opacity="0.5">x N = one agent spawned per wave or per set</text>
+</svg>
