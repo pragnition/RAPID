@@ -461,6 +461,43 @@ describe('scaffoldProject', () => {
     });
   });
 
+  describe('REQUIREMENTS.md preservation in fresh mode', () => {
+    it('does not overwrite REQUIREMENTS.md with existing content', () => {
+      // First scaffold creates REQUIREMENTS.md
+      scaffoldProject(tmpDir, { name: 'TestProject', description: 'Test', teamSize: 1 }, 'fresh');
+
+      // Write user content to REQUIREMENTS.md
+      const reqPath = path.join(tmpDir, '.planning', 'REQUIREMENTS.md');
+      fs.writeFileSync(reqPath, '# My Requirements\n\n- Feature A must do X\n');
+
+      // Second fresh scaffold should NOT overwrite
+      const result = scaffoldProject(tmpDir, { name: 'TestProject', description: 'Test', teamSize: 1 }, 'fresh');
+
+      const content = fs.readFileSync(reqPath, 'utf-8');
+      assert.ok(content.includes('Feature A must do X'), 'User content should be preserved');
+      assert.ok(result.skipped.includes('REQUIREMENTS.md'), 'REQUIREMENTS.md should be in skipped list');
+    });
+
+    it('overwrites empty REQUIREMENTS.md in fresh mode', () => {
+      // Create empty REQUIREMENTS.md
+      const planningDir = path.join(tmpDir, '.planning');
+      fs.mkdirSync(planningDir, { recursive: true });
+      fs.writeFileSync(path.join(planningDir, 'REQUIREMENTS.md'), '');
+
+      const result = scaffoldProject(tmpDir, { name: 'TestProject', description: 'Test', teamSize: 1 }, 'fresh');
+
+      assert.ok(result.created.includes('REQUIREMENTS.md'), 'Empty REQUIREMENTS.md should be overwritten');
+    });
+
+    it('still creates REQUIREMENTS.md on truly fresh project', () => {
+      const result = scaffoldProject(tmpDir, { name: 'TestProject', description: 'Test', teamSize: 1 }, 'fresh');
+
+      assert.ok(result.created.includes('REQUIREMENTS.md'), 'REQUIREMENTS.md should be created');
+      const reqPath = path.join(tmpDir, '.planning', 'REQUIREMENTS.md');
+      assert.ok(fs.existsSync(reqPath), 'REQUIREMENTS.md file should exist');
+    });
+  });
+
   describe('cancel mode', () => {
     it('returns cancelled:true without modifying anything', () => {
       // Set up existing .planning/

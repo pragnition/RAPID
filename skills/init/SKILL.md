@@ -891,9 +891,20 @@ b) Write CONTRACT.json and DEFINITION.md files for each set:
 
    If the `definition` field is missing from a contracts entry (e.g., from an older roadmapper version), skip DEFINITION.md generation for that set and log a warning: "Warning: No definition metadata for set {setId}. DEFINITION.md was not generated."
 
-c) Write STATE.json with the project > milestone > sets structure:
-   Use the Write tool to write `.planning/STATE.json` with the roadmapper's `state` content.
-   The state structure is: `{ milestones: [{ id, name, status, sets: [{ id, status: "pending" }] }], currentMilestone }`
+c) Merge the roadmapper's milestone/set data into STATE.json (preserving envelope fields):
+   Extract `milestones` and `currentMilestone` from the roadmapper's `state` output.
+   Use `mergeStatePartial()` to merge only these fields into the existing STATE.json, preserving `version`, `projectName`, `createdAt`, and `rapidVersion`:
+
+   ```bash
+   node -e "
+     const { mergeStatePartial } = require('$(dirname \"${RAPID_TOOLS}\")/lib/state-machine.cjs');
+     const partial = JSON.parse(process.argv[1]);
+     mergeStatePartial(process.cwd(), partial).then(() => console.log('STATE.json merged successfully'));
+   " '{"milestones": <MILESTONES_JSON>, "currentMilestone": "<MILESTONE_ID>"}'
+   ```
+
+   Where `<MILESTONES_JSON>` is the milestones array from the roadmapper output and `<MILESTONE_ID>` is the current milestone ID.
+   This preserves `version`, `projectName`, `createdAt`, `rapidVersion` in STATE.json while updating only the milestone/set structure.
    Each set has only `{ id, name, status: "pending", branch }` -- no waves or jobs arrays.
 
 d) Generate DAG.json and OWNERSHIP.json from the newly written STATE.json and CONTRACT.json files:

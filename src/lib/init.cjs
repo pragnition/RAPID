@@ -301,12 +301,29 @@ function scaffoldProject(cwd, opts, mode = 'fresh') {
   fs.mkdirSync(planningDir, { recursive: true });
   ensureResearchDir();
   const created = [];
+  const skipped = [];
   for (const [filename, generator] of Object.entries(fileGenerators)) {
-    fs.writeFileSync(path.join(planningDir, filename), generator());
+    const filePath = path.join(planningDir, filename);
+    // Protect REQUIREMENTS.md if it already has user content
+    if (filename === 'REQUIREMENTS.md' && fs.existsSync(filePath)) {
+      try {
+        const existing = fs.readFileSync(filePath, 'utf-8');
+        if (existing.trim().length > 0) {
+          skipped.push(filename);
+          continue;
+        }
+      } catch {
+        // Unreadable file -- protect it, log warning
+        process.stderr.write(`[RAPID] Warning: could not read existing ${filename}, skipping overwrite\n`);
+        skipped.push(filename);
+        continue;
+      }
+    }
+    fs.writeFileSync(filePath, generator());
     created.push(filename);
   }
 
-  return { created, skipped: [] };
+  return { created, skipped };
 }
 
 module.exports = {
