@@ -530,7 +530,7 @@
       "sets": [
         {
           "id": "bug-fixes-foundation",
-          "status": "discussed",
+          "status": "planned",
           "waves": [],
           "name": "Bug Fixes & Foundation",
           "branch": "set/bug-fixes-foundation"
@@ -566,6 +566,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-31T06:46:55.217Z",
+  "lastUpdatedAt": "2026-03-31T07:01:53.108Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
