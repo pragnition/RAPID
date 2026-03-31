@@ -29,7 +29,12 @@
 
 > [!TIP]
 > ```
-> claude plugin add pragnition/RAPID
+> /plugin install rapid@pragnition/pragnition-public-plugins 
+> ```
+> alternatively,
+> ```
+> /plugin marketplace add pragnition/pragnition-public-plugins
+> /plugin install rapid@pragnition-public-plugins
 > ```
 > `/rapid:install` inside Claude Code to configure your environment.
 
@@ -53,7 +58,7 @@
 That is the full lifecycle. Each command spawns specialized agents, produces artifacts, and advances the set through its lifecycle automatically.
 
 > [!TIP]
-> RAPID does not confine you to parallel development. Solo developers wishing to work without worktrees can pass in the --solo flag to all commands. 
+> RAPID does not confine you to parallel development. Should you wish to work without worktrees, you may pass in the --solo flag to all commands. 
 
 ## Architecture
 
