@@ -23,9 +23,10 @@
 
 ---
 
-<p align='center'>
-Made with :heart: by @fishjojo1
+<p align="center">
+  <sub>Built with :heart: by <a href="https://github.com/fishjojo1">@fishjojo1</a></sub>
 </p>
+
 > [!NOTE]
 > RAPID is still in beta. Therefore, features may be broken/unpolished. Feedback is **always** welcome.
 
