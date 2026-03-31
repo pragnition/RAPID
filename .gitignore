@@ -1,6 +1,5 @@
 # RAPID worktree working directories
 .rapid-worktrees/
-
 # Worktree registry lock files
 .planning/worktrees/*.lock
 
@@ -9,7 +8,6 @@
 
 # Dependencies
 node_modules/
-
 # Build outputs
 dist/
 *.tsbuildinfo
@@ -21,4 +19,7 @@ __pycache__/
 # Note: agents/ is NOT gitignored. Generated files are committed so the plugin
 # works immediately after clone without running setup.sh first.
 # Source of truth is src/modules/. Regenerate with: node src/bin/rapid-tools.cjs build-agents
-.superpowers/
+
+
+# planning files
+v6.md
