@@ -30,6 +30,44 @@ node "${RAPID_TOOLS}" display banner init
 
 ---
 
+## Step 0.5: Parse Optional Arguments
+
+If the user invoked `/rapid:init` with arguments, parse them here. The supported argument is `--spec <path>` which provides a pre-written spec file to seed research agents with prior findings.
+
+**Argument parsing instructions:**
+
+1. Check if the skill was invoked with arguments (the user's input after `/rapid:init`).
+2. If the input contains a file path argument (with or without the `--spec` prefix), treat it as a spec file path.
+   - With prefix: `/rapid:init --spec path/to/spec.md`
+   - Without prefix: `/rapid:init path/to/spec.md`
+3. Read the spec file using the Read tool.
+   - If the file does not exist or cannot be read, display a warning: **"Spec file not found at {path}. Falling back to fully interactive discovery."** and set `specContent = null`.
+   - If the file is read successfully, store its full content as `specContent` for use in Steps 4B and 7.
+4. If no arguments were provided, set `specContent = null`. This is the backward-compatible default.
+
+When `specContent` is null, all subsequent steps behave identically to the original flow.
+
+### Spec Section Extraction
+
+When `specContent` is not null, extract recognizable sections from the spec file using markdown header matching. Map extracted sections to discovery areas and research agent domains:
+
+| Spec Header Pattern | Discovery Area | Research Agent |
+|---|---|---|
+| `# Vision`, `# Overview`, `# Introduction` | Vision/problem statement | all |
+| `# Features`, `# Requirements`, `# User Stories` | Must-have features | features |
+| `# Architecture`, `# Design`, `# System Design` | Technical approach | architecture |
+| `# Stack`, `# Technology`, `# Tech Stack` | Tech stack preferences | stack |
+| `# Security`, `# Compliance`, `# Privacy` | Compliance requirements | pitfalls, oversights |
+| `# UX`, `# Design`, `# User Experience` | UX considerations | ux |
+| `# Constraints`, `# Limitations`, `# Non-functional` | Technical constraints | pitfalls, oversights |
+| `# Scale`, `# Performance`, `# Load` | Scale expectations | stack, architecture |
+
+Use case-insensitive matching. If a header does not match any pattern, include its content in a general "Additional Spec Context" bucket passed to all agents.
+
+Tag each extracted section with `[FROM SPEC]` prefix when passing to downstream consumers.
+
+---
+
 ## Step 1: Prerequisites
 
 Run the prerequisite checker to verify the development environment:
@@ -175,6 +213,26 @@ Store the selection as `opus` or `sonnet`.
 - LISTEN carefully to each batch response. After each batch, analyze the response for follow-up needs. Only ask follow-up questions for genuinely ambiguous or vague responses. Do NOT re-ask areas already covered.
 - Continue asking until you have a comprehensive understanding. This should take 3-4 batch questions plus 0-2 targeted follow-ups depending on project complexity.
 - Mentally track what you know and what gaps remain. Only proceed when no significant gaps exist.
+
+### Spec-Aware Discovery Mode
+
+If `specContent` is not null, enter spec-aware discovery mode:
+
+1. **Per-area coverage detection:** For each of the 13 discovery areas (vision, target users, scale, features, tech stack, starting point, performance, compliance, integrations, auth, experience, non-functional, success criteria), classify coverage from the spec as:
+   - `covered` -- The spec provides clear, specific information for this area.
+   - `partial` -- The spec mentions this area but lacks detail or specificity.
+   - `uncovered` -- The spec does not address this area at all.
+
+2. **Adaptive questioning depth:**
+   - For `covered` areas: Lead with context extracted from the spec. Display: "From your spec, I see: {extracted summary}". Then ask a brief confirmation: "Is this still accurate? Anything to add or change?" If confirmed, move on. If the user wants changes, collect the updated information.
+   - For `partial` areas: Lead with context: "Your spec mentions {topic} but I need more detail on: {specific gaps}". Then ask the targeted follow-up question from the original batch.
+   - For `uncovered` areas: Ask the full original question from the batch, noting it was not covered in the spec.
+
+3. **Batch compression:** Covered areas within a batch can be presented as a single confirmation prompt instead of individual questions. For example, if Batch 1's vision and target users are both covered, present them together: "From your spec: Vision is {X}, targeting {Y} users at {Z} scale. Confirm or adjust?"
+
+4. **Spec content supplements, never replaces.** Even when the spec fully covers an area, the user always has the opportunity to override or augment. Never skip an area entirely without at least offering the user a chance to confirm or modify.
+
+After spec-aware discovery completes, compile the project brief identically to the non-spec flow. Include a `Spec File: {path}` line in the brief metadata.
 
 **Discovery must cover these areas, grouped into 4 topic batches:**
 
@@ -614,6 +672,14 @@ Research the technology stack for this project.
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
 
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the stack research domain, each prefixed with [FROM SPEC]}
+{end if}
+
 ## Working Directory
 {projectRoot}
 
@@ -634,6 +700,14 @@ Research the feature implementation approach for this project.
 
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the features research domain, each prefixed with [FROM SPEC]}
+{end if}
 
 ## Working Directory
 {projectRoot}
@@ -656,6 +730,14 @@ Research the architecture patterns for this project.
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
 
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the architecture research domain, each prefixed with [FROM SPEC]}
+{end if}
+
 ## Working Directory
 {projectRoot}
 
@@ -676,6 +758,14 @@ Research potential pitfalls and risks for this project.
 
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the pitfalls research domain, each prefixed with [FROM SPEC]}
+{end if}
 
 ## Working Directory
 {projectRoot}
@@ -698,6 +788,14 @@ Research potential oversights and blind spots for this project.
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
 
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the oversights research domain, each prefixed with [FROM SPEC]}
+{end if}
+
 ## Working Directory
 {projectRoot}
 
@@ -718,6 +816,14 @@ Research domain conventions and UX patterns for this project.
 
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the UX research domain, each prefixed with [FROM SPEC]}
+{end if}
 
 ## Working Directory
 {projectRoot}
