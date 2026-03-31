@@ -4,7 +4,7 @@ RAPID (Rapid Agentic Parallelizable and Isolatable Development) is a Claude Code
 
 **Version:** 5.0.0
 
-This is the central reference hub for RAPID. For a quickstart overview, see [README.md](README.md).
+This is the central reference hub for RAPID. For a quickstart overview, see [README.md](README.md). For architectural deep-dives and system design narrative, see [technical_documentation.md](technical_documentation.md).
 
 ## Table of Contents
 
@@ -142,11 +142,12 @@ See [docs/planning.md](docs/planning.md) for details.
 
 #### `/rapid:execute-set <set-id> [--gaps]`
 
-Executes all waves in a set sequentially, spawning one `rapid-executor` agent per wave. Uses artifact-based crash recovery -- re-running after an interruption picks up exactly where it left off via WAVE-COMPLETE.md markers and git commit verification. After all waves complete, a `rapid-verifier` agent checks objectives.
+Executes all waves in a set sequentially, spawning one `rapid-executor` agent per wave. Uses artifact-based crash recovery -- re-running after an interruption picks up exactly where it left off via WAVE-COMPLETE.md markers and git commit verification. After all waves complete, a `rapid-verifier` agent checks objectives. The `--gaps` flag enables gap-closure mode, executing plans generated from post-merge gap analysis (GAPS.md).
 
 ```bash
 /rapid:execute-set auth-system
 /rapid:execute-set 1
+/rapid:execute-set auth-system --gaps
 ```
 
 See [docs/execution.md](docs/execution.md) for details.
@@ -296,13 +297,16 @@ Ad-hoc changes without set structure. Runs a 3-agent pipeline (planner, plan-ver
 
 ---
 
-#### `/rapid:bug-fix <description>`
+#### `/rapid:bug-fix <description> [--uat <set-id>]`
 
-Investigates and fixes bugs. The user describes a bug, and the skill dispatches agents to investigate the codebase and apply a targeted fix with atomic commits. Works from any branch -- no set association required.
+Investigates and fixes bugs. The user describes a bug, and the skill dispatches agents to investigate the codebase and apply a targeted fix with atomic commits. Works from any branch -- no set association required. With `--uat <set-id>`, reads `UAT-FAILURES.md` from the set's planning directory and fixes reported failures automatically without manual investigation.
 
 ```bash
 /rapid:bug-fix "merge command fails when .planning/ has untracked files"
+/rapid:bug-fix --uat auth-system
 ```
+
+See [docs/review.md](docs/review.md) for details on the UAT-to-bug-fix workflow.
 
 ---
 
@@ -449,8 +453,13 @@ For the full agent catalog with spawn hierarchy and input/output specifications,
 ### State Machine
 
 ```
-pending --> discussing --> planning --> executing --> complete --> merged
+pending --> discussed --> planned --> executed --> complete --> merged
+              ^                        ^
+              |                        |
+              +-- (self-loop)          +-- (self-loop)
 ```
+
+The `pending -> planned` shortcut skips the discuss phase when no design discussion is needed. The `discussed -> discussed` self-loop supports re-discussion, and the `executed -> executed` self-loop enables crash recovery re-execution. In solo mode, `complete -> merged` auto-transitions without branch merging.
 
 Sets are fully independent. No state transition rejects based on another set's status. For full transition rules and crash recovery details, see [docs/state-machines.md](docs/state-machines.md).
 
@@ -501,15 +510,25 @@ RAPID/
 │   └── unit-test/
 ├── agents/                          # 27 generated agent definitions
 ├── src/
-│   └── bin/
-│       └── rapid-tools.cjs          # CLI tool library
-├── docs/                            # Detailed documentation
+│   ├── bin/
+│   │   └── rapid-tools.cjs          # CLI tool library
+│   ├── commands/                    # CLI command handlers
+│   ├── hooks/                       # Post-task verification hooks
+│   ├── lib/                         # Core libraries (state, merge, worktree, etc.)
+│   ├── modules/                     # Role definitions and core modules
+│   └── schemas/                     # Zod validation schemas
+├── docs/                            # Detailed documentation (11 files)
+├── web/                             # Mission Control dashboard source
+├── branding/                        # Branding assets
+├── test/                            # Test suites
 ├── .claude-plugin/
 │   └── plugin.json                  # Plugin manifest
+├── config.json                      # Project configuration
 ├── package.json
 ├── setup.sh                         # Installation script
 ├── README.md                        # User-facing overview
-└── DOCS.md                          # This file (central reference hub)
+├── DOCS.md                          # This file (central reference hub)
+└── technical_documentation.md       # Architectural deep-dive narrative
 ```
 
 ---
