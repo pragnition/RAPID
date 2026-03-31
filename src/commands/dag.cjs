@@ -7,10 +7,12 @@ const { CliError } = require('../lib/errors.cjs');
  *
  * Subcommands:
  *   dag generate   -- Generate DAG.json from set dependencies
- *   dag show       -- Display DAG with wave grouping and status colors
+ *   dag show       -- Display DAG with wave grouping, status colors, and group badges
+ *   dag groups     -- Display developer group assignments
+ *   dag regroup    -- Partition sets into developer groups by team size
  *
  * @param {string} cwd - Project root directory
- * @param {string} subcommand - The subcommand (generate, show)
+ * @param {string} subcommand - The subcommand (generate, show, groups, regroup)
  * @param {string[]} args - Remaining arguments after subcommand
  */
 async function handleDag(cwd, subcommand, args) {
@@ -260,11 +262,11 @@ async function handleDag(cwd, subcommand, args) {
     }
 
     case undefined:
-      throw new CliError('Usage: dag <generate|show>');
+      throw new CliError('Usage: dag <generate|show|groups|regroup>');
 
     default:
       throw new CliError(
-        `Unknown subcommand: "${subcommand}". Valid subcommands: generate, show`,
+        `Unknown subcommand: "${subcommand}". Valid subcommands: generate, show, groups, regroup`,
       );
   }
 }
