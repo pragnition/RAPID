@@ -722,6 +722,52 @@ function migrateDAGv2toV3(dagV2) {
   };
 }
 
+/**
+ * Sync set statuses from STATE.json into DAG.json on disk.
+ *
+ * Reads the current DAG and STATE, maps set statuses from the current
+ * milestone onto DAG nodes, and persists the result. If the DAG was
+ * auto-migrated from an older version, the migration is also persisted.
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {Promise<void>}
+ */
+async function syncDAGStatus(cwd) {
+  // Load DAG
+  const { dag, path: dagPath, migrated } = tryLoadDAG(cwd);
+  if (!dag) return;
+
+  // Lazy require to avoid circular dependencies
+  const { readState } = require('./state-machine.cjs');
+
+  // Load state
+  const stateResult = await readState(cwd);
+  if (!stateResult || !stateResult.valid || !stateResult.state) return;
+
+  const state = stateResult.state;
+  const milestoneId = state.currentMilestone;
+  if (!milestoneId) return;
+
+  const milestone = state.milestones.find((m) => m.id === milestoneId);
+  if (!milestone || !milestone.sets) return;
+
+  // Build status map: setId -> status
+  const statusMap = {};
+  for (const set of milestone.sets) {
+    statusMap[set.id] = set.status;
+  }
+
+  // Apply statuses to DAG nodes
+  for (const node of dag.nodes) {
+    if (statusMap[node.id] !== undefined) {
+      node.status = statusMap[node.id];
+    }
+  }
+
+  // Persist updated DAG
+  fs.writeFileSync(dagPath, JSON.stringify(dag, null, 2));
+}
+
 module.exports = {
   toposort,
   assignWaves,
@@ -737,4 +783,5 @@ module.exports = {
   validateDAGv3,
   migrateDAGv1toV3,
   migrateDAGv2toV3,
+  syncDAGStatus,
 };
