@@ -20,7 +20,7 @@
 - **v4.3.0 Reliability & State** — 4 sets (shipped 2026-03-25)
 - **v4.4.0 Polish & Documentation** — 3 sets (shipped 2026-03-26)
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
-- **v5.0 OSS Presentation** — 4 sets (in progress)
+- **v5.0 OSS Presentation** — 5 sets (in progress)
 
 ## Active Milestone: v5.0 — OSS Presentation
 
@@ -42,7 +42,11 @@ Restructure README.md with centered banner header stack, badges, collapsible arc
 **Branch:** `set/readme-polish` | **Size:** M
 Condense and restructure the RAPID README using the OpenSpec README as a style reference. Make content less wordy, more scannable with tables and diagrams. Enlarge existing SVG diagrams that are too small and hard to read.
 
-**Dependency graph:** `{branding-assets, community-infra}` → `{readme-migration}` → `{readme-polish}`
+### Set 5: docs-update — Documentation Update
+**Size:** M
+Update DOCS.md and technical_documentation.md with all changes across previous versions. Sweep through version history to identify what's changed and incorporate those updates into the documentation files.
+
+**Dependency graph:** `{branding-assets, community-infra}` → `{readme-migration}` → `{readme-polish}` → `{docs-update}`
 
 ## Completed Milestone Details
 
