@@ -201,7 +201,7 @@ describe('formatPrereqSummary', () => {
   it('with all pass: hasBlockers is false, hasWarnings is false', () => {
     const results = [
       { name: 'git', status: 'pass', version: '2.43', minVersion: '2.30', required: true, reason: 'test' },
-      { name: 'Node.js', status: 'pass', version: '22', minVersion: '18', required: true, reason: 'test' },
+      { name: 'Node.js', status: 'pass', version: '22', minVersion: '20', required: true, reason: 'test' },
       { name: 'jq', status: 'pass', version: '1.7', minVersion: '1.6', required: false, reason: 'test' },
     ];
     const summary = formatPrereqSummary(results);
@@ -216,7 +216,7 @@ describe('formatPrereqSummary', () => {
   it('with one fail: hasBlockers is true', () => {
     const results = [
       { name: 'git', status: 'fail', version: null, minVersion: '2.30', required: true, reason: 'test' },
-      { name: 'Node.js', status: 'pass', version: '22', minVersion: '18', required: true, reason: 'test' },
+      { name: 'Node.js', status: 'pass', version: '22', minVersion: '20', required: true, reason: 'test' },
       { name: 'jq', status: 'pass', version: '1.7', minVersion: '1.6', required: false, reason: 'test' },
     ];
     const summary = formatPrereqSummary(results);
@@ -226,7 +226,7 @@ describe('formatPrereqSummary', () => {
   it('with one warn: hasWarnings is true', () => {
     const results = [
       { name: 'git', status: 'pass', version: '2.43', minVersion: '2.30', required: true, reason: 'test' },
-      { name: 'Node.js', status: 'pass', version: '22', minVersion: '18', required: true, reason: 'test' },
+      { name: 'Node.js', status: 'pass', version: '22', minVersion: '20', required: true, reason: 'test' },
       { name: 'jq', status: 'warn', version: null, minVersion: '1.6', required: false, reason: 'test' },
     ];
     const summary = formatPrereqSummary(results);
@@ -237,7 +237,7 @@ describe('formatPrereqSummary', () => {
   it('table contains status indicators', () => {
     const results = [
       { name: 'git', status: 'pass', version: '2.43', minVersion: '2.30', required: true, reason: 'test' },
-      { name: 'Node.js', status: 'fail', version: '16', minVersion: '18', required: true, reason: 'test' },
+      { name: 'Node.js', status: 'fail', version: '16', minVersion: '20', required: true, reason: 'test' },
       { name: 'jq', status: 'warn', version: null, minVersion: '1.6', required: false, reason: 'test' },
     ];
     const summary = formatPrereqSummary(results);

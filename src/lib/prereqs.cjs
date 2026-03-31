@@ -112,7 +112,7 @@ async function validatePrereqs() {
         const m = out.match(/v?(\d+)/);
         return m ? m[1] : null;
       },
-      minVersion: '18',
+      minVersion: '20',
       required: true,
       reason: 'runtime requirement',
     }),

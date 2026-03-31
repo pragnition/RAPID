@@ -158,6 +158,29 @@ describe('compileContract', () => {
 });
 
 // ────────────────────────────────────────────────────────────────
+// fileOwnership in CONTRACT_META_SCHEMA
+// ────────────────────────────────────────────────────────────────
+describe('fileOwnership in CONTRACT_META_SCHEMA', () => {
+  it('accepts contract with fileOwnership array', () => {
+    const contract = {
+      exports: { functions: [], types: [] },
+      fileOwnership: ['src/lib/foo.cjs', 'src/lib/bar.cjs'],
+    };
+    const result = compileContract(contract);
+    assert.equal(result.valid, true);
+  });
+
+  it('rejects contract with non-array fileOwnership', () => {
+    const contract = {
+      exports: { functions: [], types: [] },
+      fileOwnership: 'src/lib/foo.cjs',
+    };
+    const result = compileContract(contract);
+    assert.equal(result.valid, false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
 // generateContractTest
 // ────────────────────────────────────────────────────────────────
 describe('generateContractTest', () => {

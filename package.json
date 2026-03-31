@@ -3,6 +3,9 @@
   "version": "5.0.0",
   "description": "RAPID - Multi-agent orchestration plugin for Claude Code",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/pragnition/RAPID.git"

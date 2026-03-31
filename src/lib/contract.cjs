@@ -101,6 +101,10 @@ const CONTRACT_META_SCHEMA = {
         },
       },
     },
+    fileOwnership: {
+      type: 'array',
+      items: { type: 'string' },
+    },
   },
   required: ['exports'],
   additionalProperties: false,
