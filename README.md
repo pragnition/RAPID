@@ -3,18 +3,10 @@
 </p>
 
 <p align="center">
-  <a href='https://github.com/pragnition/RAPID/tree/main'>
-    <img src="https://img.shields.io/badge/version-5.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
-  </a>
-  <a href='https://github.com/pragnition/RAPID/blob/main/LICENSE'>
-    <img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" />
-  </a>
-  <a href='https://claude.com/plugins'>
-    <img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" />
-  </a>
-  <a href='https://nodejs.org/en/blog/release/v18.18.0'>
-    <img src="https://img.shields.io/badge/Node.js-18%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
-  </a>
+  <a href='https://github.com/pragnition/RAPID/tree/main'><img src="https://img.shields.io/badge/version-5.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /></a>
+  <a href='https://github.com/pragnition/RAPID/blob/main/LICENSE'><img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" /></a>
+  <a href='https://claude.com/plugins'><img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" /></a>
+  <a href='https://nodejs.org/en/blog/release/v18.18.0'><img src="https://img.shields.io/badge/Node.js-18%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" /></a>
 </p>
 
 > Pre-existing agent harnesses like GSD and OpenSpec are great, but not built for collaboration amongst teams.
