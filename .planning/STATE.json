@@ -527,9 +527,45 @@
     {
       "id": "v6.0.0",
       "name": "Scale & Quality",
-      "sets": []
+      "sets": [
+        {
+          "id": "bug-fixes-foundation",
+          "status": "discussed",
+          "waves": [],
+          "name": "Bug Fixes & Foundation",
+          "branch": "set/bug-fixes-foundation"
+        },
+        {
+          "id": "dag-central-grouping",
+          "status": "pending",
+          "waves": [],
+          "name": "DAG Central Concept & Set Grouping",
+          "branch": "set/dag-central-grouping"
+        },
+        {
+          "id": "init-enhancements",
+          "status": "pending",
+          "waves": [],
+          "name": "Init Enhancements",
+          "branch": "set/init-enhancements"
+        },
+        {
+          "id": "scaffold-overhaul",
+          "status": "pending",
+          "waves": [],
+          "name": "Scaffold Overhaul",
+          "branch": "set/scaffold-overhaul"
+        },
+        {
+          "id": "agent-namespace-enforcement",
+          "status": "pending",
+          "waves": [],
+          "name": "Agent Namespace Enforcement",
+          "branch": "set/agent-namespace-enforcement"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-31T06:06:44.857Z",
+  "lastUpdatedAt": "2026-03-31T06:46:55.217Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
