@@ -101,6 +101,64 @@ async function handleDag(cwd, subcommand, args) {
       break;
     }
 
+    case 'groups': {
+      const { tryLoadDAG } = require('../lib/dag.cjs');
+
+      const { dag } = tryLoadDAG(cwd);
+      if (!dag) {
+        throw new CliError('No DAG.json found. Run `dag generate` first.');
+      }
+
+      if (!dag.groups || Object.keys(dag.groups).length === 0) {
+        process.stdout.write(
+          'No groups assigned. Run `dag regroup --team-size N` to assign groups.\n',
+        );
+        break;
+      }
+
+      if (args.includes('--json')) {
+        process.stdout.write(JSON.stringify(dag.groups, null, 2) + '\n');
+        break;
+      }
+
+      // Build a terminal-friendly summary from the DAG groups data
+      const BOLD_G = '\x1b[1m';
+      const CYAN_G = '\x1b[36m';
+      const RESET_G = '\x1b[0m';
+
+      let groupOut = `${BOLD_G}Developer Groups:${RESET_G}\n\n`;
+
+      const groupIds = Object.keys(dag.groups).sort();
+      for (const gId of groupIds) {
+        const group = dag.groups[gId];
+        const setList = (group.sets || []).join(', ');
+        groupOut += `  ${CYAN_G}${gId}:${RESET_G} ${setList}\n`;
+      }
+
+      // Cross-group edges
+      const nodeGroupMap = {};
+      for (const node of dag.nodes) {
+        if (node.group) nodeGroupMap[node.id] = node.group;
+      }
+
+      const crossEdges = [];
+      for (const edge of dag.edges) {
+        const fg = nodeGroupMap[edge.from];
+        const tg = nodeGroupMap[edge.to];
+        if (fg && tg && fg !== tg) {
+          crossEdges.push({ from: edge.from, to: edge.to, fromGroup: fg, toGroup: tg });
+        }
+      }
+
+      groupOut += `\n${BOLD_G}Cross-Group Dependencies:${RESET_G} ${crossEdges.length}\n`;
+      for (const ce of crossEdges) {
+        groupOut += `  ${ce.from} -> ${ce.to}  (${ce.fromGroup} -> ${ce.toGroup})\n`;
+      }
+
+      process.stdout.write(groupOut);
+      break;
+    }
+
     case undefined:
       throw new CliError('Usage: dag <generate|show>');
 
