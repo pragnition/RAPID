@@ -537,14 +537,14 @@
         },
         {
           "id": "dag-central-grouping",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "DAG Central Concept & Set Grouping",
           "branch": "set/dag-central-grouping"
         },
         {
           "id": "init-enhancements",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Init Enhancements",
           "branch": "set/init-enhancements"
@@ -566,6 +566,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-03-31T07:28:53.563Z",
+  "lastUpdatedAt": "2026-03-31T08:31:25.150Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
