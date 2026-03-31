@@ -42,6 +42,7 @@
 
 ```
 /rapid:init              # Research project, generate roadmap, decompose into sets
+/rapid:branding          # Optional, helps create UI and branding theme 
 /rapid:start-set 1       # Create isolated worktree for set 1
 /rapid:discuss-set 1     # Capture your implementation vision
 /rapid:plan-set 1        # Research, plan all waves, validate contracts
