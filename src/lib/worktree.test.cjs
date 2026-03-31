@@ -1775,3 +1775,36 @@ describe('solo mode', () => {
     });
   });
 });
+
+// ────────────────────────────────────────────────────────────────
+// Shell injection safety tests
+// ────────────────────────────────────────────────────────────────
+describe('shell injection safety', () => {
+  it('gitExec uses execFileSync, not execSync with template string', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'worktree.cjs'), 'utf-8');
+    assert.ok(
+      src.includes("execFileSync('git', args"),
+      'gitExec must use execFileSync with argument array'
+    );
+    assert.ok(
+      !src.includes('execSync(`git ${'),
+      'gitExec must not use execSync with template string interpolation'
+    );
+  });
+
+  it('createWorktree does not embed shell quotes in path arguments', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'worktree.cjs'), 'utf-8');
+    assert.ok(
+      !src.includes('`"${worktreePath}"`'),
+      'createWorktree must not embed shell quotes in worktree path'
+    );
+  });
+
+  it('removeWorktree does not embed shell quotes in path arguments', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'worktree.cjs'), 'utf-8');
+    assert.ok(
+      !src.includes("['worktree', 'remove', `\"${"),
+      'removeWorktree must not embed shell quotes in worktree path'
+    );
+  });
+});
