@@ -101,6 +101,77 @@ async function handleDag(cwd, subcommand, args) {
       break;
     }
 
+    case 'regroup': {
+      const fs = require('fs');
+      const path = require('path');
+      const { tryLoadDAG } = require('../lib/dag.cjs');
+      const {
+        partitionIntoGroups,
+        annotateDAGWithGroups,
+        generateGroupReport,
+      } = require('../lib/group.cjs');
+
+      // Parse --team-size N
+      const tsIdx = args.indexOf('--team-size');
+      const tsRaw = tsIdx !== -1 ? args[tsIdx + 1] : undefined;
+      const teamSize = tsRaw !== undefined ? parseInt(tsRaw, 10) : NaN;
+
+      if (!Number.isFinite(teamSize) || teamSize < 1) {
+        throw new CliError(
+          'Usage: dag regroup --team-size N (where N >= 1)',
+        );
+      }
+
+      if (teamSize === 1) {
+        process.stdout.write(
+          'Team size is 1 -- group features are hidden for solo developers.\n',
+        );
+        break;
+      }
+
+      const { dag, path: dagPath, migrated } = tryLoadDAG(cwd);
+      if (!dag) {
+        throw new CliError('No DAG.json found. Run `dag generate` first.');
+      }
+
+      // If the DAG was auto-migrated, persist the migration first
+      if (migrated) {
+        fs.writeFileSync(dagPath, JSON.stringify(dag, null, 2));
+      }
+
+      // Load contracts for all sets in the DAG
+      const contracts = {};
+      for (const node of dag.nodes) {
+        const contractPath = path.join(
+          cwd,
+          '.planning',
+          'sets',
+          node.id,
+          'CONTRACT.json',
+        );
+        try {
+          const raw = fs.readFileSync(contractPath, 'utf-8');
+          contracts[node.id] = JSON.parse(raw);
+        } catch {
+          // Missing or malformed contract -- skip
+        }
+      }
+
+      const groupResult = partitionIntoGroups(dag, contracts, teamSize);
+      const annotatedDag = annotateDAGWithGroups(dag, groupResult);
+
+      fs.writeFileSync(dagPath, JSON.stringify(annotatedDag, null, 2));
+
+      const report = generateGroupReport(groupResult);
+      process.stdout.write(report + '\n');
+
+      const totalGroups = Object.keys(groupResult.groups).length;
+      process.stdout.write(
+        `\nDAG.json updated with ${totalGroups} group assignments.\n`,
+      );
+      break;
+    }
+
     case 'groups': {
       const { tryLoadDAG } = require('../lib/dag.cjs');
 
