@@ -16,6 +16,10 @@ const {
   DAG_CANONICAL_SUBPATH,
   createDAGv2,
   validateDAGv2,
+  createDAGv3,
+  validateDAGv3,
+  migrateDAGv1toV3,
+  migrateDAGv2toV3,
 } = require('./dag.cjs');
 
 // ────────────────────────────────────────────────────────────────
@@ -798,5 +802,519 @@ describe('tryLoadDAG', () => {
 
   it('DAG_CANONICAL_SUBPATH is the expected value', () => {
     assert.equal(DAG_CANONICAL_SUBPATH, path.join('.planning', 'sets', 'DAG.json'));
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// createDAGv3
+// ────────────────────────────────────────────────────────────────
+describe('createDAGv3', () => {
+  it('returns version:3 DAG with group fields on nodes', () => {
+    const nodes = [{ id: 'auth' }, { id: 'data' }, { id: 'api' }];
+    const edges = [
+      { from: 'auth', to: 'api' },
+      { from: 'data', to: 'api' },
+    ];
+    const dag = createDAGv3(nodes, edges);
+
+    assert.equal(dag.version, 3);
+    assert.ok(Array.isArray(dag.nodes));
+    assert.ok(Array.isArray(dag.edges));
+    assert.ok(typeof dag.waves === 'object');
+    assert.ok(typeof dag.groups === 'object');
+    assert.ok(typeof dag.metadata === 'object');
+
+    for (const node of dag.nodes) {
+      assert.ok(typeof node.wave === 'number', `Node ${node.id} should have wave`);
+      assert.equal(node.status, 'pending');
+      assert.equal(node.group, null);
+      assert.equal(node.priority, null);
+      assert.equal(node.description, null);
+    }
+  });
+
+  it('nodes default to type set when type not provided', () => {
+    const dag = createDAGv3([{ id: 'a' }, { id: 'b' }], []);
+    for (const node of dag.nodes) {
+      assert.equal(node.type, 'set');
+    }
+  });
+
+  it('preserves explicit node type when provided', () => {
+    const dag = createDAGv3([{ id: 'a', type: 'job' }], []);
+    assert.equal(dag.nodes[0].type, 'job');
+  });
+
+  it('groups default to {} when no options passed', () => {
+    const dag = createDAGv3([{ id: 'a' }], []);
+    assert.deepStrictEqual(dag.groups, {});
+  });
+
+  it('groups populated when options.groups is provided', () => {
+    const groups = {
+      backend: { sets: ['auth', 'api'], description: 'Backend services' },
+    };
+    const dag = createDAGv3(
+      [{ id: 'auth' }, { id: 'api' }],
+      [{ from: 'auth', to: 'api' }],
+      { groups }
+    );
+    assert.deepStrictEqual(dag.groups, groups);
+  });
+
+  it('nodes have group: null, priority: null, description: null by default', () => {
+    const dag = createDAGv3([{ id: 'x' }], []);
+    assert.equal(dag.nodes[0].group, null);
+    assert.equal(dag.nodes[0].priority, null);
+    assert.equal(dag.nodes[0].description, null);
+  });
+
+  it('waves use nodes key (not sets)', () => {
+    const dag = createDAGv3([{ id: 'a' }, { id: 'b' }], []);
+    assert.ok(dag.waves['1'].nodes, 'Wave should have nodes key');
+    assert.equal(dag.waves['1'].sets, undefined, 'Wave should NOT have sets key');
+  });
+
+  it('metadata has totalNodes (not totalSets)', () => {
+    const dag = createDAGv3([{ id: 'a' }, { id: 'b' }], []);
+    assert.equal(dag.metadata.totalNodes, 2);
+    assert.equal(dag.metadata.totalSets, undefined);
+  });
+
+  it('rejects duplicate node IDs', () => {
+    assert.throws(
+      () => createDAGv3([{ id: 'a' }, { id: 'a' }], []),
+      (err) => {
+        assert.ok(err instanceof Error);
+        assert.ok(err.message.includes('Duplicate'));
+        return true;
+      }
+    );
+  });
+
+  it('rejects cycles', () => {
+    assert.throws(
+      () =>
+        createDAGv3(
+          [{ id: 'a' }, { id: 'b' }],
+          [
+            { from: 'a', to: 'b' },
+            { from: 'b', to: 'a' },
+          ]
+        ),
+      (err) => {
+        assert.ok(err instanceof Error);
+        assert.ok(err.message.toLowerCase().includes('cycle'));
+        return true;
+      }
+    );
+  });
+
+  it('preserves extra node properties', () => {
+    const dag = createDAGv3([{ id: 'a', label: 'My Node', custom: 42 }], []);
+    assert.equal(dag.nodes[0].label, 'My Node');
+    assert.equal(dag.nodes[0].custom, 42);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// validateDAGv3
+// ────────────────────────────────────────────────────────────────
+describe('validateDAGv3', () => {
+  it('returns { valid: true } for well-formed v3 DAG', () => {
+    const dag = createDAGv3(
+      [{ id: 'A' }, { id: 'B' }],
+      [{ from: 'A', to: 'B' }]
+    );
+    const result = validateDAGv3(dag);
+    assert.deepStrictEqual(result, { valid: true });
+  });
+
+  it('returns { valid: false } when version is not 3', () => {
+    const dag = createDAGv3([{ id: 'A' }], []);
+    dag.version = 2;
+    const result = validateDAGv3(dag);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('version')));
+  });
+
+  it('returns { valid: false } for missing nodes', () => {
+    const result = validateDAGv3({
+      version: 3,
+      edges: [],
+      waves: {},
+      metadata: { totalNodes: 0, totalWaves: 0 },
+      groups: {},
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('nodes')));
+  });
+
+  it('returns { valid: false } for missing edges', () => {
+    const result = validateDAGv3({
+      version: 3,
+      nodes: [],
+      waves: {},
+      metadata: { totalNodes: 0, totalWaves: 0 },
+      groups: {},
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('edges')));
+  });
+
+  it('returns { valid: false } for missing waves', () => {
+    const result = validateDAGv3({
+      version: 3,
+      nodes: [],
+      edges: [],
+      metadata: { totalNodes: 0, totalWaves: 0 },
+      groups: {},
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('waves')));
+  });
+
+  it('returns { valid: false } for missing metadata', () => {
+    const result = validateDAGv3({
+      version: 3,
+      nodes: [],
+      edges: [],
+      waves: {},
+      groups: {},
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('metadata')));
+  });
+
+  it('returns { valid: false } for missing groups', () => {
+    const result = validateDAGv3({
+      version: 3,
+      nodes: [],
+      edges: [],
+      waves: {},
+      metadata: { totalNodes: 0, totalWaves: 0 },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('groups')));
+  });
+
+  it('validates node required fields (id, wave, status)', () => {
+    const result = validateDAGv3({
+      version: 3,
+      nodes: [{ foo: 'bar' }],
+      edges: [],
+      waves: {},
+      metadata: { totalNodes: 1, totalWaves: 1 },
+      groups: {},
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('id')));
+    assert.ok(result.errors.some((e) => e.includes('wave')));
+    assert.ok(result.errors.some((e) => e.includes('status')));
+  });
+
+  it('validates edge required fields (from, to)', () => {
+    const result = validateDAGv3({
+      version: 3,
+      nodes: [{ id: 'A', wave: 1, status: 'pending' }],
+      edges: [{ x: 'y' }],
+      waves: {},
+      metadata: { totalNodes: 1, totalWaves: 1 },
+      groups: {},
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('from')));
+    assert.ok(result.errors.some((e) => e.includes('to')));
+  });
+
+  it('validates metadata required fields (totalNodes, totalWaves)', () => {
+    const result = validateDAGv3({
+      version: 3,
+      nodes: [],
+      edges: [],
+      waves: {},
+      metadata: {},
+      groups: {},
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes('totalNodes')));
+    assert.ok(result.errors.some((e) => e.includes('totalWaves')));
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// migrateDAGv1toV3
+// ────────────────────────────────────────────────────────────────
+describe('migrateDAGv1toV3', () => {
+  function makeV1DAG() {
+    return createDAG(
+      [{ id: 'auth' }, { id: 'data' }, { id: 'api' }],
+      [
+        { from: 'auth', to: 'api' },
+        { from: 'data', to: 'api' },
+      ]
+    );
+  }
+
+  it('converts v1 DAG to v3 with correct version', () => {
+    const v1 = makeV1DAG();
+    const v3 = migrateDAGv1toV3(v1);
+    assert.equal(v3.version, 3);
+  });
+
+  it('converts waves[N].sets to waves[N].nodes', () => {
+    const v1 = makeV1DAG();
+    const v3 = migrateDAGv1toV3(v1);
+    for (const waveKey of Object.keys(v3.waves)) {
+      assert.ok(Array.isArray(v3.waves[waveKey].nodes), `Wave ${waveKey} should have nodes array`);
+      assert.equal(v3.waves[waveKey].sets, undefined, `Wave ${waveKey} should NOT have sets key`);
+    }
+  });
+
+  it('removes checkpoint from waves', () => {
+    const v1 = makeV1DAG();
+    const v3 = migrateDAGv1toV3(v1);
+    for (const waveKey of Object.keys(v3.waves)) {
+      assert.equal(v3.waves[waveKey].checkpoint, undefined, `Wave ${waveKey} should NOT have checkpoint`);
+    }
+  });
+
+  it('adds group/priority/description to nodes', () => {
+    const v1 = makeV1DAG();
+    const v3 = migrateDAGv1toV3(v1);
+    for (const node of v3.nodes) {
+      assert.equal(node.type, 'set');
+      assert.equal(node.group, null);
+      assert.equal(node.priority, null);
+      assert.equal(node.description, null);
+    }
+  });
+
+  it('renames metadata.totalSets to metadata.totalNodes', () => {
+    const v1 = makeV1DAG();
+    const v3 = migrateDAGv1toV3(v1);
+    assert.equal(v3.metadata.totalNodes, 3);
+    assert.equal(v3.metadata.totalSets, undefined);
+  });
+
+  it('adds groups: {}', () => {
+    const v1 = makeV1DAG();
+    const v3 = migrateDAGv1toV3(v1);
+    assert.deepStrictEqual(v3.groups, {});
+  });
+
+  it('does not mutate input', () => {
+    const v1 = makeV1DAG();
+    const originalJSON = JSON.stringify(v1);
+    migrateDAGv1toV3(v1);
+    assert.equal(JSON.stringify(v1), originalJSON);
+  });
+
+  it('result passes validateDAGv3', () => {
+    const v1 = makeV1DAG();
+    const v3 = migrateDAGv1toV3(v1);
+    const result = validateDAGv3(v3);
+    assert.deepStrictEqual(result, { valid: true });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// migrateDAGv2toV3
+// ────────────────────────────────────────────────────────────────
+describe('migrateDAGv2toV3', () => {
+  function makeV2DAG() {
+    return createDAGv2(
+      [
+        { id: 'auth', type: 'set' },
+        { id: 'data', type: 'set' },
+        { id: 'api', type: 'set' },
+      ],
+      [
+        { from: 'auth', to: 'api' },
+        { from: 'data', to: 'api' },
+      ]
+    );
+  }
+
+  it('converts v2 DAG to v3 with correct version', () => {
+    const v2 = makeV2DAG();
+    const v3 = migrateDAGv2toV3(v2);
+    assert.equal(v3.version, 3);
+  });
+
+  it('adds group/priority/description to nodes', () => {
+    const v2 = makeV2DAG();
+    const v3 = migrateDAGv2toV3(v2);
+    for (const node of v3.nodes) {
+      assert.equal(node.group, null);
+      assert.equal(node.priority, null);
+      assert.equal(node.description, null);
+    }
+  });
+
+  it('preserves existing node type', () => {
+    const v2 = makeV2DAG();
+    const v3 = migrateDAGv2toV3(v2);
+    for (const node of v3.nodes) {
+      assert.equal(node.type, 'set');
+    }
+  });
+
+  it('waves already use nodes -- preserved', () => {
+    const v2 = makeV2DAG();
+    const v3 = migrateDAGv2toV3(v2);
+    for (const waveKey of Object.keys(v3.waves)) {
+      assert.ok(Array.isArray(v3.waves[waveKey].nodes), `Wave ${waveKey} should have nodes array`);
+    }
+  });
+
+  it('adds groups: {}', () => {
+    const v2 = makeV2DAG();
+    const v3 = migrateDAGv2toV3(v2);
+    assert.deepStrictEqual(v3.groups, {});
+  });
+
+  it('does not mutate input', () => {
+    const v2 = makeV2DAG();
+    const originalJSON = JSON.stringify(v2);
+    migrateDAGv2toV3(v2);
+    assert.equal(JSON.stringify(v2), originalJSON);
+  });
+
+  it('result passes validateDAGv3', () => {
+    const v2 = makeV2DAG();
+    const v3 = migrateDAGv2toV3(v2);
+    const result = validateDAGv3(v3);
+    assert.deepStrictEqual(result, { valid: true });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// tryLoadDAG - migration
+// ────────────────────────────────────────────────────────────────
+describe('tryLoadDAG - migration', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-dag-migrate-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets'), { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns migrated: false when DAG.json does not exist', () => {
+    const result = tryLoadDAG(tmpDir);
+    assert.equal(result.dag, null);
+    assert.equal(result.migrated, false);
+  });
+
+  it('returns migrated: true for v1 DAG (and dag is now v3)', () => {
+    const v1 = createDAG(
+      [{ id: 'a' }, { id: 'b' }],
+      [{ from: 'a', to: 'b' }]
+    );
+    const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify(v1, null, 2));
+
+    const result = tryLoadDAG(tmpDir);
+    assert.equal(result.migrated, true);
+    assert.equal(result.dag.version, 3);
+    assert.ok(result.dag.groups);
+  });
+
+  it('returns migrated: true for v2 DAG (and dag is now v3)', () => {
+    const v2 = createDAGv2(
+      [{ id: 'a', type: 'set' }, { id: 'b', type: 'set' }],
+      [{ from: 'a', to: 'b' }]
+    );
+    const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify(v2, null, 2));
+
+    const result = tryLoadDAG(tmpDir);
+    assert.equal(result.migrated, true);
+    assert.equal(result.dag.version, 3);
+    assert.ok(result.dag.groups);
+  });
+
+  it('returns migrated: false for v3 DAG', () => {
+    const v3 = createDAGv3(
+      [{ id: 'a' }, { id: 'b' }],
+      [{ from: 'a', to: 'b' }]
+    );
+    const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify(v3, null, 2));
+
+    const result = tryLoadDAG(tmpDir);
+    assert.equal(result.migrated, false);
+    assert.equal(result.dag.version, 3);
+  });
+
+  it('migrated v1 DAG passes validateDAGv3', () => {
+    const v1 = createDAG(
+      [{ id: 'x' }, { id: 'y' }],
+      [{ from: 'x', to: 'y' }]
+    );
+    const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify(v1, null, 2));
+
+    const result = tryLoadDAG(tmpDir);
+    const validation = validateDAGv3(result.dag);
+    assert.deepStrictEqual(validation, { valid: true });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// getExecutionOrder - v2/v3 compat
+// ────────────────────────────────────────────────────────────────
+describe('getExecutionOrder - v2/v3 compat', () => {
+  it('works with v2 DAG (waves use .nodes)', () => {
+    const dag = createDAGv2(
+      [
+        { id: 'a', type: 'set' },
+        { id: 'b', type: 'set' },
+        { id: 'c', type: 'set' },
+      ],
+      [
+        { from: 'a', to: 'c' },
+        { from: 'b', to: 'c' },
+      ]
+    );
+    const order = getExecutionOrder(dag);
+    assert.equal(order.length, 2);
+    assert.ok(order[0].includes('a'));
+    assert.ok(order[0].includes('b'));
+    assert.deepStrictEqual(order[1], ['c']);
+  });
+
+  it('works with v3 DAG (waves use .nodes)', () => {
+    const dag = createDAGv3(
+      [{ id: 'x' }, { id: 'y' }, { id: 'z' }],
+      [
+        { from: 'x', to: 'z' },
+        { from: 'y', to: 'z' },
+      ]
+    );
+    const order = getExecutionOrder(dag);
+    assert.equal(order.length, 2);
+    assert.ok(order[0].includes('x'));
+    assert.ok(order[0].includes('y'));
+    assert.deepStrictEqual(order[1], ['z']);
+  });
+
+  it('still works with v1 DAG (waves use .sets)', () => {
+    const dag = createDAG(
+      [{ id: 'p' }, { id: 'q' }, { id: 'r' }],
+      [
+        { from: 'p', to: 'r' },
+        { from: 'q', to: 'r' },
+      ]
+    );
+    const order = getExecutionOrder(dag);
+    assert.equal(order.length, 2);
+    assert.ok(order[0].includes('p'));
+    assert.ok(order[0].includes('q'));
+    assert.deepStrictEqual(order[1], ['r']);
   });
 });
