@@ -531,6 +531,97 @@ Loop back to Step 4B and restart the discovery conversation. Clear all previousl
 
 ---
 
+## Step 4E: Principles Capture
+
+Capture meta-principles that guide development decisions across the project. These are stored in `.planning/PRINCIPLES.md` and summarized in worktree-scoped CLAUDE.md files.
+
+### Principles Interview
+
+Present the 8 predefined categories one at a time. For each category, offer 2-3 recommended principles as multiSelect options, plus the ability to add custom principles.
+
+**Escape hatch:**
+
+Before starting the category walkthrough, offer an escape hatch:
+
+Use AskUserQuestion with:
+- question: "Would you like to define project principles now?"
+- Options:
+  - "Yes, walk me through categories" -- "Define principles category by category (recommended)"
+  - "Use sensible defaults" -- "Infer principles from existing code patterns (brownfield) or use generic best practices (greenfield)"
+  - "Skip principles" -- "Do not generate PRINCIPLES.md. You can add it later."
+
+**If "Yes, walk me through categories":** Proceed with the category walkthrough below.
+
+**If "Use sensible defaults":**
+- For brownfield projects: Analyze existing code patterns detected in Step 6 (CODEBASE-ANALYSIS.md) to infer principles. Look for patterns like: test framework usage (testing principles), module structure (architecture principles), linting config (code style principles), existing security middleware (security principles).
+- For greenfield projects: Use the first recommended principle from each of the 8 predefined categories as defaults.
+- Present the inferred/default principles for confirmation before writing.
+
+**If "Skip principles":** Set `principlesData = null` and skip Step 9.5. No PRINCIPLES.md will be generated.
+
+**Category walkthrough:**
+
+For each category in order (architecture, code style, testing, security, UX, performance, data handling, documentation):
+
+Use AskUserQuestion with:
+- question: "Principles for **{Category}** -- Select any that apply, or add your own:"
+- Options (vary per category -- see recommended principles below):
+  - {Recommended principle 1} -- "{brief rationale}"
+  - {Recommended principle 2} -- "{brief rationale}"
+  - {Recommended principle 3} -- "{brief rationale}"
+  - "Add custom" -- "Write your own principle for this category"
+  - "Skip this category" -- "No principles needed for {category}"
+
+If the user selects "Add custom", ask freeform: "Enter your principle statement for {Category}:" and then "Brief rationale (why this matters):" -- collect both and add to the principles list.
+
+Users can select multiple recommended principles AND add custom ones in the same category.
+
+**Recommended principles per category:**
+
+1. **Architecture:**
+   - "Prefer composition over inheritance" -- "Flexibility and easier refactoring"
+   - "Use dependency injection for testability" -- "Enables unit testing with mocks"
+   - "Keep modules loosely coupled" -- "Independent deployment and development"
+
+2. **Code Style:**
+   - "Use strict mode everywhere" -- "Prevents silent errors"
+   - "Prefer named exports over default exports" -- "Better IDE support and refactoring"
+   - "Keep functions under 30 lines" -- "Readability and single responsibility"
+
+3. **Testing:**
+   - "Test behavior, not implementation" -- "Tests survive refactoring"
+   - "Require tests for all bug fixes" -- "Prevent regressions"
+   - "Use integration tests for critical paths" -- "Catch issues unit tests miss"
+
+4. **Security:**
+   - "Never store secrets in code" -- "Use environment variables or secret managers"
+   - "Validate all external input" -- "Prevent injection attacks"
+   - "Use parameterized queries" -- "Prevent SQL injection"
+
+5. **UX:**
+   - "Show loading states for async operations" -- "Users need feedback"
+   - "Provide meaningful error messages" -- "Help users recover from errors"
+   - "Support keyboard navigation" -- "Accessibility and power users"
+
+6. **Performance:**
+   - "Lazy load non-critical resources" -- "Faster initial page loads"
+   - "Use pagination for large datasets" -- "Prevent memory issues"
+   - "Cache expensive computations" -- "Reduce redundant work"
+
+7. **Data Handling:**
+   - "Validate at boundaries" -- "Trust nothing from external sources"
+   - "Use transactions for multi-step writes" -- "Maintain data consistency"
+   - "Log all data mutations" -- "Auditability and debugging"
+
+8. **Documentation:**
+   - "Document why, not what" -- "Code shows what; comments explain why"
+   - "Keep README up to date" -- "First impression for new contributors"
+   - "Document breaking changes in changelogs" -- "Users need migration guidance"
+
+After the interview (or defaults), compile `principlesData` as an array of `{category, statement, rationale}` objects.
+
+---
+
 ## Step 5: Scaffold
 
 Run the scaffold, config write, and research directory setup:
@@ -1069,6 +1160,25 @@ Print: "Roadmap generation cancelled. Your scaffold and research files are prese
 End the skill.
 
 **On error:** Show progress breadcrumb: `init [scaffold done, research done, synthesis done, roadmap failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
+
+---
+
+## Step 9.5: Write PRINCIPLES.md
+
+If `principlesData` is not null (principles were captured in Step 4E):
+
+1. Generate the PRINCIPLES.md content:
+
+   ```javascript
+   const { generatePrinciplesMd } = require('./src/lib/principles.cjs');
+   const content = generatePrinciplesMd(principlesData);
+   ```
+
+2. Write `.planning/PRINCIPLES.md` using the Write tool.
+
+3. Display: "Wrote {N} principles across {M} categories to .planning/PRINCIPLES.md"
+
+If `principlesData` is null (user skipped principles): Skip this step silently. Do not write an empty PRINCIPLES.md.
 
 ---
 
