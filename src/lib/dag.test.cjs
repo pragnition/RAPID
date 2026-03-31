@@ -20,6 +20,7 @@ const {
   validateDAGv3,
   migrateDAGv1toV3,
   migrateDAGv2toV3,
+  syncDAGStatus,
 } = require('./dag.cjs');
 
 // ────────────────────────────────────────────────────────────────
@@ -1316,5 +1317,122 @@ describe('getExecutionOrder - v2/v3 compat', () => {
     assert.ok(order[0].includes('p'));
     assert.ok(order[0].includes('q'));
     assert.deepStrictEqual(order[1], ['r']);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// syncDAGStatus
+// ────────────────────────────────────────────────────────────────
+describe('syncDAGStatus', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-sync-test-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'sets'), { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeDAG(dag) {
+    const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+    fs.writeFileSync(dagPath, JSON.stringify(dag, null, 2));
+    return dagPath;
+  }
+
+  function writeState(state) {
+    const statePath = path.join(tmpDir, '.planning', 'STATE.json');
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+    return statePath;
+  }
+
+  function makeValidState(sets) {
+    const now = new Date().toISOString();
+    return {
+      version: 1,
+      projectName: 'test-project',
+      currentMilestone: 'v1.0',
+      milestones: [{
+        id: 'v1.0',
+        name: 'v1.0',
+        sets: sets,
+      }],
+      lastUpdatedAt: now,
+      createdAt: now,
+    };
+  }
+
+  it('syncs statuses from STATE.json to DAG.json on disk', async () => {
+    const dag = createDAGv3(
+      [{ id: 'auth' }, { id: 'api' }],
+      [{ from: 'auth', to: 'api' }]
+    );
+    const dagPath = writeDAG(dag);
+
+    writeState(makeValidState([
+      { id: 'auth', status: 'executed' },
+      { id: 'api', status: 'planned' },
+    ]));
+
+    await syncDAGStatus(tmpDir);
+
+    const updated = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+    const nodeMap = {};
+    for (const n of updated.nodes) nodeMap[n.id] = n;
+
+    assert.equal(nodeMap['auth'].status, 'executed');
+    assert.equal(nodeMap['api'].status, 'planned');
+  });
+
+  it('handles missing DAG.json gracefully (no throw)', async () => {
+    writeState(makeValidState([{ id: 'auth', status: 'executed' }]));
+    // No DAG.json -- should not throw
+    await syncDAGStatus(tmpDir);
+  });
+
+  it('handles missing STATE.json gracefully (no throw)', async () => {
+    const dag = createDAGv3([{ id: 'auth' }], []);
+    writeDAG(dag);
+    // No STATE.json -- should not throw
+    await syncDAGStatus(tmpDir);
+  });
+
+  it('does not overwrite nodes not in STATE.json', async () => {
+    const dag = createDAGv3(
+      [{ id: 'auth' }, { id: 'extra' }],
+      []
+    );
+    const dagPath = writeDAG(dag);
+
+    // STATE only has auth, not extra
+    writeState(makeValidState([
+      { id: 'auth', status: 'complete' },
+    ]));
+
+    await syncDAGStatus(tmpDir);
+
+    const updated = JSON.parse(fs.readFileSync(dagPath, 'utf-8'));
+    const nodeMap = {};
+    for (const n of updated.nodes) nodeMap[n.id] = n;
+
+    assert.equal(nodeMap['auth'].status, 'complete');
+    assert.equal(nodeMap['extra'].status, 'pending', 'Node not in STATE should keep original status');
+  });
+
+  it('persists the synced DAG to disk', async () => {
+    const dag = createDAGv3([{ id: 'auth' }], []);
+    const dagPath = writeDAG(dag);
+
+    writeState(makeValidState([
+      { id: 'auth', status: 'merged' },
+    ]));
+
+    await syncDAGStatus(tmpDir);
+
+    // Read raw file to confirm it was written
+    const raw = fs.readFileSync(dagPath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.nodes[0].status, 'merged');
   });
 });
