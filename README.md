@@ -3,13 +3,20 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-5.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> <img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" /> <img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" /> <img src="https://img.shields.io/badge/Node.js-18%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
+  <img src="https://img.shields.io/badge/version-5.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
+  <img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" /> 
+  <img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" /> 
+  <img src="https://img.shields.io/badge/Node.js-18%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
 </p>
 
-> Parallel AI development needs isolation, ownership, contracts, and structured merge.
-> RAPID provides all four.
+> Pre-existing agent harnesses like GSD and OpenSpec are great, but not built for collaboration amongst teams.
+> At Pragnition Labs, we build in small, mobile teams. We needed something better.
+> RAPID is a meta prompting framework/agent harness that treats parallelized development as a **first class citizen** feature.
 
 ---
+
+> [!NOTE]
+> RAPID is still in beta. Therefore, features may be broken/unpolished. Feedback is **always** welcome.
 
 **RAPID is a Claude Code plugin that coordinates parallel AI-assisted development.**
 
@@ -24,8 +31,7 @@
 > ```
 > claude plugin add pragnition/RAPID
 > ```
-
-Then run `/rapid:install` inside Claude Code to configure your environment.
+> `/rapid:install` inside Claude Code to configure your environment.
 
 ## 60-Second Quickstart
 
@@ -35,14 +41,19 @@ Then run `/rapid:install` inside Claude Code to configure your environment.
 /rapid:discuss-set 1     # Capture your implementation vision
 /rapid:plan-set 1        # Research, plan all waves, validate contracts
 /rapid:execute-set 1     # Execute all waves (parallel agents per wave)
-/rapid:review 1          # Scope review targets
-/rapid:unit-test 1       # Generate and run unit tests
-/rapid:bug-hunt 1        # Adversarial bug hunting
-/rapid:uat 1             # Acceptance testing
+/rapid:review 1          # Scope review targets (optional)
+  /rapid:unit-test 1       # Generate and run unit tests
+  /rapid:bug-hunt 1        # Adversarial bug hunting
+  /rapid:uat 1             # Acceptance testing
 /rapid:merge             # Integrate completed sets to main
+/rapid:audit-version
+/rapid:new-version
 ```
 
 That is the full lifecycle. Each command spawns specialized agents, produces artifacts, and advances the set through its lifecycle automatically.
+
+> [!TIP]
+> RAPID does not confine you to parallel development. Solo developers wishing to work without worktrees can pass in the --solo flag to all commands. 
 
 ## Architecture
 
@@ -58,7 +69,7 @@ That is the full lifecycle. Each command spawns specialized agents, produces art
 
 RAPID structures parallel work around **sets** -- independent workstreams that each developer owns end-to-end.
 
-**Research pipeline.** `/rapid:init` spawns 6 parallel researchers (stack, features, architecture, pitfalls, oversights, UX) to analyze your project. A synthesizer combines their findings, and a roadmapper decomposes work into sets with clear boundaries.
+**Research pipeline.** `/rapid:init` fleshes out the project with you, spawns 6 parallel researchers (stack, features, architecture, pitfalls, oversights, UX) to analyze your project. A synthesizer combines their findings, and a roadmapper decomposes work into sets with clear boundaries.
 
 **Isolation.** `/rapid:start-set` creates a dedicated git worktree per set so each agent works in its own copy of the repo with no cross-contamination.
 
@@ -88,9 +99,24 @@ RAPID structures parallel work around **sets** -- independent workstreams that e
 
 See [DOCS.md](DOCS.md) for the full reference covering all 28 commands.
 
-## Links
+## Documentation
 
--> [Full Documentation](DOCS.md) -- all 28 commands, architecture, state machines, configuration
+-> [DOCS.md](DOCS.md) -- command reference, quick lookup, all 28 commands with usage examples
+
+-> [Technical Documentation](technical_documentation.md) -- architectural narrative, system design rationale, how components fit together
+
+-> [docs/](docs/) -- topic-specific deep-dives (agents, state machines, configuration, merge, review, and more)
+
+## Credits 
+
+Huge thanks to the work done by other opensource agent harnesses like [get-shit-done](https://github.com/gsd-build/get-shit-done) and [OpenSpec](https://github.com/gsd-build/get-shit-done). RAPID is heavily inspired by get-shit-done. In fact, earlier versions of RAPID were built using GSD till RAPID was good enough to build itself!
+
+Another shoutout to [this article](https://www.humanlayer.dev/blog/skill-issue-harness-engineering-for-coding-agents) by humanlayer that served as a great info dump/starting point.
+
+
+
+
+## Links
 
 -> [Contributing Guide](CONTRIBUTING.md) -- how to contribute to RAPID
 

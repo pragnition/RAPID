@@ -4,5 +4,9 @@
   "created": "2026-03-31",
   "exports": { "functions": [], "types": [] },
   "imports": { "functions": [], "types": [] },
-  "fileOwnership": []
+  "fileOwnership": [
+    "DOCS.md",
+    "technical_documentation.md",
+    ".planning/sets/docs-update/GAP-ANALYSIS.md"
+  ]
 }

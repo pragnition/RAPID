@@ -19,6 +19,11 @@
       "id": "readme-polish",
       "wave": 1,
       "status": "pending"
+    },
+    {
+      "id": "docs-update",
+      "wave": 1,
+      "status": "pending"
     }
   ],
   "edges": [],
@@ -28,28 +33,31 @@
         "branding-assets",
         "community-infra",
         "readme-migration",
-        "readme-polish"
+        "readme-polish",
+        "docs-update"
       ],
       "checkpoint": {
         "contracts": [
           "rapid://contracts/branding-assets",
           "rapid://contracts/community-infra",
           "rapid://contracts/readme-migration",
-          "rapid://contracts/readme-polish"
+          "rapid://contracts/readme-polish",
+          "rapid://contracts/docs-update"
         ],
         "artifacts": [
           ".planning/sets/branding-assets/CONTRACT.json",
           ".planning/sets/community-infra/CONTRACT.json",
           ".planning/sets/readme-migration/CONTRACT.json",
-          ".planning/sets/readme-polish/CONTRACT.json"
+          ".planning/sets/readme-polish/CONTRACT.json",
+          ".planning/sets/docs-update/CONTRACT.json"
         ]
       }
     }
   },
   "metadata": {
-    "created": "2026-03-30",
-    "totalSets": 4,
+    "created": "2026-03-31",
+    "totalSets": 5,
     "totalWaves": 1,
-    "maxParallelism": 4
+    "maxParallelism": 5
   }
 }
