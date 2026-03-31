@@ -41,9 +41,14 @@ async function handleDag(cwd, subcommand, args) {
     }
 
     case 'show': {
-      const { tryLoadDAG, getExecutionOrder } = require('../lib/dag.cjs');
-      const { readState } = require('../lib/state-machine.cjs');
+      const { syncDAGStatus, tryLoadDAG, getExecutionOrder } = require('../lib/dag.cjs');
 
+      // Sync statuses from STATE.json into DAG.json, then reload
+      try {
+        await syncDAGStatus(cwd);
+      } catch {
+        // Non-fatal: proceed with existing DAG statuses
+      }
       const { dag } = tryLoadDAG(cwd);
       if (!dag) {
         throw new CliError('No DAG.json found. Run `dag generate` first.');
@@ -51,22 +56,10 @@ async function handleDag(cwd, subcommand, args) {
 
       const waves = getExecutionOrder(dag);
 
-      // Build set status map from STATE.json
-      const statusMap = {};
-      try {
-        const readResult = await readState(cwd);
-        if (readResult && readResult.valid) {
-          const state = readResult.state;
-          const milestoneId = state.currentMilestone;
-          const milestone = state.milestones.find(m => m.id === milestoneId);
-          if (milestone) {
-            for (const set of milestone.sets) {
-              statusMap[set.id] = set.status || 'unknown';
-            }
-          }
-        }
-      } catch {
-        // Fallback: statuses remain unknown
+      // Build node lookup for status and group
+      const nodeMap = {};
+      for (const node of dag.nodes) {
+        nodeMap[node.id] = node;
       }
 
       const totalSets = waves.reduce((sum, w) => sum + w.length, 0);
@@ -74,6 +67,8 @@ async function handleDag(cwd, subcommand, args) {
 
       const BOLD = '\x1b[1m';
       const RESET = '\x1b[0m';
+      const CYAN = '\x1b[36m';
+      const DIM = '\x1b[2m';
 
       const statusColor = {
         pending: '\x1b[90m',
@@ -85,15 +80,49 @@ async function handleDag(cwd, subcommand, args) {
         merged: '\x1b[2m',
       };
 
+      const hasGroups = dag.groups && Object.keys(dag.groups).length > 0;
+
       let out = `${BOLD}DAG: ${totalSets} sets, ${totalWaves} waves${RESET}\n`;
 
       for (let i = 0; i < waves.length; i++) {
         out += `\n${BOLD}Wave ${i + 1}:${RESET}\n`;
         for (const setId of waves[i]) {
-          const status = statusMap[setId] || 'unknown';
+          const node = nodeMap[setId];
+          const status = (node && node.status) || 'unknown';
           const color = statusColor[status] || '';
           const colorEnd = color ? RESET : '';
-          out += `  ${setId}  (${color}${status}${colorEnd})\n`;
+          // Group badge (only if groups are assigned)
+          let badge = '';
+          if (hasGroups && node && node.group) {
+            badge = ` ${CYAN}[${node.group}]${RESET}`;
+          }
+          out += `  ${setId}${badge}  (${color}${status}${colorEnd})\n`;
+        }
+      }
+
+      // Cross-group edge markers (only if groups exist)
+      if (hasGroups) {
+        const crossGroupEdges = [];
+        for (const edge of dag.edges) {
+          const fromNode = nodeMap[edge.from];
+          const toNode = nodeMap[edge.to];
+          const fg = fromNode && fromNode.group;
+          const tg = toNode && toNode.group;
+          if (fg && tg && fg !== tg) {
+            crossGroupEdges.push({
+              from: edge.from,
+              to: edge.to,
+              fromGroup: fg,
+              toGroup: tg,
+            });
+          }
+        }
+
+        if (crossGroupEdges.length > 0) {
+          out += `\n${BOLD}Cross-group edges:${RESET}\n`;
+          for (const ce of crossGroupEdges) {
+            out += `  ${ce.from} -> ${ce.to}  ${DIM}[${ce.fromGroup} -> ${ce.toGroup}]${RESET}  \u26A1\n`;
+          }
         }
       }
 
