@@ -200,6 +200,28 @@ For each set, generate a contract:
 - Use the same type signatures in both the export and import definitions
 - Behavioral contracts must be testable (no vague "should be fast" constraints)
 
+## Group Assignment Guidance
+
+When `team-size > 1`, the roadmapper should design set boundaries that naturally partition into developer groups with minimal file ownership conflicts.
+
+### Principles
+- **File ownership isolation**: Each set should own a distinct set of files. When two sets must touch the same file, prefer to assign them to the same developer group.
+- **Active constraint**: Use team-size to actively influence set boundary design. If team-size is 2, aim for sets that cleanly split into 2 groups. If team-size is 3, aim for 3 groups.
+- **Dependency awareness**: Sets with direct dependencies (edges in the DAG) benefit from being in the same group, since the developer has full context.
+- **Balance**: Aim for roughly equal numbers of sets per developer, but prioritize conflict minimization over strict balance.
+
+### Solo Developer (team-size = 1)
+When team-size is 1, group-related features are completely suppressed:
+- Do NOT mention groups in the roadmap output.
+- Do NOT add group annotations to the DAG.
+- The roadmapper output remains unchanged from pre-group behavior.
+
+### Multi-Developer (team-size > 1)
+When team-size > 1, include in the roadmap output:
+- A "Developer Groups" section suggesting how sets should be assigned to developers.
+- Note which sets share file ownership and should ideally be assigned to the same developer.
+- Flag any sets with high cross-group dependency risk.
+
 ## Scope and Constraints
 
 ### What This Agent Does
