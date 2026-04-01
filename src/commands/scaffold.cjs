@@ -8,19 +8,21 @@ const { CliError } = require('../lib/errors.cjs');
  * Handle scaffold CLI commands.
  *
  * Subcommands:
- *   scaffold run [--type <type>]  -- Generate project foundation files
- *   scaffold status               -- Show scaffold report (if scaffold has been run)
- *   scaffold verify-stubs         -- Check which stubs have been replaced by real implementations
+ *   scaffold run [--type <type>]                          -- Generate project foundation files
+ *   scaffold status                                       -- Show scaffold report (if scaffold has been run)
+ *   scaffold verify-stubs                                 -- Check which stubs have been replaced by real implementations
+ *   scaffold create-foundation-set --name <n> --contracts <json> -- Create foundation set #0 with merged contracts
  *
  * @param {string} cwd - Project root directory
- * @param {string} subcommand - The subcommand (run, status)
+ * @param {string} subcommand - The subcommand (run, status, verify-stubs, create-foundation-set)
  * @param {string[]} args - Remaining arguments after subcommand
  */
 function handleScaffold(cwd, subcommand, args) {
-  const { scaffold, readScaffoldReport } = require('../lib/scaffold.cjs');
+  const { scaffold, readScaffoldReport, createFoundationSet } = require('../lib/scaffold.cjs');
 
-  if (!subcommand || (subcommand !== 'run' && subcommand !== 'status' && subcommand !== 'verify-stubs')) {
-    throw new CliError('Usage: rapid-tools scaffold <run|status|verify-stubs> [--type <type>]');
+  const validSubcommands = ['run', 'status', 'verify-stubs', 'create-foundation-set'];
+  if (!subcommand || !validSubcommands.includes(subcommand)) {
+    throw new CliError('Usage: rapid-tools scaffold <run|status|verify-stubs|create-foundation-set> [options]');
   }
 
   if (subcommand === 'run') {
@@ -101,6 +103,43 @@ function handleScaffold(cwd, subcommand, args) {
     }
 
     process.stdout.write(JSON.stringify(results) + '\n');
+    return;
+  }
+
+  if (subcommand === 'create-foundation-set') {
+    // Parse --name and --contracts from args
+    let name = 'foundation';
+    let contractsJson = null;
+
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--name' && i + 1 < args.length) {
+        name = args[++i];
+      } else if (args[i] === '--contracts' && i + 1 < args.length) {
+        contractsJson = args[++i];
+      }
+    }
+
+    if (contractsJson === null) {
+      throw new CliError('scaffold create-foundation-set requires --contracts <json>');
+    }
+
+    let contracts;
+    try {
+      contracts = JSON.parse(contractsJson);
+    } catch (err) {
+      throw new CliError(`Invalid --contracts JSON: ${err.message}`);
+    }
+
+    const sets = Object.keys(contracts);
+    const setConfig = { name, sets, contracts };
+
+    // createFoundationSet is async -- use .then() to handle the promise
+    createFoundationSet(cwd, setConfig).then(() => {
+      const setDir = path.join(cwd, '.planning', 'sets', name);
+      process.stdout.write(JSON.stringify({ created: true, name, setDir }) + '\n');
+    }).catch((err) => {
+      throw new CliError(`create-foundation-set failed: ${err.message}`);
+    });
     return;
   }
 }
