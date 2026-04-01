@@ -116,24 +116,34 @@ Populate the milestone with sets, each set with waves, each wave with jobs:
     "id": "[milestone-id]",
     "name": "[milestone-name]",
     "status": "active",
-    "sets": [{
-      "id": "[set-id]",
-      "name": "[Set Name]",
-      "status": "planned",
-      "branch": "set/[set-name]",
-      "waves": [{
-        "id": "[wave-id]",
-        "name": "[Wave Name]",
+    "sets": [
+      // When team-size > 1, include foundation set at index 0 (no waves array):
+      {
+        "id": "foundation",
+        "name": "Foundation",
+        "status": "pending",
+        "branch": "set/foundation"
+      },
+      // Regular sets follow:
+      {
+        "id": "[set-id]",
+        "name": "[Set Name]",
         "status": "planned",
-        "order": 1,
-        "jobs": [{
-          "id": "[job-id]",
-          "name": "[Job Title]",
+        "branch": "set/[set-name]",
+        "waves": [{
+          "id": "[wave-id]",
+          "name": "[Wave Name]",
           "status": "planned",
-          "complexity": "S|M|L"
+          "order": 1,
+          "jobs": [{
+            "id": "[job-id]",
+            "name": "[Job Title]",
+            "status": "planned",
+            "complexity": "S|M|L"
+          }]
         }]
-      }]
-    }]
+      }
+    ]
   }],
   "currentMilestone": "[milestone-id]"
 }
@@ -221,6 +231,73 @@ When team-size > 1, include in the roadmap output:
 - A "Developer Groups" section suggesting how sets should be assigned to developers.
 - Note which sets share file ownership and should ideally be assigned to the same developer.
 - Flag any sets with high cross-group dependency risk.
+
+## Foundation Set (Multi-Developer Only)
+
+When `team-size > 1`, the roadmapper MUST include a **foundation set** as the first entry (index 0) in `state.milestones[].sets[]`. The foundation set provides shared interfaces and stubs that enable parallel development across groups. When `team-size = 1`, do NOT include a foundation set -- the output remains unchanged.
+
+### Foundation Set in `state.milestones[].sets[]`
+
+When `team-size > 1`, insert this entry at index 0 of the sets array:
+
+```json
+{
+  "id": "foundation",
+  "name": "Foundation",
+  "status": "pending",
+  "branch": "set/foundation"
+}
+```
+
+Note: The foundation set has NO `waves` array. It is not executed via the wave/job pipeline.
+
+### Foundation Set Contract
+
+Include a corresponding entry in the `contracts` array:
+
+```json
+{
+  "setId": "foundation",
+  "contract": {
+    "foundation": true,
+    "exports": {
+      "<export-name>": {
+        "type": "function|class|endpoint|event|file",
+        "signature": "<type signature>",
+        "description": "<what it provides>",
+        "sourceSet": "<set-id that originally exports this>"
+      }
+    },
+    "imports": {}
+  },
+  "definition": {
+    "scope": "Foundation set containing shared interfaces and stubs for multi-group parallel development. This set must not contain feature implementation logic.",
+    "ownedFiles": [],
+    "tasks": [],
+    "acceptance": ["All cross-set interface stubs are present and importable"]
+  }
+}
+```
+
+The foundation contract's `exports` must merge ALL exports from ALL other sets. Each export entry includes a `sourceSet` field indicating which set originally exports it. The `imports` object is always empty -- the foundation set imports nothing.
+
+### Foundation Set in ROADMAP.md
+
+When `team-size > 1`, include the foundation set in the ROADMAP.md markdown output as the first set, before all numbered sets:
+
+```markdown
+### Set 0: Foundation
+**Branch:** `set/foundation`
+**Scope:** Foundation set containing shared interfaces and stubs for multi-group parallel development.
+**Dependencies:** none
+```
+
+### Conditional Behavior Summary
+
+| Condition | Foundation Set |
+|-----------|---------------|
+| `team-size > 1` | Include foundation set at index 0 with contract merging all exports |
+| `team-size = 1` | Do NOT include foundation set; output unchanged |
 
 ## Scope and Constraints
 
