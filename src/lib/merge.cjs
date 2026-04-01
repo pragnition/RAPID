@@ -32,6 +32,7 @@ const execute = require('./execute.cjs');
 const plan = require('./plan.cjs');
 const returns = require('./returns.cjs');
 const { acquireLock } = require('./lock.cjs');
+const stub = require('./stub.cjs');
 
 // ────────────────────────────────────────────────────────────────
 // MERGE-STATE.json Schema (MERG-03)
@@ -97,6 +98,7 @@ const MergeStateSchema = z.object({
     }).optional(),
   }).optional(),
   resolution: z.object({
+    tier0Count: z.number().default(0),
     tier1Count: z.number().default(0),
     tier2Count: z.number().default(0),
     tier3Count: z.number().default(0),
@@ -126,6 +128,7 @@ const MergeStateSchema = z.object({
       L5: z.number(),
     }),
     resolutionCounts: z.object({
+      T0: z.number(),
       T1: z.number(),
       T2: z.number(),
       T3: z.number(),
@@ -282,6 +285,7 @@ function compressResult(mergeState) {
       L5: (detection.semantic && detection.semantic.conflicts) ? detection.semantic.conflicts.length : 0,
     },
     resolutionCounts: {
+      T0: resolution.tier0Count || 0,
       T1: resolution.tier1Count || 0,
       T2: resolution.tier2Count || 0,
       T3: resolution.tier3Count || 0,
@@ -1150,8 +1154,59 @@ function tryHeuristicResolve(conflict, ownership, dagOrder) {
 }
 
 /**
+ * Tier 0: RAPID-STUB auto-resolution.
+ *
+ * When a merge conflict has one side that is a RAPID-STUB and the other side
+ * is real implementation code, the real code always wins at confidence 1.0.
+ * When both sides are stubs, keep ours by convention.
+ *
+ * @param {Object} conflict - A conflict object with oursContent and theirsContent
+ * @returns {{ resolved: boolean, confidence: number, resolution?: string, preferSide?: string }}
+ */
+function tryStubAutoResolve(conflict) {
+  // Requires both sides of the conflict to be available
+  if (!conflict.oursContent && !conflict.theirsContent) {
+    return { resolved: false, confidence: 0 };
+  }
+
+  const oursIsStub = stub.isRapidStub(conflict.oursContent || '');
+  const theirsIsStub = stub.isRapidStub(conflict.theirsContent || '');
+
+  // One stub, one real -> real code wins
+  if (oursIsStub && !theirsIsStub) {
+    return {
+      resolved: true,
+      confidence: 1.0,
+      resolution: 'auto-resolved: theirs is real implementation, ours is RAPID-STUB',
+      preferSide: 'theirs',
+    };
+  }
+  if (!oursIsStub && theirsIsStub) {
+    return {
+      resolved: true,
+      confidence: 1.0,
+      resolution: 'auto-resolved: ours is real implementation, theirs is RAPID-STUB',
+      preferSide: 'ours',
+    };
+  }
+
+  // Both stubs -> keep either (ours by convention)
+  if (oursIsStub && theirsIsStub) {
+    return {
+      resolved: true,
+      confidence: 1.0,
+      resolution: 'auto-resolved: both sides are RAPID-STUBs, keeping ours',
+      preferSide: 'ours',
+    };
+  }
+
+  // Neither is a stub -- not our jurisdiction
+  return { resolved: false, confidence: 0 };
+}
+
+/**
  * Run resolution cascade on all detected conflicts.
- * Tries T1 then T2, marks remainder as needsAgent for T3.
+ * Tries T0 (stub auto-resolve) then T1 then T2, marks remainder as needsAgent for T3.
  *
  * @param {{ allConflicts: Array<Object> }} detectionResults - Aggregated conflicts
  * @param {{ ownership?: Object, dagOrder?: string[] }} options
@@ -1163,6 +1218,20 @@ function resolveConflicts(detectionResults, options) {
   const dagOrder = options.dagOrder || [];
 
   for (const conflict of detectionResults.allConflicts) {
+    // Tier 0: RAPID-STUB auto-resolution (highest priority)
+    const t0 = tryStubAutoResolve(conflict);
+    if (t0.resolved) {
+      results.push({
+        conflict,
+        tier: 0,
+        resolved: true,
+        confidence: t0.confidence,
+        resolution: t0.resolution,
+        preferSide: t0.preferSide,
+      });
+      continue;
+    }
+
     // Tier 1: deterministic
     const t1 = tryDeterministicResolve(conflict);
     if (t1.resolved) {
@@ -2154,6 +2223,7 @@ module.exports = {
   parseConflictFiles,
 
   // v2.0 Resolution Cascade (MERG-02)
+  tryStubAutoResolve,
   tryDeterministicResolve,
   tryHeuristicResolve,
   resolveConflicts,
