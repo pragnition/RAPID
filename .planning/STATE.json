@@ -562,10 +562,15 @@
           "waves": [],
           "name": "Agent Namespace Enforcement",
           "branch": "set/agent-namespace-enforcement"
+        },
+        {
+          "id": "docs-version-bump",
+          "status": "pending",
+          "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-01T05:10:07.055Z",
+  "lastUpdatedAt": "2026-04-01T05:33:17.135Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
