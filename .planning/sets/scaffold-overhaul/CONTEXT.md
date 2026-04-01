@@ -6,7 +6,7 @@
 
 <domain>
 ## Set Boundary
-Overhaul the scaffold system for multi-developer parallel workflows. This includes group-aware set splitting using DAG group annotations, high-fidelity stub generation with `.rapid-stub` sidecar markers, shared `rapid/stubs` branch management, optional foundational set #0 (planned by the roadmapper as a normal set with `foundation:true` DAG flag), stub lifecycle hooks, a `scaffold verify-stubs` CLI command, RAPID-STUB merge auto-resolution at T0 tier, and scaffold-report v2 with additive fields.
+Overhaul the scaffold system for multi-developer parallel workflows. This includes group-aware set splitting using DAG group annotations, high-fidelity stub generation with `.rapid-stub` sidecar markers, per-worktree `.rapid-stubs/` directory management, optional foundational set #0 (planned by the roadmapper as a normal set with `foundation:true` DAG flag), stub lifecycle hooks, a `scaffold verify-stubs` CLI command, RAPID-STUB merge auto-resolution at T0 tier, and scaffold-report v2 with additive fields.
 </domain>
 
 <decisions>
@@ -21,10 +21,10 @@ Overhaul the scaffold system for multi-developer parallel workflows. This includ
 - For unrecognized or complex return types, stubs should return `null` as a safe fallback.
 - **Rationale:** Null is explicit, never crashes on property access in the same way as undefined, and clearly signals "not implemented" without throwing (which would defeat the purpose of high-fidelity stubs).
 
-### Stub Storage & Branch Model
-- Stubs live on a shared `rapid/stubs` git branch for centralized consistency.
-- At `start-set` time, stubs are **copied** into the worktree as ephemeral artifacts (not branched from, not symlinked).
-- **Rationale:** Shared branch ensures all developers see identical stubs. Copying keeps worktree branches clean -- stubs don't appear in branch diffs or history.
+### Stub Storage Model
+- Stubs live in a per-worktree `.rapid-stubs/` directory as ephemeral build artifacts.
+- At `start-set` time, stubs are **generated** directly in the worktree's `.rapid-stubs/` directory from CONTRACT.json imports.
+- **Rationale:** Per-worktree generation is consistent with RAPID's worktree isolation model. Each worktree generates its own stubs from contracts, avoiding shared-branch race conditions and git complexity. Stubs don't appear in branch diffs or history because `.rapid-stubs/` is gitignored.
 
 ### Stub Replacement Detection
 - Detection uses **first-line marker check only** -- check if the file still looks like a stub.
