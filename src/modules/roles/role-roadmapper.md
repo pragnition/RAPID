@@ -117,7 +117,7 @@ Populate the milestone with sets, each set with waves, each wave with jobs:
     "name": "[milestone-name]",
     "status": "active",
     "sets": [
-      // When team-size > 1, include foundation set at index 0 (no waves array):
+      // When team-size > 1, include foundation set as the first entry (no waves array):
       {
         "id": "foundation",
         "name": "Foundation",
@@ -248,13 +248,13 @@ When team-size > 1, include in the roadmap output:
 
 ## Foundation Set (Multi-Developer Only)
 
-When `team-size > 1`, the roadmapper MUST include a **foundation set** as the first entry (index 0) in `state.milestones[].sets[]`. The foundation set provides shared interfaces and stubs that enable parallel development across groups. When `team-size = 1`, do NOT include a foundation set -- the output remains unchanged.
+When `team-size > 1`, the roadmapper MUST include a **foundation set** as the **first entry** in `state.milestones[].sets[]`. The foundation set provides shared interfaces and stubs that enable parallel development across groups. When `team-size = 1`, do NOT include a foundation set -- the output remains unchanged.
 
 > **IMPORTANT:** `foundation` is a reserved set ID. It MUST NOT be used for regular feature sets. The foundation set is exclusively for shared interface stubs in multi-developer mode. If a project has a "foundation" or "core" feature area, use a descriptive ID like `core-engine`, `base-systems`, or `game-logic` -- never `foundation`.
 
 ### Foundation Set in `state.milestones[].sets[]`
 
-When `team-size > 1`, insert this entry at index 0 of the sets array:
+When `team-size > 1`, insert this entry at the first position of the sets array:
 
 ```json
 {
@@ -302,7 +302,7 @@ The foundation contract's `exports` must merge ALL exports from ALL other sets. 
 When `team-size > 1`, include the foundation set in the ROADMAP.md markdown output as the first set, before all numbered sets:
 
 ```markdown
-### Set 0: Foundation
+### Set 1: Foundation
 **Branch:** `set/foundation`
 **Scope:** Foundation set containing shared interfaces and stubs for multi-group parallel development.
 **Dependencies:** none
@@ -312,7 +312,7 @@ When `team-size > 1`, include the foundation set in the ROADMAP.md markdown outp
 
 | Condition | Foundation Set |
 |-----------|---------------|
-| `team-size > 1` | Include foundation set at index 0 with contract merging all exports |
+| `team-size > 1` | Include foundation set as first entry with contract merging all exports |
 | `team-size = 1` | Do NOT include foundation set; output unchanged |
 
 ## Scope and Constraints
