@@ -126,7 +126,7 @@ Populate the milestone with sets, each set with waves, each wave with jobs:
       },
       // Regular sets follow:
       {
-        "id": "[set-id]",
+        "id": "[set-id]",  // kebab-case slug, e.g. "auth-system"
         "name": "[Set Name]",
         "status": "planned",
         "branch": "set/[set-name]",
@@ -155,7 +155,7 @@ For each set, generate a contract:
 
 ```json
 {
-  "setId": "[set-id]",
+  "setId": "[set-id]",  // kebab-case slug, e.g. "data-pipeline"
   "version": "1.0.0",
   "exports": {
     "[export-name]": {
@@ -189,6 +189,20 @@ For each set, generate a contract:
 3. **Optimize for merge ease** -- sets that touch different files/modules merge cleanly
 4. **Contracts are foundational** -- all contracts must be generated together so imports/exports match
 5. **Respect granularity preference** -- if targetSetCount is provided, use it as soft guidance for the number of sets. "3-5" means fewer, larger sets; "11-15" means many, smaller sets. "auto" means use your best judgment based on project complexity. If you deviate from the target range, include a brief justification in the roadmap output (e.g., "Target was 3-5 sets, but 7 sets are needed because the frontend and backend have independent deployment pipelines and shared nothing.") When targetSetCount is "auto", apply no artificial bias toward any specific range -- decompose based purely on project structure, complexity, and team size.
+
+### Set Naming Convention
+
+Set IDs are used for branch names (`set/[id]`) and directory names (`.planning/sets/[id]/`), so they must be filesystem-safe and human-readable.
+
+- Set IDs **MUST** be descriptive kebab-case slugs (lowercase letters, numbers, hyphens only).
+- The name should describe the feature or domain the set covers, not its position in a sequence.
+- Format constraint: `/^[a-z][a-z0-9-]{1,38}[a-z0-9]$/` (3-40 chars, starts with letter, ends with letter or digit, kebab-case).
+- **Good examples:** `auth-system`, `hud-game-controls`, `data-pipeline`, `api-endpoints`, `polish-end-game`
+- **Bad examples (explicitly forbidden):** single letters (`A`, `B`, `C`), plain numbers (`1`, `2`, `3`), generic names (`set-1`, `group-a`, `phase-1`), overly terse names (`ui`, `db`)
+- **Reserved IDs:**
+  - `foundation` is a **reserved** set ID. It is used exclusively for the multi-developer interface stub set (`team-size > 1`).
+  - Regular feature sets **MUST NOT** use `foundation` as their ID or name, even if the set represents "base", "core", or "foundational" functionality. Use descriptive names like `core-engine`, `game-logic`, `base-api` instead.
+  - When `team-size = 1`, the word "foundation" must not appear in any set ID or name.
 
 ### Wave Ordering
 1. Waves within a set execute sequentially (wave 2 depends on wave 1)
