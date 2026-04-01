@@ -1094,7 +1094,8 @@ c) Merge the roadmapper's milestone/set data into STATE.json (preserving envelop
 
    ```bash
    node -e "
-     const { mergeStatePartial } = require('$(dirname \"${RAPID_TOOLS}\")/lib/state-machine.cjs');
+     const path = require('path');
+     const { mergeStatePartial } = require(path.join(path.dirname('${RAPID_TOOLS}'), '..', 'lib', 'state-machine.cjs'));
      const partial = JSON.parse(process.argv[1]);
      mergeStatePartial(process.cwd(), partial).then(() => console.log('STATE.json merged successfully'));
    " '{"milestones": <MILESTONES_JSON>, "currentMilestone": "<MILESTONE_ID>"}'
