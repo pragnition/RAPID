@@ -551,14 +551,14 @@
         },
         {
           "id": "scaffold-overhaul",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Scaffold Overhaul",
           "branch": "set/scaffold-overhaul"
         },
         {
           "id": "agent-namespace-enforcement",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Agent Namespace Enforcement",
           "branch": "set/agent-namespace-enforcement"
@@ -566,6 +566,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-01T01:50:09.689Z",
+  "lastUpdatedAt": "2026-04-01T04:38:25.343Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
