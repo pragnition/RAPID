@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const stub = require('./stub.cjs');
 
 // ── Constants ──
 
@@ -679,6 +680,194 @@ function scaffold(cwd, options = {}) {
   return report;
 }
 
+// ── Task 6: Group-Aware Stub Orchestration ──
+
+/**
+ * Generate stubs for all cross-group dependencies that a given group needs
+ * from other groups. This is the group-aware orchestration layer on top of
+ * the per-set generateStub() from stub.cjs.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {string} groupId - Target group identifier
+ * @param {Record<string, {sets: string[]}>} allGroups - All groups (same format as dag.groups)
+ * @param {Record<string, object>|Array<{setId: string, contract: object}>} contracts - Contracts keyed by setId or array of {setId, contract}
+ * @returns {Promise<{files: Array<{stub: string, sidecar: string}>, report: string}>}
+ */
+async function generateGroupStubs(cwd, groupId, allGroups, contracts) {
+  // Normalize contracts to Record<string, object>
+  let contractMap = contracts;
+  if (Array.isArray(contracts)) {
+    contractMap = {};
+    for (const entry of contracts) {
+      contractMap[entry.setId] = entry.contract;
+    }
+  }
+
+  // Determine which sets belong to the target group
+  const targetGroup = allGroups[groupId];
+  if (!targetGroup) {
+    return { files: [], report: `Group ${groupId}: no such group` };
+  }
+  const targetSetIds = new Set(targetGroup.sets);
+
+  // Build set-to-group lookup
+  const setToGroup = {};
+  for (const [gId, gDef] of Object.entries(allGroups)) {
+    for (const setId of gDef.sets) {
+      setToGroup[setId] = gId;
+    }
+  }
+
+  // Find cross-group provider sets by examining imports of sets in the target group
+  const crossGroupProviders = new Set();
+  for (const setId of targetSetIds) {
+    const contract = contractMap[setId];
+    if (!contract) continue;
+
+    const importsData = contract.imports;
+    if (!importsData) continue;
+
+    // Support both import formats
+    let importedSets = [];
+    if (Array.isArray(importsData.fromSets)) {
+      importedSets = importsData.fromSets.map(entry => entry.set);
+    } else if (typeof importsData === 'object' && !importsData.fromSets) {
+      for (const [, importDef] of Object.entries(importsData)) {
+        if (importDef && importDef.fromSet) {
+          importedSets.push(importDef.fromSet);
+        }
+      }
+    }
+
+    for (const importedSet of importedSets) {
+      // Only include sets that are in a DIFFERENT group
+      if (!targetSetIds.has(importedSet) && setToGroup[importedSet] && setToGroup[importedSet] !== groupId) {
+        crossGroupProviders.add(importedSet);
+      }
+    }
+  }
+
+  if (crossGroupProviders.size === 0) {
+    return { files: [], report: `Group ${groupId}: generated 0 cross-group stubs` };
+  }
+
+  // Create stubs directory
+  const stubsDir = path.join(cwd, '.rapid-stubs');
+  fs.mkdirSync(stubsDir, { recursive: true });
+
+  const files = [];
+  const reportLines = [`Group ${groupId}: generated ${crossGroupProviders.size} cross-group stubs`];
+
+  for (const providerSetId of crossGroupProviders) {
+    const providerContract = contractMap[providerSetId];
+    if (!providerContract) continue;
+
+    const stubContent = stub.generateStub(providerContract, providerSetId);
+    const stubFile = path.join(stubsDir, `${providerSetId}-stub.cjs`);
+    const sidecarFile = `${stubFile}.rapid-stub`;
+
+    fs.writeFileSync(stubFile, stubContent, 'utf-8');
+    fs.writeFileSync(sidecarFile, '', 'utf-8');
+
+    // Count exports for the report
+    const exportsData = providerContract.exports || {};
+    let exportCount = 0;
+    if (Array.isArray(exportsData.functions)) {
+      exportCount = exportsData.functions.length;
+    } else {
+      exportCount = Object.keys(exportsData).length;
+    }
+
+    files.push({ stub: stubFile, sidecar: sidecarFile });
+    reportLines.push(`  - ${providerSetId} (${exportCount} exports) -> .rapid-stubs/${providerSetId}-stub.cjs`);
+  }
+
+  return { files, report: reportLines.join('\n') };
+}
+
+// ── Task 7: Foundation Set Creator ──
+
+/**
+ * Create a foundational set #0 entry in the planning directory.
+ * Creates a normal set definition with foundation: true annotation for DAG consumption.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {{ name?: string, sets: string[], contracts: Record<string, object> }} setConfig
+ * @returns {Promise<void>}
+ */
+async function createFoundationSet(cwd, setConfig) {
+  const name = setConfig.name || 'foundation';
+  const setDir = path.join(cwd, '.planning', 'sets', name);
+  fs.mkdirSync(setDir, { recursive: true });
+
+  // Write DEFINITION.md
+  const definitionContent = `# Set: ${name}
+## Scope
+Foundation set containing shared interfaces and stubs for multi-group parallel development.
+This set must not contain feature implementation logic.
+## Foundation
+true
+`;
+  fs.writeFileSync(path.join(setDir, 'DEFINITION.md'), definitionContent, 'utf-8');
+
+  // Merge all exports from all provided contracts into a single contract
+  const mergedExports = {};
+  for (const [setId, contract] of Object.entries(setConfig.contracts)) {
+    const exportsData = contract.exports || {};
+
+    if (Array.isArray(exportsData.functions)) {
+      // Legacy format -- merge function entries by name
+      for (const fn of exportsData.functions) {
+        mergedExports[fn.name] = {
+          type: 'function',
+          signature: `${fn.name}(${fn.params.map(p => `${p.name}: ${p.type}`).join(', ')}): ${fn.returns}`,
+          description: fn.description || `From set ${setId}`,
+          sourceSet: setId,
+        };
+      }
+    } else {
+      // New flat format -- merge by key
+      for (const [exportName, exportDef] of Object.entries(exportsData)) {
+        mergedExports[exportName] = {
+          ...exportDef,
+          sourceSet: setId,
+        };
+      }
+    }
+  }
+
+  const contractJson = {
+    foundation: true,
+    definition: {
+      scope: 'Foundation set containing shared interfaces and stubs for multi-group parallel development.',
+    },
+    exports: mergedExports,
+  };
+
+  fs.writeFileSync(path.join(setDir, 'CONTRACT.json'), JSON.stringify(contractJson, null, 2), 'utf-8');
+}
+
+// ── Task 8: Scaffold Report v2 Extension ──
+
+/**
+ * Extend a v1 ScaffoldReport with v2 group-aware fields.
+ *
+ * All v2 fields are optional -- missing fields default to null/empty.
+ * Existing v1 consumers will ignore unknown fields (additive, no migration needed).
+ *
+ * @param {Object} v1Report - A v1 ScaffoldReport object
+ * @param {{ groups?: Record<string, {sets: string[]}>, stubs?: string[], foundationSet?: string }} groupData
+ * @returns {Object} Extended report with groups, stubs, and foundationSet fields
+ */
+function buildScaffoldReportV2(v1Report, groupData) {
+  return {
+    ...v1Report,
+    groups: (groupData && groupData.groups) || null,
+    stubs: (groupData && groupData.stubs) || [],
+    foundationSet: (groupData && groupData.foundationSet) || null,
+  };
+}
+
 // ── Exports ──
 
 module.exports = {
@@ -690,4 +879,7 @@ module.exports = {
   writeScaffoldReport,
   readScaffoldReport,
   scaffold,
+  generateGroupStubs,
+  createFoundationSet,
+  buildScaffoldReportV2,
 };
