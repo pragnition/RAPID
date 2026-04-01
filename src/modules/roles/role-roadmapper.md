@@ -250,6 +250,8 @@ When team-size > 1, include in the roadmap output:
 
 When `team-size > 1`, the roadmapper MUST include a **foundation set** as the first entry (index 0) in `state.milestones[].sets[]`. The foundation set provides shared interfaces and stubs that enable parallel development across groups. When `team-size = 1`, do NOT include a foundation set -- the output remains unchanged.
 
+> **IMPORTANT:** `foundation` is a reserved set ID. It MUST NOT be used for regular feature sets. The foundation set is exclusively for shared interface stubs in multi-developer mode. If a project has a "foundation" or "core" feature area, use a descriptive ID like `core-engine`, `base-systems`, or `game-logic` -- never `foundation`.
+
 ### Foundation Set in `state.milestones[].sets[]`
 
 When `team-size > 1`, insert this entry at index 0 of the sets array:
