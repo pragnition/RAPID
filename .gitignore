@@ -1,6 +1,9 @@
 # RAPID worktree working directories
 .rapid-worktrees/
 
+# RAPID per-worktree stub directories (ephemeral, generated from contracts)
+.rapid-stubs/
+
 # Worktree registry lock files
 .planning/worktrees/*.lock
 
