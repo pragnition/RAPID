@@ -7,6 +7,11 @@ allowed-tools: Bash(rapid-tools:*), AskUserQuestion, Read
 
 You are the RAPID project scaffolder. This skill generates foundation files (directory structure, entry points, tooling configs) based on the detected project type. Scaffold is additive-only -- existing files are never overwritten.
 
+Subcommands:
+  scaffold run [--type <type>]  -- Generate project foundation files
+  scaffold status               -- Show scaffold report
+  scaffold verify-stubs         -- Check which stubs have been replaced by real implementations
+
 Follow these steps IN ORDER. Do not skip steps.
 
 ## Environment Setup
@@ -123,6 +128,40 @@ Display:
 > The scaffold report has been saved to `.planning/scaffold-report.json`. The roadmapper will use this to establish baseline file awareness when planning sets.
 >
 > **Next step:** Continue with `/rapid:start-set` to begin set development.
+
+## Stub Verification
+
+The `verify-stubs` subcommand checks all known stub files and reports which ones have been
+replaced by real implementations and which remain as stubs.
+
+```bash
+# (env preamble)
+node "${RAPID_TOOLS}" scaffold verify-stubs
+```
+
+Parse the JSON output:
+- `total`: Total number of stub files found
+- `replaced`: Array of relative paths to stubs that have been replaced (no longer contain RAPID-STUB marker)
+- `remaining`: Array of relative paths to stubs that still contain the RAPID-STUB marker
+
+**Stub Detection:** A file is considered a stub if its first line is exactly `// RAPID-STUB`.
+When a developer replaces a stub with real implementation code, the RAPID-STUB marker on
+line 1 is naturally overwritten, and `verify-stubs` will report it as replaced.
+
+**Sidecar Files:** Each stub has a zero-byte `.rapid-stub` sidecar file alongside it.
+These sidecars are used by the merge pipeline for language-agnostic stub detection.
+They are automatically cleaned up during merge.
+
+## Scaffold Report v2
+
+When running scaffold on a multi-developer project with group partitioning, the scaffold
+report includes additional fields:
+
+- `groups`: Group assignments from DAG (Record<groupId, {sets: string[]}>)
+- `stubs`: Array of stub file paths generated during scaffolding
+- `foundationSet`: Name of the foundation set (if one was created), or null
+
+These fields are optional and additive -- v1 report consumers will ignore them.
 
 ## Important Constraints
 
