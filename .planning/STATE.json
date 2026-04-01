@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rapidVersion": "5.0.0",
+  "rapidVersion": "6.0.0",
   "projectName": "RAPID",
   "currentMilestone": "v6.0.0",
   "milestones": [
@@ -565,12 +565,12 @@
         },
         {
           "id": "docs-version-bump",
-          "status": "planned",
+          "status": "executed",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-01T06:37:25.712Z",
+  "lastUpdatedAt": "2026-04-01T06:41:07.703Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

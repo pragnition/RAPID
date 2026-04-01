@@ -3,10 +3,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-5.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
+  <img src="https://img.shields.io/badge/version-6.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
   <img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" /> 
   <img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" /> 
-  <img src="https://img.shields.io/badge/Node.js-18%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Node.js-20%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
 </p>
 
 > Pre-existing agent harnesses like GSD and OpenSpec are great, but not built for collaboration amongst teams.
