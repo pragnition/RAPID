@@ -558,7 +558,7 @@
         },
         {
           "id": "agent-namespace-enforcement",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Agent Namespace Enforcement",
           "branch": "set/agent-namespace-enforcement"
@@ -566,6 +566,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-01T04:38:25.343Z",
+  "lastUpdatedAt": "2026-04-01T05:10:07.055Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
