@@ -14,7 +14,13 @@ const {
   writeScaffoldReport,
   readScaffoldReport,
   scaffold,
+  generateGroupStubs,
+  createFoundationSet,
+  buildScaffoldReportV2,
 } = require('./scaffold.cjs');
+
+const { tryStubAutoResolve } = require('./merge.cjs');
+const { isRapidStub } = require('./stub.cjs');
 
 // Helper to create a temp directory for each test
 let tmpDir;
@@ -425,5 +431,262 @@ describe('scaffold', () => {
 
     const report = scaffold(tmpDir, { codebaseInfo, projectType: 'api' });
     assert.deepStrictEqual(report.detectedFrameworks, ['express']);
+  });
+});
+
+// ── generateGroupStubs Tests (Wave 2) ──
+
+describe('generateGroupStubs', () => {
+  it('generates stubs for cross-group dependencies', async () => {
+    const allGroups = {
+      'group-a': { sets: ['set-a1'] },
+      'group-b': { sets: ['set-b1'] },
+    };
+    const contracts = {
+      'set-a1': {
+        imports: { fromSets: [{ set: 'set-b1', functions: ['doStuff'] }] },
+        exports: {},
+      },
+      'set-b1': {
+        exports: {
+          functions: [
+            { name: 'doStuff', params: [{ name: 'x', type: 'string' }], returns: 'boolean' },
+          ],
+        },
+      },
+    };
+
+    const result = await generateGroupStubs(tmpDir, 'group-a', allGroups, contracts);
+    assert.equal(result.files.length, 1);
+
+    // Verify stub file exists and contains RAPID-STUB marker
+    assert.ok(fs.existsSync(result.files[0].stub));
+    const stubContent = fs.readFileSync(result.files[0].stub, 'utf-8');
+    assert.ok(isRapidStub(stubContent), 'Stub should start with // RAPID-STUB');
+
+    // Verify sidecar exists and is zero-byte
+    assert.ok(fs.existsSync(result.files[0].sidecar));
+    const sidecarStat = fs.statSync(result.files[0].sidecar);
+    assert.equal(sidecarStat.size, 0);
+  });
+
+  it('returns empty files array when group has no cross-group deps', async () => {
+    const allGroups = {
+      'group-a': { sets: ['set-a1', 'set-a2'] },
+    };
+    const contracts = {
+      'set-a1': {
+        imports: { fromSets: [{ set: 'set-a2', functions: ['helper'] }] },
+        exports: {},
+      },
+      'set-a2': {
+        exports: {
+          functions: [
+            { name: 'helper', params: [], returns: 'void' },
+          ],
+        },
+      },
+    };
+
+    const result = await generateGroupStubs(tmpDir, 'group-a', allGroups, contracts);
+    assert.deepStrictEqual(result.files, []);
+  });
+
+  it('report string summarizes generated stubs', async () => {
+    const allGroups = {
+      'group-a': { sets: ['set-a1'] },
+      'group-b': { sets: ['set-b1'] },
+    };
+    const contracts = {
+      'set-a1': {
+        imports: { fromSets: [{ set: 'set-b1', functions: ['fn1'] }] },
+        exports: {},
+      },
+      'set-b1': {
+        exports: {
+          functions: [
+            { name: 'fn1', params: [], returns: 'string' },
+            { name: 'fn2', params: [], returns: 'number' },
+          ],
+        },
+      },
+    };
+
+    const result = await generateGroupStubs(tmpDir, 'group-a', allGroups, contracts);
+    assert.ok(result.report.includes('group-a'));
+    assert.ok(result.report.includes('set-b1'));
+    assert.ok(result.report.includes('2 exports'));
+  });
+});
+
+// ── createFoundationSet Tests (Wave 2) ──
+
+describe('createFoundationSet', () => {
+  it('creates set directory with DEFINITION.md and CONTRACT.json', async () => {
+    const setConfig = {
+      name: 'my-foundation',
+      sets: ['set-a', 'set-b'],
+      contracts: {
+        'set-a': {
+          exports: {
+            functions: [
+              { name: 'funcA', params: [{ name: 'x', type: 'number' }], returns: 'string', description: 'A function' },
+            ],
+          },
+        },
+        'set-b': {
+          exports: {
+            doThing: { type: 'function', signature: 'doThing(): void', description: 'Does a thing' },
+          },
+        },
+      },
+    };
+
+    await createFoundationSet(tmpDir, setConfig);
+
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'my-foundation');
+    assert.ok(fs.existsSync(path.join(setDir, 'DEFINITION.md')));
+    assert.ok(fs.existsSync(path.join(setDir, 'CONTRACT.json')));
+
+    const definition = fs.readFileSync(path.join(setDir, 'DEFINITION.md'), 'utf-8');
+    assert.ok(definition.includes('# Set: my-foundation'));
+    assert.ok(definition.includes('Foundation'));
+  });
+
+  it('marks CONTRACT.json with foundation:true', async () => {
+    const setConfig = {
+      name: 'foundation-test',
+      sets: ['s1'],
+      contracts: {
+        's1': {
+          exports: {
+            hello: { type: 'function', signature: 'hello(): string', description: 'Greet' },
+          },
+        },
+      },
+    };
+
+    await createFoundationSet(tmpDir, setConfig);
+
+    const contractPath = path.join(tmpDir, '.planning', 'sets', 'foundation-test', 'CONTRACT.json');
+    const contract = JSON.parse(fs.readFileSync(contractPath, 'utf-8'));
+    assert.equal(contract.foundation, true);
+  });
+
+  it('defaults name to foundation when not specified', async () => {
+    const setConfig = {
+      sets: ['s1'],
+      contracts: {
+        's1': {
+          exports: {},
+        },
+      },
+    };
+
+    await createFoundationSet(tmpDir, setConfig);
+
+    const setDir = path.join(tmpDir, '.planning', 'sets', 'foundation');
+    assert.ok(fs.existsSync(setDir), 'Should create directory named "foundation"');
+    assert.ok(fs.existsSync(path.join(setDir, 'DEFINITION.md')));
+  });
+});
+
+// ── buildScaffoldReportV2 Tests (Wave 2) ──
+
+describe('buildScaffoldReportV2', () => {
+  const v1Report = {
+    projectType: 'api',
+    language: 'javascript',
+    filesCreated: ['src/index.js'],
+    filesSkipped: [],
+    timestamp: '2025-01-01T00:00:00.000Z',
+    detectedFrameworks: ['express'],
+    reRun: false,
+  };
+
+  it('extends v1 report with groups, stubs, foundationSet', () => {
+    const groupData = {
+      groups: { 'group-a': { sets: ['set-a1'] } },
+      stubs: ['set-b1-stub.cjs'],
+      foundationSet: 'foundation',
+    };
+
+    const v2 = buildScaffoldReportV2(v1Report, groupData);
+    assert.deepStrictEqual(v2.groups, groupData.groups);
+    assert.deepStrictEqual(v2.stubs, groupData.stubs);
+    assert.equal(v2.foundationSet, 'foundation');
+  });
+
+  it('defaults missing v2 fields to null/empty', () => {
+    const v2 = buildScaffoldReportV2(v1Report, {});
+    assert.equal(v2.groups, null);
+    assert.deepStrictEqual(v2.stubs, []);
+    assert.equal(v2.foundationSet, null);
+  });
+
+  it('preserves all v1 fields unchanged', () => {
+    const v2 = buildScaffoldReportV2(v1Report, { groups: null });
+    assert.equal(v2.projectType, 'api');
+    assert.equal(v2.language, 'javascript');
+    assert.deepStrictEqual(v2.filesCreated, ['src/index.js']);
+    assert.deepStrictEqual(v2.filesSkipped, []);
+    assert.equal(v2.timestamp, '2025-01-01T00:00:00.000Z');
+    assert.deepStrictEqual(v2.detectedFrameworks, ['express']);
+    assert.equal(v2.reRun, false);
+  });
+});
+
+// ── RAPID-STUB T0 merge resolution Tests (Wave 2) ──
+
+describe('RAPID-STUB T0 merge resolution', () => {
+  const stubContent = '// RAPID-STUB\n// Generated stub\n\'use strict\';\nfunction foo() { return null; }\nmodule.exports = { foo };\n';
+  const realContent = '\'use strict\';\nfunction foo() { return computeResult(); }\nmodule.exports = { foo };\n';
+
+  it('resolves stub-vs-real in favor of real (ours=stub, theirs=real)', () => {
+    const result = tryStubAutoResolve({
+      oursContent: stubContent,
+      theirsContent: realContent,
+    });
+    assert.equal(result.resolved, true);
+    assert.equal(result.confidence, 1.0);
+    assert.equal(result.preferSide, 'theirs');
+    assert.ok(result.resolution.includes('theirs is real implementation'));
+  });
+
+  it('resolves stub-vs-real in favor of real (ours=real, theirs=stub)', () => {
+    const result = tryStubAutoResolve({
+      oursContent: realContent,
+      theirsContent: stubContent,
+    });
+    assert.equal(result.resolved, true);
+    assert.equal(result.confidence, 1.0);
+    assert.equal(result.preferSide, 'ours');
+    assert.ok(result.resolution.includes('ours is real implementation'));
+  });
+
+  it('resolves both-stubs by keeping ours', () => {
+    const result = tryStubAutoResolve({
+      oursContent: stubContent,
+      theirsContent: stubContent,
+    });
+    assert.equal(result.resolved, true);
+    assert.equal(result.confidence, 1.0);
+    assert.equal(result.preferSide, 'ours');
+    assert.ok(result.resolution.includes('both sides are RAPID-STUBs'));
+  });
+
+  it('returns unresolved when neither side is a stub', () => {
+    const result = tryStubAutoResolve({
+      oursContent: realContent,
+      theirsContent: realContent,
+    });
+    assert.equal(result.resolved, false);
+    assert.equal(result.confidence, 0);
+  });
+
+  it('returns unresolved when content is missing', () => {
+    const result = tryStubAutoResolve({});
+    assert.equal(result.resolved, false);
+    assert.equal(result.confidence, 0);
   });
 });
