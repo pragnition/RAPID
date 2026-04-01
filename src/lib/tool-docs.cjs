@@ -101,6 +101,7 @@ const TOOL_REGISTRY = {
   // Scaffold
   'scaffold-run':         'scaffold run [--type <type:str>] -- Generate project foundation files',
   'scaffold-status':      'scaffold status -- Show scaffold report',
+  'scaffold-create-foundation-set': 'scaffold create-foundation-set --name <n:str> --contracts <json:str> -- Create foundation set #0 with merged contracts',
 
   // Prereqs
   'prereqs-check':        'prereqs -- Check prerequisites',
