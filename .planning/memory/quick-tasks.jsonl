@@ -3,3 +3,8 @@
 {"id":3,"timestamp":"2026-03-21T10:39:35.594Z","description":"Put this project into solo mode","outcome":"COMPLETE","slug":"enable-solo-mode","branch":"main"}
 {"id":4,"timestamp":"2026-03-23T11:42:23.498Z","description":"Currently the init process doesn't generate the DAG every time. We should fix this.","outcome":"COMPLETE","slug":"fix-init-dag-generation","branch":"main"}
 {"id":5,"timestamp":"2026-03-31T01:15:28.700Z","description":"Fix lifecycle SVG line artifacts on sub boxes - remove 7 spurious line elements","outcome":"COMPLETE","slug":"fix-lifecycle-svg-line-on-sub-boxes","branch":"main"}
+{"id":6,"timestamp":"2026-04-01T08:08:22.305Z","description":"The init command doesn't seem to be generating a set 0","outcome":"COMPLETE","slug":"init-not-generating-set-0","branch":"dev"}
+{"id":7,"timestamp":"2026-04-01T08:41:26.724Z","description":"Teach the roadmapper to include a foundation set (set 0) in its proposal when team-size > 1, and remove Step 9a from init SKILL.md","outcome":"COMPLETE","slug":"roadmapper-foundation-set","branch":"dev"}
+{"id":8,"timestamp":"2026-04-01T09:18:05.127Z","description":"Add set naming convention (kebab-case slugs) and clarify foundation as reserved set ID","outcome":"COMPLETE","slug":"roadmapper-set-naming-and-set0","branch":"dev"}
+{"id":9,"timestamp":"2026-04-01T10:12:50.344Z","description":"Remove index 0 language, fix init next-step message, add Developer Groups output format","outcome":"COMPLETE","slug":"remove-index0-fix-groups","branch":"dev"}
+{"id":10,"timestamp":"2026-04-01T11:05:29.568Z","description":"Check if the documentation and changelog made the proper changes for this version","outcome":"COMPLETE","slug":"check-docs-changelog-version","branch":"dev"}

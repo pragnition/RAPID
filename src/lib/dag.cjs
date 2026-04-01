@@ -270,7 +270,7 @@ function getExecutionOrder(dag) {
     .map(Number)
     .sort((a, b) => a - b);
 
-  return waveNumbers.map((waveNum) => dag.waves[waveNum].sets);
+  return waveNumbers.map((waveNum) => dag.waves[waveNum].nodes || dag.waves[waveNum].sets);
 }
 
 /**
@@ -292,11 +292,27 @@ function tryLoadDAG(cwd) {
     raw = fs.readFileSync(canonicalPath, 'utf-8');
   } catch (err) {
     if (err.code === 'ENOENT') {
-      return { dag: null, path: canonicalPath };
+      return { dag: null, path: canonicalPath, migrated: false };
     }
     throw err;
   }
-  return { dag: JSON.parse(raw), path: canonicalPath };
+  let dag = JSON.parse(raw);
+  let migrated = false;
+
+  // Auto-detect version and migrate to v3
+  if (!dag.version && dag.waves) {
+    // v1: no version field, waves use 'sets' key
+    const firstWave = Object.values(dag.waves)[0];
+    if (firstWave && firstWave.sets) {
+      dag = migrateDAGv1toV3(dag);
+      migrated = true;
+    }
+  } else if (dag.version === 2) {
+    dag = migrateDAGv2toV3(dag);
+    migrated = true;
+  }
+
+  return { dag, path: canonicalPath, migrated };
 }
 
 /**
@@ -486,6 +502,272 @@ function validateDAGv2(dag) {
   return { valid: true };
 }
 
+/**
+ * Create a v3 DAG with developer group annotations.
+ *
+ * Validates inputs, runs topological sort (cycle detection), assigns waves,
+ * and builds the full DAG object with group support and node metadata.
+ *
+ * @param {Array<{id: string, type?: string}>} nodes - Graph nodes (type defaults to 'set')
+ * @param {Array<{from: string, to: string}>} edges - Directed edges (from=dependency, to=dependent)
+ * @param {Object} [options] - Optional configuration
+ * @param {Record<string, {sets: string[], description?: string}>} [options.groups] - Developer groups
+ * @returns {Object} v3 DAG object with version, nodes, edges, waves, groups, metadata
+ * @throws {Error} If duplicate node IDs, unknown edge refs, or cycles detected
+ */
+function createDAGv3(nodes, edges, options) {
+  // Check for duplicate node IDs
+  const seen = new Set();
+  for (const node of nodes) {
+    if (seen.has(node.id)) {
+      throw new Error(`Duplicate node ID: ${node.id}`);
+    }
+    seen.add(node.id);
+  }
+
+  // toposort validates edges and detects cycles
+  toposort(nodes, edges);
+
+  // Assign waves
+  const waveMap = assignWaves(nodes, edges);
+
+  // Build nodes with wave, status, and v3 fields
+  const dagNodes = nodes.map((node) => ({
+    ...node,
+    type: node.type || 'set',
+    wave: waveMap[node.id],
+    status: 'pending',
+    group: null,
+    priority: null,
+    description: null,
+  }));
+
+  // Group nodes by wave
+  const waveGroups = {};
+  for (const [nodeId, wave] of Object.entries(waveMap)) {
+    if (!waveGroups[wave]) waveGroups[wave] = [];
+    waveGroups[wave].push(nodeId);
+  }
+
+  // Build waves object (v3 uses 'nodes' key, no checkpoint)
+  const waves = {};
+  for (const [waveNum, nodeIds] of Object.entries(waveGroups)) {
+    waves[waveNum] = {
+      nodes: nodeIds,
+    };
+  }
+
+  // Calculate metadata
+  const totalWaves = Object.keys(waveGroups).length;
+  const waveValues = Object.values(waveGroups).map((g) => g.length);
+  const maxParallelism = waveValues.length > 0 ? Math.max(...waveValues) : 0;
+
+  return {
+    version: 3,
+    nodes: dagNodes,
+    edges,
+    waves,
+    groups: (options && options.groups) || {},
+    metadata: {
+      created: new Date().toISOString().split('T')[0],
+      totalNodes: nodes.length,
+      totalWaves,
+      maxParallelism,
+    },
+  };
+}
+
+/**
+ * Validate a v3 DAG object for required structure and fields.
+ *
+ * @param {Object} dag - v3 DAG object to validate
+ * @returns {{ valid: true } | { valid: false, errors: string[] }}
+ */
+function validateDAGv3(dag) {
+  const errors = [];
+
+  // Check top-level required fields
+  if (!dag || typeof dag !== 'object') {
+    return { valid: false, errors: ['DAG must be an object'] };
+  }
+
+  if (dag.version !== 3) {
+    errors.push('DAG version must be 3');
+  }
+
+  if (!Array.isArray(dag.nodes)) {
+    errors.push('Missing required field: nodes (must be an array)');
+  }
+  if (!Array.isArray(dag.edges)) {
+    errors.push('Missing required field: edges (must be an array)');
+  }
+  if (!dag.waves || typeof dag.waves !== 'object' || Array.isArray(dag.waves)) {
+    errors.push('Missing required field: waves (must be an object)');
+  }
+  if (!dag.metadata || typeof dag.metadata !== 'object' || Array.isArray(dag.metadata)) {
+    errors.push('Missing required field: metadata (must be an object)');
+  }
+  if (!dag.groups || typeof dag.groups !== 'object' || Array.isArray(dag.groups)) {
+    errors.push('Missing required field: groups (must be an object)');
+  }
+
+  // If top-level fields missing, return early
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  // Validate each node (v3 requires id, wave, status; type is optional)
+  for (let i = 0; i < dag.nodes.length; i++) {
+    const node = dag.nodes[i];
+    if (!node.id) errors.push(`Node at index ${i} missing required field: id`);
+    if (node.wave === undefined || node.wave === null) {
+      errors.push(`Node at index ${i} missing required field: wave`);
+    }
+    if (!node.status) errors.push(`Node at index ${i} missing required field: status`);
+  }
+
+  // Validate each edge
+  for (let i = 0; i < dag.edges.length; i++) {
+    const edge = dag.edges[i];
+    if (!edge.from) errors.push(`Edge at index ${i} missing required field: from`);
+    if (!edge.to) errors.push(`Edge at index ${i} missing required field: to`);
+  }
+
+  // Validate metadata
+  if (dag.metadata.totalNodes === undefined || dag.metadata.totalNodes === null) {
+    errors.push('Metadata missing required field: totalNodes');
+  }
+  if (dag.metadata.totalWaves === undefined || dag.metadata.totalWaves === null) {
+    errors.push('Metadata missing required field: totalWaves');
+  }
+
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Migrate a v1 DAG directly to v3.
+ *
+ * @param {Object} dagV1 - v1 DAG object (no version field, waves use 'sets' key)
+ * @returns {Object} v3 DAG object (new object, input not mutated)
+ */
+function migrateDAGv1toV3(dagV1) {
+  // Build migrated nodes with v3 fields
+  const nodes = dagV1.nodes.map((node) => ({
+    ...node,
+    type: 'set',
+    group: null,
+    priority: null,
+    description: null,
+  }));
+
+  // Convert waves: rename 'sets' to 'nodes', remove 'checkpoint'
+  const waves = {};
+  for (const [waveNum, waveData] of Object.entries(dagV1.waves)) {
+    const { sets, checkpoint, ...rest } = waveData;
+    waves[waveNum] = {
+      ...rest,
+      nodes: sets,
+    };
+  }
+
+  // Convert metadata: rename totalSets to totalNodes
+  const { totalSets, ...restMeta } = dagV1.metadata;
+  const metadata = {
+    ...restMeta,
+    totalNodes: totalSets,
+  };
+
+  return {
+    version: 3,
+    nodes,
+    edges: dagV1.edges.map((e) => ({ ...e })),
+    waves,
+    groups: {},
+    metadata,
+  };
+}
+
+/**
+ * Migrate a v2 DAG directly to v3.
+ *
+ * @param {Object} dagV2 - v2 DAG object (version: 2, waves use 'nodes' key)
+ * @returns {Object} v3 DAG object (new object, input not mutated)
+ */
+function migrateDAGv2toV3(dagV2) {
+  // Build migrated nodes with v3 fields
+  const nodes = dagV2.nodes.map((node) => ({
+    ...node,
+    group: null,
+    priority: null,
+    description: null,
+  }));
+
+  // Copy waves (already use 'nodes' key)
+  const waves = {};
+  for (const [waveNum, waveData] of Object.entries(dagV2.waves)) {
+    waves[waveNum] = { ...waveData };
+  }
+
+  return {
+    version: 3,
+    nodes,
+    edges: dagV2.edges.map((e) => ({ ...e })),
+    waves,
+    groups: {},
+    metadata: { ...dagV2.metadata },
+  };
+}
+
+/**
+ * Sync set statuses from STATE.json into DAG.json on disk.
+ *
+ * Reads the current DAG and STATE, maps set statuses from the current
+ * milestone onto DAG nodes, and persists the result. If the DAG was
+ * auto-migrated from an older version, the migration is also persisted.
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {Promise<void>}
+ */
+async function syncDAGStatus(cwd) {
+  // Load DAG
+  const { dag, path: dagPath, migrated } = tryLoadDAG(cwd);
+  if (!dag) return;
+
+  // Lazy require to avoid circular dependencies
+  const { readState } = require('./state-machine.cjs');
+
+  // Load state
+  const stateResult = await readState(cwd);
+  if (!stateResult || !stateResult.valid || !stateResult.state) return;
+
+  const state = stateResult.state;
+  const milestoneId = state.currentMilestone;
+  if (!milestoneId) return;
+
+  const milestone = state.milestones.find((m) => m.id === milestoneId);
+  if (!milestone || !milestone.sets) return;
+
+  // Build status map: setId -> status
+  const statusMap = {};
+  for (const set of milestone.sets) {
+    statusMap[set.id] = set.status;
+  }
+
+  // Apply statuses to DAG nodes
+  for (const node of dag.nodes) {
+    if (statusMap[node.id] !== undefined) {
+      node.status = statusMap[node.id];
+    }
+  }
+
+  // Persist updated DAG
+  fs.writeFileSync(dagPath, JSON.stringify(dag, null, 2));
+}
+
 module.exports = {
   toposort,
   assignWaves,
@@ -497,4 +779,9 @@ module.exports = {
   DAG_CANONICAL_SUBPATH: DAG_SUBPATH, // backward-compat alias
   createDAGv2,
   validateDAGv2,
+  createDAGv3,
+  validateDAGv3,
+  migrateDAGv1toV3,
+  migrateDAGv2toV3,
+  syncDAGStatus,
 };

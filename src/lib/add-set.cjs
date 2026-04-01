@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const { readState, withStateTransaction, findMilestone } = require('./state-machine.cjs');
-const { createDAG } = require('./dag.cjs');
+const { createDAG, tryLoadDAG } = require('./dag.cjs');
 const { createOwnershipMap } = require('./contract.cjs');
 const { writeDAG, writeOwnership } = require('./plan.cjs');
 
@@ -95,8 +95,23 @@ async function recalculateDAG(cwd, milestoneId) {
   const state = readResult.state;
   const milestone = findMilestone(state, milestoneId);
 
-  // Build DAG nodes from all sets in the milestone
-  const nodes = milestone.sets.map(s => ({ id: s.id }));
+  // Load existing DAG.json to preserve annotations (group, priority, description, etc.)
+  const existingDAG = tryLoadDAG(cwd);
+  const existingNodeMap = {};
+  if (existingDAG.dag && Array.isArray(existingDAG.dag.nodes)) {
+    for (const node of existingDAG.dag.nodes) {
+      existingNodeMap[node.id] = node;
+    }
+  }
+
+  // Build DAG nodes from all sets in the milestone, preserving existing annotations
+  const nodes = milestone.sets.map(s => {
+    const existing = existingNodeMap[s.id];
+    if (existing) {
+      return { ...existing, id: s.id };
+    }
+    return { id: s.id };
+  });
 
   // Build edges from CONTRACT.json imports
   const edges = [];

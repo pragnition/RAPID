@@ -6,7 +6,7 @@ Four commands handle everything from first install to project initialization, co
 
 ## Requirements
 
-- **Node.js 18+** (runtime for tool libraries)
+- **Node.js 20+** (runtime for tool libraries)
 - **git 2.30+** (required for worktree support)
 - **RAPID_TOOLS env var** must be set (both installation methods handle this)
 

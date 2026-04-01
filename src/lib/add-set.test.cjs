@@ -351,6 +351,47 @@ describe('add-set', () => {
       assert.equal(result.dag.metadata.maxParallelism, 1);
     });
 
+    it('preserves existing node annotations during recalculation', async () => {
+      // Write a DAG.json with annotated nodes
+      const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+      fs.mkdirSync(path.dirname(dagPath), { recursive: true });
+      const annotatedDAG = {
+        nodes: [
+          { id: 'set-a', group: 'core', priority: 1, description: 'Alpha module' },
+          { id: 'set-b', group: 'utils', priority: 2, description: 'Beta module' },
+        ],
+        edges: [],
+        metadata: { totalSets: 2, totalWaves: 1, maxParallelism: 2 },
+      };
+      fs.writeFileSync(dagPath, JSON.stringify(annotatedDAG, null, 2));
+
+      const result = await recalculateDAG(tmpDir, 'v1');
+
+      // Verify annotations are preserved
+      const nodeA = result.dag.nodes.find(n => n.id === 'set-a');
+      const nodeB = result.dag.nodes.find(n => n.id === 'set-b');
+      assert.equal(nodeA.group, 'core', 'set-a group annotation should be preserved');
+      assert.equal(nodeA.priority, 1, 'set-a priority annotation should be preserved');
+      assert.equal(nodeA.description, 'Alpha module', 'set-a description annotation should be preserved');
+      assert.equal(nodeB.group, 'utils', 'set-b group annotation should be preserved');
+      assert.equal(nodeB.priority, 2, 'set-b priority annotation should be preserved');
+    });
+
+    it('handles missing DAG.json gracefully (first recalculation)', async () => {
+      // Ensure no DAG.json exists
+      const dagPath = path.join(tmpDir, '.planning', 'sets', 'DAG.json');
+      if (fs.existsSync(dagPath)) {
+        fs.unlinkSync(dagPath);
+      }
+
+      // Should succeed and create DAG.json with bare nodes
+      const result = await recalculateDAG(tmpDir, 'v1');
+      assert.equal(result.dag.nodes.length, 2);
+      const nodeA = result.dag.nodes.find(n => n.id === 'set-a');
+      assert.ok(nodeA, 'set-a node should exist');
+      assert.equal(nodeA.id, 'set-a');
+    });
+
     it('handles empty milestone with no sets', async () => {
       // Overwrite STATE.json with a milestone that has zero sets
       const state = {

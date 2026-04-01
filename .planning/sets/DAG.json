@@ -1,27 +1,32 @@
 {
   "nodes": [
     {
-      "id": "branding-assets",
+      "id": "bug-fixes-foundation",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "community-infra",
+      "id": "dag-central-grouping",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "readme-migration",
+      "id": "init-enhancements",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "readme-polish",
+      "id": "scaffold-overhaul",
       "wave": 1,
       "status": "pending"
     },
     {
-      "id": "docs-update",
+      "id": "agent-namespace-enforcement",
+      "wave": 1,
+      "status": "pending"
+    },
+    {
+      "id": "docs-version-bump",
       "wave": 1,
       "status": "pending"
     }
@@ -30,34 +35,37 @@
   "waves": {
     "1": {
       "sets": [
-        "branding-assets",
-        "community-infra",
-        "readme-migration",
-        "readme-polish",
-        "docs-update"
+        "bug-fixes-foundation",
+        "dag-central-grouping",
+        "init-enhancements",
+        "scaffold-overhaul",
+        "agent-namespace-enforcement",
+        "docs-version-bump"
       ],
       "checkpoint": {
         "contracts": [
-          "rapid://contracts/branding-assets",
-          "rapid://contracts/community-infra",
-          "rapid://contracts/readme-migration",
-          "rapid://contracts/readme-polish",
-          "rapid://contracts/docs-update"
+          "rapid://contracts/bug-fixes-foundation",
+          "rapid://contracts/dag-central-grouping",
+          "rapid://contracts/init-enhancements",
+          "rapid://contracts/scaffold-overhaul",
+          "rapid://contracts/agent-namespace-enforcement",
+          "rapid://contracts/docs-version-bump"
         ],
         "artifacts": [
-          ".planning/sets/branding-assets/CONTRACT.json",
-          ".planning/sets/community-infra/CONTRACT.json",
-          ".planning/sets/readme-migration/CONTRACT.json",
-          ".planning/sets/readme-polish/CONTRACT.json",
-          ".planning/sets/docs-update/CONTRACT.json"
+          ".planning/sets/bug-fixes-foundation/CONTRACT.json",
+          ".planning/sets/dag-central-grouping/CONTRACT.json",
+          ".planning/sets/init-enhancements/CONTRACT.json",
+          ".planning/sets/scaffold-overhaul/CONTRACT.json",
+          ".planning/sets/agent-namespace-enforcement/CONTRACT.json",
+          ".planning/sets/docs-version-bump/CONTRACT.json"
         ]
       }
     }
   },
   "metadata": {
-    "created": "2026-03-31",
-    "totalSets": 5,
+    "created": "2026-04-01",
+    "totalSets": 6,
     "totalWaves": 1,
-    "maxParallelism": 5
+    "maxParallelism": 6
   }
 }

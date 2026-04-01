@@ -116,24 +116,34 @@ Populate the milestone with sets, each set with waves, each wave with jobs:
     "id": "[milestone-id]",
     "name": "[milestone-name]",
     "status": "active",
-    "sets": [{
-      "id": "[set-id]",
-      "name": "[Set Name]",
-      "status": "planned",
-      "branch": "set/[set-name]",
-      "waves": [{
-        "id": "[wave-id]",
-        "name": "[Wave Name]",
+    "sets": [
+      // When team-size > 1, include foundation set as the first entry (no waves array):
+      {
+        "id": "foundation",
+        "name": "Foundation",
+        "status": "pending",
+        "branch": "set/foundation"
+      },
+      // Regular sets follow:
+      {
+        "id": "[set-id]",  // kebab-case slug, e.g. "auth-system"
+        "name": "[Set Name]",
         "status": "planned",
-        "order": 1,
-        "jobs": [{
-          "id": "[job-id]",
-          "name": "[Job Title]",
+        "branch": "set/[set-name]",
+        "waves": [{
+          "id": "[wave-id]",
+          "name": "[Wave Name]",
           "status": "planned",
-          "complexity": "S|M|L"
+          "order": 1,
+          "jobs": [{
+            "id": "[job-id]",
+            "name": "[Job Title]",
+            "status": "planned",
+            "complexity": "S|M|L"
+          }]
         }]
-      }]
-    }]
+      }
+    ]
   }],
   "currentMilestone": "[milestone-id]"
 }
@@ -145,7 +155,7 @@ For each set, generate a contract:
 
 ```json
 {
-  "setId": "[set-id]",
+  "setId": "[set-id]",  // kebab-case slug, e.g. "data-pipeline"
   "version": "1.0.0",
   "exports": {
     "[export-name]": {
@@ -180,6 +190,20 @@ For each set, generate a contract:
 4. **Contracts are foundational** -- all contracts must be generated together so imports/exports match
 5. **Respect granularity preference** -- if targetSetCount is provided, use it as soft guidance for the number of sets. "3-5" means fewer, larger sets; "11-15" means many, smaller sets. "auto" means use your best judgment based on project complexity. If you deviate from the target range, include a brief justification in the roadmap output (e.g., "Target was 3-5 sets, but 7 sets are needed because the frontend and backend have independent deployment pipelines and shared nothing.") When targetSetCount is "auto", apply no artificial bias toward any specific range -- decompose based purely on project structure, complexity, and team size.
 
+### Set Naming Convention
+
+Set IDs are used for branch names (`set/[id]`) and directory names (`.planning/sets/[id]/`), so they must be filesystem-safe and human-readable.
+
+- Set IDs **MUST** be descriptive kebab-case slugs (lowercase letters, numbers, hyphens only).
+- The name should describe the feature or domain the set covers, not its position in a sequence.
+- Format constraint: `/^[a-z][a-z0-9-]{1,38}[a-z0-9]$/` (3-40 chars, starts with letter, ends with letter or digit, kebab-case).
+- **Good examples:** `auth-system`, `hud-game-controls`, `data-pipeline`, `api-endpoints`, `polish-end-game`
+- **Bad examples (explicitly forbidden):** single letters (`A`, `B`, `C`), plain numbers (`1`, `2`, `3`), generic names (`set-1`, `group-a`, `phase-1`), overly terse names (`ui`, `db`)
+- **Reserved IDs:**
+  - `foundation` is a **reserved** set ID. It is used exclusively for the multi-developer interface stub set (`team-size > 1`).
+  - Regular feature sets **MUST NOT** use `foundation` as their ID or name, even if the set represents "base", "core", or "foundational" functionality. Use descriptive names like `core-engine`, `game-logic`, `base-api` instead.
+  - When `team-size = 1`, the word "foundation" must not appear in any set ID or name.
+
 ### Wave Ordering
 1. Waves within a set execute sequentially (wave 2 depends on wave 1)
 2. Jobs within a wave can execute in parallel
@@ -199,6 +223,113 @@ For each set, generate a contract:
 - Every import in Set A must correspond to an export in the referenced set
 - Use the same type signatures in both the export and import definitions
 - Behavioral contracts must be testable (no vague "should be fast" constraints)
+
+## Group Assignment Guidance
+
+When `team-size > 1`, the roadmapper should design set boundaries that naturally partition into developer groups with minimal file ownership conflicts.
+
+### Principles
+- **File ownership isolation**: Each set should own a distinct set of files. When two sets must touch the same file, prefer to assign them to the same developer group.
+- **Active constraint**: Use team-size to actively influence set boundary design. If team-size is 2, aim for sets that cleanly split into 2 groups. If team-size is 3, aim for 3 groups.
+- **Dependency awareness**: Sets with direct dependencies (edges in the DAG) benefit from being in the same group, since the developer has full context.
+- **Balance**: Aim for roughly equal numbers of sets per developer, but prioritize conflict minimization over strict balance.
+
+### Solo Developer (team-size = 1)
+When team-size is 1, group-related features are completely suppressed:
+- Do NOT mention groups in the roadmap output.
+- Do NOT add group annotations to the DAG.
+- The roadmapper output remains unchanged from pre-group behavior.
+
+### Multi-Developer (team-size > 1)
+When team-size > 1, include in the roadmap output:
+- A "Developer Groups" section suggesting how sets should be assigned to developers.
+- Note which sets share file ownership and should ideally be assigned to the same developer.
+- Flag any sets with high cross-group dependency risk.
+
+Include the Developer Groups section in the ROADMAP.md output using this exact table format:
+
+```markdown
+## Developer Groups
+
+| Group | Developer | Sets | Rationale |
+|-------|-----------|------|-----------|
+| 1 | Dev 1 | foundation, auth-system | Foundation first, then auth (shares user model files) |
+| 2 | Dev 2 | data-pipeline, api-endpoints | Both touch the data layer, minimal cross-group deps |
+```
+
+**Rules:**
+- The foundation set MUST be assigned to Group 1 (it must be completed first by one developer before parallel work begins).
+- Each group corresponds to one developer. Number of groups must equal team-size.
+- The "Rationale" column explains why those sets are grouped together (shared files, dependency chain, domain affinity).
+
+## Foundation Set (Multi-Developer Only)
+
+When `team-size > 1`, the roadmapper MUST include a **foundation set** as the **first entry** in `state.milestones[].sets[]`. The foundation set provides shared interfaces and stubs that enable parallel development across groups. When `team-size = 1`, do NOT include a foundation set -- the output remains unchanged.
+
+> **IMPORTANT:** `foundation` is a reserved set ID. It MUST NOT be used for regular feature sets. The foundation set is exclusively for shared interface stubs in multi-developer mode. If a project has a "foundation" or "core" feature area, use a descriptive ID like `core-engine`, `base-systems`, or `game-logic` -- never `foundation`.
+
+### Foundation Set in `state.milestones[].sets[]`
+
+When `team-size > 1`, insert this entry at the first position of the sets array:
+
+```json
+{
+  "id": "foundation",
+  "name": "Foundation",
+  "status": "pending",
+  "branch": "set/foundation"
+}
+```
+
+Note: The foundation set has NO `waves` array. It is not executed via the wave/job pipeline.
+
+### Foundation Set Contract
+
+Include a corresponding entry in the `contracts` array:
+
+```json
+{
+  "setId": "foundation",
+  "contract": {
+    "foundation": true,
+    "exports": {
+      "<export-name>": {
+        "type": "function|class|endpoint|event|file",
+        "signature": "<type signature>",
+        "description": "<what it provides>",
+        "sourceSet": "<set-id that originally exports this>"
+      }
+    },
+    "imports": {}
+  },
+  "definition": {
+    "scope": "Foundation set containing shared interfaces and stubs for multi-group parallel development. This set must not contain feature implementation logic.",
+    "ownedFiles": [],
+    "tasks": [],
+    "acceptance": ["All cross-set interface stubs are present and importable"]
+  }
+}
+```
+
+The foundation contract's `exports` must merge ALL exports from ALL other sets. Each export entry includes a `sourceSet` field indicating which set originally exports it. The `imports` object is always empty -- the foundation set imports nothing.
+
+### Foundation Set in ROADMAP.md
+
+When `team-size > 1`, include the foundation set in the ROADMAP.md markdown output as the first set, before all numbered sets:
+
+```markdown
+### Set 1: Foundation
+**Branch:** `set/foundation`
+**Scope:** Foundation set containing shared interfaces and stubs for multi-group parallel development.
+**Dependencies:** none
+```
+
+### Conditional Behavior Summary
+
+| Condition | Foundation Set |
+|-----------|---------------|
+| `team-size > 1` | Include foundation set as first entry with contract merging all exports |
+| `team-size = 1` | Do NOT include foundation set; output unchanged |
 
 ## Scope and Constraints
 

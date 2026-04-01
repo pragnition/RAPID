@@ -11,6 +11,7 @@ const {
   readState,
   writeState,
   withStateTransaction,
+  mergeStatePartial,
   findMilestone,
   findSet,
   findWave,
@@ -920,5 +921,87 @@ describe('detectIndependentWaves', () => {
     assert.deepEqual(midIds, ['B', 'C']);
     assert.equal(result[2].length, 1);
     assert.equal(result[2][0].id, 'D');
+  });
+});
+
+// ---- mergeStatePartial ----
+
+describe('mergeStatePartial', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTempProject();
+    const state = createInitialState('TestProject', 'v1.0');
+    writeTestState(tmpDir, state);
+  });
+
+  afterEach(() => {
+    cleanTempProject(tmpDir);
+  });
+
+  it('replaces milestones while preserving envelope fields', async () => {
+    const newMilestones = [
+      { id: 'v2.0', name: 'Version 2', sets: [] },
+    ];
+
+    await mergeStatePartial(tmpDir, { milestones: newMilestones });
+
+    const result = await readState(tmpDir);
+    assert.ok(result.valid);
+    assert.equal(result.state.milestones.length, 1);
+    assert.equal(result.state.milestones[0].id, 'v2.0');
+    // Envelope fields preserved
+    assert.equal(result.state.version, 1);
+    assert.equal(result.state.projectName, 'TestProject');
+    assert.ok(result.state.createdAt); // still present
+  });
+
+  it('updates currentMilestone without touching milestones', async () => {
+    await mergeStatePartial(tmpDir, { currentMilestone: 'v2.0' });
+
+    const result = await readState(tmpDir);
+    assert.ok(result.valid);
+    assert.equal(result.state.currentMilestone, 'v2.0');
+    // Milestones should still have original data
+    assert.equal(result.state.milestones.length, 1);
+    assert.equal(result.state.milestones[0].id, 'v1.0');
+  });
+
+  it('merges both milestones and currentMilestone at once', async () => {
+    const newMilestones = [
+      { id: 'v3.0', name: 'Version 3', sets: [] },
+    ];
+
+    await mergeStatePartial(tmpDir, {
+      milestones: newMilestones,
+      currentMilestone: 'v3.0',
+    });
+
+    const result = await readState(tmpDir);
+    assert.ok(result.valid);
+    assert.equal(result.state.milestones.length, 1);
+    assert.equal(result.state.milestones[0].id, 'v3.0');
+    assert.equal(result.state.currentMilestone, 'v3.0');
+    assert.equal(result.state.projectName, 'TestProject');
+  });
+
+  it('throws on invalid merged state', async () => {
+    await assert.rejects(
+      () => mergeStatePartial(tmpDir, { milestones: 'not-an-array' }),
+      /invalid state/i
+    );
+  });
+
+  it('does not overwrite version, createdAt, or rapidVersion', async () => {
+    // Read initial state to capture original values
+    const before = await readState(tmpDir);
+    const origCreatedAt = before.state.createdAt;
+    const origVersion = before.state.version;
+
+    await mergeStatePartial(tmpDir, { currentMilestone: 'v2.0' });
+
+    const after = await readState(tmpDir);
+    assert.equal(after.state.version, origVersion);
+    assert.equal(after.state.createdAt, origCreatedAt);
   });
 });

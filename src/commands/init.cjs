@@ -29,6 +29,7 @@ function handleInit(args) {
         case '--name':
           name = args[++i];
           break;
+        case '--description':
         case '--desc':
           desc = args[++i];
           break;

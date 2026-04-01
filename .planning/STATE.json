@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "rapidVersion": "5.0.0",
+  "rapidVersion": "6.0.0",
   "projectName": "RAPID",
-  "currentMilestone": "v5.0",
+  "currentMilestone": "v6.0.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -523,8 +523,54 @@
           "waves": []
         }
       ]
+    },
+    {
+      "id": "v6.0.0",
+      "name": "Scale & Quality",
+      "sets": [
+        {
+          "id": "bug-fixes-foundation",
+          "status": "merged",
+          "waves": [],
+          "name": "Bug Fixes & Foundation",
+          "branch": "set/bug-fixes-foundation"
+        },
+        {
+          "id": "dag-central-grouping",
+          "status": "merged",
+          "waves": [],
+          "name": "DAG Central Concept & Set Grouping",
+          "branch": "set/dag-central-grouping"
+        },
+        {
+          "id": "init-enhancements",
+          "status": "merged",
+          "waves": [],
+          "name": "Init Enhancements",
+          "branch": "set/init-enhancements"
+        },
+        {
+          "id": "scaffold-overhaul",
+          "status": "merged",
+          "waves": [],
+          "name": "Scaffold Overhaul",
+          "branch": "set/scaffold-overhaul"
+        },
+        {
+          "id": "agent-namespace-enforcement",
+          "status": "merged",
+          "waves": [],
+          "name": "Agent Namespace Enforcement",
+          "branch": "set/agent-namespace-enforcement"
+        },
+        {
+          "id": "docs-version-bump",
+          "status": "merged",
+          "waves": []
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-03-31T03:06:55.754Z",
+  "lastUpdatedAt": "2026-04-01T06:47:27.749Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

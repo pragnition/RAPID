@@ -30,6 +30,44 @@ node "${RAPID_TOOLS}" display banner init
 
 ---
 
+## Step 0.5: Parse Optional Arguments
+
+If the user invoked `/rapid:init` with arguments, parse them here. The supported argument is `--spec <path>` which provides a pre-written spec file to seed research agents with prior findings.
+
+**Argument parsing instructions:**
+
+1. Check if the skill was invoked with arguments (the user's input after `/rapid:init`).
+2. If the input contains a file path argument (with or without the `--spec` prefix), treat it as a spec file path.
+   - With prefix: `/rapid:init --spec path/to/spec.md`
+   - Without prefix: `/rapid:init path/to/spec.md`
+3. Read the spec file using the Read tool.
+   - If the file does not exist or cannot be read, display a warning: **"Spec file not found at {path}. Falling back to fully interactive discovery."** and set `specContent = null`.
+   - If the file is read successfully, store its full content as `specContent` for use in Steps 4B and 7.
+4. If no arguments were provided, set `specContent = null`. This is the backward-compatible default.
+
+When `specContent` is null, all subsequent steps behave identically to the original flow.
+
+### Spec Section Extraction
+
+When `specContent` is not null, extract recognizable sections from the spec file using markdown header matching. Map extracted sections to discovery areas and research agent domains:
+
+| Spec Header Pattern | Discovery Area | Research Agent |
+|---|---|---|
+| `# Vision`, `# Overview`, `# Introduction` | Vision/problem statement | all |
+| `# Features`, `# Requirements`, `# User Stories` | Must-have features | features |
+| `# Architecture`, `# Design`, `# System Design` | Technical approach | architecture |
+| `# Stack`, `# Technology`, `# Tech Stack` | Tech stack preferences | stack |
+| `# Security`, `# Compliance`, `# Privacy` | Compliance requirements | pitfalls, oversights |
+| `# UX`, `# Design`, `# User Experience` | UX considerations | ux |
+| `# Constraints`, `# Limitations`, `# Non-functional` | Technical constraints | pitfalls, oversights |
+| `# Scale`, `# Performance`, `# Load` | Scale expectations | stack, architecture |
+
+Use case-insensitive matching. If a header does not match any pattern, include its content in a general "Additional Spec Context" bucket passed to all agents.
+
+Tag each extracted section with `[FROM SPEC]` prefix when passing to downstream consumers.
+
+---
+
 ## Step 1: Prerequisites
 
 Run the prerequisite checker to verify the development environment:
@@ -175,6 +213,26 @@ Store the selection as `opus` or `sonnet`.
 - LISTEN carefully to each batch response. After each batch, analyze the response for follow-up needs. Only ask follow-up questions for genuinely ambiguous or vague responses. Do NOT re-ask areas already covered.
 - Continue asking until you have a comprehensive understanding. This should take 3-4 batch questions plus 0-2 targeted follow-ups depending on project complexity.
 - Mentally track what you know and what gaps remain. Only proceed when no significant gaps exist.
+
+### Spec-Aware Discovery Mode
+
+If `specContent` is not null, enter spec-aware discovery mode:
+
+1. **Per-area coverage detection:** For each of the 13 discovery areas (vision, target users, scale, features, tech stack, starting point, performance, compliance, integrations, auth, experience, non-functional, success criteria), classify coverage from the spec as:
+   - `covered` -- The spec provides clear, specific information for this area.
+   - `partial` -- The spec mentions this area but lacks detail or specificity.
+   - `uncovered` -- The spec does not address this area at all.
+
+2. **Adaptive questioning depth:**
+   - For `covered` areas: Lead with context extracted from the spec. Display: "From your spec, I see: {extracted summary}". Then ask a brief confirmation: "Is this still accurate? Anything to add or change?" If confirmed, move on. If the user wants changes, collect the updated information.
+   - For `partial` areas: Lead with context: "Your spec mentions {topic} but I need more detail on: {specific gaps}". Then ask the targeted follow-up question from the original batch.
+   - For `uncovered` areas: Ask the full original question from the batch, noting it was not covered in the spec.
+
+3. **Batch compression:** Covered areas within a batch can be presented as a single confirmation prompt instead of individual questions. For example, if Batch 1's vision and target users are both covered, present them together: "From your spec: Vision is {X}, targeting {Y} users at {Z} scale. Confirm or adjust?"
+
+4. **Spec content supplements, never replaces.** Even when the spec fully covers an area, the user always has the opportunity to override or augment. Never skip an area entirely without at least offering the user a chance to confirm or modify.
+
+After spec-aware discovery completes, compile the project brief identically to the non-spec flow. Include a `Spec File: {path}` line in the brief metadata.
 
 **Discovery must cover these areas, grouped into 4 topic batches:**
 
@@ -473,6 +531,97 @@ Loop back to Step 4B and restart the discovery conversation. Clear all previousl
 
 ---
 
+## Step 4E: Principles Capture
+
+Capture meta-principles that guide development decisions across the project. These are stored in `.planning/PRINCIPLES.md` and summarized in worktree-scoped CLAUDE.md files.
+
+### Principles Interview
+
+Present the 8 predefined categories one at a time. For each category, offer 2-3 recommended principles as multiSelect options, plus the ability to add custom principles.
+
+**Escape hatch:**
+
+Before starting the category walkthrough, offer an escape hatch:
+
+Use AskUserQuestion with:
+- question: "Would you like to define project principles now?"
+- Options:
+  - "Yes, walk me through categories" -- "Define principles category by category (recommended)"
+  - "Use sensible defaults" -- "Infer principles from existing code patterns (brownfield) or use generic best practices (greenfield)"
+  - "Skip principles" -- "Do not generate PRINCIPLES.md. You can add it later."
+
+**If "Yes, walk me through categories":** Proceed with the category walkthrough below.
+
+**If "Use sensible defaults":**
+- For brownfield projects: Analyze existing code patterns detected in Step 6 (CODEBASE-ANALYSIS.md) to infer principles. Look for patterns like: test framework usage (testing principles), module structure (architecture principles), linting config (code style principles), existing security middleware (security principles).
+- For greenfield projects: Use the first recommended principle from each of the 8 predefined categories as defaults.
+- Present the inferred/default principles for confirmation before writing.
+
+**If "Skip principles":** Set `principlesData = null` and skip Step 9.5. No PRINCIPLES.md will be generated.
+
+**Category walkthrough:**
+
+For each category in order (architecture, code style, testing, security, UX, performance, data handling, documentation):
+
+Use AskUserQuestion with:
+- question: "Principles for **{Category}** -- Select any that apply, or add your own:"
+- Options (vary per category -- see recommended principles below):
+  - {Recommended principle 1} -- "{brief rationale}"
+  - {Recommended principle 2} -- "{brief rationale}"
+  - {Recommended principle 3} -- "{brief rationale}"
+  - "Add custom" -- "Write your own principle for this category"
+  - "Skip this category" -- "No principles needed for {category}"
+
+If the user selects "Add custom", ask freeform: "Enter your principle statement for {Category}:" and then "Brief rationale (why this matters):" -- collect both and add to the principles list.
+
+Users can select multiple recommended principles AND add custom ones in the same category.
+
+**Recommended principles per category:**
+
+1. **Architecture:**
+   - "Prefer composition over inheritance" -- "Flexibility and easier refactoring"
+   - "Use dependency injection for testability" -- "Enables unit testing with mocks"
+   - "Keep modules loosely coupled" -- "Independent deployment and development"
+
+2. **Code Style:**
+   - "Use strict mode everywhere" -- "Prevents silent errors"
+   - "Prefer named exports over default exports" -- "Better IDE support and refactoring"
+   - "Keep functions under 30 lines" -- "Readability and single responsibility"
+
+3. **Testing:**
+   - "Test behavior, not implementation" -- "Tests survive refactoring"
+   - "Require tests for all bug fixes" -- "Prevent regressions"
+   - "Use integration tests for critical paths" -- "Catch issues unit tests miss"
+
+4. **Security:**
+   - "Never store secrets in code" -- "Use environment variables or secret managers"
+   - "Validate all external input" -- "Prevent injection attacks"
+   - "Use parameterized queries" -- "Prevent SQL injection"
+
+5. **UX:**
+   - "Show loading states for async operations" -- "Users need feedback"
+   - "Provide meaningful error messages" -- "Help users recover from errors"
+   - "Support keyboard navigation" -- "Accessibility and power users"
+
+6. **Performance:**
+   - "Lazy load non-critical resources" -- "Faster initial page loads"
+   - "Use pagination for large datasets" -- "Prevent memory issues"
+   - "Cache expensive computations" -- "Reduce redundant work"
+
+7. **Data Handling:**
+   - "Validate at boundaries" -- "Trust nothing from external sources"
+   - "Use transactions for multi-step writes" -- "Maintain data consistency"
+   - "Log all data mutations" -- "Auditability and debugging"
+
+8. **Documentation:**
+   - "Document why, not what" -- "Code shows what; comments explain why"
+   - "Keep README up to date" -- "First impression for new contributors"
+   - "Document breaking changes in changelogs" -- "Users need migration guidance"
+
+After the interview (or defaults), compile `principlesData` as an array of `{category, statement, rationale}` objects.
+
+---
+
 ## Step 5: Scaffold
 
 Run the scaffold, config write, and research directory setup:
@@ -614,6 +763,14 @@ Research the technology stack for this project.
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
 
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the stack research domain, each prefixed with [FROM SPEC]}
+{end if}
+
 ## Working Directory
 {projectRoot}
 
@@ -634,6 +791,14 @@ Research the feature implementation approach for this project.
 
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the features research domain, each prefixed with [FROM SPEC]}
+{end if}
 
 ## Working Directory
 {projectRoot}
@@ -656,6 +821,14 @@ Research the architecture patterns for this project.
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
 
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the architecture research domain, each prefixed with [FROM SPEC]}
+{end if}
+
 ## Working Directory
 {projectRoot}
 
@@ -676,6 +849,14 @@ Research potential pitfalls and risks for this project.
 
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the pitfalls research domain, each prefixed with [FROM SPEC]}
+{end if}
 
 ## Working Directory
 {projectRoot}
@@ -698,6 +879,14 @@ Research potential oversights and blind spots for this project.
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
 
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the oversights research domain, each prefixed with [FROM SPEC]}
+{end if}
+
 ## Working Directory
 {projectRoot}
 
@@ -718,6 +907,14 @@ Research domain conventions and UX patterns for this project.
 
 ## Brownfield Context
 {if brownfield: "Read .planning/research/CODEBASE-ANALYSIS.md for existing codebase analysis." | if greenfield: "This is a greenfield project with no existing codebase."}
+
+{if specContent is not null:}
+## Spec Content
+The following content was extracted from a user-provided spec file. Assertions are tagged with [FROM SPEC].
+Evaluate critically: verify technical claims where possible, accept domain/business assertions at face value unless contradicted by evidence.
+
+{extracted spec sections relevant to the UX research domain, each prefixed with [FROM SPEC]}
+{end if}
 
 ## Working Directory
 {projectRoot}
@@ -891,9 +1088,21 @@ b) Write CONTRACT.json and DEFINITION.md files for each set:
 
    If the `definition` field is missing from a contracts entry (e.g., from an older roadmapper version), skip DEFINITION.md generation for that set and log a warning: "Warning: No definition metadata for set {setId}. DEFINITION.md was not generated."
 
-c) Write STATE.json with the project > milestone > sets structure:
-   Use the Write tool to write `.planning/STATE.json` with the roadmapper's `state` content.
-   The state structure is: `{ milestones: [{ id, name, status, sets: [{ id, status: "pending" }] }], currentMilestone }`
+c) Merge the roadmapper's milestone/set data into STATE.json (preserving envelope fields):
+   Extract `milestones` and `currentMilestone` from the roadmapper's `state` output.
+   Use `mergeStatePartial()` to merge only these fields into the existing STATE.json, preserving `version`, `projectName`, `createdAt`, and `rapidVersion`:
+
+   ```bash
+   node -e "
+     const path = require('path');
+     const { mergeStatePartial } = require(path.join(path.dirname('${RAPID_TOOLS}'), '..', 'lib', 'state-machine.cjs'));
+     const partial = JSON.parse(process.argv[1]);
+     mergeStatePartial(process.cwd(), partial).then(() => console.log('STATE.json merged successfully'));
+   " '{"milestones": <MILESTONES_JSON>, "currentMilestone": "<MILESTONE_ID>"}'
+   ```
+
+   Where `<MILESTONES_JSON>` is the milestones array from the roadmapper output and `<MILESTONE_ID>` is the current milestone ID.
+   This preserves `version`, `projectName`, `createdAt`, `rapidVersion` in STATE.json while updating only the milestone/set structure.
    Each set has only `{ id, name, status: "pending", branch }` -- no waves or jobs arrays.
 
 d) Generate DAG.json and OWNERSHIP.json from the newly written STATE.json and CONTRACT.json files:
@@ -952,6 +1161,25 @@ Print: "Roadmap generation cancelled. Your scaffold and research files are prese
 End the skill.
 
 **On error:** Show progress breadcrumb: `init [scaffold done, research done, synthesis done, roadmap failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
+
+---
+
+## Step 9.5: Write PRINCIPLES.md
+
+If `principlesData` is not null (principles were captured in Step 4E):
+
+1. Generate the PRINCIPLES.md content:
+
+   ```javascript
+   const { generatePrinciplesMd } = require('./src/lib/principles.cjs');
+   const content = generatePrinciplesMd(principlesData);
+   ```
+
+2. Write `.planning/PRINCIPLES.md` using the Write tool.
+
+3. Display: "Wrote {N} principles across {M} categories to .planning/PRINCIPLES.md"
+
+If `principlesData` is null (user skipped principles): Skip this step silently. Do not write an empty PRINCIPLES.md.
 
 ---
 
@@ -1057,7 +1285,14 @@ Determine the first pending set by running:
 SETS_JSON=$(node "${RAPID_TOOLS}" plan list-sets 2>&1)
 ```
 
-Parse the JSON output. If there are sets available, display:
+Parse the JSON output. If there are sets available, display based on team-size:
+
+**When team-size > 1:**
+
+> **Next step:** `/rapid:start-set 1`
+> *(Start set 1 -- foundation -- to establish shared interfaces)*
+
+**When team-size = 1:**
 
 > **Next step:** `/rapid:start-set 1`
 > *(Start set 1 for development)*

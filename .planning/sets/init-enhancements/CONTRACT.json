@@ -1,0 +1,67 @@
+{
+  "setId": "init-enhancements",
+  "version": "1.0.0",
+  "exports": {
+    "generatePrinciplesMd": {
+      "type": "function",
+      "signature": "generatePrinciplesMd(principlesData: Array<{category: string, statement: string, rationale: string}>): string",
+      "description": "Returns markdown content for .planning/PRINCIPLES.md from structured principles data"
+    },
+    "generateClaudeMdSection": {
+      "type": "function",
+      "signature": "generateClaudeMdSection(principlesData: Array<{category: string, statement: string}>): string",
+      "description": "Returns a compact summary (10-15 lines max) suitable for appending to CLAUDE.md with a pointer to the full PRINCIPLES.md"
+    },
+    "loadPrinciples": {
+      "type": "function",
+      "signature": "loadPrinciples(cwd: string): Array<{category: string, statement: string, rationale: string}> | null",
+      "description": "Reads and parses .planning/PRINCIPLES.md, returns null if file does not exist"
+    },
+    "specFlag": {
+      "type": "endpoint",
+      "signature": "/rapid:init --spec <path>",
+      "description": "Optional spec file path argument for init that seeds research agents with prior findings"
+    },
+    "principlesAwareScopedClaudeMd": {
+      "type": "function",
+      "signature": "generateScopedClaudeMd(cwd, setId, options) -- includes PRINCIPLES.md content in scoped output",
+      "description": "Extended generateScopedClaudeMd() in worktree.cjs to include principles summary when PRINCIPLES.md exists"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "claudeMdTokenBudget": {
+      "description": "The CLAUDE.md principles summary must not exceed 15 lines to avoid agent context bloat",
+      "enforced_by": "test"
+    },
+    "specCriticalEvaluation": {
+      "description": "When spec content is passed to research agents, it must be framed with 'evaluate critically' instruction and spec-derived assertions must be tagged with [FROM SPEC]",
+      "enforced_by": "test"
+    },
+    "principlesOptional": {
+      "description": "All principles-related features must degrade gracefully when PRINCIPLES.md does not exist -- loadPrinciples() returns null, generateScopedClaudeMd() omits the section",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Add --spec flag to /rapid:init for spec file integration mirroring the new-version pattern, implement meta-principles capture during init with new principles.cjs module, generate PRINCIPLES.md and inject summary into CLAUDE.md, and extend generateScopedClaudeMd() with principles awareness.",
+    "ownedFiles": [
+      "src/lib/principles.cjs",
+      "src/lib/principles.test.cjs",
+      "src/modules/roles/role-research-stack.md",
+      "src/modules/roles/role-research-architecture.md",
+      "src/modules/roles/role-research-features.md",
+      "src/modules/roles/role-research-pitfalls.md",
+      "src/modules/roles/role-research-ux.md",
+      "src/modules/roles/role-research-oversights.md"
+    ],
+    "tasks": [
+      { "description": "Create principles.cjs with generatePrinciplesMd(), generateClaudeMdSection(), loadPrinciples()", "acceptance": "Module generates valid PRINCIPLES.md and compact CLAUDE.md section (max 15 lines)" },
+      { "description": "Add --spec flag to init SKILL.md with spec-aware discovery bypass and critical-evaluation framing", "acceptance": "Init with --spec extracts structured info from spec file; research agents receive spec with [FROM SPEC] tags" },
+      { "description": "Add principles capture step to init SKILL.md after discovery confirmation", "acceptance": "Init flow includes principles interview with 'Use sensible defaults' escape hatch" },
+      { "description": "Extend generateScopedClaudeMd() to include PRINCIPLES.md content when available", "acceptance": "Worktree-scoped CLAUDE.md includes principles summary; gracefully omits when no PRINCIPLES.md exists" },
+      { "description": "Update research role modules to accept and critically evaluate spec content", "acceptance": "Research agents produce output that references spec assertions with [FROM SPEC] tags" }
+    ],
+    "acceptance": ["principles.cjs module fully tested", "Init with --spec flag works end-to-end", "PRINCIPLES.md generated and CLAUDE.md summary injected", "Scoped CLAUDE.md includes principles when available", "Sensible defaults escape hatch works"]
+  }
+}

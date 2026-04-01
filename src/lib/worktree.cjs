@@ -1,6 +1,6 @@
 'use strict';
 
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { acquireLock } = require('./lock.cjs');
@@ -18,7 +18,7 @@ const REGISTRY_FILE = 'REGISTRY.json';
  */
 function gitExec(args, cwd) {
   try {
-    const result = execSync(`git ${args.join(' ')}`, {
+    const result = execFileSync('git', args, {
       cwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -94,7 +94,7 @@ function createWorktree(projectRoot, setName) {
   ensureWorktreeDir(projectRoot);
 
   const result = gitExec(
-    ['worktree', 'add', '-b', branch, `"${worktreePath}"`, 'HEAD'],
+    ['worktree', 'add', '-b', branch, worktreePath, 'HEAD'],
     projectRoot
   );
 
@@ -129,7 +129,7 @@ function createWorktree(projectRoot, setName) {
  * @returns {{ removed: boolean, reason?: string, message?: string }}
  */
 function removeWorktree(projectRoot, worktreePath) {
-  const result = gitExec(['worktree', 'remove', `"${worktreePath}"`], projectRoot);
+  const result = gitExec(['worktree', 'remove', worktreePath], projectRoot);
 
   if (!result.ok) {
     if (result.stderr.includes('modified or untracked') ||
@@ -817,6 +817,18 @@ function generateScopedClaudeMd(cwd, setName) {
     // Graceful -- skip style guide section
   }
 
+  // Load principles summary (graceful if missing)
+  let principlesSummary = null;
+  try {
+    const principles = require('./principles.cjs');
+    const principlesData = principles.loadPrinciples(cwd);
+    if (principlesData && principlesData.length > 0) {
+      principlesSummary = principles.generateClaudeMdSection(principlesData);
+    }
+  } catch (err) {
+    // Graceful -- skip principles section
+  }
+
   // Build owned files and deny list from OWNERSHIP.json
   const ownedFiles = [];
   const denyByOwner = {}; // { ownerSetName: [filePaths] }
@@ -843,6 +855,12 @@ function generateScopedClaudeMd(cwd, setName) {
   sections.push('## Your Scope');
   sections.push(`You are working on the '${setName}' set. ONLY modify files listed under File Ownership.`);
   sections.push('');
+
+  // 2.5. Project Principles (if available)
+  if (principlesSummary) {
+    sections.push(principlesSummary);
+    sections.push('');
+  }
 
   // 3. Interface Contract
   sections.push('## Interface Contract');

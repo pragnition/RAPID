@@ -1,0 +1,109 @@
+{
+  "setId": "dag-central-grouping",
+  "version": "1.0.0",
+  "exports": {
+    "createDAGv3": {
+      "type": "function",
+      "signature": "createDAGv3(nodes: Array<{id: string, group?: string, priority?: number, description?: string}>, edges: Array<{from: string, to: string}>, options?: {groups?: Record<string, {sets: string[], description?: string}>}): DAGv3",
+      "description": "Creates a v3 DAG with optional group annotations on nodes and a top-level groups summary"
+    },
+    "validateDAGv3": {
+      "type": "function",
+      "signature": "validateDAGv3(dag: object): { valid: boolean, errors: string[] }",
+      "description": "Validates a v3 DAG structure including group field consistency and groups summary completeness"
+    },
+    "syncDAGStatus": {
+      "type": "function",
+      "signature": "syncDAGStatus(cwd: string): Promise<void>",
+      "description": "Reads set statuses from STATE.json and updates DAG node status fields to match"
+    },
+    "partitionIntoGroups": {
+      "type": "function",
+      "signature": "partitionIntoGroups(dag: DAGv3, contracts: Array<Contract>, numDevelopers: number): { groups: Array<{id: string, sets: string[], sharedDeps: string[]}>, crossGroupEdges: Array<{from: string, to: string, sharedFiles: string[]}> }",
+      "description": "Partitions sets into N developer groups minimizing cross-group file ownership conflicts"
+    },
+    "annotateDAGWithGroups": {
+      "type": "function",
+      "signature": "annotateDAGWithGroups(dag: DAGv3, groups: Array<{id: string, sets: string[]}>): DAGv3",
+      "description": "Returns a modified DAG with group field set on each node according to the provided group assignments"
+    },
+    "generateGroupReport": {
+      "type": "function",
+      "signature": "generateGroupReport(groups: Array<{id: string, sets: string[], sharedDeps: string[]}>, crossGroupEdges: Array): string",
+      "description": "Returns a markdown summary of group assignments and cross-group dependencies"
+    },
+    "dagGroupsCLI": {
+      "type": "endpoint",
+      "signature": "node rapid-tools.cjs dag groups [--json]",
+      "description": "CLI subcommand that displays current developer group assignments from DAG.json"
+    },
+    "dagRegroupCLI": {
+      "type": "endpoint",
+      "signature": "node rapid-tools.cjs dag regroup --team-size <N>",
+      "description": "CLI subcommand that re-partitions sets into N groups"
+    },
+    "migrateDAGv1toV2": {
+      "type": "function",
+      "signature": "migrateDAGv1toV2(dagV1: object): DAGv2",
+      "description": "Auto-migrates a v1 DAG to v2 format, preserving all existing data"
+    },
+    "migrateDAGv2toV3": {
+      "type": "function",
+      "signature": "migrateDAGv2toV3(dagV2: DAGv2): DAGv3",
+      "description": "Auto-migrates a v2 DAG to v3 format, adding group fields with null defaults"
+    }
+  },
+  "imports": {
+    "preservedRecalculateDAG": {
+      "fromSet": "bug-fixes-foundation",
+      "type": "function",
+      "signature": "recalculateDAG(cwd: string): Promise<object>",
+      "description": "Needs the fixed recalculateDAG that preserves annotations so DAGv3 group annotations survive add-set operations"
+    },
+    "fileOwnershipSchema": {
+      "fromSet": "bug-fixes-foundation",
+      "type": "file",
+      "signature": "CONTRACT_META_SCHEMA.properties.fileOwnership",
+      "description": "Needs fileOwnership in contract schema so the group partitioning algorithm can read file ownership data from contracts"
+    }
+  },
+  "behavioral": {
+    "backwardCompatibility": {
+      "description": "All existing DAG consumers (getExecutionOrder, getMergeOrder, dag show) must continue working with v3 DAGs without modification -- group fields are optional",
+      "enforced_by": "test"
+    },
+    "autoMigration": {
+      "description": "tryLoadDAG() must auto-detect DAG version (v1/v2/v3) and migrate to v3 transparently, preserving all existing data",
+      "enforced_by": "test"
+    },
+    "groupPartitioningDeterminism": {
+      "description": "partitionIntoGroups() must produce deterministic output for the same input",
+      "enforced_by": "test"
+    },
+    "crossGroupMinimization": {
+      "description": "The partitioning algorithm must minimize cross-group file ownership conflicts",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Extend DAG to v3 with group annotations, implement developer group partitioning algorithm, add DAG status synchronization, create migration logic for v1/v2 DAGs, add dag groups and dag regroup CLI commands, and integrate group assignment into the roadmapper.",
+    "ownedFiles": [
+      "src/lib/dag.cjs",
+      "src/lib/dag.test.cjs",
+      "src/lib/group.cjs",
+      "src/lib/group.test.cjs",
+      "src/commands/dag.cjs",
+      "src/modules/roles/role-roadmapper.md"
+    ],
+    "tasks": [
+      { "description": "Create DAGv3 schema with optional group, priority, description fields on nodes and top-level groups summary", "acceptance": "createDAGv3() produces valid v3 DAGs; validateDAGv3() rejects invalid structures" },
+      { "description": "Implement auto-migration: migrateDAGv1toV2() and migrateDAGv2toV3() with tryLoadDAG() auto-detection", "acceptance": "v1 and v2 DAGs are transparently migrated to v3 on load; all existing data preserved" },
+      { "description": "Implement syncDAGStatus() that synchronizes DAG node statuses from STATE.json", "acceptance": "DAG node statuses match STATE.json set statuses after calling syncDAGStatus()" },
+      { "description": "Create group.cjs with partitionIntoGroups(), annotateDAGWithGroups(), generateGroupReport()", "acceptance": "partitionIntoGroups() produces balanced groups minimizing cross-group file conflicts; output is deterministic" },
+      { "description": "Add dag groups and dag regroup CLI subcommands", "acceptance": "dag groups displays current assignments; dag regroup --team-size N re-partitions and updates DAG.json" },
+      { "description": "Extend dag show with group labels and cross-group edge highlighting", "acceptance": "dag show displays group annotations on each node" },
+      { "description": "Integrate group assignment into roadmapper role module output", "acceptance": "Roadmapper output includes group annotations when team-size > 1" }
+    ],
+    "acceptance": ["All existing DAG consumers work unchanged with v3 DAGs", "Group partitioning algorithm produces balanced groups", "v1 and v2 DAGs auto-migrate to v3", "dag groups and dag regroup commands functional"]
+  }
+}

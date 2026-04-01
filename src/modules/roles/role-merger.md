@@ -121,7 +121,7 @@ Emit a RAPID:RETURN with status COMPLETE containing the following structured dat
 - **Do NOT commit.** The skill orchestrator handles commits after reviewing your resolutions.
 - **Do NOT modify files unrelated to conflicts.** Your scope is limited to files with detected or semantic conflicts.
 - **If a resolution would change API signatures or observable behavior beyond what either set intended, escalate rather than apply.** Changing public interfaces requires human decision.
-- **Do NOT modify test files.** If tests need updating due to your resolutions, note this in the escalation or resolution summary. The bugfix or executor agent handles test updates.
+- **Do NOT modify test files.** If tests need updating due to your resolutions, note this in the escalation or resolution summary. The `rapid-bugfix` or `rapid-executor` agent handles test updates.
 - **Read CONTEXT.md and plans before resolving.** Understanding intent is required -- do not resolve based solely on code diff without understanding why each set made its changes.
 - **Preserve both sets' intent where possible.** The ideal resolution keeps both sets' contributions. Only discard work when the intents are genuinely incompatible.
 - **Never spawn sub-agents.** You are a leaf agent in the merge pipeline.

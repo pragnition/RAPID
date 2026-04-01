@@ -1,0 +1,33 @@
+{
+  "setId": "agent-namespace-enforcement",
+  "version": "1.0.0",
+  "exports": {
+    "strengthenedIdentity": {
+      "type": "file",
+      "signature": "core-identity.md: updated Namespace Isolation section with deny-list and enforcement language",
+      "description": "Strengthened namespace isolation in core-identity.md with explicit deny-list examples, concrete enforcement language, and optionally a build-agents validation check"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "denyListExplicitness": {
+      "description": "core-identity.md Namespace Isolation section must include at least 3 concrete examples of non-RAPID skills/agents that agents must NOT invoke",
+      "enforced_by": "runtime"
+    },
+    "enforcementLanguage": {
+      "description": "The enforcement language must use imperative MUST/MUST NOT phrasing, not advisory SHOULD phrasing",
+      "enforced_by": "runtime"
+    }
+  },
+  "definition": {
+    "scope": "Strengthen namespace isolation in core-identity.md with explicit deny-list examples for non-RAPID subagent invocation, imperative enforcement language, and optionally a build-agents validation check.",
+    "ownedFiles": [
+      "src/modules/core/core-identity.md"
+    ],
+    "tasks": [
+      { "description": "Strengthen core-identity.md Namespace Isolation section with deny-list and imperative enforcement", "acceptance": "Section includes 3+ concrete deny-list examples and MUST/MUST NOT language" },
+      { "description": "Optionally add build-agents validation check for non-rapid- agent references in role modules", "acceptance": "Build-agents warns when role modules reference non-rapid- agents (if implemented)" }
+    ],
+    "acceptance": ["core-identity.md updated with deny-list enforcement", "All agents regenerated with updated identity module"]
+  }
+}

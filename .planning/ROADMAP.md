@@ -20,33 +20,38 @@
 - **v4.3.0 Reliability & State** — 4 sets (shipped 2026-03-25)
 - **v4.4.0 Polish & Documentation** — 3 sets (shipped 2026-03-26)
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
-- **v5.0 OSS Presentation** — 5 sets (in progress)
+- **v5.0 OSS Presentation** — 5 sets (shipped 2026-03-31)
+- **v6.0.0 Scale & Quality** — 6 sets (in progress)
 
-## Active Milestone: v5.0 — OSS Presentation
+## Active Milestone: v6.0.0 — Scale & Quality
 
-This milestone prepares RAPID for public open-source presentation. All deliverables are static assets — SVG branding graphics, community contribution files, GitHub templates, a restructured README, and reference migration from fishjojo1/RAPID to pragnition/RAPID. No runtime code changes.
+This milestone elevates DAG.json from a post-hoc artifact to the central coordination primitive driving dependency tracking, team group assignment, and workflow ordering. It fixes three known bugs (REQUIREMENTS.md overwrite, --desc/--description flag mismatch, roadmapper state overwrite), adds spec file and meta-principles support to init, overhauls the scaffold system for multi-developer group-aware stub generation, and strengthens agent namespace enforcement.
 
-### Set 1: branding-assets — Branding Assets
-**Branch:** `set/branding-assets` | **Size:** L
-Create four core visual assets: 1280x320 banner SVG with Everforest dark palette and path-based serif title, horizontal lifecycle flow SVG (~1280x200) showing init-to-merge pipeline, vertical agent dispatch SVG (~1280x600) showing command-to-agent spawning, and 1280x640 social preview PNG. Also creates .gitattributes for binary file handling.
+### Set 1: bug-fixes-foundation — Bug Fixes & Foundation
+**Branch:** `set/bug-fixes-foundation` | **Dependencies:** none
+Fix all three known bugs (REQUIREMENTS.md overwrite by scaffold, --desc/--description flag mismatch, roadmapper STATE.json overwrite) and resolve foundational infrastructure issues: bump Node.js minimum to 20+, fix shell injection via execSync in worktree.cjs, add fileOwnership to CONTRACT_META_SCHEMA, and fix recalculateDAG() annotation stripping.
 
-### Set 2: community-infra — Community Infrastructure
-**Branch:** `set/community-infra` | **Size:** M
-Create community infrastructure: CONTRIBUTING.md (dev install, bug reports, feature proposals, code style), GitHub issue templates (bug_report.yml, feature_request.yml, config.yml as YAML forms), PR template with what/why/testing checklist, and package.json repository/homepage fields pointing to pragnition/RAPID.
+### Set 2: dag-central-grouping — DAG Central Concept & Set Grouping
+**Branch:** `set/dag-central-grouping` | **Dependencies:** bug-fixes-foundation
+Extend DAG schema to v3 with group annotations, add DAG status synchronization (syncDAGStatus), implement developer group partitioning algorithm in new group.cjs module, add dag regroup and dag groups CLI subcommands, extend dag show with group-aware display, integrate group assignment into roadmapper output, and create v1-to-v2-to-v3 auto-migration in tryLoadDAG().
 
-### Set 3: readme-migration — README Overhaul & Reference Migration
-**Branch:** `set/readme-migration` | **Size:** M
-Restructure README.md with centered banner header stack, badges, collapsible architecture with SVG diagrams, tip callout install, and arrow-prefix doc links. Migrate all active fishjojo1/RAPID references to pragnition/RAPID (archives untouched). Bump version from 4.4.0 to 5.0.0.
+### Set 3: init-enhancements — Init Enhancements
+**Branch:** `set/init-enhancements` | **Dependencies:** none
+Add --spec flag to /rapid:init for spec file integration, implement meta-principles capture during init with new principles.cjs module, generate PRINCIPLES.md in .planning/ and inject summary into CLAUDE.md, and modify generateScopedClaudeMd() in worktree.cjs to include principles. Spec content is passed to research agents with critical-evaluation framing.
 
-### Set 4: readme-polish — README Polish
-**Branch:** `set/readme-polish` | **Size:** M
-Condense and restructure the RAPID README using the OpenSpec README as a style reference. Make content less wordy, more scannable with tables and diagrams. Enlarge existing SVG diagrams that are too small and hard to read.
+### Set 4: scaffold-overhaul — Scaffold Overhaul
+**Branch:** `set/scaffold-overhaul` | **Dependencies:** dag-central-grouping
+Group-aware set splitting using DAG group annotations and file ownership data, high-fidelity stub generation with RAPID-STUB markers, per-worktree stub directory management (.rapid-stubs/), optional foundational set #0 with foundation:true DAG flag, stub lifecycle hooks, scaffold verify-stubs command, and scaffold-report v2.
 
-### Set 5: docs-update — Documentation Update
-**Size:** M
-Update DOCS.md and technical_documentation.md with all changes across previous versions. Sweep through version history to identify what's changed and incorporate those updates into the documentation files.
+### Set 5: agent-namespace-enforcement — Agent Namespace Enforcement
+**Branch:** `set/agent-namespace-enforcement` | **Dependencies:** none
+Strengthen namespace isolation in core-identity.md with explicit deny-list examples, imperative MUST/MUST NOT enforcement language, and optionally a build-agents validation check.
 
-**Dependency graph:** `{branding-assets, community-infra}` → `{readme-migration}` → `{readme-polish}` → `{docs-update}`
+### Set 6: docs-version-bump — Documentation & Version Bump
+**Branch:** `set/docs-version-bump` | **Dependencies:** none
+Update CHANGELOG.md with a summary of all v6.0.0 sets, bump all version references from 5.0.0 to 6.0.0 across package.json, plugin.json, config.json, STATE.json, and skill files, and update project documentation.
+
+**Dependency graph:** `{bug-fixes-foundation}` → `{dag-central-grouping}` → `{scaffold-overhaul}` | `{init-enhancements, agent-namespace-enforcement, docs-version-bump}` independent
 
 ## Completed Milestone Details
 
@@ -239,6 +244,17 @@ Update DOCS.md and technical_documentation.md with all changes across previous v
 - [x] bugfix-uat — Bug-Fix --uat Flag
 - [x] branding-server — Branding Preview Server
 - [x] generous-planning — Generous Set Planning
+
+</details>
+
+<details>
+<summary>v5.0 OSS Presentation (5 sets) — shipped 2026-03-31</summary>
+
+- [x] branding-assets — Branding Assets (SVG banner, lifecycle flow, agent dispatch, social preview)
+- [x] community-infra — Community Infrastructure (CONTRIBUTING.md, issue templates, PR template)
+- [x] readme-migration — README Overhaul & Reference Migration (pragnition/RAPID, version bump)
+- [x] readme-polish — README Polish (concise, scannable, enlarged SVGs)
+- [x] docs-update — Documentation Update (DOCS.md and technical_documentation.md)
 
 </details>
 

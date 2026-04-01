@@ -267,6 +267,35 @@ async function withStateTransaction(cwd, mutationFn, options = {}) {
   }
 }
 
+// ---- Partial merge function ----
+
+/**
+ * Merge a partial state update into existing STATE.json within a transaction.
+ * Preserves all existing fields not included in the partial update.
+ *
+ * Supported partial fields:
+ * - milestones: Wholesale replacement of the milestones array
+ * - currentMilestone: Direct assignment
+ *
+ * lastUpdatedAt is auto-set by the transaction wrapper.
+ * The merged result is validated against ProjectState schema.
+ *
+ * @param {string} cwd - Project root directory
+ * @param {Object} partial - Fields to merge (milestones, currentMilestone)
+ * @returns {Promise<object>} The validated state after merge
+ * @throws {Error} If merged state fails Zod validation
+ */
+async function mergeStatePartial(cwd, partial) {
+  return withStateTransaction(cwd, (state) => {
+    if (partial.milestones !== undefined) {
+      state.milestones = partial.milestones;
+    }
+    if (partial.currentMilestone !== undefined) {
+      state.currentMilestone = partial.currentMilestone;
+    }
+  });
+}
+
 // ---- Transition function ----
 
 /**
@@ -525,6 +554,7 @@ module.exports = {
   readState,
   writeState,
   withStateTransaction,
+  mergeStatePartial,
   findMilestone,
   findSet,
   findWave,

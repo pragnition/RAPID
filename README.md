@@ -3,10 +3,10 @@
 </p>
 
 <p align="center">
-  <a href='https://github.com/pragnition/RAPID/tree/main'><img src="https://img.shields.io/badge/version-5.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /></a>
-  <a href='https://github.com/pragnition/RAPID/blob/main/LICENSE'><img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" /></a>
-  <a href='https://claude.com/plugins'><img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" /></a>
-  <a href='https://nodejs.org/en/blog/release/v18.18.0'><img src="https://img.shields.io/badge/Node.js-18%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" /></a>
+  <img src="https://img.shields.io/badge/version-6.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
+  <img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" /> 
+  <img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" /> 
+  <img src="https://img.shields.io/badge/Node.js-20%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
 </p>
 
 > Pre-existing agent harnesses like GSD and OpenSpec are great, but not built for collaboration amongst teams.
@@ -108,6 +108,10 @@ RAPID structures parallel work around **sets** -- independent workstreams that e
 | `/rapid:merge` | Merge completed sets to main with conflict detection |
 
 See [DOCS.md](DOCS.md) for the full reference covering all 28 commands.
+
+## Changelog
+
+See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v6.0.0 Scale & Quality** (2026-04-01) -- DAGv3 schema, developer group partitioning, Node.js 20+ minimum, enhanced merge pipeline.
 
 ## Documentation
 

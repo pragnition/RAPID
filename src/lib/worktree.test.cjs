@@ -945,6 +945,58 @@ describe('generateScopedClaudeMd', () => {
     // Style Guide section should not appear
     assert.ok(!md.includes('## Style Guide'), 'should not contain Style Guide section when file missing');
   });
+
+  it('includes principles section when PRINCIPLES.md exists', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'PRINCIPLES.md'),
+      [
+        '# Project Principles',
+        '',
+        '> Generated: 2026-03-31',
+        '> Categories: architecture',
+        '',
+        '## Architecture',
+        '',
+        '- **Prefer composition over inheritance** -- Flexibility and easier refactoring',
+        '',
+      ].join('\n'),
+      'utf-8'
+    );
+
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(md.includes('## Project Principles'), 'should contain Project Principles section');
+    assert.ok(md.includes('Prefer composition over inheritance'), 'should contain principle statement');
+  });
+
+  it('omits principles section when PRINCIPLES.md does not exist', () => {
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    assert.ok(!md.includes('## Project Principles'), 'should not contain Project Principles section when file missing');
+  });
+
+  it('places principles section between scope and contract', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'PRINCIPLES.md'),
+      [
+        '# Project Principles',
+        '',
+        '> Generated: 2026-03-31',
+        '> Categories: testing',
+        '',
+        '## Testing',
+        '',
+        '- **Test behavior not implementation** -- Tests survive refactoring',
+        '',
+      ].join('\n'),
+      'utf-8'
+    );
+
+    const md = worktree.generateScopedClaudeMd(tmpDir, 'my-set');
+    const scopeIdx = md.indexOf('## Your Scope');
+    const principlesIdx = md.indexOf('## Project Principles');
+    const contractIdx = md.indexOf('## Interface Contract');
+    assert.ok(scopeIdx < principlesIdx, 'principles should come after scope');
+    assert.ok(principlesIdx < contractIdx, 'principles should come before contract');
+  });
 });
 
 // ────────────────────────────────────────────────────────────────
@@ -1773,5 +1825,38 @@ describe('solo mode', () => {
       assert.equal(result.transitioned, false);
       assert.ok(result.error.includes('RAPID_TOOLS'));
     });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────
+// Shell injection safety tests
+// ────────────────────────────────────────────────────────────────
+describe('shell injection safety', () => {
+  it('gitExec uses execFileSync, not execSync with template string', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'worktree.cjs'), 'utf-8');
+    assert.ok(
+      src.includes("execFileSync('git', args"),
+      'gitExec must use execFileSync with argument array'
+    );
+    assert.ok(
+      !src.includes('execSync(`git ${'),
+      'gitExec must not use execSync with template string interpolation'
+    );
+  });
+
+  it('createWorktree does not embed shell quotes in path arguments', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'worktree.cjs'), 'utf-8');
+    assert.ok(
+      !src.includes('`"${worktreePath}"`'),
+      'createWorktree must not embed shell quotes in worktree path'
+    );
+  });
+
+  it('removeWorktree does not embed shell quotes in path arguments', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'worktree.cjs'), 'utf-8');
+    assert.ok(
+      !src.includes("['worktree', 'remove', `\"${"),
+      'removeWorktree must not embed shell quotes in worktree path'
+    );
   });
 });

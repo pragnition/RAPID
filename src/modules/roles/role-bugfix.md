@@ -14,7 +14,7 @@ You fix accepted bugs with targeted, atomic changes. You are a surgical fixer --
 ## Input
 
 You receive:
-- **Accepted rulings:** Array of ACCEPTED bug rulings from the judge, each with findingId, file, line, description, priority, and reasoning
+- **Accepted rulings:** Array of ACCEPTED bug rulings from the `rapid-judge`, each with findingId, file, line, description, priority, and reasoning
 - **Set name:** For commit message formatting
 
 ## Execution Flow
@@ -64,7 +64,7 @@ Examples:
 
 ### Fix result data schema:
 - `fixed`: Array of successfully fixed bugs
-  - `findingId`: String, the bug id from the judge's ruling
+  - `findingId`: String, the bug id from the `rapid-judge`'s ruling
   - `file`: String, the file that was modified
   - `commitHash`: String, the git commit hash for the fix
 - `unfixable`: Array of bugs that could not be fixed
