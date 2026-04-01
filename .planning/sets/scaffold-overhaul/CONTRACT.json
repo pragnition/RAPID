@@ -1,0 +1,92 @@
+{
+  "setId": "scaffold-overhaul",
+  "version": "1.0.0",
+  "exports": {
+    "generateHighFidelityStub": {
+      "type": "function",
+      "signature": "generateHighFidelityStub(exportDef: {name: string, type: string, signature: string}, options?: {language?: string}): string",
+      "description": "Generates a high-fidelity stub with realistic return values from type signature, JSDoc types, and RAPID-STUB marker comment"
+    },
+    "generateGroupStubs": {
+      "type": "function",
+      "signature": "generateGroupStubs(cwd: string, groupId: string, allGroups: Array, contracts: Array): Promise<{files: string[], report: string}>",
+      "description": "Generates stubs for all cross-group dependencies that a given group needs from other groups"
+    },
+    "scaffoldVerifyStubs": {
+      "type": "endpoint",
+      "signature": "node rapid-tools.cjs scaffold verify-stubs",
+      "description": "CLI subcommand that reports which stubs have been replaced by real implementations and which remain"
+    },
+    "foundationSetLifecycle": {
+      "type": "function",
+      "signature": "createFoundationSet(cwd: string, setConfig: object): Promise<void>",
+      "description": "Creates a foundational set #0 with foundation:true flag in DAG, containing shared interfaces and stubs"
+    },
+    "scaffoldReportV2": {
+      "type": "file",
+      "signature": "scaffold-report.json: { ...v1, groups: object, stubs: string[], foundationSet?: string }",
+      "description": "Extended scaffold-report.json with groups, stub file locations, and optional foundationSet designation"
+    },
+    "stubAutoResolve": {
+      "type": "function",
+      "signature": "isRapidStub(fileContent: string): boolean",
+      "description": "Detects RAPID-STUB marker in file content for auto-resolution during merge (stub yields to real implementation)"
+    }
+  },
+  "imports": {
+    "partitionIntoGroups": {
+      "fromSet": "dag-central-grouping",
+      "type": "function",
+      "signature": "partitionIntoGroups(dag: DAGv3, contracts: Array<Contract>, numDevelopers: number): { groups: Array, crossGroupEdges: Array }",
+      "description": "Needs group partitioning to know which sets belong to which developer groups for stub generation"
+    },
+    "annotateDAGWithGroups": {
+      "fromSet": "dag-central-grouping",
+      "type": "function",
+      "signature": "annotateDAGWithGroups(dag: DAGv3, groups: Array): DAGv3",
+      "description": "Needs DAG annotation to write group assignments into DAG.json after scaffold completes"
+    }
+  },
+  "behavioral": {
+    "stubMarkerInvariant": {
+      "description": "Every generated stub file must contain the exact string '// RAPID-STUB' (or language-appropriate comment equivalent) on its first line for merge auto-resolution",
+      "enforced_by": "test"
+    },
+    "stubReplacementSafety": {
+      "description": "scaffold verify-stubs must accurately report replacement status by checking if file content still contains the RAPID-STUB marker",
+      "enforced_by": "test"
+    },
+    "foundationSetMinimality": {
+      "description": "Foundation set #0 scope must be limited to interfaces and stubs only -- no feature implementation logic allowed in the foundation set",
+      "enforced_by": "runtime"
+    },
+    "stubContentIsolation": {
+      "description": "Stub files generated in the .rapid-stubs/ directory must not include any implementation logic beyond return value scaffolding",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Overhaul the scaffold system for multi-developer workflows: group-aware set splitting, high-fidelity stub generation with realistic return values and RAPID-STUB markers, shared stub branch management, optional foundational set #0, stub lifecycle hooks, and scaffold-report v2.",
+    "ownedFiles": [
+      "src/lib/stub.cjs",
+      "src/lib/stub.test.cjs",
+      "src/lib/scaffold.cjs",
+      "src/lib/scaffold.test.cjs",
+      "src/lib/scaffold.integration.test.cjs",
+      "src/commands/scaffold.cjs",
+      "src/commands/scaffold.test.cjs",
+      "skills/scaffold/SKILL.md",
+      "src/lib/merge.cjs"
+    ],
+    "tasks": [
+      { "description": "Implement generateHighFidelityStub() with realistic return values from CONTRACT.json type signatures and RAPID-STUB marker", "acceptance": "Generated stubs include JSDoc types, realistic return values, and RAPID-STUB marker on first line" },
+      { "description": "Implement generateGroupStubs() for cross-group dependency stubs", "acceptance": "Stubs generated for all imports a group needs from other groups" },
+      { "description": "Implement per-worktree stub directory management (.rapid-stubs/ generation and cleanup)", "acceptance": "Worktrees generate stubs in .rapid-stubs/ from CONTRACT.json; stubs replaced by real implementations during merge" },
+      { "description": "Implement foundational set #0 with foundation:true DAG flag and scope constraints", "acceptance": "Foundation set created with DAG annotation; start-set checks DAG dependencies for foundation requirement" },
+      { "description": "Implement scaffold verify-stubs CLI command", "acceptance": "Command accurately reports stub replacement status across all groups" },
+      { "description": "Add RAPID-STUB auto-resolution rule to merge.cjs", "acceptance": "Merge pipeline auto-resolves conflicts where one side is a stub and the other is a real implementation" },
+      { "description": "Extend scaffold-report.json with v2 fields (groups, stubs, foundationSet)", "acceptance": "Scaffold report includes group assignments, stub file paths, and optional foundation set designation" }
+    ],
+    "acceptance": ["High-fidelity stubs generated with correct return types", "Cross-group stub generation works for multi-group projects", "Stub branch management functional", "Foundation set lifecycle operational", "Merge auto-resolution works for stub-to-real conflicts", "scaffold-report v2 format validated"]
+  }
+}
