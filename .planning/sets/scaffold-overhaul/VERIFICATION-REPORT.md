@@ -11,7 +11,7 @@
 |-------------|------------|--------|-------|
 | Stub Generation Model (LLM-driven, not programmatic) | Wave 1 Task 1 | PASS | `generateStub()` rewritten with realistic return values; CONTEXT.md notes LLM-driven is about agent instructions in the skill, which Wave 3 Task 3 covers in SKILL.md |
 | Stub Return Value Fallback (null for unrecognized types) | Wave 1 Task 1 | PASS | Explicit type-to-return mapping with null fallback |
-| Stub Storage & Branch Model (rapid/stubs branch) | -- | GAP | CONTEXT.md specifies stubs live on a shared `rapid/stubs` git branch and are copied into worktrees at start-set time. No wave plan implements branch creation, branch commit, or start-set copy logic. The primitives (stub generation, sidecar files) are covered but the branch orchestration is missing. This may be intentional if branch management is deferred to a separate set or handled by the skill agent |
+| Stub Storage & Branch Model (rapid/stubs branch) | -- | GAP | CONTEXT.md specifies stubs live on a shared `rapid/stubs` git branch and are copied into worktrees at start-set time. No wave plan implements branch creation, branch commit, or start-set copy logic. The primitives (stub generation, sidecar files) are covered but the branch orchestration is missing. This may be intentional if branch management is deferred to a separate set or handled by the skill agent [CLOSED wave-4: documentation aligned to per-worktree .rapid-stubs/ model] |
 | Stub Replacement Detection (first-line marker only) | Wave 1 Task 2, Wave 3 Task 1 | PASS | `isRapidStub()` implements first-line check; `verify-stubs` CLI uses it on-demand |
 | RAPID-STUB Marker Format (simple tag + sidecar) | Wave 1 Tasks 1, 3 | PASS | First line `// RAPID-STUB`, zero-byte `.rapid-stub` sidecar files |
 | Cross-Group Stub Routing (LLM-planned) | Wave 2 Task 1 | PASS | `generateGroupStubs()` orchestrates cross-group stubs from pre-computed groups |
@@ -30,7 +30,7 @@
 | BEHAVIORAL: stubMarkerInvariant | Wave 1 Task 5 | PASS | Test verifies first line is exactly `// RAPID-STUB` |
 | BEHAVIORAL: stubReplacementSafety | Wave 3 Tasks 1-2 | PASS | verify-stubs CLI tests check replacement detection accuracy |
 | BEHAVIORAL: foundationSetMinimality | Wave 2 Task 2 | PASS | Creation-time scope check with warnings |
-| BEHAVIORAL: stubBranchIsolation | -- | GAP | No wave plan explicitly tests that stubs on the rapid/stubs branch contain no implementation logic. This is partially covered by the stub generation tests (stubs return default values, not real logic) but is not directly tested as a branch-level invariant |
+| BEHAVIORAL: stubBranchIsolation | -- | GAP | No wave plan explicitly tests that stubs on the rapid/stubs branch contain no implementation logic. This is partially covered by the stub generation tests (stubs return default values, not real logic) but is not directly tested as a branch-level invariant [CLOSED wave-4: renamed to stubContentIsolation, references updated to .rapid-stubs/ directory] |
 | SPECIFIC: LLM planner receives CONTRACT.json exports as context | Wave 3 Task 3 | PASS | SKILL.md update documents stub generation workflow with contract context |
 | SPECIFIC: .rapid-stub sidecars are empty (zero-byte) | Wave 1 Task 3 | PASS | Explicitly specified as zero-byte in the plan |
 | SPECIFIC: verify-stubs outputs JSON consistent with scaffold status | Wave 3 Task 1 | PASS | JSON output with total, replaced, remaining fields |
