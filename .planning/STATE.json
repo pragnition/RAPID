@@ -565,12 +565,12 @@
         },
         {
           "id": "docs-version-bump",
-          "status": "discussed",
+          "status": "planned",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-01T05:52:20.003Z",
+  "lastUpdatedAt": "2026-04-01T06:37:25.712Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
