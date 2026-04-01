@@ -726,6 +726,72 @@
       "startCommit": "0ec1a502d149bf74f8ddf5fab827fbb8a4656d57",
       "wave": null,
       "createdAt": "2026-03-31T02:17:25.913Z"
+    },
+    "bug-fixes-foundation": {
+      "setName": "bug-fixes-foundation",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "be8188068035b6adbaeb23b6dab49285064ba6fb",
+      "wave": null,
+      "createdAt": "2026-03-31T06:30:05.302Z"
+    },
+    "dag-central-grouping": {
+      "setName": "dag-central-grouping",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "149df7c0564050d3cd9f59f4c055db03430a4fbd",
+      "wave": null,
+      "createdAt": "2026-03-31T07:17:20.458Z"
+    },
+    "init-enhancements": {
+      "setName": "init-enhancements",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "da4059434046eb82f335421a02776c08eab2fa40",
+      "wave": null,
+      "createdAt": "2026-03-31T08:18:35.672Z"
+    },
+    "scaffold-overhaul": {
+      "setName": "scaffold-overhaul",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "a52773ec25b8318efe37562fd9aba1d9be790c21",
+      "wave": null,
+      "createdAt": "2026-03-31T09:09:00.198Z"
+    },
+    "agent-namespace-enforcement": {
+      "setName": "agent-namespace-enforcement",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "71f5a73aebade85daaf6ea358abbd2698bfbb8f2",
+      "wave": null,
+      "createdAt": "2026-04-01T04:21:34.821Z"
+    },
+    "docs-version-bump": {
+      "setName": "docs-version-bump",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "002aeaad322e881fed4ca7187d28b47889e53be9",
+      "wave": null,
+      "createdAt": "2026-04-01T05:34:15.366Z"
     }
   }
 }

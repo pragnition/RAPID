@@ -1,0 +1,89 @@
+{
+  "setId": "bug-fixes-foundation",
+  "version": "1.0.0",
+  "exports": {
+    "mergeStatePartial": {
+      "type": "function",
+      "signature": "mergeStatePartial(cwd: string, partial: { milestones?: Array, currentMilestone?: string }): Promise<void>",
+      "description": "Merges a partial state update into existing STATE.json within a transaction, preserving version, projectName, createdAt, rapidVersion fields while updating only the specified fields"
+    },
+    "descriptionAlias": {
+      "type": "function",
+      "signature": "case '--description': (falls through to case '--desc': in CLI switch)",
+      "description": "Adds --description as an alias for --desc in src/commands/init.cjs CLI parser"
+    },
+    "preservedRecalculateDAG": {
+      "type": "function",
+      "signature": "recalculateDAG(cwd: string): Promise<object>",
+      "description": "Fixed recalculateDAG in add-set.cjs that preserves existing DAG node annotations (group, priority, description) during recalculation instead of stripping them to { id: s.id }"
+    },
+    "fileOwnershipSchema": {
+      "type": "file",
+      "signature": "CONTRACT_META_SCHEMA.properties.fileOwnership: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } } }",
+      "description": "Extended CONTRACT_META_SCHEMA in contract.cjs to accept optional fileOwnership field for ownership-based group splitting"
+    },
+    "execFileSync": {
+      "type": "function",
+      "signature": "execFileSync(cmd: string, args: string[], options?: object): Buffer",
+      "description": "Replaced execSync template string calls in worktree.cjs with execFileSync to prevent shell injection through set/branch names"
+    },
+    "requirementsPreservation": {
+      "type": "function",
+      "signature": "scaffoldProject(cwd, options) -- skips REQUIREMENTS.md when it contains user-approved content",
+      "description": "Modified scaffoldProject() in init.cjs to not overwrite REQUIREMENTS.md if it contains encoded criteria"
+    },
+    "nodeMinimumBump": {
+      "type": "file",
+      "signature": "prereqs.cjs: MIN_NODE_VERSION >= 20",
+      "description": "Updated Node.js minimum version check from 18 to 20+ in prereqs.cjs"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "statePreservation": {
+      "description": "mergeStatePartial() must preserve all existing STATE.json fields not included in the partial update, and the resulting state must pass Zod ProjectState validation",
+      "enforced_by": "test"
+    },
+    "annotationPreservation": {
+      "description": "recalculateDAG() must carry forward all existing node properties (group, priority, description, etc.) when reconstructing nodes, not just { id: s.id }",
+      "enforced_by": "test"
+    },
+    "requirementsProtection": {
+      "description": "scaffoldProject() must not overwrite REQUIREMENTS.md when it contains lines matching the encoded criteria pattern",
+      "enforced_by": "test"
+    },
+    "noShellInjection": {
+      "description": "All git command execution in worktree.cjs must use execFileSync with argument arrays, never execSync with template string interpolation",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Fix all three known bugs (REQUIREMENTS.md overwrite, --desc/--description mismatch, roadmapper STATE.json overwrite) and resolve foundational infrastructure issues: Node.js minimum bump, shell injection fix, fileOwnership in contract meta-schema, and recalculateDAG annotation preservation.",
+    "ownedFiles": [
+      "src/lib/init.cjs",
+      "src/lib/init.test.cjs",
+      "src/lib/state-machine.cjs",
+      "src/lib/state-machine.test.cjs",
+      "src/lib/contract.cjs",
+      "src/lib/contract.test.cjs",
+      "src/lib/worktree.cjs",
+      "src/lib/worktree.test.cjs",
+      "src/lib/add-set.cjs",
+      "src/lib/add-set.test.cjs",
+      "src/lib/prereqs.cjs",
+      "src/lib/prereqs.test.cjs",
+      "src/commands/init.cjs",
+      "skills/init/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Add --description alias for --desc in src/commands/init.cjs CLI parser", "acceptance": "Both --desc and --description flags are accepted and produce identical results" },
+      { "description": "Fix REQUIREMENTS.md overwrite by removing it from fileGenerators or adding content-check guard", "acceptance": "scaffoldProject() does not overwrite REQUIREMENTS.md containing encoded criteria" },
+      { "description": "Implement mergeStatePartial() for atomic state merge and update init SKILL.md Step 9", "acceptance": "Roadmapper output merges into STATE.json preserving envelope fields; Zod validation passes" },
+      { "description": "Fix recalculateDAG() in add-set.cjs to preserve existing node annotations", "acceptance": "DAG recalculation carries forward group, priority, description fields on existing nodes" },
+      { "description": "Add fileOwnership to CONTRACT_META_SCHEMA as optional field", "acceptance": "Contracts with fileOwnership field pass Ajv validation" },
+      { "description": "Replace execSync with execFileSync in worktree.cjs", "acceptance": "All git commands in worktree.cjs use execFileSync with argument arrays" },
+      { "description": "Bump Node.js minimum version to 20+ in prereqs.cjs", "acceptance": "Version check rejects Node.js < 20 and accepts Node.js >= 20" }
+    ],
+    "acceptance": ["All three bugs fixed with regression tests", "All existing tests continue passing", "CONTRACT.json with fileOwnership validates successfully", "No execSync with template strings in worktree.cjs"]
+  }
+}
