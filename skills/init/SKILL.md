@@ -1284,7 +1284,14 @@ Determine the first pending set by running:
 SETS_JSON=$(node "${RAPID_TOOLS}" plan list-sets 2>&1)
 ```
 
-Parse the JSON output. If there are sets available, display:
+Parse the JSON output. If there are sets available, display based on team-size:
+
+**When team-size > 1:**
+
+> **Next step:** `/rapid:start-set 1`
+> *(Start set 1 -- foundation -- to establish shared interfaces)*
+
+**When team-size = 1:**
 
 > **Next step:** `/rapid:start-set 1`
 > *(Start set 1 for development)*
