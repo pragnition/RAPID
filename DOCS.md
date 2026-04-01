@@ -50,7 +50,7 @@ The `setup.sh` script installs dependencies, configures `RAPID_TOOLS`, and runs 
 
 ### Requirements
 
-- **Node.js 18+** (runtime for tool libraries)
+- **Node.js 20+** (runtime for tool libraries)
 - **git 2.30+** (required for worktree support)
 - **RAPID_TOOLS env var** must be set (both installation methods handle this)
 - npm dependencies are bundled in `node_modules/`

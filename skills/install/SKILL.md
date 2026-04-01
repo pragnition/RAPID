@@ -205,7 +205,7 @@ If "Show manual fix steps": display:
 
 ```
 # Check Node.js version
-node -v  # Must be v18+
+node -v  # Must be v20+
 
 # Check RAPID_TOOLS path
 cat "${CLAUDE_SKILL_DIR}/../../.env"
