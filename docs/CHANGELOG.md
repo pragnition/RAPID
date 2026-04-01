@@ -44,6 +44,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - `recalculateDAG()` now preserves existing node annotations (group, priority, description) (`bug-fixes-foundation`)
 - 43 unprefixed agent/skill references swept across 10 role module files (`agent-namespace-enforcement`)
 
+## [v5.0] OSS Presentation (shipped 2026-03-31)
+
+### Added
+- Branding assets: SVG banner, lifecycle flow diagram, agent dispatch diagram, social preview image (`branding-assets`)
+- Community infrastructure: CONTRIBUTING.md, GitHub issue templates (bug report, feature request -- standard and AI variants), PR template (`community-infra`)
+
+### Changed
+- README overhaul and reference migration to pragnition/RAPID with version bump (`readme-migration`)
+- README polish pass for conciseness, scannability, and enlarged SVGs (`readme-polish`)
+- Documentation update for DOCS.md and technical_documentation.md (`docs-update`)
+
+## [v4.5] Developer Experience II (shipped 2026-03-26)
+
+### Added
+- Human-only UAT workflow separating automated checks from manual verification steps (`uat-workflow`)
+- `--uat` flag for `/rapid:bug-fix` enabling automatic UAT failure fixing from UAT-FAILURES.md (`bugfix-uat`)
+- Branding preview server for live BRANDING.md rendering (`branding-server`)
+
+### Changed
+- Generous set planning with expanded task granularity and coverage (`generous-planning`)
+
 ## [v4.4.0] Polish & Documentation (shipped 2026-03-25)
 
 ### Added
