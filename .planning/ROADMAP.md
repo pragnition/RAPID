@@ -21,7 +21,7 @@
 - **v4.4.0 Polish & Documentation** — 3 sets (shipped 2026-03-26)
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
 - **v5.0 OSS Presentation** — 5 sets (shipped 2026-03-31)
-- **v6.0.0 Scale & Quality** — 5 sets (in progress)
+- **v6.0.0 Scale & Quality** — 6 sets (in progress)
 
 ## Active Milestone: v6.0.0 — Scale & Quality
 
@@ -47,7 +47,11 @@ Group-aware set splitting using DAG group annotations and file ownership data, h
 **Branch:** `set/agent-namespace-enforcement` | **Dependencies:** none
 Strengthen namespace isolation in core-identity.md with explicit deny-list examples, imperative MUST/MUST NOT enforcement language, and optionally a build-agents validation check.
 
-**Dependency graph:** `{bug-fixes-foundation}` → `{dag-central-grouping}` → `{scaffold-overhaul}` | `{init-enhancements, agent-namespace-enforcement}` independent
+### Set 6: docs-version-bump — Documentation & Version Bump
+**Branch:** `set/docs-version-bump` | **Dependencies:** none
+Update CHANGELOG.md with a summary of all v6.0.0 sets, bump all version references from 5.0.0 to 6.0.0 across package.json, plugin.json, config.json, STATE.json, and skill files, and update project documentation.
+
+**Dependency graph:** `{bug-fixes-foundation}` → `{dag-central-grouping}` → `{scaffold-overhaul}` | `{init-enhancements, agent-namespace-enforcement, docs-version-bump}` independent
 
 ## Completed Milestone Details
 
