@@ -99,6 +99,10 @@ RAPID structures parallel work around **sets** -- independent workstreams that e
 
 See [DOCS.md](DOCS.md) for the full reference covering all 28 commands.
 
+## Changelog
+
+See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v6.0.0 Scale & Quality** (2026-04-01) -- DAGv3 schema, developer group partitioning, Node.js 20+ minimum, enhanced merge pipeline.
+
 ## Documentation
 
 -> [DOCS.md](DOCS.md) -- command reference, quick lookup, all 28 commands with usage examples
