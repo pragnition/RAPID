@@ -246,6 +246,22 @@ When team-size > 1, include in the roadmap output:
 - Note which sets share file ownership and should ideally be assigned to the same developer.
 - Flag any sets with high cross-group dependency risk.
 
+Include the Developer Groups section in the ROADMAP.md output using this exact table format:
+
+```markdown
+## Developer Groups
+
+| Group | Developer | Sets | Rationale |
+|-------|-----------|------|-----------|
+| 1 | Dev 1 | foundation, auth-system | Foundation first, then auth (shares user model files) |
+| 2 | Dev 2 | data-pipeline, api-endpoints | Both touch the data layer, minimal cross-group deps |
+```
+
+**Rules:**
+- The foundation set MUST be assigned to Group 1 (it must be completed first by one developer before parallel work begins).
+- Each group corresponds to one developer. Number of groups must equal team-size.
+- The "Rationale" column explains why those sets are grouped together (shared files, dependency chain, domain affinity).
+
 ## Foundation Set (Multi-Developer Only)
 
 When `team-size > 1`, the roadmapper MUST include a **foundation set** as the **first entry** in `state.milestones[].sets[]`. The foundation set provides shared interfaces and stubs that enable parallel development across groups. When `team-size = 1`, do NOT include a foundation set -- the output remains unchanged.
