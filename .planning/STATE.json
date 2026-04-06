@@ -609,12 +609,12 @@
         },
         {
           "id": "backlog-system",
-          "status": "discussed",
+          "status": "merged",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-06T11:05:05.153Z",
+  "lastUpdatedAt": "2026-04-06T11:33:21.763Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

@@ -847,6 +847,17 @@
       "startCommit": "4b2afcdd928ed851a63f1d6815cbc356f20dde71",
       "wave": null,
       "createdAt": "2026-04-06T09:12:39.398Z"
+    },
+    "backlog-system": {
+      "setName": "backlog-system",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "f8fe18afb3819b920a8139a558e7dd736e252f51",
+      "wave": null,
+      "createdAt": "2026-04-06T10:49:22.220Z"
     }
   }
 }

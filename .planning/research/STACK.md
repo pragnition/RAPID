@@ -1,213 +1,165 @@
-# Stack Research: ux-audit
+# Stack Research: backlog-system
 
 ## Core Stack Assessment
 
 ### Runtime Environment
-- **Node.js:** >=22 (enforced in package.json `engines` and prereqs.cjs)
+- **Node.js:** >=22 (enforced in package.json `engines`)
 - **Latest stable:** Node.js 24.x (as of April 2026)
-- **Relevant features:** `node:test` built-in test runner (used throughout), `require('node:assert/strict')` strict assertions
-- **No breaking changes impact:** The codebase uses CommonJS exclusively (`.cjs` extensions), which remains fully supported in Node 22+
-
-### Package Manager
-- **npm** (no lockfile indicates basic npm usage; no yarn.lock or pnpm-lock.yaml detected)
-
-### Testing Framework
-- **Built-in `node:test`** -- used in all 60+ test files
-- **Test runner invocation:** `node --test 'src/**/*.test.cjs'`
-- **No external test runner dependency** -- this simplifies the test setup for `tests/ux-audit.test.cjs`
+- **Relevant features:** `node:test` built-in test runner, `node:fs` for file I/O, `node:path` for cross-platform path handling
+- **No breaking changes impact:** The backlog-system set writes Markdown files and modifies existing SKILL.md files -- no runtime code changes that would encounter Node.js version concerns
 
 ### Module System
-- **CommonJS throughout** -- all files use `.cjs` extension with `'use strict'` preamble
-- **No ESM migration needed** for this set
+- **CommonJS throughout** -- all `.cjs` files use `'use strict'` preamble and `require()`
+- **SKILL.md files are pure Markdown** -- no module system considerations for the core deliverable
+- **Role prompt files (`role-executor.md`, `role-planner.md`) are Markdown** -- text edits only
+
+### Package Manager
+- **npm** (no lockfile detected -- project uses `package.json` directly)
+- **No new dependencies needed** -- the backlog-system set creates a new skill and modifies existing Markdown files; all file I/O within skills uses the `Bash`, `Read`, `Write`, and `Glob` tools provided by the Claude Code harness
+
+### Testing Framework
+- **Built-in `node:test`** with `node:assert/strict`
+- **Test runner:** `node --test 'src/**/*.test.cjs'`
+- **Relevance to this set:** This set's deliverables are primarily SKILL.md files (interpreted by the Claude Code agent at runtime, not by Node.js). Unit testing applies only if any Node.js library code (e.g., a `backlog.cjs` module) is created for programmatic backlog I/O. Per the CONTEXT.md decisions, the skill file itself handles all logic -- no Node.js library module is scoped for v1.
 
 ## Dependency Health
 
 | Package | Current | Latest | Status | Notes |
 |---------|---------|--------|--------|-------|
-| zod | ^3.25.76 | 3.25.x | Active | Used for STATE.json schema validation (ProjectState) |
-| proper-lockfile | ^4.1.2 | 4.1.2 | Maintenance | Lock acquisition for state transactions; stable, no updates needed |
-| ajv | ^8.17.1 | 8.17.x | Active | JSON Schema validation for UI contracts; not used by UX audit |
-| ajv-formats | ^3.0.1 | 3.0.x | Active | Format extensions for ajv; not used by UX audit |
+| zod | ^3.25.76 | 3.25.x | Active | Used for STATE.json schema validation; not involved in backlog-system |
+| proper-lockfile | ^4.1.2 | 4.1.2 | Maintenance-only | File locking for state transactions; not needed for backlog writes |
+| ajv | ^8.17.1 | 8.17.x | Active | JSON Schema validation; not used by this set |
+| ajv-formats | ^3.0.1 | 3.0.x | Active | Format extensions for ajv; not used by this set |
 
-All dependencies are healthy and up-to-date. None are relevant to the UX audit work itself -- the audit primarily touches CLI output, error messages, and function wiring using only Node.js built-ins.
+**Assessment:** No dependency changes needed. The backlog-system set operates entirely at the SKILL.md and role-prompt level, using tools already provided by the Claude Code agent runtime (Bash, Read, Write, Glob, Grep, AskUserQuestion). No new npm packages are required.
 
 ## Compatibility Matrix
 
-No compatibility issues affect this set. Key constraints:
+### Skill File Format Compatibility
 
-- **Zod `.passthrough()`** on `ProjectState` schema (state-schemas.cjs:41) -- this is critical because it allows the CONTEXT.md decision to add a `teamSize` field to STATE.json without schema changes. The `.passthrough()` modifier permits arbitrary additional fields.
-- **`node:test` built-in** requires Node.js 18+ (satisfied by the >=22 requirement)
-- **ANSI escape codes** used in `display.cjs` -- basic 16-color palette (`\x1b[...m`), compatible with all modern terminals. NO_COLOR env var support already implemented.
+The SKILL.md format follows a strict convention confirmed across all 28 existing skills:
 
-## Key Implementation Details for UX Audit
+1. **YAML frontmatter** with `description` and `allowed-tools` fields
+2. **Markdown body** with numbered Steps (Step 0, Step 1, etc.)
+3. **Environment preamble** in every Bash code block that calls `rapid-tools.cjs`
+4. **AskUserQuestion** for interactive prompts with prefilled options
 
-### Auto-Regroup Wiring
+The new `skills/backlog/SKILL.md` must follow this exact pattern. Key observations:
 
-**Current state of `addSetToMilestone()` (add-set.cjs:33-74):**
-- Line 71: calls `await recalculateDAG(cwd, milestoneId)` after the state transaction
-- Line 73: returns `{ setId, milestoneId, depsValidated: depList }`
-- The auto-regroup call should go between lines 71 and 73
+- **`allowed-tools` determines capability.** The backlog skill needs `Bash(rapid-tools:*)`, `AskUserQuestion`, `Read`, `Write`, and `Glob` (for directory scanning). It does NOT need `Agent` (no subagent spawns) or `Grep`.
+- **Directory auto-discovery.** Skills are auto-discovered from `skills/*/SKILL.md` paths -- placing a SKILL.md in `skills/backlog/` is sufficient for registration. No plugin.json or settings.json changes needed.
+- **The `description` frontmatter** appears in the skill list shown by `/rapid:help` and in the system reminder's available skills list.
 
-**`partitionIntoGroups()` signature (group.cjs:29):**
-```javascript
-partitionIntoGroups(dag, contracts, numDevelopers)
-// Returns: { groups, crossGroupEdges, assignments }
+### Backlog File Format Compatibility
+
+The CONTEXT.md decision specifies **Markdown with YAML frontmatter** for backlog items:
+
+```markdown
+---
+title: Example idea title
+created: 2026-04-06T12:00:00.000Z
+---
+
+Description of the idea goes here.
 ```
 
-**`annotateDAGWithGroups()` signature (group.cjs:176):**
-```javascript
-annotateDAGWithGroups(dag, groupResult)
-// Returns: new DAG with group fields populated on nodes
+This format aligns with existing RAPID artifact conventions:
+- **CONTEXT.md** uses XML-tagged sections within Markdown
+- **DEFERRED.md** uses Markdown tables
+- **DEFINITION.md** uses Markdown with structured sections
+- **v{VERSION}-DEFERRED.md** uses Markdown tables with frontmatter-like headers
+
+The YAML frontmatter + Markdown body pattern is human-readable and parseable via simple text processing (split on `---` markers, parse YAML block for metadata, remainder is body).
+
+### Audit-Version Integration Compatibility
+
+The audit-version SKILL.md currently has 5 steps (0-5). The backlog surfacing step should be inserted as a new step. Key constraints:
+
+- **Step 3 (Generate Audit Report)** writes the audit report
+- **Step 4 (Remediation and Deferral)** handles gap remediation with AskUserQuestion prompts
+- **Step 5 (Completion Banner)** is the final output
+
+The backlog surfacing step fits naturally as **Step 3.5** (between report generation and remediation) or as a new **Step 4 subsection** (Step 4f) at the end of remediation. Given that backlog items are conceptually separate from gap remediation, a dedicated step (inserted as Step 3.5 or renumbering Step 4 onward) is cleaner.
+
+**Promotion flow compatibility:** When promoting a backlog item to a remediation set, the same `.planning/pending-sets/{name}.json` format is used. The `writeRemediationArtifact()` function from `src/lib/remediation.cjs` provides `{ setName, scope, files: [], deps: [], severity, source, createdAt }` -- reusable for backlog promotions. However, since the audit-version skill writes these artifacts directly in its SKILL.md (not via the library), the backlog promotion should follow the same inline Write tool pattern.
+
+**Deferral flow compatibility:** When deferring a backlog item, content is appended to `v{VERSION}-DEFERRED.md` using the existing table format: `| # | Requirement | Original Severity | Reason for Deferral | Carry-Forward Context |`. Since backlog items have no severity field, the severity column should use a placeholder like "backlog" or "N/A".
+
+### File Naming Convention
+
+Backlog items need unique filenames to avoid merge conflicts across worktrees. The CONTEXT.md mentions "timestamp + slug" naming. Recommended format:
+
+```
+.planning/backlog/{YYYYMMDD-HHmmss}-{slug}.md
 ```
 
-**Team-size resolution chain:**
-1. `teamSize` is passed to `init scaffold --team-size N` and stored in `config.json` as `planning.max_parallel_sets` (computed as `floor(teamSize * 1.5)`)
-2. The actual `teamSize` value is NOT stored in STATE.json or config.json -- only the derived `max_parallel_sets` is stored
-3. `config.json` has a `solo` boolean (true when teamSize=1)
-4. The CONTEXT.md decision says: "Store `teamSize` in STATE.json during init, read it at add-set time"
-5. **Current STATE.json schema uses `.passthrough()`** so adding a `teamSize` field will pass Zod validation without schema changes
-6. **However:** The `dag regroup` command (dag.cjs:135-204) currently requires `--team-size N` as an explicit argument -- it does NOT read from state or config
-7. **Back-derivation option:** `teamSize` can be inferred from `config.json` `solo` field (true = 1) or `planning.max_parallel_sets` (reverse: `ceil(max_parallel_sets / 1.5)`)
+Where:
+- Timestamp uses ISO-style compact format for sortability
+- Slug is derived from the title (kebab-case, truncated to ~40 chars)
+- Example: `.planning/backlog/20260406-143022-add-priority-field.md`
 
-**Wiring decision:** The CONTEXT.md says to call `partitionIntoGroups()` explicitly after `recalculateDAG()` in `addSetToMilestone()`. This requires:
-1. Loading the freshly-written DAG.json (via `tryLoadDAG`)
-2. Loading contracts for all sets in the DAG
-3. Determining `numDevelopers` (from STATE.json `teamSize` or config.json derivation)
-4. Calling `partitionIntoGroups(dag, contracts, numDevelopers)`
-5. Calling `annotateDAGWithGroups(dag, groupResult)`
-6. Writing the annotated DAG back to disk
+This pattern:
+- Ensures uniqueness across concurrent worktree writes (timestamp granularity to seconds)
+- Sorts chronologically when listed
+- Is human-readable in directory listings
+- Avoids conflicts during merge (different filenames from different worktrees)
 
-**The existing `dag regroup` command (dag.cjs:135-204) already implements steps 1-6 fully.** The wiring in `addSetToMilestone()` can reuse the same logic, but needs the `numDevelopers` parameter resolved automatically.
+### Cross-Worktree Behavior
 
-### Error Message Patterns
+Per CONTEXT.md: "Committed with set work -- backlog items are committed in the worktree and merge alongside set changes."
 
-**Current error architecture:**
-1. **`CliError` class** (errors.cjs:26-39): `new CliError(message, { code, data })` -- thrown by command handlers
-2. **`exitWithError(msg, code)`** (errors.cjs:48-52): writes JSON to stdout + human-readable to stderr + `process.exit(1)`
-3. **Router catch** (rapid-tools.cjs:305-310): catches `CliError`, calls `exitWithError(err.message, err.code)`
-4. **`error(msg)`** (core.cjs:21-23): writes `[RAPID ERROR] ${msg}\n` to stderr
+This means:
+- Backlog items created in a worktree are `git add`-ed and committed alongside other set artifacts
+- They merge to main when the set merges
+- `.planning/backlog/` is NOT gitignored (confirmed: not present in `.gitignore` or `.planning/.gitignore`)
+- The directory needs a `.gitkeep` or equivalent if the skill creates it lazily (mkdir -p in the skill)
 
-**Current error message patterns across the codebase (sampled from ~80+ throw sites):**
+**Risk:** If two worktrees create backlog items with identical filenames (same second, same slug), a merge conflict would occur. The timestamp-to-second granularity makes this extremely unlikely in practice.
 
-| Pattern | Example | Count (approx) |
-|---------|---------|----------------|
-| Usage hint | `'Usage: state get milestone <id>'` | ~25 |
-| State-not-found | `'STATE.json not found. Run init to create project state.'` | ~5 |
-| Entity-not-found | `'Set "auth" not found in milestone "v1"'` | ~8 |
-| Invalid transition | `'Invalid transition: "pending" -> "executed". Valid: [discussed, planned]'` | via validateTransition |
-| Unknown subcommand | `'Unknown state subcommand: foo'` | ~10 |
-| Generic message | `err.message` passthrough | ~15 |
+## Upgrade Paths
 
-**Breadcrumb consistency findings:**
-
-The CONTEXT.md specifies: `[ERROR] {context}. Run: {recovery command}`
-
-Current state:
-- **State machine errors** (state-machine.cjs:19-23): Already have `REMEDIATION_HINTS` with recovery commands -- partial breadcrumb pattern exists
-- **State command errors** (state.cjs): Mix of `CliError('Usage: ...')` and `CliError('STATE.json not found. Run init...')` -- inconsistent format
-- **Transition errors** (state-transitions.cjs:36-51): Show valid transitions but no recovery command
-- **add-set errors** (add-set.cjs:49-58): Show what failed and available options but no recovery command
-- **dag errors** (dag.cjs): Some have recovery hints (`'Run init first'`, `'Run dag generate first'`), others do not
-- **resolve errors** (resolve.cjs): Include actionable hint (`'Use /rapid:status to see available sets'`)
-
-**Key observation:** The `REMEDIATION_HINTS` object in `state-machine.cjs:19-23` already has recovery commands for state errors, but they use a `\nRemediation: Run ...` format appended to the error message. This is different from the CONTEXT.md target format `[ERROR] {context}. Run: {recovery command}`.
-
-**Error output coloring:** The `error()` function in `core.cjs` prefixes with `[RAPID ERROR]` but uses no ANSI color. The CONTEXT.md says: "Minimal color: red ANSI for the `[ERROR]` label, default terminal color for the rest."
-
-### USAGE String Structure
-
-**Current USAGE string** (rapid-tools.cjs:30-145):
-- 116 lines, flat listing of all CLI subcommands
-- No section headers or grouping
-- Commands listed in the order they were added historically
-- Mix of indentation styles (some with extra spaces for alignment)
-
-**CONTEXT.md decision:** Add workflow-based section headers: Setup, Planning, Execution, Review & Merge, Utilities
-
-**Proposed reorganization mapping:**
-- **Setup:** prereqs, init, context, scaffold, migrate
-- **Planning:** state, plan, assumptions, dag, set-init
-- **Execution:** worktree, execute, resume, quick
-- **Review & Merge:** review, merge, display, build-agents
-- **Utilities:** lock, parse-return, verify-artifacts, memory, hooks, ui-contract, docs, compact, resolve
-
-### Status Command (Skill-Based)
-
-The `/rapid:status` skill (skills/status/SKILL.md) is a read-only skill defined entirely in its SKILL.md. It:
-1. Loads STATE.json via CLI
-2. Loads DAG.json for wave ordering
-3. Gets git activity per branch
-4. Displays a table with status/activity/branch per set
-5. Shows next action suggestions based on status
-6. Uses AskUserQuestion for action routing
-
-**CONTEXT.md decision:** Enhance `/rapid:status` to include contextual next-step suggestions based on current project state (state-aware hints).
-
-**Current next-action mapping** (status skill lines 161-173):
-- pending -> `/rapid:start-set {N}`
-- discussed -> `/rapid:discuss-set {N}`
-- planned -> `/rapid:plan-set {N}`
-- executed -> `/rapid:execute-set {N}`
-- complete -> `/rapid:review {N}`
-- merged -> (done)
-
-**Current edge cases** (status skill lines 156-159):
-- No sets: "No sets found. Run `/rapid:init` to get started."
-- All merged: "All sets merged! Run `/rapid:new-version`"
-- Missing state: Shows init suggestion
-
-**Gap:** There is no specific guidance for the "sets exist but none started" state (post-init, pre-start-set). The CONTEXT.md says to show a workflow guide at the end of `/rapid:init` AND include it in `/rapid:status` when no sets have been started yet.
-
-### Init Flow Output
-
-The init skill (`skills/init/SKILL.md`) is a multi-step pipeline. The final output after init completes would need a workflow guide section. The CONTEXT.md says to show it at the end of `/rapid:init` output.
-
-**Current init output flow:** After roadmap generation and set decomposition, the init skill shows:
-- A summary of sets created
-- A next-step message (team-size conditional from quick task 9)
-
-**Gap for first-run guidance:** No structured workflow guide exists. The CONTEXT.md wants a guide covering the gap between "project initialized" and "user confidently running their first set through the lifecycle."
+No upgrades needed for this set. All work is at the Markdown/SKILL.md level with no runtime code dependencies beyond what the Claude Code agent already provides.
 
 ## Tooling Assessment
 
 ### Build Tools
-- **No build step** -- all `.cjs` files run directly via Node.js
-- **Agent builder:** `build-agents` command generates `.md` files from `src/modules/` -- not relevant to UX audit
+- **No build step needed** -- SKILL.md files are directly consumed by the Claude Code agent
+- **`build-agents` command:** Generates agent `.md` files from `src/modules/`. The `role-executor.md` and `role-planner.md` files modified by this set are in `src/modules/roles/`. After modifying these source files, `build-agents` must be run to regenerate the corresponding files in `agents/`. This is an important post-modification step.
 
 ### Test Framework
-- **`node:test`** built-in -- sufficient for unit tests
-- **Test file naming:** `*.test.cjs` in source directories (collocated) and `tests/` directory
-- **The owned test file** `tests/ux-audit.test.cjs` should follow existing patterns: `require('node:test')`, `require('node:assert/strict')`, describe/it blocks
+- **`node:test`** built-in -- available but likely unused for this set's primary deliverables (SKILL.md files cannot be unit-tested; they are Claude-interpreted Markdown)
+- **Potential test surface:** If a `src/lib/backlog.cjs` module is created for reusable backlog I/O (read, list, write, delete operations used by audit-version), it should have a collocated `backlog.test.cjs`
+- **CONTEXT.md decision says "No validation on write or read"** which suggests no library module is strictly needed for v1 -- the skill can use inline Bash commands for file creation
 
 ### Linting/Formatting
-- **No linter configured** (no .eslintrc, .prettierrc, biome.json)
-- **`'use strict'`** convention enforced by pattern, not tooling
-- **Consistent style:** 2-space indentation, single quotes, CommonJS
+- **No linter configured** -- Markdown formatting follows existing conventions (2-space indentation in YAML, consistent heading levels)
+- **SKILL.md convention:** All existing skills use consistent Step numbering, environment preamble patterns, and AskUserQuestion formatting
 
 ### CI/CD
-- **No CI pipeline detected** in the repository root (no `.github/workflows/`, `.gitlab-ci.yml`, etc.)
-- **Test invocation:** Manual via `npm test` or `node --test`
+- **No CI pipeline** -- testing is manual via `npm test`
+- **No Markdown linting** in CI -- SKILL.md quality relies on pattern consistency
 
 ## Stack Risks
 
 | # | Risk | Impact | Mitigation |
 |---|------|--------|------------|
-| 1 | `teamSize` not stored in STATE.json or config.json directly | Medium -- auto-regroup wiring needs it at add-set time | Store `teamSize` top-level in STATE.json per CONTEXT.md decision; existing `.passthrough()` on schema permits this |
-| 2 | Config.json only stores derived `max_parallel_sets`, not original `teamSize` | Low -- back-derivation is lossy (`ceil(max_parallel_sets / 1.5)`) | Add `teamSize` to STATE.json during init scaffold and read from there |
-| 3 | 80+ throw sites across 20+ files -- breadcrumb standardization scope risk | High -- touching all of them would be a massive change | CONTEXT.md bounds scope to "state transition errors and set lifecycle command errors" -- estimate ~20-30 sites |
-| 4 | Error format change could break tests that assert on error messages | Medium -- test files use `.match()` patterns | Run full test suite after each batch of error changes; use flexible regex patterns in new tests |
-| 5 | Status skill is markdown-based (SKILL.md), not code -- changes are text edits not code changes | Low -- but means changes cannot be unit tested | Manual verification; audit checklist grading handles this |
-| 6 | `solo: true` in config.json means `teamSize=1` -- auto-regroup should be skipped for solo developers | Medium -- calling `partitionIntoGroups` with `numDevelopers=1` is a no-op (all sets in G1) but adds overhead | Check `teamSize <= 1` or `solo === true` and skip regrouping |
+| 1 | `build-agents` regeneration required after role prompt changes | Medium -- forgetting to run it means agents use stale prompts | Add a verification step to the wave plan: after modifying `src/modules/roles/role-*.md`, run `node src/bin/rapid-tools.cjs build-agents` and commit regenerated files |
+| 2 | YAML frontmatter parsing in audit-version integration | Low -- simple text-based parsing (split on `---` markers) could break on edge cases (description containing `---`) | Use greedy first-match for the second `---` delimiter; document the constraint that descriptions should not contain `---` on a line by itself |
+| 3 | Audit-version step renumbering cascading complexity | Low -- inserting a new step requires renumbering subsequent steps | Keep existing steps intact by inserting as Step 3.5 or appending as Step 4f subsection rather than renumbering |
+| 4 | `.planning/backlog/` directory not existing on first invocation | Low -- skill must create it lazily | Use `mkdir -p .planning/backlog` in the skill's write step; the directory is committed when the first item is added |
+| 5 | Agent prompt bloat from adding backlog sections to role files | Low -- ~5-8 lines per file | Keep sections concise with a single example; validate line count after editing |
+| 6 | Skill auto-discovery naming collision | Very low -- `skills/backlog/SKILL.md` maps to `/rapid:backlog` | Verify no existing skill uses the `backlog` name (confirmed: no collision among 28 existing skills) |
 
 ## Recommendations
 
 | # | Action | Rationale | Priority |
 |---|--------|-----------|----------|
-| 1 | Add `teamSize` field to STATE.json in `createInitialState()` | Required for auto-regroup wiring; CONTEXT.md decision says "top-level in STATE.json" | **critical** |
-| 2 | Wire `partitionIntoGroups()` + `annotateDAGWithGroups()` after `recalculateDAG()` in `addSetToMilestone()` | Deferred from v6.0.0; the function and tests exist, just needs wiring | **critical** |
-| 3 | Skip auto-regroup when `teamSize <= 1` (solo mode) | Unnecessary overhead for solo developers; `dag regroup` already has this check (dag.cjs:156-160) | **high** |
-| 4 | Standardize error breadcrumbs on state transition errors first | Highest user impact; `validateTransition()` errors are the most common user-facing errors | **high** |
-| 5 | Add red ANSI to `[ERROR]` label in `error()` function (core.cjs:21) | CONTEXT.md decision on error styling; minimal color change | **medium** |
-| 6 | Restructure USAGE string with workflow section headers | CONTEXT.md decision; low risk, improves discoverability | **medium** |
-| 7 | Add first-run workflow guide to init output and status skill empty-state | CONTEXT.md decision on first-run experience | **medium** |
-| 8 | Reuse `dag regroup` logic in the `addSetToMilestone()` wiring to avoid code duplication | The regroup command already handles contract loading, group partitioning, DAG annotation, and persistence | **medium** |
+| 1 | Create `skills/backlog/SKILL.md` following the exact YAML frontmatter + Step-based structure of existing skills | Core deliverable; must match established conventions for auto-discovery and agent compatibility | **critical** |
+| 2 | Use `allowed-tools: Bash(rapid-tools:*), AskUserQuestion, Read, Write, Glob` in frontmatter | Matches the tool set needed: Bash for mkdir/git, AskUserQuestion for fallback prompts, Read for validation, Write for file creation, Glob for directory scanning | **critical** |
+| 3 | Use `{YYYYMMDD-HHmmss}-{slug}.md` naming for backlog files | Ensures uniqueness across worktrees, chronological sorting, and human readability | **critical** |
+| 4 | Insert audit-version backlog surfacing as a new Step 3.5 (or append as Step 4f) to minimize disruption to existing step numbering | Preserves existing step references in documentation and user muscle memory | **high** |
+| 5 | Reuse the pending-sets JSON format (`{ setName, scope, files, deps, severity, source, createdAt }`) for backlog promotions via inline Write tool calls | Consistency with existing audit-version remediation flow; no new artifact format needed | **high** |
+| 6 | Run `build-agents` after modifying `src/modules/roles/role-executor.md` and `role-planner.md` | Required to propagate changes to the generated agent files in `agents/` directory | **high** |
+| 7 | Add backlog hint to discuss-set's Key Principles section (not Anti-Patterns) | Key Principles is the positive guidance section; Anti-Patterns is for "do not do" rules. Backlog usage is positive guidance. | **medium** |
+| 8 | Use "N/A" for severity when deferring backlog items to `v{VERSION}-DEFERRED.md` | Backlog items have no severity field per CONTEXT.md; must fit the existing DEFERRED.md table schema | **medium** |
+| 9 | No Node.js library module (`backlog.cjs`) needed for v1 | SKILL.md can handle file creation via Bash inline; audit-version can parse backlog files via Read + Glob tools. Library extraction is a future optimization if backlog management features are added. | **low** |

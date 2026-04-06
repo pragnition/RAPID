@@ -1,10 +1,9 @@
 {
-  "version": 3,
   "nodes": [
     {
       "id": "clear-guidance-and-display",
       "wave": 1,
-      "status": "merged",
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
@@ -36,24 +35,45 @@
       "group": null,
       "priority": null,
       "description": null
+    },
+    {
+      "id": "backlog-system",
+      "wave": 1,
+      "status": "pending"
     }
   ],
   "edges": [],
   "waves": {
     "1": {
-      "nodes": [
+      "sets": [
         "clear-guidance-and-display",
         "audit-handoff",
         "readme-and-onboarding",
-        "ux-audit"
-      ]
+        "ux-audit",
+        "backlog-system"
+      ],
+      "checkpoint": {
+        "contracts": [
+          "rapid://contracts/clear-guidance-and-display",
+          "rapid://contracts/audit-handoff",
+          "rapid://contracts/readme-and-onboarding",
+          "rapid://contracts/ux-audit",
+          "rapid://contracts/backlog-system"
+        ],
+        "artifacts": [
+          ".planning/sets/clear-guidance-and-display/CONTRACT.json",
+          ".planning/sets/audit-handoff/CONTRACT.json",
+          ".planning/sets/readme-and-onboarding/CONTRACT.json",
+          ".planning/sets/ux-audit/CONTRACT.json",
+          ".planning/sets/backlog-system/CONTRACT.json"
+        ]
+      }
     }
   },
-  "groups": {},
   "metadata": {
     "created": "2026-04-06",
+    "totalSets": 5,
     "totalWaves": 1,
-    "maxParallelism": 4,
-    "totalNodes": 4
+    "maxParallelism": 5
   }
 }
