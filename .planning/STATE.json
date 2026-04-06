@@ -614,12 +614,12 @@
         },
         {
           "id": "docs-housekeeping",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-06T14:54:16.471Z",
+  "lastUpdatedAt": "2026-04-06T15:08:49.267Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
