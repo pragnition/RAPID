@@ -424,3 +424,11 @@ Report: .planning/v{TARGET_VERSION}-AUDIT.md
 {If REMEDIATION_LIST is not empty: "Remediation sets suggested: {count}"}
 ----------------------------
 ```
+
+Display the completion footer:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:new-version"
+```
