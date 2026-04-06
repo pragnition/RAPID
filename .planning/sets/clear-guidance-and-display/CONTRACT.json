@@ -1,0 +1,47 @@
+{
+  "setId": "clear-guidance-and-display",
+  "version": "1.0.0",
+  "exports": {
+    "renderFooter": {
+      "type": "function",
+      "signature": "renderFooter(nextCommand: string, options?: { clearRequired?: boolean }): string",
+      "description": "Renders a standardized footer string with /clear reminder and suggested next command. Called by lifecycle skills at completion."
+    },
+    "CLEAR_POLICY": {
+      "type": "file",
+      "signature": ".planning/CLEAR-POLICY.md",
+      "description": "Document defining which skill transitions require /clear reminders (lifecycle boundaries: yes, review sub-steps: no, help/status: no)"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "footerConsistency": {
+      "description": "All lifecycle skills (init, start-set, discuss-set, plan-set, execute-set, review, merge, new-version, add-set, scaffold, audit-version) must call renderFooter() at completion",
+      "enforced_by": "test"
+    },
+    "noColorRespect": {
+      "description": "renderFooter() respects NO_COLOR environment variable, consistent with existing display.cjs behavior",
+      "enforced_by": "runtime"
+    }
+  },
+  "definition": {
+    "scope": "Implement renderFooter() utility in display.cjs, define /clear policy, add structural test, apply footer to all lifecycle skills (~10-12 skills).",
+    "ownedFiles": [
+      "src/lib/display.cjs",
+      "tests/display.test.cjs",
+      "skills/*/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Implement renderFooter() in display.cjs with /clear guidance and next-command suggestion", "acceptance": "Function exported, handles NO_COLOR, renders consistently" },
+      { "description": "Define /clear policy -- which skills get footers and which do not", "acceptance": "Policy documented, lifecycle skills identified" },
+      { "description": "Wire renderFooter() display CLI subcommand into rapid-tools.cjs", "acceptance": "Skills can invoke via node rapid-tools.cjs display footer" },
+      { "description": "Apply footer to all lifecycle skills (~10-12)", "acceptance": "Each lifecycle skill calls footer display at completion" },
+      { "description": "Add structural test verifying all lifecycle skills include footer call", "acceptance": "Test fails if a lifecycle skill omits footer" }
+    ],
+    "acceptance": [
+      "renderFooter() utility exists in display.cjs and is callable from skills",
+      "All lifecycle skills produce /clear guidance at completion",
+      "Structural test prevents regression"
+    ]
+  }
+}
