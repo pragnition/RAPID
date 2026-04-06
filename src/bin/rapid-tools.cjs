@@ -153,6 +153,62 @@ Options:
 `;
 
 /**
+ * Compute the Levenshtein edit distance between two strings.
+ * Standard dynamic-programming implementation (single-row optimisation).
+ *
+ * @param {string} a - First string
+ * @param {string} b - Second string
+ * @returns {number} Edit distance (>= 0)
+ */
+function levenshteinDistance(a, b) {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+
+  // Single-row DP: prev holds the previous row, curr the current row.
+  let prev = new Array(n + 1);
+  let curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(
+        prev[j] + 1,      // deletion
+        curr[j - 1] + 1,  // insertion
+        prev[j - 1] + cost // substitution
+      );
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+/**
+ * Suggest commands within edit-distance threshold, sorted by distance then
+ * alphabetically for ties.
+ *
+ * @param {string}   input          - The unknown command the user typed
+ * @param {string[]} commands       - List of valid command names
+ * @param {number}   [maxDistance=3] - Maximum edit distance to consider
+ * @param {number}   [maxSuggestions=3] - Maximum suggestions to return
+ * @returns {string[]} Suggested command names (may be empty)
+ */
+function suggestCommands(input, commands, maxDistance = 3, maxSuggestions = 3) {
+  const scored = [];
+  for (const cmd of commands) {
+    const dist = levenshteinDistance(input, cmd);
+    if (dist <= maxDistance) {
+      scored.push({ cmd, dist });
+    }
+  }
+  scored.sort((a, b) => a.dist - b.dist || a.cmd.localeCompare(b.cmd));
+  return scored.slice(0, maxSuggestions).map(s => s.cmd);
+}
+
+/**
  * Silently migrate gsd_state_version -> rapid_state_version in STATE.md.
  * Preserves the version number. No-op if already migrated or file missing.
  *
@@ -305,10 +361,25 @@ async function main() {
         await handleDag(cwd, subcommand, args.slice(2));
         break;
 
-      default:
-        error(`Unknown command: ${command}`);
+      default: {
+        const knownCommands = [
+          'prereqs', 'init', 'context', 'display',
+          'lock', 'state', 'parse-return', 'verify-artifacts',
+          'plan', 'assumptions', 'worktree', 'execute',
+          'memory', 'quick', 'merge', 'set-init',
+          'review', 'resume', 'resolve', 'build-agents',
+          'migrate', 'scaffold', 'compact', 'hooks',
+          'ui-contract', 'docs', 'dag'
+        ];
+        const suggestions = suggestCommands(command, knownCommands);
+        if (suggestions.length > 0) {
+          error(`Unknown command: ${command}. Did you mean: ${suggestions.join(', ')}?`);
+        } else {
+          error(`Unknown command: ${command}`);
+        }
         process.stdout.write(USAGE);
         process.exit(1);
+      }
     }
   } catch (err) {
     if (err instanceof CliError) {
@@ -325,4 +396,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { migrateStateVersion };
+module.exports = { migrateStateVersion, levenshteinDistance, suggestCommands };
