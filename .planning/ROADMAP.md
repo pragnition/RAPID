@@ -22,7 +22,7 @@
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
 - **v5.0 OSS Presentation** — 5 sets (shipped 2026-03-31)
 - **v6.0.0 Scale & Quality** — 7 sets (shipped 2026-04-06)
-- **v6.1.0 UX & Onboarding** — 5 sets (in progress)
+- **v6.1.0 UX & Onboarding** — 6 sets (in progress)
 
 ## Active Milestone: v6.1.0 — UX & Onboarding
 
@@ -48,7 +48,11 @@ Systematic UX audit: breadcrumb consistency, error messages, command discoverabi
 **Branch:** `set/backlog-system` | **Dependencies:** none
 New `/rapid:backlog` skill callable by users and agents to capture out-of-scope feature ideas as individual files in `.planning/backlog/`. Integrates with audit-version to surface backlog items as deferred items or new sets. Updates discuss-set and agent prompts to hint at backlog usage.
 
-**Dependency graph:** `{clear-guidance-and-display, audit-handoff, backlog-system}` (parallel) → `{readme-and-onboarding}` (depends on 1) | `{ux-audit}` (depends on 1 & 2)
+### Set 6: docs-housekeeping — Documentation & Housekeeping
+**Branch:** `set/docs-housekeeping` | **Dependencies:** none
+Full housekeeping sweep: bump all version references to v6.1.0 (package.json, README, skill metadata, planning docs), refresh documentation project-wide (references/, guides/, .planning/context/), and clean up any stale version strings or outdated references.
+
+**Dependency graph:** `{clear-guidance-and-display, audit-handoff, backlog-system, docs-housekeeping}` (parallel) → `{readme-and-onboarding}` (depends on 1) | `{ux-audit}` (depends on 1 & 2)
 
 ## Completed Milestone Details
 
