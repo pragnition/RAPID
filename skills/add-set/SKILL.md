@@ -58,6 +58,59 @@ Existing sets:
 
 ---
 
+## Step 1.5: Check for Pending Remediation Artifacts
+
+Check if any remediation artifacts exist from a previous `/rapid:audit-version` run:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+PENDING_DIR=".planning/pending-sets"
+if [ -d "$PENDING_DIR" ]; then
+  ARTIFACTS=$(ls "$PENDING_DIR"/*.json 2>/dev/null | wc -l)
+  if [ "$ARTIFACTS" -gt 0 ]; then
+    echo "PENDING_ARTIFACTS=$ARTIFACTS"
+    ls "$PENDING_DIR"/*.json
+  else
+    echo "PENDING_ARTIFACTS=0"
+  fi
+else
+  echo "PENDING_ARTIFACTS=0"
+fi
+```
+
+**If PENDING_ARTIFACTS is 0:** Skip to Step 2 (standard interactive discovery). This is the graceful fallback path.
+
+**If PENDING_ARTIFACTS is 1:** Read the single artifact file using the Read tool. Parse the JSON to extract `setName`, `scope`, `severity`, and `source`. Display the artifact context:
+
+```
+--- Pending Remediation Found ---
+Set Name: {setName}
+Scope: {scope}
+Severity: {severity}
+Source: {source}
+---------------------------------
+```
+
+Use AskUserQuestion to confirm:
+
+> "A remediation artifact was found from {source}. Use this to pre-populate the new set?"
+> Options: ["Yes -- use artifact", "No -- start fresh"]
+
+- If "Yes": Set `SET_SCOPE = artifact.scope`, `SET_FILES_AND_DEPS = "Files: " + artifact.files.join(", ") + " | Deps: " + artifact.deps.join(", ")`, and `ARTIFACT_SET_NAME = artifact.setName`. Skip Step 2 (interactive discovery) and proceed to Step 3 with the artifact's set name pre-filled.
+- If "No": Proceed to Step 2 as normal.
+
+**If PENDING_ARTIFACTS is more than 1:** Read all artifact files. Present a selection list using AskUserQuestion:
+
+> "Multiple remediation artifacts found. Which one should be used for this set?"
+> Options: One option per artifact formatted as "{setName} -- {scope} ({severity})" plus a final "None -- start fresh" option.
+
+- If user selects an artifact: Pre-populate as described above for the single-artifact case.
+- If user selects "None -- start fresh": Proceed to Step 2 as normal.
+
+Record `CONSUMED_ARTIFACT_NAME` (the setName of the consumed artifact, or null if none was used). This is needed for cleanup in Step 7.
+
+---
+
 ## Step 2: Interactive Discovery (Mini Discuss-Set)
 
 Ask the user 2 focused questions to understand the new set's scope.
@@ -77,6 +130,8 @@ Record the answer as `SET_FILES_AND_DEPS`.
 ---
 
 ## Step 3: Generate Set ID
+
+If `ARTIFACT_SET_NAME` was set in Step 1.5 (from a consumed remediation artifact), propose that name as the set ID instead of deriving one from the scope description. The user still confirms or customizes the ID as normal.
 
 Derive a kebab-case set ID from the user's scope description:
 - Extract key nouns/verbs from the description
@@ -224,6 +279,20 @@ git add ".planning/sets/${SET_ID}/"
 git add ".planning/ROADMAP.md"
 git commit -m "add-set(${SET_ID}): add set to ${MILESTONE_ID}"
 ```
+
+### Clean Up Consumed Artifact
+
+If `CONSUMED_ARTIFACT_NAME` is set (a remediation artifact was used):
+
+```bash
+ARTIFACT_FILE=".planning/pending-sets/${CONSUMED_ARTIFACT_NAME}.json"
+if [ -f "$ARTIFACT_FILE" ]; then
+  rm "$ARTIFACT_FILE"
+  echo "Cleaned up remediation artifact: $ARTIFACT_FILE"
+fi
+```
+
+This ensures consumed artifacts are deleted after the set is successfully committed. If add-set fails before this point, the artifact survives for retry.
 
 ### Display Confirmation
 
