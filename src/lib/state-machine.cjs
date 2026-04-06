@@ -7,6 +7,7 @@ const { acquireLock, isLocked } = require('./lock.cjs');
 const { ProjectState } = require('./state-schemas.cjs');
 const { validateTransition, WAVE_TRANSITIONS, JOB_TRANSITIONS } = require('./state-transitions.cjs');
 const { assignWaves } = require('./dag.cjs');
+const { formatBreadcrumb } = require('./errors.cjs');
 
 const PLANNING_DIR = '.planning';
 const STATE_FILE = 'STATE.json';
@@ -17,9 +18,9 @@ const STATE_PARSE_ERROR = 'STATE_PARSE_ERROR';
 const STATE_VALIDATION_ERROR = 'STATE_VALIDATION_ERROR';
 
 const REMEDIATION_HINTS = {
-  [STATE_FILE_MISSING]: '\nRemediation: Run /rapid:init',
-  [STATE_PARSE_ERROR]: '\nRemediation: Run `git checkout HEAD -- .planning/STATE.json`',
-  [STATE_VALIDATION_ERROR]: '\nRemediation: Run /rapid:health',
+  [STATE_FILE_MISSING]: '/rapid:init',
+  [STATE_PARSE_ERROR]: 'git checkout HEAD -- .planning/STATE.json',
+  [STATE_VALIDATION_ERROR]: '/rapid:init --mode reinitialize',
 };
 
 /**
@@ -32,7 +33,8 @@ const REMEDIATION_HINTS = {
  */
 function createStateError(code, message, details) {
   const hint = REMEDIATION_HINTS[code] || '';
-  const err = new Error(message + hint);
+  const fullMessage = hint ? formatBreadcrumb(message, hint) : message;
+  const err = new Error(fullMessage);
   err.code = code;
   if (details !== undefined) {
     err.details = details;
