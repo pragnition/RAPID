@@ -381,6 +381,24 @@ Next steps:
 
 Where `{setIndex}` is the numeric index of the set resolved at Step 0.
 
+Display the completion footer:
+
+**If `POST_MERGE=true`:**
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:unit-test {setIndex} --post-merge" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review [done] > merge"
+```
+
+**Standard path:**
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:unit-test {setIndex}" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review [done] > merge"
+```
+
 Then exit. Do NOT prompt for selection.
 
 ## Log Issue Command
