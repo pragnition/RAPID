@@ -154,24 +154,64 @@ This is read-only -- no state modification.
 
 ### Edge Cases
 
-- **No sets exist**: Display "No sets found. Run `/rapid:init` to get started."
-- **All sets merged**: Display "All sets merged! Run `/rapid:new-version` to start the next milestone."
 - **STATE.json missing**: Already handled in Step 2 -- display error message and skip to Step 4 fallback.
+
+- **No sets in milestone**: Display "No sets found in this milestone. Run `/rapid:add-set` to create one, or `/rapid:new-version` to start a new milestone."
+
+- **All sets pending** (sets exist but none have been started): Display a "Getting Started" guide:
+
+  ```markdown
+  ### Getting Started
+
+  Your project has {N} sets ready to develop. The RAPID lifecycle for each set:
+
+  1. `/rapid:start-set N` -- initialize a set for development
+  2. `/rapid:discuss-set N` -- capture implementation vision
+  3. `/rapid:plan-set N` -- research and plan waves
+  4. `/rapid:execute-set N` -- implement the plan
+  5. `/rapid:review N` -- review before merge
+  6. `/rapid:merge N` -- merge into main
+
+  Start with `/rapid:start-set 1` to begin your first set.
+  ```
+
+  Then continue to Step 4 (which will offer `/rapid:start-set` actions for each pending set).
+
+- **All sets merged**: Display "All sets merged! Run `/rapid:new-version` to start the next milestone."
 
 ## Step 4: Per-Set Next Actions via AskUserQuestion
 
 Based on each set's status, determine the suggested v6.1.0 next action:
 
-| Set Status | Suggested Action         |
-| ---------- | ------------------------ |
-| pending    | `/rapid:start-set {N}`   |
-| discussed  | `/rapid:discuss-set {N}` |
-| planned    | `/rapid:plan-set {N}`    |
-| executed   | `/rapid:execute-set {N}` |
-| complete   | `/rapid:review {N}`      |
-| merged     | (done)                   |
+| Set Status | Suggested Action           |
+| ---------- | -------------------------- |
+| pending    | `/rapid:start-set {N}`     |
+| discussed  | `/rapid:plan-set {N}`      |
+| planned    | `/rapid:execute-set {N}`   |
+| executed   | `/rapid:review {N}`        |
+| complete   | `/rapid:merge {N}`         |
+| merged     | (done)                     |
 
 Where `{N}` is the 1-based numeric index of the set.
+
+### Progress Insights
+
+Before presenting actionable options, analyze the set data for patterns and display relevant insights. Only display insights that apply -- if none apply, skip this subsection entirely (no empty heading).
+
+**Wave advancement:** If DAG.json was loaded in Step 2 and all sets in a DAG wave have status `merged` or `complete`, display:
+> "Wave {W} sets are all complete. Wave {W+1} sets are ready to start."
+
+Replace {W} with the wave number. Only display for the most recently completed wave (not historical ones).
+
+**Batch opportunity:** If 2 or more non-merged sets share the same status, display:
+> "{count} sets are at '{status}' status. Consider batch-processing them with the same command."
+
+Only display this once for the most common shared status.
+
+**Near completion:** If only 1 set remains unmerged, display:
+> "Almost there! Only '{set-name}' remains before milestone completion."
+
+Display at most 2 insights to keep the output concise. Prioritize in order: near completion > wave advancement > batch opportunity.
 
 ### Present actions
 

@@ -1277,6 +1277,28 @@ Display a final summary:
 
 ```
 
+## Step 11.5: Workflow Guide
+
+Display the RAPID lifecycle as a compact reference:
+
+```markdown
+### What's Next?
+
+The RAPID lifecycle for each set:
+
+1. `/rapid:status` -- see your project dashboard
+2. `/rapid:start-set N` -- initialize a set for development
+3. `/rapid:discuss-set N` -- capture implementation vision
+4. `/rapid:plan-set N` -- research and plan waves
+5. `/rapid:execute-set N` -- implement the plan
+6. `/rapid:review N` -- review before merge
+7. `/rapid:merge N` -- merge into main
+
+Start with `/rapid:start-set 1` to begin your first set.
+```
+
+This is pure markdown output -- no bash commands. The agent displays this text exactly as shown.
+
 ## Step 12: Footer
 
 Display the completion footer. The next command depends on team-size and set availability:
