@@ -59,6 +59,46 @@ For full setup details, see [docs/setup.md](docs/setup.md).
 
 ---
 
+## Session Management
+
+RAPID commands spawn specialized agents that consume significant context. After each command completes, the context window is filled with agent output, planning artifacts, and execution logs. Running `/clear` between commands resets the context window so the next command starts fresh, focused on its own task rather than carrying stale context from the previous step. This is the core mechanism that prevents context rot -- the degradation that occurs when too much prior conversation competes for the model's attention.
+
+### The Footer Box
+
+After every lifecycle command that produces artifacts, RAPID displays a bordered box containing:
+
+- "Run /clear before continuing"
+- The suggested next command (e.g., "Next: /rapid:plan-set 1")
+- An optional progress breadcrumb showing the current stage
+
+This footer is produced by `renderFooter()` in `src/lib/display.cjs`.
+
+### Commands That Show the Footer (17 of 28)
+
+All core lifecycle commands: init, start-set, discuss-set, plan-set, execute-set, review, merge. Review sub-pipeline: unit-test, bug-hunt, uat. Project management: new-version, add-set. Generation: scaffold, audit-version, branding, documentation, quick, bug-fix.
+
+### Commands That Do NOT Show the Footer (10 of 28)
+
+Informational: help, status, assumptions. Setup and maintenance: install, cleanup, pause, resume, context, migrate, register-web. These commands produce no artifacts and consume minimal context, so clearing after them is unnecessary.
+
+### The Pattern in Practice
+
+A typical session looks like this:
+
+```
+/rapid:start-set 1
+/clear
+/rapid:discuss-set 1
+/clear
+/rapid:plan-set 1
+```
+
+If you skip `/clear`, RAPID still works -- but command quality degrades as the session gets longer. The footer is a strong recommendation, not a hard gate.
+
+For the technical specification of which skills include footers and why, see the CLEAR-POLICY in the planning directory.
+
+---
+
 ## Core Lifecycle
 
 These commands form the linear workflow from project initialization to merge:
