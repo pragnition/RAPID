@@ -366,28 +366,24 @@ Verification: {PASS/PASS_WITH_GAPS/FAIL (overridden)}
 Agent spawns: {3 or 4}
 ```
 
-### Next Step
+### Footer
+
+Display the completion footer:
 
 **If `GAPS_MODE=true`:**
 
-> **Next step:** `/rapid:execute-set {SET_INDEX} --gaps`
-
-**If `GAPS_MODE=false`:**
-
-> **Next step:** `/rapid:execute-set {SET_INDEX}`
-
-### Progress Breadcrumb
-
-Display the progress breadcrumb:
-
-**If `GAPS_MODE=true`:**
-```
-init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge [done] > gap-closure plan [done]
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:execute-set {SET_INDEX} --gaps" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge [done] > gap-closure plan [done]"
 ```
 
 **If `GAPS_MODE=false`:**
-```
-init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set > review > merge
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:execute-set {SET_INDEX}" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set > review > merge"
 ```
 
 ---
