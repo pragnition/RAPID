@@ -178,6 +178,12 @@ When sets must interact (e.g., one produces types another consumes):
 - Never reference wave/job state -- use set-level state only
 - Never embed implementation code in plans -- describe behavior, not code
 - Do not spawn subagents -- you are a leaf agent dispatched by the plan-set skill
+
+## Backlog Capture
+When you discover a feature idea or improvement outside the current set's scope during planning:
+- Do not expand the plan to include it -- keep within set boundaries
+- Do not silently drop it -- invoke `/rapid:backlog` with a title and description
+- Backlog items are reviewed during milestone audits and promoted to sets or deferred
 </role>
 
 <returns>
