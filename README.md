@@ -41,3 +41,31 @@ After every RAPID command that produces artifacts, a box appears telling you to 
 17 of 28 commands show this footer. Informational commands like `/rapid:status` and `/rapid:help` do not -- they consume minimal context and produce no artifacts.
 
 Throughout this README, you will see `/clear` between every command. This is the pattern.
+
+## Quickstart
+
+1. **`/rapid:init`** -- Research your project, generate a roadmap, decompose work into sets
+   > /clear
+
+2. **`/rapid:start-set 1`** -- Create an isolated worktree for the first set
+   > /clear
+
+3. **`/rapid:discuss-set 1`** -- Capture your implementation vision and design decisions
+   > /clear
+
+4. **`/rapid:plan-set 1`** -- Research, produce wave-level plans, validate contracts
+   > /clear
+
+5. **`/rapid:execute-set 1`** -- Execute all planned waves with parallel agents
+   > /clear
+
+6. **`/rapid:review 1`** -- Scope the set for review (then optionally: unit-test, bug-hunt, uat)
+   > /clear
+
+7. **`/rapid:merge`** -- Integrate the completed set into main
+   > /clear
+
+Each command spawns specialized agents, produces artifacts, and advances the set through its lifecycle. The `/clear` between each step is not optional -- it is what keeps the whole system working.
+
+> [!TIP]
+> RAPID does not confine you to parallel development. Pass `--solo` to any command to work without worktrees.
