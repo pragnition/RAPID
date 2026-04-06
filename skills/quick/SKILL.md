@@ -260,8 +260,15 @@ Quick task {NEXT_ID} complete.
 Directory: {TASK_DIR}
 ```
 
+Display the completion footer:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:status"
+```
+
 Do NOT add to STATE.json sets array (quick tasks are not sets -- avoids polluting /status).
-Do NOT suggest a next action (fire-and-forget -- user is done).
 
 ---
 
