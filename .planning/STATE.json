@@ -606,10 +606,15 @@
           "waves": [],
           "name": "General UX Audit & Polish",
           "branch": "set/ux-audit"
+        },
+        {
+          "id": "backlog-system",
+          "status": "pending",
+          "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-06T10:21:32.214Z",
+  "lastUpdatedAt": "2026-04-06T10:47:31.610Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
