@@ -581,7 +581,7 @@
       "sets": [
         {
           "id": "clear-guidance-and-display",
-          "status": "planned",
+          "status": "merged",
           "waves": [],
           "name": "Clear Guidance & Display Footer",
           "branch": "set/clear-guidance-and-display"
@@ -610,6 +610,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-06T06:34:52.870Z",
+  "lastUpdatedAt": "2026-04-06T07:01:58.152Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
