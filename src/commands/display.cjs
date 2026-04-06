@@ -3,7 +3,7 @@
 const { CliError } = require('../lib/errors.cjs');
 
 function handleDisplay(subcommand, args) {
-  const { renderBanner } = require('../lib/display.cjs');
+  const { renderBanner, renderFooter } = require('../lib/display.cjs');
 
   switch (subcommand) {
     case 'banner': {
@@ -15,6 +15,22 @@ function handleDisplay(subcommand, args) {
       // Banner outputs raw formatted text, NOT JSON
       // This is intentional -- banners are visual output, not data
       process.stdout.write(renderBanner(stage, target) + '\n');
+      break;
+    }
+    case 'footer': {
+      const nextCommand = args[0];
+      if (!nextCommand) {
+        throw new CliError('Usage: rapid-tools display footer <next-command> [--breadcrumb "<text>"] [--no-clear]');
+      }
+      const remaining = args.slice(1);
+      let breadcrumb;
+      const bcIndex = remaining.indexOf('--breadcrumb');
+      if (bcIndex !== -1 && bcIndex + 1 < remaining.length) {
+        breadcrumb = remaining[bcIndex + 1];
+      }
+      const clearRequired = !remaining.includes('--no-clear');
+      const result = renderFooter(nextCommand, { breadcrumb, clearRequired });
+      process.stdout.write(result + '\n');
       break;
     }
     default:
