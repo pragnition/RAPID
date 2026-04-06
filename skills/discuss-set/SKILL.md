@@ -437,17 +437,14 @@ git commit -m "discuss-set(${SET_ID}): capture set implementation vision"
 
 ---
 
-## Step 9: Next Steps
+## Step 9: Footer
 
-Display next step:
+Display the completion footer:
 
-> **Next step:** `/rapid:plan-set {SET_INDEX}`
-> _(Plan set {SET_ID})_
-
-Display progress breadcrumb:
-
-```
-init [done] > start-set [done] > discuss-set [done] > plan-set > execute-set > review > merge
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:plan-set {SET_INDEX}" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set > execute-set > review > merge"
 ```
 
 ---
