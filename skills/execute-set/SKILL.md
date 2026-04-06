@@ -446,13 +446,20 @@ fi
 
 Display gap-closure summary: "Gap-closure for set '{SET_ID}' complete. {N} gap-closure waves executed."
 
-Adjust the next-step suggestion based on verification results:
-- If all gaps resolved: `> **Next step:** /rapid:review {SET_INDEX}` (or note that set is already merged)
-- If gaps remain: `> **Next step:** /rapid:plan-set {SET_INDEX} --gaps` (plan another round)
+Display the completion footer (next command depends on gap status):
 
-Display progress breadcrumb:
+If all gaps resolved:
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:review {SET_INDEX}" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge [done] > gap-closure [done]"
 ```
-init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge [done] > gap-closure [done]
+
+If gaps remain:
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:plan-set {SET_INDEX} --gaps" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge [done] > gap-closure [done]"
 ```
 
 **Skip the rest of Step 6 below** (state transition, solo auto-merge, normal commit, normal summary).
@@ -549,14 +556,12 @@ Set '{SET_ID}' execution complete.
 Waves: {completed}/{total}
 ```
 
-Display next step:
+Display the completion footer:
 
-> **Next step:** `/rapid:review {SET_INDEX}`
-
-Display progress breadcrumb:
-
-```
-init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:review {SET_INDEX}" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review > merge"
 ```
 
 ---
