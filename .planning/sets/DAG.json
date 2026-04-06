@@ -39,6 +39,24 @@
     {
       "id": "backlog-system",
       "wave": 1,
+      "status": "pending",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
+    },
+    {
+      "id": "docs-housekeeping",
+      "wave": 1,
+      "status": "pending",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
+    },
+    {
+      "id": "ux-first-run",
+      "wave": 1,
       "status": "pending"
     }
   ],
@@ -50,7 +68,9 @@
         "audit-handoff",
         "readme-and-onboarding",
         "ux-audit",
-        "backlog-system"
+        "backlog-system",
+        "docs-housekeeping",
+        "ux-first-run"
       ],
       "checkpoint": {
         "contracts": [
@@ -58,22 +78,26 @@
           "rapid://contracts/audit-handoff",
           "rapid://contracts/readme-and-onboarding",
           "rapid://contracts/ux-audit",
-          "rapid://contracts/backlog-system"
+          "rapid://contracts/backlog-system",
+          "rapid://contracts/docs-housekeeping",
+          "rapid://contracts/ux-first-run"
         ],
         "artifacts": [
           ".planning/sets/clear-guidance-and-display/CONTRACT.json",
           ".planning/sets/audit-handoff/CONTRACT.json",
           ".planning/sets/readme-and-onboarding/CONTRACT.json",
           ".planning/sets/ux-audit/CONTRACT.json",
-          ".planning/sets/backlog-system/CONTRACT.json"
+          ".planning/sets/backlog-system/CONTRACT.json",
+          ".planning/sets/docs-housekeeping/CONTRACT.json",
+          ".planning/sets/ux-first-run/CONTRACT.json"
         ]
       }
     }
   },
   "metadata": {
     "created": "2026-04-06",
-    "totalSets": 5,
+    "totalSets": 7,
     "totalWaves": 1,
-    "maxParallelism": 5
+    "maxParallelism": 7
   }
 }

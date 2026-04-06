@@ -1,5 +1,26 @@
 {
   "version": 1,
   "generated": "2026-04-06",
-  "ownership": {}
+  "ownership": {
+    "skills/backlog/SKILL.md": "backlog-system",
+    "skills/audit-version/SKILL.md": "backlog-system",
+    "skills/discuss-set/SKILL.md": "backlog-system",
+    "src/modules/roles/role-executor.md": "backlog-system",
+    "src/modules/roles/role-planner.md": "backlog-system",
+    "package.json": "docs-housekeeping",
+    ".claude-plugin/plugin.json": "docs-housekeeping",
+    ".planning/config.json": "docs-housekeeping",
+    ".planning/STATE.json": "docs-housekeeping",
+    "README.md": "docs-housekeeping",
+    "DOCS.md": "docs-housekeeping",
+    "technical_documentation.md": "docs-housekeeping",
+    "skills/help/SKILL.md": "docs-housekeeping",
+    "skills/status/SKILL.md": "docs-housekeeping",
+    "skills/install/SKILL.md": "docs-housekeeping",
+    ".github/ISSUE_TEMPLATE/feature-request.yml": "docs-housekeeping",
+    ".github/ISSUE_TEMPLATE/bug-report.yml": "docs-housekeeping",
+    "CONTRIBUTING.md": "docs-housekeeping",
+    "docs/setup.md": "docs-housekeeping",
+    "docs/CHANGELOG.md": "docs-housekeeping"
+  }
 }

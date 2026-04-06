@@ -101,7 +101,7 @@ describe('structural: display footer in all skills', () => {
 
   const FOOTER_EXCLUDED_SKILLS = [
     'help', 'install', 'status', 'cleanup', 'pause', 'resume',
-    'assumptions', 'context', 'migrate', 'register-web',
+    'assumptions', 'context', 'migrate', 'register-web', 'backlog',
   ];
 
   for (const name of FOOTER_REQUIRED_SKILLS) {

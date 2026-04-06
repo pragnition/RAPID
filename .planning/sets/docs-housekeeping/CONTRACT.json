@@ -4,5 +4,21 @@
   "created": "2026-04-06",
   "exports": { "functions": [], "types": [] },
   "imports": { "functions": [], "types": [] },
-  "fileOwnership": []
+  "fileOwnership": [
+    "package.json",
+    ".claude-plugin/plugin.json",
+    ".planning/config.json",
+    ".planning/STATE.json",
+    "README.md",
+    "DOCS.md",
+    "technical_documentation.md",
+    "skills/help/SKILL.md",
+    "skills/status/SKILL.md",
+    "skills/install/SKILL.md",
+    ".github/ISSUE_TEMPLATE/feature-request.yml",
+    ".github/ISSUE_TEMPLATE/bug-report.yml",
+    "CONTRIBUTING.md",
+    "docs/setup.md",
+    "docs/CHANGELOG.md"
+  ]
 }
