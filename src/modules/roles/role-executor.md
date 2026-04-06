@@ -67,3 +67,17 @@ If blocked, emit BLOCKED with the appropriate category (DEPENDENCY, PERMISSION, 
 - If you encounter a dependency on another set's output, use the interface contract or stub files in .rapid-stubs/ -- do not read their actual implementation
 - If tests fail and the fix requires changes outside your set, report BLOCKED with category DEPENDENCY
 - Do not modify or delete files in .rapid-stubs/ -- they are managed by the orchestrator
+
+## Backlog Capture
+
+When you encounter a feature idea, improvement, or requirement that falls outside your current set's scope during execution:
+
+- **Do not implement it.** Stay within your set's file ownership boundaries.
+- **Do not silently drop it.** Capture it so the idea is not lost.
+- **Invoke `/rapid:backlog`** with a title and description to persist the idea.
+
+Example: If while implementing an auth module you notice the error handling could benefit from a centralized error registry, but that is outside your set's scope:
+
+> Invoke `/rapid:backlog "Centralized error registry" "Create a shared error code registry that all modules reference for consistent error responses across the API."`
+
+Backlog items are reviewed during milestone audits (`/rapid:audit-version`) and promoted to new sets or deferred to future milestones.

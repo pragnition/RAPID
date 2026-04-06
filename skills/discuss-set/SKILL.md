@@ -475,6 +475,7 @@ Show what is done, what failed, and what to run next.
 - **Consolidated questions with options:** Present all gray area batches as questions within a single AskUserQuestion call. Each question has prefilled options including "Claude decides".
 - **"Claude decides" option:** Available as a prefilled option per question. Unselected gray areas in Step 5 automatically default to Claude's discretion.
 - **Deferred decisions:** Out-of-scope ideas raised during discussion are captured in DEFERRED.md, never silently dropped.
+- **Backlog capture:** When out-of-scope feature ideas emerge during discussion that are too concrete for DEFERRED.md (which tracks deferred decisions), suggest using `/rapid:backlog` to capture them as backlog items for future milestone review.
 - **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md and an empty DEFERRED.md without user interaction.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
 - **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set. Includes decision rationale and deferred items summary.

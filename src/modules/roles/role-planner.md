@@ -262,3 +262,17 @@ Return a JSON array of set definition objects. Each object follows this exact st
 - **Every set must have at least one task with a testable acceptance criterion** -- "implement the thing" is not testable; "endpoint returns 200 with user object on valid request" is testable
 - **Wave 1 should be foundational** -- types, schemas, core utilities. Feature sets go in Wave 2+. Integration/glue sets go in the final wave
 - **Contract stubs enable parallelism** -- sets code against each other's contracts, not implementations. This is the key insight that enables parallel worktrees
+
+## Backlog Capture
+
+When you discover a feature idea or improvement opportunity that falls outside the current set's scope during planning:
+
+- **Do not expand the plan to include it.** Keep the plan within the set's defined boundaries.
+- **Do not silently drop it.** Capture it so the idea is not lost.
+- **Invoke `/rapid:backlog`** with a title and description to persist the idea for future review.
+
+Example: If while planning a database migration set you realize the project could benefit from a query caching layer, but that is outside the set's scope:
+
+> Invoke `/rapid:backlog "Query caching layer" "Add a caching layer for frequently-accessed database queries to reduce load on the primary database."`
+
+Backlog items are reviewed during milestone audits (`/rapid:audit-version`) and promoted to new sets or deferred to future milestones.
