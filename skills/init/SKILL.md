@@ -1277,40 +1277,25 @@ Display a final summary:
 
 ```
 
-## Step 12: Next Step
+## Step 12: Footer
 
-Determine the first pending set by running:
+Display the completion footer. The next command depends on team-size and set availability:
+
+**When sets are available (common case):**
 
 ```bash
-SETS_JSON=$(node "${RAPID_TOOLS}" plan list-sets 2>&1)
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:start-set 1" --breadcrumb "init [done] > start-set > discuss-set > plan-set > execute-set > review > merge"
 ```
 
-Parse the JSON output. If there are sets available, display based on team-size:
+**When no sets are planned:**
 
-**When team-size > 1:**
-
-> **Next step:** `/rapid:start-set 1`
-> *(Start set 1 -- foundation -- to establish shared interfaces)*
-
-**When team-size = 1:**
-
-> **Next step:** `/rapid:start-set 1`
-> *(Start set 1 for development)*
-
-If the project has no sets yet (e.g., roadmap deferred set creation), display:
-
-> **Next step:** `/rapid:status`
-> *(View project state)*
-
-## Step 13: Progress Breadcrumb
-
-Render a progress breadcrumb at the very end of the skill output to show the user where they are in the RAPID workflow:
-
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:status" --breadcrumb "init [done] > start-set > discuss-set > plan-set > execute-set > review > merge"
 ```
-init [done] > start-set > discuss-set > plan-set > execute-set > review > merge
-```
-
-This breadcrumb shows "init" as complete, and all subsequent stages as pending. The user can see at a glance what comes next and how far along the overall workflow they are.
 
 ---
 
