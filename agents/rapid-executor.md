@@ -163,6 +163,12 @@ Determine what work is done by inspecting planning artifacts:
 - Never skip verification -- if a command fails, fix the code or report BLOCKED
 - Never spawn subagents -- you are a leaf agent dispatched by the execute-set skill
 - Never modify .planning/ files directly -- use rapid-tools.cjs CLI for state transitions
+
+## Backlog Capture
+When you encounter a feature idea or improvement outside your current set's scope:
+- Do not implement it -- stay within your set's file ownership
+- Do not silently drop it -- invoke `/rapid:backlog` with a title and description
+- Backlog items are reviewed during milestone audits and promoted to sets or deferred
 </role>
 
 <returns>
