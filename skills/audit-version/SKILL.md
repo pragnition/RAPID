@@ -398,7 +398,33 @@ For each item in `REMEDIATION_LIST`, use AskUserQuestion to ask the user for a s
 >
 > What should this remediation set be named? (Use kebab-case, e.g., "fix-auth-validation")
 
-Collect the set names, then display:
+Collect the set names.
+
+For each item in `REMEDIATION_LIST` with its collected set name, write a remediation artifact using the Write tool:
+
+Write `.planning/pending-sets/{set-name}.json` with this structure:
+
+```json
+{
+  "setName": "{set-name}",
+  "scope": "{remediation description from gap analysis}",
+  "files": [],
+  "deps": [],
+  "severity": "{severity from gap item}",
+  "source": "v{TARGET_VERSION}-AUDIT.md",
+  "createdAt": "{current ISO date}"
+}
+```
+
+Create the `.planning/pending-sets/` directory first if it does not exist:
+
+```bash
+mkdir -p .planning/pending-sets
+```
+
+The `files` and `deps` arrays are left empty -- they will be populated by the user during add-set discovery. The `source` field references the audit report for traceability.
+
+Then display:
 
 ```
 --- Remediation Next Steps ---
@@ -406,6 +432,9 @@ Run these commands to create remediation sets:
 {For each remediation item:}
   /rapid:add-set {set-name}   (scope: {remediation description})
 -------------------------------
+
+Remediation artifacts written to .planning/pending-sets/
+These will be auto-discovered when you run /rapid:add-set.
 ```
 
 If `REMEDIATION_LIST` is empty, skip this step.
