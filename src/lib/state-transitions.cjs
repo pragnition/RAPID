@@ -1,5 +1,7 @@
 'use strict';
 
+const { formatBreadcrumb } = require('./errors.cjs');
+
 const SET_TRANSITIONS = {
   pending:     ['discussed', 'planned'],
   discussed:   ['planned', 'discussed'],
@@ -34,19 +36,26 @@ function validateTransition(currentStatus, nextStatus, transitionMap) {
   const allowed = map[currentStatus];
   if (allowed === undefined) {
     throw new Error(
-      `Unknown status "${currentStatus}". Valid statuses: ${Object.keys(map).join(', ')}`
+      formatBreadcrumb(
+        `Unknown status "${currentStatus}". Valid statuses: ${Object.keys(map).join(', ')}`,
+        '/rapid:status'
+      )
     );
   }
   if (!allowed.includes(nextStatus)) {
     if (allowed.length === 0) {
       throw new Error(
-        `Invalid transition: "${currentStatus}" -> "${nextStatus}". ` +
-        `"${currentStatus}" is a terminal state with no valid transitions.`
+        formatBreadcrumb(
+          `Invalid transition: "${currentStatus}" -> "${nextStatus}". "${currentStatus}" is a terminal state with no valid transitions`,
+          '/rapid:status'
+        )
       );
     }
     throw new Error(
-      `Invalid transition: "${currentStatus}" -> "${nextStatus}". ` +
-      `Valid transitions from "${currentStatus}": [${allowed.join(', ')}]`
+      formatBreadcrumb(
+        `Invalid transition: "${currentStatus}" -> "${nextStatus}". Valid transitions from "${currentStatus}": [${allowed.join(', ')}]`,
+        '/rapid:status'
+      )
     );
   }
 }
