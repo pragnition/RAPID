@@ -125,23 +125,37 @@ function renderBanner(stage, target) {
 function renderFooter(nextCommand, options = {}) {
   const { breadcrumb, clearRequired = true } = options;
 
-  const lines = [];
+  const noColor = process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '';
+
+  // Box-drawing characters (or ASCII fallbacks for NO_COLOR)
+  const chars = noColor
+    ? { tl: '+', tr: '+', bl: '+', br: '+', h: '-', v: '|' }
+    : { tl: '╔', tr: '╗', bl: '╚', br: '╝', h: '═', v: '║' };
+
+  const contentLines = [];
   if (clearRequired) {
-    lines.push('  Run /clear before continuing');
+    contentLines.push('Run /clear before continuing');
   }
-  lines.push(`  Next: ${nextCommand}`);
+  contentLines.push(`Next: ${nextCommand}`);
   if (breadcrumb && breadcrumb.length > 0) {
-    lines.push(`  ${breadcrumb}`);
+    contentLines.push(breadcrumb);
   }
 
-  const maxLen = Math.max(...lines.map(l => l.length));
-  const width = Math.max(maxLen + 4, 40);
+  const maxLen = Math.max(...contentLines.map(l => l.length));
+  const innerWidth = Math.max(maxLen + 4, 40); // 2 padding each side
 
-  // NO_COLOR support -- use ASCII hyphen instead of box-drawing character
-  const sepChar = (process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '') ? '-' : '─';
-  const separator = sepChar.repeat(width);
+  const topBorder = `${chars.tl}${chars.h.repeat(innerWidth)}${chars.tr}`;
+  const botBorder = `${chars.bl}${chars.h.repeat(innerWidth)}${chars.br}`;
+  const padLine = (text) => `${chars.v}  ${text.padEnd(innerWidth - 2)}${chars.v}`;
+  const emptyLine = `${chars.v}${' '.repeat(innerWidth)}${chars.v}`;
 
-  return `\n${separator}\n${lines.join('\n')}\n${separator}`;
+  const boxLines = [topBorder, emptyLine];
+  for (const line of contentLines) {
+    boxLines.push(padLine(line));
+  }
+  boxLines.push(emptyLine, botBorder);
+
+  return '\n' + boxLines.join('\n');
 }
 
 module.exports = { renderBanner, renderFooter, STAGE_VERBS, STAGE_BG };

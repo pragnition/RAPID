@@ -18,7 +18,9 @@ describe('renderFooter', () => {
     assert.equal(typeof out, 'string');
     assert.ok(out.includes('Run /clear before continuing'), 'should include /clear reminder');
     assert.ok(out.includes('Next: /rapid:plan-set 1'), 'should include next command');
-    assert.ok(out.includes('\u2500'), 'should include box-drawing separator');
+    assert.ok(out.includes('╔'), 'should include box-drawing top-left corner');
+    assert.ok(out.includes('╚'), 'should include box-drawing bottom-left corner');
+    assert.ok(out.includes('║'), 'should include box-drawing vertical border');
     assert.ok(!out.includes('\x1b'), 'should NOT contain ANSI escape codes');
   });
 
@@ -33,8 +35,8 @@ describe('renderFooter', () => {
 
   it('omits breadcrumb when not provided', () => {
     const out = renderFooter('/rapid:plan-set 1');
-    // Split by separator to get content lines
-    const lines = out.split('\n').filter(l => l.trim().length > 0 && !l.match(/^[─-]+$/));
+    // Filter to content lines only (exclude borders and empty padding lines)
+    const lines = out.split('\n').filter(l => l.trim().length > 0 && l.includes('║') && l.trim() !== '║' && !/^║\s+║$/.test(l));
     assert.equal(lines.length, 2, 'should have exactly 2 content lines (clear + next)');
   });
 
@@ -44,25 +46,28 @@ describe('renderFooter', () => {
     assert.ok(out.includes('Next: /rapid:plan-set 1'), 'should still include next command');
   });
 
-  it('NO_COLOR uses ASCII separator', () => {
+  it('NO_COLOR uses ASCII box characters', () => {
     process.env.NO_COLOR = '1';
     const out = renderFooter('/rapid:plan-set 1');
-    assert.ok(out.includes('-'), 'should include ASCII hyphen separator');
-    assert.ok(!out.includes('\u2500'), 'should NOT include box-drawing character');
+    assert.ok(out.includes('+'), 'should include ASCII corner character');
+    assert.ok(out.includes('|'), 'should include ASCII vertical border');
+    assert.ok(out.includes('-'), 'should include ASCII horizontal border');
+    assert.ok(!out.includes('╔'), 'should NOT include box-drawing corner');
+    assert.ok(!out.includes('║'), 'should NOT include box-drawing vertical');
   });
 
-  it('separator width adapts to content', () => {
+  it('box width adapts to content', () => {
     const shortOut = renderFooter('/rapid:x');
     const longOut = renderFooter('/rapid:execute-set some-very-long-set-name-here');
 
-    // Extract separator lines
-    const shortSep = shortOut.split('\n').find(l => /^[─]+$/.test(l));
-    const longSep = longOut.split('\n').find(l => /^[─]+$/.test(l));
+    // Extract top border lines (╔═══╗)
+    const shortBorder = shortOut.split('\n').find(l => l.startsWith('╔'));
+    const longBorder = longOut.split('\n').find(l => l.startsWith('╔'));
 
-    assert.ok(shortSep, 'short output should have separator');
-    assert.ok(longSep, 'long output should have separator');
-    assert.ok(longSep.length > shortSep.length, 'longer content should produce longer separator');
-    assert.ok(shortSep.length >= 40, 'separator should be at least 40 characters');
+    assert.ok(shortBorder, 'short output should have top border');
+    assert.ok(longBorder, 'long output should have top border');
+    assert.ok(longBorder.length > shortBorder.length, 'longer content should produce wider box');
+    assert.ok(shortBorder.length >= 42, 'box should be at least 42 characters wide (40 inner + corners)');
   });
 
   it('all three lines present with full options', () => {
@@ -70,7 +75,7 @@ describe('renderFooter', () => {
       breadcrumb: 'init [done] > start-set [done]',
       clearRequired: true,
     });
-    const lines = out.split('\n').filter(l => l.trim().length > 0 && !l.match(/^[─-]+$/));
+    const lines = out.split('\n').filter(l => l.trim().length > 0 && l.includes('║') && !/^║\s+║$/.test(l));
     assert.equal(lines.length, 3, 'should have 3 content lines');
 
     // Verify order: clear, next, breadcrumb
