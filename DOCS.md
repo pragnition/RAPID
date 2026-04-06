@@ -9,6 +9,7 @@ This is the central reference hub for RAPID. For a quickstart overview, see [REA
 ## Table of Contents
 
 - [Installation](#installation) -- [docs/setup.md](docs/setup.md)
+- [Session Management](#session-management) -- /clear pattern, footer behavior, context hygiene
 - [Core Lifecycle](#core-lifecycle)
   - [Getting Started](#getting-started): install, init
   - [Set Lifecycle](#set-lifecycle): start-set, discuss-set, plan-set, execute-set
@@ -50,7 +51,7 @@ The `setup.sh` script installs dependencies, configures `RAPID_TOOLS`, and runs 
 
 ### Requirements
 
-- **Node.js 20+** (runtime for tool libraries)
+- **Node.js 22+** (runtime for tool libraries)
 - **git 2.30+** (required for worktree support)
 - **RAPID_TOOLS env var** must be set (both installation methods handle this)
 - npm dependencies are bundled in `node_modules/`
