@@ -646,6 +646,14 @@ Display the available next steps:
 > - `/rapid:status` -- *View project state*
 > - `/rapid:new-version` -- *Start planning next version (if all sets merged)*
 
+Display the completion footer:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:cleanup" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set [done] > review [done] > merge [done]"
+```
+
 ## Important Notes
 
 - **Solo sets skip the entire merge pipeline.** Solo sets have `solo: true` in the registry. Solo sets are auto-merged to `merged` status during execute-set Step 6. If a user runs `/rapid:merge` on a solo set, the pipeline detects the `merged` status and displays an informational message: "Set '{name}' is a solo set -- already merged automatically after execution. No merge needed." The merge execute command also handles solo sets gracefully by returning `{ merged: true, solo: true }` immediately without git operations. No subagent is dispatched, no conflict detection runs, no integration tests are needed for solo-only waves.
