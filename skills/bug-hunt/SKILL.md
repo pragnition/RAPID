@@ -492,6 +492,14 @@ Mark the bug-hunt stage as complete:
 node "${RAPID_TOOLS}" review mark-stage "${SET_NAME}" bug-hunt {verdict}
 ```
 
+Display the completion footer:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:uat {setIndex}" --breadcrumb "review [done] > unit-test [done] > bug-hunt [done] > uat"
+```
+
 ## Important Notes
 
 - **Hunter-Advocate-Judge pattern.** Each cycle follows: hunters find bugs -> devil's advocate challenges -> judge rules. This adversarial process reduces false positives.
