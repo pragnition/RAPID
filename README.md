@@ -69,3 +69,37 @@ Each command spawns specialized agents, produces artifacts, and advances the set
 
 > [!TIP]
 > RAPID does not confine you to parallel development. Pass `--solo` to any command to work without worktrees.
+
+## Your First Project
+
+This walkthrough assumes you have installed RAPID and have a project you want to work on.
+
+**Step 1: Install and configure.**
+Run `claude plugin add pragnition/RAPID`, then `/rapid:install` inside Claude Code. Install configures the RAPID_TOOLS environment variable and builds the agent files your project needs.
+> /clear
+
+**Step 2: Initialize your project.**
+Navigate to your project directory in Claude Code and run `/rapid:init`. RAPID will ask you questions about your project, then spawn 6 research agents in parallel to analyze your codebase. You will be presented with a roadmap of sets -- independent workstreams that can be developed in parallel. Approve or adjust the roadmap before continuing.
+> /clear
+
+**Step 3: Start your first set.**
+Run `/rapid:start-set 1`. This creates an isolated copy of your repo (a git worktree) where the first set's work will happen. No changes touch your main branch until you explicitly merge.
+> /clear
+
+**Step 4: Discuss implementation.**
+Run `/rapid:discuss-set 1`. RAPID identifies design decisions where multiple valid approaches exist and asks for your input. Your answers are recorded into CONTEXT.md so the planner knows your intent.
+> /clear
+
+**Step 5: Plan.**
+Run `/rapid:plan-set 1`. A researcher investigates your codebase, a planner produces task-level plans for each wave, and a verifier checks for gaps. You get PLAN.md files you can review before execution begins.
+> /clear
+
+**Step 6: Execute.**
+Run `/rapid:execute-set 1`. One executor agent per wave implements the planned tasks with atomic commits. If something goes wrong, re-running the command resumes from where it left off.
+> /clear
+
+**Step 7: Review and merge.**
+Run `/rapid:review 1` to scope the changed files for review, then `/rapid:merge` to integrate the set branch into main with conflict detection. Optionally run `/rapid:unit-test 1`, `/rapid:bug-hunt 1`, or `/rapid:uat 1` between review and merge for additional validation.
+> /clear
+
+That is the full cycle for one set. In a real project, multiple sets run in parallel -- each developer owns a set end-to-end, and RAPID handles the coordination.
