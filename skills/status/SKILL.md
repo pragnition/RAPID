@@ -107,6 +107,45 @@ Using the parsed state and git activity data, display a compact set-level dashbo
    - **Last Activity**: Relative time + commit message from the set's git branch, or "no branch" if no branch exists
    - **Branch**: `rapid/{setName}` if branch exists, `--` if not
 
+3.5. **Pending Remediations:** Check for remediation artifacts from `/rapid:audit-version`:
+
+   ```bash
+   if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+   PENDING_DIR=".planning/pending-sets"
+   if [ -d "$PENDING_DIR" ]; then
+     ARTIFACTS=$(ls "$PENDING_DIR"/*.json 2>/dev/null)
+     if [ -n "$ARTIFACTS" ]; then
+       echo "HAS_PENDING=true"
+       for f in $ARTIFACTS; do
+         NAME=$(basename "$f" .json)
+         SCOPE=$(node -e "try { const a = JSON.parse(require('fs').readFileSync('$f','utf-8')); console.log(a.scope || 'no scope'); } catch(e) { console.log('unreadable'); }")
+         echo "$NAME|$SCOPE"
+       done
+     else
+       echo "HAS_PENDING=false"
+     fi
+   else
+     echo "HAS_PENDING=false"
+   fi
+   ```
+
+   If `HAS_PENDING` is true, display a "Pending Remediations" section after the set table:
+
+   ```
+   ### Pending Remediations
+
+   The following remediation sets were suggested by `/rapid:audit-version` and are waiting to be created:
+
+   | Set Name | Scope |
+   |----------|-------|
+   | {name} | {scope (truncated to ~80 chars)} |
+   | ... | ... |
+
+   Run `/rapid:add-set` to create a set from these suggestions.
+   ```
+
+   If `HAS_PENDING` is false, do not display this section at all (no empty table, no "0 pending" message).
+
 4. After the table, display a tip line:
 
    > **Tip:** Use numeric shorthand with commands (e.g., `/rapid:start-set 1`, `/rapid:discuss-set 2`).
