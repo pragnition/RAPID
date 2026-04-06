@@ -792,6 +792,61 @@
       "startCommit": "002aeaad322e881fed4ca7187d28b47889e53be9",
       "wave": null,
       "createdAt": "2026-04-01T05:34:15.366Z"
+    },
+    "fix-stub-cleanup": {
+      "setName": "fix-stub-cleanup",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "9676325b184ff31cf912cae9a4eb8407e07b7fa0",
+      "wave": null,
+      "createdAt": "2026-04-06T03:00:30.516Z"
+    },
+    "clear-guidance-and-display": {
+      "setName": "clear-guidance-and-display",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "be75e29d91208066f3417143972f5a591fd8a2be",
+      "wave": null,
+      "createdAt": "2026-04-06T05:52:28.371Z"
+    },
+    "audit-handoff": {
+      "setName": "audit-handoff",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "ccafed234ecd553982686463f379949f0ba38f19",
+      "wave": null,
+      "createdAt": "2026-04-06T07:23:50.507Z"
+    },
+    "readme-and-onboarding": {
+      "setName": "readme-and-onboarding",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "ada4c56c400b562e44d92c044bd1c5298b87845a",
+      "wave": null,
+      "createdAt": "2026-04-06T08:18:25.724Z"
+    },
+    "ux-audit": {
+      "setName": "ux-audit",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "4b2afcdd928ed851a63f1d6815cbc356f20dde71",
+      "wave": null,
+      "createdAt": "2026-04-06T09:12:39.398Z"
     }
   }
 }

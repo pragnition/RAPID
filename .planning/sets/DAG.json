@@ -1,71 +1,59 @@
 {
+  "version": 3,
   "nodes": [
     {
-      "id": "bug-fixes-foundation",
+      "id": "clear-guidance-and-display",
       "wave": 1,
-      "status": "pending"
+      "status": "merged",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
     },
     {
-      "id": "dag-central-grouping",
+      "id": "audit-handoff",
       "wave": 1,
-      "status": "pending"
+      "status": "pending",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
     },
     {
-      "id": "init-enhancements",
+      "id": "readme-and-onboarding",
       "wave": 1,
-      "status": "pending"
+      "status": "pending",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
     },
     {
-      "id": "scaffold-overhaul",
+      "id": "ux-audit",
       "wave": 1,
-      "status": "pending"
-    },
-    {
-      "id": "agent-namespace-enforcement",
-      "wave": 1,
-      "status": "pending"
-    },
-    {
-      "id": "docs-version-bump",
-      "wave": 1,
-      "status": "pending"
+      "status": "pending",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
     }
   ],
   "edges": [],
   "waves": {
     "1": {
-      "sets": [
-        "bug-fixes-foundation",
-        "dag-central-grouping",
-        "init-enhancements",
-        "scaffold-overhaul",
-        "agent-namespace-enforcement",
-        "docs-version-bump"
-      ],
-      "checkpoint": {
-        "contracts": [
-          "rapid://contracts/bug-fixes-foundation",
-          "rapid://contracts/dag-central-grouping",
-          "rapid://contracts/init-enhancements",
-          "rapid://contracts/scaffold-overhaul",
-          "rapid://contracts/agent-namespace-enforcement",
-          "rapid://contracts/docs-version-bump"
-        ],
-        "artifacts": [
-          ".planning/sets/bug-fixes-foundation/CONTRACT.json",
-          ".planning/sets/dag-central-grouping/CONTRACT.json",
-          ".planning/sets/init-enhancements/CONTRACT.json",
-          ".planning/sets/scaffold-overhaul/CONTRACT.json",
-          ".planning/sets/agent-namespace-enforcement/CONTRACT.json",
-          ".planning/sets/docs-version-bump/CONTRACT.json"
-        ]
-      }
+      "nodes": [
+        "clear-guidance-and-display",
+        "audit-handoff",
+        "readme-and-onboarding",
+        "ux-audit"
+      ]
     }
   },
+  "groups": {},
   "metadata": {
-    "created": "2026-04-01",
-    "totalSets": 6,
+    "created": "2026-04-06",
     "totalWaves": 1,
-    "maxParallelism": 6
+    "maxParallelism": 4,
+    "totalNodes": 4
   }
 }

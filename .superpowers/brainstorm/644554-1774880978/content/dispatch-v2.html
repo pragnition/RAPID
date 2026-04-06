@@ -1,0 +1,245 @@
+<h2>Agent Dispatch v2: Aligned Columns</h2>
+<p class="subtitle">Fixed column alignment + single-line command pills</p>
+
+<div class="section">
+  <div style="background:#2d353b; border-radius:12px; padding:24px 20px; overflow:hidden; position:relative;">
+
+    <!-- Dot grid background -->
+    <svg width="100%" height="100%" style="position:absolute; inset:0; opacity:0.3;">
+      <defs>
+        <pattern id="dots3" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="12" cy="12" r="0.7" fill="#859289"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#dots3)"/>
+    </svg>
+
+    <div style="position:relative;">
+      <!-- Title -->
+      <div style="text-align:center; margin-bottom:20px;">
+        <span style="font-family:'Noto Serif',Georgia,serif; font-size:20px; font-weight:bold; color:#d3c6aa;">Agent Dispatch Architecture</span>
+      </div>
+
+      <!-- Table with fixed columns -->
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        <colgroup>
+          <col style="width:180px;"><!-- command pill -->
+          <col style="width:44px;"><!-- count badge -->
+          <col style="width:36px;"><!-- connector -->
+          <col><!-- agents -->
+        </colgroup>
+
+        <!-- Column headers -->
+        <tr>
+          <td colspan="2" style="padding:0 0 12px 4px;">
+            <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#859289; opacity:0.5;">Command</span>
+          </td>
+          <td></td>
+          <td style="padding:0 0 12px 0;">
+            <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#859289; opacity:0.5;">Dispatched Agents</span>
+          </td>
+        </tr>
+
+        <!-- Divider -->
+        <tr><td colspan="4" style="padding:0; height:1px; background:rgba(133,146,137,0.1);"></td></tr>
+
+        <!-- Row 1: /rapid:init (Setup) -->
+        <tr>
+          <td style="padding:16px 0; vertical-align:top; padding-top:20px;">
+            <div style="background:#3a4349; padding:8px 12px; border-radius:8px; border:1px solid rgba(133,146,137,0.25); border-top:1px solid rgba(133,146,137,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(133,146,137,0.06); display:inline-block; white-space:nowrap;">
+              <span style="color:#d3c6aa; font-family:'Courier New',monospace; font-size:14px;">/rapid:init</span>
+            </div>
+          </td>
+          <td style="padding:16px 0; vertical-align:top; padding-top:24px; text-align:center;">
+            <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(133,146,137,0.3); display:inline-flex; align-items:center; justify-content:center;">
+              <span style="color:#859289; font-family:monospace; font-size:12px; opacity:0.7;">9</span>
+            </div>
+          </td>
+          <td style="padding:16px 0; vertical-align:top; padding-top:32px;">
+            <div style="width:100%; height:1px; background:linear-gradient(90deg, rgba(133,146,137,0.3), rgba(133,146,137,0.1));"></div>
+          </td>
+          <td style="padding:16px 0; vertical-align:top;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">codebase-synthesizer</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">research-stack</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">research-features</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">research-architecture</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">research-pitfalls</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">research-oversights</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">research-ux</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">research-synthesizer</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">roadmapper</span></div>
+            </div>
+          </td>
+        </tr>
+
+        <tr><td colspan="4" style="padding:0; height:1px; background:rgba(133,146,137,0.06);"></td></tr>
+
+        <!-- Row 2: /rapid:start-set (Setup) -->
+        <tr>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="background:#3a4349; padding:8px 12px; border-radius:8px; border:1px solid rgba(133,146,137,0.25); border-top:1px solid rgba(133,146,137,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(133,146,137,0.06); display:inline-block; white-space:nowrap;">
+              <span style="color:#d3c6aa; font-family:'Courier New',monospace; font-size:14px;">/rapid:start-set</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle; text-align:center;">
+            <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(133,146,137,0.3); display:inline-flex; align-items:center; justify-content:center;">
+              <span style="color:#859289; font-family:monospace; font-size:12px; opacity:0.7;">1</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="width:100%; height:1px; background:linear-gradient(90deg, rgba(133,146,137,0.3), rgba(133,146,137,0.1));"></div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#859289; font-family:monospace; font-size:12px;">set-planner</span></div>
+            </div>
+          </td>
+        </tr>
+
+        <tr><td colspan="4" style="padding:0; height:1px; background:rgba(133,146,137,0.06);"></td></tr>
+
+        <!-- Row 3: /rapid:discuss (Planning) -->
+        <tr>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="background:#3a4349; padding:8px 12px; border-radius:8px; border:1px solid rgba(167,192,128,0.25); border-top:1px solid rgba(167,192,128,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(167,192,128,0.06); display:inline-block; white-space:nowrap;">
+              <span style="color:#a7c080; font-family:'Courier New',monospace; font-size:14px;">/rapid:discuss</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle; text-align:center;">
+            <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(167,192,128,0.3); display:inline-flex; align-items:center; justify-content:center;">
+              <span style="color:#a7c080; font-family:monospace; font-size:12px; opacity:0.7;">1</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="width:100%; height:1px; background:linear-gradient(90deg, rgba(167,192,128,0.3), rgba(167,192,128,0.1));"></div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(167,192,128,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#a7c080; font-family:monospace; font-size:12px;">research-stack</span></div>
+            </div>
+          </td>
+        </tr>
+
+        <tr><td colspan="4" style="padding:0; height:1px; background:rgba(167,192,128,0.06);"></td></tr>
+
+        <!-- Row 4: /rapid:plan (Planning) -->
+        <tr>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="background:#3a4349; padding:8px 12px; border-radius:8px; border:1px solid rgba(167,192,128,0.25); border-top:1px solid rgba(167,192,128,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(167,192,128,0.06); display:inline-block; white-space:nowrap;">
+              <span style="color:#a7c080; font-family:'Courier New',monospace; font-size:14px;">/rapid:plan</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle; text-align:center;">
+            <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(167,192,128,0.3); display:inline-flex; align-items:center; justify-content:center;">
+              <span style="color:#a7c080; font-family:monospace; font-size:12px; opacity:0.7;">3</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="width:100%; height:1px; background:linear-gradient(90deg, rgba(167,192,128,0.3), rgba(167,192,128,0.1));"></div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(167,192,128,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#a7c080; font-family:monospace; font-size:12px;">research-stack</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(167,192,128,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#a7c080; font-family:monospace; font-size:12px;">planner</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(167,192,128,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#a7c080; font-family:monospace; font-size:12px;">plan-verifier</span></div>
+            </div>
+          </td>
+        </tr>
+
+        <tr><td colspan="4" style="padding:0; height:1px; background:rgba(127,187,179,0.06);"></td></tr>
+
+        <!-- Row 5: /rapid:execute (Execution) -->
+        <tr>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="background:#3a4349; padding:8px 12px; border-radius:8px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(127,187,179,0.06); display:inline-block; white-space:nowrap;">
+              <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:14px;">/rapid:execute</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle; text-align:center;">
+            <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(127,187,179,0.3); display:inline-flex; align-items:center; justify-content:center;">
+              <span style="color:#7fbbb3; font-family:monospace; font-size:12px; opacity:0.7;">2</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="width:100%; height:1px; background:linear-gradient(90deg, rgba(127,187,179,0.3), rgba(127,187,179,0.1));"></div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#7fbbb3; font-family:monospace; font-size:12px;">executor x N</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#7fbbb3; font-family:monospace; font-size:12px;">verifier</span></div>
+            </div>
+          </td>
+        </tr>
+
+        <tr><td colspan="4" style="padding:0; height:1px; background:rgba(127,187,179,0.06);"></td></tr>
+
+        <!-- Row 6: /rapid:review (Execution) -->
+        <tr>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="background:#3a4349; padding:8px 12px; border-radius:8px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(127,187,179,0.06); display:inline-block; white-space:nowrap;">
+              <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:14px;">/rapid:review</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle; text-align:center;">
+            <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(127,187,179,0.3); display:inline-flex; align-items:center; justify-content:center;">
+              <span style="color:#7fbbb3; font-family:monospace; font-size:12px; opacity:0.7;">1</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="width:100%; height:1px; background:linear-gradient(90deg, rgba(127,187,179,0.3), rgba(127,187,179,0.1));"></div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#7fbbb3; font-family:monospace; font-size:12px;">scoper</span></div>
+            </div>
+          </td>
+        </tr>
+
+        <tr><td colspan="4" style="padding:0; height:1px; background:rgba(127,187,179,0.06);"></td></tr>
+
+        <!-- Row 7: /rapid:merge (Execution) -->
+        <tr>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="background:#3a4349; padding:8px 12px; border-radius:8px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(127,187,179,0.06); display:inline-block; white-space:nowrap;">
+              <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:14px;">/rapid:merge</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle; text-align:center;">
+            <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(127,187,179,0.3); display:inline-flex; align-items:center; justify-content:center;">
+              <span style="color:#7fbbb3; font-family:monospace; font-size:12px; opacity:0.7;">2</span>
+            </div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="width:100%; height:1px; background:linear-gradient(90deg, rgba(127,187,179,0.3), rgba(127,187,179,0.1));"></div>
+          </td>
+          <td style="padding:14px 0; vertical-align:middle;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#7fbbb3; font-family:monospace; font-size:12px;">set-merger x N</span></div>
+              <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);"><span style="color:#7fbbb3; font-family:monospace; font-size:12px;">conflict-resolver</span></div>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Legend -->
+      <div style="display:flex; justify-content:center; gap:28px; padding:20px 0 4px; border-top:1px solid rgba(133,146,137,0.08); margin-top:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px; height:12px; border-radius:3px; background:#3a4349; border:1px solid rgba(133,146,137,0.3);"></div>
+          <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#859289; opacity:0.6;">Setup</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px; height:12px; border-radius:3px; background:#3a4349; border:1px solid rgba(167,192,128,0.3);"></div>
+          <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#a7c080; opacity:0.6;">Planning</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px; height:12px; border-radius:3px; background:#3a4349; border:1px solid rgba(127,187,179,0.3);"></div>
+          <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#7fbbb3; opacity:0.6;">Execution</span>
+        </div>
+      </div>
+      <div style="text-align:center; padding-top:4px;">
+        <span style="font-family:'Noto Serif',Georgia,serif; font-size:12px; color:#859289; opacity:0.35;">x N = one agent spawned per wave or per set</span>
+      </div>
+    </div>
+  </div>
+</div>

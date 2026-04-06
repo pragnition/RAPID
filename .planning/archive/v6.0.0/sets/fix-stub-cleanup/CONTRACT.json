@@ -1,0 +1,13 @@
+{
+  "setId": "fix-stub-cleanup",
+  "milestone": "v6.0.0",
+  "created": "2026-04-06",
+  "exports": { "functions": [], "types": [] },
+  "imports": { "functions": [], "types": [] },
+  "fileOwnership": [
+    "src/lib/merge.cjs",
+    "src/lib/merge.test.cjs",
+    ".planning/sets/dag-central-grouping/CONTRACT.json",
+    ".planning/sets/init-enhancements/CONTRACT.json"
+  ]
+}

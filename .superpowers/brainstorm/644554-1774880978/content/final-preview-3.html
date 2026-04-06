@@ -1,0 +1,47 @@
+<h2>Updated Lifecycle Flow</h2>
+<p class="subtitle">Nodes now fully contained within phase regions</p>
+
+<div class="section">
+  <div style="background:#1a1e24; border-radius:8px; padding:16px; overflow-x:auto;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 280" style="width:100%;height:auto;display:block;">
+      <defs>
+        <pattern id="dg" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.8" fill="#859289" opacity="0.3"/></pattern>
+        <filter id="ss" x="-10%" y="-10%" width="130%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.3"/><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#859289" flood-opacity="0.08"/></filter>
+        <filter id="sp" x="-10%" y="-10%" width="130%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.3"/><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#a7c080" flood-opacity="0.08"/></filter>
+        <filter id="se" x="-10%" y="-10%" width="130%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.3"/><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#7fbbb3" flood-opacity="0.08"/></filter>
+        <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7fbbb3"/><stop offset="50%" stop-color="#d3c6aa"/><stop offset="100%" stop-color="#859289"/></linearGradient>
+      </defs>
+      <rect fill="#2d353b" width="1280" height="280" rx="8"/><rect fill="url(#dg)" width="1280" height="280" rx="8"/>
+      <text x="640" y="30" text-anchor="middle" fill="#d3c6aa" font-family="'Noto Serif',Georgia,serif" font-size="22" font-weight="bold">RAPID Lifecycle</text>
+      <!-- Phase regions -->
+      <rect fill="#859289" opacity="0.05" x="20" y="42" width="344" height="112" rx="12"/><rect fill="none" stroke="#859289" stroke-opacity="0.08" x="20" y="42" width="344" height="112" rx="12"/><text x="192" y="58" text-anchor="middle" fill="#859289" font-family="'Noto Serif',Georgia,serif" font-size="11" opacity="0.45" letter-spacing="1.5">SETUP</text>
+      <rect fill="#a7c080" opacity="0.04" x="382" y="42" width="344" height="112" rx="12"/><rect fill="none" stroke="#a7c080" stroke-opacity="0.08" x="382" y="42" width="344" height="112" rx="12"/><text x="554" y="58" text-anchor="middle" fill="#a7c080" font-family="'Noto Serif',Georgia,serif" font-size="11" opacity="0.45" letter-spacing="1.5">PLANNING</text>
+      <rect fill="#7fbbb3" opacity="0.04" x="744" y="42" width="516" height="112" rx="12"/><rect fill="none" stroke="#7fbbb3" stroke-opacity="0.08" x="744" y="42" width="516" height="112" rx="12"/><text x="1002" y="58" text-anchor="middle" fill="#7fbbb3" font-family="'Noto Serif',Georgia,serif" font-size="11" opacity="0.45" letter-spacing="1.5">EXECUTION</text>
+      <!-- Nodes -->
+      <g filter="url(#ss)"><rect fill="#3a4349" x="34" y="68" width="144" height="62" rx="10"/><rect fill="none" stroke="#859289" stroke-opacity="0.25" x="34" y="68" width="144" height="62" rx="10"/><line x1="34" y1="69" x2="178" y2="69" stroke="#859289" stroke-opacity="0.4" stroke-width="1"/></g>
+      <text x="106" y="96" text-anchor="middle" fill="#d3c6aa" font-family="monospace" font-size="20">init</text><text x="106" y="116" text-anchor="middle" fill="#d3c6aa" font-family="serif" font-size="12" opacity="0.55">Research &amp; Plan</text>
+      <path d="M180,99 C188,99 192,99 196,99" stroke="#859289" stroke-width="1.5" fill="none" opacity="0.4"/><polygon points="194,94 206,99 194,104" fill="#859289" opacity="0.4"/>
+      <g filter="url(#ss)"><rect fill="#3a4349" x="206" y="68" width="144" height="62" rx="10"/><rect fill="none" stroke="#859289" stroke-opacity="0.25" x="206" y="68" width="144" height="62" rx="10"/><line x1="206" y1="69" x2="350" y2="69" stroke="#859289" stroke-opacity="0.4" stroke-width="1"/></g>
+      <text x="278" y="96" text-anchor="middle" fill="#d3c6aa" font-family="monospace" font-size="20">start-set</text><text x="278" y="116" text-anchor="middle" fill="#d3c6aa" font-family="serif" font-size="12" opacity="0.55">Create Worktree</text>
+      <path d="M352,99 C366,99 376,99 384,99" stroke="#d3c6aa" stroke-width="1.5" fill="none" opacity="0.3"/><polygon points="382,94 396,99 382,104" fill="#d3c6aa" opacity="0.3"/>
+      <g filter="url(#sp)"><rect fill="#3a4349" x="396" y="68" width="144" height="62" rx="10"/><rect fill="none" stroke="#a7c080" stroke-opacity="0.25" x="396" y="68" width="144" height="62" rx="10"/><line x1="396" y1="69" x2="540" y2="69" stroke="#a7c080" stroke-opacity="0.4" stroke-width="1"/></g>
+      <text x="468" y="96" text-anchor="middle" fill="#a7c080" font-family="monospace" font-size="20">discuss</text><text x="468" y="116" text-anchor="middle" fill="#a7c080" font-family="serif" font-size="12" opacity="0.55">Capture Vision</text>
+      <path d="M542,99 C550,99 554,99 558,99" stroke="#a7c080" stroke-width="1.5" fill="none" opacity="0.4"/><polygon points="556,94 568,99 556,104" fill="#a7c080" opacity="0.4"/>
+      <g filter="url(#sp)"><rect fill="#3a4349" x="568" y="68" width="144" height="62" rx="10"/><rect fill="none" stroke="#a7c080" stroke-opacity="0.25" x="568" y="68" width="144" height="62" rx="10"/><line x1="568" y1="69" x2="712" y2="69" stroke="#a7c080" stroke-opacity="0.4" stroke-width="1"/></g>
+      <text x="640" y="96" text-anchor="middle" fill="#a7c080" font-family="monospace" font-size="20">plan</text><text x="640" y="116" text-anchor="middle" fill="#a7c080" font-family="serif" font-size="12" opacity="0.55">Write Tasks</text>
+      <path d="M714,99 C728,99 738,99 746,99" stroke="#d3c6aa" stroke-width="1.5" fill="none" opacity="0.3"/><polygon points="744,94 758,99 744,104" fill="#d3c6aa" opacity="0.3"/>
+      <g filter="url(#se)"><rect fill="#3a4349" x="758" y="68" width="144" height="62" rx="10"/><rect fill="none" stroke="#7fbbb3" stroke-opacity="0.25" x="758" y="68" width="144" height="62" rx="10"/><line x1="758" y1="69" x2="902" y2="69" stroke="#7fbbb3" stroke-opacity="0.4" stroke-width="1"/></g>
+      <text x="830" y="96" text-anchor="middle" fill="#7fbbb3" font-family="monospace" font-size="20">execute</text><text x="830" y="116" text-anchor="middle" fill="#7fbbb3" font-family="serif" font-size="12" opacity="0.55">Implement</text>
+      <path d="M904,99 C912,99 916,99 920,99" stroke="#7fbbb3" stroke-width="1.5" fill="none" opacity="0.4"/><polygon points="918,94 930,99 918,104" fill="#7fbbb3" opacity="0.4"/>
+      <g filter="url(#se)"><rect fill="#3a4349" x="930" y="68" width="144" height="62" rx="10"/><rect fill="none" stroke="#7fbbb3" stroke-opacity="0.25" x="930" y="68" width="144" height="62" rx="10"/><line x1="930" y1="69" x2="1074" y2="69" stroke="#7fbbb3" stroke-opacity="0.4" stroke-width="1"/></g>
+      <text x="1002" y="96" text-anchor="middle" fill="#7fbbb3" font-family="monospace" font-size="20">review</text><text x="1002" y="116" text-anchor="middle" fill="#7fbbb3" font-family="serif" font-size="12" opacity="0.55">Verify Quality</text>
+      <path d="M1076,99 C1084,99 1088,99 1092,99" stroke="#7fbbb3" stroke-width="1.5" fill="none" opacity="0.4"/><polygon points="1090,94 1102,99 1090,104" fill="#7fbbb3" opacity="0.4"/>
+      <g filter="url(#se)"><rect fill="#3a4349" x="1102" y="68" width="144" height="62" rx="10"/><rect fill="none" stroke="#7fbbb3" stroke-opacity="0.25" x="1102" y="68" width="144" height="62" rx="10"/><line x1="1102" y1="69" x2="1246" y2="69" stroke="#7fbbb3" stroke-opacity="0.4" stroke-width="1"/></g>
+      <text x="1174" y="96" text-anchor="middle" fill="#7fbbb3" font-family="monospace" font-size="20">merge</text><text x="1174" y="116" text-anchor="middle" fill="#7fbbb3" font-family="serif" font-size="12" opacity="0.55">Integrate</text>
+      <!-- Loop -->
+      <path d="M1174,130 L1174,215 Q1174,230 1154,230 L298,230 Q278,230 278,215 L278,130" stroke="url(#lg)" stroke-width="1.5" fill="none" opacity="0.25" stroke-dasharray="8 5"/>
+      <polygon points="274,136 278,124 282,136" fill="#859289" opacity="0.25"/>
+      <text x="726" y="253" text-anchor="middle" fill="#859289" font-family="serif" font-size="13" opacity="0.4">repeat per set</text>
+    </svg>
+  </div>
+</div>

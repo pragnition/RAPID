@@ -1,0 +1,61 @@
+<h2>Adding Depth to the Diagrams</h2>
+<p class="subtitle">Three approaches to making lifecycle-flow and agent-dispatch feel polished instead of flat</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Subtle Shadows + Gradients</h3>
+      <p>Add soft drop shadows behind nodes/pills and use top-to-bottom gradients on fills instead of flat colors. Nodes feel like they float above the background. Connectors get thicker with smooth curves instead of straight lines. Most conservative -- same layout, just deeper.</p>
+      <div style="margin-top:12px; padding:16px; background:#2d353b; border-radius:8px; display:flex; gap:24px; align-items:center;">
+        <div style="background: linear-gradient(180deg, #8fa396 0%, #6e8275 100%); width:120px; height:48px; border-radius:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;">
+          <span style="color:#d3c6aa; font-family:monospace; font-size:14px;">init</span>
+        </div>
+        <svg width="40" height="20"><path d="M0 10 Q20 10 35 10" stroke="#d3c6aa" stroke-width="2" fill="none" opacity="0.5"/><polygon points="33,6 40,10 33,14" fill="#d3c6aa" opacity="0.5"/></svg>
+        <div style="background: linear-gradient(180deg, #b5cea5 0%, #8aab6a 100%); width:120px; height:48px; border-radius:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;">
+          <span style="color:#2d353b; font-family:monospace; font-size:14px;">discuss</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Layered Cards + Glow Accents</h3>
+      <p>Nodes become card-like with a subtle border, inner highlight at the top edge, and a colored glow underneath that matches their phase. Connectors use dashed or dotted animated-looking paths. Background gets a faint dot grid for spatial grounding. More visually rich.</p>
+      <div style="margin-top:12px; padding:16px; background:#2d353b; border-radius:8px; background-image: radial-gradient(circle, #859289 0.5px, transparent 0.5px); background-size: 20px 20px; display:flex; gap:24px; align-items:center;">
+        <div style="background:#3d474d; width:120px; height:48px; border-radius:8px; border: 1px solid rgba(133,146,137,0.3); border-top: 1px solid rgba(133,146,137,0.5); box-shadow: 0 4px 16px rgba(133,146,137,0.15), 0 1px 0 rgba(133,146,137,0.1) inset; display:flex; align-items:center; justify-content:center;">
+          <span style="color:#d3c6aa; font-family:monospace; font-size:14px;">init</span>
+        </div>
+        <svg width="40" height="20"><line x1="0" y1="10" x2="35" y2="10" stroke="#d3c6aa" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.4"/><polygon points="33,6 40,10 33,14" fill="#d3c6aa" opacity="0.5"/></svg>
+        <div style="background:#3d474d; width:120px; height:48px; border-radius:8px; border: 1px solid rgba(167,192,128,0.3); border-top: 1px solid rgba(167,192,128,0.5); box-shadow: 0 4px 16px rgba(167,192,128,0.15), 0 1px 0 rgba(167,192,128,0.1) inset; display:flex; align-items:center; justify-content:center;">
+          <span style="color:#a7c080; font-family:monospace; font-size:14px;">discuss</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Glass Morphism + Phase Regions</h3>
+      <p>Nodes have frosted-glass appearance with semi-transparent backgrounds and blur. Phase groups (Setup, Planning, Execution) get subtle background regions that connect their nodes visually. Connectors are smooth Bezier curves with gradient strokes. Most modern but hardest to get right in pure SVG.</p>
+      <div style="margin-top:12px; padding:16px; background:#2d353b; border-radius:8px; display:flex; gap:24px; align-items:center;">
+        <div style="position:relative;">
+          <div style="position:absolute; inset:0; background:rgba(133,146,137,0.15); border-radius:8px; filter:blur(0px);"></div>
+          <div style="position:relative; background:rgba(133,146,137,0.2); backdrop-filter:blur(8px); width:120px; height:48px; border-radius:8px; border: 1px solid rgba(133,146,137,0.25); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#d3c6aa; font-family:monospace; font-size:14px;">init</span>
+          </div>
+        </div>
+        <svg width="40" height="20"><path d="M0 10 C15 10 25 10 35 10" stroke="url(#grad)" stroke-width="2" fill="none" opacity="0.5"/><defs><linearGradient id="grad"><stop offset="0%" stop-color="#859289"/><stop offset="100%" stop-color="#a7c080"/></linearGradient></defs><polygon points="33,6 40,10 33,14" fill="#a7c080" opacity="0.5"/></svg>
+        <div style="position:relative;">
+          <div style="position:absolute; inset:-4px; background:rgba(167,192,128,0.08); border-radius:12px; filter:blur(8px);"></div>
+          <div style="position:relative; background:rgba(167,192,128,0.2); backdrop-filter:blur(8px); width:120px; height:48px; border-radius:8px; border: 1px solid rgba(167,192,128,0.25); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#a7c080; font-family:monospace; font-size:14px;">discuss</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

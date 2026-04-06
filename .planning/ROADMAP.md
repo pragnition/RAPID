@@ -21,41 +21,30 @@
 - **v4.4.0 Polish & Documentation** — 3 sets (shipped 2026-03-26)
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
 - **v5.0 OSS Presentation** — 5 sets (shipped 2026-03-31)
-- **v6.0.0 Scale & Quality** — 7 sets (in progress)
+- **v6.0.0 Scale & Quality** — 7 sets (shipped 2026-04-06)
+- **v6.1.0 UX & Onboarding** — 4 sets (in progress)
 
-## Active Milestone: v6.0.0 — Scale & Quality
+## Active Milestone: v6.1.0 — UX & Onboarding
 
-This milestone elevates DAG.json from a post-hoc artifact to the central coordination primitive driving dependency tracking, team group assignment, and workflow ordering. It fixes three known bugs (REQUIREMENTS.md overwrite, --desc/--description flag mismatch, roadmapper state overwrite), adds spec file and meta-principles support to init, overhauls the scaffold system for multi-developer group-aware stub generation, and strengthens agent namespace enforcement.
+This milestone improves onboarding and user experience: persistent audit-to-set handoff across `/clear` boundaries, standardized `/clear` guidance footers on all lifecycle skills, a beginner-friendly README rewrite with problem statement and streamlined quickstart, and a systematic UX audit covering breadcrumbs, error messages, and command discoverability.
 
-### Set 1: bug-fixes-foundation — Bug Fixes & Foundation
-**Branch:** `set/bug-fixes-foundation` | **Dependencies:** none
-Fix all three known bugs (REQUIREMENTS.md overwrite by scaffold, --desc/--description flag mismatch, roadmapper STATE.json overwrite) and resolve foundational infrastructure issues: bump Node.js minimum to 20+, fix shell injection via execSync in worktree.cjs, add fileOwnership to CONTRACT_META_SCHEMA, and fix recalculateDAG() annotation stripping.
+### Set 1: clear-guidance-and-display — Clear Guidance & Display Footer
+**Branch:** `set/clear-guidance-and-display` | **Dependencies:** none
+Implement `renderFooter()` utility in `display.cjs`, define `/clear` policy (lifecycle boundaries: yes, review sub-steps: no), add structural test, apply footer to all lifecycle skills (~10-12 skills).
 
-### Set 2: dag-central-grouping — DAG Central Concept & Set Grouping
-**Branch:** `set/dag-central-grouping` | **Dependencies:** bug-fixes-foundation
-Extend DAG schema to v3 with group annotations, add DAG status synchronization (syncDAGStatus), implement developer group partitioning algorithm in new group.cjs module, add dag regroup and dag groups CLI subcommands, extend dag show with group-aware display, integrate group assignment into roadmapper output, and create v1-to-v2-to-v3 auto-migration in tryLoadDAG().
+### Set 2: audit-handoff — Audit-to-Set Handoff Mechanism
+**Branch:** `set/audit-handoff` | **Dependencies:** none
+Design and implement REMEDIATION artifact for audit-to-set handoff. Audit-version writes structured context to `.planning/pending-sets/`. Add-set auto-discovers and pre-populates scope. Status displays pending sets. Node.js version bump to >=22.
 
-### Set 3: init-enhancements — Init Enhancements
-**Branch:** `set/init-enhancements` | **Dependencies:** none
-Add --spec flag to /rapid:init for spec file integration, implement meta-principles capture during init with new principles.cjs module, generate PRINCIPLES.md in .planning/ and inject summary into CLAUDE.md, and modify generateScopedClaudeMd() in worktree.cjs to include principles. Spec content is passed to research agents with critical-evaluation framing.
+### Set 3: readme-and-onboarding — Beginner-Friendly README & Onboarding
+**Branch:** `set/readme-and-onboarding` | **Dependencies:** clear-guidance-and-display
+Rewrite README.md with problem statement (context rot), single install path, `/clear` mental model, annotated quickstart, and "First Project" walkthrough. Update DOCS.md and help command.
 
-### Set 4: scaffold-overhaul — Scaffold Overhaul
-**Branch:** `set/scaffold-overhaul` | **Dependencies:** dag-central-grouping
-Group-aware set splitting using DAG group annotations and file ownership data, high-fidelity stub generation with RAPID-STUB markers, per-worktree stub directory management (.rapid-stubs/), optional foundational set #0 with foundation:true DAG flag, stub lifecycle hooks, scaffold verify-stubs command, and scaffold-report v2.
+### Set 4: ux-audit — General UX Audit & Polish
+**Branch:** `set/ux-audit` | **Dependencies:** clear-guidance-and-display, audit-handoff
+Systematic UX audit: breadcrumb consistency, error messages, command discoverability, first-run polish. Wire auto-regroup after add-set (deferred from v6.0.0). Bounded checklist, not open-ended.
 
-### Set 5: agent-namespace-enforcement — Agent Namespace Enforcement
-**Branch:** `set/agent-namespace-enforcement` | **Dependencies:** none
-Strengthen namespace isolation in core-identity.md with explicit deny-list examples, imperative MUST/MUST NOT enforcement language, and optionally a build-agents validation check.
-
-### Set 6: docs-version-bump — Documentation & Version Bump
-**Branch:** `set/docs-version-bump` | **Dependencies:** none
-Update CHANGELOG.md with a summary of all v6.0.0 sets, bump all version references from 5.0.0 to 6.0.0 across package.json, plugin.json, config.json, STATE.json, and skill files, and update project documentation.
-
-### Set 7: fix-stub-cleanup — Audit Gap Closure
-**Branch:** `set/fix-stub-cleanup` | **Dependencies:** none
-Close the 3 actionable gaps from the v6.0.0 audit: wire cleanupStubSidecars() into the merge pipeline post-resolution flow, fix stale CONTRACT.json export name migrateDAGv1toV2 -> migrateDAGv1toV3 in dag-central-grouping, and fix CONTRACT.json claudeMdTokenBudget from 15 to 45 in init-enhancements.
-
-**Dependency graph:** `{bug-fixes-foundation}` → `{dag-central-grouping}` → `{scaffold-overhaul}` | `{init-enhancements, agent-namespace-enforcement, docs-version-bump, fix-stub-cleanup}` independent
+**Dependency graph:** `{clear-guidance-and-display, audit-handoff}` (parallel) → `{readme-and-onboarding}` (depends on 1) | `{ux-audit}` (depends on 1 & 2)
 
 ## Completed Milestone Details
 
@@ -259,6 +248,19 @@ Close the 3 actionable gaps from the v6.0.0 audit: wire cleanupStubSidecars() in
 - [x] readme-migration — README Overhaul & Reference Migration (pragnition/RAPID, version bump)
 - [x] readme-polish — README Polish (concise, scannable, enlarged SVGs)
 - [x] docs-update — Documentation Update (DOCS.md and technical_documentation.md)
+
+</details>
+
+<details>
+<summary>v6.0.0 Scale & Quality (7 sets) — shipped 2026-04-06</summary>
+
+- [x] bug-fixes-foundation — Bug Fixes & Foundation
+- [x] dag-central-grouping — DAG Central Concept & Set Grouping
+- [x] init-enhancements — Init Enhancements
+- [x] scaffold-overhaul — Scaffold Overhaul
+- [x] agent-namespace-enforcement — Agent Namespace Enforcement
+- [x] docs-version-bump — Documentation & Version Bump
+- [x] fix-stub-cleanup — Audit Gap Closure
 
 </details>
 

@@ -1,0 +1,55 @@
+{
+  "setId": "readme-and-onboarding",
+  "version": "1.0.0",
+  "exports": {
+    "readme": {
+      "type": "file",
+      "signature": "README.md",
+      "description": "Beginner-friendly README with problem statement, single install path, /clear mental model, annotated quickstart, and First Project walkthrough"
+    },
+    "docsUpdate": {
+      "type": "file",
+      "signature": "DOCS.md",
+      "description": "Updated DOCS.md referencing /clear pattern and current command set"
+    }
+  },
+  "imports": {
+    "clearPattern": {
+      "fromSet": "clear-guidance-and-display",
+      "type": "function",
+      "signature": "renderFooter(nextCommand: string, options?: { clearRequired?: boolean }): string",
+      "description": "Needs the /clear footer pattern to be established so README can accurately describe the user workflow"
+    }
+  },
+  "behavioral": {
+    "singleInstallPath": {
+      "description": "README presents exactly one primary install path (marketplace), with alternatives clearly marked as secondary",
+      "enforced_by": "test"
+    },
+    "clearMentalModel": {
+      "description": "README explains the /clear-after-every-command mental model within the first 3 sections",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Rewrite README.md for beginners: problem statement (context rot), single install path, /clear mental model, annotated quickstart, First Project walkthrough. Fix contradictory install instructions. Update DOCS.md and help command.",
+    "ownedFiles": [
+      "README.md",
+      "DOCS.md",
+      "skills/help/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Rewrite README.md with problem statement, single install path, /clear explanation", "acceptance": "README opens with what RAPID solves, one install command, explains session model" },
+      { "description": "Add annotated quickstart with /clear between every command", "acceptance": "Quickstart shows the full lifecycle with /clear interleaved and explained" },
+      { "description": "Add First Project walkthrough for beginners", "acceptance": "Step-by-step guide for someone who has never used an AI agent harness" },
+      { "description": "Update DOCS.md to reference /clear pattern", "acceptance": "DOCS.md mentions /clear at appropriate command transitions" },
+      { "description": "Update help skill output for consistency", "acceptance": "Help output matches README structure" }
+    ],
+    "acceptance": [
+      "README has clear problem statement and /clear mental model",
+      "Single unambiguous install path",
+      "First Project walkthrough exists",
+      "DOCS.md updated"
+    ]
+  }
+}

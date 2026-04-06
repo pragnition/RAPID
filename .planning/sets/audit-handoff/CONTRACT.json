@@ -1,0 +1,67 @@
+{
+  "setId": "audit-handoff",
+  "version": "1.0.0",
+  "exports": {
+    "writeRemediationArtifact": {
+      "type": "function",
+      "signature": "writeRemediationArtifact(setName: string, remediation: { scope: string, files: string[], deps: string[], severity: string, source: string }): void",
+      "description": "Writes a structured JSON artifact to .planning/pending-sets/{set-name}.json for later consumption by add-set"
+    },
+    "readRemediationArtifact": {
+      "type": "function",
+      "signature": "readRemediationArtifact(setName: string): object | null",
+      "description": "Reads a pending-sets artifact if it exists, returns null otherwise"
+    },
+    "listPendingRemediations": {
+      "type": "function",
+      "signature": "listPendingRemediations(): string[]",
+      "description": "Lists all pending remediation set names from .planning/pending-sets/"
+    },
+    "deleteRemediationArtifact": {
+      "type": "function",
+      "signature": "deleteRemediationArtifact(setName: string): boolean",
+      "description": "Removes a pending-sets artifact after it has been consumed by add-set"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "survivesClear": {
+      "description": "Remediation artifacts persist on disk in .planning/pending-sets/ and survive /clear context resets",
+      "enforced_by": "test"
+    },
+    "gracefulFallback": {
+      "description": "add-set falls through to standard interactive discovery when no remediation artifact exists (fs.existsSync guard clause)",
+      "enforced_by": "test"
+    },
+    "noStateMutation": {
+      "description": "Remediation artifacts operate outside STATE.json -- no schema migration, no Zod changes, no withStateTransaction",
+      "enforced_by": "runtime"
+    }
+  },
+  "definition": {
+    "scope": "Design and implement the REMEDIATION artifact for audit-to-set handoff. Audit-version writes structured context to .planning/pending-sets/. Add-set auto-discovers and pre-populates scope. Status displays pending sets. Update Node.js minimum version references.",
+    "ownedFiles": [
+      "src/lib/remediation.cjs",
+      "tests/remediation.test.cjs",
+      "skills/audit-version/SKILL.md",
+      "skills/add-set/SKILL.md",
+      "skills/status/SKILL.md",
+      "package.json",
+      "setup.sh"
+    ],
+    "tasks": [
+      { "description": "Create remediation.cjs module with write/read/list/delete functions", "acceptance": "Module handles .planning/pending-sets/ CRUD with validation" },
+      { "description": "Wire remediation artifact writer into audit-version skill", "acceptance": "After audit produces remediation suggestions, artifacts are written to disk" },
+      { "description": "Wire remediation artifact reader into add-set skill with fallback", "acceptance": "add-set pre-populates from artifact when present, falls through to interactive when absent" },
+      { "description": "Add pending remediation display to status skill", "acceptance": "Status output shows pending remediation sets count and names" },
+      { "description": "Synchronize Node.js minimum version to >=22 across package.json, setup.sh, README badge", "acceptance": "All three locations specify >=22" },
+      { "description": "Add unit tests for remediation module", "acceptance": "Tests cover write/read/list/delete and edge cases" }
+    ],
+    "acceptance": [
+      "Remediation artifacts persist across /clear",
+      "add-set auto-discovers pending remediations",
+      "Status displays pending remediations",
+      "Node.js version synchronized to >=22"
+    ]
+  }
+}

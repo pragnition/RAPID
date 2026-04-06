@@ -1,0 +1,124 @@
+<h2>Lifecycle Flow: B/C Hybrid Preview</h2>
+<p class="subtitle">Card nodes + phase glows + background regions + Bezier connectors</p>
+
+<div class="section">
+  <h3>Reimagined Lifecycle</h3>
+  <div style="background:#2d353b; border-radius:12px; padding:24px; overflow:hidden; position:relative;">
+
+    <!-- Dot grid background -->
+    <svg width="100%" height="100%" style="position:absolute; inset:0; opacity:0.3;">
+      <defs>
+        <pattern id="dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="12" cy="12" r="0.7" fill="#859289"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#dots)"/>
+    </svg>
+
+    <!-- Phase background regions -->
+    <div style="position:relative; display:flex; gap:0; padding:8px 0;">
+
+      <!-- Setup phase region -->
+      <div style="flex:0 0 auto; background:rgba(133,146,137,0.06); border-radius:12px; border:1px solid rgba(133,146,137,0.08); padding:16px 12px; margin-right:6px; display:flex; flex-direction:column; align-items:center; gap:8px;">
+        <span style="font-family:'Noto Serif',Georgia,serif; font-size:11px; color:#859289; opacity:0.5; letter-spacing:1px; text-transform:uppercase;">Setup</span>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <!-- init node -->
+          <div style="background:#3a4349; width:130px; height:54px; border-radius:10px; border:1px solid rgba(133,146,137,0.25); border-top:1px solid rgba(133,146,137,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 20px rgba(133,146,137,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span style="color:#d3c6aa; font-family:'Courier New',monospace; font-size:16px; font-weight:500;">init</span>
+            <span style="color:#d3c6aa; font-family:'Noto Serif',Georgia,serif; font-size:10px; opacity:0.6;">Research & Plan</span>
+          </div>
+          <!-- arrow -->
+          <svg width="28" height="16" style="flex-shrink:0;"><path d="M0 8 C10 8 14 8 22 8" stroke="#859289" stroke-width="1.5" fill="none" opacity="0.4"/><polygon points="20,4 28,8 20,12" fill="#859289" opacity="0.4"/></svg>
+          <!-- start-set node -->
+          <div style="background:#3a4349; width:130px; height:54px; border-radius:10px; border:1px solid rgba(133,146,137,0.25); border-top:1px solid rgba(133,146,137,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 20px rgba(133,146,137,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span style="color:#d3c6aa; font-family:'Courier New',monospace; font-size:16px; font-weight:500;">start-set</span>
+            <span style="color:#d3c6aa; font-family:'Noto Serif',Georgia,serif; font-size:10px; opacity:0.6;">Create Worktree</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transition arrow between phases -->
+      <div style="display:flex; align-items:center; margin:0 2px; padding-top:20px;">
+        <svg width="24" height="16"><path d="M0 8 C8 8 12 8 18 8" stroke="#d3c6aa" stroke-width="1.5" fill="none" opacity="0.3"/><polygon points="16,4 24,8 16,12" fill="#d3c6aa" opacity="0.3"/></svg>
+      </div>
+
+      <!-- Planning phase region -->
+      <div style="flex:0 0 auto; background:rgba(167,192,128,0.06); border-radius:12px; border:1px solid rgba(167,192,128,0.08); padding:16px 12px; margin-right:6px; display:flex; flex-direction:column; align-items:center; gap:8px;">
+        <span style="font-family:'Noto Serif',Georgia,serif; font-size:11px; color:#a7c080; opacity:0.5; letter-spacing:1px; text-transform:uppercase;">Planning</span>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <!-- discuss node -->
+          <div style="background:#3a4349; width:130px; height:54px; border-radius:10px; border:1px solid rgba(167,192,128,0.25); border-top:1px solid rgba(167,192,128,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 20px rgba(167,192,128,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span style="color:#a7c080; font-family:'Courier New',monospace; font-size:16px; font-weight:500;">discuss</span>
+            <span style="color:#a7c080; font-family:'Noto Serif',Georgia,serif; font-size:10px; opacity:0.6;">Capture Vision</span>
+          </div>
+          <svg width="28" height="16" style="flex-shrink:0;"><path d="M0 8 C10 8 14 8 22 8" stroke="#a7c080" stroke-width="1.5" fill="none" opacity="0.4"/><polygon points="20,4 28,8 20,12" fill="#a7c080" opacity="0.4"/></svg>
+          <!-- plan node -->
+          <div style="background:#3a4349; width:130px; height:54px; border-radius:10px; border:1px solid rgba(167,192,128,0.25); border-top:1px solid rgba(167,192,128,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 20px rgba(167,192,128,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span style="color:#a7c080; font-family:'Courier New',monospace; font-size:16px; font-weight:500;">plan</span>
+            <span style="color:#a7c080; font-family:'Noto Serif',Georgia,serif; font-size:10px; opacity:0.6;">Write Tasks</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transition arrow -->
+      <div style="display:flex; align-items:center; margin:0 2px; padding-top:20px;">
+        <svg width="24" height="16"><path d="M0 8 C8 8 12 8 18 8" stroke="#d3c6aa" stroke-width="1.5" fill="none" opacity="0.3"/><polygon points="16,4 24,8 16,12" fill="#d3c6aa" opacity="0.3"/></svg>
+      </div>
+
+      <!-- Execution phase region -->
+      <div style="flex:0 0 auto; background:rgba(127,187,179,0.06); border-radius:12px; border:1px solid rgba(127,187,179,0.08); padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px;">
+        <span style="font-family:'Noto Serif',Georgia,serif; font-size:11px; color:#7fbbb3; opacity:0.5; letter-spacing:1px; text-transform:uppercase;">Execution</span>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <!-- execute node -->
+          <div style="background:#3a4349; width:130px; height:54px; border-radius:10px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 20px rgba(127,187,179,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:16px; font-weight:500;">execute</span>
+            <span style="color:#7fbbb3; font-family:'Noto Serif',Georgia,serif; font-size:10px; opacity:0.6;">Implement</span>
+          </div>
+          <svg width="28" height="16" style="flex-shrink:0;"><path d="M0 8 C10 8 14 8 22 8" stroke="#7fbbb3" stroke-width="1.5" fill="none" opacity="0.4"/><polygon points="20,4 28,8 20,12" fill="#7fbbb3" opacity="0.4"/></svg>
+          <!-- review node -->
+          <div style="background:#3a4349; width:130px; height:54px; border-radius:10px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 20px rgba(127,187,179,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:16px; font-weight:500;">review</span>
+            <span style="color:#7fbbb3; font-family:'Noto Serif',Georgia,serif; font-size:10px; opacity:0.6;">Verify Quality</span>
+          </div>
+          <svg width="28" height="16" style="flex-shrink:0;"><path d="M0 8 C10 8 14 8 22 8" stroke="#7fbbb3" stroke-width="1.5" fill="none" opacity="0.4"/><polygon points="20,4 28,8 20,12" fill="#7fbbb3" opacity="0.4"/></svg>
+          <!-- merge node -->
+          <div style="background:#3a4349; width:130px; height:54px; border-radius:10px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 20px rgba(127,187,179,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:16px; font-weight:500;">merge</span>
+            <span style="color:#7fbbb3; font-family:'Noto Serif',Georgia,serif; font-size:10px; opacity:0.6;">Integrate</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- "repeat per set" loop indicator -->
+    <div style="position:relative; text-align:center; margin-top:12px; padding:0 12px;">
+      <svg width="100%" height="36" style="display:block;">
+        <defs>
+          <linearGradient id="loopGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#7fbbb3"/>
+            <stop offset="50%" stop-color="#d3c6aa"/>
+            <stop offset="100%" stop-color="#859289"/>
+          </linearGradient>
+        </defs>
+        <!-- Loop arc with gradient stroke -->
+        <path d="M85% 2 C85% 26 15% 26 15% 2" stroke="url(#loopGrad)" stroke-width="1.5" fill="none" opacity="0.25" stroke-dasharray="6 4"/>
+        <!-- Arrowhead at left end -->
+        <polygon points="14.5%,-2 15%,4 15.5%,-2" fill="#859289" opacity="0.25" transform="translate(0,2)"/>
+      </svg>
+      <span style="font-family:'Noto Serif',Georgia,serif; font-size:12px; color:#859289; opacity:0.4; position:relative; top:-4px;">repeat per set</span>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>What changed</h3>
+  <ul style="color:#b0b8a8; font-size:14px; line-height:1.8;">
+    <li><strong>Phase regions</strong> -- subtle tinted backgrounds group related nodes (Setup, Planning, Execution)</li>
+    <li><strong>Card depth</strong> -- dark card background (#3a4349) with phase-colored borders, top highlight edge, and soft glow shadow</li>
+    <li><strong>Phase-colored text</strong> -- command names take the phase color instead of background dark, giving each group its own identity</li>
+    <li><strong>Dot grid</strong> -- faint grid behind everything for spatial grounding</li>
+    <li><strong>Bezier connectors</strong> -- smooth curves with phase-matching colors</li>
+    <li><strong>Gradient loop arc</strong> -- dashed, gradient-stroked "repeat per set" arc</li>
+    <li><strong>Phase labels</strong> -- moved inside the regions as subtle uppercase headers</li>
+  </ul>
+</div>

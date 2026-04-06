@@ -1,0 +1,231 @@
+<h2>Agent Dispatch: Same Treatment</h2>
+<p class="subtitle">Card depth + phase glows + dot grid applied to the dispatch table</p>
+
+<div class="section">
+  <div style="background:#2d353b; border-radius:12px; padding:24px 20px; overflow:hidden; position:relative;">
+
+    <!-- Dot grid background -->
+    <svg width="100%" height="100%" style="position:absolute; inset:0; opacity:0.3;">
+      <defs>
+        <pattern id="dots2" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="12" cy="12" r="0.7" fill="#859289"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#dots2)"/>
+    </svg>
+
+    <div style="position:relative;">
+      <!-- Title -->
+      <div style="text-align:center; margin-bottom:20px;">
+        <span style="font-family:'Noto Serif',Georgia,serif; font-size:20px; font-weight:bold; color:#d3c6aa;">Agent Dispatch Architecture</span>
+      </div>
+
+      <!-- Column headers -->
+      <div style="display:flex; align-items:center; padding:0 8px 12px; border-bottom:1px solid rgba(133,146,137,0.1);">
+        <div style="width:200px; flex-shrink:0;">
+          <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#859289; opacity:0.5;">Command</span>
+        </div>
+        <div style="flex:1; padding-left:60px;">
+          <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#859289; opacity:0.5;">Dispatched Agents</span>
+        </div>
+      </div>
+
+      <!-- Row 1: /rapid:init (Setup) -->
+      <div style="display:flex; align-items:center; padding:16px 8px; border-bottom:1px solid rgba(133,146,137,0.06);">
+        <div style="width:200px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
+          <div style="background:#3a4349; padding:8px 16px; border-radius:8px; border:1px solid rgba(133,146,137,0.25); border-top:1px solid rgba(133,146,137,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(133,146,137,0.06);">
+            <span style="color:#d3c6aa; font-family:'Courier New',monospace; font-size:14px;">/rapid:init</span>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(133,146,137,0.3); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#859289; font-family:monospace; font-size:12px; opacity:0.7;">9</span>
+          </div>
+        </div>
+        <!-- Connector -->
+        <div style="width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+          <div style="width:28px; height:1px; background:linear-gradient(90deg, rgba(133,146,137,0.3), rgba(133,146,137,0.1));"></div>
+        </div>
+        <!-- Agent pills -->
+        <div style="flex:1; display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">codebase-synthesizer</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">research-stack</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">research-features</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">research-architecture</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">research-pitfalls</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">research-oversights</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">research-ux</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">research-synthesizer</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">roadmapper</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: /rapid:start-set (Setup) -->
+      <div style="display:flex; align-items:center; padding:16px 8px; border-bottom:1px solid rgba(133,146,137,0.06);">
+        <div style="width:200px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
+          <div style="background:#3a4349; padding:8px 16px; border-radius:8px; border:1px solid rgba(133,146,137,0.25); border-top:1px solid rgba(133,146,137,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(133,146,137,0.06);">
+            <span style="color:#d3c6aa; font-family:'Courier New',monospace; font-size:14px;">/rapid:start-set</span>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(133,146,137,0.3); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#859289; font-family:monospace; font-size:12px; opacity:0.7;">1</span>
+          </div>
+        </div>
+        <div style="width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+          <div style="width:28px; height:1px; background:linear-gradient(90deg, rgba(133,146,137,0.3), rgba(133,146,137,0.1));"></div>
+        </div>
+        <div style="flex:1; display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(133,146,137,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#859289; font-family:monospace; font-size:12px;">set-planner</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: /rapid:discuss (Planning) -->
+      <div style="display:flex; align-items:center; padding:16px 8px; border-bottom:1px solid rgba(167,192,128,0.06);">
+        <div style="width:200px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
+          <div style="background:#3a4349; padding:8px 16px; border-radius:8px; border:1px solid rgba(167,192,128,0.25); border-top:1px solid rgba(167,192,128,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(167,192,128,0.06);">
+            <span style="color:#a7c080; font-family:'Courier New',monospace; font-size:14px;">/rapid:discuss</span>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(167,192,128,0.3); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#a7c080; font-family:monospace; font-size:12px; opacity:0.7;">1</span>
+          </div>
+        </div>
+        <div style="width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+          <div style="width:28px; height:1px; background:linear-gradient(90deg, rgba(167,192,128,0.3), rgba(167,192,128,0.1));"></div>
+        </div>
+        <div style="flex:1; display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(167,192,128,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#a7c080; font-family:monospace; font-size:12px;">research-stack</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4: /rapid:plan (Planning) -->
+      <div style="display:flex; align-items:center; padding:16px 8px; border-bottom:1px solid rgba(167,192,128,0.06);">
+        <div style="width:200px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
+          <div style="background:#3a4349; padding:8px 16px; border-radius:8px; border:1px solid rgba(167,192,128,0.25); border-top:1px solid rgba(167,192,128,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(167,192,128,0.06);">
+            <span style="color:#a7c080; font-family:'Courier New',monospace; font-size:14px;">/rapid:plan</span>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(167,192,128,0.3); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#a7c080; font-family:monospace; font-size:12px; opacity:0.7;">3</span>
+          </div>
+        </div>
+        <div style="width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+          <div style="width:28px; height:1px; background:linear-gradient(90deg, rgba(167,192,128,0.3), rgba(167,192,128,0.1));"></div>
+        </div>
+        <div style="flex:1; display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(167,192,128,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#a7c080; font-family:monospace; font-size:12px;">research-stack</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(167,192,128,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#a7c080; font-family:monospace; font-size:12px;">planner</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(167,192,128,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#a7c080; font-family:monospace; font-size:12px;">plan-verifier</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5: /rapid:execute (Execution) -->
+      <div style="display:flex; align-items:center; padding:16px 8px; border-bottom:1px solid rgba(127,187,179,0.06);">
+        <div style="width:200px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
+          <div style="background:#3a4349; padding:8px 16px; border-radius:8px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(127,187,179,0.06);">
+            <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:14px;">/rapid:execute</span>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(127,187,179,0.3); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#7fbbb3; font-family:monospace; font-size:12px; opacity:0.7;">2</span>
+          </div>
+        </div>
+        <div style="width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+          <div style="width:28px; height:1px; background:linear-gradient(90deg, rgba(127,187,179,0.3), rgba(127,187,179,0.1));"></div>
+        </div>
+        <div style="flex:1; display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#7fbbb3; font-family:monospace; font-size:12px;">executor x N</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#7fbbb3; font-family:monospace; font-size:12px;">verifier</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 6: /rapid:review (Execution) -->
+      <div style="display:flex; align-items:center; padding:16px 8px; border-bottom:1px solid rgba(127,187,179,0.06);">
+        <div style="width:200px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
+          <div style="background:#3a4349; padding:8px 16px; border-radius:8px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(127,187,179,0.06);">
+            <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:14px;">/rapid:review</span>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(127,187,179,0.3); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#7fbbb3; font-family:monospace; font-size:12px; opacity:0.7;">1</span>
+          </div>
+        </div>
+        <div style="width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+          <div style="width:28px; height:1px; background:linear-gradient(90deg, rgba(127,187,179,0.3), rgba(127,187,179,0.1));"></div>
+        </div>
+        <div style="flex:1; display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#7fbbb3; font-family:monospace; font-size:12px;">scoper</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 7: /rapid:merge (Execution) -->
+      <div style="display:flex; align-items:center; padding:16px 8px; border-bottom:1px solid rgba(127,187,179,0.06);">
+        <div style="width:200px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
+          <div style="background:#3a4349; padding:8px 16px; border-radius:8px; border:1px solid rgba(127,187,179,0.25); border-top:1px solid rgba(127,187,179,0.4); box-shadow: 0 3px 12px rgba(0,0,0,0.3), 0 0 16px rgba(127,187,179,0.06);">
+            <span style="color:#7fbbb3; font-family:'Courier New',monospace; font-size:14px;">/rapid:merge</span>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(127,187,179,0.3); display:flex; align-items:center; justify-content:center;">
+            <span style="color:#7fbbb3; font-family:monospace; font-size:12px; opacity:0.7;">2</span>
+          </div>
+        </div>
+        <div style="width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+          <div style="width:28px; height:1px; background:linear-gradient(90deg, rgba(127,187,179,0.3), rgba(127,187,179,0.1));"></div>
+        </div>
+        <div style="flex:1; display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#7fbbb3; font-family:monospace; font-size:12px;">set-merger x N</span>
+          </div>
+          <div style="background:#343f44; padding:6px 14px; border-radius:6px; border:1px solid rgba(127,187,179,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <span style="color:#7fbbb3; font-family:monospace; font-size:12px;">conflict-resolver</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div style="display:flex; justify-content:center; gap:28px; padding:20px 0 4px; border-top:1px solid rgba(133,146,137,0.08); margin-top:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px; height:12px; border-radius:3px; background:#3a4349; border:1px solid rgba(133,146,137,0.3);"></div>
+          <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#859289; opacity:0.6;">Setup</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px; height:12px; border-radius:3px; background:#3a4349; border:1px solid rgba(167,192,128,0.3);"></div>
+          <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#a7c080; opacity:0.6;">Planning</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px; height:12px; border-radius:3px; background:#3a4349; border:1px solid rgba(127,187,179,0.3);"></div>
+          <span style="font-family:'Noto Serif',Georgia,serif; font-size:13px; color:#7fbbb3; opacity:0.6;">Execution</span>
+        </div>
+      </div>
+      <div style="text-align:center; padding-top:4px;">
+        <span style="font-family:'Noto Serif',Georgia,serif; font-size:12px; color:#859289; opacity:0.35;">x N = one agent spawned per wave or per set</span>
+      </div>
+    </div>
+  </div>
+</div>
