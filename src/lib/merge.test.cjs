@@ -1,10 +1,11 @@
 'use strict';
 
-const { describe, it, beforeEach, afterEach } = require('node:test');
+const { describe, it, beforeEach, afterEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 
 const {
   extractExports,
@@ -16,6 +17,7 @@ const {
   detectCascadeImpact,
   readMergeState,
   writeMergeState,
+  mergeSet,
 } = require('./merge.cjs');
 
 // ---------------------------------------------------------------------------
@@ -575,5 +577,105 @@ describe('detectCascadeImpact - canonical DAG path', () => {
     const result = detectCascadeImpact(tmpDir, 'any-set');
     assert.equal(result.hasCascade, false);
     assert.ok(result.recommendation.includes('No DAG.json found'));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// mergeSet stub cleanup wiring
+// ---------------------------------------------------------------------------
+describe('mergeSet stub cleanup wiring', () => {
+  let tmpDir;
+
+  /**
+   * Helper: create a minimal git repo with a main branch and optionally a
+   * feature branch with one commit.
+   */
+  function setupGitRepo(opts = {}) {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'merge-stub-test-'));
+    execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'pipe' });
+    // Create initial commit on main
+    fs.writeFileSync(path.join(tmpDir, 'init.txt'), 'init\n');
+    execSync('git add . && git commit -m "init"', { cwd: tmpDir, stdio: 'pipe' });
+
+    // Detect main branch name (could be master or main depending on git config)
+    const mainBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: tmpDir, encoding: 'utf-8' }).trim();
+
+    // Create .planning/worktrees directory for REGISTRY.json
+    const worktreeDir = path.join(tmpDir, '.planning', 'worktrees');
+    fs.mkdirSync(worktreeDir, { recursive: true });
+
+    if (opts.solo) {
+      // Solo mode: write registry with solo: true
+      fs.writeFileSync(
+        path.join(worktreeDir, 'REGISTRY.json'),
+        JSON.stringify({ version: 1, worktrees: { 'test-set': { solo: true, branch: mainBranch } } }, null, 2),
+        'utf-8'
+      );
+    } else {
+      // Normal mode: create a feature branch with a commit
+      execSync('git checkout -b rapid/test-set', { cwd: tmpDir, stdio: 'pipe' });
+      fs.writeFileSync(path.join(tmpDir, 'feature.txt'), 'feature\n');
+      execSync('git add . && git commit -m "feat: add feature"', { cwd: tmpDir, stdio: 'pipe' });
+      execSync(`git checkout ${mainBranch}`, { cwd: tmpDir, stdio: 'pipe' });
+
+      fs.writeFileSync(
+        path.join(worktreeDir, 'REGISTRY.json'),
+        JSON.stringify({ version: 1, worktrees: { 'test-set': { branch: 'rapid/test-set' } } }, null, 2),
+        'utf-8'
+      );
+    }
+
+    // Stage and commit the registry so merge does not fail on untracked files
+    execSync('git add .planning && git commit -m "chore: add registry"', { cwd: tmpDir, stdio: 'pipe' });
+
+    return mainBranch;
+  }
+
+  afterEach(() => {
+    if (tmpDir && fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('mergeSet normal mode returns stubsCleanedUp field', () => {
+    const mainBranch = setupGitRepo({ solo: false });
+
+    // Place a .rapid-stub sidecar file in the repo
+    fs.writeFileSync(path.join(tmpDir, 'foo.cjs'), 'module.exports = {};\n');
+    fs.writeFileSync(path.join(tmpDir, 'foo.cjs.rapid-stub'), '// stub sidecar\n');
+    execSync('git add . && git commit -m "chore: add stub sidecar"', { cwd: tmpDir, stdio: 'pipe' });
+
+    const result = mergeSet(tmpDir, 'test-set', mainBranch);
+    assert.equal(result.merged, true, `merge failed: ${result.reason} -- ${result.detail}`);
+    assert.equal(typeof result.stubsCleanedUp, 'number', 'stubsCleanedUp should be a number');
+  });
+
+  it('mergeSet solo mode returns stubsCleanedUp field', () => {
+    const mainBranch = setupGitRepo({ solo: true });
+
+    const result = mergeSet(tmpDir, 'test-set', mainBranch);
+    assert.equal(result.merged, true);
+    assert.equal(result.solo, true);
+    assert.equal(typeof result.stubsCleanedUp, 'number', 'stubsCleanedUp should be a number');
+  });
+
+  it('mergeSet continues when cleanupStubSidecars throws', () => {
+    const mainBranch = setupGitRepo({ solo: true });
+
+    // Mock stub.cleanupStubSidecars to throw
+    const stub = require('./stub.cjs');
+    const originalCleanup = stub.cleanupStubSidecars;
+    stub.cleanupStubSidecars = () => { throw new Error('simulated cleanup failure'); };
+
+    try {
+      const result = mergeSet(tmpDir, 'test-set', mainBranch);
+      assert.equal(result.merged, true, 'merge should succeed even when cleanup throws');
+      assert.equal(result.stubsCleanedUp, 0, 'stubsCleanedUp should be 0 on failure');
+    } finally {
+      // Restore original function
+      stub.cleanupStubSidecars = originalCleanup;
+    }
   });
 });
