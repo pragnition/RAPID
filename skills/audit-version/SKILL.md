@@ -272,6 +272,101 @@ Verify the artifact was created:
 test -f .planning/v${TARGET_VERSION}-AUDIT.md && echo "PASS: Audit report exists" || echo "FAIL: Audit report not created"
 ```
 
+## Step 3.5: Backlog Review
+
+### Step 3.5a: Scan for Backlog Items
+
+Check if `.planning/backlog/` exists and contains any `.md` files:
+
+```bash
+BACKLOG_COUNT=$(find .planning/backlog -name '*.md' 2>/dev/null | wc -l)
+echo "Backlog items found: ${BACKLOG_COUNT}"
+```
+
+If `BACKLOG_COUNT` is 0, display: "No backlog items found. Skipping backlog review." and skip to Step 4.
+
+### Step 3.5b: Parse Backlog Items
+
+For each `.md` file in `.planning/backlog/`, read the file and extract:
+- `title` from the YAML frontmatter
+- `created` date from the YAML frontmatter
+- `description` from the Markdown body (everything after the frontmatter closing `---`)
+
+Use the Read tool to read each file. Parse the YAML frontmatter by extracting content between the opening and closing `---` lines.
+
+### Step 3.5c: Present Backlog Summary Table
+
+Display a batch summary table of all backlog items:
+
+```
+--- Backlog Items ({BACKLOG_COUNT} found) ---
+
+| # | Title | Created | Description (preview) |
+|---|-------|---------|----------------------|
+| 1 | {title} | {created} | {first 60 chars of description}... |
+| 2 | ... | ... | ... |
+
+-----------------------------------------
+```
+
+### Step 3.5d: Backlog Triage
+
+For each backlog item, prompt the user individually using AskUserQuestion:
+
+**Prompt:**
+> Backlog item: {title}
+> Created: {created}
+> Description: {full description}
+>
+> What should be done with this item?
+
+**Options:** `["Promote to new set", "Defer to next version", "Discard"]`
+
+Handle each response:
+
+- **"Promote to new set":** Ask the user for a set name using AskUserQuestion (freeform):
+  > "What should this set be named? (Use kebab-case, e.g., 'add-priority-field')"
+
+  Then write `.planning/pending-sets/{set-name}.json` using the Write tool:
+  ```json
+  {
+    "setName": "{set-name}",
+    "scope": "{backlog item description}",
+    "files": [],
+    "deps": [],
+    "severity": "N/A",
+    "source": "backlog/{original-filename}",
+    "createdAt": "{current ISO date}"
+  }
+  ```
+  Create the `.planning/pending-sets/` directory first if it does not exist: `mkdir -p .planning/pending-sets`
+
+  After writing the pending-set JSON, delete the backlog file:
+  ```bash
+  rm .planning/backlog/{original-filename}
+  ```
+  Display: "Promoted '{title}' to pending set '{set-name}'. Run `/rapid:add-set {set-name}` to formalize."
+
+- **"Defer to next version":** Add the item to the `DEFERRAL_LIST` (the same list used by Step 4d). The item should be formatted as:
+  - requirement: `[Backlog] {title}`
+  - severity: `N/A`
+  - reason: "Backlog item deferred during audit"
+  - remediation/carry-forward context: `{full description}`
+
+  After adding to DEFERRAL_LIST, delete the backlog file:
+  ```bash
+  rm .planning/backlog/{original-filename}
+  ```
+  Display: "Deferred '{title}' to next version."
+
+  Note: The actual write to `v{VERSION}-DEFERRED.md` happens in existing Step 4d, which already handles the DEFERRAL_LIST. This step just appends to that list.
+
+- **"Discard":** Delete the backlog file without persisting content anywhere:
+  ```bash
+  rm .planning/backlog/{original-filename}
+  ```
+  Display: "Discarded '{title}'."
+
 ## Step 4: Remediation and Deferral
 
 ### Step 4a: Determine if Remediation is Needed
