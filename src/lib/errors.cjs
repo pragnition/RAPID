@@ -13,7 +13,24 @@
  * @module errors
  */
 
-const { error } = require('./core.cjs');
+/**
+ * Format an error message with breadcrumb recovery hint.
+ * Follows the compact inline format: {context}. Run: {recovery}
+ *
+ * ANSI coloring is NOT applied here -- it is added at output time
+ * by exitWithError() so that formatBreadcrumb() returns plain text
+ * suitable for CliError messages, Error objects, and JSON payloads.
+ *
+ * @param {string} context - What went wrong
+ * @param {string} [recovery] - Recovery command suggestion
+ * @returns {string} Formatted error message (without ANSI)
+ */
+function formatBreadcrumb(context, recovery) {
+  if (recovery) {
+    return `${context}. Run: ${recovery}`;
+  }
+  return context;
+}
 
 /**
  * Custom error class for CLI command failures.
@@ -40,6 +57,7 @@ class CliError extends Error {
 
 /**
  * Write error to both stdout (JSON) and stderr (human), then exit.
+ * Uses red ANSI on the [ERROR] label; respects NO_COLOR env var.
  *
  * @param {string} msg - Error message
  * @param {number} [code=1] - Process exit code
@@ -47,8 +65,10 @@ class CliError extends Error {
  */
 function exitWithError(msg, code = 1) {
   process.stdout.write(JSON.stringify({ error: msg }) + '\n');
-  error(msg);
+  const noColor = process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '';
+  const label = noColor ? '[ERROR]' : '\x1b[31m[ERROR]\x1b[0m';
+  process.stderr.write(`${label} ${msg}\n`);
   process.exit(code);
 }
 
-module.exports = { CliError, exitWithError };
+module.exports = { CliError, exitWithError, formatBreadcrumb };
