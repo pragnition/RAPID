@@ -1,6 +1,6 @@
 {
   "name": "rapid",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "description": "RAPID - Multi-agent orchestration plugin for Claude Code",
   "private": true,
   "engines": {
