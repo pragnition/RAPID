@@ -1,6 +1,6 @@
 'use strict';
 
-const { CliError } = require('../lib/errors.cjs');
+const { CliError, formatBreadcrumb } = require('../lib/errors.cjs');
 const { readStdinAsync } = require('../lib/stdin.cjs');
 
 async function handleState(cwd, subcommand, args) {
@@ -17,10 +17,10 @@ async function handleState(cwd, subcommand, args) {
         if (target === '--all') {
           const result = await sm.readState(cwd);
           if (result === null) {
-            throw new CliError('STATE.json not found. Run init to create project state.');
+            throw new CliError(formatBreadcrumb('STATE.json not found', '/rapid:init'));
           }
           if (!result.valid) {
-            throw new CliError('STATE.json is invalid: ' + JSON.stringify(result.errors));
+            throw new CliError(formatBreadcrumb('STATE.json is invalid: ' + JSON.stringify(result.errors), 'git checkout HEAD -- .planning/STATE.json'));
           }
           process.stdout.write(JSON.stringify(result.state, null, 2) + '\n');
           break;
@@ -29,10 +29,10 @@ async function handleState(cwd, subcommand, args) {
         // Hierarchy lookups: need to read state first
         const readResult = await sm.readState(cwd);
         if (readResult === null) {
-          throw new CliError('STATE.json not found.');
+          throw new CliError(formatBreadcrumb('STATE.json not found', '/rapid:init'));
         }
         if (!readResult.valid) {
-          throw new CliError('STATE.json is invalid: ' + JSON.stringify(readResult.errors));
+          throw new CliError(formatBreadcrumb('STATE.json is invalid: ' + JSON.stringify(readResult.errors), 'git checkout HEAD -- .planning/STATE.json'));
         }
         const state = readResult.state;
 
@@ -191,7 +191,7 @@ async function handleState(cwd, subcommand, args) {
       }
 
       default:
-        throw new CliError(`Unknown state subcommand: ${subcommand}`);
+        throw new CliError(formatBreadcrumb(`Unknown state subcommand: ${subcommand}`, 'node rapid-tools.cjs --help'));
     }
   } catch (err) {
     if (err instanceof CliError) throw err;
