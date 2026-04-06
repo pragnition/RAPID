@@ -110,4 +110,38 @@ function renderBanner(stage, target) {
   return `${bg}${ANSI.bold}${ANSI.brightWhite}${padded}${ANSI.reset}`;
 }
 
-module.exports = { renderBanner, STAGE_VERBS, STAGE_BG };
+/**
+ * Render a standardized footer with /clear reminder, next command, and optional breadcrumb.
+ *
+ * Returns a multi-line string (does NOT write to stdout). The caller decides output.
+ * Footer uses no ANSI color codes -- plain text only.
+ *
+ * @param {string} nextCommand - The next command to suggest (e.g., '/rapid:plan-set 1')
+ * @param {object} [options] - Optional settings
+ * @param {string} [options.breadcrumb] - Raw breadcrumb string to display as-is
+ * @param {boolean} [options.clearRequired=true] - Whether to include the /clear reminder line
+ * @returns {string} Formatted footer string
+ */
+function renderFooter(nextCommand, options = {}) {
+  const { breadcrumb, clearRequired = true } = options;
+
+  const lines = [];
+  if (clearRequired) {
+    lines.push('  Run /clear before continuing');
+  }
+  lines.push(`  Next: ${nextCommand}`);
+  if (breadcrumb && breadcrumb.length > 0) {
+    lines.push(`  ${breadcrumb}`);
+  }
+
+  const maxLen = Math.max(...lines.map(l => l.length));
+  const width = Math.max(maxLen + 4, 40);
+
+  // NO_COLOR support -- use ASCII hyphen instead of box-drawing character
+  const sepChar = (process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '') ? '-' : '─';
+  const separator = sepChar.repeat(width);
+
+  return `\n${separator}\n${lines.join('\n')}\n${separator}`;
+}
+
+module.exports = { renderBanner, renderFooter, STAGE_VERBS, STAGE_BG };
