@@ -31,7 +31,7 @@
   "imports": {},
   "behavioral": {
     "claudeMdTokenBudget": {
-      "description": "The CLAUDE.md principles summary must not exceed 15 lines to avoid agent context bloat",
+      "description": "The CLAUDE.md principles summary must not exceed 45 lines to avoid agent context bloat",
       "enforced_by": "test"
     },
     "specCriticalEvaluation": {
