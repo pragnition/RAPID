@@ -22,7 +22,7 @@
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
 - **v5.0 OSS Presentation** — 5 sets (shipped 2026-03-31)
 - **v6.0.0 Scale & Quality** — 7 sets (shipped 2026-04-06)
-- **v6.1.0 UX & Onboarding** — 6 sets (in progress)
+- **v6.1.0 UX & Onboarding** — 7 sets (in progress)
 
 ## Active Milestone: v6.1.0 — UX & Onboarding
 
@@ -52,7 +52,11 @@ New `/rapid:backlog` skill callable by users and agents to capture out-of-scope 
 **Branch:** `set/docs-housekeeping` | **Dependencies:** none
 Full housekeeping sweep: bump all version references to v6.1.0 (package.json, README, skill metadata, planning docs), refresh documentation project-wide (references/, guides/, .planning/context/), and clean up any stale version strings or outdated references.
 
-**Dependency graph:** `{clear-guidance-and-display, audit-handoff, backlog-system, docs-housekeeping}` (parallel) → `{readme-and-onboarding}` (depends on 1) | `{ux-audit}` (depends on 1 & 2)
+### Set 7: ux-first-run — First-Run UX Polish
+**Branch:** `set/ux-first-run` | **Dependencies:** none
+Implement 5 deferred first-run UX items from v6.1.0 audit: post-init workflow guide, status empty-state guidance, init-to-first-set bridge, fuzzy command matching, and status contextual hints. All require SKILL.md modifications. Carry-forward context in `.planning/v6.1.0-UX-AUDIT.md`.
+
+**Dependency graph:** `{clear-guidance-and-display, audit-handoff, backlog-system, docs-housekeeping, ux-first-run}` (parallel) → `{readme-and-onboarding}` (depends on 1) | `{ux-audit}` (depends on 1 & 2)
 
 ## Completed Milestone Details
 

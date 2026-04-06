@@ -1,0 +1,8 @@
+{
+  "setId": "ux-first-run",
+  "milestone": "v6.1.0",
+  "created": "2026-04-07",
+  "exports": { "functions": [], "types": [] },
+  "imports": { "functions": [], "types": [] },
+  "fileOwnership": []
+}
