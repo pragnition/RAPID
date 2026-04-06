@@ -477,6 +477,24 @@ Registers the current project with the RAPID Mission Control web dashboard. Only
 
 RAPID v6.0.0 structures parallel work around **sets** -- independent workstreams that each developer owns end-to-end. Sets are the sole stateful entity; there is no wave or task state in STATE.json.
 
+### How It Works
+
+**Research pipeline.** `/rapid:init` runs a structured discovery conversation, spawns 6 parallel researchers (stack, features, architecture, pitfalls, oversights, UX) to analyze the project, synthesizes findings, and generates a roadmap with sets.
+
+**Isolation.** `/rapid:start-set` creates a dedicated git worktree per set so each agent works in its own copy of the repo.
+
+**Discussion.** `/rapid:discuss-set` captures implementation vision and design decisions into CONTEXT.md before planning begins.
+
+**Interface contracts.** Sets connect through `CONTRACT.json` -- machine-verifiable specs defining which functions, types, and endpoints each set exposes. Contracts are validated after planning, during execution, and before merge.
+
+**Planning.** `/rapid:plan-set` runs researcher, planner, and verifier agents to produce per-wave PLAN.md files.
+
+**Execution.** `/rapid:execute-set` runs one executor per wave with atomic commits and artifact-based crash recovery.
+
+**Review pipeline.** Four sequential stages: scoping, unit tests, adversarial bug hunt (hunter/advocate/judge, up to 3 rounds), and acceptance testing.
+
+**Merge.** `/rapid:merge` detects conflicts at 5 levels and resolves them through a confidence cascade.
+
 ### Agent Dispatch
 
 Skills dispatch agents directly -- there is no central coordination agent. Each command spawns exactly the agents it needs. 27 agents are organized into 7 categories:
