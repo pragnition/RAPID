@@ -42,10 +42,10 @@
       "signature": "node rapid-tools.cjs dag regroup --team-size <N>",
       "description": "CLI subcommand that re-partitions sets into N groups"
     },
-    "migrateDAGv1toV2": {
+    "migrateDAGv1toV3": {
       "type": "function",
-      "signature": "migrateDAGv1toV2(dagV1: object): DAGv2",
-      "description": "Auto-migrates a v1 DAG to v2 format, preserving all existing data"
+      "signature": "migrateDAGv1toV3(dagV1: object): DAGv3",
+      "description": "Auto-migrates a v1 DAG to v3 format, preserving all existing data"
     },
     "migrateDAGv2toV3": {
       "type": "function",
