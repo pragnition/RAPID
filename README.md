@@ -103,3 +103,53 @@ Run `/rapid:review 1` to scope the changed files for review, then `/rapid:merge`
 > /clear
 
 That is the full cycle for one set. In a real project, multiple sets run in parallel -- each developer owns a set end-to-end, and RAPID handles the coordination.
+
+## Architecture
+
+<p align="center">
+  <img src="branding/lifecycle-flow.svg" alt="RAPID Lifecycle Flow" />
+</p>
+
+<p align="center">
+  <img src="branding/agent-dispatch.svg" alt="Agent Dispatch Architecture" />
+</p>
+
+For a detailed explanation of how each stage works, see [DOCS.md](DOCS.md#architecture-overview).
+
+## Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `/rapid:init` | Research project, generate roadmap, decompose into sets |
+| `/rapid:start-set` | Create isolated worktree, generate scoped CLAUDE.md |
+| `/rapid:discuss-set` | Capture developer implementation vision before planning |
+| `/rapid:plan-set` | Plan all waves in a set -- research, plan, validate |
+| `/rapid:execute-set` | Execute all waves with per-wave executor agents |
+| `/rapid:review` | Scope review targets and produce REVIEW-SCOPE.md |
+| `/rapid:merge` | Merge completed sets to main with conflict detection |
+
+See [DOCS.md](DOCS.md) for the full reference covering all 28 commands.
+
+## Changelog
+
+See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v6.0.0 Scale & Quality** (2026-04-01) -- DAGv3 schema, developer group partitioning, Node.js 20+ minimum, enhanced merge pipeline.
+
+## Documentation
+
+-> [DOCS.md](DOCS.md) -- command reference, quick lookup, all 28 commands with usage examples
+
+-> [Technical Documentation](technical_documentation.md) -- architectural narrative, system design rationale, how components fit together
+
+-> [docs/](docs/) -- topic-specific deep-dives (agents, state machines, configuration, merge, review, and more)
+
+## Credits 
+
+Huge thanks to the work done by other opensource agent harnesses like [get-shit-done](https://github.com/gsd-build/get-shit-done) and [OpenSpec](https://github.com/gsd-build/get-shit-done). RAPID is heavily inspired by get-shit-done. In fact, earlier versions of RAPID were built using GSD till RAPID was good enough to build itself!
+
+Another shoutout to [this article](https://www.humanlayer.dev/blog/skill-issue-harness-engineering-for-coding-agents) by humanlayer that served as a great info dump/starting point.
+
+## Links
+
+-> [Contributing Guide](CONTRIBUTING.md) -- how to contribute to RAPID
+
+-> [License](LICENSE) -- MIT
