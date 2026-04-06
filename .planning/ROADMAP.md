@@ -21,7 +21,7 @@
 - **v4.4.0 Polish & Documentation** — 3 sets (shipped 2026-03-26)
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
 - **v5.0 OSS Presentation** — 5 sets (shipped 2026-03-31)
-- **v6.0.0 Scale & Quality** — 6 sets (in progress)
+- **v6.0.0 Scale & Quality** — 7 sets (in progress)
 
 ## Active Milestone: v6.0.0 — Scale & Quality
 
@@ -51,7 +51,11 @@ Strengthen namespace isolation in core-identity.md with explicit deny-list examp
 **Branch:** `set/docs-version-bump` | **Dependencies:** none
 Update CHANGELOG.md with a summary of all v6.0.0 sets, bump all version references from 5.0.0 to 6.0.0 across package.json, plugin.json, config.json, STATE.json, and skill files, and update project documentation.
 
-**Dependency graph:** `{bug-fixes-foundation}` → `{dag-central-grouping}` → `{scaffold-overhaul}` | `{init-enhancements, agent-namespace-enforcement, docs-version-bump}` independent
+### Set 7: fix-stub-cleanup — Audit Gap Closure
+**Branch:** `set/fix-stub-cleanup` | **Dependencies:** none
+Close the 3 actionable gaps from the v6.0.0 audit: wire cleanupStubSidecars() into the merge pipeline post-resolution flow, fix stale CONTRACT.json export name migrateDAGv1toV2 -> migrateDAGv1toV3 in dag-central-grouping, and fix CONTRACT.json claudeMdTokenBudget from 15 to 45 in init-enhancements.
+
+**Dependency graph:** `{bug-fixes-foundation}` → `{dag-central-grouping}` → `{scaffold-overhaul}` | `{init-enhancements, agent-namespace-enforcement, docs-version-bump, fix-stub-cleanup}` independent
 
 ## Completed Milestone Details
 
