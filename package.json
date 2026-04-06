@@ -4,7 +4,7 @@
   "description": "RAPID - Multi-agent orchestration plugin for Claude Code",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "repository": {
     "type": "git",

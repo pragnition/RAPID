@@ -32,12 +32,12 @@ echo ""
 echo "[1/8] Checking prerequisites..."
 
 if ! command -v node &>/dev/null; then
-    echo "  ERROR: Node.js is required (v18+). Install from https://nodejs.org"
+    echo "  ERROR: Node.js is required (v22+). Install from https://nodejs.org"
     exit 1
 fi
 NODE_VERSION=$(node -v | sed 's/v//' | cut -d. -f1)
-if [[ "$NODE_VERSION" -lt 18 ]]; then
-    echo "  ERROR: Node.js 18+ required, found $(node -v)"
+if [[ "$NODE_VERSION" -lt 22 ]]; then
+    echo "  ERROR: Node.js 22+ required, found $(node -v)"
     exit 1
 fi
 echo "  OK: Node.js $(node -v)"
