@@ -29,10 +29,22 @@ const { handleDag } = require('../commands/dag.cjs');
 
 const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
 
-Commands:
-  lock acquire <name>    Acquire a named lock
-  lock status <name>     Check if a named lock is held
-  lock release <name>    Release a named lock (not typically used directly)
+--- Setup ---
+  prereqs                Check prerequisites (git, Node.js, jq)
+  prereqs --git-check    Check if current directory is a git repository
+  prereqs --json         Output raw prerequisite results as JSON
+  init detect            Check if .planning/ already exists
+  init scaffold --name <n> --desc <d> --team-size <N>  Create .planning/ files
+               [--mode fresh|reinitialize|upgrade|cancel]
+  context detect         Detect codebase characteristics (languages, frameworks, configs)
+  context generate       Ensure .planning/context/ directory exists and return its path
+  migrate detect                   Detect current RAPID version from .planning/ state
+  migrate is-latest                Check if .planning/ state is at the latest version
+  migrate backup                   Create pre-migration backup of .planning/
+  migrate restore                  Restore .planning/ from pre-migration backup
+  migrate cleanup                  Remove pre-migration backup
+
+--- Planning ---
   state get --all                                     Read full STATE.json
   state get milestone <id>                            Read milestone
   state get set <milestoneId> <setId>                 Read set
@@ -45,34 +57,22 @@ Commands:
   state add-set --milestone <id> --set-id <id> --set-name <name> [--deps <dep1,dep2>]  Add new set to milestone
   state detect-corruption                             Check STATE.json integrity
   state recover                                       Recover STATE.json from git
-  parse-return <file>    Parse a RAPID:RETURN marker from a file
-  parse-return --validate <file>  Parse and validate return data from a file
-  verify-artifacts <file1> [file2...]  Verify artifact files exist (lightweight)
-  verify-artifacts --heavy --test "<cmd>" <file1> [file2...]  Heavy verification with tests
-  verify-artifacts --report <file1> [file2...]  Generate verification report
-  prereqs                Check prerequisites (git, Node.js, jq)
-  prereqs --git-check    Check if current directory is a git repository
-  prereqs --json         Output raw prerequisite results as JSON
-  init detect            Check if .planning/ already exists
-  init scaffold --name <n> --desc <d> --team-size <N>  Create .planning/ files
-               [--mode fresh|reinitialize|upgrade|cancel]
-  context detect         Detect codebase characteristics (languages, frameworks, configs)
-  context generate       Ensure .planning/context/ directory exists and return its path
   plan create-set             Create a set from JSON on stdin
   plan decompose              Decompose sets from JSON array on stdin
   plan write-dag              Write DAG.json from JSON on stdin
   plan list-sets              List all defined sets
   plan load-set <name>        Load a set's definition and contract
+  set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
+  set-init list-available        List pending sets without worktrees
+  resolve set <input>                Resolve set reference (numeric index or string ID) to JSON
+  resolve wave <input>               Resolve wave reference (N.N dot notation or string ID) to JSON
   assumptions [set-name]      Surface assumptions about a set (or list sets)
-  worktree create <set-name>  Create worktree and branch for a set
-  worktree list               List all registered worktrees with status
-  worktree cleanup <set-name> Remove a worktree (blocks if dirty)
-  worktree reconcile          Sync registry with actual git state
-  worktree status             Show all worktrees with status table
-  worktree status --json      Machine-readable worktree status
-  worktree generate-claude-md <set>  Generate scoped CLAUDE.md for a worktree
-  worktree delete-branch <branch> [--force]  Delete a git branch (safe or forced)
-  resume <set-name>              Resume a paused set (extends execute resume with STATE.json)
+  dag generate                     Generate DAG.json from set dependencies
+  dag show                         Display DAG with wave grouping and status colors
+  scaffold run [--type <type>]  Generate project-type-aware foundation files
+  scaffold status               Show scaffold report (if scaffold has been run)
+
+--- Execution ---
   execute prepare-context <set>  Prepare execution context for a set
   execute verify <set> --branch <branch>  Verify set execution results
   execute generate-stubs <set>   Generate contract stubs for a set's imports
@@ -85,20 +85,47 @@ Commands:
   execute reconcile-jobs <set> <wave> [--branch <b>] [--mode <m>]  Reconcile jobs in a wave
   execute job-status <set>        Show per-wave/per-job statuses from STATE.json
   execute commit-state [message]  Commit STATE.json with a given message
+  resume <set-name>              Resume a paused set (extends execute resume with STATE.json)
+  worktree create <set-name>  Create worktree and branch for a set
+  worktree list               List all registered worktrees with status
+  worktree cleanup <set-name> Remove a worktree (blocks if dirty)
+  worktree reconcile          Sync registry with actual git state
+  worktree status             Show all worktrees with status table
+  worktree status --json      Machine-readable worktree status
+  worktree generate-claude-md <set>  Generate scoped CLAUDE.md for a worktree
+  worktree delete-branch <branch> [--force]  Delete a git branch (safe or forced)
+
+--- Review & Merge ---
+  review scope <set-id> [<wave-id>] [--branch <b>] [--post-merge]  Scope files for review
+  review log-issue <set-id> [<wave-id>] [--post-merge]  Log issue from stdin JSON
+  review list-issues <set-id> [--status <s>]         List all issues for a set
+  review update-issue <set-id> <wave-id> <issue-id> <status>  Update issue status
+  review lean <set-id> <wave-id>                     Run lean wave-level review
+  review summary <set-id> [--post-merge]             Generate REVIEW-SUMMARY.md
   merge review <set>              Run programmatic gate + write REVIEW.md
   merge execute <set>             Merge set branch into main (--no-ff) + update MERGE-STATE
   merge status                    Show merge pipeline status (per-set verdicts + MERGE-STATE)
   merge integration-test          Run post-wave integration test suite on main
   merge order                     Show merge order from DAG (wave-grouped)
   merge update-status <set> <status> [--agent-phase <phase>] [--agent-phase2 <conflictId> <phase>]  Update merge status + optional agentPhase1/agentPhase2
-  resolve set <input>                Resolve set reference (numeric index or string ID) to JSON
-  resolve wave <input>               Resolve wave reference (N.N dot notation or string ID) to JSON
   merge detect <set>              Run 5-level conflict detection (returns JSON)
   merge resolve <set>             Run resolution cascade on detected conflicts
   merge bisect <waveNum>          Run bisection recovery for a failed wave
   merge rollback <set> [--force]  Revert a merged set's merge commit (cascade check)
   merge merge-state <set>         Show MERGE-STATE.json for a set
   merge prepare-context <set>    Assemble launch briefing for set-merger subagent
+
+--- Utilities ---
+  lock acquire <name>    Acquire a named lock
+  lock status <name>     Check if a named lock is held
+  lock release <name>    Release a named lock (not typically used directly)
+  display banner <stage> [target]  Display branded RAPID stage banner
+  build-agents              Build all agent .md files from source modules
+  parse-return <file>    Parse a RAPID:RETURN marker from a file
+  parse-return --validate <file>  Parse and validate return data from a file
+  verify-artifacts <file1> [file2...]  Verify artifact files exist (lightweight)
+  verify-artifacts --heavy --test "<cmd>" <file1> [file2...]  Heavy verification with tests
+  verify-artifacts --report <file1> [file2...]  Generate verification report
   memory log-decision --category <c> --decision <d> --rationale <r> --source <s>  Log a decision
                       [--milestone <m>] [--set-id <id>] [--topic <t>]
   memory log-correction --original <o> --correction <c> --reason <r>  Log a correction
@@ -109,18 +136,6 @@ Commands:
   quick log --description <d> --outcome <o> --slug <s> --branch <b>  Append quick task to log
   quick list [--limit <n>]                                           List quick task history
   quick show <id>                                                    Show a quick task by ID
-  set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
-  set-init list-available        List pending sets without worktrees
-  review scope <set-id> [<wave-id>] [--branch <b>] [--post-merge]  Scope files for review
-  review log-issue <set-id> [<wave-id>] [--post-merge]  Log issue from stdin JSON
-  review list-issues <set-id> [--status <s>]         List all issues for a set
-  review update-issue <set-id> <wave-id> <issue-id> <status>  Update issue status
-  review lean <set-id> <wave-id>                     Run lean wave-level review
-  review summary <set-id> [--post-merge]             Generate REVIEW-SUMMARY.md
-  display banner <stage> [target]  Display branded RAPID stage banner
-  build-agents              Build all agent .md files from source modules
-  scaffold run [--type <type>]  Generate project-type-aware foundation files
-  scaffold status               Show scaffold report (if scaffold has been run)
   compact context <set-id> [--active-wave N]  Diagnostic: show compaction stats for a set
   hooks list                     List all verification checks and their status
   hooks run [--dry-run]          Run post-task hooks (reads RAPID:RETURN JSON from stdin)
@@ -132,13 +147,6 @@ Commands:
   docs generate [--scope <s>]      Generate documentation templates (scope: full|changelog|api|architecture)
   docs list                         List existing documentation files
   docs diff <milestone>             Show changelog entries for a milestone
-  dag generate                     Generate DAG.json from set dependencies
-  dag show                         Display DAG with wave grouping and status colors
-  migrate detect                   Detect current RAPID version from .planning/ state
-  migrate is-latest                Check if .planning/ state is at the latest version
-  migrate backup                   Create pre-migration backup of .planning/
-  migrate restore                  Restore .planning/ from pre-migration backup
-  migrate cleanup                  Remove pre-migration backup
 
 Options:
   --help, -h             Show this help message
