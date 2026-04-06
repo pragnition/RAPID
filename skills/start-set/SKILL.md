@@ -202,28 +202,17 @@ After the agent completes:
 
 ---
 
-## Step 5: Next Step
+## Step 5: Footer
 
-Display:
+Display the completion footer:
 
-> **Next step:** `/rapid:discuss-set {setIndex}`
-> *(Discuss set {setId})*
-
-Where `{setIndex}` is the numeric index of the set just initialized (obtained from the resolve step earlier in this skill).
-
-Display the suggestion and stop. The user will invoke discuss-set when ready.
-
----
-
-## Step 6: Progress Breadcrumb
-
-After the next-step suggestion, render the progress breadcrumb:
-
-```
-init [done] > start-set [done] > discuss-set > plan-set > execute-set > review > merge
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:discuss-set {setIndex}" --breadcrumb "init [done] > start-set [done] > discuss-set > plan-set > execute-set > review > merge"
 ```
 
-"init" and "start-set" are marked as done. All others are pending (no marker).
+Where `{setIndex}` is the resolved set index from Step 1.
 
 ---
 
