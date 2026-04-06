@@ -588,14 +588,14 @@
         },
         {
           "id": "audit-handoff",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Audit-to-Set Handoff Mechanism",
           "branch": "set/audit-handoff"
         },
         {
           "id": "readme-and-onboarding",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Beginner-Friendly README & Onboarding",
           "branch": "set/readme-and-onboarding"
@@ -610,6 +610,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-06T07:40:28.697Z",
+  "lastUpdatedAt": "2026-04-06T08:37:27.012Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
