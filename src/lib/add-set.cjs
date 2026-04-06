@@ -17,6 +17,7 @@ const { readState, withStateTransaction, findMilestone } = require('./state-mach
 const { createDAG, tryLoadDAG } = require('./dag.cjs');
 const { createOwnershipMap } = require('./contract.cjs');
 const { writeDAG, writeOwnership } = require('./plan.cjs');
+const { partitionIntoGroups, annotateDAGWithGroups } = require('./group.cjs');
 
 /**
  * Add a new set to a milestone atomically, then recalculate DAG and OWNERSHIP.
@@ -69,6 +70,9 @@ async function addSetToMilestone(cwd, milestoneId, setId, setName, deps) {
 
   // After transaction completes, recalculate DAG and OWNERSHIP
   await recalculateDAG(cwd, milestoneId);
+
+  // Auto-regroup if team size > 1
+  await autoRegroup(cwd);
 
   return { setId, milestoneId, depsValidated: depList };
 }
@@ -171,4 +175,38 @@ async function recalculateDAG(cwd, milestoneId) {
   return { dag: dagObj, ownership: ownershipObj };
 }
 
-module.exports = { addSetToMilestone, recalculateDAG };
+/**
+ * Auto-regroup DAG sets into developer groups based on teamSize from STATE.json.
+ * Skips gracefully when teamSize <= 1 (solo mode) or when STATE.json/DAG is missing.
+ *
+ * @param {string} cwd - Project root directory
+ */
+async function autoRegroup(cwd) {
+  // Read teamSize from STATE.json (top-level field, added during init)
+  const readResult = await readState(cwd);
+  if (!readResult || !readResult.valid) return; // graceful skip
+
+  const teamSize = readResult.state.teamSize;
+  if (!teamSize || teamSize <= 1) return; // solo mode -- skip regrouping
+
+  const { dag, path: dagPath } = tryLoadDAG(cwd);
+  if (!dag) return; // no DAG -- skip gracefully
+
+  // Load contracts for all sets in the DAG
+  const contracts = {};
+  for (const node of dag.nodes) {
+    const contractPath = path.join(cwd, '.planning', 'sets', node.id, 'CONTRACT.json');
+    try {
+      const raw = fs.readFileSync(contractPath, 'utf-8');
+      contracts[node.id] = JSON.parse(raw);
+    } catch {
+      // Missing or malformed contract -- skip
+    }
+  }
+
+  const groupResult = partitionIntoGroups(dag, contracts, teamSize);
+  const annotatedDag = annotateDAGWithGroups(dag, groupResult);
+  writeDAG(cwd, annotatedDag);
+}
+
+module.exports = { addSetToMilestone, recalculateDAG, autoRegroup };
