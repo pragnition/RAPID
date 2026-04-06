@@ -132,7 +132,7 @@ See [DOCS.md](DOCS.md) for the full reference covering all 29 commands.
 
 ## Changelog
 
-See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v6.0.0 Scale & Quality** (2026-04-01) -- DAGv3 schema, developer group partitioning, Node.js 20+ minimum, enhanced merge pipeline.
+See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v6.1.0 UX & Onboarding** (2026-04-06) -- unified footer guidance, audit-to-set handoff, README rewrite, UX audit, backlog capture, version housekeeping.
 
 ## Documentation
 
