@@ -602,7 +602,7 @@
         },
         {
           "id": "ux-audit",
-          "status": "planned",
+          "status": "executed",
           "waves": [],
           "name": "General UX Audit & Polish",
           "branch": "set/ux-audit"
@@ -610,6 +610,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-06T09:51:25.251Z",
+  "lastUpdatedAt": "2026-04-06T09:57:31.811Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
