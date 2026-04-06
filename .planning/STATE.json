@@ -570,12 +570,12 @@
         },
         {
           "id": "fix-stub-cleanup",
-          "status": "pending",
+          "status": "discussed",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-06T02:59:13.050Z",
+  "lastUpdatedAt": "2026-04-06T04:41:03.403Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
