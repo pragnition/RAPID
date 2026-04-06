@@ -81,3 +81,47 @@ describe('renderFooter', () => {
     assert.ok(nextIdx < bcIdx, 'next should come before breadcrumb');
   });
 });
+
+// Structural regression: every designated skill must contain display footer
+describe('structural: display footer in all skills', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+
+  const FOOTER_REQUIRED_SKILLS = [
+    'init', 'start-set', 'discuss-set', 'plan-set', 'execute-set',
+    'review', 'merge', 'new-version', 'add-set', 'scaffold',
+    'audit-version', 'quick', 'branding', 'documentation',
+    'unit-test', 'bug-hunt', 'uat', 'bug-fix',
+  ];
+
+  const FOOTER_EXCLUDED_SKILLS = [
+    'help', 'install', 'status', 'cleanup', 'pause', 'resume',
+    'assumptions', 'context', 'migrate', 'register-web',
+  ];
+
+  for (const name of FOOTER_REQUIRED_SKILLS) {
+    it(`skill '${name}' contains display footer call`, () => {
+      const skillPath = path.resolve(__dirname, '..', 'skills', name, 'SKILL.md');
+      const content = fs.readFileSync(skillPath, 'utf-8');
+      assert.ok(
+        content.includes('display footer'),
+        `Skill '${name}' SKILL.md does not contain 'display footer' -- add footer call`,
+      );
+    });
+  }
+
+  it('every skill directory is listed in REQUIRED or EXCLUDED', () => {
+    const skillsDir = path.resolve(__dirname, '..', 'skills');
+    const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
+    const dirs = entries.filter(e => e.isDirectory()).map(e => e.name);
+
+    const allListed = new Set([...FOOTER_REQUIRED_SKILLS, ...FOOTER_EXCLUDED_SKILLS]);
+    const unlisted = dirs.filter(d => !allListed.has(d));
+
+    assert.deepStrictEqual(
+      unlisted,
+      [],
+      `Skill(s) not in FOOTER_REQUIRED_SKILLS or FOOTER_EXCLUDED_SKILLS: ${unlisted.join(', ')} -- add each to one list`,
+    );
+  });
+});
