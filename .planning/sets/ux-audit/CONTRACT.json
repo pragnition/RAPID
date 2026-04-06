@@ -1,0 +1,61 @@
+{
+  "setId": "ux-audit",
+  "version": "1.0.0",
+  "exports": {
+    "uxAuditReport": {
+      "type": "file",
+      "signature": ".planning/v6.1.0-UX-AUDIT.md",
+      "description": "Structured UX audit report documenting findings, fixes applied, and remaining items"
+    },
+    "autoRegroupWiring": {
+      "type": "function",
+      "signature": "partitionIntoGroups() called after recalculateDAG() in state add-set flow",
+      "description": "Auto-regroup when DAG structure changes via add-set (deferred from v6.0.0)"
+    }
+  },
+  "imports": {
+    "clearPattern": {
+      "fromSet": "clear-guidance-and-display",
+      "type": "function",
+      "signature": "renderFooter(nextCommand: string, options?: { clearRequired?: boolean }): string",
+      "description": "Footer pattern must exist to verify UX consistency across skills"
+    },
+    "remediationFlow": {
+      "fromSet": "audit-handoff",
+      "type": "function",
+      "signature": "readRemediationArtifact(setName: string): object | null",
+      "description": "Remediation flow must exist to audit the audit-to-set handoff UX"
+    }
+  },
+  "behavioral": {
+    "boundedScope": {
+      "description": "UX audit operates on a predefined checklist of items, not open-ended exploration. The checklist is defined before work begins.",
+      "enforced_by": "test"
+    },
+    "breadcrumbConsistency": {
+      "description": "All error messages follow the breadcrumb pattern: what is done, what is missing, what to run next",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Systematic UX audit: breadcrumb consistency, error message improvements, command discoverability, first-run experience polish. Wire auto-regroup after add-set. Bounded checklist, not open-ended.",
+    "ownedFiles": [
+      "src/bin/rapid-tools.cjs",
+      "src/lib/dag.cjs",
+      "tests/ux-audit.test.cjs"
+    ],
+    "tasks": [
+      { "description": "Define UX audit checklist covering breadcrumbs, errors, discoverability, first-run", "acceptance": "Checklist documented with pass/fail criteria" },
+      { "description": "Standardize breadcrumb format across error messages", "acceptance": "Error messages show done/missing/next consistently" },
+      { "description": "Wire partitionIntoGroups() after recalculateDAG() in add-set state flow", "acceptance": "Adding a set auto-regroups the DAG" },
+      { "description": "Improve command discoverability and first-run experience", "acceptance": "New users can discover commands without reading full docs" },
+      { "description": "Produce UX audit report documenting findings and fixes", "acceptance": "Report at .planning/v6.1.0-UX-AUDIT.md" }
+    ],
+    "acceptance": [
+      "UX audit checklist complete with all items addressed",
+      "Breadcrumb consistency verified",
+      "Auto-regroup wired",
+      "Audit report produced"
+    ]
+  }
+}
