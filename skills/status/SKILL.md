@@ -3,9 +3,9 @@ description: Show project dashboard with set statuses, last activity, and next a
 allowed-tools: Bash, Read, AskUserQuestion
 ---
 
-# /rapid:status -- v6.0.0 Set Dashboard
+# /rapid:status -- v6.1.0 Set Dashboard
 
-You are the RAPID status viewer. This skill shows a set-level dashboard of all sets with their statuses, last git activity, and actionable next steps using v6.0.0 command names. This skill is **read-only** and never modifies any state. Follow these steps IN ORDER.
+You are the RAPID status viewer. This skill shows a set-level dashboard of all sets with their statuses, last git activity, and actionable next steps using v6.1.0 command names. This skill is **read-only** and never modifies any state. Follow these steps IN ORDER.
 
 ## Step 1: Load Environment
 
@@ -160,7 +160,7 @@ This is read-only -- no state modification.
 
 ## Step 4: Per-Set Next Actions via AskUserQuestion
 
-Based on each set's status, determine the suggested v6.0.0 next action:
+Based on each set's status, determine the suggested v6.1.0 next action:
 
 | Set Status | Suggested Action         |
 | ---------- | ------------------------ |
@@ -182,7 +182,7 @@ Collect all non-merged sets that have a suggested action. These are the actionab
 Use AskUserQuestion with one option per action plus a "Done" option:
 
 - For each actionable set:
-  - name: the v6.0.0 command with numeric shorthand (e.g., "/rapid:start-set 1")
+  - name: the v6.1.0 command with numeric shorthand (e.g., "/rapid:start-set 1")
   - description: what it does, including the full set name (e.g., "Start set-01-foundation for development")
 - Always include: name "Done -- no action needed", description "Exit status dashboard"
 
@@ -207,5 +207,5 @@ Use AskUserQuestion with:
 - **Read-only skill:** This skill only reads state and git history. It never creates, modifies, or removes worktrees or state.
 - **Data source:** STATE.json is the single source for set statuses (via `state get --all`). Git log provides last activity per branch.
 - **Set-level only:** No wave or job information is displayed. The dashboard shows sets and their statuses directly.
-- **v6.0.0 commands:** All suggested actions use v6.0.0 command names: start-set, discuss-set, plan-set, execute-set, review, merge, new-version.
+- **v6.1.0 commands:** All suggested actions use v6.1.0 command names: start-set, discuss-set, plan-set, execute-set, review, merge, new-version.
 - **AskUserQuestion:** Always used for next-action routing. Users pick from suggested commands or exit.
