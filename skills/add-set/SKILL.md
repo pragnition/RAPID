@@ -232,18 +232,16 @@ Set '{SET_ID}' added to milestone '{MILESTONE_ID}'.
 Status: pending
 ```
 
-### Next Step
+### Footer
 
 Determine the new set's numeric index (position in the milestone's sets array).
 
-Display the next step:
+Display the completion footer:
 
-> **Next step:** `/rapid:start-set {SET_INDEX}`
-
-### Progress Breadcrumb
-
-```
-init [done] > start-set > discuss-set > plan-set > execute-set > review > merge
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:start-set {SET_INDEX}"
 ```
 
 ---
