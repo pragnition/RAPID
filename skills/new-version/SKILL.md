@@ -726,8 +726,6 @@ New Milestone Created.
 Milestone: {milestoneId} -- {milestoneName}
 Sets planned: {count}
 Carried forward: {count} from {previousMilestone}
-
-Next step: /rapid:start-set 1
 ```
 
 If no sets were planned (roadmap cancelled), display:
@@ -738,14 +736,24 @@ New Milestone Created.
 Milestone: {milestoneId} -- {milestoneName}
 Sets planned: 0
 Carried forward: {count} from {previousMilestone}
-
-Next step: /rapid:status
 ```
 
-Show progress breadcrumb at the end:
+Display the completion footer:
 
+**When sets were planned:**
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:start-set 1" --breadcrumb "new-version [done] > start-set > discuss-set > plan-set > execute-set > review > merge"
 ```
-new-version [done] > start-set > discuss-set > plan-set > execute-set > review > merge
+
+**When no sets were planned:**
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:status" --breadcrumb "new-version [done] > start-set > discuss-set > plan-set > execute-set > review > merge"
 ```
 
 ---
