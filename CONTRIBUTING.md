@@ -6,7 +6,7 @@ RAPID (Rapid Agentic Parallelizable and Isolatable Development) is a Claude Code
 
 ## Development Setup
 
-**Prerequisites:** Node.js 20+, Git
+**Prerequisites:** Node.js 22+, Git
 
 ```bash
 git clone https://github.com/pragnition/RAPID.git
