@@ -239,7 +239,11 @@ function scaffoldProject(cwd, opts, mode = 'fresh') {
     'ROADMAP.md': () => generateRoadmapMd(opts.name),
     'REQUIREMENTS.md': () => generateRequirementsMd(opts.name),
     'config.json': () => generateConfigJson(opts),
-    'STATE.json': () => JSON.stringify(createInitialState(opts.name, 'v1.0', getVersion()), null, 2),
+    'STATE.json': () => {
+      const state = createInitialState(opts.name, 'v1.0', getVersion());
+      state.teamSize = opts.teamSize || 1;
+      return JSON.stringify(state, null, 2);
+    },
   };
 
   // Helper: ensure research directory exists inside planningDir
