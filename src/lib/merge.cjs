@@ -1736,16 +1736,30 @@ function checkFeatureRegression(cwd, preMergeRef, setBranch, postMergeRef, chang
  * @returns {{ merged: true, branch: string, commitHash: string } | { merged: false, reason: string, detail: string }}
  */
 function mergeSet(projectRoot, setName, baseBranch) {
+  // Helper: clean up .rapid-stub sidecar files (non-fatal)
+  let stubsCleanedUp = 0;
+  function doStubCleanup() {
+    try {
+      const cleanup = stub.cleanupStubSidecars(projectRoot);
+      stubsCleanedUp = cleanup.cleaned;
+    } catch (err) {
+      console.warn('[merge] stub sidecar cleanup failed (non-fatal):', err.message, '-- run scaffold verify-stubs manually');
+      stubsCleanedUp = 0;
+    }
+  }
+
   // Solo mode: no merge needed -- work is already on main
   const registry = worktree.readRegistry(projectRoot);
   const entry = registry.worktrees[setName];
   if (entry && entry.solo === true) {
     const headResult = worktree.gitExec(['rev-parse', 'HEAD'], projectRoot);
+    doStubCleanup();
     return {
       merged: true,
       branch: entry.branch || baseBranch,
       commitHash: headResult.ok ? headResult.stdout : '',
       solo: true,
+      stubsCleanedUp,
     };
   }
 
@@ -1831,7 +1845,8 @@ function mergeSet(projectRoot, setName, baseBranch) {
     }
   }
 
-  return { merged: true, branch, commitHash };
+  doStubCleanup();
+  return { merged: true, branch, commitHash, stubsCleanedUp };
 }
 
 // ────────────────────────────────────────────────────────────────
