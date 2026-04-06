@@ -126,8 +126,14 @@ Display:
 > **Scaffold complete.** {N} files generated for {projectType} ({language}) project.
 >
 > The scaffold report has been saved to `.planning/scaffold-report.json`. The roadmapper will use this to establish baseline file awareness when planning sets.
->
-> **Next step:** Continue with `/rapid:start-set` to begin set development.
+
+Display the completion footer:
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID."; exit 1; fi
+node "${RAPID_TOOLS}" display footer "/rapid:start-set"
+```
 
 ## Stub Verification
 
