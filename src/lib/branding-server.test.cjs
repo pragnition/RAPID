@@ -259,4 +259,181 @@ describe('branding-server.cjs', () => {
       assert.deepEqual(body, { status: 'ok' });
     });
   });
+
+  // -------------------------------------------------------------------------
+  // SSE endpoint
+  // -------------------------------------------------------------------------
+
+  /**
+   * Helper: connect to the SSE endpoint and collect events.
+   * Returns { res, events, req } -- caller must destroy req in afterEach.
+   */
+  function _connectSSE(port) {
+    return new Promise((resolve, reject) => {
+      const req = http.get(`http://127.0.0.1:${port}/_events`, (res) => {
+        const events = [];
+        let buffer = '';
+        res.on('data', (chunk) => {
+          buffer += chunk.toString();
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop(); // keep incomplete part
+          for (const part of parts) {
+            if (part.startsWith(':')) continue; // comment (e.g., ': connected')
+            const lines = part.split('\n');
+            const event = {};
+            for (const line of lines) {
+              if (line.startsWith('event: ')) event.type = line.slice(7);
+              if (line.startsWith('data: ')) {
+                try { event.data = JSON.parse(line.slice(6)); } catch { event.data = line.slice(6); }
+              }
+            }
+            if (event.type || event.data) events.push(event);
+          }
+        });
+        resolve({ res, events, req });
+      });
+      req.on('error', reject);
+    });
+  }
+
+  describe('SSE endpoint (/_events)', () => {
+    it('connects and receives initial comment', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const { res, req } = await _connectSSE(freePort);
+      try {
+        assert.equal(res.statusCode, 200);
+        assert.equal(res.headers['content-type'], 'text/event-stream');
+      } finally {
+        req.destroy();
+      }
+    });
+
+    it('receives events from notifyClients', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const { events, req } = await _connectSSE(freePort);
+      try {
+        // Give the connection a moment to register
+        await new Promise((r) => setTimeout(r, 50));
+
+        server.notifyClients('artifact-created', { id: 'test-1', type: 'logo' });
+
+        // Wait for event propagation
+        await new Promise((r) => setTimeout(r, 50));
+
+        assert.ok(events.length >= 1, `Expected at least 1 event, got ${events.length}`);
+        const evt = events.find((e) => e.type === 'artifact-created');
+        assert.ok(evt, 'should receive artifact-created event');
+        assert.equal(evt.data.id, 'test-1');
+        assert.equal(evt.data.type, 'logo');
+      } finally {
+        req.destroy();
+      }
+    });
+
+    it('enforces max 10 concurrent connections', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const connections = [];
+      try {
+        // Open MAX_SSE_CLIENTS connections
+        for (let i = 0; i < server.MAX_SSE_CLIENTS; i++) {
+          connections.push(await _connectSSE(freePort));
+        }
+        await new Promise((r) => setTimeout(r, 50));
+
+        // The 11th should get 503
+        const resp = await _fetch(freePort, '/_events');
+        assert.equal(resp.status, 503);
+      } finally {
+        for (const c of connections) c.req.destroy();
+      }
+    });
+
+    it('cleans up connections on client disconnect', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const { req } = await _connectSSE(freePort);
+      await new Promise((r) => setTimeout(r, 50));
+      assert.equal(server._sseClients.size, 1);
+
+      req.destroy();
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Trigger cleanup by notifying -- stale connections are removed
+      server.notifyClients('ping', {});
+      assert.equal(server._sseClients.size, 0);
+    });
+
+    it('stop() closes all SSE connections', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const connections = [];
+      connections.push(await _connectSSE(freePort));
+      connections.push(await _connectSSE(freePort));
+      await new Promise((r) => setTimeout(r, 50));
+      assert.equal(server._sseClients.size, 2);
+
+      await server.stop(tmpDir);
+      assert.equal(server._sseClients.size, 0);
+
+      // Clean up refs (already destroyed by server.stop)
+      for (const c of connections) c.req.destroy();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // _escapeHtml
+  // -------------------------------------------------------------------------
+
+  describe('_escapeHtml()', () => {
+    it('escapes HTML special characters', () => {
+      assert.equal(
+        server._escapeHtml('<script>alert("xss")</script>'),
+        '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+      );
+      assert.equal(server._escapeHtml('a & b'), 'a &amp; b');
+      assert.equal(server._escapeHtml("it's"), 'it&#39;s');
+    });
+
+    it('returns safe strings unchanged', () => {
+      assert.equal(server._escapeHtml('hello world'), 'hello world');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // fs.watch integration
+  // -------------------------------------------------------------------------
+
+  describe('fs.watch integration', () => {
+    it('file changes trigger SSE events', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const { events, req } = await _connectSSE(freePort);
+      try {
+        await new Promise((r) => setTimeout(r, 50));
+
+        // Write a new file to the branding directory
+        const brandingDir = path.join(tmpDir, '.planning', 'branding');
+        fs.writeFileSync(path.join(brandingDir, 'new-asset.png'), 'data');
+
+        // Wait for debounce (300ms) + propagation
+        await new Promise((r) => setTimeout(r, 600));
+
+        const fileChanged = events.find((e) => e.type === 'file-changed');
+        assert.ok(fileChanged, 'should receive file-changed event');
+        assert.ok(fileChanged.data.directory, 'event should include directory');
+        assert.ok(fileChanged.data.timestamp, 'event should include timestamp');
+      } finally {
+        req.destroy();
+      }
+    });
+  });
 });
