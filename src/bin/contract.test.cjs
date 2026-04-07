@@ -455,6 +455,15 @@ describe('CLI Output Contract Tests', () => {
       }
       assert.ok(!isJson, 'banner output should NOT be valid JSON');
     });
+
+    it('display footer returns raw text (NOT JSON)', () => {
+      const stdout = runCli('display footer "/rapid:test-cmd"', { cwd: projectDir });
+      assert.ok(typeof stdout === 'string', 'should return a string');
+      assert.ok(stdout.length > 0, 'should not be empty');
+      let isJson = false;
+      try { JSON.parse(stdout.trim()); isJson = true; } catch { /* Expected */ }
+      assert.ok(!isJson, 'footer output should NOT be valid JSON');
+    });
   });
 
   // ── Verify-artifacts commands ──

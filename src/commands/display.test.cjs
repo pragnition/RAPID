@@ -82,3 +82,48 @@ describe('handleDisplay — banner subcommand', () => {
     assert.ok(output.endsWith('\n'), 'Output should end with newline');
   });
 });
+
+describe('handleDisplay — footer subcommand', () => {
+  it('writes basic footer output with next command', () => {
+    const output = captureStdout(() => handleDisplay('footer', ['/rapid:plan-set 1']));
+
+    assert.ok(output.includes('Next: /rapid:plan-set 1'),
+      `Expected next command in output, got: ${output}`);
+    assert.ok(output.includes('Run /clear before continuing'),
+      `Expected clear instruction in output, got: ${output}`);
+    assert.ok(output.endsWith('\n'), 'Output should end with newline');
+  });
+
+  it('writes footer with breadcrumb text', () => {
+    const output = captureStdout(() => handleDisplay('footer', [
+      '/rapid:plan-set 1', '--breadcrumb', 'init [done] > start-set',
+    ]));
+
+    assert.ok(output.includes('init [done] > start-set'),
+      `Expected breadcrumb text in output, got: ${output}`);
+    assert.ok(output.includes('Next: /rapid:plan-set 1'),
+      `Expected next command in output, got: ${output}`);
+  });
+
+  it('omits clear instruction when --no-clear is passed', () => {
+    const output = captureStdout(() => handleDisplay('footer', [
+      '/rapid:plan-set 1', '--no-clear',
+    ]));
+
+    assert.ok(!output.includes('Run /clear'),
+      `Expected NO clear instruction in output, got: ${output}`);
+    assert.ok(output.includes('Next: /rapid:plan-set 1'),
+      `Expected next command in output, got: ${output}`);
+  });
+
+  it('throws CliError when next-command is missing', () => {
+    assert.throws(
+      () => handleDisplay('footer', []),
+      (err) => {
+        assert.ok(err instanceof CliError, `Expected CliError, got ${err.constructor.name}`);
+        assert.ok(err.message.includes('Usage'), `Expected Usage message, got: ${err.message}`);
+        return true;
+      },
+    );
+  });
+});
