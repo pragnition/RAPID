@@ -1266,6 +1266,13 @@ Evaluate critically: verify technical claims where possible, accept domain/busin
 {extracted spec sections relevant to the UX research domain, each prefixed with [FROM SPEC]}
 {end if}
 
+{if brandingStatus === "configured" or brandingStatus === "configured (preserved)":}
+## Branding Context
+The following branding guidelines have been configured for this project. Factor these into your UX research -- recommend patterns that align with the established branding direction and flag any conventions that would conflict.
+
+{full contents of .planning/branding/BRANDING.md}
+{end if}
+
 ## Working Directory
 {projectRoot}
 
