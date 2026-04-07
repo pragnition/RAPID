@@ -630,14 +630,14 @@
       "sets": [
         {
           "id": "branding-overhaul",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Branding Webserver Overhaul",
           "branch": "set/branding-overhaul"
         },
         {
           "id": "init-branding-integration",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Init Branding Integration",
           "branch": "set/init-branding-integration"
@@ -659,6 +659,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-07T06:53:51.031Z",
+  "lastUpdatedAt": "2026-04-07T08:56:52.021Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
