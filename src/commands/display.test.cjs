@@ -1,9 +1,10 @@
 'use strict';
 
-const { describe, it, before, after } = require('node:test');
+const { describe, it, before, after, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const { CliError } = require('../lib/errors.cjs');
 const { handleDisplay } = require('./display.cjs');
+const { renderFooter } = require('../lib/display.cjs');
 
 /**
  * Capture process.stdout.write calls during a synchronous function invocation.
@@ -125,5 +126,73 @@ describe('handleDisplay — footer subcommand', () => {
         return true;
       },
     );
+  });
+});
+
+describe('renderFooter -- responsive layout', () => {
+  let savedColumns;
+
+  beforeEach(() => {
+    savedColumns = process.stdout.columns;
+  });
+
+  afterEach(() => {
+    process.stdout.columns = savedColumns;
+  });
+
+  it('full mode clamps width to terminal columns', () => {
+    process.stdout.columns = 60;
+    const out = renderFooter('/rapid:execute-set auth', {
+      breadcrumb: 'init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set > review > merge',
+      clearRequired: true,
+    });
+    const lines = out.split('\n');
+    for (const line of lines) {
+      assert.ok(line.length <= 60, `Line exceeds 60 chars (${line.length}): "${line}"`);
+    }
+  });
+
+  it('full mode truncates long lines with ellipsis', () => {
+    process.stdout.columns = 60;
+    const out = renderFooter('/rapid:test', {
+      breadcrumb: 'init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set > review > merge',
+      clearRequired: false,
+    });
+    assert.ok(out.includes('...'), 'Long breadcrumb line should be truncated with ellipsis');
+    const lines = out.split('\n');
+    for (const line of lines) {
+      assert.ok(line.length <= 60, `Line exceeds 60 chars (${line.length}): "${line}"`);
+    }
+  });
+
+  it('compact mode renders without box-drawing characters', () => {
+    process.stdout.columns = 40;
+    const out = renderFooter('/rapid:test', {
+      breadcrumb: 'init [done] > start-set',
+      clearRequired: true,
+    });
+    assert.ok(!out.includes('\u2550'), 'Should not contain ═ (U+2550)');
+    assert.ok(!out.includes('\u2551'), 'Should not contain ║ (U+2551)');
+    assert.ok(!out.includes('\u2554'), 'Should not contain ╔ (U+2554)');
+    assert.ok(!out.includes('\u255A'), 'Should not contain ╚ (U+255A)');
+  });
+
+  it('compact mode abbreviates [done] to [ok]', () => {
+    process.stdout.columns = 40;
+    const out = renderFooter('/rapid:test', {
+      breadcrumb: 'init [done] > start-set [done]',
+      clearRequired: false,
+    });
+    assert.ok(out.includes('[ok]'), 'Should contain [ok]');
+    assert.ok(!out.includes('[done]'), 'Should not contain [done]');
+  });
+
+  it('compact mode abbreviates clear line', () => {
+    process.stdout.columns = 40;
+    const out = renderFooter('/rapid:test', {
+      clearRequired: true,
+    });
+    assert.ok(out.includes('> /clear'), 'Should contain "> /clear"');
+    assert.ok(!out.includes('Run /clear before continuing'), 'Should not contain full clear sentence');
   });
 });
