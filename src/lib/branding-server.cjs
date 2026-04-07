@@ -12,6 +12,17 @@ const HEALTH_PROBE_TIMEOUT = 1000;
 /** @type {import('node:http').Server|null} */
 let _activeServer = null;
 
+/** @type {Set<import('node:http').ServerResponse>} */
+let _sseClients = new Set();
+const MAX_SSE_CLIENTS = 10;
+
+/** @type {import('node:fs').FSWatcher|null} */
+let _fsWatcher = null;
+
+/** @type {NodeJS.Timeout|null} */
+let _debounceTimer = null;
+const DEBOUNCE_MS = 300;
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -237,6 +248,119 @@ ${otherFiles.length > 0 ? `    <h2>Files</h2>\n    <ul>\n${fileLinks}\n    </ul>
 </html>`;
 }
 
+// ---------------------------------------------------------------------------
+// SSE infrastructure
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape HTML special characters to prevent XSS.
+ * @param {string} str
+ * @returns {string}
+ */
+function _escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Send an SSE event to all connected clients.
+ * Stale connections are removed automatically.
+ * @param {string} event - Event type name
+ * @param {*} data - JSON-serializable data payload
+ */
+function notifyClients(event, data) {
+  for (const res of _sseClients) {
+    if (res.writableEnded) {
+      _sseClients.delete(res);
+      continue;
+    }
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  }
+}
+
+/**
+ * Handle an incoming SSE connection request.
+ * @param {import('node:http').IncomingMessage} req
+ * @param {import('node:http').ServerResponse} res
+ */
+function _handleSSE(req, res) {
+  if (_sseClients.size >= MAX_SSE_CLIENTS) {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Too many SSE connections' }));
+    return;
+  }
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.write(': connected\n\n');
+
+  _sseClients.add(res);
+
+  req.on('close', () => {
+    _sseClients.delete(res);
+  });
+}
+
+/**
+ * Start watching the branding directory for file changes.
+ * Debounces events and notifies SSE clients.
+ * @param {string} brandingDir - Absolute path to the branding directory
+ */
+function _startFileWatcher(brandingDir) {
+  try {
+    _fsWatcher = fs.watch(brandingDir, { recursive: false }, () => {
+      if (_debounceTimer) clearTimeout(_debounceTimer);
+      _debounceTimer = setTimeout(() => {
+        notifyClients('file-changed', {
+          directory: brandingDir,
+          timestamp: new Date().toISOString(),
+        });
+      }, DEBOUNCE_MS);
+    });
+  } catch {
+    // Directory may not exist or watcher may fail -- non-fatal
+    _fsWatcher = null;
+  }
+}
+
+/**
+ * Stop the file watcher if active.
+ */
+function _stopFileWatcher() {
+  if (_debounceTimer) {
+    clearTimeout(_debounceTimer);
+    _debounceTimer = null;
+  }
+  if (_fsWatcher) {
+    _fsWatcher.close();
+    _fsWatcher = null;
+  }
+}
+
+/**
+ * Close all active SSE client connections.
+ */
+function _closeAllSSEClients() {
+  for (const res of _sseClients) {
+    if (!res.writableEnded) {
+      res.end();
+    }
+  }
+  _sseClients.clear();
+}
+
+// ---------------------------------------------------------------------------
+// Request handling
+// ---------------------------------------------------------------------------
+
 /**
  * HTTP request handler for the branding server.
  * @param {import('node:http').IncomingMessage} req
@@ -253,6 +377,14 @@ function _handleRequest(req, res, brandingDir) {
     res.end('{"status":"ok"}');
     return;
   }
+
+  // SSE endpoint
+  if (req.method === 'GET' && pathname === '/_events') {
+    _handleSSE(req, res);
+    return;
+  }
+
+  // Wave 2: artifact CRUD endpoints go here
 
   // Hub page
   if (req.method === 'GET' && pathname === '/') {
@@ -347,6 +479,7 @@ async function start(projectRoot, port) {
     server.listen(port, '127.0.0.1', () => {
       _writePidFile(projectRoot, process.pid, port);
       _activeServer = server;
+      _startFileWatcher(brandingDir);
       resolve({ pid: process.pid, port, server });
     });
   });
@@ -364,6 +497,8 @@ async function stop(projectRoot) {
   }
 
   if (_activeServer) {
+    _closeAllSSEClients();
+    _stopFileWatcher();
     await new Promise((resolve) => {
       _activeServer.close(resolve);
     });
@@ -411,4 +546,9 @@ module.exports = {
   _readPidFile,
   _writePidFile,
   _removePidFile,
+  // SSE infrastructure
+  notifyClients,
+  _escapeHtml,
+  get _sseClients() { return _sseClients; },
+  MAX_SSE_CLIENTS,
 };
