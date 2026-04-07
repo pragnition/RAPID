@@ -120,6 +120,7 @@ const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
   lock status <name>     Check if a named lock is held
   lock release <name>    Release a named lock (not typically used directly)
   display banner <stage> [target]  Display branded RAPID stage banner
+  display footer <next-cmd> [--breadcrumb "<text>"] [--no-clear]  Display next-step footer box
   build-agents              Build all agent .md files from source modules
   parse-return <file>    Parse a RAPID:RETURN marker from a file
   parse-return --validate <file>  Parse and validate return data from a file

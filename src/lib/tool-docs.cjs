@@ -97,6 +97,7 @@ const TOOL_REGISTRY = {
 
   // Display
   'display-banner':       'display banner <stage:str> [target:str] -- Show RAPID banner',
+  'display-footer':       'display footer <next-command:str> [--breadcrumb <text:str>] [--no-clear] -- Show next-step footer box',
 
   // Scaffold
   'scaffold-run':         'scaffold run [--type <type:str>] -- Generate project foundation files',
