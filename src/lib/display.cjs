@@ -125,7 +125,28 @@ function renderBanner(stage, target) {
 function renderFooter(nextCommand, options = {}) {
   const { breadcrumb, clearRequired = true } = options;
 
+  // Detect terminal width: process.stdout.columns -> COLUMNS env -> default 80
+  const columns = process.stdout.columns || parseInt(process.env.COLUMNS, 10) || 80;
+  const compact = columns < 60;
+
   const noColor = process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '';
+
+  // ── Compact mode: plain text, no box-drawing ──
+  if (compact) {
+    const lines = ['---'];
+    if (clearRequired) {
+      lines.push('> /clear');
+    }
+    lines.push(`> ${nextCommand}`);
+    if (breadcrumb && breadcrumb.length > 0) {
+      // Abbreviate [done] to [ok] for space savings
+      lines.push(`> ${breadcrumb.replace(/\[done\]/g, '[ok]')}`);
+    }
+    lines.push('---');
+    return '\n' + lines.join('\n');
+  }
+
+  // ── Full mode: box-drawing layout, clamped to terminal width ──
 
   // Box-drawing characters (or ASCII fallbacks for NO_COLOR)
   const chars = noColor
@@ -142,11 +163,25 @@ function renderFooter(nextCommand, options = {}) {
   }
 
   const maxLen = Math.max(...contentLines.map(l => l.length));
-  const innerWidth = Math.max(maxLen + 4, 40); // 2 padding each side
+  // Clamp innerWidth so total box width (innerWidth + 2 border chars) never exceeds terminal
+  const innerWidth = Math.min(Math.max(maxLen + 4, 40), columns - 2);
 
   const topBorder = `${chars.tl}${chars.h.repeat(innerWidth)}${chars.tr}`;
   const botBorder = `${chars.bl}${chars.h.repeat(innerWidth)}${chars.br}`;
-  const padLine = (text) => `${chars.v}  ${text.padEnd(innerWidth - 2)}${chars.v}`;
+
+  // Truncate lines that exceed the available inner space (innerWidth - 4 for 2-char padding each side)
+  const maxTextWidth = innerWidth - 4;
+  const truncate = (text) => {
+    if (text.length > maxTextWidth) {
+      return text.slice(0, maxTextWidth - 3) + '...';
+    }
+    return text;
+  };
+
+  const padLine = (text) => {
+    const truncated = truncate(text);
+    return `${chars.v}  ${truncated.padEnd(innerWidth - 2)}${chars.v}`;
+  };
   const emptyLine = `${chars.v}${' '.repeat(innerWidth)}${chars.v}`;
 
   const boxLines = [topBorder, emptyLine];
