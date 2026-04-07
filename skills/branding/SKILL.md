@@ -378,6 +378,87 @@ wc -l .planning/branding/BRANDING.md
 - If under 50 lines: add more specific guidance, examples, or terminology rows to meet the minimum.
 - Target: 50-150 lines of actionable, prompt-injection-ready style guidance.
 
+### Register Theme Artifact
+
+After validation, register the BRANDING.md file as a branding artifact. If registration fails, log a warning but continue -- the branding file is still valid.
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const result = artifacts.createArtifact(process.cwd(), {
+  type: 'theme',
+  filename: 'BRANDING.md',
+  description: 'Project branding guidelines and style tokens'
+});
+console.log('Registered artifact:', result.id);
+"
+```
+
+If the command fails, display: `"[WARN] Could not register BRANDING.md artifact. Continuing."` and proceed to the next step.
+
+---
+
+## Step 5b: Generate Logo Artifact
+
+Generate a simple SVG logo for the project based on the branding interview responses. Write it to `.planning/branding/logo.svg` using the Write tool.
+
+The SVG should:
+- Be a simple, clean vector graphic (not complex -- this is a placeholder/starting point)
+- Use the primary color from the branding guidelines
+- Include the project name or initials
+- Be viewBox-based for scalability (e.g., `viewBox="0 0 200 200"`)
+- Be self-contained (no external references)
+
+After writing the SVG file, register the artifact:
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const result = artifacts.createArtifact(process.cwd(), {
+  type: 'logo',
+  filename: 'logo.svg',
+  description: 'Project logo (placeholder -- customize or replace)'
+});
+console.log('Registered artifact:', result.id);
+"
+```
+
+If the command fails, display: `"[WARN] Could not register logo.svg artifact. Continuing."` and proceed to the next step.
+
+---
+
+## Step 5c: Generate Wireframe Artifact
+
+Generate a simple HTML wireframe that demonstrates the branding guidelines applied to a typical page layout. Write it to `.planning/branding/wireframe.html` using the Write tool.
+
+The wireframe should:
+- Be a single self-contained HTML file with inline CSS
+- Show a representative page layout for the detected project type:
+  - **webapp**: header, sidebar nav, main content area, card grid, footer
+  - **cli**: terminal-style output mockup showing help text and sample command output
+  - **library**: API documentation layout with code samples
+- Apply the color palette, typography, and spacing tokens from BRANDING.md
+- Include placeholder content that demonstrates the branding in context
+
+After writing the wireframe, register the artifact:
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const result = artifacts.createArtifact(process.cwd(), {
+  type: 'wireframe',
+  filename: 'wireframe.html',
+  description: 'Page layout wireframe demonstrating branding guidelines'
+});
+console.log('Registered artifact:', result.id);
+"
+```
+
+If the command fails, display: `"[WARN] Could not register wireframe.html artifact. Continuing."` and proceed to the next step.
+
 ---
 
 ## Step 6: Generate Static HTML Branding Page
@@ -450,6 +531,25 @@ const server = require('./src/lib/branding-server.cjs');
 - If output contains `already running`: Display the URL and continue.
 - If server started successfully: Display `"Branding preview available at http://localhost:{port}"`.
 
+### Register Preview Artifact
+
+After the server is started (or after handling any server errors), register the index.html as a branding artifact:
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const result = artifacts.createArtifact(process.cwd(), {
+  type: 'preview',
+  filename: 'index.html',
+  description: 'Visual branding reference page with live preview'
+});
+console.log('Registered artifact:', result.id);
+"
+```
+
+If the command fails, display: `"[WARN] Could not register index.html artifact. Continuing."` and proceed to the next step.
+
 ---
 
 ## Step 7: Display Server URL
@@ -494,8 +594,8 @@ If the user chooses to keep running, note in the summary that the server is stil
 Commit the branding artifacts:
 
 ```bash
-git add .planning/branding/BRANDING.md .planning/branding/index.html
-git commit -m "feat(branding-system): generate branding guidelines"
+git add .planning/branding/BRANDING.md .planning/branding/index.html .planning/branding/logo.svg .planning/branding/wireframe.html .planning/branding/artifacts.json
+git commit -m "feat(branding-system): generate branding guidelines and artifacts"
 ```
 
 Display a summary of what was generated:
@@ -503,7 +603,10 @@ Display a summary of what was generated:
 ```
 Branding artifacts generated:
 - .planning/branding/BRANDING.md -- Authoritative branding guidelines ({line_count} lines)
+- .planning/branding/logo.svg -- Project logo placeholder
+- .planning/branding/wireframe.html -- Page layout wireframe
 - .planning/branding/index.html -- Visual branding reference page
+- .planning/branding/artifacts.json -- Artifact manifest ({count} entries)
 - Branding server: {running|stopped} (http://localhost:{port})
 
 Branding context will be automatically injected into all future RAPID execution prompts.
