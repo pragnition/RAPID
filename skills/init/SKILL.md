@@ -822,6 +822,7 @@ PROJECT BRIEF
 {full compiled project brief}
 
 Granularity Preference: {targetSetCount value and label}
+Branding: {brandingStatus}
 ```
 
 **Generate formal acceptance criteria:**
