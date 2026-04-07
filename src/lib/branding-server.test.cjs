@@ -436,4 +436,262 @@ describe('branding-server.cjs', () => {
       }
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Artifact CRUD API helpers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Helper: send a POST request with JSON body.
+   * @param {number} port
+   * @param {string} urlPath
+   * @param {*} body
+   * @returns {Promise<{ status: number, headers: object, body: string }>}
+   */
+  function _postJSON(port, urlPath, body) {
+    return new Promise((resolve, reject) => {
+      const data = JSON.stringify(body);
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port,
+        path: urlPath,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(data),
+        },
+      }, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+          resolve({ status: res.statusCode, headers: res.headers, body: responseBody });
+        });
+      });
+      req.on('error', reject);
+      req.write(data);
+      req.end();
+    });
+  }
+
+  /**
+   * Helper: send a DELETE request.
+   * @param {number} port
+   * @param {string} urlPath
+   * @returns {Promise<{ status: number, headers: object, body: string }>}
+   */
+  function _deleteReq(port, urlPath) {
+    return new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port,
+        path: urlPath,
+        method: 'DELETE',
+      }, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+          resolve({ status: res.statusCode, headers: res.headers, body: responseBody });
+        });
+      });
+      req.on('error', reject);
+      req.end();
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Artifact CRUD API
+  // -------------------------------------------------------------------------
+
+  describe('Artifact CRUD API', () => {
+    it('POST /_artifacts creates artifact and returns 201', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const resp = await _postJSON(freePort, '/_artifacts', {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Main logo',
+      });
+
+      assert.equal(resp.status, 201);
+      const entry = JSON.parse(resp.body);
+      assert.ok(entry.id, 'should have id');
+      assert.equal(entry.type, 'logo');
+      assert.equal(entry.filename, 'logo.svg');
+      assert.equal(entry.description, 'Main logo');
+      assert.ok(entry.createdAt, 'should have createdAt');
+    });
+
+    it('POST /_artifacts with missing fields returns 400', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const resp = await _postJSON(freePort, '/_artifacts', { type: 'logo' });
+      assert.equal(resp.status, 400);
+      const body = JSON.parse(resp.body);
+      assert.ok(body.error.includes('Missing required fields'));
+    });
+
+    it('GET /_artifacts returns artifact list', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      // Create two artifacts
+      await _postJSON(freePort, '/_artifacts', { type: 'logo', filename: 'logo.svg', description: 'Logo' });
+      await _postJSON(freePort, '/_artifacts', { type: 'font', filename: 'main.woff2', description: 'Font' });
+
+      const resp = await _fetch(freePort, '/_artifacts');
+      assert.equal(resp.status, 200);
+      const list = JSON.parse(resp.body);
+      assert.equal(list.length, 2);
+    });
+
+    it('DELETE /_artifacts?id=... deletes artifact', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      // Create an artifact
+      const createResp = await _postJSON(freePort, '/_artifacts', {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Logo',
+      });
+      const entry = JSON.parse(createResp.body);
+
+      // Delete it
+      const delResp = await _deleteReq(freePort, `/_artifacts?id=${entry.id}`);
+      assert.equal(delResp.status, 200);
+      const result = JSON.parse(delResp.body);
+      assert.equal(result.deleted, true);
+
+      // Verify list is now empty
+      const listResp = await _fetch(freePort, '/_artifacts');
+      const list = JSON.parse(listResp.body);
+      assert.equal(list.length, 0);
+    });
+
+    it('DELETE /_artifacts without id returns 400', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const resp = await _deleteReq(freePort, '/_artifacts');
+      assert.equal(resp.status, 400);
+      const body = JSON.parse(resp.body);
+      assert.ok(body.error.includes('Missing required query parameter'));
+    });
+
+    it('DELETE /_artifacts with unknown id returns 404', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const resp = await _deleteReq(freePort, '/_artifacts?id=nonexistent');
+      assert.equal(resp.status, 404);
+      const body = JSON.parse(resp.body);
+      assert.ok(body.error.includes('Artifact not found'));
+    });
+
+    it('CRUD operations fire SSE events', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const { events, req } = await _connectSSE(freePort);
+      try {
+        await new Promise((r) => setTimeout(r, 50));
+
+        // Create an artifact
+        const createResp = await _postJSON(freePort, '/_artifacts', {
+          type: 'logo',
+          filename: 'logo.svg',
+          description: 'Logo',
+        });
+        const entry = JSON.parse(createResp.body);
+        await new Promise((r) => setTimeout(r, 50));
+
+        const createdEvt = events.find((e) => e.type === 'artifact-created');
+        assert.ok(createdEvt, 'should receive artifact-created event');
+        assert.equal(createdEvt.data.id, entry.id);
+
+        // Delete the artifact
+        await _deleteReq(freePort, `/_artifacts?id=${entry.id}`);
+        await new Promise((r) => setTimeout(r, 50));
+
+        const deletedEvt = events.find((e) => e.type === 'artifact-deleted');
+        assert.ok(deletedEvt, 'should receive artifact-deleted event');
+        assert.equal(deletedEvt.data.id, entry.id);
+      } finally {
+        req.destroy();
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Hub page redesign
+  // -------------------------------------------------------------------------
+
+  describe('Hub page redesign', () => {
+    it('hub page renders artifact cards from manifest', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      // Create artifacts via API
+      await _postJSON(freePort, '/_artifacts', { type: 'logo', filename: 'logo.svg', description: 'Main logo' });
+      await _postJSON(freePort, '/_artifacts', { type: 'font', filename: 'heading.woff2', description: 'Heading font' });
+
+      const resp = await _fetch(freePort, '/');
+      assert.equal(resp.status, 200);
+      assert.ok(resp.body.includes('logo.svg'), 'should contain logo.svg');
+      assert.ok(resp.body.includes('heading.woff2'), 'should contain heading.woff2');
+      assert.ok(resp.body.includes('type-badge'), 'should contain type badge class');
+      assert.ok(resp.body.includes('logo'), 'should contain logo type label');
+      assert.ok(resp.body.includes('font'), 'should contain font type label');
+    });
+
+    it('hub page shows untracked files', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      // Write a file directly to branding directory (not via API)
+      const brandingDir = path.join(tmpDir, '.planning', 'branding');
+      fs.writeFileSync(path.join(brandingDir, 'orphan-logo.png'), 'binary-data');
+
+      const resp = await _fetch(freePort, '/');
+      assert.equal(resp.status, 200);
+      assert.ok(resp.body.includes('orphan-logo.png'), 'should contain untracked filename');
+      assert.ok(resp.body.includes('untracked'), 'should contain untracked indicator');
+    });
+
+    it('hub page includes EventSource script', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const resp = await _fetch(freePort, '/');
+      assert.equal(resp.status, 200);
+      assert.ok(resp.body.includes('EventSource'), 'should contain EventSource');
+      assert.ok(resp.body.includes('/_events'), 'should reference /_events endpoint');
+    });
+
+    it('hub page escapes HTML in artifact names', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      await _postJSON(freePort, '/_artifacts', {
+        type: 'test',
+        filename: '<script>alert(1)</script>.txt',
+        description: 'XSS test',
+      });
+
+      const resp = await _fetch(freePort, '/');
+      assert.equal(resp.status, 200);
+      assert.ok(
+        resp.body.includes('&lt;script&gt;'),
+        'should contain escaped script tag'
+      );
+      // Verify the raw script tag is NOT present as an HTML element
+      // (the string will appear in escaped form, not as executable HTML)
+      assert.ok(
+        !resp.body.includes('<script>alert(1)</script>.txt'),
+        'should NOT contain raw unescaped script tag in filename context'
+      );
+    });
+  });
 });
