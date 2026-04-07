@@ -644,7 +644,7 @@
         },
         {
           "id": "update-reminder",
-          "status": "discussed",
+          "status": "planned",
           "waves": [],
           "name": "Update Reminder",
           "branch": "set/update-reminder"
@@ -659,6 +659,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-07T09:47:26.564Z",
+  "lastUpdatedAt": "2026-04-07T10:08:17.914Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
