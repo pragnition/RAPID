@@ -3,6 +3,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const artifacts = require('./branding-artifacts.cjs');
 
 const DEFAULT_PORT = 3141;
 const PID_FILE_NAME = '.server.pid';
@@ -248,6 +249,40 @@ ${otherFiles.length > 0 ? `    <h2>Files</h2>\n    <ul>\n${fileLinks}\n    </ul>
 </html>`;
 }
 
+/**
+ * Read and parse a JSON request body with a 64KB size limit.
+ * @param {import('node:http').IncomingMessage} req
+ * @returns {Promise<*>}
+ */
+function _readRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    const MAX_BODY_SIZE = 64 * 1024; // 64KB
+    const chunks = [];
+    let totalSize = 0;
+
+    req.on('data', (chunk) => {
+      totalSize += chunk.length;
+      if (totalSize > MAX_BODY_SIZE) {
+        req.destroy();
+        reject(new Error('Request body too large'));
+        return;
+      }
+      chunks.push(chunk);
+    });
+
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf-8');
+      try {
+        resolve(JSON.parse(raw));
+      } catch (err) {
+        reject(new Error(`Invalid JSON: ${err.message}`));
+      }
+    });
+
+    req.on('error', (err) => reject(err));
+  });
+}
+
 // ---------------------------------------------------------------------------
 // SSE infrastructure
 // ---------------------------------------------------------------------------
@@ -366,8 +401,9 @@ function _closeAllSSEClients() {
  * @param {import('node:http').IncomingMessage} req
  * @param {import('node:http').ServerResponse} res
  * @param {string} brandingDir
+ * @param {string} projectRoot
  */
-function _handleRequest(req, res, brandingDir) {
+function _handleRequest(req, res, brandingDir, projectRoot) {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const pathname = decodeURIComponent(url.pathname);
 
@@ -384,11 +420,67 @@ function _handleRequest(req, res, brandingDir) {
     return;
   }
 
-  // Wave 2: artifact CRUD endpoints go here
+  // Artifact CRUD endpoints
+  if (req.method === 'POST' && pathname === '/_artifacts') {
+    _readRequestBody(req)
+      .then((body) => {
+        const { type, filename, description } = body || {};
+        if (!type || !filename || !description) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing required fields: type, filename, description' }));
+          return;
+        }
+        const entry = artifacts.createArtifact(projectRoot, { type, filename, description });
+        notifyClients('artifact-created', entry);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(entry));
+      })
+      .catch((err) => {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      });
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/_artifacts') {
+    try {
+      const list = artifacts.listArtifacts(projectRoot);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(list));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (req.method === 'DELETE' && pathname === '/_artifacts') {
+    const id = url.searchParams.get('id');
+    if (!id) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Missing required query parameter: id' }));
+      return;
+    }
+    try {
+      const result = artifacts.deleteArtifact(projectRoot, id);
+      if (result.deleted) {
+        notifyClients('artifact-deleted', { id, ...result.entry });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Artifact not found', id }));
+      }
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
 
   // Hub page
   if (req.method === 'GET' && pathname === '/') {
-    const html = _generateHubPage(brandingDir);
+    const html = _generateHubPage(brandingDir, projectRoot);
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(html);
     return;
@@ -466,7 +558,7 @@ async function start(projectRoot, port) {
   }
 
   return new Promise((resolve) => {
-    const server = http.createServer((req, res) => _handleRequest(req, res, brandingDir));
+    const server = http.createServer((req, res) => _handleRequest(req, res, brandingDir, projectRoot));
 
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
