@@ -740,4 +740,5 @@ module.exports = {
   _escapeHtml,
   get _sseClients() { return _sseClients; },
   MAX_SSE_CLIENTS,
+  DEBOUNCE_MS,
 };
