@@ -6,7 +6,7 @@ RAPID_DIR = Path.home() / ".rapid"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     rapid_web_port: int = 8998
     rapid_web_host: str = "127.0.0.1"
