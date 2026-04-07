@@ -464,6 +464,18 @@ describe('CLI Output Contract Tests', () => {
       try { JSON.parse(stdout.trim()); isJson = true; } catch { /* Expected */ }
       assert.ok(!isJson, 'footer output should NOT be valid JSON');
     });
+
+    it('display footer respects terminal width via COLUMNS env', () => {
+      const stdout = runCli(
+        'display footer "/rapid:test-cmd" --breadcrumb "init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set > review > merge"',
+        { cwd: projectDir, env: { ...process.env, COLUMNS: '70' } },
+      );
+      const lines = stdout.split('\n');
+      for (const line of lines) {
+        if (line.length === 0) continue;
+        assert.ok(line.length <= 70, `Line exceeds 70 chars (${line.length}): "${line}"`);
+      }
+    });
   });
 
   // ── Verify-artifacts commands ──
