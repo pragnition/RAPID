@@ -301,6 +301,173 @@ class TestCodebaseEndpoint:
 
 
 # ---------------------------------------------------------------------------
+# Code Graph endpoint tests
+# ---------------------------------------------------------------------------
+
+
+class TestCodeGraphEndpoint:
+    @pytest.mark.asyncio
+    async def test_code_graph_200(self, async_client, project_dir):
+        # Create JS files that import each other
+        (project_dir / "main.js").write_text(
+            'import { helper } from "./utils";\nconsole.log(helper());\n'
+        )
+        (project_dir / "utils.js").write_text(
+            "export function helper() { return 42; }\n"
+        )
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(f"/api/projects/{pid}/code-graph")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "nodes" in data
+        assert "edges" in data
+        assert "total_files" in data
+        assert "total_edges" in data
+        assert data["total_files"] >= 2  # at least main.js and utils.js
+
+    @pytest.mark.asyncio
+    async def test_code_graph_edges(self, async_client, project_dir):
+        (project_dir / "main.js").write_text(
+            'import { helper } from "./utils";\n'
+        )
+        (project_dir / "utils.js").write_text(
+            "export function helper() { return 1; }\n"
+        )
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(f"/api/projects/{pid}/code-graph")
+        data = resp.json()
+        # There should be an edge from main.js -> utils.js
+        edge_pairs = [(e["source"], e["target"]) for e in data["edges"]]
+        assert ("main.js", "utils.js") in edge_pairs
+
+    @pytest.mark.asyncio
+    async def test_code_graph_max_files(self, async_client, project_dir):
+        for i in range(5):
+            (project_dir / f"mod{i}.py").write_text(f"def func{i}(): pass\n")
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(f"/api/projects/{pid}/code-graph?max_files=2")
+        data = resp.json()
+        assert data["truncated"] is True
+        assert len(data["nodes"]) <= 2
+
+    @pytest.mark.asyncio
+    async def test_code_graph_parse_errors(self, async_client, project_dir):
+        # Write binary garbage with a .py extension
+        (project_dir / "broken.py").write_bytes(b"\x80\x81\x82\x83" * 100)
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(f"/api/projects/{pid}/code-graph")
+        data = resp.json()
+        # broken.py may or may not parse -- if it fails, it appears in parse_errors
+        # At minimum the field exists
+        assert "parse_errors" in data
+
+    @pytest.mark.asyncio
+    async def test_code_graph_404_no_project(self, async_client):
+        fake_id = str(uuid4())
+        resp = await async_client.get(f"/api/projects/{fake_id}/code-graph")
+        assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# File endpoint tests
+# ---------------------------------------------------------------------------
+
+
+class TestFileEndpoint:
+    @pytest.mark.asyncio
+    async def test_file_200(self, async_client, project_dir):
+        (project_dir / "hello.py").write_text("print('hello')\n")
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(
+            f"/api/projects/{pid}/file", params={"path": "hello.py"}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["path"] == "hello.py"
+        assert "print('hello')" in data["content"]
+        assert data["language"] == "python"
+        assert data["size"] > 0
+
+    @pytest.mark.asyncio
+    async def test_file_traversal_dotdot_400(self, async_client, project_dir):
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(
+            f"/api/projects/{pid}/file", params={"path": "../../etc/passwd"}
+        )
+        assert resp.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_file_traversal_resolved_403(self, async_client, project_dir):
+        """Path that resolves outside project root via symlink."""
+        import os
+
+        # Create a symlink that points outside the project
+        outside_file = project_dir.parent / "secret.txt"
+        outside_file.write_text("secret data")
+        link_path = project_dir / "sneaky_link"
+        os.symlink(str(outside_file), str(link_path))
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(
+            f"/api/projects/{pid}/file", params={"path": "sneaky_link"}
+        )
+        assert resp.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_file_symlink_403(self, async_client, project_dir):
+        """Symlink inside project pointing to a file inside project is still rejected."""
+        import os
+
+        target = project_dir / "real.txt"
+        target.write_text("real content")
+        link = project_dir / "link.txt"
+        os.symlink(str(target), str(link))
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(
+            f"/api/projects/{pid}/file", params={"path": "link.txt"}
+        )
+        assert resp.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_file_not_found_404(self, async_client, project_dir):
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(
+            f"/api/projects/{pid}/file", params={"path": "nonexistent.py"}
+        )
+        assert resp.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_file_too_large_400(self, async_client, project_dir):
+        big_file = project_dir / "big.txt"
+        big_file.write_bytes(b"A" * (1_048_576 + 1))
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(
+            f"/api/projects/{pid}/file", params={"path": "big.txt"}
+        )
+        assert resp.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_file_binary_400(self, async_client, project_dir):
+        bin_file = project_dir / "data.bin"
+        bin_file.write_bytes(b"some text\x00more text")
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(
+            f"/api/projects/{pid}/file", params={"path": "data.bin"}
+        )
+        assert resp.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_file_unknown_language(self, async_client, project_dir):
+        (project_dir / "notes.txt").write_text("just some notes\n")
+        pid = await _register_project(async_client, str(project_dir))
+        resp = await async_client.get(
+            f"/api/projects/{pid}/file", params={"path": "notes.txt"}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["language"] is None
+
+
+# ---------------------------------------------------------------------------
 # Read-only enforcement tests
 # ---------------------------------------------------------------------------
 
