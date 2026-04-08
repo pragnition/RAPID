@@ -2,7 +2,7 @@
 
 RAPID (Rapid Agentic Parallelizable and Isolatable Development) is a Claude Code plugin that enables coordinated parallel AI-assisted development. It structures work around independent sets -- each running in an isolated git worktree with strict file ownership -- connected through machine-verifiable interface contracts and validated through a multi-stage adversarial review pipeline. 27 specialized agents handle research, planning, execution, review, and merge so developers focus on decisions, not coordination.
 
-**Version:** 6.1.0
+**Version:** 6.2.0
 
 This is the central reference hub for RAPID. For a quickstart overview, see [README.md](README.md). For architectural deep-dives and system design narrative, see [technical_documentation.md](technical_documentation.md).
 
@@ -444,7 +444,7 @@ See [docs/auxiliary.md](docs/auxiliary.md) for details.
 
 #### `/rapid:help`
 
-Displays a static command reference with the full workflow diagram, all 29 commands organized by category, and usage guidance. No project analysis or state checking -- purely informational.
+Displays a static command reference with the full workflow diagram, all 30 commands organized by category, and usage guidance. No project analysis or state checking -- purely informational.
 
 ```bash
 /rapid:help
@@ -476,7 +476,7 @@ Registers the current project with the RAPID Mission Control web dashboard. Only
 
 ## Architecture Overview
 
-RAPID v6.1.0 structures parallel work around **sets** -- independent workstreams that each developer owns end-to-end. Sets are the sole stateful entity; there is no wave or task state in STATE.json.
+RAPID v6.2.0 structures parallel work around **sets** -- independent workstreams that each developer owns end-to-end. Sets are the sole stateful entity; there is no wave or task state in STATE.json.
 
 ### How It Works
 
