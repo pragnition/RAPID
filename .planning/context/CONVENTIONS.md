@@ -25,7 +25,7 @@
 
 ## Module Structure
 
-Every library module in `src/lib/` follows this pattern:
+Every library module in `src/lib/` and every command handler in `src/commands/` follows this pattern:
 
 ```javascript
 'use strict';
@@ -115,6 +115,8 @@ describe('ModuleName', () => {
 - Arrange/Act/Assert pattern
 - Descriptive test names starting with "should"
 - Clean up temp files/dirs in `afterEach`
+- Tests live next to the module they cover (`src/lib/{module}.test.cjs`, `src/commands/{module}.test.cjs`)
+- The `package.json` test script only runs `src/**/*.test.cjs` -- **do NOT add tests under `tests/`** for new work (the `tests/` directory contains legacy suites like `tests/ux-audit.test.cjs` but is not on the default test path)
 
 ## Shell Commands
 
