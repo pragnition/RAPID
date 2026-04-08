@@ -1,0 +1,68 @@
+{
+  "setId": "branding-overhaul",
+  "version": "1.0.0",
+  "exports": {
+    "notifyClients": {
+      "type": "function",
+      "signature": "notifyClients(event: string, data: object): void",
+      "description": "Push SSE event to all connected browser clients for live-reload"
+    },
+    "branding-artifacts-module": {
+      "type": "file",
+      "signature": "src/lib/branding-artifacts.cjs",
+      "description": "Artifact registry module: manifest CRUD, file operations, Zod-validated artifacts.json"
+    },
+    "artifact-crud-api": {
+      "type": "endpoint",
+      "signature": "POST|GET|DELETE /_artifacts",
+      "description": "HTTP endpoints for programmatic artifact management (create, list, delete)"
+    },
+    "sse-endpoint": {
+      "type": "endpoint",
+      "signature": "GET /_events (text/event-stream)",
+      "description": "Server-Sent Events endpoint for auto-reload and artifact notifications"
+    },
+    "hub-page": {
+      "type": "function",
+      "signature": "_generateHubPage(manifest: ArtifactManifest): string",
+      "description": "Redesigned hub page renderer producing artifact card gallery HTML"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "sse-connection-cleanup": {
+      "description": "All SSE connections tracked in a Set and cleared on server stop; max 10 concurrent connections",
+      "enforced_by": "test"
+    },
+    "fs-watch-debounce": {
+      "description": "File system watcher debounces events by 200-500ms; ignores filename argument and re-scans directory",
+      "enforced_by": "test"
+    },
+    "xss-prevention": {
+      "description": "All dynamic content in hub page HTML is escaped before insertion",
+      "enforced_by": "test"
+    },
+    "zero-new-dependencies": {
+      "description": "No new npm production dependencies; uses only node:http, node:fs built-ins",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Complete overhaul of the branding webserver: SSE auto-reload, artifact registry system with branding-artifacts.cjs, hub page redesign to artifact card gallery, extended branding skill flow for logo/wireframe/guidelines generation.",
+    "ownedFiles": [
+      "src/lib/branding-server.cjs",
+      "src/lib/branding-artifacts.cjs",
+      "skills/branding/SKILL.md",
+      "tests/branding-server.test.cjs",
+      "tests/branding-artifacts.test.cjs"
+    ],
+    "tasks": [
+      {"description": "Implement SSE endpoint and fs.watch auto-reload infrastructure", "acceptance": "Browser receives SSE events within 500ms of file changes"},
+      {"description": "Create branding-artifacts.cjs with artifact manifest schema and CRUD", "acceptance": "Artifacts can be created, listed, and deleted with Zod-validated manifest"},
+      {"description": "Redesign hub page as artifact card gallery", "acceptance": "Hub page renders typed cards with timestamps from manifest"},
+      {"description": "Add artifact CRUD HTTP API endpoints", "acceptance": "POST/GET/DELETE /_artifacts endpoints function correctly"},
+      {"description": "Extend branding skill flow for sequential artifact generation", "acceptance": "Skill flow generates theme -> logo -> wireframe -> guidelines in sequence"}
+    ],
+    "acceptance": ["All tasks complete with passing tests", "CONTRACT.json satisfied", "Zero new npm dependencies"]
+  }
+}

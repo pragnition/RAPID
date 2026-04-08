@@ -1,8 +1,16 @@
-- after audit-milestone is done, it suggests to create a set. However, after we /clear, there is 0 indication of what this is supposed to be given to the add-set agent. We need to find some way to handoff this information
+# Feature Changes 
+1. Integration of /branding into the init flow
 
-- the documentation in README.md is not very beginner friendly at all. For instance, the install instructions can confuse beginners, and it is not clear that we are trying to solve the problem of context rot by allowing users to /clear after every command. We should update this part as well. 
+There is quite a lot of friction currently for the user to do /branding. Therefore, we shall integrate the /branding skill into the project initialisation flow. Insert it somewhere in 4B. Maybe after all the areas now and before the granularity preference 
 
-- adjacent to point 2, we should also tell the users that they should do /clear before the next command (at the end of each command)
 
-- try to find any ux improvements that can be made too
+2. /branding webserver Changes
 
+Currently, the branding skill spawns a light webserver that requires the user to refresh on every change. I think this could be made much better. Lets instead spawn a webserver with autoreload that stores "artifacts". In this webpage, the model can create new artifacts (eg. logo, theme etc) that will be populated on the main page. The user can then browse through these artifacts on their own.
+
+Therefore, the branding skill can also be expanded to do mroe things. For instance, after the theme is settled, the branding skill should ask the user if they want to generate logos(document)/a wireframe of the site. After everything is completed, the agent can then generate a branding guidelines page as well.
+
+
+# Feature adds 
+
+1. Update reminder. When we do /rapid:install, we should add a updated_on env var or temp file somewhere. When the date of this exceeds a week, we should encourage the user to update. 

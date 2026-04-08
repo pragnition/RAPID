@@ -1,7 +1,7 @@
 {
   "nodes": [
     {
-      "id": "clear-guidance-and-display",
+      "id": "branding-overhaul",
       "wave": 1,
       "status": "pending",
       "type": "set",
@@ -10,7 +10,7 @@
       "description": null
     },
     {
-      "id": "audit-handoff",
+      "id": "init-branding-integration",
       "wave": 1,
       "status": "pending",
       "type": "set",
@@ -19,7 +19,7 @@
       "description": null
     },
     {
-      "id": "readme-and-onboarding",
+      "id": "update-reminder",
       "wave": 1,
       "status": "pending",
       "type": "set",
@@ -28,7 +28,7 @@
       "description": null
     },
     {
-      "id": "ux-audit",
+      "id": "docs-and-housekeeping",
       "wave": 1,
       "status": "pending",
       "type": "set",
@@ -37,25 +37,7 @@
       "description": null
     },
     {
-      "id": "backlog-system",
-      "wave": 1,
-      "status": "pending",
-      "type": "set",
-      "group": null,
-      "priority": null,
-      "description": null
-    },
-    {
-      "id": "docs-housekeeping",
-      "wave": 1,
-      "status": "pending",
-      "type": "set",
-      "group": null,
-      "priority": null,
-      "description": null
-    },
-    {
-      "id": "ux-first-run",
+      "id": "branding-crud-completion",
       "wave": 1,
       "status": "pending"
     }
@@ -64,40 +46,34 @@
   "waves": {
     "1": {
       "sets": [
-        "clear-guidance-and-display",
-        "audit-handoff",
-        "readme-and-onboarding",
-        "ux-audit",
-        "backlog-system",
-        "docs-housekeeping",
-        "ux-first-run"
+        "branding-overhaul",
+        "init-branding-integration",
+        "update-reminder",
+        "docs-and-housekeeping",
+        "branding-crud-completion"
       ],
       "checkpoint": {
         "contracts": [
-          "rapid://contracts/clear-guidance-and-display",
-          "rapid://contracts/audit-handoff",
-          "rapid://contracts/readme-and-onboarding",
-          "rapid://contracts/ux-audit",
-          "rapid://contracts/backlog-system",
-          "rapid://contracts/docs-housekeeping",
-          "rapid://contracts/ux-first-run"
+          "rapid://contracts/branding-overhaul",
+          "rapid://contracts/init-branding-integration",
+          "rapid://contracts/update-reminder",
+          "rapid://contracts/docs-and-housekeeping",
+          "rapid://contracts/branding-crud-completion"
         ],
         "artifacts": [
-          ".planning/sets/clear-guidance-and-display/CONTRACT.json",
-          ".planning/sets/audit-handoff/CONTRACT.json",
-          ".planning/sets/readme-and-onboarding/CONTRACT.json",
-          ".planning/sets/ux-audit/CONTRACT.json",
-          ".planning/sets/backlog-system/CONTRACT.json",
-          ".planning/sets/docs-housekeeping/CONTRACT.json",
-          ".planning/sets/ux-first-run/CONTRACT.json"
+          ".planning/sets/branding-overhaul/CONTRACT.json",
+          ".planning/sets/init-branding-integration/CONTRACT.json",
+          ".planning/sets/update-reminder/CONTRACT.json",
+          ".planning/sets/docs-and-housekeeping/CONTRACT.json",
+          ".planning/sets/branding-crud-completion/CONTRACT.json"
         ]
       }
     }
   },
   "metadata": {
-    "created": "2026-04-06",
-    "totalSets": 7,
+    "created": "2026-04-08",
+    "totalSets": 5,
     "totalWaves": 1,
-    "maxParallelism": 7
+    "maxParallelism": 5
   }
 }

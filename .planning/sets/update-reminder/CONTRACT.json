@@ -1,0 +1,62 @@
+{
+  "setId": "update-reminder",
+  "version": "1.0.0",
+  "exports": {
+    "writeInstallTimestamp": {
+      "type": "function",
+      "signature": "writeInstallTimestamp(pluginRoot: string): void",
+      "description": "Write ISO 8601 timestamp to .rapid-install-meta.json at plugin root"
+    },
+    "readInstallTimestamp": {
+      "type": "function",
+      "signature": "readInstallTimestamp(pluginRoot: string): string | null",
+      "description": "Read install timestamp from .rapid-install-meta.json"
+    },
+    "isUpdateStale": {
+      "type": "function",
+      "signature": "isUpdateStale(pluginRoot: string, thresholdDays?: number): boolean",
+      "description": "Return true if install timestamp is older than threshold (default 7 days)"
+    },
+    "install-meta-subcommand": {
+      "type": "function",
+      "signature": "CLI: node rapid-tools.cjs state install-meta",
+      "description": "CLI subcommand returning JSON with install timestamp and staleness status"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "deferred-display": {
+      "description": "Update reminder banner appears AFTER command output, not before",
+      "enforced_by": "test"
+    },
+    "tty-only": {
+      "description": "Reminder banner only shown when stdout is a TTY (not in piped/scripted contexts)",
+      "enforced_by": "test"
+    },
+    "suppressible": {
+      "description": "Setting NO_UPDATE_NOTIFIER env var suppresses the reminder entirely",
+      "enforced_by": "test"
+    },
+    "no-color-respect": {
+      "description": "All new terminal output respects NO_COLOR convention",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Implement update staleness detection: timestamp recording during /rapid:install, staleness check in version.cjs, CLI subcommand, and non-blocking reminder banners in status/install skills.",
+    "ownedFiles": [
+      "src/lib/version.cjs",
+      "setup.sh",
+      "skills/install/SKILL.md",
+      "skills/status/SKILL.md",
+      "tests/version.test.cjs"
+    ],
+    "tasks": [
+      {"description": "Implement timestamp write/read in version.cjs with .rapid-install-meta.json", "acceptance": "Timestamps persist across install invocations"},
+      {"description": "Add isUpdateStale() with configurable threshold", "acceptance": "Returns true after 7 days, false before"},
+      {"description": "Add CLI install-meta subcommand to rapid-tools.cjs", "acceptance": "Subcommand returns JSON with timestamp and staleness boolean"},
+      {"description": "Inject reminder banners into status and install skills", "acceptance": "Banner appears after output when stale, hidden when fresh or suppressed"}
+    ],
+    "acceptance": ["All tasks complete with passing tests", "CONTRACT.json satisfied", "Follows update-notifier convention"]
+  }
+}

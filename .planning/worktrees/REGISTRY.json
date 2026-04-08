@@ -880,6 +880,61 @@
       "startCommit": "7677a0c9f6080ff3b2f6409b3f077e2e15991a4d",
       "wave": null,
       "createdAt": "2026-04-06T16:12:32.925Z"
+    },
+    "branding-overhaul": {
+      "setName": "branding-overhaul",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "2b1037ed90f5a17202d2af79a6d0531d031ff659",
+      "wave": null,
+      "createdAt": "2026-04-07T06:31:25.383Z"
+    },
+    "init-branding-integration": {
+      "setName": "init-branding-integration",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "b7df9517412325cdf885d2d9f11bd287f44539e7",
+      "wave": null,
+      "createdAt": "2026-04-07T08:19:15.238Z"
+    },
+    "update-reminder": {
+      "setName": "update-reminder",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "d1c0c381e68f8e21b523aa0e9bcb595314dbe6bd",
+      "wave": null,
+      "createdAt": "2026-04-07T09:25:44.626Z"
+    },
+    "docs-and-housekeeping": {
+      "setName": "docs-and-housekeeping",
+      "branch": "dev",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "f64433e184594d8e54281ea156be2e477c0602e1",
+      "wave": null,
+      "createdAt": "2026-04-08T05:01:35.099Z"
+    },
+    "branding-crud-completion": {
+      "setName": "branding-crud-completion",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "a8ea1f6fb84d03519af82aabd9ea83655ee63240",
+      "wave": null,
+      "createdAt": "2026-04-08T08:10:36.596Z"
     }
   }
 }
