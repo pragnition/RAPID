@@ -651,7 +651,7 @@
         },
         {
           "id": "docs-and-housekeeping",
-          "status": "discussed",
+          "status": "planned",
           "waves": [],
           "name": "Documentation & Housekeeping",
           "branch": "set/docs-and-housekeeping"
@@ -659,6 +659,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T05:15:38.532Z",
+  "lastUpdatedAt": "2026-04-08T06:10:09.539Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

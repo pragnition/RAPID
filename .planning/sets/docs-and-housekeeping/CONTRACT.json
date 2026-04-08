@@ -1,0 +1,98 @@
+{
+  "setId": "docs-and-housekeeping",
+  "version": "1.1.0",
+  "exports": {
+    "updated-context-files": {
+      "type": "file",
+      "signature": ".planning/context/{CODEBASE,ARCHITECTURE,CONVENTIONS,STYLE_GUIDE}.md",
+      "description": "Regenerated context files reflecting v6.2.0 codebase state (branding server, init branding step, update-reminder, src/commands router split)"
+    },
+    "version-strings": {
+      "type": "file",
+      "signature": "package.json, .claude-plugin/plugin.json, .planning/STATE.json, .planning/config.json, README.md, DOCS.md, technical_documentation.md, skills/**/SKILL.md, .github/ISSUE_TEMPLATE/*.yml, .planning/research/v6.2.0-*.md, .planning/sets/update-reminder/*.md",
+      "description": "All active-file version references updated from v6.1.0/6.1.0 to v6.2.0/6.2.0 (both prefixed and bare forms)"
+    },
+    "pinned-runtime-deps": {
+      "type": "file",
+      "signature": "package.json (dependencies block)",
+      "description": "All runtime dependencies pinned to exact versions from package-lock.json: zod=3.25.76, ajv=8.18.0, ajv-formats=3.0.1, proper-lockfile=4.1.2 (no ^ or ~ prefixes). devDependencies are NOT in scope."
+    }
+  },
+  "imports": {
+    "final-feature-state": {
+      "fromSet": "branding-overhaul",
+      "type": "file",
+      "signature": "All branding-overhaul files merged to main",
+      "description": "Context files must reflect the final branding server architecture"
+    },
+    "final-init-state": {
+      "fromSet": "init-branding-integration",
+      "type": "file",
+      "signature": "skills/init/SKILL.md merged to main",
+      "description": "Context files must reflect init flow with branding step"
+    },
+    "final-reminder-state": {
+      "fromSet": "update-reminder",
+      "type": "file",
+      "signature": "All update-reminder files merged to main",
+      "description": "Context files must reflect update reminder infrastructure"
+    }
+  },
+  "behavioral": {
+    "no-stale-versions": {
+      "description": "Zero remaining v6.1.0 or bare 6.1.0 version strings in active project files after completion. Exclusions: .planning/archive/**, node_modules/**, .git/**, ROADMAP.md, docs/CHANGELOG.md, .planning/v6.1.0-AUDIT.md, .planning/v6.1.0-UX-AUDIT.md, tests/ux-audit.test.cjs, .planning/sets/docs-and-housekeeping/**, src/lib/housekeeping.test.cjs, .archive/**, package-lock.json (transitive 6.1.0 versions from other npm deps are coincidental), and .planning/STATE.json (the latter is excluded because line 579 contains a preserved historical milestone id 'v6.1.0' inside the milestones[] array; line 3 rapidVersion IS bumped to 6.2.0 by Task 1).",
+      "enforced_by": "test"
+    },
+    "runtime-deps-pinned": {
+      "description": "Every entry in package.json.dependencies uses an exact semver (matches /^\\d+\\.\\d+\\.\\d+$/). Specifically: zod === '3.25.76', ajv === '8.18.0', ajv-formats === '3.0.1', proper-lockfile === '4.1.2'. devDependencies are not checked.",
+      "enforced_by": "test"
+    },
+    "context-accuracy": {
+      "description": "All .planning/context/ files accurately describe the v6.2.0 codebase including branding modules, version.cjs staleness primitives, src/commands/ router split, and the 30-skill / 27-agent counts",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Documentation updates and project housekeeping: regenerate .planning/context/ files for v6.2.0, bump all version strings v6.1.0 -> v6.2.0 (and bare 6.1.0 -> 6.2.0) in active non-archive files, pin all runtime deps (zod, ajv, ajv-formats, proper-lockfile) to exact versions, update .env.example with NO_UPDATE_NOTIFIER documentation. ROADMAP.md is OUT OF SCOPE (user directive -- handled separately).",
+    "ownedFiles": [
+      ".planning/context/CODEBASE.md",
+      ".planning/context/ARCHITECTURE.md",
+      ".planning/context/CONVENTIONS.md",
+      ".planning/context/STYLE_GUIDE.md",
+      ".env.example",
+      "package.json",
+      ".claude-plugin/plugin.json",
+      ".planning/STATE.json",
+      ".planning/config.json",
+      "README.md",
+      "DOCS.md",
+      "technical_documentation.md",
+      "skills/install/SKILL.md",
+      "skills/status/SKILL.md",
+      "skills/help/SKILL.md",
+      ".github/ISSUE_TEMPLATE/bug-report.yml",
+      ".github/ISSUE_TEMPLATE/feature-request.yml",
+      ".planning/research/v6.2.0-synthesis.md",
+      ".planning/research/v6.2.0-research-architecture.md",
+      ".planning/research/v6.2.0-research-oversights.md",
+      ".planning/sets/update-reminder/CONTEXT.md",
+      ".planning/sets/update-reminder/wave-3-PLAN.md",
+      "src/lib/version.test.cjs",
+      "src/lib/housekeeping.test.cjs"
+    ],
+    "tasks": [
+      {"description": "Sweep v6.1.0 and bare 6.1.0 version strings to v6.2.0/6.2.0 across all active files (respecting the documented exclusion list)", "acceptance": "Grep for /v?6\\.1\\.0/ returns zero matches outside the exclusion list"},
+      {"description": "Pin all runtime dependencies in package.json to exact versions (zod=3.25.76, ajv=8.18.0, ajv-formats=3.0.1, proper-lockfile=4.1.2)", "acceptance": "package.json dependencies block has no ^ or ~ prefixes and matches the exact pin targets"},
+      {"description": "Document NO_UPDATE_NOTIFIER in .env.example with conventional usage", "acceptance": ".env.example includes a commented block describing the env var with example assignment"},
+      {"description": "Add behavioral tests (no-stale-versions, runtime-deps-pinned) colocated under src/lib/", "acceptance": "npm test passes; new tests assert zero stale version strings and exact pins"},
+      {"description": "Surgically patch .planning/context/ files for v6.2.0 (module counts, new modules, src/commands/ router split, skill counts, Node engine)", "acceptance": "Context files reflect 41 lib modules, 30 skills, 27 agents, the bin/router + src/commands handler split, branding-artifacts.cjs, branding-server.cjs, version.cjs staleness primitives, and Node >=22"}
+    ],
+    "acceptance": [
+      "All tasks complete with passing tests",
+      "CONTRACT.json satisfied",
+      "No stale v6.1.0 or bare 6.1.0 references remain outside the exclusion list",
+      "All runtime dependencies exact-pinned",
+      "Context files accurately describe post-merge v6.2.0 state"
+    ]
+  }
+}
