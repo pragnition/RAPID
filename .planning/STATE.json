@@ -658,12 +658,12 @@
         },
         {
           "id": "branding-crud-completion",
-          "status": "discussed",
+          "status": "merged",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T08:18:07.384Z",
+  "lastUpdatedAt": "2026-04-08T08:47:30.076Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
