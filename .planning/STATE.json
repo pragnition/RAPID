@@ -2,7 +2,7 @@
   "version": 1,
   "rapidVersion": "6.2.0",
   "projectName": "RAPID",
-  "currentMilestone": "v6.2.0",
+  "currentMilestone": "v6.3.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -662,8 +662,13 @@
           "waves": []
         }
       ]
+    },
+    {
+      "id": "v6.3.0",
+      "name": "Mission Control & Fixes",
+      "sets": []
     }
   ],
-  "lastUpdatedAt": "2026-04-08T08:47:30.076Z",
+  "lastUpdatedAt": "2026-04-08T10:16:17.940Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
