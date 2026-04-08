@@ -2,7 +2,18 @@
   "setId": "branding-crud-completion",
   "milestone": "v6.2.0",
   "created": "2026-04-08",
-  "exports": { "functions": [], "types": [] },
-  "imports": { "functions": [], "types": [] },
-  "fileOwnership": []
+  "exports": {
+    "functions": ["updateArtifact"],
+    "types": []
+  },
+  "imports": {
+    "functions": ["loadManifest", "saveManifest", "createArtifact", "notifyClients", "_readRequestBody"],
+    "types": []
+  },
+  "fileOwnership": [
+    "src/lib/branding-artifacts.cjs",
+    "src/lib/branding-server.cjs",
+    "src/lib/branding-artifacts.test.cjs",
+    "src/lib/branding-server.test.cjs"
+  ]
 }
