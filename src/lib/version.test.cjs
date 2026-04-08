@@ -107,6 +107,44 @@ describe('version sync', () => {
   });
 });
 
+// --- runtime dependency pins ---
+
+describe('runtime dependency pins', () => {
+  const pkgPath = path.resolve(__dirname, '../../package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  const deps = pkg.dependencies || {};
+  const EXACT_SEMVER = /^\d+\.\d+\.\d+$/;
+
+  it('package.json has a dependencies block', () => {
+    assert.ok(Object.keys(deps).length > 0, 'expected at least one runtime dependency');
+  });
+
+  it('every runtime dependency is an exact semver (no ^ or ~)', () => {
+    const unpinned = Object.entries(deps).filter(([, v]) => !EXACT_SEMVER.test(v));
+    assert.deepEqual(
+      unpinned,
+      [],
+      `unpinned runtime dependencies found: ${JSON.stringify(unpinned)}`
+    );
+  });
+
+  it('pins zod to the exact resolved version (3.25.76)', () => {
+    assert.equal(deps.zod, '3.25.76');
+  });
+
+  it('pins ajv to the exact resolved version (8.18.0)', () => {
+    assert.equal(deps.ajv, '8.18.0');
+  });
+
+  it('pins ajv-formats to the exact resolved version (3.0.1)', () => {
+    assert.equal(deps['ajv-formats'], '3.0.1');
+  });
+
+  it('pins proper-lockfile to the exact resolved version (4.1.2)', () => {
+    assert.equal(deps['proper-lockfile'], '4.1.2');
+  });
+});
+
 // --- staleness primitives ---
 
 describe('install timestamp primitives', () => {
