@@ -1,11 +1,18 @@
 'use strict';
 
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
-const { getVersion, versionCheck } = require('./version.cjs');
+const {
+  getVersion,
+  versionCheck,
+  writeInstallTimestamp,
+  readInstallTimestamp,
+  isUpdateStale,
+} = require('./version.cjs');
 
 // --- getVersion ---
 
@@ -97,5 +104,108 @@ describe('version sync', () => {
     const pluginPath = path.resolve(__dirname, '../../.claude-plugin/plugin.json');
     const plugin = JSON.parse(fs.readFileSync(pluginPath, 'utf-8'));
     assert.equal(getVersion(), plugin.version);
+  });
+});
+
+// --- staleness primitives ---
+
+describe('install timestamp primitives', () => {
+  let tmpRoot;
+  let originalEnv;
+
+  beforeEach(() => {
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-version-test-'));
+    originalEnv = process.env.RAPID_UPDATE_THRESHOLD_DAYS;
+    delete process.env.RAPID_UPDATE_THRESHOLD_DAYS;
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+    if (originalEnv === undefined) {
+      delete process.env.RAPID_UPDATE_THRESHOLD_DAYS;
+    } else {
+      process.env.RAPID_UPDATE_THRESHOLD_DAYS = originalEnv;
+    }
+  });
+
+  it('writeInstallTimestamp writes ISO 8601 string to .rapid-install-meta.json', () => {
+    writeInstallTimestamp(tmpRoot);
+    const metaPath = path.join(tmpRoot, '.rapid-install-meta.json');
+    assert.ok(fs.existsSync(metaPath), '.rapid-install-meta.json should exist');
+    const parsed = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+    assert.match(parsed.installedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  });
+
+  it('readInstallTimestamp round-trips a freshly written timestamp', () => {
+    writeInstallTimestamp(tmpRoot);
+    const timestamp = readInstallTimestamp(tmpRoot);
+    assert.ok(timestamp);
+    assert.ok(!Number.isNaN(new Date(timestamp).getTime()));
+  });
+
+  it('readInstallTimestamp returns null for missing file (no throw)', () => {
+    const result = readInstallTimestamp(tmpRoot);
+    assert.equal(result, null);
+  });
+
+  it('readInstallTimestamp returns null for malformed JSON (no throw)', () => {
+    fs.writeFileSync(path.join(tmpRoot, '.rapid-install-meta.json'), '{not valid json');
+    const result = readInstallTimestamp(tmpRoot);
+    assert.equal(result, null);
+  });
+
+  it('isUpdateStale returns false when no timestamp recorded', () => {
+    assert.equal(isUpdateStale(tmpRoot), false);
+  });
+
+  it('isUpdateStale returns true for timestamp older than 7 days (default)', () => {
+    const oldTimestamp = new Date(Date.now() - 8 * 86400000).toISOString();
+    fs.writeFileSync(
+      path.join(tmpRoot, '.rapid-install-meta.json'),
+      JSON.stringify({ installedAt: oldTimestamp })
+    );
+    assert.equal(isUpdateStale(tmpRoot), true);
+  });
+
+  it('isUpdateStale returns false for timestamp younger than 7 days', () => {
+    const recentTimestamp = new Date(Date.now() - 3 * 86400000).toISOString();
+    fs.writeFileSync(
+      path.join(tmpRoot, '.rapid-install-meta.json'),
+      JSON.stringify({ installedAt: recentTimestamp })
+    );
+    assert.equal(isUpdateStale(tmpRoot), false);
+  });
+
+  it('isUpdateStale honors explicit thresholdDays argument', () => {
+    const fiveDaysOld = new Date(Date.now() - 5 * 86400000).toISOString();
+    fs.writeFileSync(
+      path.join(tmpRoot, '.rapid-install-meta.json'),
+      JSON.stringify({ installedAt: fiveDaysOld })
+    );
+    assert.equal(isUpdateStale(tmpRoot, 3), true, '5 days old > 3 day threshold');
+    assert.equal(isUpdateStale(tmpRoot, 10), false, '5 days old < 10 day threshold');
+  });
+
+  it('isUpdateStale honors RAPID_UPDATE_THRESHOLD_DAYS env var when arg omitted', () => {
+    const fiveDaysOld = new Date(Date.now() - 5 * 86400000).toISOString();
+    fs.writeFileSync(
+      path.join(tmpRoot, '.rapid-install-meta.json'),
+      JSON.stringify({ installedAt: fiveDaysOld })
+    );
+    process.env.RAPID_UPDATE_THRESHOLD_DAYS = '3';
+    assert.equal(isUpdateStale(tmpRoot), true);
+    process.env.RAPID_UPDATE_THRESHOLD_DAYS = '10';
+    assert.equal(isUpdateStale(tmpRoot), false);
+  });
+
+  it('isUpdateStale -- explicit arg wins over env var', () => {
+    const fiveDaysOld = new Date(Date.now() - 5 * 86400000).toISOString();
+    fs.writeFileSync(
+      path.join(tmpRoot, '.rapid-install-meta.json'),
+      JSON.stringify({ installedAt: fiveDaysOld })
+    );
+    process.env.RAPID_UPDATE_THRESHOLD_DAYS = '10';
+    // Explicit arg of 3 should beat env var of 10
+    assert.equal(isUpdateStale(tmpRoot, 3), true);
   });
 });
