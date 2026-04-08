@@ -161,6 +161,30 @@ function deleteArtifact(projectRoot, id) {
 }
 
 /**
+ * Update an existing artifact entry by id (partial update).
+ * Only 'type', 'filename', and 'description' are patchable.
+ * @param {string} projectRoot
+ * @param {string} id
+ * @param {{ type?: string, filename?: string, description?: string }} updates
+ * @returns {{ updated: boolean, entry?: z.infer<typeof ArtifactEntrySchema> }}
+ */
+function updateArtifact(projectRoot, id, updates) {
+  const manifest = loadManifest(projectRoot);
+  const idx = manifest.findIndex((e) => e.id === id);
+  if (idx === -1) return { updated: false };
+
+  const patchable = ['type', 'filename', 'description'];
+  for (const key of patchable) {
+    if (updates[key] !== undefined) {
+      manifest[idx][key] = updates[key];
+    }
+  }
+
+  saveManifest(projectRoot, manifest);
+  return { updated: true, entry: manifest[idx] };
+}
+
+/**
  * Return filenames present on disk but NOT tracked in the manifest.
  * Excludes infrastructure files (artifacts.json, .server.pid, index.html).
  * @param {string} projectRoot
@@ -204,6 +228,7 @@ module.exports = {
   createArtifact,
   listArtifacts,
   getArtifact,
+  updateArtifact,
   deleteArtifact,
   listUntrackedFiles,
 };
