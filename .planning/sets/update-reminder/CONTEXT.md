@@ -75,7 +75,7 @@ Out of scope: remote version checks, snooze/dismiss state, CLI flag overrides, u
 - `skills/status/SKILL.md` and `skills/install/SKILL.md` both already use the standard env-loading preamble pattern (`if [ -z "${RAPID_TOOLS:-}" ] && ...`). The new `display update-reminder` call should reuse this preamble at the end of each skill.
 - RAPID has an existing `display banner` CLI pattern (`node "${RAPID_TOOLS}" display banner discuss-set`). The new `display update-reminder` command should live under the same `display` namespace in `rapid-tools.cjs` for consistency.
 - The status skill's Step 4 ends with a "Run: `{action}`" guidance line. The reminder banner should be emitted AFTER any AskUserQuestion responses are collected -- as the very last line printed before the skill exits.
-- The install skill's Step 5 ends with various exit messages like "RAPID v6.1.0 is ready. Happy building!" -- the reminder banner should be emitted after that final message.
+- The install skill's Step 5 ends with various exit messages like "RAPID v6.2.0 is ready. Happy building!" -- the reminder banner should be emitted after that final message.
 - `.gitignore` will need a one-line addition. The file already exists at the repo root.
 </code_context>
 

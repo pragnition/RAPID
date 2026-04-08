@@ -87,7 +87,7 @@ The "Important Notes" section MUST come AFTER Step 5, not before. Verify with `g
 Step 5 currently ends at line 331:
 
 ```markdown
-If "Done": display "RAPID v6.1.0 is ready. Happy building!"
+If "Done": display "RAPID v6.2.0 is ready. Happy building!"
 ```
 
 Append the following AFTER that line (i.e., starting on what is currently line 332, the empty trailing line):
