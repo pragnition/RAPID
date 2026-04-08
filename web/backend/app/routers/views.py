@@ -10,14 +10,16 @@ from sqlmodel import Session
 from app.database import Project
 from app.schemas.views import (
     CodebaseTree,
+    CodeGraph,
     DagGraph,
+    FileContent,
     ProjectState,
     WorktreeRegistry,
 )
 from app.services.state_service import get_project_state
 from app.services.worktree_service import get_worktree_registry
 from app.services.dag_service import get_dag_graph
-from app.services.codebase_service import get_codebase_tree
+from app.services.codebase_service import get_codebase_tree, get_codebase_graph
 
 logger = logging.getLogger(__name__)
 
@@ -77,3 +79,13 @@ def get_codebase_view(
     project = _get_project(project_id, session)
     result = get_codebase_tree(Path(project.path), max_files=max_files)
     return CodebaseTree(**result)
+
+
+@router.get("/{project_id}/code-graph", response_model=CodeGraph)
+def get_code_graph_view(
+    project_id: UUID, max_files: int = 500, session: Session = Depends(get_db)
+):
+    """Return file dependency graph for a project."""
+    project = _get_project(project_id, session)
+    result = get_codebase_graph(Path(project.path), max_files=max_files)
+    return CodeGraph(**result)
