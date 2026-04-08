@@ -22,41 +22,34 @@
 - **v4.5 Developer Experience II** — 4 sets (shipped 2026-03-26)
 - **v5.0 OSS Presentation** — 5 sets (shipped 2026-03-31)
 - **v6.0.0 Scale & Quality** — 7 sets (shipped 2026-04-06)
-- **v6.1.0 UX & Onboarding** — 7 sets (in progress)
+- **v6.1.0 UX & Onboarding** — 7 sets (shipped 2026-04-07)
+- **v6.2.0 DX Refinements** — 5 sets (in progress)
 
-## Active Milestone: v6.1.0 — UX & Onboarding
+## Active Milestone: v6.2.0 — DX Refinements
 
-This milestone improves onboarding and user experience: persistent audit-to-set handoff across `/clear` boundaries, standardized `/clear` guidance footers on all lifecycle skills, a beginner-friendly README rewrite with problem statement and streamlined quickstart, and a systematic UX audit covering breadcrumbs, error messages, and command discoverability.
+Three features plus documentation/housekeeping targeting branding webserver improvements, init flow integration, and update staleness detection.
 
-### Set 1: clear-guidance-and-display — Clear Guidance & Display Footer
-**Branch:** `set/clear-guidance-and-display` | **Dependencies:** none
-Implement `renderFooter()` utility in `display.cjs`, define `/clear` policy (lifecycle boundaries: yes, review sub-steps: no), add structural test, apply footer to all lifecycle skills (~10-12 skills).
+### Set 1: branding-overhaul — Branding Webserver Overhaul
+**Branch:** `set/branding-overhaul` | **Dependencies:** none
+Replace manual-refresh webserver with SSE-based auto-reload, add artifact registry system (branding-artifacts.cjs + artifacts.json manifest), redesign hub page to artifact card gallery, add CRUD API, extend branding skill to generate logos, wireframes, and guidelines.
 
-### Set 2: audit-handoff — Audit-to-Set Handoff Mechanism
-**Branch:** `set/audit-handoff` | **Dependencies:** none
-Design and implement REMEDIATION artifact for audit-to-set handoff. Audit-version writes structured context to `.planning/pending-sets/`. Add-set auto-discovers and pre-populates scope. Status displays pending sets. Node.js version bump to >=22.
+### Set 2: init-branding-integration — Init Branding Integration
+**Branch:** `set/init-branding-integration` | **Dependencies:** branding-overhaul (soft)
+Insert optional branding step at init step 4B.5. Single opt-in AskUserQuestion with prominent Skip. Condensed inline interview (2-3 questions max). No server during init. Context-aware framing.
 
-### Set 3: readme-and-onboarding — Beginner-Friendly README & Onboarding
-**Branch:** `set/readme-and-onboarding` | **Dependencies:** clear-guidance-and-display
-Rewrite README.md with problem statement (context rot), single install path, `/clear` mental model, annotated quickstart, and "First Project" walkthrough. Update DOCS.md and help command.
+### Set 3: update-reminder — Update Reminder
+**Branch:** `set/update-reminder` | **Dependencies:** none
+Record install timestamp in .rapid-install-meta.json, add staleness check to version.cjs, CLI subcommand, non-blocking reminder banners in status/install skills. TTY-only, suppressible, NO_COLOR aware.
 
-### Set 4: ux-audit — General UX Audit & Polish
-**Branch:** `set/ux-audit` | **Dependencies:** clear-guidance-and-display, audit-handoff
-Systematic UX audit: breadcrumb consistency, error messages, command discoverability, first-run polish. Wire auto-regroup after add-set (deferred from v6.0.0). Bounded checklist, not open-ended.
+### Set 4: docs-and-housekeeping — Documentation & Housekeeping
+**Branch:** `set/docs-and-housekeeping` | **Dependencies:** branding-overhaul, init-branding-integration, update-reminder
+Regenerate .planning/context/ files, bump version strings v6.1.0→v6.2.0, pin Zod to exact 3.25.76, update .env.example, finalize ROADMAP.md.
 
-### Set 5: backlog-system — Backlog Capture & Audit Integration
-**Branch:** `set/backlog-system` | **Dependencies:** none
-New `/rapid:backlog` skill callable by users and agents to capture out-of-scope feature ideas as individual files in `.planning/backlog/`. Integrates with audit-version to surface backlog items as deferred items or new sets. Updates discuss-set and agent prompts to hint at backlog usage.
+### Set 5: branding-crud-completion — Branding CRUD Completion (audit remediation)
+**Branch:** `set/branding-crud-completion` | **Dependencies:** none
+Resolve the v6.2.0 audit gap on branding-overhaul's `/_artifacts` API: it ships POST/GET/DELETE but no update path, and CONTEXT.md advertises an `artifact-updated` SSE event no wave actually emits. Decide between (a) adding PUT/PATCH + the SSE event for true CRUD, or (b) renaming the API to CRD across docs and removing the unused event type. Update branding-server tests and CONTEXT.md to match the chosen surface.
 
-### Set 6: docs-housekeeping — Documentation & Housekeeping
-**Branch:** `set/docs-housekeeping` | **Dependencies:** none
-Full housekeeping sweep: bump all version references to v6.1.0 (package.json, README, skill metadata, planning docs), refresh documentation project-wide (references/, guides/, .planning/context/), and clean up any stale version strings or outdated references.
-
-### Set 7: ux-first-run — First-Run UX Polish
-**Branch:** `set/ux-first-run` | **Dependencies:** none
-Implement 5 deferred first-run UX items from v6.1.0 audit: post-init workflow guide, status empty-state guidance, init-to-first-set bridge, fuzzy command matching, and status contextual hints. All require SKILL.md modifications. Carry-forward context in `.planning/v6.1.0-UX-AUDIT.md`.
-
-**Dependency graph:** `{clear-guidance-and-display, audit-handoff, backlog-system, docs-housekeeping, ux-first-run}` (parallel) → `{readme-and-onboarding}` (depends on 1) | `{ux-audit}` (depends on 1 & 2)
+**Dependency graph:** `{branding-overhaul, update-reminder}` (parallel) → `{init-branding-integration}` (soft dep on 1) | `{docs-and-housekeeping}` (after all 3) | `{branding-crud-completion}` (audit remediation, independent)
 
 ## Completed Milestone Details
 
@@ -273,6 +266,19 @@ Implement 5 deferred first-run UX items from v6.1.0 audit: post-init workflow gu
 - [x] agent-namespace-enforcement — Agent Namespace Enforcement
 - [x] docs-version-bump — Documentation & Version Bump
 - [x] fix-stub-cleanup — Audit Gap Closure
+
+</details>
+
+<details>
+<summary>v6.1.0 UX & Onboarding (7 sets) — shipped 2026-04-07</summary>
+
+- [x] clear-guidance-and-display — Clear Guidance & Display Footer
+- [x] audit-handoff — Audit-to-Set Handoff Mechanism
+- [x] readme-and-onboarding — Beginner-Friendly README & Onboarding
+- [x] ux-audit — General UX Audit & Polish
+- [x] backlog-system — Backlog Capture & Audit Integration
+- [x] docs-housekeeping — Documentation & Housekeeping
+- [x] ux-first-run — First-Run UX Polish
 
 </details>
 
