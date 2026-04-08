@@ -575,6 +575,39 @@ function _handleRequest(req, res, brandingDir, projectRoot) {
     return;
   }
 
+  if (req.method === 'PATCH' && pathname === '/_artifacts') {
+    const id = url.searchParams.get('id');
+    if (!id) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Missing required query parameter: id' }));
+      return;
+    }
+    _readRequestBody(req)
+      .then((body) => {
+        const patchable = ['type', 'filename', 'description'];
+        const hasUpdates = patchable.some((k) => body[k] !== undefined);
+        if (!hasUpdates) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Request body must include at least one patchable field: type, filename, description' }));
+          return;
+        }
+        const result = artifacts.updateArtifact(projectRoot, id, body);
+        if (result.updated) {
+          notifyClients('artifact-updated', result.entry);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result.entry));
+        } else {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Artifact not found', id }));
+        }
+      })
+      .catch((err) => {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      });
+    return;
+  }
+
   // Hub page
   if (req.method === 'GET' && pathname === '/') {
     const html = _generateHubPage(brandingDir, projectRoot);
