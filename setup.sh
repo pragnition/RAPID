@@ -170,6 +170,11 @@ else
     echo "  [skip] Service template not found"
 fi
 
+# Record install timestamp for update reminder (non-fatal -- guarded with || echo
+# because set -euo pipefail is active and would otherwise abort the script).
+node -e "require('$SCRIPT_DIR/src/lib/version.cjs').writeInstallTimestamp('$SCRIPT_DIR')" 2>/dev/null \
+  || echo "  WARNING: Could not record install timestamp (non-fatal)"
+
 echo ""
 echo "=== Bootstrap Complete ==="
 echo "RAPID_TOOLS=$RAPID_TOOLS_PATH"
