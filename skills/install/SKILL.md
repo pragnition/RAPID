@@ -329,3 +329,14 @@ If "Run /rapid:init": invoke the /rapid:init skill.
 If "Run /rapid:status": invoke the /rapid:status skill.
 If "Run /rapid:register-web": invoke the /rapid:register-web skill.
 If "Done": display "RAPID v6.1.0 is ready. Happy building!"
+
+## Step 6: Update Reminder
+
+After the post-install action prompt is handled (or "Done" is selected), emit the deferred update-reminder banner. On a fresh install this is always a no-op (the timestamp was just written -- the install is 0 days old), but the call is unconditional so that re-running `/rapid:install` after months without setup.sh produces the right banner. The CLI handles all gating internally.
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+node "${RAPID_TOOLS}" display update-reminder
+```
+
+Do not interpret or react to the output. The CLI handles all gating internally; this skill only invokes it.
