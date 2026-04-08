@@ -1,5 +1,8 @@
 """Service for parsing project codebase structure using tree-sitter."""
 
+# NOTE: Frontend polling interval (refetchInterval in useViews.ts) is 2s.
+# Tuning to 30s+ is deferred to a frontend set -- see .planning/sets/code-graph-backend/DEFERRED.md
+
 import logging
 import os
 from collections import OrderedDict
