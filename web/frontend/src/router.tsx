@@ -11,8 +11,8 @@ import { NotesPage } from "@/pages/NotesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
-const LazyKnowledgeGraphPage = lazy(() =>
-  import("@/pages/KnowledgeGraphPage").then((m) => ({ default: m.KnowledgeGraphPage }))
+const LazyCodeGraphPage = lazy(() =>
+  import("@/pages/KnowledgeGraphPage").then((m) => ({ default: m.CodeGraphPage }))
 );
 
 export const router = createBrowserRouter([
@@ -24,7 +24,7 @@ export const router = createBrowserRouter([
       { path: "projects", element: <ProjectsPage /> },
       { path: "state", element: <StatePage /> },
       { path: "worktrees", element: <WorktreePage /> },
-      { path: "graph", element: <Suspense fallback={<div className="p-6 animate-pulse">Loading graph...</div>}><LazyKnowledgeGraphPage /></Suspense> },
+      { path: "graph", element: <Suspense fallback={<div className="p-6 animate-pulse">Loading graph...</div>}><LazyCodeGraphPage /></Suspense> },
       { path: "codebase", element: <CodebasePage /> },
       { path: "kanban", element: <KanbanBoard /> },
       { path: "notes", element: <NotesPage /> },
