@@ -9,8 +9,8 @@ import tree_sitter
 
 logger = logging.getLogger(__name__)
 
-# Module-level cache: OrderedDict mapping (filepath, mtime) -> list of symbols (LRU)
-_parse_cache: OrderedDict[tuple[str, float], list[dict]] = OrderedDict()
+# Module-level cache: OrderedDict mapping (filepath, mtime) -> (symbols, raw_imports) (LRU)
+_parse_cache: OrderedDict[tuple[str, float], tuple[list[dict], list[str]]] = OrderedDict()
 
 # Max file size to parse (1MB)
 _MAX_FILE_SIZE = 1_048_576
@@ -388,8 +388,8 @@ def _resolve_import_to_file(
     return None
 
 
-def _parse_file(filepath: str, language: str) -> list[dict] | None:
-    """Parse a single file and return symbols, using mtime cache."""
+def _parse_file(filepath: str, language: str) -> tuple[list[dict], list[str]] | None:
+    """Parse a single file and return (symbols, raw_imports), using mtime cache."""
     try:
         mtime = os.path.getmtime(filepath)
     except OSError:
@@ -417,10 +417,12 @@ def _parse_file(filepath: str, language: str) -> list[dict] | None:
     try:
         tree = parser.parse(source)
         symbols = _extract_symbols(tree.root_node, language)
-        _parse_cache[cache_key] = symbols
+        raw_imports = _extract_imports(tree.root_node, language)
+        result = (symbols, raw_imports)
+        _parse_cache[cache_key] = result
         if len(_parse_cache) > _CACHE_MAX_SIZE:
             _parse_cache.popitem(last=False)
-        return symbols
+        return result
     except Exception:
         logger.debug("tree-sitter parse failed for %s", filepath)
         return None
@@ -469,12 +471,13 @@ def get_codebase_tree(project_path: Path, max_files: int = 500) -> dict:
                 parse_errors.append(f"File too large (>{_MAX_FILE_SIZE} bytes): {rel}")
                 continue
 
-            symbols = _parse_file(filepath, language)
-            if symbols is None:
+            result = _parse_file(filepath, language)
+            if result is None:
                 rel = os.path.relpath(filepath, project_str)
                 parse_errors.append(f"Parse failed: {rel}")
                 continue
 
+            symbols, _imports = result
             rel = os.path.relpath(filepath, project_str)
             languages_found.add(language)
             files.append({
