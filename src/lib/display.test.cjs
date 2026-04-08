@@ -1,9 +1,13 @@
 'use strict';
 
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
-const displayPath = require('path').join(__dirname, 'display.cjs');
+const displayPath = path.join(__dirname, 'display.cjs');
+const { renderUpdateReminder } = require(displayPath);
 
 describe('display', () => {
   let display;
@@ -403,5 +407,91 @@ describe('display', () => {
       assert.ok(result.includes('Unknown stage'), 'Fallback should mention "Unknown stage"');
       delete process.env.NO_COLOR;
     });
+  });
+});
+
+// --- renderUpdateReminder ---
+
+describe('renderUpdateReminder', () => {
+  let tmpRoot;
+  let originalIsTTY;
+  let originalNoUpdate;
+  let originalNoColor;
+  let originalThreshold;
+
+  beforeEach(() => {
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rapid-display-test-'));
+    // Save and force TTY=true so default test mode does not short-circuit
+    originalIsTTY = process.stdout.isTTY;
+    Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
+    originalNoUpdate = process.env.NO_UPDATE_NOTIFIER;
+    delete process.env.NO_UPDATE_NOTIFIER;
+    originalNoColor = process.env.NO_COLOR;
+    delete process.env.NO_COLOR;
+    originalThreshold = process.env.RAPID_UPDATE_THRESHOLD_DAYS;
+    delete process.env.RAPID_UPDATE_THRESHOLD_DAYS;
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+    Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true });
+    if (originalNoUpdate === undefined) delete process.env.NO_UPDATE_NOTIFIER;
+    else process.env.NO_UPDATE_NOTIFIER = originalNoUpdate;
+    if (originalNoColor === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = originalNoColor;
+    if (originalThreshold === undefined) delete process.env.RAPID_UPDATE_THRESHOLD_DAYS;
+    else process.env.RAPID_UPDATE_THRESHOLD_DAYS = originalThreshold;
+  });
+
+  function writeStaleMeta(daysOld) {
+    const ts = new Date(Date.now() - daysOld * 86400000).toISOString();
+    fs.writeFileSync(
+      path.join(tmpRoot, '.rapid-install-meta.json'),
+      JSON.stringify({ installedAt: ts })
+    );
+  }
+
+  it('returns empty string when no timestamp file exists', () => {
+    const result = renderUpdateReminder(tmpRoot);
+    assert.equal(result, '');
+  });
+
+  it('returns empty string when stdout is not a TTY', () => {
+    writeStaleMeta(8);
+    Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true });
+    const result = renderUpdateReminder(tmpRoot);
+    assert.equal(result, '');
+  });
+
+  it('returns empty string when NO_UPDATE_NOTIFIER is set', () => {
+    writeStaleMeta(8);
+    process.env.NO_UPDATE_NOTIFIER = '1';
+    const result = renderUpdateReminder(tmpRoot);
+    assert.equal(result, '');
+  });
+
+  it('returns ANSI-dimmed banner when stale + TTY + no suppression', () => {
+    writeStaleMeta(8);
+    const result = renderUpdateReminder(tmpRoot);
+    assert.ok(result.length > 0);
+    assert.ok(result.includes('\x1b[2m'), 'should include dim ANSI code');
+    assert.ok(result.includes('\x1b[0m'), 'should include reset ANSI code');
+    assert.ok(result.includes('[RAPID] Your install is'));
+    assert.ok(result.includes('Run /rapid:install to refresh.'));
+  });
+
+  it('returns plain banner when NO_COLOR is set', () => {
+    writeStaleMeta(8);
+    process.env.NO_COLOR = '1';
+    const result = renderUpdateReminder(tmpRoot);
+    assert.ok(result.length > 0);
+    assert.ok(!result.includes('\x1b['), 'should NOT include ANSI escapes');
+    assert.ok(result.includes('[RAPID] Your install is'));
+  });
+
+  it('returns empty string when install is fresh (not stale)', () => {
+    writeStaleMeta(2); // 2 days old, default threshold is 7
+    const result = renderUpdateReminder(tmpRoot);
+    assert.equal(result, '');
   });
 });
