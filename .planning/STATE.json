@@ -669,7 +669,7 @@
       "sets": [
         {
           "id": "code-graph-backend",
-          "status": "discussed",
+          "status": "planned",
           "waves": [],
           "name": "Code Graph Backend",
           "branch": "set/code-graph-backend"
@@ -712,6 +712,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T11:24:21.515Z",
+  "lastUpdatedAt": "2026-04-08T11:42:57.459Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
