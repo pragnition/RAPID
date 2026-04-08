@@ -7,6 +7,7 @@ import { useDagGraph } from "@/hooks/useViews";
 import { useCodeGraph } from "@/hooks/useCodeGraph";
 import { GraphTabBar } from "@/components/graph/GraphTabBar";
 import { FileViewerPanel } from "@/components/graph/FileViewerPanel";
+import { GraphSearchFilter } from "@/components/graph/GraphSearchFilter";
 import type { DagGraph, CodeGraph as CodeGraphData } from "@/types/api";
 
 // Register dagre layout extension once
@@ -558,6 +559,7 @@ export function CodeGraphPage() {
             )}
             <div className="flex flex-row h-[calc(100vh-16rem)]">
               <div className="flex-1 relative">
+                <GraphSearchFilter cyRef={codeGraphCyRef} enabled={activeTab === "code-graph"} />
                 <GraphControls
                   onFit={handleCodeGraphFit}
                   onReset={handleCodeGraphReset}
