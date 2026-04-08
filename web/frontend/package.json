@@ -10,7 +10,11 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@codemirror/lang-go": "^6.0.1",
+    "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/lang-markdown": "^6.5.0",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/lang-rust": "^6.0.2",
     "@codemirror/language": "^6.12.2",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.40.0",
@@ -22,6 +26,7 @@
     "codemirror": "^6.0.2",
     "cytoscape": "^3.33.1",
     "cytoscape-dagre": "^2.5.0",
+    "cytoscape-fcose": "^2.2.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router": "^7.13.1",
@@ -31,6 +36,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@types/cytoscape-dagre": "^2.3.4",
+    "@types/cytoscape-fcose": "^2.2.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",

@@ -146,6 +146,44 @@ export interface CodebaseTree {
 }
 
 // ---------------------------------------------------------------------------
+// Code Graph View
+// ---------------------------------------------------------------------------
+
+export interface CodeGraphNode {
+  id: string;
+  path: string;
+  language: string;
+  size: number;
+}
+
+export interface CodeGraphEdge {
+  source: string;
+  target: string;
+}
+
+export interface CodeGraph {
+  nodes: CodeGraphNode[];
+  edges: CodeGraphEdge[];
+  total_files: number;
+  total_edges: number;
+  scanned_files: number;
+  truncated: boolean;
+  parse_errors: string[];
+  unresolved_imports: string[];
+}
+
+// ---------------------------------------------------------------------------
+// File Content
+// ---------------------------------------------------------------------------
+
+export interface FileContent {
+  path: string;
+  content: string;
+  language: string | null;
+  size: number;
+}
+
+// ---------------------------------------------------------------------------
 // Kanban
 // ---------------------------------------------------------------------------
 
