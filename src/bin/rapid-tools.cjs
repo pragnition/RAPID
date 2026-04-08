@@ -57,6 +57,7 @@ const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
   state add-set --milestone <id> --set-id <id> --set-name <name> [--deps <dep1,dep2>]  Add new set to milestone
   state detect-corruption                             Check STATE.json integrity
   state recover                                       Recover STATE.json from git
+  state install-meta                                  Show install timestamp and staleness as JSON
   plan create-set             Create a set from JSON on stdin
   plan decompose              Decompose sets from JSON array on stdin
   plan write-dag              Write DAG.json from JSON on stdin
@@ -121,6 +122,7 @@ const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
   lock release <name>    Release a named lock (not typically used directly)
   display banner <stage> [target]  Display branded RAPID stage banner
   display footer <next-cmd> [--breadcrumb "<text>"] [--no-clear]  Display next-step footer box
+  display update-reminder           Display deferred update reminder banner (TTY-only, suppressible via NO_UPDATE_NOTIFIER)
   build-agents              Build all agent .md files from source modules
   parse-return <file>    Parse a RAPID:RETURN marker from a file
   parse-return --validate <file>  Parse and validate return data from a file
