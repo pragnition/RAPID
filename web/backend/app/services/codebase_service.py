@@ -148,6 +148,142 @@ def _classify_kind(node_type: str) -> str:
     return mapping.get(node_type, "unknown")
 
 
+def _extract_imports(root: tree_sitter.Node, language: str) -> list[str]:
+    """Extract import/require specifiers from the AST root node."""
+    extractors = {
+        "python": _extract_python_imports,
+        "javascript": _extract_js_imports,
+        "typescript": _extract_js_imports,  # same AST shape
+        "tsx": _extract_js_imports,          # same AST shape
+        "go": _extract_go_imports,
+        "rust": _extract_rust_imports,
+    }
+    fn = extractors.get(language)
+    if fn is None:
+        return []
+    return fn(root)
+
+
+def _node_text(node: tree_sitter.Node) -> str:
+    """Get the text of a node as a string."""
+    return node.text.decode("utf-8") if isinstance(node.text, bytes) else node.text
+
+
+def _extract_python_imports(root: tree_sitter.Node) -> list[str]:
+    """Extract import specifiers from Python AST."""
+    imports: list[str] = []
+    for child in root.children:
+        if child.type == "import_statement":
+            # `import foo.bar` -> name child holds the dotted name
+            name_node = child.child_by_field_name("name")
+            if name_node is not None:
+                imports.append(_node_text(name_node))
+            else:
+                # Fallback: walk children for dotted_name / identifier
+                for gc in child.children:
+                    if gc.type in ("dotted_name", "identifier"):
+                        imports.append(_node_text(gc))
+        elif child.type == "import_from_statement":
+            # `from foo.bar import baz` -> module_name field
+            module_node = child.child_by_field_name("module_name")
+            if module_node is not None:
+                imports.append(_node_text(module_node))
+            else:
+                # Fallback: look for dotted_name or relative_import children
+                for gc in child.children:
+                    if gc.type in ("dotted_name", "relative_import"):
+                        imports.append(_node_text(gc))
+                        break
+    return imports
+
+
+def _extract_js_imports(root: tree_sitter.Node) -> list[str]:
+    """Extract import/require specifiers from JS/TS AST. Only relative imports."""
+    imports: list[str] = []
+    for child in root.children:
+        if child.type == "import_statement":
+            source_node = child.child_by_field_name("source")
+            if source_node is not None:
+                spec = _node_text(source_node).strip("'\"")
+                if spec.startswith("."):
+                    imports.append(spec)
+        elif child.type == "expression_statement":
+            # Check for `const x = require("./foo")` or bare `require("./foo")`
+            expr = child.children[0] if child.children else None
+            if expr is not None:
+                _collect_require(expr, imports)
+        elif child.type == "lexical_declaration" or child.type == "variable_declaration":
+            # `const x = require("./foo")`
+            for decl in child.children:
+                if decl.type == "variable_declarator":
+                    value = decl.child_by_field_name("value")
+                    if value is not None:
+                        _collect_require(value, imports)
+    return imports
+
+
+def _collect_require(node: tree_sitter.Node, imports: list[str]) -> None:
+    """If node is a require('...') call with a relative path, append to imports."""
+    if node.type != "call_expression":
+        return
+    func = node.child_by_field_name("function")
+    if func is None or func.type != "identifier" or _node_text(func) != "require":
+        return
+    args = node.child_by_field_name("arguments")
+    if args is None:
+        return
+    for arg_child in args.children:
+        if arg_child.type == "string":
+            spec = _node_text(arg_child).strip("'\"")
+            if spec.startswith("."):
+                imports.append(spec)
+            return
+
+
+def _extract_go_imports(root: tree_sitter.Node) -> list[str]:
+    """Extract import paths from Go AST."""
+    imports: list[str] = []
+    for child in root.children:
+        if child.type == "import_declaration":
+            for gc in child.children:
+                if gc.type == "import_spec":
+                    path_node = gc.child_by_field_name("path")
+                    if path_node is not None:
+                        imports.append(_node_text(path_node).strip('"'))
+                elif gc.type == "import_spec_list":
+                    for spec in gc.children:
+                        if spec.type == "import_spec":
+                            path_node = spec.child_by_field_name("path")
+                            if path_node is not None:
+                                imports.append(_node_text(path_node).strip('"'))
+                elif gc.type == "interpreted_string_literal":
+                    # Single import: `import "fmt"`
+                    imports.append(_node_text(gc).strip('"'))
+    return imports
+
+
+def _extract_rust_imports(root: tree_sitter.Node) -> list[str]:
+    """Extract use declarations from Rust AST. Only crate:: paths."""
+    imports: list[str] = []
+    for child in root.children:
+        if child.type == "use_declaration":
+            # The argument child holds the full use path
+            arg = child.child_by_field_name("argument")
+            if arg is not None:
+                path_text = _node_text(arg)
+                if path_text.startswith("crate::"):
+                    imports.append(path_text)
+            else:
+                # Fallback: grab text of first meaningful child
+                for gc in child.children:
+                    if gc.type not in ("use", ";"):
+                        path_text = _node_text(gc)
+                        if path_text.startswith("crate::"):
+                            imports.append(path_text)
+                        break
+    return imports
+
+
 def _parse_file(filepath: str, language: str) -> list[dict] | None:
     """Parse a single file and return symbols, using mtime cache."""
     try:
