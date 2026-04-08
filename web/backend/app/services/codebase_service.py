@@ -20,11 +20,13 @@ _SKIP_DIRS = frozenset({
     "__pycache__", ".venv", "venv", "target", "dist", "build",
 })
 
-SUPPORTED_LANGUAGES: dict[str, tuple[str, list[str]]] = {
-    "python": ("tree_sitter_python", [".py"]),
-    "javascript": ("tree_sitter_javascript", [".js", ".jsx", ".ts", ".tsx"]),
-    "go": ("tree_sitter_go", [".go"]),
-    "rust": ("tree_sitter_rust", [".rs"]),
+SUPPORTED_LANGUAGES: dict[str, tuple[str, str, list[str]]] = {
+    "python":     ("tree_sitter_python",     "language",            [".py"]),
+    "javascript": ("tree_sitter_javascript", "language",            [".js", ".jsx", ".cjs", ".mjs"]),
+    "typescript": ("tree_sitter_typescript", "language_typescript", [".ts", ".cts", ".mts"]),
+    "tsx":        ("tree_sitter_typescript", "language_tsx",        [".tsx"]),
+    "go":         ("tree_sitter_go",         "language",            [".go"]),
+    "rust":       ("tree_sitter_rust",       "language",            [".rs"]),
 }
 
 # Node types to extract per language
@@ -40,7 +42,7 @@ SYMBOL_QUERIES: dict[str, list[str]] = {
 
 # Map of extension -> language name
 _EXT_TO_LANG: dict[str, str] = {}
-for _lang_name, (_mod_name, _exts) in SUPPORTED_LANGUAGES.items():
+for _lang_name, (_mod_name, _func_name, _exts) in SUPPORTED_LANGUAGES.items():
     for _ext in _exts:
         _EXT_TO_LANG[_ext] = _lang_name
 
@@ -53,10 +55,10 @@ def _get_parser(language: str) -> tree_sitter.Parser | None:
     if language in _parsers:
         return _parsers[language]
 
-    mod_name = SUPPORTED_LANGUAGES[language][0]
+    mod_name, func_name, _ = SUPPORTED_LANGUAGES[language]
     try:
         mod = __import__(mod_name)
-        lang = tree_sitter.Language(mod.language())
+        lang = tree_sitter.Language(getattr(mod, func_name)())
         parser = tree_sitter.Parser(lang)
         _parsers[language] = parser
         return parser
