@@ -242,6 +242,17 @@ Use AskUserQuestion with:
 - Option: "Run /rapid:init" -- "Initialize project state and planning infrastructure"
 - Option: "Done viewing" -- "Exit status"
 
+## Step 5: Update Reminder
+
+After the dashboard renders and any user action prompt is handled, emit the deferred update-reminder banner. This is a one-shot bash block at the very end of the skill -- it produces no output when the install is fresh, when stdout is non-TTY, or when `NO_UPDATE_NOTIFIER` is set, and a single dim line otherwise.
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+node "${RAPID_TOOLS}" display update-reminder
+```
+
+Do not interpret or react to the output. The CLI handles all gating internally; this skill only invokes it.
+
 ## Important Notes
 
 - **Read-only skill:** This skill only reads state and git history. It never creates, modifies, or removes worktrees or state.
