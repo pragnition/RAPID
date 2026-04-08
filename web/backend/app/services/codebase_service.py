@@ -2,17 +2,21 @@
 
 import logging
 import os
+from collections import OrderedDict
 from pathlib import Path
 
 import tree_sitter
 
 logger = logging.getLogger(__name__)
 
-# Module-level cache: dict mapping (filepath, mtime) -> list of symbols
-_parse_cache: dict[tuple[str, float], list[dict]] = {}
+# Module-level cache: OrderedDict mapping (filepath, mtime) -> list of symbols (LRU)
+_parse_cache: OrderedDict[tuple[str, float], list[dict]] = OrderedDict()
 
 # Max file size to parse (1MB)
 _MAX_FILE_SIZE = 1_048_576
+
+# Maximum number of entries in the parse cache
+_CACHE_MAX_SIZE = 1000
 
 # Directories to skip during walk
 _SKIP_DIRS = frozenset({
@@ -153,6 +157,7 @@ def _parse_file(filepath: str, language: str) -> list[dict] | None:
 
     cache_key = (filepath, mtime)
     if cache_key in _parse_cache:
+        _parse_cache.move_to_end(cache_key)
         return _parse_cache[cache_key]
 
     try:
@@ -173,6 +178,8 @@ def _parse_file(filepath: str, language: str) -> list[dict] | None:
         tree = parser.parse(source)
         symbols = _extract_symbols(tree.root_node, language)
         _parse_cache[cache_key] = symbols
+        if len(_parse_cache) > _CACHE_MAX_SIZE:
+            _parse_cache.popitem(last=False)
         return symbols
     except Exception:
         logger.debug("tree-sitter parse failed for %s", filepath)
