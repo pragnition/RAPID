@@ -12,6 +12,7 @@ const ANSI = {
   reset: '\x1b[0m',
   bold: '\x1b[1m',
   brightWhite: '\x1b[97m',
+  dim: '\x1b[2m',
 };
 
 /**
@@ -193,4 +194,45 @@ function renderFooter(nextCommand, options = {}) {
   return '\n' + boxLines.join('\n');
 }
 
-module.exports = { renderBanner, renderFooter, STAGE_VERBS, STAGE_BG };
+/**
+ * Render a deferred update-reminder banner. Designed to be called AFTER a
+ * command's primary output, so the user sees the reminder without it
+ * disrupting parsing/automation.
+ *
+ * Returns an empty string (caller should emit nothing) when:
+ *   - the install is not stale,
+ *   - stdout is not a TTY (piped/scripted contexts),
+ *   - NO_UPDATE_NOTIFIER is set to any non-empty value, or
+ *   - the timestamp can't be read.
+ *
+ * Respects NO_COLOR (https://no-color.org): when set to a non-empty value,
+ * the banner is plain text. Otherwise it is wrapped in ANSI dim.
+ *
+ * @param {string} pluginRoot - Absolute path to plugin root
+ * @returns {string} Banner string (with optional trailing reset) or empty string
+ */
+function renderUpdateReminder(pluginRoot) {
+  // Suppression checks first -- cheapest, no I/O
+  if (!process.stdout.isTTY) return '';
+  if (process.env.NO_UPDATE_NOTIFIER !== undefined && process.env.NO_UPDATE_NOTIFIER !== '') {
+    return '';
+  }
+
+  // Lazy-require version primitives to avoid pulling fs into display.cjs's
+  // require graph at module load time.
+  const { readInstallTimestamp, isUpdateStale } = require('./version.cjs');
+
+  const timestamp = readInstallTimestamp(pluginRoot);
+  if (timestamp === null) return '';
+  if (!isUpdateStale(pluginRoot)) return '';
+
+  const ageMs = Date.now() - new Date(timestamp).getTime();
+  const ageDays = Math.floor(ageMs / 86400000);
+  const text = `[RAPID] Your install is ${ageDays} days old. Run /rapid:install to refresh.`;
+
+  const noColor = process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '';
+  if (noColor) return text;
+  return `${ANSI.dim}${text}${ANSI.reset}`;
+}
+
+module.exports = { renderBanner, renderFooter, renderUpdateReminder, STAGE_VERBS, STAGE_BG };
