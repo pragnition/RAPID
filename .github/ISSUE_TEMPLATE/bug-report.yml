@@ -6,7 +6,7 @@ body:
     id: version
     attributes:
       label: RAPID Version
-      placeholder: "e.g., v6.1.0"
+      placeholder: "e.g., v6.2.0"
     validations:
       required: true
 
