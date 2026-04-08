@@ -644,14 +644,14 @@
         },
         {
           "id": "update-reminder",
-          "status": "executed",
+          "status": "merged",
           "waves": [],
           "name": "Update Reminder",
           "branch": "set/update-reminder"
         },
         {
           "id": "docs-and-housekeeping",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Documentation & Housekeeping",
           "branch": "set/docs-and-housekeeping"
@@ -659,6 +659,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T04:20:11.346Z",
+  "lastUpdatedAt": "2026-04-08T05:15:38.532Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
