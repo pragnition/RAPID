@@ -666,9 +666,52 @@
     {
       "id": "v6.3.0",
       "name": "Mission Control & Fixes",
-      "sets": []
+      "sets": [
+        {
+          "id": "code-graph-backend",
+          "status": "discussed",
+          "waves": [],
+          "name": "Code Graph Backend",
+          "branch": "set/code-graph-backend"
+        },
+        {
+          "id": "code-graph-frontend",
+          "status": "pending",
+          "waves": [],
+          "name": "Code Graph Frontend",
+          "branch": "set/code-graph-frontend"
+        },
+        {
+          "id": "fixes-and-housekeeping",
+          "status": "pending",
+          "waves": [],
+          "name": "Fixes & Housekeeping",
+          "branch": "set/fixes-and-housekeeping"
+        },
+        {
+          "id": "bugfix-wave-splitting",
+          "status": "pending",
+          "waves": [],
+          "name": "Bug-Fix Wave Splitting",
+          "branch": "set/bugfix-wave-splitting"
+        },
+        {
+          "id": "research-agent-reduction",
+          "status": "pending",
+          "waves": [],
+          "name": "Research Agent Reduction",
+          "branch": "set/research-agent-reduction"
+        },
+        {
+          "id": "branding-skill-overhaul",
+          "status": "pending",
+          "waves": [],
+          "name": "Branding Skill Overhaul",
+          "branch": "set/branding-skill-overhaul"
+        }
+      ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T10:16:17.940Z",
+  "lastUpdatedAt": "2026-04-08T11:24:21.515Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
