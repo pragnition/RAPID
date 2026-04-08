@@ -3,7 +3,7 @@
 ## Language & Runtime
 
 - **JavaScript (CommonJS)** — all source files use `.cjs` extension
-- **Node.js 18+** — leverages built-in `node:test`, `node:assert`, `node:fs`, `node:path`
+- **Node.js 22+** — leverages built-in `node:test`, `node:assert`, `node:fs`, `node:path` (engines.node = `">=22"`)
 - No TypeScript, no transpilation, no bundler
 - No ES module syntax (`import`/`export`) — strictly `require()`/`module.exports`
 
@@ -65,11 +65,13 @@ process.stderr.write(`[RAPID] Processing set "${setName}"...\n`);
 
 ### Source Layout
 ```
-src/lib/{module}.cjs         — library module (public API)
-src/lib/{module}.test.cjs    — co-located tests
-src/bin/rapid-tools.cjs      — CLI entry point
-src/modules/core/*.md        — shared agent prompt modules
-src/modules/roles/*.md       — role-specific agent prompts
+src/lib/{module}.cjs             — library module (public API)
+src/lib/{module}.test.cjs        — co-located tests
+src/bin/rapid-tools.cjs          — CLI router (~400 lines)
+src/commands/{command}.cjs       — CLI handler modules (23)
+src/commands/{command}.test.cjs  — co-located handler tests
+src/modules/core/*.md            — shared agent prompt modules
+src/modules/roles/*.md           — role-specific agent prompts
 ```
 
 ### Module Template
@@ -146,3 +148,4 @@ module.exports = {
 - Test edge cases explicitly (dedicated `.edge-cases.test.cjs` files when needed)
 - Clean up filesystem artifacts in `afterEach`
 - Mock only external boundaries (git commands, file system in some cases)
+- New tests MUST live under `src/**` so `npm test`'s `'src/**/*.test.cjs'` glob picks them up
