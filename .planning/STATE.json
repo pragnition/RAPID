@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rapidVersion": "6.1.0",
+  "rapidVersion": "6.2.0",
   "projectName": "RAPID",
   "currentMilestone": "v6.2.0",
   "milestones": [
@@ -651,7 +651,7 @@
         },
         {
           "id": "docs-and-housekeeping",
-          "status": "planned",
+          "status": "executed",
           "waves": [],
           "name": "Documentation & Housekeeping",
           "branch": "set/docs-and-housekeeping"
@@ -659,6 +659,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T06:10:09.539Z",
+  "lastUpdatedAt": "2026-04-08T06:13:07.695Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
