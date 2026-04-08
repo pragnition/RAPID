@@ -498,6 +498,38 @@ describe('branding-server.cjs', () => {
     });
   }
 
+  /**
+   * Helper: send a PATCH request with JSON body.
+   * @param {number} port
+   * @param {string} urlPath
+   * @param {*} body
+   * @returns {Promise<{ status: number, headers: object, body: string }>}
+   */
+  function _patchJSON(port, urlPath, body) {
+    return new Promise((resolve, reject) => {
+      const data = JSON.stringify(body);
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port,
+        path: urlPath,
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(data),
+        },
+      }, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+          resolve({ status: res.statusCode, headers: res.headers, body: responseBody });
+        });
+      });
+      req.on('error', reject);
+      req.write(data);
+      req.end();
+    });
+  }
+
   // -------------------------------------------------------------------------
   // Artifact CRUD API
   // -------------------------------------------------------------------------
@@ -588,6 +620,90 @@ describe('branding-server.cjs', () => {
       assert.equal(resp.status, 404);
       const body = JSON.parse(resp.body);
       assert.ok(body.error.includes('Artifact not found'));
+    });
+
+    it('PATCH /_artifacts?id=... updates artifact and returns 200', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      // Create an artifact
+      const createResp = await _postJSON(freePort, '/_artifacts', {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Original',
+      });
+      const entry = JSON.parse(createResp.body);
+
+      // Patch it
+      const patchResp = await _patchJSON(freePort, `/_artifacts?id=${entry.id}`, {
+        description: 'Updated description',
+      });
+      assert.equal(patchResp.status, 200);
+      const updated = JSON.parse(patchResp.body);
+      assert.equal(updated.description, 'Updated description');
+      assert.equal(updated.id, entry.id);
+      assert.equal(updated.type, 'logo');
+      assert.equal(updated.filename, 'logo.svg');
+      assert.equal(updated.createdAt, entry.createdAt);
+    });
+
+    it('PATCH /_artifacts without id returns 400', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const resp = await _patchJSON(freePort, '/_artifacts', { type: 'icon' });
+      assert.equal(resp.status, 400);
+      const body = JSON.parse(resp.body);
+      assert.ok(body.error.includes('Missing required query parameter'));
+    });
+
+    it('PATCH /_artifacts with unknown id returns 404', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const resp = await _patchJSON(freePort, '/_artifacts?id=nonexistent', { type: 'icon' });
+      assert.equal(resp.status, 404);
+      const body = JSON.parse(resp.body);
+      assert.ok(body.error.includes('Artifact not found'));
+    });
+
+    it('PATCH /_artifacts with empty body returns 400', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const resp = await _patchJSON(freePort, '/_artifacts?id=some-id', {});
+      assert.equal(resp.status, 400);
+      const body = JSON.parse(resp.body);
+      assert.ok(body.error.includes('patchable field'));
+    });
+
+    it('PATCH /_artifacts fires artifact-updated SSE event', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      const { events, req } = await _connectSSE(freePort);
+      try {
+        await new Promise((r) => setTimeout(r, 50));
+
+        // Create an artifact
+        const createResp = await _postJSON(freePort, '/_artifacts', {
+          type: 'logo',
+          filename: 'logo.svg',
+          description: 'Original',
+        });
+        const entry = JSON.parse(createResp.body);
+
+        // Patch it
+        await _patchJSON(freePort, `/_artifacts?id=${entry.id}`, { type: 'icon' });
+        await new Promise((r) => setTimeout(r, 50));
+
+        const updatedEvt = events.find((e) => e.type === 'artifact-updated');
+        assert.ok(updatedEvt, 'should receive artifact-updated event');
+        assert.equal(updatedEvt.data.id, entry.id);
+        assert.equal(updatedEvt.data.type, 'icon');
+      } finally {
+        req.destroy();
+      }
     });
 
     it('CRUD operations fire SSE events', async () => {
