@@ -7,19 +7,19 @@ RAPID is a Claude Code plugin that orchestrates parallel development through iso
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   SKILL LAYER                        │
-│  24 skills (SKILL.md) — user-facing command defs     │
+│  30 skills (SKILL.md) — user-facing command defs     │
 │  Orchestrate agent spawning and CLI calls             │
 ├─────────────────────────────────────────────────────┤
 │                   AGENT LAYER                        │
-│  26 agents (.md) — specialized AI workers            │
+│  27 agents (.md) — specialized AI workers            │
 │  Built from core modules + role modules              │
 ├─────────────────────────────────────────────────────┤
 │                   CLI LAYER                          │
-│  rapid-tools.cjs — command router + handlers         │
-│  Dispatches to library modules                       │
+│  rapid-tools.cjs — thin router (~400 lines)          │
+│  src/commands/ — 23 handler modules                  │
 ├─────────────────────────────────────────────────────┤
 │                   LIBRARY LAYER                      │
-│  21 modules (src/lib/) — core business logic         │
+│  41 modules (src/lib/) — core business logic         │
 │  State, contracts, worktrees, merge, review, etc.    │
 ├─────────────────────────────────────────────────────┤
 │                   STORAGE LAYER                      │
@@ -106,14 +106,36 @@ Agents communicate completion status via embedded markers:
 
 Statuses: `COMPLETE`, `CHECKPOINT` (pause/resume), `BLOCKED` (escalation needed)
 
+## v6.2.0 Subsystems
+
+Three subsystems landed in v6.2.0. Each is isolated from the core state machine and loads lazily at invocation time.
+
+### Branding Server (src/lib/branding-server.cjs)
+- HTTP + SSE server bound to port 3141 by default
+- Watches `.planning/branding/artifacts.json` via `fs.watch` with 300ms debounce (`DEBOUNCE_MS`)
+- Pushes change events to connected SSE clients (capped at `MAX_SSE_CLIENTS=10`)
+- PID file at `.planning/branding/.server.pid` (ignored by git); 1-second health-probe timeout
+- Manifest CRUD lives in `src/lib/branding-artifacts.cjs` with a Zod `ManifestSchema`
+
+### Install Staleness Reminder (src/lib/version.cjs + src/lib/display.cjs)
+- `writeInstallTimestamp(pluginRoot)` writes `{ installedAt: <ISO 8601> }` to `.rapid-install-meta.json` at plugin root (gitignored sidecar)
+- `isUpdateStale(pluginRoot, thresholdDays?)` returns true if the recorded install is older than the threshold (default 7 days, configurable via `RAPID_UPDATE_THRESHOLD_DAYS` env var)
+- `renderUpdateReminder(pluginRoot)` in `display.cjs` is the gated banner entry point -- gate order: TTY → `NO_UPDATE_NOTIFIER` env var (any non-empty value suppresses) → `readInstallTimestamp` → `isUpdateStale` → `NO_COLOR`
+- Wired into skill output end-of-flow for `/rapid:install` and `/rapid:status` via the CLI `display update-reminder` subcommand
+
+### Init Branding Integration (skills/init/SKILL.md)
+- Step 4B.5 "Optional Branding Step (Skip by Default)" -- runs only when the user opts in during `/rapid:init`
+- Project-type aware: offers different defaults for web / CLI / library projects
+- Always skippable -- no branding is created unless the user confirms
+
 ## Agent Architecture
 
 ### Build Pipeline
 ```
 src/modules/core/*.md    ← shared identity, conventions, returns
-src/modules/roles/*.md   ← 30 role-specific instructions
+src/modules/roles/*.md   ← 28 role-specific instructions
         ↓ build-agents
-agents/*.md              ← 26 assembled agent definitions
+agents/*.md              ← 27 assembled agent definitions
 ```
 
 ### Agent Categories
@@ -123,7 +145,7 @@ agents/*.md              ← 26 assembled agent definitions
 | Research | 6 domain + synthesizer | Init-time analysis |
 | Review | scoper, unit-tester, bug-hunter, devils-advocate, judge, bugfix, uat | Quality gate |
 | Merge | set-merger, conflict-resolver | Integration |
-| Utility | roadmapper, set-planner, plan-verifier, verifier, codebase-synthesizer | Support |
+| Utility | roadmapper, set-planner, plan-verifier, verifier, codebase-synthesizer, auditor, context-generator | Support |
 
 ### Prompt Assembly
 ```
@@ -181,12 +203,13 @@ The hunter/devils-advocate/judge pipeline ensures high-confidence findings by ha
 ### Command Flow: `/rapid:execute-set set-01`
 ```
 1. Skill (skills/execute-set/SKILL.md) → orchestrates
-2. CLI (rapid-tools.cjs execute prepare-context) → dispatches
-3. execute.cjs → prepares context, loads contracts
-4. worktree.cjs → generates scoped CLAUDE.md
-5. Agent (rapid-executor) → implements in worktree
-6. returns.cjs → parses RAPID:RETURN
-7. state-machine.cjs → transitions set to 'complete'
+2. CLI router (src/bin/rapid-tools.cjs) → dispatches to handler
+3. Handler (src/commands/execute.cjs) → parses args, calls library
+4. Library (src/lib/execute.cjs) → prepares context, loads contracts
+5. worktree.cjs → generates scoped CLAUDE.md
+6. Agent (rapid-executor) → implements in worktree
+7. returns.cjs → parses RAPID:RETURN
+8. state-machine.cjs → transitions set to 'complete'
 ```
 
 ### State Flow: Init → Merge
