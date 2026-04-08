@@ -284,6 +284,110 @@ def _extract_rust_imports(root: tree_sitter.Node) -> list[str]:
     return imports
 
 
+# Extensions to try when resolving JS/TS imports
+_JS_EXTENSIONS = (".js", ".jsx", ".ts", ".tsx", ".cjs", ".mjs", ".cts", ".mts")
+
+
+def _resolve_import_to_file(
+    specifier: str,
+    source_file: str,
+    project_path: str,
+    known_files: set[str],
+) -> str | None:
+    """Resolve a raw import specifier to a relative file path within the project.
+
+    Returns the relative path (matching an entry in known_files) or None.
+    """
+    # --- JS/TS relative imports ---
+    if specifier.startswith("./") or specifier.startswith("../"):
+        source_dir = os.path.dirname(source_file)
+        candidate_abs = os.path.normpath(os.path.join(source_dir, specifier))
+        candidate_rel = os.path.relpath(candidate_abs, project_path)
+        # Normalise to forward slashes for matching
+        candidate_rel = candidate_rel.replace(os.sep, "/")
+
+        # Try as-is
+        if candidate_rel in known_files:
+            return candidate_rel
+
+        # Try with extensions
+        for ext in _JS_EXTENSIONS:
+            with_ext = candidate_rel + ext
+            if with_ext in known_files:
+                return with_ext
+
+        # Try as directory with index file
+        for ext in _JS_EXTENSIONS:
+            index = candidate_rel + "/index" + ext
+            if index in known_files:
+                return index
+
+        return None
+
+    # --- Rust crate:: imports ---
+    if specifier.startswith("crate::"):
+        # crate::foo::bar -> src/foo/bar.rs or src/foo/bar/mod.rs
+        parts = specifier.split("::")[1:]  # drop "crate"
+        rust_path = "src/" + "/".join(parts)
+        candidate_rs = rust_path + ".rs"
+        if candidate_rs in known_files:
+            return candidate_rs
+        candidate_mod = rust_path + "/mod.rs"
+        if candidate_mod in known_files:
+            return candidate_mod
+        return None
+
+    # --- Go imports: skip (module path resolution is out of scope) ---
+    if "/" in specifier and not specifier.startswith("."):
+        # Looks like a Go import path or an absolute path -- cannot resolve
+        return None
+
+    # --- Python dotted imports ---
+    if specifier.startswith("."):
+        # Relative import: .utils from pkg/main.py -> pkg/utils
+        source_dir = os.path.dirname(source_file)
+        source_rel_dir = os.path.relpath(source_dir, project_path)
+        if source_rel_dir == ".":
+            source_rel_dir = ""
+        # Count leading dots for relative level
+        dot_count = 0
+        for ch in specifier:
+            if ch == ".":
+                dot_count += 1
+            else:
+                break
+        remainder = specifier[dot_count:]
+        # Go up (dot_count - 1) directories from source_dir
+        base_dir = source_rel_dir
+        for _ in range(dot_count - 1):
+            base_dir = os.path.dirname(base_dir) if base_dir else ""
+        if remainder:
+            py_path = os.path.join(base_dir, remainder.replace(".", "/")) if base_dir else remainder.replace(".", "/")
+        else:
+            py_path = base_dir
+        py_path = py_path.replace(os.sep, "/")
+        # Try as .py file then __init__.py
+        candidate_py = py_path + ".py"
+        if candidate_py in known_files:
+            return candidate_py
+        candidate_init = py_path + "/__init__.py"
+        if candidate_init in known_files:
+            return candidate_init
+        return None
+
+    # Absolute Python dotted import: foo.bar -> foo/bar.py or foo/bar/__init__.py
+    if specifier and "." in specifier or specifier.isidentifier():
+        py_path = specifier.replace(".", "/")
+        candidate_py = py_path + ".py"
+        if candidate_py in known_files:
+            return candidate_py
+        candidate_init = py_path + "/__init__.py"
+        if candidate_init in known_files:
+            return candidate_init
+
+    return None
+
+
 def _parse_file(filepath: str, language: str) -> list[dict] | None:
     """Parse a single file and return symbols, using mtime cache."""
     try:
