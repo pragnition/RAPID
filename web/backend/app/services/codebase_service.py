@@ -36,6 +36,16 @@ SYMBOL_QUERIES: dict[str, list[str]] = {
         "function_declaration", "class_declaration",
         "arrow_function", "method_definition",
     ],
+    "typescript": [
+        "function_declaration", "class_declaration",
+        "arrow_function", "method_definition",
+        "interface_declaration", "type_alias_declaration", "enum_declaration",
+    ],
+    "tsx": [
+        "function_declaration", "class_declaration",
+        "arrow_function", "method_definition",
+        "interface_declaration", "type_alias_declaration", "enum_declaration",
+    ],
     "go": ["function_declaration", "method_declaration", "type_declaration"],
     "rust": ["function_item", "struct_item", "impl_item", "enum_item"],
 }
@@ -127,6 +137,9 @@ def _classify_kind(node_type: str) -> str:
         "struct_item": "struct",
         "impl_item": "impl",
         "enum_item": "enum",
+        "interface_declaration": "interface",
+        "type_alias_declaration": "type",
+        "enum_declaration": "enum",
     }
     return mapping.get(node_type, "unknown")
 
