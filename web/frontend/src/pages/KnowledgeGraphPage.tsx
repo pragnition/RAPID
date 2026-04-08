@@ -107,21 +107,50 @@ function extractFilename(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
+function extractDirectory(path: string): string {
+  const parts = path.split("/");
+  if (parts.length <= 1) return ".";
+  return parts.slice(0, -1).join("/");
+}
+
 function buildCodeGraphElements(
   data: CodeGraphData,
+  cluster: boolean,
 ): cytoscape.ElementDefinition[] {
   const elements: cytoscape.ElementDefinition[] = [];
 
+  if (cluster) {
+    // Collect unique directories and create parent compound nodes
+    const directories = new Set<string>();
+    for (const node of data.nodes) {
+      directories.add(extractDirectory(node.path));
+    }
+    for (const dir of directories) {
+      elements.push({
+        data: {
+          id: `dir:${dir}`,
+          label: dir,
+          isDirectory: true,
+        },
+        classes: "directory",
+      });
+    }
+  }
+
   for (const node of data.nodes) {
-    elements.push({
-      data: {
-        id: node.id,
-        label: extractFilename(node.path),
-        fullPath: node.path,
-        language: node.language,
-        size: node.size,
-      },
-    });
+    const nodeData: Record<string, unknown> = {
+      id: node.id,
+      label: extractFilename(node.path),
+      fullPath: node.path,
+      language: node.language,
+      size: node.size,
+    };
+
+    if (cluster) {
+      nodeData.parent = `dir:${extractDirectory(node.path)}`;
+    }
+
+    elements.push({ data: nodeData });
   }
 
   for (const edge of data.edges) {
@@ -330,7 +359,8 @@ export function CodeGraphPage() {
 
     ensureFcose();
 
-    const elements = buildCodeGraphElements(codeGraphQuery.data);
+    const shouldCluster = codeGraphQuery.data.nodes.length > 200;
+    const elements = buildCodeGraphElements(codeGraphQuery.data, shouldCluster);
 
     if (codeGraphCyRef.current) {
       const cy = codeGraphCyRef.current;
@@ -390,6 +420,24 @@ export function CodeGraphPage() {
             "curve-style": "bezier",
             width: 1.5,
           },
+        },
+        {
+          selector: "node.directory",
+          style: {
+            "background-color": "transparent" as unknown as undefined,
+            "background-opacity": 0,
+            "border-width": 1,
+            "border-style": "dashed",
+            "border-color": "#4b5563",
+            label: "data(label)",
+            "font-size": 13,
+            "text-valign": "top",
+            "text-halign": "center",
+            padding: 20,
+            shape: "roundrectangle",
+            width: "label",
+            height: "label",
+          } as cytoscape.Css.Node,
         },
         {
           selector: "node:selected",
@@ -557,6 +605,16 @@ export function CodeGraphPage() {
                 max_files for a complete view.
               </div>
             )}
+            {codeGraphQuery.data.nodes.length > 500 && (
+              <div className="mb-2 px-3 py-2 text-xs text-yellow-300 bg-yellow-900/30 border border-yellow-700/50 rounded">
+                Very large graph ({codeGraphQuery.data.nodes.length} files). Consider filtering or searching to focus on specific areas.
+              </div>
+            )}
+            {codeGraphQuery.data.nodes.length > 200 && codeGraphQuery.data.nodes.length <= 500 && (
+              <div className="mb-2 px-3 py-2 text-xs text-blue-300 bg-blue-900/30 border border-blue-700/50 rounded">
+                Large graph ({codeGraphQuery.data.nodes.length} files) -- directory clustering enabled for performance.
+              </div>
+            )}
             <div className="flex flex-row h-[calc(100vh-16rem)]">
               <div className="flex-1 relative">
                 <GraphSearchFilter cyRef={codeGraphCyRef} enabled={activeTab === "code-graph"} />
@@ -566,7 +624,8 @@ export function CodeGraphPage() {
                 />
                 <div
                   ref={codeGraphContainerRef}
-                  className="h-full border border-border rounded-lg bg-surface-0"
+                  tabIndex={0}
+                  className="h-full border border-border rounded-lg bg-surface-0 focus:outline-none focus:ring-2 focus:ring-accent/50"
                 />
               </div>
               {selectedFilePath && (
@@ -576,6 +635,10 @@ export function CodeGraphPage() {
                   onClose={() => setSelectedFilePath(null)}
                 />
               )}
+            </div>
+            {/* Accessibility: announce selected node */}
+            <div aria-live="polite" className="sr-only">
+              {selectedFilePath ? `Viewing ${extractFilename(selectedFilePath)}` : ""}
             </div>
           </>
         )}
