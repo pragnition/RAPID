@@ -190,6 +190,18 @@ async function handleState(cwd, subcommand, args) {
         break;
       }
 
+      case 'install-meta': {
+        const path = require('path');
+        const { readInstallTimestamp, isUpdateStale } = require('../lib/version.cjs');
+        const pluginRoot = path.resolve(__dirname, '../..');
+        const timestamp = readInstallTimestamp(pluginRoot);
+        const isStale = isUpdateStale(pluginRoot);
+        const envOverride = parseInt(process.env.RAPID_UPDATE_THRESHOLD_DAYS, 10);
+        const thresholdDays = Number.isFinite(envOverride) && envOverride > 0 ? envOverride : 7;
+        process.stdout.write(JSON.stringify({ timestamp, isStale, thresholdDays }, null, 2) + '\n');
+        break;
+      }
+
       default:
         throw new CliError(formatBreadcrumb(`Unknown state subcommand: ${subcommand}`, 'node rapid-tools.cjs --help'));
     }
