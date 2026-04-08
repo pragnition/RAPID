@@ -107,3 +107,43 @@ class CodebaseTree(BaseModel):
     languages: list[str]
     total_files: int
     parse_errors: list[str] = []
+
+
+# ---------------------------------------------------------------------------
+# Code Graph View
+# ---------------------------------------------------------------------------
+
+
+class GraphNode(BaseModel):
+    id: str
+    path: str
+    language: str
+    size: int
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+
+
+class CodeGraph(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+    total_files: int
+    total_edges: int
+    scanned_files: int
+    truncated: bool
+    parse_errors: list[str] = []
+    unresolved_imports: list[str] = []
+
+
+# ---------------------------------------------------------------------------
+# File Content View
+# ---------------------------------------------------------------------------
+
+
+class FileContent(BaseModel):
+    path: str
+    content: str
+    language: str | None = None
+    size: int
