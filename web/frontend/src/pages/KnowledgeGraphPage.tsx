@@ -433,7 +433,7 @@ export function CodeGraphPage() {
             "font-size": 13,
             "text-valign": "top",
             "text-halign": "center",
-            padding: 20,
+            padding: "20px",
             shape: "roundrectangle",
             width: "label",
             height: "label",
