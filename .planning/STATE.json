@@ -651,14 +651,19 @@
         },
         {
           "id": "docs-and-housekeeping",
-          "status": "executed",
+          "status": "merged",
           "waves": [],
           "name": "Documentation & Housekeeping",
           "branch": "set/docs-and-housekeeping"
+        },
+        {
+          "id": "branding-crud-completion",
+          "status": "pending",
+          "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T06:13:07.695Z",
+  "lastUpdatedAt": "2026-04-08T08:03:50.664Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
