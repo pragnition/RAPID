@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useDagGraph } from "@/hooks/useViews";
 import { useCodeGraph } from "@/hooks/useCodeGraph";
 import { GraphTabBar } from "@/components/graph/GraphTabBar";
+import { FileViewerPanel } from "@/components/graph/FileViewerPanel";
 import type { DagGraph, CodeGraph as CodeGraphData } from "@/types/api";
 
 // Register dagre layout extension once
@@ -183,6 +184,7 @@ export function CodeGraphPage() {
   const [activeTab, setActiveTab] = useState<"code-graph" | "set-dag">(
     "code-graph",
   );
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
   // DAG refs and state
   const containerRef = useRef<HTMLDivElement>(null);
@@ -407,6 +409,22 @@ export function CodeGraphPage() {
       } as cytoscape.LayoutOptions,
     });
 
+    // Node click: open file viewer
+    cy.on("tap", "node", (evt) => {
+      const node = evt.target;
+      const fullPath = node.data("fullPath") as string;
+      if (fullPath) {
+        setSelectedFilePath(fullPath);
+      }
+    });
+
+    // Background click: close file viewer
+    cy.on("tap", (evt) => {
+      if (evt.target === cy) {
+        setSelectedFilePath(null);
+      }
+    });
+
     codeGraphCyRef.current = cy;
 
     return () => {
@@ -425,6 +443,15 @@ export function CodeGraphPage() {
       }
     });
   }, [activeTab]);
+
+  // Resize code graph when file viewer opens/closes (width changes)
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (codeGraphCyRef.current) {
+        codeGraphCyRef.current.resize();
+      }
+    });
+  }, [selectedFilePath]);
 
   // DAG controls
   const handleFit = useCallback(() => {
@@ -522,22 +549,33 @@ export function CodeGraphPage() {
             </p>
           )}
         {codeGraphQuery.data && (
-          <div className="relative">
+          <>
             {codeGraphQuery.data.truncated && (
               <div className="mb-2 px-3 py-2 text-xs text-yellow-300 bg-yellow-900/30 border border-yellow-700/50 rounded">
                 Graph is truncated -- showing a subset of files. Increase
                 max_files for a complete view.
               </div>
             )}
-            <GraphControls
-              onFit={handleCodeGraphFit}
-              onReset={handleCodeGraphReset}
-            />
-            <div
-              ref={codeGraphContainerRef}
-              className="h-[calc(100vh-16rem)] border border-border rounded-lg bg-surface-0"
-            />
-          </div>
+            <div className="flex flex-row h-[calc(100vh-16rem)]">
+              <div className="flex-1 relative">
+                <GraphControls
+                  onFit={handleCodeGraphFit}
+                  onReset={handleCodeGraphReset}
+                />
+                <div
+                  ref={codeGraphContainerRef}
+                  className="h-full border border-border rounded-lg bg-surface-0"
+                />
+              </div>
+              {selectedFilePath && (
+                <FileViewerPanel
+                  projectId={activeProjectId}
+                  filePath={selectedFilePath}
+                  onClose={() => setSelectedFilePath(null)}
+                />
+              )}
+            </div>
+          </>
         )}
       </div>
 
