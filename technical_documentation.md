@@ -1,6 +1,6 @@
 # RAPID Technical Documentation
 
-This is the architectural deep-dive for RAPID v6.1.0 (Rapid Agentic Parallelizable and Isolatable Development). It explains how RAPID's systems fit together, the design rationale behind key architectural decisions, and the cross-cutting concerns that span multiple lifecycle stages. This document is intentionally a "thin companion" -- it covers architecture and design narrative rather than exhaustive per-topic detail, which lives in the [docs/](docs/) directory. For command reference and quick lookup, see [DOCS.md](DOCS.md). For topic-specific detail, see the [docs/](docs/) directory.
+This is the architectural deep-dive for RAPID v6.2.0 (Rapid Agentic Parallelizable and Isolatable Development). It explains how RAPID's systems fit together, the design rationale behind key architectural decisions, and the cross-cutting concerns that span multiple lifecycle stages. This document is intentionally a "thin companion" -- it covers architecture and design narrative rather than exhaustive per-topic detail, which lives in the [docs/](docs/) directory. For command reference and quick lookup, see [DOCS.md](DOCS.md). For topic-specific detail, see the [docs/](docs/) directory.
 
 ## Table of Contents
 
@@ -70,7 +70,7 @@ The system bootstraps from STATE.json and disk artifacts. No conversation contex
 
 ## Agent Pipeline
 
-RAPID v6.1.0 uses 27 specialized agents organized into 7 categories. Skills dispatch agents directly -- there is no central coordination agent.
+RAPID v6.2.0 uses 27 specialized agents organized into 7 categories. Skills dispatch agents directly -- there is no central coordination agent.
 
 ### Category Overview
 
@@ -93,7 +93,7 @@ For the complete agent catalog with spawn hierarchy, input/output specs, and dis
 
 ## State Machine Design
 
-RAPID v6.1.0 tracks state at the set level. Sets are the sole stateful entity in the lifecycle state machine, and this is a deliberate design choice.
+RAPID v6.2.0 tracks state at the set level. Sets are the sole stateful entity in the lifecycle state machine, and this is a deliberate design choice.
 
 ### SetStatus Lifecycle
 

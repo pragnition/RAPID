@@ -1,0 +1,45 @@
+{
+  "setId": "init-branding-integration",
+  "version": "1.0.0",
+  "exports": {
+    "init-branding-step": {
+      "type": "function",
+      "signature": "Step 4B.5 in init SKILL.md flow",
+      "description": "Optional branding opt-in step inserted between discovery and granularity in init"
+    }
+  },
+  "imports": {
+    "branding-inline-mode": {
+      "fromSet": "branding-overhaul",
+      "type": "file",
+      "signature": "skills/branding/SKILL.md (inline mode section)",
+      "description": "Branding SKILL.md must support condensed inline interview mode (soft dependency -- init works without it but provides richer experience with it)"
+    }
+  },
+  "behavioral": {
+    "skip-is-default": {
+      "description": "Skip branding during init must be the default/prominent option with zero side effects",
+      "enforced_by": "test"
+    },
+    "no-server-during-init": {
+      "description": "Branding server must NOT be started during the init flow",
+      "enforced_by": "test"
+    },
+    "question-budget": {
+      "description": "Branding during init uses at most 1 opt-in + 1 possible re-init check + 5 interview questions (max 7 total AskUserQuestion calls)",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Insert optional branding step into project init flow at step 4B.5. Single opt-in question with condensed inline interview. No server start. Context-aware framing.",
+    "ownedFiles": [
+      "skills/init/SKILL.md"
+    ],
+    "tasks": [
+      {"description": "Add branding opt-in gate at init step 4B.5", "acceptance": "Init flow presents branding opt-in after discovery areas"},
+      {"description": "Implement condensed inline branding interview", "acceptance": "2-3 question interview generates BRANDING.md and index.html"},
+      {"description": "Handle pre-scaffolding state gracefully", "acceptance": "Branding works even when .planning/ does not yet exist"}
+    ],
+    "acceptance": ["All tasks complete with passing tests", "CONTRACT.json satisfied", "Skip path has zero side effects"]
+  }
+}

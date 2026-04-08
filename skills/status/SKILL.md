@@ -3,9 +3,9 @@ description: Show project dashboard with set statuses, last activity, and next a
 allowed-tools: Bash, Read, AskUserQuestion
 ---
 
-# /rapid:status -- v6.1.0 Set Dashboard
+# /rapid:status -- v6.2.0 Set Dashboard
 
-You are the RAPID status viewer. This skill shows a set-level dashboard of all sets with their statuses, last git activity, and actionable next steps using v6.1.0 command names. This skill is **read-only** and never modifies any state. Follow these steps IN ORDER.
+You are the RAPID status viewer. This skill shows a set-level dashboard of all sets with their statuses, last git activity, and actionable next steps using v6.2.0 command names. This skill is **read-only** and never modifies any state. Follow these steps IN ORDER.
 
 ## Step 1: Load Environment
 
@@ -181,7 +181,7 @@ This is read-only -- no state modification.
 
 ## Step 4: Per-Set Next Actions via AskUserQuestion
 
-Based on each set's status, determine the suggested v6.1.0 next action:
+Based on each set's status, determine the suggested v6.2.0 next action:
 
 | Set Status | Suggested Action           |
 | ---------- | -------------------------- |
@@ -222,7 +222,7 @@ Collect all non-merged sets that have a suggested action. These are the actionab
 Use AskUserQuestion with one option per action plus a "Done" option:
 
 - For each actionable set:
-  - name: the v6.1.0 command with numeric shorthand (e.g., "/rapid:start-set 1")
+  - name: the v6.2.0 command with numeric shorthand (e.g., "/rapid:start-set 1")
   - description: what it does, including the full set name (e.g., "Start set-01-foundation for development")
 - Always include: name "Done -- no action needed", description "Exit status dashboard"
 
@@ -242,10 +242,21 @@ Use AskUserQuestion with:
 - Option: "Run /rapid:init" -- "Initialize project state and planning infrastructure"
 - Option: "Done viewing" -- "Exit status"
 
+## Step 5: Update Reminder
+
+After the dashboard renders and any user action prompt is handled, emit the deferred update-reminder banner. This is a one-shot bash block at the very end of the skill -- it produces no output when the install is fresh, when stdout is non-TTY, or when `NO_UPDATE_NOTIFIER` is set, and a single dim line otherwise.
+
+```bash
+if [ -z "${RAPID_TOOLS:-}" ] && [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "${CLAUDE_SKILL_DIR}/../../.env" ]; then export $(grep -v '^#' "${CLAUDE_SKILL_DIR}/../../.env" | xargs); fi
+node "${RAPID_TOOLS}" display update-reminder
+```
+
+Do not interpret or react to the output. The CLI handles all gating internally; this skill only invokes it.
+
 ## Important Notes
 
 - **Read-only skill:** This skill only reads state and git history. It never creates, modifies, or removes worktrees or state.
 - **Data source:** STATE.json is the single source for set statuses (via `state get --all`). Git log provides last activity per branch.
 - **Set-level only:** No wave or job information is displayed. The dashboard shows sets and their statuses directly.
-- **v6.1.0 commands:** All suggested actions use v6.1.0 command names: start-set, discuss-set, plan-set, execute-set, review, merge, new-version.
+- **v6.2.0 commands:** All suggested actions use v6.2.0 command names: start-set, discuss-set, plan-set, execute-set, review, merge, new-version.
 - **AskUserQuestion:** Always used for next-action routing. Users pick from suggested commands or exit.

@@ -3,7 +3,7 @@
 const { CliError } = require('../lib/errors.cjs');
 
 function handleDisplay(subcommand, args) {
-  const { renderBanner, renderFooter } = require('../lib/display.cjs');
+  const { renderBanner, renderFooter, renderUpdateReminder } = require('../lib/display.cjs');
 
   switch (subcommand) {
     case 'banner': {
@@ -31,6 +31,23 @@ function handleDisplay(subcommand, args) {
       const clearRequired = !remaining.includes('--no-clear');
       const result = renderFooter(nextCommand, { breadcrumb, clearRequired });
       process.stdout.write(result + '\n');
+      break;
+    }
+    case 'update-reminder': {
+      // Deferred update reminder banner. Must NEVER throw -- a banner failure
+      // must not break the exit code of the parent command. Swallow all errors.
+      try {
+        const path = require('path');
+        const pluginRoot = path.resolve(__dirname, '../..');
+        const output = renderUpdateReminder(pluginRoot);
+        if (output) {
+          process.stdout.write(output + '\n');
+        }
+        // If output is empty (fresh install, non-TTY, suppressed) write nothing,
+        // not even a bare newline. Caller skills depend on this.
+      } catch (_err) {
+        // Swallow -- never throw out of update-reminder
+      }
       break;
     }
     default:
