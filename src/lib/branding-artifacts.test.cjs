@@ -214,6 +214,124 @@ describe('branding-artifacts.cjs', () => {
   });
 
   // -------------------------------------------------------------------------
+  // updateArtifact
+  // -------------------------------------------------------------------------
+
+  describe('updateArtifact()', () => {
+    it('updates type field and preserves other fields', () => {
+      const entry = artifacts.createArtifact(tmpDir, {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Original',
+      });
+
+      const result = artifacts.updateArtifact(tmpDir, entry.id, { type: 'icon' });
+      assert.equal(result.updated, true);
+      assert.equal(result.entry.type, 'icon');
+      assert.equal(result.entry.filename, 'logo.svg');
+      assert.equal(result.entry.description, 'Original');
+      assert.equal(result.entry.id, entry.id);
+      assert.equal(result.entry.createdAt, entry.createdAt);
+    });
+
+    it('updates filename field', () => {
+      const entry = artifacts.createArtifact(tmpDir, {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Original',
+      });
+
+      const result = artifacts.updateArtifact(tmpDir, entry.id, { filename: 'new-logo.svg' });
+      assert.equal(result.updated, true);
+      assert.equal(result.entry.filename, 'new-logo.svg');
+      assert.equal(result.entry.type, 'logo');
+      assert.equal(result.entry.description, 'Original');
+    });
+
+    it('updates description field', () => {
+      const entry = artifacts.createArtifact(tmpDir, {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Original',
+      });
+
+      const result = artifacts.updateArtifact(tmpDir, entry.id, { description: 'Updated description' });
+      assert.equal(result.updated, true);
+      assert.equal(result.entry.description, 'Updated description');
+    });
+
+    it('updates multiple fields at once', () => {
+      const entry = artifacts.createArtifact(tmpDir, {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Original',
+      });
+
+      const result = artifacts.updateArtifact(tmpDir, entry.id, {
+        type: 'font',
+        filename: 'heading.woff2',
+        description: 'Changed all',
+      });
+      assert.equal(result.updated, true);
+      assert.equal(result.entry.type, 'font');
+      assert.equal(result.entry.filename, 'heading.woff2');
+      assert.equal(result.entry.description, 'Changed all');
+      assert.equal(result.entry.id, entry.id);
+      assert.equal(result.entry.createdAt, entry.createdAt);
+    });
+
+    it('returns { updated: false } for non-existent id', () => {
+      const result = artifacts.updateArtifact(tmpDir, 'no-such-id', { type: 'icon' });
+      assert.equal(result.updated, false);
+      assert.equal(result.entry, undefined);
+    });
+
+    it('allows setting fields to empty strings', () => {
+      const entry = artifacts.createArtifact(tmpDir, {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Has description',
+      });
+
+      const result = artifacts.updateArtifact(tmpDir, entry.id, { description: '' });
+      assert.equal(result.updated, true);
+      assert.equal(result.entry.description, '');
+    });
+
+    it('ignores immutable fields (id, createdAt) in updates', () => {
+      const entry = artifacts.createArtifact(tmpDir, {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Original',
+      });
+
+      const result = artifacts.updateArtifact(tmpDir, entry.id, {
+        id: 'hacked-id',
+        createdAt: '2000-01-01T00:00:00Z',
+        type: 'icon',
+      });
+      assert.equal(result.entry.id, entry.id);
+      assert.equal(result.entry.createdAt, entry.createdAt);
+      assert.equal(result.entry.type, 'icon');
+    });
+
+    it('persists updates to manifest on disk', () => {
+      const entry = artifacts.createArtifact(tmpDir, {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Original',
+      });
+
+      artifacts.updateArtifact(tmpDir, entry.id, { type: 'wireframe' });
+
+      const manifest = artifacts.loadManifest(tmpDir);
+      const found = manifest.find((e) => e.id === entry.id);
+      assert.ok(found, 'entry should exist in manifest');
+      assert.equal(found.type, 'wireframe');
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // listUntrackedFiles
   // -------------------------------------------------------------------------
 
