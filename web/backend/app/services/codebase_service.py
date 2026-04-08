@@ -495,3 +495,93 @@ def get_codebase_tree(project_path: Path, max_files: int = 500) -> dict:
         "total_files": len(files),
         "parse_errors": parse_errors,
     }
+
+
+def get_codebase_graph(project_path: Path, max_files: int = 500) -> dict:
+    """Walk project directory and build a file-to-file dependency graph.
+
+    Returns dict with keys: nodes, edges, total_files, total_edges,
+    scanned_files, truncated, parse_errors, unresolved_imports.
+    """
+    project_str = str(project_path)
+    parse_errors: list[str] = []
+    unresolved_imports: list[str] = []
+
+    # First pass: collect all file entries and build known_files set
+    collected: list[tuple[str, str, str, int]] = []  # (abs_path, rel_path, language, size)
+    file_count = 0
+
+    for dirpath, dirnames, filenames in os.walk(project_path, followlinks=False):
+        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
+
+        for filename in filenames:
+            ext = os.path.splitext(filename)[1]
+            language = _EXT_TO_LANG.get(ext)
+            if language is None:
+                continue
+
+            file_count += 1
+            if file_count > max_files:
+                continue  # keep counting but don't collect
+
+            filepath = os.path.join(dirpath, filename)
+            try:
+                size = os.path.getsize(filepath)
+            except OSError:
+                parse_errors.append(f"Cannot stat: {filepath}")
+                continue
+
+            if size > _MAX_FILE_SIZE:
+                rel = os.path.relpath(filepath, project_str)
+                parse_errors.append(f"File too large (>{_MAX_FILE_SIZE} bytes): {rel}")
+                continue
+
+            rel = os.path.relpath(filepath, project_str).replace(os.sep, "/")
+            collected.append((filepath, rel, language, size))
+
+    truncated = file_count > max_files
+    known_files: set[str] = {rel for _, rel, _, _ in collected}
+
+    # Second pass: parse files, build nodes and edges
+    nodes: list[dict] = []
+    edge_set: set[tuple[str, str]] = set()
+
+    for abs_path, rel_path, language, size in collected:
+        node = {
+            "id": rel_path,
+            "path": rel_path,
+            "language": language,
+            "size": size,
+        }
+        nodes.append(node)
+
+        result = _parse_file(abs_path, language)
+        if result is None:
+            parse_errors.append(f"Parse failed: {rel_path}")
+            continue
+
+        _symbols, raw_imports = result
+
+        for specifier in raw_imports:
+            target = _resolve_import_to_file(specifier, abs_path, project_str, known_files)
+            if target is not None:
+                # Skip self-edges
+                if target != rel_path and (rel_path, target) not in edge_set:
+                    edge_set.add((rel_path, target))
+            else:
+                # Track unresolved local-looking imports
+                if specifier.startswith("."):
+                    unresolved_imports.append(f"{rel_path}: {specifier}")
+
+    edges = [{"source": src, "target": tgt} for src, tgt in sorted(edge_set)]
+
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "total_files": len(nodes),
+        "total_edges": len(edges),
+        "scanned_files": file_count,
+        "truncated": truncated,
+        "parse_errors": parse_errors,
+        "unresolved_imports": unresolved_imports,
+    }
