@@ -676,14 +676,14 @@
         },
         {
           "id": "code-graph-frontend",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Code Graph Frontend",
           "branch": "set/code-graph-frontend"
         },
         {
           "id": "fixes-and-housekeeping",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Fixes & Housekeeping",
           "branch": "set/fixes-and-housekeeping"
@@ -712,6 +712,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T12:56:40.974Z",
+  "lastUpdatedAt": "2026-04-08T17:07:04.555Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
