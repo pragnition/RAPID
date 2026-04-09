@@ -84,6 +84,24 @@ function darken(hex: string): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
 }
 
+function fitAndClamp(cy: cytoscape.Core, padding: number): void {
+  cy.fit(undefined, padding);
+  const zoom = cy.zoom();
+  const min = 0.5;
+  const max = 1.5;
+  if (zoom < min || zoom > max) {
+    const clamped = Math.max(min, Math.min(max, zoom));
+    cy.zoom({
+      level: clamped,
+      renderedPosition: {
+        x: cy.width() / 2,
+        y: cy.height() / 2,
+      },
+    });
+    cy.center();
+  }
+}
+
 function buildElements(data: DagGraph): cytoscape.ElementDefinition[] {
   const elements: cytoscape.ElementDefinition[] = [];
 
@@ -262,6 +280,7 @@ export function CodeGraphPage() {
         padding: 30,
         animate: false,
       } as cytoscape.LayoutOptions).run();
+      fitAndClamp(cy, 60);
       return;
     }
 
@@ -354,6 +373,7 @@ export function CodeGraphPage() {
     });
 
     cyRef.current = cy;
+    fitAndClamp(cy, 60);
 
     return () => {
       cy.destroy();
@@ -385,6 +405,7 @@ export function CodeGraphPage() {
         nodeRepulsion: 4500,
         edgeElasticity: 0.45,
       } as cytoscape.LayoutOptions).run();
+      fitAndClamp(cy, 30);
       return;
     }
 
@@ -483,6 +504,7 @@ export function CodeGraphPage() {
     });
 
     codeGraphCyRef.current = cy;
+    fitAndClamp(cy, 30);
 
     return () => {
       cy.destroy();
@@ -512,7 +534,7 @@ export function CodeGraphPage() {
 
   // DAG controls
   const handleFit = useCallback(() => {
-    cyRef.current?.fit();
+    if (cyRef.current) fitAndClamp(cyRef.current, 60);
   }, []);
 
   const handleReset = useCallback(() => {
@@ -540,7 +562,7 @@ export function CodeGraphPage() {
 
   // Code graph controls
   const handleCodeGraphFit = useCallback(() => {
-    codeGraphCyRef.current?.fit();
+    if (codeGraphCyRef.current) fitAndClamp(codeGraphCyRef.current, 30);
   }, []);
 
   const handleCodeGraphReset = useCallback(() => {
