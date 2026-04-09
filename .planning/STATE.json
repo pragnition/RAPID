@@ -704,7 +704,7 @@
         },
         {
           "id": "branding-skill-overhaul",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Branding Skill Overhaul",
           "branch": "set/branding-skill-overhaul"
@@ -712,6 +712,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-09T05:52:22.412Z",
+  "lastUpdatedAt": "2026-04-09T06:28:13.100Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
