@@ -248,6 +248,25 @@ If "Apply fix": Continue to Step 4.
 
 Build a plan for the fix. The plan should be a concise description of exactly what needs to change, in which files, and how to verify the fix.
 
+### Step 4 Branching: Single Executor vs Wave Splitting
+
+Before dispatching, check whether wave splitting applies:
+
+- If `BUG_COUNT < 2 * WAVE_SIZE`, skip wave logic and fall through to the legacy single-executor dispatch unchanged. This preserves exact backward compatibility for small bug lists.
+- If `BUG_COUNT >= 2 * WAVE_SIZE`, proceed to Step 4a (Wave Decomposition). Do NOT execute the single-executor block below -- the wave loop replaces it for this invocation.
+
+**Worked examples:**
+
+- `BUG_COUNT = 5`, `WAVE_SIZE = 3` -- `5 < 6`, floor NOT met, single-executor path (legacy, unchanged).
+- `BUG_COUNT = 6`, `WAVE_SIZE = 3` -- `6 >= 6`, floor met, wave splitting triggers with 2 waves of 3.
+- `BUG_COUNT = 10`, `WAVE_SIZE = 3` -- `10 >= 6`, floor met, wave splitting triggers with 4 waves of sizes 3, 3, 3, 1.
+
+When `BUG_COUNT == 1` (single-bug invocation), the floor is never met regardless of `WAVE_SIZE`, so the single-executor path below always runs -- preserving exact backward compatibility.
+
+### Legacy Single-Executor Dispatch
+
+> The block below runs only when wave splitting does NOT trigger (i.e., `BUG_COUNT < 2 * WAVE_SIZE`).
+
 Spawn the **rapid-executor** agent with this task:
 
 ```
