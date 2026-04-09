@@ -204,11 +204,11 @@ function GraphControls({
   onToggleLayout?: () => void;
 }) {
   return (
-    <div className="absolute top-3 right-3 flex gap-1 z-10">
+    <div className="absolute top-3 right-3 z-10 bg-surface-0/60 backdrop-blur-md rounded-xl p-1.5 flex gap-1">
       <button
         type="button"
         onClick={onFit}
-        className="bg-surface-1 border border-border rounded px-2 py-1 text-xs text-fg hover:bg-surface-2 transition-colors"
+        className="bg-surface-0/80 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-1.5 text-xs text-fg hover:bg-accent/20 hover:text-accent hover:border-accent/50 transition-all duration-200"
       >
         Fit
       </button>
@@ -216,7 +216,7 @@ function GraphControls({
         <button
           type="button"
           onClick={onToggleLayout}
-          className="bg-surface-1 border border-border rounded px-2 py-1 text-xs text-fg hover:bg-surface-2 transition-colors"
+          className="bg-surface-0/80 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-1.5 text-xs text-fg hover:bg-accent/20 hover:text-accent hover:border-accent/50 transition-all duration-200"
         >
           {layoutDir === "TB" ? "Horizontal" : "Vertical"}
         </button>
@@ -224,7 +224,7 @@ function GraphControls({
       <button
         type="button"
         onClick={onReset}
-        className="bg-surface-1 border border-border rounded px-2 py-1 text-xs text-fg hover:bg-surface-2 transition-colors"
+        className="bg-surface-0/80 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-1.5 text-xs text-fg hover:bg-accent/20 hover:text-accent hover:border-accent/50 transition-all duration-200"
       >
         Reset
       </button>
@@ -645,7 +645,7 @@ export function CodeGraphPage() {
       {/* Code Graph tab */}
       <div style={{ display: activeTab === "code-graph" ? "block" : "none" }}>
         {codeGraphQuery.isLoading && (
-          <div className="h-[calc(100vh-16rem)] bg-surface-0 border border-border rounded-lg animate-pulse" />
+          <div className="h-[calc(100vh-16rem)] bg-bg-dim border border-border rounded-lg animate-pulse" />
         )}
         {codeGraphQuery.isError && (
           <p className="text-red-400">
@@ -710,7 +710,7 @@ export function CodeGraphPage() {
       {/* Set DAG tab */}
       <div style={{ display: activeTab === "set-dag" ? "block" : "none" }}>
         {dagQuery.isLoading && (
-          <div className="h-[calc(100vh-16rem)] bg-surface-0 border border-border rounded-lg animate-pulse" />
+          <div className="h-[calc(100vh-16rem)] bg-bg-dim border border-border rounded-lg animate-pulse" />
         )}
         {dagQuery.isError && (() => {
           const is404 =
@@ -742,14 +742,20 @@ export function CodeGraphPage() {
               className="h-[calc(100vh-16rem)] border border-border rounded-lg bg-bg-dim"
             />
             {selectedNode && (
-              <div className="absolute bottom-3 left-3 z-10 bg-surface-1 border border-border rounded-lg p-4 min-w-[200px] shadow-lg">
+              <div className="absolute bottom-3 left-3 z-10 bg-surface-0/80 backdrop-blur-md border border-accent/30 rounded-lg p-4 min-w-[200px] shadow-lg">
                 <h3 className="text-sm font-bold text-fg mb-2">
                   {selectedNode.id}
                 </h3>
                 <dl className="text-xs text-muted space-y-1">
-                  <div>
+                  <div className="flex items-center gap-1.5">
                     <dt className="inline font-medium">Status:</dt>{" "}
-                    <dd className="inline">{selectedNode.status}</dd>
+                    <dd className="inline flex items-center gap-1.5">
+                      <span
+                        className="inline-block w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getNodeColor(selectedNode.status) }}
+                      />
+                      {selectedNode.status}
+                    </dd>
                   </div>
                   <div>
                     <dt className="inline font-medium">Wave:</dt>{" "}
