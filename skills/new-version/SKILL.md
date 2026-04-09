@@ -405,13 +405,55 @@ Display: "Artifacts kept in place." Continue to Step 5.
 
 ## Step 5: Run Research Pipeline
 
-Spawn ALL 6 research agents in parallel to explore the new milestone's scope. Use the milestone goals from Step 2 as the research context.
+Analyze milestone goals and selectively spawn research agents to explore the new milestone's scope. Use the milestone goals from Step 2 as the research context.
 
 Ensure `.planning/research/` exists:
 
 ```bash
 mkdir -p .planning/research
 ```
+
+### Step 5A: Agent Selection
+
+Before spawning any agents, analyze the category-tagged goals from Step 2C-vi and determine which research domains are relevant. The 6 available research agents are:
+
+| # | Agent | Domain | Spawn when... |
+|---|-------|--------|---------------|
+| 1 | rapid-research-stack | Technology stack, dependencies, compatibility | Goals mention new dependencies, framework changes, runtime upgrades, or tooling changes |
+| 2 | rapid-research-features | Feature decomposition, implementation strategies | Goals include new features, capability additions, or significant behavior changes |
+| 3 | rapid-research-architecture | Architectural patterns, module organization | Goals involve structural changes, new modules, data flow redesign, or cross-cutting refactors |
+| 4 | rapid-research-pitfalls | Failure modes, anti-patterns, security/perf traps | Goals touch areas with known risk (security, performance, concurrency, migrations) |
+| 5 | rapid-research-oversights | Edge cases, cross-cutting concerns, blind spots | Goals span multiple subsystems or introduce new integration surfaces |
+| 6 | rapid-research-ux | Domain conventions, UX/DX patterns | Goals include user-facing changes, CLI/UI modifications, or workflow changes |
+
+**Selection process:**
+
+1. Read each goal category (features, bugFixes, techDebt, uxImprovements, deferredDecisions, additionalGoals).
+2. For each of the 6 agents, reason about whether the milestone goals overlap with that agent's domain.
+3. When uncertain whether an agent is relevant, err on the side of spawning it (preserve depth over efficiency).
+4. Produce a selection list with brief justification for each included and excluded agent.
+
+**Display the selection to the user:**
+
+```
+## Research Agent Selection
+
+Based on milestone goals, spawning {N}/6 research agents:
+
+{For each SELECTED agent:}
+- [SELECTED] {agent name}: {one-line justification}
+
+{For each EXCLUDED agent:}
+- [SKIPPED] {agent name}: {one-line justification for exclusion}
+```
+
+**Minimum agents:** At least 1 agent must be selected. If analysis suggests 0 agents are needed, select all 6 as a fallback (the milestone goals may be too abstract to filter).
+
+**All 6 selected is valid.** If all goals are broad or the milestone is large, selecting all 6 is the correct outcome. Do not artificially reduce count.
+
+Store the selected agent list as `selectedAgents` (an array of agent identifiers: "stack", "features", "architecture", "pitfalls", "oversights", "ux") and the corresponding output file paths as `selectedResearchFiles`.
+
+### Step 5B: Spawn Selected Agents
 
 **1. Spawn the **rapid-research-stack** agent with this task:**
 ```
