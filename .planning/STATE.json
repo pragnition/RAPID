@@ -690,14 +690,14 @@
         },
         {
           "id": "bugfix-wave-splitting",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Bug-Fix Wave Splitting",
           "branch": "set/bugfix-wave-splitting"
         },
         {
           "id": "research-agent-reduction",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Research Agent Reduction",
           "branch": "set/research-agent-reduction"
@@ -712,6 +712,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-09T02:37:43.469Z",
+  "lastUpdatedAt": "2026-04-09T04:35:35.385Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
