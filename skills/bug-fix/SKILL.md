@@ -182,13 +182,25 @@ Exit. Do NOT fall through to Step 1 or any subsequent step. The `--uat` path ter
 
 ## Step 1: Gather Bug Description
 
-If the user provided a bug description inline with the command (e.g., `/rapid:bug-fix the merge command fails when .planning/ has untracked files`), use that description directly.
+### Inline invocation path
 
-Otherwise, use AskUserQuestion (freeform):
+If the user provided a bug description inline with the command (e.g., `/rapid:bug-fix the merge command fails when .planning/ has untracked files`), inspect the description for multi-bug structure:
+
+- **Multi-bug trigger:** The inline description contains multiple items on separate lines each beginning with `-`, `*`, or a number followed by a period (e.g., `1.`, `2.`), OR the user writes an explicit enumeration header such as "bugs:" or "issues:" followed by multiple items.
+- **Single-bug path (default):** If no multi-bug structure is detected, treat the entire description as one bug exactly as today. No behavior change from the current single-bug flow.
+- **Multi-bug path:** If multi-bug structure is detected, parse each bullet or numbered item into a separate bug. Record the result as an array `BUGS` with entries `{ id: <1-indexed>, description: <verbatim text of that item> }`.
+
+### Freeform invocation path
+
+If the user did NOT provide an inline description, use AskUserQuestion (freeform):
 
 > "Describe the bug you are experiencing. Include any error messages, reproduction steps, or symptoms."
 
-Record the user's bug description verbatim. This is the primary input.
+After receiving the response, run the same multi-bug detection described above on the response. If the response contains multiple items on separate lines each beginning with `-`, `*`, or a number followed by a period, treat each as a separate bug and populate the `BUGS` array. Otherwise, treat it as a single bug.
+
+### Record bug count
+
+Record `BUG_COUNT = BUGS.length`. When `BUG_COUNT == 1`, all subsequent steps MUST behave exactly as today -- this preserves backward compatibility for the common single-bug case. The `BUGS` array always has at least one entry.
 
 ## Step 2: Investigate the Codebase
 
