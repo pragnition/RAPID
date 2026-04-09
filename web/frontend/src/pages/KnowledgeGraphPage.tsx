@@ -67,6 +67,14 @@ function getLanguageColor(language: string): string {
   return style.getPropertyValue("--th-muted").trim() || "#859289";
 }
 
+function getEdgeColor(): string {
+  return getComputedStyle(document.documentElement).getPropertyValue('--th-border').trim() || '#4b5563';
+}
+
+function getSelectionColor(): string {
+  return getComputedStyle(document.documentElement).getPropertyValue('--th-accent').trim() || '#a78bfa';
+}
+
 function darken(hex: string): string {
   // Darken by roughly 20% for border
   const num = parseInt(hex.slice(1), 16);
@@ -292,8 +300,8 @@ export function CodeGraphPage() {
         {
           selector: "edge",
           style: {
-            "line-color": "#4b5563",
-            "target-arrow-color": "#4b5563",
+            "line-color": getEdgeColor(),
+            "target-arrow-color": getEdgeColor(),
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
             width: 2,
@@ -303,14 +311,14 @@ export function CodeGraphPage() {
           selector: "node:selected",
           style: {
             "border-width": 4,
-            "border-color": "#a78bfa",
+            "border-color": getSelectionColor(),
           } as cytoscape.Css.Node,
         },
         {
           selector: "edge:selected",
           style: {
-            "line-color": "#a78bfa",
-            "target-arrow-color": "#a78bfa",
+            "line-color": getSelectionColor(),
+            "target-arrow-color": getSelectionColor(),
             width: 3,
           },
         },
@@ -414,8 +422,8 @@ export function CodeGraphPage() {
         {
           selector: "edge",
           style: {
-            "line-color": "#4b5563",
-            "target-arrow-color": "#4b5563",
+            "line-color": getEdgeColor(),
+            "target-arrow-color": getEdgeColor(),
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
             width: 1.5,
@@ -428,7 +436,7 @@ export function CodeGraphPage() {
             "background-opacity": 0,
             "border-width": 1,
             "border-style": "dashed",
-            "border-color": "#4b5563",
+            "border-color": getEdgeColor(),
             label: "data(label)",
             "font-size": 13,
             "text-valign": "top",
@@ -443,7 +451,7 @@ export function CodeGraphPage() {
           selector: "node:selected",
           style: {
             "border-width": 3,
-            "border-color": "#a78bfa",
+            "border-color": getSelectionColor(),
           } as cytoscape.Css.Node,
         },
       ],
