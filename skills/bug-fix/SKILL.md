@@ -48,6 +48,23 @@ Check if the user's invocation includes `--uat`. The argument immediately after 
    - If `--uat` is detected: skip Steps 1-3 entirely and proceed directly to **Step UAT**.
    - If `--uat` is NOT present: continue to Step 1 as normal (no behavior change).
 
+## Step 0c: Parse --wave-size Flag
+
+Check if the user's invocation includes `--wave-size <n>`. The argument immediately after `--wave-size` is the wave size value.
+
+1. **Flag detection:** If `--wave-size` is present, read the next argument as the wave size value.
+   - If `--wave-size` is present but no argument follows, or the argument is not a positive integer (i.e., it is zero, negative, non-numeric, or a decimal), display a usage error and exit:
+     ```
+     Usage: /rapid:bug-fix [--wave-size <n>] [bug description]
+     ```
+   - If the argument is a valid positive integer (>= 1), record it as `WAVE_SIZE`.
+
+2. **Default value:** If `--wave-size` is not present in the invocation, set `WAVE_SIZE = 3` (default).
+
+3. **Strip flag from description:** If `--wave-size <n>` was present, remove it and its argument from the remaining input before passing the rest to subsequent steps. The wave-size flag is not part of the bug description.
+
+4. Continue to Step 1 (or Step UAT if `--uat` was detected in Step 0b). The UAT path ignores `WAVE_SIZE` -- do not add any UAT-specific branching in this step.
+
 ## Step UAT: Read Failures and Dispatch Fixes
 
 > This step is ONLY reached when the `--uat` flag is detected in Step 0b.
