@@ -316,6 +316,118 @@ Remaining: {what remains}
 ```
 Exit.
 
+### Step 4a: Wave Decomposition
+
+> This step is ONLY reached when `BUG_COUNT >= 2 * WAVE_SIZE` (the wave-splitting trigger from Step 4 Branching).
+
+1. Compute `WAVE_COUNT = ceil(BUG_COUNT / WAVE_SIZE)`.
+
+2. Partition `BUGS` into `WAVES[1..WAVE_COUNT]` where each wave (except possibly the last) contains exactly `WAVE_SIZE` bugs, and the final wave contains the remainder.
+
+3. **Acceptance examples (codified):**
+   - 10 bugs with `--wave-size 3` produces 4 waves of sizes 3, 3, 3, 1 (the final wave holds the remainder).
+   - 6 bugs with `--wave-size 3` produces 2 waves: [3, 3].
+   - 7 bugs with `--wave-size 3` produces 3 waves: [3, 3, 1].
+
+4. Display a decomposition summary banner before entering the dispatch loop:
+
+```
+--- Wave Decomposition ---
+Total bugs: {BUG_COUNT}
+Wave size: {WAVE_SIZE}
+Waves: {WAVE_COUNT}
+Distribution: {comma-separated list of wave sizes, e.g. "3, 3, 3, 1"}
+--------------------------
+```
+
+### Step 4b: Sequential Dispatch Loop
+
+**CRITICAL: Waves execute strictly SEQUENTIALLY on the same branch; no parallel wave execution. Each wave dispatch MUST be in its own assistant response. Never use parallel Agent tool calls in this loop. This mirrors `skills/merge/SKILL.md` Step 3: sets within a wave merge sequentially (not in parallel) -- each dispatch sees the result of the previous one.**
+
+For each wave N from 1 to WAVE_COUNT:
+
+1. **Display per-wave banner:**
+
+```bash
+node "${RAPID_TOOLS}" display banner bug-fix "Wave {N} of {WAVE_COUNT}"
+```
+
+2. **Build and dispatch per-wave executor prompt.** Spawn the **rapid-executor** agent with this task:
+
+```
+Fix a batch of bugs in the codebase.
+
+## Your PLAN
+### Task 1: {BUGS[0].description -- brief}
+**Files:** {to be determined by executor via investigation}
+**Action:** {root cause + fix description -- executor investigates}
+**Verification:** {command or criterion}
+**Done when:** {success criterion}
+
+### Task 2: {BUGS[1].description -- brief}
+...
+
+(repeat for each bug in this wave only)
+
+## Commit Convention
+After each fix, commit with: fix(bug-fix): {brief description}
+
+## Working Directory
+{current working directory}
+```
+
+The prompt MUST contain only the current wave's bugs. Do NOT include bugs from prior or subsequent waves. Do NOT include a cross-wave handoff section -- each wave receives only its assigned bug list with no modified-files list, no commit log, and no prior-wave summary.
+
+3. **Parse RAPID:RETURN and switch on status:**
+
+After each wave's executor returns, parse the `<!-- RAPID:RETURN { ... } -->` HTML comment and switch on `status`:
+
+- **If COMPLETE:** Record the wave's commits and artifacts in `WAVE_RESULTS[N]`. Display the per-wave result block (see below) and continue to wave N+1.
+- **If CHECKPOINT:** Record the wave's partial progress in `WAVE_RESULTS[N]` with status `CHECKPOINT`. Display the per-wave result block and continue to wave N+1. Partial progress counts as progress, not failure.
+- **If BLOCKED:** Record the blocker in `WAVE_RESULTS[N]` with status `BLOCKED`. Display the per-wave result block AND the blocker details. **STOP the entire run.** Do NOT dispatch waves N+1..WAVE_COUNT. Proceed directly to Step 4c (Aggregate Results) and render the aggregate with the waves completed so far.
+
+> NOTE: This differs from Step UAT-d, which continues on BLOCKED. In wave splitting, BLOCKED STOPS the run to prevent compounding failures across waves.
+
+4. **Per-wave result block** (displayed after each dispatch, regardless of status):
+
+```
+--- Wave {N} Result ---
+Status: {COMPLETE|CHECKPOINT|BLOCKED}
+Bugs in wave: {count}
+Commits: {comma-separated hashes or "(none)"}
+Files modified: {count}
+{If CHECKPOINT: "Note: partial progress -- continuing to next wave."}
+{If BLOCKED: "Blocker: {details}. STOPPING run."}
+-----------------------
+```
+
+### Step 4c: Aggregate Results
+
+After the dispatch loop terminates -- either naturally via completion of all WAVE_COUNT waves, or prematurely via BLOCKED in a wave -- render an aggregate summary. The aggregate MUST render even on a halted run.
+
+```
+--- RAPID Bug Fix (Wave Splitting) Complete ---
+Total bugs: {BUG_COUNT}
+Wave size: {WAVE_SIZE}
+Waves dispatched: {number of waves actually dispatched, may be < WAVE_COUNT on BLOCKED}
+Waves completed: {count of COMPLETE}
+Waves checkpointed: {count of CHECKPOINT}
+Waves blocked: {count of BLOCKED}
+Total commits: {sum of commits across all waves}
+Total files modified: {sum of distinct files across all waves}
+
+Per-Wave Summary:
+| Wave | Bugs | Status     | Commits              | Files |
+|------|------|------------|----------------------|-------|
+| 1    | 3    | COMPLETE   | abc1234, def5678, .. | 4     |
+| 2    | 3    | CHECKPOINT | 9a0bcde              | 2     |
+| 3    | 3    | BLOCKED    | (none)               | 0     |
+...
+------------------------------------------------
+```
+
+After rendering the aggregate, proceed to Step 5 for the final completion footer. If the run was halted by BLOCKED, Step 5 still displays the footer -- there is no separate error exit.
+
 ## Step 5: Display Results
 
 Display the fix results:
