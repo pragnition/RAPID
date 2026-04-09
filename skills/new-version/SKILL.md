@@ -820,8 +820,9 @@ node "${RAPID_TOOLS}" display footer "/rapid:status" --breadcrumb "new-version [
 - Do NOT reference `/rapid:set-init` -- the v3 command is `/rapid:start-set`.
 - Do NOT include "waves" or "total jobs" counts in the completion summary or roadmap presentation -- only show "N sets planned".
 - Do NOT write waves or jobs arrays into STATE.json -- each set has only `{ id, name, status: "pending", branch }`.
-- Do NOT spawn only 5 researchers -- MUST spawn all 6 (stack, features, architecture, pitfalls, oversights, ux).
-- Do NOT skip the UX researcher (rapid-research-ux) -- it is required for complete research coverage matching /init.
+- Do NOT skip agents without explicit reasoning -- every excluded agent must have a logged justification in Step 5A.
+- Do NOT use keyword matching or category-to-agent mapping for agent selection -- use semantic analysis of goal content.
+- Do NOT artificially reduce agent count -- when uncertain, err on the side of spawning the agent to preserve research depth.
 - Do NOT force archiving -- user explicitly chooses via AskUserQuestion.
 - Do NOT ask a single freeform question for all goals -- use the structured 5-category prompt sequence.
 - Do NOT skip the completeness confirmation -- it is the final gate before research begins.
