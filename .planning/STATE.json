@@ -708,10 +708,15 @@
           "waves": [],
           "name": "Branding Skill Overhaul",
           "branch": "set/branding-skill-overhaul"
+        },
+        {
+          "id": "mission-control-polish",
+          "status": "pending",
+          "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-09T06:28:13.100Z",
+  "lastUpdatedAt": "2026-04-09T07:10:43.157Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
