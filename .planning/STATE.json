@@ -697,14 +697,14 @@
         },
         {
           "id": "research-agent-reduction",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Research Agent Reduction",
           "branch": "set/research-agent-reduction"
         },
         {
           "id": "branding-skill-overhaul",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Branding Skill Overhaul",
           "branch": "set/branding-skill-overhaul"
@@ -712,6 +712,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-09T04:35:35.385Z",
+  "lastUpdatedAt": "2026-04-09T05:52:22.412Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
