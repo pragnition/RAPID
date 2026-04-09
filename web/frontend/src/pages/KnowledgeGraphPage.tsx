@@ -44,27 +44,27 @@ function getNodeColor(status: string): string {
 }
 
 function getLanguageColor(language: string): string {
-  const colors: Record<string, string> = {
-    typescript: "#3178c6",
-    tsx: "#3178c6",
-    javascript: "#f7df1e",
-    jsx: "#f7df1e",
-    python: "#3776ab",
-    go: "#00add8",
-    rust: "#dea584",
-    css: "#264de4",
-    scss: "#264de4",
-    html: "#e34c26",
-    json: "#83a598",
-    markdown: "#859289",
+  const style = getComputedStyle(document.documentElement);
+  const varMap: Record<string, string> = {
+    typescript: "--th-info",
+    tsx: "--th-info",
+    javascript: "--th-warning",
+    jsx: "--th-warning",
+    python: "--th-info",
+    go: "--th-link",
+    rust: "--th-orange",
+    css: "--th-highlight",
+    scss: "--th-highlight",
+    html: "--th-error",
+    json: "--th-muted",
+    markdown: "--th-fg-dim",
   };
-  return (
-    colors[language.toLowerCase()] ||
-    getComputedStyle(document.documentElement)
-      .getPropertyValue("--th-muted")
-      .trim() ||
-    "#859289"
-  );
+  const cssVar = varMap[language.toLowerCase()];
+  if (cssVar) {
+    const value = style.getPropertyValue(cssVar).trim();
+    if (value) return value;
+  }
+  return style.getPropertyValue("--th-muted").trim() || "#859289";
 }
 
 function darken(hex: string): string {
