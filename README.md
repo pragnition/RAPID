@@ -139,7 +139,7 @@ See [DOCS.md](DOCS.md) for the full reference covering all 30 commands.
 
 ## Changelog
 
-See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v6.2.0 DX Refinements** (2026-04-08) -- branding server with SSE auto-reload, opt-in init branding step, deferred update-reminder banner, runtime dependency pinning, context-file refresh.
+See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v6.3.0** (2026-04-08) -- branding server with SSE auto-reload, opt-in init branding step, deferred update-reminder banner, runtime dependency pinning, context-file refresh.
 
 ## Documentation
 

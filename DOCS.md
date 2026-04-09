@@ -476,7 +476,7 @@ Registers the current project with the RAPID Mission Control web dashboard. Only
 
 ## Architecture Overview
 
-RAPID v6.2.0 structures parallel work around **sets** -- independent workstreams that each developer owns end-to-end. Sets are the sole stateful entity; there is no wave or task state in STATE.json.
+RAPID v6.3.0 structures parallel work around **sets** -- independent workstreams that each developer owns end-to-end. Sets are the sole stateful entity; there is no wave or task state in STATE.json.
 
 ### How It Works
 
