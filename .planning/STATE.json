@@ -683,14 +683,14 @@
         },
         {
           "id": "fixes-and-housekeeping",
-          "status": "discussed",
+          "status": "merged",
           "waves": [],
           "name": "Fixes & Housekeeping",
           "branch": "set/fixes-and-housekeeping"
         },
         {
           "id": "bugfix-wave-splitting",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Bug-Fix Wave Splitting",
           "branch": "set/bugfix-wave-splitting"
@@ -712,6 +712,6 @@
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-08T17:07:04.555Z",
+  "lastUpdatedAt": "2026-04-09T02:37:43.469Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
