@@ -741,6 +741,92 @@ describe('branding-server.cjs', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Hub page badge colors
+  // -------------------------------------------------------------------------
+
+  describe('Hub page badge colors', () => {
+    it('TYPE_COLORS has expected keys', () => {
+      const expectedKeys = [
+        'theme', 'logo', 'wireframe', 'preview',
+        'guidelines', 'readme-template', 'component-library',
+      ];
+      for (const key of expectedKeys) {
+        assert.ok(
+          server.TYPE_COLORS[key],
+          `TYPE_COLORS should have key "${key}"`
+        );
+        assert.equal(typeof server.TYPE_COLORS[key], 'string', `TYPE_COLORS["${key}"] should be a string`);
+      }
+    });
+
+    it('Hub page renders per-type badge CSS classes', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      // Create an artifact with type 'logo'
+      await _postJSON(freePort, '/_artifacts', {
+        type: 'logo',
+        filename: 'brand-logo.svg',
+        description: 'Brand logo',
+      });
+
+      const resp = await _fetch(freePort, '/');
+      assert.equal(resp.status, 200);
+      assert.ok(
+        resp.body.includes('type-badge-logo'),
+        'Hub page should contain type-badge-logo class on the badge element'
+      );
+    });
+
+    it('Hub page renders per-type badge CSS rules', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      // Create artifacts so the types are in the manifest
+      await _postJSON(freePort, '/_artifacts', {
+        type: 'logo',
+        filename: 'logo.svg',
+        description: 'Logo',
+      });
+
+      const resp = await _fetch(freePort, '/');
+      assert.equal(resp.status, 200);
+      assert.ok(
+        resp.body.includes('.type-badge-theme'),
+        'Style block should contain .type-badge-theme CSS class'
+      );
+      assert.ok(
+        resp.body.includes('.type-badge-logo'),
+        'Style block should contain .type-badge-logo CSS class'
+      );
+    });
+
+    it('Unknown artifact types get base badge styling', async () => {
+      const freePort = await _getFreePort();
+      await server.start(tmpDir, freePort);
+
+      // Create an artifact with an unknown type
+      await _postJSON(freePort, '/_artifacts', {
+        type: 'custom-thing',
+        filename: 'custom.txt',
+        description: 'Custom artifact',
+      });
+
+      const resp = await _fetch(freePort, '/');
+      assert.equal(resp.status, 200);
+      assert.ok(
+        resp.body.includes('type-badge-custom-thing'),
+        'Badge element should have type-badge-custom-thing class'
+      );
+      // The base .type-badge fallback color applies since custom-thing is not in TYPE_COLORS
+      assert.ok(
+        !resp.body.includes('.type-badge-custom-thing {'),
+        'No specific CSS rule should be generated for unknown type'
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Hub page redesign
   // -------------------------------------------------------------------------
 
