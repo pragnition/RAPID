@@ -11,21 +11,7 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    },
-    [onClose],
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const updates: { title?: string; description?: string } = {};
     if (title.trim() !== card.title) {
       updates.title = title.trim();
@@ -37,7 +23,26 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
       onSave(card.id, updates);
     }
     onClose();
-  };
+  }, [title, description, card, onSave, onClose]);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSave();
+        return;
+      }
+      if (e.key === "Escape") {
+        onClose();
+      }
+    },
+    [onClose, handleSave],
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
     <div
