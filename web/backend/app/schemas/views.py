@@ -59,6 +59,8 @@ class WorktreeRegistry(BaseModel):
 
 
 class DagNode(BaseModel):
+    model_config = {"extra": "ignore"}
+
     id: str
     wave: int
     status: str
