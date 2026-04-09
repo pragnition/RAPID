@@ -311,36 +311,52 @@ export function CodeGraphPage() {
               const status = ele.data("status") as string;
               return getNodeColor(status);
             },
+            "background-opacity": 0.2,
             "border-width": 2,
             "border-color": (ele: cytoscape.NodeSingular) => {
               const status = ele.data("status") as string;
-              return darken(getNodeColor(status));
+              return getNodeColor(status);
             },
+            "border-opacity": 0.8,
+            "text-outline-color": (ele: cytoscape.NodeSingular) => {
+              const status = ele.data("status") as string;
+              return getNodeColor(status);
+            },
+            "text-outline-width": 1,
+            "text-outline-opacity": 0.3,
           } as cytoscape.Css.Node,
         },
         {
           selector: "edge",
           style: {
-            "line-color": getEdgeColor(),
-            "target-arrow-color": getEdgeColor(),
+            "line-color": getSelectionColor(),
+            "line-opacity": 0.4,
+            "target-arrow-color": getSelectionColor(),
             "target-arrow-shape": "triangle",
-            "curve-style": "bezier",
-            width: 2,
+            "arrow-scale": 0.8,
+            "curve-style": "unbundled-bezier",
+            width: 2.5,
           },
         },
         {
           selector: "node:selected",
           style: {
-            "border-width": 4,
+            "border-width": 3,
             "border-color": getSelectionColor(),
+            "border-opacity": 1,
+            "background-opacity": 0.35,
+            "overlay-color": getSelectionColor(),
+            "overlay-opacity": 0.15,
+            "overlay-padding": 6,
           } as cytoscape.Css.Node,
         },
         {
           selector: "edge:selected",
           style: {
             "line-color": getSelectionColor(),
+            "line-opacity": 1,
             "target-arrow-color": getSelectionColor(),
-            width: 3,
+            width: 4,
           },
         },
       ],
@@ -436,20 +452,27 @@ export function CodeGraphPage() {
             "background-color": (ele: cytoscape.NodeSingular) => {
               return getLanguageColor(ele.data("language") as string);
             },
+            "background-opacity": 0.2,
             "border-width": 2,
             "border-color": (ele: cytoscape.NodeSingular) => {
-              return darken(
-                getLanguageColor(ele.data("language") as string),
-              );
+              return getLanguageColor(ele.data("language") as string);
             },
+            "border-opacity": 0.8,
+            "text-outline-color": (ele: cytoscape.NodeSingular) => {
+              return getLanguageColor(ele.data("language") as string);
+            },
+            "text-outline-width": 1,
+            "text-outline-opacity": 0.3,
           } as cytoscape.Css.Node,
         },
         {
           selector: "edge",
           style: {
-            "line-color": getEdgeColor(),
-            "target-arrow-color": getEdgeColor(),
+            "line-color": getSelectionColor(),
+            "line-opacity": 0.4,
+            "target-arrow-color": getSelectionColor(),
             "target-arrow-shape": "triangle",
+            "arrow-scale": 0.8,
             "curve-style": "bezier",
             width: 1.5,
           },
@@ -462,6 +485,7 @@ export function CodeGraphPage() {
             "border-width": 1,
             "border-style": "dashed",
             "border-color": getEdgeColor(),
+            "border-opacity": 0.4,
             label: "data(label)",
             "font-size": 13,
             "text-valign": "top",
@@ -477,6 +501,11 @@ export function CodeGraphPage() {
           style: {
             "border-width": 3,
             "border-color": getSelectionColor(),
+            "border-opacity": 1,
+            "background-opacity": 0.35,
+            "overlay-color": getSelectionColor(),
+            "overlay-opacity": 0.15,
+            "overlay-padding": 6,
           } as cytoscape.Css.Node,
         },
       ],
@@ -659,7 +688,7 @@ export function CodeGraphPage() {
                 <div
                   ref={codeGraphContainerRef}
                   tabIndex={0}
-                  className="h-full border border-border rounded-lg bg-surface-0 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                  className="h-full border border-border rounded-lg bg-bg-dim focus:outline-none focus:ring-2 focus:ring-accent/50"
                 />
               </div>
               {selectedFilePath && (
@@ -710,7 +739,7 @@ export function CodeGraphPage() {
             />
             <div
               ref={containerRef}
-              className="h-[calc(100vh-16rem)] border border-border rounded-lg bg-surface-0"
+              className="h-[calc(100vh-16rem)] border border-border rounded-lg bg-bg-dim"
             />
             {selectedNode && (
               <div className="absolute bottom-3 left-3 z-10 bg-surface-1 border border-border rounded-lg p-4 min-w-[200px] shadow-lg">
