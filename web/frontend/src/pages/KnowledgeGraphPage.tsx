@@ -59,6 +59,7 @@ function getLanguageColor(language: string): string {
     json: "--th-muted",
     markdown: "--th-fg-dim",
   };
+  if (!language) return style.getPropertyValue("--th-muted").trim() || "#859289";
   const cssVar = varMap[language.toLowerCase()];
   if (cssVar) {
     const value = style.getPropertyValue(cssVar).trim();
@@ -75,14 +76,6 @@ function getSelectionColor(): string {
   return getComputedStyle(document.documentElement).getPropertyValue('--th-accent').trim() || '#a78bfa';
 }
 
-function darken(hex: string): string {
-  // Darken by roughly 20% for border
-  const num = parseInt(hex.slice(1), 16);
-  const r = Math.max(0, ((num >> 16) & 0xff) - 40);
-  const g = Math.max(0, ((num >> 8) & 0xff) - 40);
-  const b = Math.max(0, (num & 0xff) - 40);
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
-}
 
 function fitAndClamp(cy: cytoscape.Core, padding: number): void {
   cy.fit(undefined, padding);
@@ -275,9 +268,10 @@ export function CodeGraphPage() {
       cy.layout({
         name: "dagre",
         rankDir: "TB",
-        nodeSep: 80,
-        rankSep: 80,
+        nodeSep: 100,
+        rankSep: 70,
         padding: 30,
+        nodeDimensionsIncludeLabels: true,
         animate: false,
       } as cytoscape.LayoutOptions).run();
       fitAndClamp(cy, 60);
@@ -298,12 +292,12 @@ export function CodeGraphPage() {
           selector: "node",
           style: {
             shape: "roundrectangle",
-            width: "label",
-            height: "label",
-            padding: "12px",
+            width: (ele: cytoscape.NodeSingular) => Math.min(220, Math.max(90, (ele.data("id") as string || "").length * 7.5 + 28)),
+            height: 34,
             label: "data(id)",
             "font-size": 11,
             "text-max-width": "200px",
+            "text-wrap": "ellipsis",
             "text-valign": "center",
             "text-halign": "center",
             color: "#ffffff",
@@ -311,43 +305,43 @@ export function CodeGraphPage() {
               const status = ele.data("status") as string;
               return getNodeColor(status);
             },
-            "background-opacity": 0.2,
-            "border-width": 2,
+            "background-opacity": 0.15,
+            "border-width": 1.5,
             "border-color": (ele: cytoscape.NodeSingular) => {
               const status = ele.data("status") as string;
               return getNodeColor(status);
             },
-            "border-opacity": 0.8,
+            "border-opacity": 0.9,
             "text-outline-color": (ele: cytoscape.NodeSingular) => {
               const status = ele.data("status") as string;
               return getNodeColor(status);
             },
-            "text-outline-width": 1,
-            "text-outline-opacity": 0.3,
+            "text-outline-width": 0.5,
+            "text-outline-opacity": 0.4,
           } as cytoscape.Css.Node,
         },
         {
           selector: "edge",
           style: {
             "line-color": getSelectionColor(),
-            "line-opacity": 0.4,
+            "line-opacity": 0.35,
             "target-arrow-color": getSelectionColor(),
             "target-arrow-shape": "triangle",
-            "arrow-scale": 0.8,
+            "arrow-scale": 0.7,
             "curve-style": "unbundled-bezier",
-            width: 2.5,
+            width: 2,
           },
         },
         {
           selector: "node:selected",
           style: {
-            "border-width": 3,
+            "border-width": 2.5,
             "border-color": getSelectionColor(),
             "border-opacity": 1,
-            "background-opacity": 0.35,
+            "background-opacity": 0.3,
             "overlay-color": getSelectionColor(),
-            "overlay-opacity": 0.15,
-            "overlay-padding": 6,
+            "overlay-opacity": 0.12,
+            "overlay-padding": 8,
           } as cytoscape.Css.Node,
         },
         {
@@ -356,16 +350,17 @@ export function CodeGraphPage() {
             "line-color": getSelectionColor(),
             "line-opacity": 1,
             "target-arrow-color": getSelectionColor(),
-            width: 4,
+            width: 3,
           },
         },
       ],
       layout: {
         name: "dagre",
         rankDir: "TB",
-        nodeSep: 80,
-        rankSep: 80,
+        nodeSep: 100,
+        rankSep: 70,
         padding: 30,
+        nodeDimensionsIncludeLabels: true,
       } as cytoscape.LayoutOptions,
     });
 
@@ -419,8 +414,8 @@ export function CodeGraphPage() {
         animate: false,
         quality: "default",
         nodeDimensionsIncludeLabels: true,
-        idealEdgeLength: 120,
-        nodeRepulsion: 4500,
+        idealEdgeLength: 140,
+        nodeRepulsion: 6000,
         edgeElasticity: 0.45,
       } as cytoscape.LayoutOptions).run();
       fitAndClamp(cy, 30);
@@ -440,29 +435,29 @@ export function CodeGraphPage() {
           selector: "node",
           style: {
             shape: "roundrectangle",
-            width: "label",
-            height: "label",
-            padding: "10px",
+            width: (ele: cytoscape.NodeSingular) => Math.min(200, Math.max(80, (ele.data("label") as string || "").length * 7 + 24)),
+            height: 30,
             label: "data(label)",
             "font-size": 11,
             "text-max-width": "180px",
+            "text-wrap": "ellipsis",
             "text-valign": "center",
             "text-halign": "center",
             color: "#ffffff",
             "background-color": (ele: cytoscape.NodeSingular) => {
               return getLanguageColor(ele.data("language") as string);
             },
-            "background-opacity": 0.2,
-            "border-width": 2,
+            "background-opacity": 0.15,
+            "border-width": 1.5,
             "border-color": (ele: cytoscape.NodeSingular) => {
               return getLanguageColor(ele.data("language") as string);
             },
-            "border-opacity": 0.8,
+            "border-opacity": 0.9,
             "text-outline-color": (ele: cytoscape.NodeSingular) => {
               return getLanguageColor(ele.data("language") as string);
             },
-            "text-outline-width": 1,
-            "text-outline-opacity": 0.3,
+            "text-outline-width": 0.5,
+            "text-outline-opacity": 0.4,
           } as cytoscape.Css.Node,
         },
         {
@@ -485,15 +480,16 @@ export function CodeGraphPage() {
             "border-width": 1,
             "border-style": "dashed",
             "border-color": getEdgeColor(),
-            "border-opacity": 0.4,
+            "border-opacity": 0.3,
             label: "data(label)",
-            "font-size": 13,
+            "font-size": 12,
+            color: getEdgeColor(),
             "text-valign": "top",
             "text-halign": "center",
             padding: "20px",
             shape: "roundrectangle",
-            width: "label",
-            height: "label",
+            width: (ele: cytoscape.NodeSingular) => Math.min(240, Math.max(100, (ele.data("label") as string || "").length * 8 + 40)),
+            height: 30,
           } as cytoscape.Css.Node,
         },
         {
@@ -514,8 +510,8 @@ export function CodeGraphPage() {
         animate: false,
         quality: "default",
         nodeDimensionsIncludeLabels: true,
-        idealEdgeLength: 120,
-        nodeRepulsion: 4500,
+        idealEdgeLength: 140,
+        nodeRepulsion: 6000,
         edgeElasticity: 0.45,
       } as cytoscape.LayoutOptions,
     });
@@ -582,7 +578,7 @@ export function CodeGraphPage() {
           .layout({
             name: next === "TB" ? "dagre" : "breadthfirst",
             ...(next === "TB"
-              ? { rankDir: "TB", nodeSep: 80, rankSep: 80, padding: 30 }
+              ? { rankDir: "TB", nodeSep: 100, rankSep: 70, padding: 30, nodeDimensionsIncludeLabels: true }
               : { directed: true, padding: 30, spacingFactor: 1.5 }),
             animate: true,
             animationDuration: 300,
@@ -678,8 +674,8 @@ export function CodeGraphPage() {
                 Large graph ({codeGraphQuery.data.nodes.length} files) -- directory clustering enabled for performance.
               </div>
             )}
-            <div className="flex flex-row h-[calc(100vh-16rem)]">
-              <div className="flex-1 relative">
+            <div className="flex flex-row h-[calc(100vh-16rem)] overflow-hidden">
+              <div className="flex-1 min-w-0 relative">
                 <GraphSearchFilter cyRef={codeGraphCyRef} enabled={activeTab === "code-graph"} />
                 <GraphControls
                   onFit={handleCodeGraphFit}
