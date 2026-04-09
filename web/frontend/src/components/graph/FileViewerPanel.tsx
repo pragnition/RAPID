@@ -3,6 +3,7 @@ import { EditorView } from "@codemirror/view";
 import { EditorState, Compartment } from "@codemirror/state";
 import { basicSetup } from "codemirror";
 import { useFileContent } from "@/hooks/useCodeGraph";
+import { themeHighlighting } from "@/lib/codemirrorTheme";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -102,6 +103,13 @@ async function loadLanguageExtension(
       return import("@codemirror/lang-go").then((m) => m.go());
     case "rust":
       return import("@codemirror/lang-rust").then((m) => m.rust());
+    case "css":
+    case "scss":
+      return import("@codemirror/lang-css").then((m) => m.css());
+    case "html":
+      return import("@codemirror/lang-html").then((m) => m.html());
+    case "json":
+      return import("@codemirror/lang-json").then((m) => m.json());
     case "markdown":
     case "md":
       return import("@codemirror/lang-markdown").then((m) => m.markdown());
@@ -166,6 +174,7 @@ export function FileViewerPanel({
       doc: "",
       extensions: [
         basicSetup,
+        themeHighlighting,
         EditorState.readOnly.of(true),
         editorTheme,
         darkHighlight,
