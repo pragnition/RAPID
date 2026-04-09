@@ -1,13 +1,23 @@
 ---
-description: Conduct a structured branding interview with codebase-aware visual/UX brand guidelines
+description: Conduct a structured branding interview with codebase-aware visual/UX brand guidelines, artifact gallery, and live-reloading webserver
 allowed-tools: Bash(rapid-tools:*), Read, Write, AskUserQuestion, Glob, Grep
 ---
 
 # /rapid:branding -- Codebase-Aware Project Branding Interview
 
-You are the RAPID branding interviewer. This skill detects the project type, then captures visual identity, component style, terminology, and interaction preferences through a short structured interview. It generates a BRANDING.md artifact that shapes how all RAPID agents communicate and style their output.
+You are the RAPID branding interviewer. This skill detects the project type, then captures visual identity, component style, terminology, and interaction preferences through a structured interview. It generates a BRANDING.md artifact that shapes how all RAPID agents communicate and style their output, along with optional expanded assets (guidelines, README template, component library) all browseable from a hub gallery.
 
 Follow these steps IN ORDER. Do not skip steps.
+
+## Operating Modes
+
+This skill supports two operating modes:
+
+**Standalone mode** (default): The full branding experience. Runs banner, interview, artifact generation, server startup, commit, and footer. This is what happens when a user runs `/rapid:branding` directly.
+
+**Delegated mode**: When invoked from `/rapid:init`. In delegated mode, the skill MUST skip: banner display (Step 1), git commit (Step 10), and footer display (Step 10). Everything else runs normally, including the server. The calling code (init) passes `mode=delegated` context.
+
+---
 
 ## Step 1: Environment Setup + Banner
 
@@ -20,7 +30,7 @@ if [ -z "${RAPID_TOOLS}" ]; then echo "[RAPID ERROR] RAPID_TOOLS is not set. Run
 
 Use this environment preamble in ALL subsequent Bash commands within this skill. Every `node "${RAPID_TOOLS}"` call must be preceded by the env loading block above in the same Bash invocation.
 
-Display the stage banner:
+Display the stage banner (**skip in delegated mode**):
 
 ```bash
 # (env preamble here)
@@ -64,7 +74,7 @@ Detect the project type to tailor the interview and output. Use multiple signals
    - "Library / SDK" -- "Package consumed by other projects, no direct UI"
    - "Other" -- "Describe your project type"
    ```
-   This AskUserQuestion counts toward the 5-call budget. When type detection is high-confidence, skip this question to save budget.
+   When type detection is high-confidence, skip this question.
 
 Store the detected type as a reference used by all subsequent steps.
 
@@ -139,8 +149,6 @@ Continue to Step 4.
 ## Step 4: Branding Interview
 
 Conduct the interview in 4 rounds, one per dimension. Each round is adapted to the detected project type. For each round, use ONE AskUserQuestion call with 3-4 prefilled options plus "Other" for custom input.
-
-**Budget note:** If the type-confirmation question was asked in Step 2, combine Rounds 1 and 2 into a single AskUserQuestion with the most critical question for that project type, to stay within the 5-call budget.
 
 ### Round 1 -- Visual Identity / Output Identity
 
@@ -399,7 +407,7 @@ If the command fails, display: `"[WARN] Could not register BRANDING.md artifact.
 
 ---
 
-## Step 5b: Generate Logo Artifact
+## Step 6: Generate Logo Artifact
 
 Generate a simple SVG logo for the project based on the branding interview responses. Write it to `.planning/branding/logo.svg` using the Write tool.
 
@@ -429,7 +437,7 @@ If the command fails, display: `"[WARN] Could not register logo.svg artifact. Co
 
 ---
 
-## Step 5c: Generate Wireframe Artifact
+## Step 7: Generate Wireframe Artifact
 
 Generate a simple HTML wireframe that demonstrates the branding guidelines applied to a typical page layout. Write it to `.planning/branding/wireframe.html` using the Write tool.
 
@@ -461,9 +469,109 @@ If the command fails, display: `"[WARN] Could not register wireframe.html artifa
 
 ---
 
-## Step 6: Generate Static HTML Branding Page
+## Step 8: Expanded Asset Generation
 
-Write `.planning/branding/index.html` using the Write tool. Create a single self-contained HTML file with inline CSS and JS.
+After the wireframe is generated, present a multi-select prompt using AskUserQuestion:
+
+```
+"Which additional branding assets would you like to generate?"
+Options:
+- "Guidelines page" -- "Comprehensive design system reference with usage rules, do/don't examples, copy-paste snippets, accessibility guidelines, and brand voice examples (guidelines.html)"
+- "README template" -- "Branded README.md template applying your project's terminology and tone guidelines (readme-template.md)"
+- "Component library" -- "Interactive HTML page with buttons, forms, cards using your branding tokens (components.html)"
+- "All of the above" -- "Generate all three additional assets"
+- "Skip" -- "Continue without additional assets"
+```
+
+For each selected asset type, generate the artifact and register it:
+
+### Guidelines page (`guidelines.html`)
+
+Write `.planning/branding/guidelines.html` using the Write tool.
+
+The guidelines page should be a self-contained HTML file with inline CSS containing:
+- **Design Tokens Reference**: All color, typography, and spacing tokens from BRANDING.md in a browseable format
+- **Usage Rules**: Do/don't examples showing correct and incorrect usage of tokens
+- **Copy-Paste Code Snippets**: CSS custom properties and utility classes ready to use
+- **Accessibility Guidelines**: Contrast ratios, focus states, screen reader considerations
+- **Brand Voice & Tone Examples**: Writing samples for documentation, error messages, and UI copy
+
+Apply the project's branding tokens from BRANDING.md throughout the page.
+
+Register after writing:
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const result = artifacts.createArtifact(process.cwd(), {
+  type: 'guidelines',
+  filename: 'guidelines.html',
+  description: 'Comprehensive design system reference with usage rules and accessibility guidelines'
+});
+console.log('Registered artifact:', result.id);
+"
+```
+
+### README template (`readme-template.md`)
+
+Write `.planning/branding/readme-template.md` using the Write tool.
+
+The README template should be a Markdown file containing:
+- Placeholders for: project name, description, installation, usage, contributing, license
+- Written in the project's terminology and tone from BRANDING.md
+- Apply the anti-patterns list (e.g., if "no emojis" was selected, the template avoids emojis)
+- Follow the detected project type conventions (webapp vs CLI vs library)
+
+Register after writing:
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const result = artifacts.createArtifact(process.cwd(), {
+  type: 'readme-template',
+  filename: 'readme-template.md',
+  description: 'Branded README.md template applying project terminology and tone guidelines'
+});
+console.log('Registered artifact:', result.id);
+"
+```
+
+### Component library (`components.html`)
+
+Write `.planning/branding/components.html` using the Write tool.
+
+The component library should be a self-contained HTML file with inline CSS and JS containing:
+- **Buttons**: primary, secondary, outline variants
+- **Form inputs**: text, select, checkbox
+- **Cards**: basic, with image placeholder, with action
+- **Alert/notification components**: info, success, warning, error variants
+
+All components must use the branding color palette, typography, and spacing tokens from BRANDING.md.
+
+Register after writing:
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const result = artifacts.createArtifact(process.cwd(), {
+  type: 'component-library',
+  filename: 'components.html',
+  description: 'Interactive component library with buttons, forms, and cards using branding tokens'
+});
+console.log('Registered artifact:', result.id);
+"
+```
+
+If any registration fails, display: `"[WARN] Could not register {filename} artifact. Continuing."` and proceed.
+
+---
+
+## Step 9: Start Server + Display Hub URL
+
+Generate the static HTML branding page at `.planning/branding/index.html` using the Write tool. Create a single self-contained HTML file with inline CSS and JS.
 
 The HTML content is project-type-conditional:
 
@@ -494,9 +602,26 @@ The HTML content is project-type-conditional:
 - All CSS must be in a `<style>` tag, all JS (if any) in a `<script>` tag
 - Clean, readable design with good typography
 
+### Register Preview Artifact
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const result = artifacts.createArtifact(process.cwd(), {
+  type: 'preview',
+  filename: 'index.html',
+  description: 'Visual branding reference page with live preview'
+});
+console.log('Registered artifact:', result.id);
+"
+```
+
+If the command fails, display: `"[WARN] Could not register index.html artifact. Continuing."` and proceed.
+
 ### Start Branding Server
 
-After writing `index.html`, start the branding server to serve the artifacts:
+After writing `index.html` and registering all artifacts, start the branding server:
 
 ```bash
 # (env preamble here)
@@ -529,45 +654,26 @@ const server = require('./src/lib/branding-server.cjs');
   Then retry `server.start(process.cwd(), <chosen_port>)`.
 - If output contains `SERVER_ERROR`: Display the error message clearly: `"[RAPID ERROR] Branding server failed to start: {error}. The branding artifacts are still available at .planning/branding/ but cannot be served via HTTP."` Do NOT attempt a file:// fallback.
 - If output contains `already running`: Display the URL and continue.
-- If server started successfully: Display `"Branding preview available at http://localhost:{port}"`.
+- If server started successfully: Display the hub URL.
 
-### Register Preview Artifact
+### Display Hub URL
 
-After the server is started (or after handling any server errors), register the index.html as a branding artifact:
+Display the branding hub URL for the user. The hub page at `/` (root URL) is the primary entry point. Do NOT auto-open the browser.
 
-```bash
-# (env preamble here)
-node -e "
-const artifacts = require('./src/lib/branding-artifacts.cjs');
-const result = artifacts.createArtifact(process.cwd(), {
-  type: 'preview',
-  filename: 'index.html',
-  description: 'Visual branding reference page with live preview'
-});
-console.log('Registered artifact:', result.id);
-"
+```
+Branding hub available at: http://localhost:{port}
+
+Open this URL in your browser to browse all branding artifacts.
+The server auto-reloads when artifacts change.
 ```
 
-If the command fails, display: `"[WARN] Could not register index.html artifact. Continuing."` and proceed to the next step.
+The hub gallery links to `index.html` for the visual preview, but the hub is what the user sees first. Hub as primary entry point means all artifacts are discoverable from one URL.
 
 ---
 
-## Step 7: Display Server URL
+## Step 10: Server Lifecycle, Commit, and Summary
 
-Display the branding server URL for the user. Do NOT auto-open the browser.
-
-```
-Branding preview available at: http://localhost:{port}
-
-Open this URL in your browser to view the branding guidelines.
-The server will remain running until you stop it.
-```
-
----
-
-## Step 8: Server Lifecycle
-
-After the user has reviewed the branding preview, use AskUserQuestion to ask:
+After the user has reviewed the branding hub, use AskUserQuestion to ask:
 
 ```
 "Would you like to stop the branding server?"
@@ -587,30 +693,38 @@ server.stop(process.cwd()).then(r => console.log(JSON.stringify(r)));
 
 If the user chooses to keep running, note in the summary that the server is still active.
 
----
-
-## Step 9: Commit and Summary
+### Commit (**skip in delegated mode**)
 
 Commit the branding artifacts:
 
 ```bash
-git add .planning/branding/BRANDING.md .planning/branding/index.html .planning/branding/logo.svg .planning/branding/wireframe.html .planning/branding/artifacts.json
+git add .planning/branding/BRANDING.md .planning/branding/index.html .planning/branding/logo.svg .planning/branding/wireframe.html .planning/branding/artifacts.json .planning/branding/guidelines.html .planning/branding/readme-template.md .planning/branding/components.html 2>/dev/null
 git commit -m "feat(branding-system): generate branding guidelines and artifacts"
 ```
 
-Display a summary of what was generated:
+The `2>/dev/null` handles cases where optional files (guidelines.html, readme-template.md, components.html) were not generated.
 
+### Summary
+
+Display a dynamic summary listing all generated artifacts:
+
+```bash
+# (env preamble here)
+node -e "
+const artifacts = require('./src/lib/branding-artifacts.cjs');
+const all = artifacts.listArtifacts(process.cwd());
+console.log('Branding artifacts generated:');
+all.forEach(a => console.log('  - .planning/branding/' + a.filename + ' -- ' + a.description));
+console.log('  - .planning/branding/artifacts.json -- Artifact manifest (' + all.length + ' entries)');
+"
 ```
-Branding artifacts generated:
-- .planning/branding/BRANDING.md -- Authoritative branding guidelines ({line_count} lines)
-- .planning/branding/logo.svg -- Project logo placeholder
-- .planning/branding/wireframe.html -- Page layout wireframe
-- .planning/branding/index.html -- Visual branding reference page
-- .planning/branding/artifacts.json -- Artifact manifest ({count} entries)
-- Branding server: {running|stopped} (http://localhost:{port})
 
+Display the summary message:
+```
 Branding context will be automatically injected into all future RAPID execution prompts.
 ```
+
+### Footer (**skip in delegated mode**)
 
 Display the completion footer:
 
@@ -634,7 +748,7 @@ node "${RAPID_TOOLS}" display footer "/rapid:status"
 ## Key Principles
 
 - **Branding is FULLY OPTIONAL.** This skill should never be required for any other RAPID workflow. If BRANDING.md does not exist, all other skills work normally.
-- **Keep the interview quick.** Under 2 minutes, 4-5 AskUserQuestion calls total. Do not over-interview.
+- **Hub gallery at `/` is the primary branding URL.** All artifacts are browseable from there.
 - **BRANDING.md is the authoritative artifact.** `index.html` is for human review and sharing. Agents consume BRANDING.md, not the HTML page.
 - **Each AskUserQuestion must have 3-4 prefilled options with clear descriptions.** The "Other" option on every question allows full customization.
 - **50-150 line budget.** BRANDING.md must be concise enough to inject into prompts without blowing context limits.
@@ -642,7 +756,6 @@ node "${RAPID_TOOLS}" display footer "/rapid:status"
 
 ## Anti-Patterns for This Skill
 
-- Do NOT ask more than 5 AskUserQuestion calls in total (keep it fast)
 - Do NOT generate BRANDING.md longer than 150 lines (prompt budget discipline)
 - Do NOT reference or modify any RAPID internals (execute.cjs, display.cjs, etc.) -- that is the integration wave's job
 - Do NOT add external dependencies to the HTML page
