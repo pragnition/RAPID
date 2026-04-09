@@ -149,12 +149,14 @@ describe('skills/branding/SKILL.md -- structural validation', () => {
     );
   });
 
-  it('12. contains auto-open step (platform detection with xdg-open/open)', () => {
-    assert.ok(content.includes('xdg-open'), 'Must reference xdg-open for Linux');
+  it('12. hub URL display mentions http://localhost', () => {
     assert.ok(
-      // Match 'open' as the macOS command (not just substring of xdg-open)
-      /\bopen\b/.test(content) && content.includes('Darwin'),
-      'Must reference open command for macOS (Darwin)'
+      content.includes('http://localhost'),
+      'Must display hub URL with http://localhost'
+    );
+    assert.ok(
+      content.includes('hub') || content.includes('Hub'),
+      'Must reference the hub page'
     );
   });
 
@@ -196,14 +198,14 @@ describe('skills/branding/SKILL.md -- structural validation', () => {
     }
   });
 
-  it('15. step ordering is sequential (Step 1 through Step 8)', () => {
+  it('15. step ordering is sequential (Step 1 through Step 10)', () => {
     const stepPattern = /##\s+Step\s+(\d+)/g;
     const steps = [];
     let match;
     while ((match = stepPattern.exec(content)) !== null) {
       steps.push(parseInt(match[1], 10));
     }
-    assert.ok(steps.length >= 7, `Must have at least 7 steps, found ${steps.length}`);
+    assert.equal(steps.length, 10, `Must have exactly 10 steps, found ${steps.length}`);
     for (let i = 0; i < steps.length; i++) {
       assert.equal(steps[i], i + 1, `Step ${i + 1} must be in order, found Step ${steps[i]}`);
     }
@@ -246,6 +248,71 @@ describe('skills/branding/SKILL.md -- structural validation', () => {
     assert.ok(
       content.includes('terminal') || content.includes('error') || content.includes('output formatting'),
       'Must contain CLI keywords (terminal, error, or output formatting)'
+    );
+  });
+
+  it('18. dual-mode documentation exists (standalone and delegated)', () => {
+    assert.ok(
+      content.includes('standalone') || content.includes('Standalone'),
+      'Must reference standalone mode'
+    );
+    assert.ok(
+      content.includes('delegated') || content.includes('Delegated'),
+      'Must reference delegated mode'
+    );
+    // Both modes should be documented together
+    assert.ok(
+      content.includes('Operating Modes') || content.includes('operating modes') ||
+      (content.includes('Standalone mode') && content.includes('Delegated mode')),
+      'Must have a section documenting both operating modes'
+    );
+  });
+
+  it('19. expanded asset types referenced (guidelines.html, readme-template.md, components.html)', () => {
+    assert.ok(
+      content.includes('guidelines.html'),
+      'Must reference guidelines.html artifact'
+    );
+    assert.ok(
+      content.includes('readme-template.md'),
+      'Must reference readme-template.md artifact'
+    );
+    assert.ok(
+      content.includes('components.html'),
+      'Must reference components.html artifact'
+    );
+  });
+
+  it('20. hub gallery is described as the primary branding URL', () => {
+    // Check that hub and primary appear in the document
+    assert.ok(
+      content.includes('hub') || content.includes('Hub'),
+      'Must reference the hub gallery'
+    );
+    assert.ok(
+      content.includes('primary'),
+      'Must describe something as primary'
+    );
+    // More specific: check that hub is described as the primary entry point/URL
+    const hubPrimary = content.includes('primary entry point') ||
+      content.includes('primary branding URL') ||
+      content.includes('Hub gallery') ||
+      content.includes('hub gallery');
+    assert.ok(hubPrimary, 'Must describe hub gallery as the primary entry point or URL');
+  });
+
+  it('21. no AskUserQuestion budget cap', () => {
+    assert.ok(
+      !content.includes('5 AskUserQuestion'),
+      'Must NOT contain "5 AskUserQuestion" budget cap reference'
+    );
+    assert.ok(
+      !content.includes('5-call budget'),
+      'Must NOT contain "5-call budget" reference'
+    );
+    assert.ok(
+      !content.includes('5-call'),
+      'Must NOT contain "5-call" budget reference'
     );
   });
 });
