@@ -1,6 +1,6 @@
 [project]
 name = "rapid-web"
-version = "4.2.1"
+dynamic = ["version"]
 description = "RAPID Mission Control web service"
 requires-python = ">=3.12"
 dependencies = [
@@ -27,6 +27,9 @@ dev = ["pytest>=8.0", "httpx>=0.28", "pytest-asyncio>=0.25", "ruff>=0.11"]
 
 [tool.setuptools.packages.find]
 include = ["app*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "app.__version__"}
 
 [tool.ruff]
 line-length = 100

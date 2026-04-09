@@ -120,13 +120,28 @@ function SidebarContent({
 
       {/* Bottom version text */}
       <div className="px-3 py-3 border-t border-border">
-        {isFull ? (
-          <span className="text-muted text-xs">RAPID v4.2.1</span>
-        ) : isCompact ? (
-          <span className="text-muted text-xs flex justify-center" title="RAPID v4.2.1">
-            v4
-          </span>
-        ) : null}
+        {(() => {
+          const appVersion =
+            typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "";
+          const fullLabel = appVersion ? `RAPID v${appVersion}` : "RAPID";
+          const majorLabel = appVersion
+            ? `v${appVersion.split(".")[0]}`
+            : "";
+          if (isFull) {
+            return <span className="text-muted text-xs">{fullLabel}</span>;
+          }
+          if (isCompact) {
+            return (
+              <span
+                className="text-muted text-xs flex justify-center"
+                title={fullLabel}
+              >
+                {majorLabel}
+              </span>
+            );
+          }
+          return null;
+        })()}
       </div>
     </>
   );
