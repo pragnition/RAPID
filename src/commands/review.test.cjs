@@ -34,7 +34,7 @@ function setupTestProject(setId) {
     milestones: [{
       id: 'ms-1',
       name: 'ms-1',
-      sets: [{ id: setId, status: 'executing', waves: [] }],
+      sets: [{ id: setId, status: 'executed', waves: [] }],
     }],
     lastUpdatedAt: new Date().toISOString(),
     createdAt: new Date().toISOString(),

@@ -76,7 +76,6 @@ async function handleDag(cwd, subcommand, args) {
         pending: '\x1b[90m',
         discussed: '\x1b[33m',
         planned: '\x1b[34m',
-        executing: '\x1b[92m',
         executed: '\x1b[92m',
         complete: '\x1b[32m',
         merged: '\x1b[2m',
