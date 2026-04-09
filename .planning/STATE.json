@@ -711,12 +711,12 @@
         },
         {
           "id": "mission-control-polish",
-          "status": "discussed",
+          "status": "merged",
           "waves": []
         }
       ]
     }
   ],
-  "lastUpdatedAt": "2026-04-09T07:20:53.843Z",
+  "lastUpdatedAt": "2026-04-09T07:44:26.284Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

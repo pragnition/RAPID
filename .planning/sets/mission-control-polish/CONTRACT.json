@@ -4,5 +4,12 @@
   "created": "2026-04-09",
   "exports": { "functions": [], "types": [] },
   "imports": { "functions": [], "types": [] },
-  "fileOwnership": []
+  "fileOwnership": [
+    "web/backend/app/schemas/views.py",
+    "web/backend/app/services/dag_service.py",
+    "web/frontend/package.json",
+    "web/frontend/src/lib/codemirrorTheme.ts",
+    "web/frontend/src/pages/KnowledgeGraphPage.tsx",
+    "web/frontend/src/components/graph/FileViewerPanel.tsx"
+  ]
 }

@@ -1,10 +1,9 @@
 {
-  "version": 3,
   "nodes": [
     {
       "id": "code-graph-backend",
       "wave": 1,
-      "status": "merged",
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
@@ -13,7 +12,7 @@
     {
       "id": "code-graph-frontend",
       "wave": 1,
-      "status": "merged",
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
@@ -22,7 +21,7 @@
     {
       "id": "fixes-and-housekeeping",
       "wave": 1,
-      "status": "merged",
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
@@ -31,7 +30,7 @@
     {
       "id": "bugfix-wave-splitting",
       "wave": 1,
-      "status": "merged",
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
@@ -40,7 +39,7 @@
     {
       "id": "research-agent-reduction",
       "wave": 1,
-      "status": "merged",
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
@@ -49,31 +48,56 @@
     {
       "id": "branding-skill-overhaul",
       "wave": 1,
-      "status": "merged",
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
+    },
+    {
+      "id": "mission-control-polish",
+      "wave": 1,
+      "status": "pending"
     }
   ],
   "edges": [],
   "waves": {
     "1": {
-      "nodes": [
+      "sets": [
         "code-graph-backend",
         "code-graph-frontend",
         "fixes-and-housekeeping",
         "bugfix-wave-splitting",
         "research-agent-reduction",
-        "branding-skill-overhaul"
-      ]
+        "branding-skill-overhaul",
+        "mission-control-polish"
+      ],
+      "checkpoint": {
+        "contracts": [
+          "rapid://contracts/code-graph-backend",
+          "rapid://contracts/code-graph-frontend",
+          "rapid://contracts/fixes-and-housekeeping",
+          "rapid://contracts/bugfix-wave-splitting",
+          "rapid://contracts/research-agent-reduction",
+          "rapid://contracts/branding-skill-overhaul",
+          "rapid://contracts/mission-control-polish"
+        ],
+        "artifacts": [
+          ".planning/sets/code-graph-backend/CONTRACT.json",
+          ".planning/sets/code-graph-frontend/CONTRACT.json",
+          ".planning/sets/fixes-and-housekeeping/CONTRACT.json",
+          ".planning/sets/bugfix-wave-splitting/CONTRACT.json",
+          ".planning/sets/research-agent-reduction/CONTRACT.json",
+          ".planning/sets/branding-skill-overhaul/CONTRACT.json",
+          ".planning/sets/mission-control-polish/CONTRACT.json"
+        ]
+      }
     }
   },
-  "groups": {},
   "metadata": {
-    "created": "2026-04-08",
+    "created": "2026-04-09",
+    "totalSets": 7,
     "totalWaves": 1,
-    "maxParallelism": 6,
-    "totalNodes": 6
+    "maxParallelism": 7
   }
 }

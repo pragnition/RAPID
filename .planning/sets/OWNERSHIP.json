@@ -1,5 +1,12 @@
 {
   "version": 1,
-  "generated": "2026-04-08",
-  "ownership": {}
+  "generated": "2026-04-09",
+  "ownership": {
+    "web/backend/app/schemas/views.py": "mission-control-polish",
+    "web/backend/app/services/dag_service.py": "mission-control-polish",
+    "web/frontend/package.json": "mission-control-polish",
+    "web/frontend/src/lib/codemirrorTheme.ts": "mission-control-polish",
+    "web/frontend/src/pages/KnowledgeGraphPage.tsx": "mission-control-polish",
+    "web/frontend/src/components/graph/FileViewerPanel.tsx": "mission-control-polish"
+  }
 }
