@@ -21,6 +21,30 @@ def get_dag_graph(project_path: Path) -> dict | None:
         logger.debug("DAG.json not readable at %s", dag_file)
         return None
 
+    # ---- Merge authoritative statuses from STATE.json ----
+    status_map: dict[str, str] = {}
+    try:
+        state_file = project_path / ".planning" / "STATE.json"
+        state_raw = state_file.read_text(encoding="utf-8")
+        state_data = json.loads(state_raw)
+        current_ms = state_data.get("currentMilestone")
+        if current_ms:
+            for ms in state_data.get("milestones", []):
+                if ms.get("id") == current_ms:
+                    for s in ms.get("sets", []):
+                        if s.get("id") and s.get("status"):
+                            status_map[s["id"]] = s["status"]
+                    break
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        logger.debug("STATE.json not readable; using DAG.json statuses as-is")
+
+    nodes = data.get("nodes", [])
+    if status_map:
+        for node in nodes:
+            node_id = node.get("id", "")
+            if node_id in status_map:
+                node["status"] = status_map[node_id]
+
     # Map edge keys: from/to -> source/target
     edges = []
     for edge in data.get("edges", []):
@@ -30,7 +54,7 @@ def get_dag_graph(project_path: Path) -> dict | None:
         })
 
     return {
-        "nodes": data.get("nodes", []),
+        "nodes": nodes,
         "edges": edges,
         "waves": data.get("waves", {}),
         "metadata": data.get("metadata", {}),
