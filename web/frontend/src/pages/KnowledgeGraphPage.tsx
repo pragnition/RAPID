@@ -275,7 +275,7 @@ export function CodeGraphPage() {
       cy.layout({
         name: "dagre",
         rankDir: "TB",
-        nodeSep: 60,
+        nodeSep: 80,
         rankSep: 80,
         padding: 30,
         animate: false,
@@ -298,10 +298,12 @@ export function CodeGraphPage() {
           selector: "node",
           style: {
             shape: "roundrectangle",
-            width: 140,
-            height: 40,
+            width: "label",
+            height: "label",
+            padding: "12px",
             label: "data(id)",
-            "font-size": 12,
+            "font-size": 11,
+            "text-max-width": "200px",
             "text-valign": "center",
             "text-halign": "center",
             color: "#ffffff",
@@ -345,7 +347,7 @@ export function CodeGraphPage() {
       layout: {
         name: "dagre",
         rankDir: "TB",
-        nodeSep: 60,
+        nodeSep: 80,
         rankSep: 80,
         padding: 30,
       } as cytoscape.LayoutOptions,
@@ -401,7 +403,7 @@ export function CodeGraphPage() {
         animate: false,
         quality: "default",
         nodeDimensionsIncludeLabels: true,
-        idealEdgeLength: 100,
+        idealEdgeLength: 120,
         nodeRepulsion: 4500,
         edgeElasticity: 0.45,
       } as cytoscape.LayoutOptions).run();
@@ -422,10 +424,12 @@ export function CodeGraphPage() {
           selector: "node",
           style: {
             shape: "roundrectangle",
-            width: 120,
-            height: 32,
+            width: "label",
+            height: "label",
+            padding: "10px",
             label: "data(label)",
             "font-size": 11,
+            "text-max-width": "180px",
             "text-valign": "center",
             "text-halign": "center",
             color: "#ffffff",
@@ -481,7 +485,7 @@ export function CodeGraphPage() {
         animate: false,
         quality: "default",
         nodeDimensionsIncludeLabels: true,
-        idealEdgeLength: 100,
+        idealEdgeLength: 120,
         nodeRepulsion: 4500,
         edgeElasticity: 0.45,
       } as cytoscape.LayoutOptions,
@@ -549,7 +553,7 @@ export function CodeGraphPage() {
           .layout({
             name: next === "TB" ? "dagre" : "breadthfirst",
             ...(next === "TB"
-              ? { rankDir: "TB", nodeSep: 60, rankSep: 80, padding: 30 }
+              ? { rankDir: "TB", nodeSep: 80, rankSep: 80, padding: 30 }
               : { directed: true, padding: 30, spacingFactor: 1.5 }),
             animate: true,
             animationDuration: 300,
