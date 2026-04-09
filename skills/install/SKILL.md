@@ -81,7 +81,6 @@ Check if RAPID_TOOLS is already configured in any shell config:
 for f in ~/.bashrc ~/.bash_profile ~/.zshrc ~/.config/fish/config.fish ~/.profile; do
     if grep -qF "RAPID_TOOLS" "$f" 2>/dev/null; then
         echo "ALREADY_CONFIGURED=$f"
-        break
     fi
 done
 ```
