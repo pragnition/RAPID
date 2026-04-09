@@ -1,0 +1,55 @@
+{
+  "setId": "branding-skill-overhaul",
+  "version": "1.0.0",
+  "exports": {
+    "artifact-driven-branding-skill": {
+      "type": "file",
+      "signature": "skills/branding/SKILL.md with artifact gallery webserver and auto-reload",
+      "description": "Overhauled branding skill with artifact-driven webserver, auto-reload, and expanded capabilities"
+    },
+    "init-branding-delegation": {
+      "type": "file",
+      "signature": "skills/init/SKILL.md branding section delegates to branding skill",
+      "description": "Init skill calls branding skill rather than duplicating interview logic"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "auto-reload": {
+      "description": "Branding webserver must auto-reload when artifacts change (no manual browser refresh)",
+      "enforced_by": "test"
+    },
+    "artifact-gallery": {
+      "description": "Hub page must display all branding artifacts as browseable cards",
+      "enforced_by": "test"
+    },
+    "expanded-flow": {
+      "description": "After theme is settled, skill must offer to generate logos, documents, wireframes, and guidelines page",
+      "enforced_by": "test"
+    },
+    "init-delegation": {
+      "description": "/rapid:init branding section must delegate to /rapid:branding rather than reimplementing",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Overhaul /rapid:branding with artifact-driven auto-reload webserver, expand capabilities (logos, wireframes, guidelines), make /rapid:init delegate to branding skill.",
+    "ownedFiles": [
+      "skills/branding/SKILL.md",
+      "src/lib/branding-server.cjs",
+      "src/lib/branding-artifacts.cjs"
+    ],
+    "tasks": [
+      { "description": "Ensure auto-reload works without manual refresh via SSE", "acceptance": "Artifact changes trigger automatic browser reload" },
+      { "description": "Expand branding flow: logos, documents, wireframes, guidelines page after theme", "acceptance": "User prompted to generate additional assets after theme is settled" },
+      { "description": "Hub page displays all artifacts as browseable gallery", "acceptance": "All registered artifacts shown with type badges and links" },
+      { "description": "Refactor /rapid:init to delegate to /rapid:branding", "acceptance": "Init calls branding skill instead of duplicating logic" }
+    ],
+    "acceptance": [
+      "Auto-reload works without manual refresh",
+      "Expanded branding flow generates additional assets",
+      "Hub page shows artifact gallery",
+      "Init delegates to branding skill"
+    ]
+  }
+}

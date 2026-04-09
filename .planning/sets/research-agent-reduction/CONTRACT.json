@@ -1,0 +1,39 @@
+{
+  "setId": "research-agent-reduction",
+  "version": "1.0.0",
+  "exports": {
+    "reduced-research-pipeline": {
+      "type": "function",
+      "signature": "Reduced research agent pipeline in /rapid:new-version SKILL.md (fewer than 6 agents)",
+      "description": "Consolidated research pipeline covering all domains with fewer agent spawns"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "coverage-preservation": {
+      "description": "Reduced pipeline must still cover all research domains even if consolidated into fewer agents",
+      "enforced_by": "test"
+    },
+    "synthesis-compatibility": {
+      "description": "Synthesizer agent must still receive structured research outputs it can merge",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Reduce the number of research agents spawned during /rapid:new-version from 6 to fewer by consolidating overlapping research concerns while preserving coverage quality.",
+    "ownedFiles": [
+      "skills/new-version/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Analyze 6 research agents for overlapping concerns and consolidation opportunities", "acceptance": "Clear mapping of which agents can be merged" },
+      { "description": "Consolidate research agents in new-version SKILL.md", "acceptance": "Fewer agents spawned while all domains covered" },
+      { "description": "Update synthesizer prompt for consolidated output format", "acceptance": "Synthesis produces equivalent quality summary" }
+    ],
+    "acceptance": [
+      "Fewer than 6 research agents spawned",
+      "All research domains still covered",
+      "Synthesis quality unchanged",
+      "New-version flow completes successfully"
+    ]
+  }
+}

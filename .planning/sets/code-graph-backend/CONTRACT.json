@@ -1,0 +1,65 @@
+{
+  "setId": "code-graph-backend",
+  "version": "1.0.0",
+  "exports": {
+    "code-graph-endpoint": {
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/code-graph -> { nodes: Array<{id, path, language, size}>, edges: Array<{source, target, type}>, total_files, total_edges }",
+      "description": "Returns the full codebase dependency graph with file nodes and import/require edges"
+    },
+    "file-content-endpoint": {
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/file?path=<relative_path> -> { path, content, language, size }",
+      "description": "Returns file content with path traversal protection. Rejects paths with '..', symlinks escaping project root, files >1MB, binary files"
+    },
+    "extended-codebase-service": {
+      "type": "function",
+      "signature": "get_codebase_graph(project_path: Path, max_files: int = 500) -> dict",
+      "description": "Extends codebase_service.py to extract import/require statements and build file-to-file dependency graph. Supports .py, .js, .jsx, .ts, .tsx, .cjs, .mjs, .cts, .mts, .go, .rs"
+    },
+    "typescript-parser": {
+      "type": "function",
+      "signature": "tree-sitter-typescript language parser integration",
+      "description": "Adds tree-sitter-typescript for accurate TypeScript parsing"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "sync-endpoints-only": {
+      "description": "All new endpoints calling tree-sitter must use sync 'def' (not 'async def') so FastAPI runs them in threadpool",
+      "enforced_by": "test"
+    },
+    "path-traversal-protection": {
+      "description": "File content endpoint must validate resolved path with is_relative_to(project_path), reject '..' and symlinks",
+      "enforced_by": "test"
+    },
+    "cache-bounded": {
+      "description": "_parse_cache must not grow unbounded; implement LRU eviction or size cap",
+      "enforced_by": "runtime"
+    }
+  },
+  "definition": {
+    "scope": "Extend backend tree-sitter parsing to support full codebase graph generation with import/dependency extraction, new API endpoints, and missing file extension support.",
+    "ownedFiles": [
+      "web/backend/app/services/codebase_service.py",
+      "web/backend/app/routers/views.py",
+      "web/backend/app/schemas/views.py",
+      "web/backend/pyproject.toml"
+    ],
+    "tasks": [
+      { "description": "Add .cjs, .mjs, .cts, .mts extensions to SUPPORTED_LANGUAGES in codebase_service.py", "acceptance": "RAPID's own .cjs files appear in codebase output" },
+      { "description": "Add tree-sitter-typescript dependency and separate TypeScript language entry", "acceptance": ".ts/.tsx files parsed with TypeScript grammar" },
+      { "description": "Implement import/require extraction to build file-to-file edges", "acceptance": "get_codebase_graph returns nodes and edges" },
+      { "description": "Create GET /api/projects/{id}/code-graph endpoint", "acceptance": "Returns JSON with nodes, edges, total_files, total_edges" },
+      { "description": "Create GET /api/projects/{id}/file endpoint with path traversal protection", "acceptance": "Valid paths return content; traversal attacks return 403/400" },
+      { "description": "Add LRU eviction or size cap to _parse_cache", "acceptance": "Cache does not grow beyond limit" },
+      { "description": "Tune codebase polling interval to 30s+", "acceptance": "Default refetch interval is 30s+ instead of 2s" }
+    ],
+    "acceptance": [
+      "All new endpoints return correct data for RAPID's own codebase",
+      "Path traversal attacks rejected",
+      "tree-sitter-typescript correctly parses TypeScript constructs",
+      "All backend tests pass"
+    ]
+  }
+}

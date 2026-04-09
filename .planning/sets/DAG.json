@@ -1,79 +1,79 @@
 {
+  "version": 3,
   "nodes": [
     {
-      "id": "branding-overhaul",
+      "id": "code-graph-backend",
       "wave": 1,
-      "status": "pending",
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     },
     {
-      "id": "init-branding-integration",
+      "id": "code-graph-frontend",
       "wave": 1,
-      "status": "pending",
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     },
     {
-      "id": "update-reminder",
+      "id": "fixes-and-housekeeping",
       "wave": 1,
-      "status": "pending",
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     },
     {
-      "id": "docs-and-housekeeping",
+      "id": "bugfix-wave-splitting",
       "wave": 1,
-      "status": "pending",
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     },
     {
-      "id": "branding-crud-completion",
+      "id": "research-agent-reduction",
       "wave": 1,
-      "status": "pending"
+      "status": "merged",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
+    },
+    {
+      "id": "branding-skill-overhaul",
+      "wave": 1,
+      "status": "merged",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
     }
   ],
   "edges": [],
   "waves": {
     "1": {
-      "sets": [
-        "branding-overhaul",
-        "init-branding-integration",
-        "update-reminder",
-        "docs-and-housekeeping",
-        "branding-crud-completion"
-      ],
-      "checkpoint": {
-        "contracts": [
-          "rapid://contracts/branding-overhaul",
-          "rapid://contracts/init-branding-integration",
-          "rapid://contracts/update-reminder",
-          "rapid://contracts/docs-and-housekeeping",
-          "rapid://contracts/branding-crud-completion"
-        ],
-        "artifacts": [
-          ".planning/sets/branding-overhaul/CONTRACT.json",
-          ".planning/sets/init-branding-integration/CONTRACT.json",
-          ".planning/sets/update-reminder/CONTRACT.json",
-          ".planning/sets/docs-and-housekeeping/CONTRACT.json",
-          ".planning/sets/branding-crud-completion/CONTRACT.json"
-        ]
-      }
+      "nodes": [
+        "code-graph-backend",
+        "code-graph-frontend",
+        "fixes-and-housekeeping",
+        "bugfix-wave-splitting",
+        "research-agent-reduction",
+        "branding-skill-overhaul"
+      ]
     }
   },
+  "groups": {},
   "metadata": {
     "created": "2026-04-08",
-    "totalSets": 5,
     "totalWaves": 1,
-    "maxParallelism": 5
+    "maxParallelism": 6,
+    "totalNodes": 6
   }
 }

@@ -23,33 +23,43 @@
 - **v5.0 OSS Presentation** — 5 sets (shipped 2026-03-31)
 - **v6.0.0 Scale & Quality** — 7 sets (shipped 2026-04-06)
 - **v6.1.0 UX & Onboarding** — 7 sets (shipped 2026-04-07)
-- **v6.2.0 DX Refinements** — 5 sets (in progress)
+- **v6.2.0 DX Refinements** — 5 sets (shipped 2026-04-08)
+- **v6.3.0 Mission Control & Fixes** — 6 sets (in progress)
 
-## Active Milestone: v6.2.0 — DX Refinements
+## Active Milestone: v6.3.0 — Mission Control & Fixes
 
-Three features plus documentation/housekeeping targeting branding webserver improvements, init flow integration, and update staleness detection.
+Code graph overhaul, bug fixes, multi-agent bug-fix wave splitting, research agent reduction, and branding skill improvements.
 
-### Set 1: branding-overhaul — Branding Webserver Overhaul
-**Branch:** `set/branding-overhaul` | **Dependencies:** none
-Replace manual-refresh webserver with SSE-based auto-reload, add artifact registry system (branding-artifacts.cjs + artifacts.json manifest), redesign hub page to artifact card gallery, add CRUD API, extend branding skill to generate logos, wireframes, and guidelines.
+### Set 1: code-graph-backend — Code Graph Backend
+**Branch:** `set/code-graph-backend` | **Dependencies:** none
+Extend tree-sitter parsing (.cjs/.mjs/.cts/.mts extensions, tree-sitter-typescript), implement import/dependency extraction, create /code-graph and /file API endpoints with path traversal guards, tune codebase polling intervals.
 
-### Set 2: init-branding-integration — Init Branding Integration
-**Branch:** `set/init-branding-integration` | **Dependencies:** branding-overhaul (soft)
-Insert optional branding step at init step 4B.5. Single opt-in AskUserQuestion with prominent Skip. Condensed inline interview (2-3 questions max). No server during init. Context-aware framing.
+### Set 2: code-graph-frontend — Code Graph Frontend
+**Branch:** `set/code-graph-frontend` | **Dependencies:** code-graph-backend
+Overhaul Knowledge Graph page into Code Graph visualization using Cytoscape.js. Click-to-view file panel (CodeMirror), search/filter, tabbed view (Code Graph + Set DAG), rename to "Code Graph", performance safeguards for large codebases.
 
-### Set 3: update-reminder — Update Reminder
-**Branch:** `set/update-reminder` | **Dependencies:** none
-Record install timestamp in .rapid-install-meta.json, add staleness check to version.cjs, CLI subcommand, non-blocking reminder banners in status/install skills. TTY-only, suppressible, NO_COLOR aware.
+### Set 3: fixes-and-housekeeping — Fixes & Housekeeping
+**Branch:** `set/fixes-and-housekeeping` | **Dependencies:** none
+Fix version display (3 hardcoded v4.2.1 locations + single-source-of-truth), Kanban Ctrl+Enter save shortcut, shell config multi-match, pre-existing test failure, regenerate .planning/context/ files.
 
-### Set 4: docs-and-housekeeping — Documentation & Housekeeping
-**Branch:** `set/docs-and-housekeeping` | **Dependencies:** branding-overhaul, init-branding-integration, update-reminder
-Regenerate .planning/context/ files, bump version strings v6.1.0→v6.2.0, pin Zod to exact 3.25.76, update .env.example, finalize ROADMAP.md.
+### Set 4: bugfix-wave-splitting — Bug-Fix Wave Splitting
+**Branch:** `set/bugfix-wave-splitting` | **Dependencies:** none
+Add wave decomposition to /rapid:bug-fix SKILL.md. Split bugs into sequential waves, one executor per wave, cross-wave context handoff (modified-files + commit log), --wave-size flag.
 
-### Set 5: branding-crud-completion — Branding CRUD Completion (audit remediation)
-**Branch:** `set/branding-crud-completion` | **Dependencies:** none
-Resolve the v6.2.0 audit gap on branding-overhaul's `/_artifacts` API: it ships POST/GET/DELETE but no update path, and CONTEXT.md advertises an `artifact-updated` SSE event no wave actually emits. Decide between (a) adding PUT/PATCH + the SSE event for true CRUD, or (b) renaming the API to CRD across docs and removing the unused event type. Update branding-server tests and CONTEXT.md to match the chosen surface.
+### Set 5: research-agent-reduction — Research Agent Reduction
+**Branch:** `set/research-agent-reduction` | **Dependencies:** none
+Reduce /rapid:new-version from 6 research agents to fewer by consolidating overlapping concerns while preserving research coverage quality.
+
+### Set 6: branding-skill-overhaul — Branding Skill Overhaul
+**Branch:** `set/branding-skill-overhaul` | **Dependencies:** none
+Overhaul /rapid:branding with artifact-driven auto-reload webserver, expand capabilities (logos, wireframes, guidelines page), make /rapid:init delegate to branding skill instead of duplicating logic.
 
 **Dependency graph:** `{branding-overhaul, update-reminder}` (parallel) → `{init-branding-integration}` (soft dep on 1) | `{docs-and-housekeeping}` (after all 3) | `{branding-crud-completion}` (audit remediation, independent)
+
+### Deferred from v6.3.0
+The following items were identified during audit and deferred:
+- Sidebar navigation label should show 'Code Graph' (severity: low)
+- Tune existing view polling intervals to 30s+ (severity: low)
 
 ## Completed Milestone Details
 

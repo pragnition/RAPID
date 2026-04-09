@@ -1,0 +1,50 @@
+{
+  "setId": "bugfix-wave-splitting",
+  "version": "1.0.0",
+  "exports": {
+    "wave-splitting": {
+      "type": "function",
+      "signature": "/rapid:bug-fix with wave decomposition and --wave-size <n> flag",
+      "description": "Splits large bug lists into sequential waves, one executor per wave to reduce context rot. Default wave size 3 normal, 5 UAT"
+    },
+    "cross-wave-handoff": {
+      "type": "function",
+      "signature": "Modified-files list and commit log passed from wave N to wave N+1",
+      "description": "Context propagation between waves to avoid regressions"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "sequential-execution": {
+      "description": "Waves execute strictly sequentially on same branch; no parallel wave execution",
+      "enforced_by": "runtime"
+    },
+    "wave-results-display": {
+      "description": "Each wave's results displayed before proceeding to next wave",
+      "enforced_by": "runtime"
+    },
+    "backward-compatible": {
+      "description": "Without --wave-size flag, /rapid:bug-fix behaves exactly as before",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Add multi-agent wave splitting to /rapid:bug-fix so large bug lists are split into sequential waves with context handoff.",
+    "ownedFiles": [
+      "skills/bug-fix/SKILL.md"
+    ],
+    "tasks": [
+      { "description": "Add wave decomposition logic splitting bugs into groups of --wave-size", "acceptance": "10 bugs with --wave-size 3 produces 4 waves (3+3+3+1)" },
+      { "description": "Implement sequential wave dispatch with one executor per wave", "acceptance": "Each wave gets a fresh agent with only its assigned bugs" },
+      { "description": "Implement cross-wave context handoff (modified-files + commit log)", "acceptance": "Wave 2+ agents receive prior wave changes" },
+      { "description": "Add --wave-size flag with defaults (3 normal, 5 UAT)", "acceptance": "Flag overrides default wave size" },
+      { "description": "Display per-wave results and aggregate summary", "acceptance": "User sees wave progress and final summary" }
+    ],
+    "acceptance": [
+      "Wave splitting produces correct groupings",
+      "Context handoff prevents regressions across waves",
+      "Backward compatible when wave splitting not triggered",
+      "Per-wave progress displayed"
+    ]
+  }
+}

@@ -935,6 +935,72 @@
       "startCommit": "a8ea1f6fb84d03519af82aabd9ea83655ee63240",
       "wave": null,
       "createdAt": "2026-04-08T08:10:36.596Z"
+    },
+    "code-graph-backend": {
+      "setName": "code-graph-backend",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "490b41403732a501057bb519d0d5bcdfac68307b",
+      "wave": null,
+      "createdAt": "2026-04-08T10:53:10.965Z"
+    },
+    "code-graph-frontend": {
+      "setName": "code-graph-frontend",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "3b0275808fdbd1841e3d6ae109bdbb663200c79c",
+      "wave": null,
+      "createdAt": "2026-04-08T12:32:03.897Z"
+    },
+    "fixes-and-housekeeping": {
+      "setName": "fixes-and-housekeeping",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "fc6a61dd3bfebff0131f19e20073d025084931ad",
+      "wave": null,
+      "createdAt": "2026-04-08T16:50:55.234Z"
+    },
+    "bugfix-wave-splitting": {
+      "setName": "bugfix-wave-splitting",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "76d18c247ff37253b6b2e3d45d8f2eee566c8e63",
+      "wave": null,
+      "createdAt": "2026-04-09T02:21:06.467Z"
+    },
+    "research-agent-reduction": {
+      "setName": "research-agent-reduction",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "14511c1ae1fc94bd8a4a39f922a5c374ce3cb3fe",
+      "wave": null,
+      "createdAt": "2026-04-09T04:16:51.274Z"
+    },
+    "branding-skill-overhaul": {
+      "setName": "branding-skill-overhaul",
+      "branch": "main",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "89a400fce9115bd5597646d77d183efa30d4ecfb",
+      "wave": null,
+      "createdAt": "2026-04-09T05:26:46.570Z"
     }
   }
 }

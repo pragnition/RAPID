@@ -1,0 +1,55 @@
+{
+  "setId": "fixes-and-housekeeping",
+  "version": "1.0.0",
+  "exports": {
+    "version-mechanism": {
+      "type": "function",
+      "signature": "Single-source-of-truth version derivation for Mission Control",
+      "description": "Version in frontend sidebar and backend health endpoint derived from one authoritative source"
+    },
+    "kanban-save-shortcut": {
+      "type": "function",
+      "signature": "CardDetailModal handles Ctrl+Enter and Cmd+Enter as save-and-close",
+      "description": "Keyboard shortcut for saving card details without mouse"
+    },
+    "shell-config-multiupdate": {
+      "type": "function",
+      "signature": "Install skill updates ALL shell config files, not just first match",
+      "description": "Removes break-on-first-match in install skill shell config detection"
+    }
+  },
+  "imports": {},
+  "behavioral": {
+    "version-single-source": {
+      "description": "All 3 version locations (Sidebar.tsx, __init__.py, pyproject.toml) must derive from single source of truth",
+      "enforced_by": "test"
+    },
+    "ctrl-enter-cross-platform": {
+      "description": "Save shortcut handles both e.ctrlKey (Windows/Linux) and e.metaKey (macOS)",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Fix three bugs (version display, Kanban save shortcut, shell config multi-match), fix pre-existing test failure, and regenerate planning context files.",
+    "ownedFiles": [
+      "web/frontend/src/components/layout/Sidebar.tsx",
+      "web/frontend/src/components/kanban/CardDetailModal.tsx",
+      "web/backend/app/__init__.py",
+      "web/backend/pyproject.toml"
+    ],
+    "tasks": [
+      { "description": "Fix version display: update v4.2.1 in 3 locations, establish single-source-of-truth", "acceptance": "Frontend and backend display correct version from one source" },
+      { "description": "Add Ctrl+Enter / Cmd+Enter save to CardDetailModal.tsx", "acceptance": "Pressing Ctrl+Enter saves and closes the modal" },
+      { "description": "Remove break statement in install skill shell config loop", "acceptance": "Multiple shell config files detected and updated" },
+      { "description": "Fix pre-existing test failure (stale 'executing' literals)", "acceptance": "All existing tests pass with zero failures" },
+      { "description": "Regenerate .planning/context/ files", "acceptance": "Context files reflect current codebase state" }
+    ],
+    "acceptance": [
+      "Version display shows current version across all locations",
+      "Ctrl+Enter saves in Kanban modal",
+      "Install skill updates all shell configs",
+      "All tests pass",
+      "Context files regenerated"
+    ]
+  }
+}

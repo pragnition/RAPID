@@ -1,0 +1,73 @@
+{
+  "setId": "code-graph-frontend",
+  "version": "1.0.0",
+  "exports": {
+    "code-graph-page": {
+      "type": "file",
+      "signature": "CodeGraphPage React component",
+      "description": "Full codebase dependency graph visualization with file nodes, import edges, search/filter, tabbed view"
+    },
+    "file-viewer-panel": {
+      "type": "file",
+      "signature": "FileViewerPanel React component",
+      "description": "Read-only file content viewer using CodeMirror, shown when a graph node is clicked"
+    }
+  },
+  "imports": {
+    "code-graph-api": {
+      "fromSet": "code-graph-backend",
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/code-graph -> { nodes, edges, total_files, total_edges }",
+      "description": "Backend API providing codebase dependency graph data"
+    },
+    "file-content-api": {
+      "fromSet": "code-graph-backend",
+      "type": "endpoint",
+      "signature": "GET /api/projects/{id}/file?path=<relative_path> -> { path, content, language, size }",
+      "description": "Backend API providing file content for click-to-view"
+    }
+  },
+  "behavioral": {
+    "cytoscape-cleanup": {
+      "description": "Cytoscape instance must be destroyed in useEffect cleanup; use cy.batch() for bulk updates",
+      "enforced_by": "test"
+    },
+    "progressive-loading": {
+      "description": "Graphs with 200+ nodes must render directory-level clusters first; show warning at renderable limit",
+      "enforced_by": "runtime"
+    },
+    "keyboard-accessible": {
+      "description": "Graph nodes navigable via keyboard; selected node details announced via aria-live",
+      "enforced_by": "test"
+    }
+  },
+  "definition": {
+    "scope": "Overhaul Knowledge Graph page into full Code Graph visualization with file dependency viewing, click-to-view source, search/filter, tabbed Code Graph / Set DAG view.",
+    "ownedFiles": [
+      "web/frontend/src/pages/KnowledgeGraphPage.tsx",
+      "web/frontend/src/components/graph/FileViewerPanel.tsx",
+      "web/frontend/src/components/graph/GraphSearchFilter.tsx",
+      "web/frontend/src/components/graph/GraphTabBar.tsx",
+      "web/frontend/src/hooks/useCodeGraph.ts",
+      "web/frontend/src/types/api.ts",
+      "web/frontend/src/router.tsx"
+    ],
+    "tasks": [
+      { "description": "Create useCodeGraph hook for /code-graph endpoint with 30s+ polling", "acceptance": "Hook fetches graph data with loading/error states" },
+      { "description": "Rename KnowledgeGraphPage to CodeGraphPage, update all references", "acceptance": "Navigation shows 'Code Graph'" },
+      { "description": "Implement tabbed view for Code Graph and Set DAG", "acceptance": "Both tabs render; existing DAG preserved" },
+      { "description": "Build code graph visualization with Cytoscape.js force-directed layout", "acceptance": "File nodes colored by language, import edges with arrows" },
+      { "description": "Implement click-to-view file panel with CodeMirror", "acceptance": "Clicking node opens syntax-highlighted file viewer" },
+      { "description": "Add search/filter for filename filtering with graph highlighting", "acceptance": "Typing highlights matching nodes, dims others" },
+      { "description": "Add performance safeguards: directory clustering, max-nodes warning", "acceptance": "200+ node graphs show clustered view" }
+    ],
+    "acceptance": [
+      "Code Graph page renders codebase dependency graph",
+      "Click-to-view opens file content in CodeMirror panel",
+      "Search filters graph nodes by filename",
+      "Tab switching works without page reload",
+      "Existing DAG functionality fully preserved",
+      "Cytoscape instance properly cleaned up on unmount"
+    ]
+  }
+}
