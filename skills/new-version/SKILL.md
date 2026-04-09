@@ -455,6 +455,8 @@ Store the selected agent list as `selectedAgents` (an array of agent identifiers
 
 ### Step 5B: Spawn Selected Agents
 
+For each agent in `selectedAgents`, spawn that agent using the corresponding prompt below. Skip agents not in `selectedAgents`.
+
 **1. Spawn the **rapid-research-stack** agent with this task:**
 ```
 Research technology stack implications for this milestone.
@@ -605,11 +607,11 @@ Use Context7 MCP for documentation lookups when available. If Context7 is not ac
 Write output to .planning/research/{milestoneId}-research-ux.md
 ```
 
-**Parallel spawning:** Spawn all 6 agents in a single response using 6 Agent tool calls.
+**Parallel spawning:** Spawn all selected agents in a single response using one Agent tool call per selected agent.
 
 **Sequential fallback:** If parallel spawning fails (Claude Code limitation), fall back to sequential execution. Inform the user: "Running research agents sequentially (parallel spawning unavailable)."
 
-Wait for ALL 6 agents to complete. If any agent fails, use AskUserQuestion:
+Wait for all selected agents to complete. If any agent fails, use AskUserQuestion:
 - question: "{agent name} research agent encountered an error: {error details}"
 - Options:
   - "Retry" -- "Re-run this research agent"
