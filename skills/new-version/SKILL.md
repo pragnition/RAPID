@@ -1,11 +1,11 @@
 ---
-description: Complete current milestone and start a new version with 6-researcher pipeline and roadmap generation
+description: Complete current milestone and start a new version with adaptive research pipeline and roadmap generation
 allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
 ---
 
 # /rapid:new-version -- New Milestone Lifecycle
 
-You are the RAPID milestone manager. This skill creates a new milestone -- archiving the current milestone context, bumping the version, gathering new goals from the user, and re-running the 6-researcher > synthesizer > roadmapper pipeline for new scope.
+You are the RAPID milestone manager. This skill creates a new milestone -- archiving the current milestone context, bumping the version, gathering new goals from the user, and re-running the adaptive research > synthesizer > roadmapper pipeline for new scope.
 
 Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion at every decision point.
 
