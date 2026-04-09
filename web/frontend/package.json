@@ -37,6 +37,7 @@
     "@tanstack/react-query-devtools": "^5.91.3",
     "@types/cytoscape-dagre": "^2.3.4",
     "@types/cytoscape-fcose": "^2.2.5",
+    "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
