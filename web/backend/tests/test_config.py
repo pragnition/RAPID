@@ -12,7 +12,7 @@ class TestSettingsDefaults:
 
     def test_default_port(self):
         s = Settings()
-        assert s.rapid_web_port == 8998
+        assert s.rapid_web_port == 9889
 
     def test_default_host(self):
         s = Settings()

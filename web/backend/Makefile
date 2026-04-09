@@ -4,7 +4,7 @@ install:
 	uv sync
 
 dev:
-	RAPID_WEB=true uv run uvicorn app.main:app --host 127.0.0.1 --port 8998 --reload
+	RAPID_WEB=true uv run uvicorn app.main:app --host 127.0.0.1 --port 9889 --reload
 
 test:
 	uv run pytest -v
