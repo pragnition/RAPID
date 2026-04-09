@@ -24,6 +24,20 @@ let _fsWatcher = null;
 let _debounceTimer = null;
 const DEBOUNCE_MS = 300;
 
+/**
+ * Per-artifact-type badge colors for the hub page gallery.
+ * Keys are artifact type strings; values are hex color codes.
+ */
+const TYPE_COLORS = {
+  'theme': '#1f6feb',
+  'logo': '#e5534b',
+  'wireframe': '#57ab5a',
+  'preview': '#986ee2',
+  'guidelines': '#cc6b2c',
+  'readme-template': '#768390',
+  'component-library': '#539bf5',
+};
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -189,14 +203,29 @@ function _generateHubPage(brandingDir, projectRoot) {
   if (untrackedCount > 0) subtitleParts.push(`${untrackedCount} untracked file${untrackedCount !== 1 ? 's' : ''}`);
   const subtitle = subtitleParts.length > 0 ? subtitleParts.join(', ') : 'No artifacts yet';
 
+  // Collect all unique artifact types for CSS generation
+  const allTypes = new Set(Object.keys(TYPE_COLORS));
+  for (const entry of manifest) {
+    allTypes.add(entry.type);
+  }
+
+  // Generate per-type badge CSS rules
+  const typeBadgeCss = Array.from(allTypes).map((type) => {
+    const color = TYPE_COLORS[type]; // undefined for unknown types -- fallback applies
+    if (!color) return ''; // unknown types use the base .type-badge fallback
+    const safeType = type.replace(/[^a-z0-9-]/gi, '-');
+    return `    .type-badge-${safeType} { background: ${color}; color: #fff; }`;
+  }).filter(Boolean).join('\n');
+
   // Build artifact cards
   const artifactCards = manifest.map((entry) => {
     const escapedType = _escapeHtml(entry.type);
+    const safeType = entry.type.replace(/[^a-z0-9-]/gi, '-');
     const escapedFilename = _escapeHtml(entry.filename);
     const escapedDesc = _escapeHtml(entry.description);
     const createdAt = _escapeHtml(entry.createdAt);
     return `      <div class="card">
-        <span class="badge type-badge">${escapedType}</span>
+        <span class="badge type-badge type-badge-${safeType}">${escapedType}</span>
         <a class="card-title" href="/${escapedFilename}">${escapedFilename}</a>
         <span class="timestamp" data-created="${createdAt}"></span>
         <p class="card-desc">${escapedDesc}</p>
@@ -269,7 +298,8 @@ function _generateHubPage(brandingDir, projectRoot) {
       font-weight: 600;
       align-self: flex-start;
     }
-    .type-badge { background: #1f6feb; color: #fff; }
+    .type-badge { background: #484f58; color: #fff; }
+${typeBadgeCss}
     .untracked-badge { background: #30363d; color: #8b949e; }
     .untracked-card { opacity: 0.7; }
     .card-title {
@@ -760,6 +790,7 @@ module.exports = {
   stop,
   status,
   DEFAULT_PORT,
+  TYPE_COLORS,
   // Export internals for testing (prefixed)
   _isProcessAlive,
   _httpHealthProbe,
