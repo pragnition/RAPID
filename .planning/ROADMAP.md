@@ -24,7 +24,7 @@
 - **v6.0.0 Scale & Quality** — 7 sets (shipped 2026-04-06)
 - **v6.1.0 UX & Onboarding** — 7 sets (shipped 2026-04-07)
 - **v6.2.0 DX Refinements** — 5 sets (shipped 2026-04-08)
-- **v6.3.0 Mission Control & Fixes** — 6 sets (in progress)
+- **v6.3.0 Mission Control & Fixes** — 7 sets (in progress)
 
 ## Active Milestone: v6.3.0 — Mission Control & Fixes
 
@@ -53,6 +53,10 @@ Reduce /rapid:new-version from 6 research agents to fewer by consolidating overl
 ### Set 6: branding-skill-overhaul — Branding Skill Overhaul
 **Branch:** `set/branding-skill-overhaul` | **Dependencies:** none
 Overhaul /rapid:branding with artifact-driven auto-reload webserver, expand capabilities (logos, wireframes, guidelines page), make /rapid:init delegate to branding skill instead of duplicating logic.
+
+### Set 7: mission-control-polish — Mission Control Polish
+**Branch:** `set/mission-control-polish` | **Dependencies:** none
+Fix Mission Control web dashboard visual and functional issues: improve graph color schemes and default zoom, upgrade syntax highlighting, fix broken set DAG endpoint/visualization.
 
 **Dependency graph:** `{branding-overhaul, update-reminder}` (parallel) → `{init-branding-integration}` (soft dep on 1) | `{docs-and-housekeeping}` (after all 3) | `{branding-crud-completion}` (audit remediation, independent)
 
