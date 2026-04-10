@@ -147,51 +147,34 @@ function renderFooter(nextCommand, options = {}) {
     return '\n' + lines.join('\n');
   }
 
-  // ── Full mode: box-drawing layout, clamped to terminal width ──
+  // ── Full mode: compact inline footer ──
 
-  // Box-drawing characters (or ASCII fallbacks for NO_COLOR)
-  const chars = noColor
-    ? { tl: '+', tr: '+', bl: '+', br: '+', h: '-', v: '|' }
-    : { tl: '╔', tr: '╗', bl: '╚', br: '╝', h: '═', v: '║' };
+  const bullet = noColor ? '>' : '\u25B6';
 
-  const contentLines = [];
+  const lines = [];
   if (clearRequired) {
-    contentLines.push('Run /clear before continuing');
+    lines.push(`${bullet} Run /clear before continuing`);
   }
-  contentLines.push(`Next: ${nextCommand}`);
+
+  let nextLine = `${bullet} Next: ${nextCommand}`;
   if (breadcrumb && breadcrumb.length > 0) {
-    contentLines.push(breadcrumb);
-  }
-
-  const maxLen = Math.max(...contentLines.map(l => l.length));
-  // Clamp innerWidth so total box width (innerWidth + 2 border chars) never exceeds terminal
-  const innerWidth = Math.min(Math.max(maxLen + 4, 40), columns - 2);
-
-  const topBorder = `${chars.tl}${chars.h.repeat(innerWidth)}${chars.tr}`;
-  const botBorder = `${chars.bl}${chars.h.repeat(innerWidth)}${chars.br}`;
-
-  // Truncate lines that exceed the available inner space (innerWidth - 4 for 2-char padding each side)
-  const maxTextWidth = innerWidth - 4;
-  const truncate = (text) => {
-    if (text.length > maxTextWidth) {
-      return text.slice(0, maxTextWidth - 3) + '...';
+    const separator = '  \u00B7  ';
+    const combined = nextLine + separator + breadcrumb;
+    if (combined.length > columns - 2) {
+      // Truncate breadcrumb so the whole line fits within columns - 2
+      const available = columns - 2 - nextLine.length - separator.length;
+      if (available > 3) {
+        nextLine = nextLine + separator + breadcrumb.slice(0, available - 3) + '...';
+      } else {
+        nextLine = nextLine + separator + '...';
+      }
+    } else {
+      nextLine = combined;
     }
-    return text;
-  };
-
-  const padLine = (text) => {
-    const truncated = truncate(text);
-    return `${chars.v}  ${truncated.padEnd(innerWidth - 2)}${chars.v}`;
-  };
-  const emptyLine = `${chars.v}${' '.repeat(innerWidth)}${chars.v}`;
-
-  const boxLines = [topBorder, emptyLine];
-  for (const line of contentLines) {
-    boxLines.push(padLine(line));
   }
-  boxLines.push(emptyLine, botBorder);
+  lines.push(nextLine);
 
-  return '\n' + boxLines.join('\n');
+  return '\n' + lines.join('\n');
 }
 
 /**
