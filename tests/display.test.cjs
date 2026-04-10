@@ -16,12 +16,12 @@ describe('renderFooter', () => {
   it('basic output structure', () => {
     const out = renderFooter('/rapid:plan-set 1');
     assert.equal(typeof out, 'string');
-    assert.ok(out.includes('Run /clear before continuing'), 'should include /clear reminder');
+    assert.ok(out.includes('\u25B6 Run /clear before continuing'), 'should include /clear reminder with bullet');
     assert.ok(out.includes('Next: /rapid:plan-set 1'), 'should include next command');
-    assert.ok(out.includes('╔'), 'should include box-drawing top-left corner');
-    assert.ok(out.includes('╚'), 'should include box-drawing bottom-left corner');
-    assert.ok(out.includes('║'), 'should include box-drawing vertical border');
     assert.ok(!out.includes('\x1b'), 'should NOT contain ANSI escape codes');
+    // Should have exactly 2 non-blank lines (clear + next)
+    const nonBlank = out.split('\n').filter(l => l.trim().length > 0);
+    assert.equal(nonBlank.length, 2, 'should have exactly 2 non-blank lines');
   });
 
   it('includes breadcrumb when provided', () => {
@@ -35,9 +35,8 @@ describe('renderFooter', () => {
 
   it('omits breadcrumb when not provided', () => {
     const out = renderFooter('/rapid:plan-set 1');
-    // Filter to content lines only (exclude borders and empty padding lines)
-    const lines = out.split('\n').filter(l => l.trim().length > 0 && l.includes('║') && l.trim() !== '║' && !/^║\s+║$/.test(l));
-    assert.equal(lines.length, 2, 'should have exactly 2 content lines (clear + next)');
+    const nonBlank = out.split('\n').filter(l => l.trim().length > 0);
+    assert.equal(nonBlank.length, 2, 'should have exactly 2 non-blank lines (clear + next)');
   });
 
   it('clearRequired false omits clear line', () => {
@@ -46,44 +45,56 @@ describe('renderFooter', () => {
     assert.ok(out.includes('Next: /rapid:plan-set 1'), 'should still include next command');
   });
 
-  it('NO_COLOR uses ASCII box characters', () => {
+  it('NO_COLOR uses ASCII bullet instead of triangle', () => {
     process.env.NO_COLOR = '1';
     const out = renderFooter('/rapid:plan-set 1');
-    assert.ok(out.includes('+'), 'should include ASCII corner character');
-    assert.ok(out.includes('|'), 'should include ASCII vertical border');
-    assert.ok(out.includes('-'), 'should include ASCII horizontal border');
+    assert.ok(out.includes('> Run /clear'), 'should use > as bullet for clear line');
+    assert.ok(out.includes('> Next:'), 'should use > as bullet for next line');
+    assert.ok(!out.includes('\u25B6'), 'should NOT include triangle bullet');
     assert.ok(!out.includes('╔'), 'should NOT include box-drawing corner');
     assert.ok(!out.includes('║'), 'should NOT include box-drawing vertical');
   });
 
-  it('box width adapts to content', () => {
-    const shortOut = renderFooter('/rapid:x');
-    const longOut = renderFooter('/rapid:execute-set some-very-long-set-name-here');
-
-    // Extract top border lines (╔═══╗)
-    const shortBorder = shortOut.split('\n').find(l => l.startsWith('╔'));
-    const longBorder = longOut.split('\n').find(l => l.startsWith('╔'));
-
-    assert.ok(shortBorder, 'short output should have top border');
-    assert.ok(longBorder, 'long output should have top border');
-    assert.ok(longBorder.length > shortBorder.length, 'longer content should produce wider box');
-    assert.ok(shortBorder.length >= 42, 'box should be at least 42 characters wide (40 inner + corners)');
+  it('long breadcrumbs are truncated with ellipsis', () => {
+    // Force a narrow-ish terminal so the breadcrumb must be truncated
+    const saved = process.stdout.columns;
+    process.stdout.columns = 60;
+    try {
+      const out = renderFooter('/rapid:plan-set 1', {
+        breadcrumb: 'init [done] > start-set [done] > discuss-set [done] > plan-set [done] > execute-set > review > merge',
+      });
+      assert.ok(out.includes('...'), 'long breadcrumb should be truncated with ellipsis');
+      const lines = out.split('\n');
+      for (const line of lines) {
+        assert.ok(line.length <= 60, `line exceeds 60 chars (${line.length}): "${line}"`);
+      }
+    } finally {
+      process.stdout.columns = saved;
+    }
   });
 
-  it('all three lines present with full options', () => {
+  it('all three pieces present with full options, breadcrumb inline', () => {
     const out = renderFooter('/rapid:plan-set 1', {
       breadcrumb: 'init [done] > start-set [done]',
       clearRequired: true,
     });
-    const lines = out.split('\n').filter(l => l.trim().length > 0 && l.includes('║') && !/^║\s+║$/.test(l));
-    assert.equal(lines.length, 3, 'should have 3 content lines');
+    const nonBlank = out.split('\n').filter(l => l.trim().length > 0);
+    // Should have 2 non-blank lines: clear line + next/breadcrumb line
+    assert.equal(nonBlank.length, 2, 'should have 2 non-blank lines (clear + next with inline breadcrumb)');
 
-    // Verify order: clear, next, breadcrumb
+    // All three pieces of info present
+    assert.ok(out.includes('Run /clear before continuing'), 'should contain clear reminder');
+    assert.ok(out.includes('Next: /rapid:plan-set 1'), 'should contain next command');
+    assert.ok(out.includes('init [done] > start-set [done]'), 'should contain breadcrumb');
+
+    // Verify order: clear before next, breadcrumb on same line as Next
     const clearIdx = out.indexOf('Run /clear before continuing');
     const nextIdx = out.indexOf('Next: /rapid:plan-set 1');
-    const bcIdx = out.indexOf('init [done] > start-set [done]');
     assert.ok(clearIdx < nextIdx, 'clear should come before next');
-    assert.ok(nextIdx < bcIdx, 'next should come before breadcrumb');
+
+    // Breadcrumb should be on the same line as Next (inline format)
+    const nextLine = nonBlank.find(l => l.includes('Next:'));
+    assert.ok(nextLine.includes('init [done] > start-set [done]'), 'breadcrumb should be inline with Next');
   });
 });
 
