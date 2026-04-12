@@ -1,9 +1,0 @@
-{
-  "project": {
-    "name": "",
-    "version": "0.1.0"
-  },
-  "planning": {
-    "max_parallel_sets": 3
-  }
-}

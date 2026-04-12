@@ -25,7 +25,8 @@ window loaded with exactly the artifacts it needs -- nothing more, nothing stale
 > [!TIP]
 > Inside Claude Code:
 >```
->/plugin install rapid@pragnition/pragnition-public-plugins 
+>/plugin marketplace add pragnition/pragnition-public-plugins
+>/plugin install rapid@pragnition-public-plugins 
 >```
 >
 >Then, 
