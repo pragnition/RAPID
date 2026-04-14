@@ -1,0 +1,2 @@
+[console_scripts]
+rapid-web = app.main:cli_entry

@@ -1,0 +1,13 @@
+fastapi[standard]<1.0,>=0.135
+sqlmodel<1.0,>=0.0.37
+alembic<2.0,>=1.18
+pydantic-settings<3.0,>=2.13
+python-json-logger<4.0,>=3.0
+uvicorn[standard]<1.0,>=0.34
+watchdog<7.0,>=6.0
+tree-sitter<1.0,>=0.24
+tree-sitter-python<1.0,>=0.23
+tree-sitter-javascript<1.0,>=0.23
+tree-sitter-typescript<1.0,>=0.23
+tree-sitter-go<1.0,>=0.23
+tree-sitter-rust<1.0,>=0.23
