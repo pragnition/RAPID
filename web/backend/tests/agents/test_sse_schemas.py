@@ -50,7 +50,7 @@ def test_discriminator_roundtrip():
         ThinkingEvent(seq=2, ts=now, run_id=run, text="hmm"),
         ToolUseEvent(seq=3, ts=now, run_id=run, tool_name="Bash", tool_use_id="t1", input={"cmd": "ls"}),
         ToolResultEvent(seq=4, ts=now, run_id=run, tool_use_id="t1", output="ok", is_error=False),
-        AskUserEvent(seq=5, ts=now, run_id=run, tool_use_id="t2", question="which?"),
+        AskUserEvent(seq=5, ts=now, run_id=run, prompt_id="p-2", tool_use_id="t2", question="which?"),
         PermissionReqEvent(seq=6, ts=now, run_id=run, tool_name="Bash", tool_use_id="t3", reason="r", blocked=False),
         StatusEvent(seq=7, ts=now, run_id=run, status="running"),
         RunCompleteEvent(seq=8, ts=now, run_id=run, status="completed", total_cost_usd=0.1, turn_count=2, duration_s=3.0),

@@ -46,6 +46,9 @@ class ToolResultEvent(_BaseEvent):
 
 class AskUserEvent(_BaseEvent):
     kind: Literal["ask_user"] = "ask_user"
+    # Server-minted prompt id (web-tool-bridge). Frontend echoes this back in
+    # POST /runs/{id}/answer so the backend can reject stale answers (409).
+    prompt_id: str
     tool_use_id: str
     question: str
     options: list[str] | None = None

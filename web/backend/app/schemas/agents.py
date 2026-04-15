@@ -48,10 +48,30 @@ class SendInputRequest(BaseModel):
 
 
 class AnswerRequest(BaseModel):
-    """POST /{id}/answer body -- used only by the ask_user MCP tool path (Set 2)."""
+    """POST /{id}/answer body -- used by the ask_user MCP tool path (web-tool-bridge).
+
+    ``prompt_id`` is the real acknowledgement handle (server-minted). ``tool_use_id``
+    is preserved for backwards compatibility during the frozen-contract transition.
+    """
 
     tool_use_id: str
     answer: str
+    prompt_id: str | None = None
+
+
+class PendingPromptResponse(BaseModel):
+    """Returned by ``GET /runs/{id}/pending-prompt`` when a pending prompt exists."""
+
+    prompt_id: str
+    run_id: UUID
+    kind: Literal["ask_user"]
+    question: str
+    options: list[str] | None = None
+    allow_free_text: bool = True
+    created_at: datetime
+    batch_id: str | None = None
+    batch_position: int | None = None
+    batch_total: int | None = None
 
 
 class InterruptResponse(BaseModel):
