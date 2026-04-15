@@ -729,7 +729,7 @@
         },
         {
           "id": "web-tool-bridge",
-          "status": "discussed",
+          "status": "planned",
           "waves": [],
           "name": "Web Tool Bridge",
           "branch": "set/web-tool-bridge"
@@ -764,6 +764,6 @@
       "status": "active"
     }
   ],
-  "lastUpdatedAt": "2026-04-15T11:15:48.321Z",
+  "lastUpdatedAt": "2026-04-15T11:37:06.900Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }

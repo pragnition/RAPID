@@ -5,17 +5,12 @@
     "webui_ask_user_tool": {
       "type": "function",
       "signature": "@tool('webui_ask_user', 'Ask the user a structured multi-choice question', schema) async def webui_ask_user(args) -> ToolResult",
-      "description": "In-process SDK MCP tool handling structured questions (free-form text OR N-choice OR N>4 questions that built-in AskUserQuestion can't handle). Mints a server-side prompt_id, persists to agent_prompts, emits SSE ask_user event, awaits POST /api/agents/runs/{id}/answer with timeout. Called by skill prose when RAPID_RUN_MODE=sdk."
+      "description": "In-process SDK MCP tool handling structured questions (free-form text OR N-choice OR N>4 questions that built-in AskUserQuestion can't handle). Mints a server-side prompt_id, persists to agent_prompts, emits SSE ask_user event, awaits POST /api/agents/runs/{id}/answer. Called by skill prose when RAPID_RUN_MODE=sdk."
     },
     "ask_free_text_tool": {
       "type": "function",
       "signature": "@tool('ask_free_text', 'Prompt the user for free-form text input', schema) async def ask_free_text(args) -> ToolResult",
       "description": "Specialization of webui_ask_user for free-form text where the 4-question multi-choice limit of built-in AskUserQuestion doesn't fit."
-    },
-    "render_diff_tool": {
-      "type": "function",
-      "signature": "@tool('render_diff', 'Render a unified diff in the browser for user approval', schema) async def render_diff(args) -> ToolResult",
-      "description": "Optional tool for surfacing unified diffs before destructive edits; reuses approval modal infrastructure."
     },
     "ask_user_built_in_interception": {
       "type": "function",
@@ -24,28 +19,28 @@
     },
     "agent_prompts_model": {
       "type": "class",
-      "signature": "class AgentPrompt(SQLModel, table=True): id: str (prompt_id); run_id: str (FK); kind: Literal['ask_user','permission_req','approve_tool']; payload: str (json); status: Literal['pending','answered','expired','stale']; answer: str | None; created_at: datetime; answered_at: datetime | None",
-      "description": "Server-minted prompt per round-trip. Prevents race (wrong answer applied to wrong question) via id-keyed acknowledgement. 409 returned on stale prompt_id; timeout auto-expires pending prompts."
+      "signature": "class AgentPrompt(SQLModel, table=True): id: str (prompt_id); run_id: str (FK); kind: Literal['ask_user']; payload: str (json); status: Literal['pending','answered','stale']; answer: str | None; created_at: datetime; answered_at: datetime | None; consumed_at: datetime | None",
+      "description": "Server-minted prompt per round-trip. Prevents race (wrong answer applied to wrong question) via id-keyed acknowledgement. 409 returned on stale prompt_id. consumed_at captures when the agent has read the answer (prevents late reopen corrupting agent context)."
     },
     "answer_endpoint": {
       "type": "endpoint",
-      "signature": "POST /api/agents/runs/{run_id}/answer {prompt_id, answer} -> 200 | 409 stale | 404 expired",
+      "signature": "POST /api/agents/runs/{run_id}/answer {prompt_id, answer} -> 200 | 409 stale | 404 not found",
       "description": "Frontend submits the answer for a pending prompt. Backend validates prompt_id matches current pending prompt for run; rejects stale answers."
     },
-    "approval_modal_component": {
-      "type": "file",
-      "signature": "<ApprovalModal prompt={Prompt} onApprove onReject onEdit />",
-      "description": "React component with Approve / Reject / Edit triad. Focus-trapped, ESC=reject, default=reject for destructive patterns. Edit mode allows modifying tool args before approving (e.g. change a file path)."
+    "pending_prompt_endpoint": {
+      "type": "endpoint",
+      "signature": "GET /api/agents/runs/{run_id}/pending-prompt -> 200 {prompt} | 204 none",
+      "description": "Returns current pending prompt for a run. Used by frontend on SSE reconnect and on 409 auto-swap to rehydrate modal from SQLite truth."
+    },
+    "reopen_prompt_endpoint": {
+      "type": "endpoint",
+      "signature": "POST /api/agents/runs/{run_id}/prompts/{prompt_id}/reopen -> 200 | 400 | 404 | 409",
+      "description": "Transitions a previously-answered prompt back to pending (and marks downstream prompts stale) for back-navigation. 409 when the agent has already consumed the answer (consumed_at is not null)."
     },
     "ask_user_modal_component": {
       "type": "file",
       "signature": "<AskUserModal prompt={Prompt} onSubmit />",
       "description": "React component rendering structured questions (multi-choice, free-form, N-questions) with sessionStorage-backed draft persistence across tab close."
-    },
-    "permission_prompt_component": {
-      "type": "file",
-      "signature": "<PermissionPrompt prompt={Prompt} onDecision />",
-      "description": "Specialization of ApprovalModal for permission_req events (when can_use_tool routes unknowns to user)."
     },
     "skill_prose_patches": {
       "type": "file",
@@ -70,12 +65,12 @@
       "fromSet": "agent-runtime-foundation",
       "type": "class",
       "signature": "EventBus.publish(run_id, event) / subscribe(run_id, since_seq)",
-      "description": "We publish ask_user and permission_req events via EventBus"
+      "description": "We publish ask_user events via EventBus"
     },
     "sse_event_schema": {
       "fromSet": "agent-runtime-foundation",
       "type": "event",
-      "signature": "'ask_user' and 'permission_req' event kinds with stable payload shapes",
+      "signature": "'ask_user' event kind with stable payload shape (extended with prompt_id)",
       "description": "Our events ride on the typed SSE event schema"
     },
     "agent_run_model": {
@@ -104,27 +99,23 @@
   },
   "behavioral": {
     "prompt_id_is_server_minted": {
-      "description": "Every ask_user or permission_req emits a server-side UUID prompt_id. Frontend cannot invent one. Stale prompt_id from old tab yields 409.",
+      "description": "Every ask_user event emits a server-side UUID prompt_id. Frontend cannot invent one. Stale prompt_id from old tab yields 409.",
       "enforced_by": "test"
     },
     "four_question_split_enforced": {
       "description": "Built-in AskUserQuestion with >4 questions is split server-side into multiple prompts before being emitted. Skills that batch 12 gray areas (e.g. discuss-set) work transparently.",
       "enforced_by": "test"
     },
-    "timeout_on_pending_prompt": {
-      "description": "A pending agent_prompts row older than per-skill answer_timeout (default 30 minutes) is marked 'expired' and the agent run enters 'waiting' -> 'interrupted' state. UI surfaces 'this run timed out'.",
-      "enforced_by": "runtime"
-    },
     "cli_parity_additive_only": {
-      "description": "Skill-prose patches use if/else branches on $RAPID_RUN_MODE, never forking the skill file. CLI run (mode != 'sdk') uses built-in AskUserQuestion exactly as before. Regression CI test runs /rapid:execute-set via CLI against fixture every build.",
-      "enforced_by": "test"
-    },
-    "approval_modal_destructive_default_reject": {
-      "description": "When permission_req includes a destructive tool (Bash with rm/git push --force/branch -D regex match), the approval modal defaults to reject; user must explicitly click Approve. ESC still equals reject.",
+      "description": "Skill-prose patches use if/else branches on $RAPID_RUN_MODE, never forking the skill file. CLI run (mode != 'sdk') uses built-in AskUserQuestion exactly as before. Regression lint test enforces the if/else/built-in trio shape at each call site.",
       "enforced_by": "test"
     },
     "draft_persists_across_tab_close": {
       "description": "AskUserModal's in-progress answer is saved to sessionStorage keyed by prompt_id. Tab close + reopen restores draft. Server status is truth if the prompt was answered elsewhere.",
+      "enforced_by": "test"
+    },
+    "back_navigation_reopen_respects_consume_race": {
+      "description": "POST /reopen for a target prompt transitions it to pending and marks downstream prompts stale ONLY when consumed_at IS NULL. If the agent has already consumed the answer (consumed_at IS NOT NULL), the endpoint returns 409 'too late to revise; interrupt the run instead'. At most one pending prompt per run is enforced via partial unique index.",
       "enforced_by": "test"
     }
   }
