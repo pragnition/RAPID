@@ -1,12 +1,14 @@
 ---
 description: Surface Claude's mental model and assumptions about a set before execution begins
 disable-model-invocation: true
-allowed-tools: Read, Bash, AskUserQuestion
+allowed-tools: Read, Bash, AskUserQuestion, mcp__rapid__webui_ask_user
 ---
 
 # /rapid:assumptions -- Surface Set Assumptions for Developer Review
 
 You are the RAPID assumptions reviewer. This skill surfaces Claude's mental model about how a set will be implemented, so the developer can catch misunderstandings before execution begins. This skill is **read-only** -- it reviews set definitions and contracts but never modifies them. Follow these steps IN ORDER.
+
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge; otherwise the built-in tool is used. The if/else branches at each call site make both modes explicit.
 
 ## Step 1: Identify Target Set
 
@@ -45,10 +47,23 @@ Parse the JSON output. The response contains `availableSets` (array of set names
 - If the `availableSets` array is empty or the command errors with "No sets found": Display this message and end the skill:
   > No sets have been defined yet. Run `/rapid:plan` first to decompose the project into sets.
 
-- If sets exist and there are **4 or fewer**: Use AskUserQuestion with:
-  - question: "Select set"
-  - Options: Each set name as an option label (no consequence description needed since options are just names)
-  - Add an "Other" option with description "Type a set name manually"
+- If sets exist and there are **4 or fewer**:
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: route through the web bridge.
+    # Call mcp__rapid__webui_ask_user with:
+    #   question: "Select set"
+    #   options: [each set name, plus "Other"]
+    #   allow_free_text: true
+    # Wait for the answer, then continue as below.
+  else
+    # CLI mode: use the built-in tool exactly as before.
+    # Use AskUserQuestion with:
+    # - question: "Select set"
+    # - Options: Each set name as an option label (no consequence description needed since options are just names)
+    # - Add an "Other" option with description "Type a set name manually"
+  fi
+  ```
 
   Map the user's selection to a set name. If they select "Other", ask them in plain text: "Which set would you like to review?" and accept their input.
 
@@ -111,14 +126,26 @@ Present the assumptions exactly as surfaced by the CLI. Do not add interpretatio
 
 ## Step 4: Developer Feedback
 
-After presenting assumptions, use AskUserQuestion to collect feedback:
+After presenting assumptions, use AskUserQuestion to collect feedback (when `RAPID_RUN_MODE=sdk`, this routes to `mcp__rapid__webui_ask_user`):
 
-Use AskUserQuestion with:
-- question: "Assumptions"
-- Options:
-  - "Correct assumptions" -- "Describe what needs to change -- you will need to re-run /rapid:plan to modify set definitions"
-  - "Note for execution" -- "Add notes to the set's DEFINITION.md for the executor to see during implementation"
-  - "Looks good" -- "Assumptions are correct, proceed with confidence"
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "Assumptions"
+  #   options: ["Correct assumptions", "Note for execution", "Looks good"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with:
+  # - question: "Assumptions"
+  # - Options:
+  #   - "Correct assumptions" -- "Describe what needs to change -- you will need to re-run /rapid:plan to modify set definitions"
+  #   - "Note for execution" -- "Add notes to the set's DEFINITION.md for the executor to see during implementation"
+  #   - "Looks good" -- "Assumptions are correct, proceed with confidence"
+fi
+```
 
 Wait for the developer's response.
 
@@ -137,11 +164,24 @@ Suggest they add notes directly to the set's DEFINITION.md file:
 End the skill.
 
 **If the developer selects "Looks good":**
-Show a SECOND AskUserQuestion with:
-- question: "Continue"
-- Options:
-  - "Review another set" -- "Go back to set selection"
-  - "Done" -- "Finish reviewing assumptions"
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "Continue"
+  #   options: ["Review another set", "Done"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Show a SECOND AskUserQuestion with:
+  # - question: "Continue"
+  # - Options:
+  #   - "Review another set" -- "Go back to set selection"
+  #   - "Done" -- "Finish reviewing assumptions"
+fi
+```
 
 - If **Review another set**: Loop back to Step 1 set selection (re-run the assumptions listing and present the set selection prompt again).
 - If **Done**: Display "Assumptions review complete." and end the skill.
