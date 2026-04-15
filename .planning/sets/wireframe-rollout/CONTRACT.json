@@ -1,0 +1,8 @@
+{
+  "setId": "wireframe-rollout",
+  "milestone": "v7.0.0",
+  "created": "2026-04-15",
+  "exports": { "functions": [], "types": [] },
+  "imports": { "functions": [], "types": [] },
+  "fileOwnership": []
+}

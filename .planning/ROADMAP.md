@@ -25,7 +25,7 @@
 - **v6.1.0 UX & Onboarding** — 7 sets (shipped 2026-04-07)
 - **v6.2.0 DX Refinements** — 5 sets (shipped 2026-04-08)
 - **v6.3.0 Mission Control & Fixes** — 7 sets (shipped 2026-04-15)
-- **v7.0.0 Mission Control Autopilot** — 5 sets (in progress)
+- **v7.0.0 Mission Control Autopilot** — 6 sets (in progress)
 
 ## Active Milestone: v7.0.0 — Mission Control Autopilot
 
@@ -56,19 +56,27 @@ Build a Python-native agent control plane in-process in the existing FastAPI Mis
 **Scope:** New frontend routes `/agents`, `/agents/:runId`, `/chats`, `/chats/:threadId`; sidebar `NAV_ITEMS` extension with `ga` / `gh` keyboard shortcuts (grouped with Kanban under driver surfaces, separated from observer surfaces); `AgentsPage` (runs list with filters + launcher entry), `AgentRunPage` (status pill `RUNNING / 00:04:32` + live activity feed + pause/stop controls + cost/token/duration telemetry + inline tool-call cards with spinner-checkmark-duration-expandable args/result + NO composer); `ChatsPage` thread list + `ChatThreadPage` with persistent bottom composer, streaming cursor, inline tool-call cards, inline structured-question forms for `can_use_tool` prompts; `useAgentEvents` hook with SSE primary + polling fallback (2-5s); `useChats` hook; chat persistence schema (`chat`, `chat_message`, optional `chat_attachments` stubbed nullable) + Alembic migration + `chat_service.py` + `/api/chats` routes; ARIA live regions for streaming content, `aria-busy` during token streams, focus-trapped approval modals, keyboard-accessible pause/stop/approve (`Shift+P`/`Shift+S`), `prefers-reduced-motion` respect, auto-scroll opt-out, WCAG AA color contrast; empty-state onboarding on both tabs explaining chat-vs-run distinction with 3 example actions; deep-linkable routes; consolidated dashboard endpoint to reduce React Query thundering herd; Vite dev-proxy config for SSE (`vite.config.ts`). Replaces the provisional `/runs` page from Set A.
 **Dependencies:** agent-runtime-foundation (SSE event schema + agent_run queries + run dispatch); web-tool-bridge (rich chat with pending-question UI + approval modal triad); skill-invocation-ui (launcher modal embedded in AgentsPage)
 
+### Set 6: Wireframe Rollout
+**Branch:** `set/wireframe-rollout`
+**Scope:** Apply the newly branded wireframe (produced via the `/rapid:branding` skill) across the Mission Control frontend shell AND rewrite the `CONTRACT.json` files for every pending downstream set in this milestone so their exports/imports/file-ownership reflect the new UI structure. Deliverables: updated `web/frontend/**` (layout, theme, routing, top-level components, design tokens, shared primitives), rewritten `.planning/sets/{web-tool-bridge,skill-invocation-ui,kanban-autopilot,agents-chats-tabs}/CONTRACT.json` aligned to the redesigned surfaces, and targeted `DEFINITION.md` updates on downstream sets whose UI scope shifted materially. This set is the rollout vehicle for the redesign: it makes the wireframe real in code, then propagates the design's implications through the planning artifacts so downstream sets execute against the new shape instead of the pre-redesign contracts.
+**Dependencies:** agent-runtime-foundation (backend runtime the redesigned frontend consumes). Blocks (soft): web-tool-bridge, skill-invocation-ui, kanban-autopilot, agents-chats-tabs — those sets will consume the rewritten contracts and should declare `wireframe-rollout` as a dep when planned.
+
 ## Dependency Graph
 
 ```
 agent-runtime-foundation (must go first; gates all others)
   |
-  +-- web-tool-bridge ---------+
-  |                            |
-  +-- skill-invocation-ui -----+--> agents-chats-tabs
-  |
-  +-- kanban-autopilot (independent of B/C/E)
+  +-- wireframe-rollout (rewrites downstream CONTRACT.json; lands before B/C/D/E)
+  |     |
+  |     +-- web-tool-bridge ---------+
+  |     |                            |
+  |     +-- skill-invocation-ui -----+--> agents-chats-tabs
+  |     |
+  |     +-- kanban-autopilot (independent of B/C/E)
 ```
 
 - `agent-runtime-foundation` gates everything.
+- `wireframe-rollout` lands next, applying the new branded wireframe and rewriting contracts for sets B-E so they execute against the redesign.
 - `web-tool-bridge` and `skill-invocation-ui` are parallel-compatible (runtime-side vs pre-dispatch-side).
 - `kanban-autopilot` and `agents-chats-tabs` are parallel-compatible.
 - `agents-chats-tabs` soft-depends on `web-tool-bridge` for the chat UI's pending-question flow; the agents list/run-detail view alone could ship against the foundation.
@@ -81,7 +89,8 @@ agent-runtime-foundation (must go first; gates all others)
 | web-tool-bridge | `mcp__rapid__webui_ask_user` MCP tool, `mcp__rapid__ask_free_text` MCP tool, `agent_prompts` table, `POST /api/agents/runs/{id}/answer` endpoint, `<AskUserModal>` + `<PermissionPrompt>` + `<ApprovalModal>` React components, prompt-id mint+timeout+409 protocol, patched skill prose for 9 interactive skills | `build_sdk_options()`, `can_use_tool` callback hook, `EventBus`, SSE event schema (ask_user / permission_req events), `agent_run` SQLModel, `RAPID_RUN_MODE` env var (from agent-runtime-foundation) |
 | skill-invocation-ui | Extended SKILL.md frontmatter schema (`args:` block), `GET /api/skills` + `GET /api/skills/{name}` catalog endpoints, `skill_catalog_service.py`, `<SkillLauncher>` + `<RunLauncher>` React components + typed form generator, precondition-check endpoint, sanitized-args contract (`<user_input>` delimiters + length limits) | `POST /api/agents/runs` dispatch endpoint, `build_sdk_options()` helper signature, `skill_runner` contract (from agent-runtime-foundation) |
 | kanban-autopilot | Kanban v2 schema (`created_by`, `locked_by_run_id`, `completed_by_run_id`, `agent_status`, `metadata`, `agent_run_id` FK; `is_autopilot` flag on KanbanColumn), Kanban MCP tools (list/get/add/move/update/comment as `@tool`), `autopilot_worker.py` lifespan service, `skills/autopilot/SKILL.md`, card-to-skill routing contract, commit-trailer traceability (`Autopilot-Card-Id:`) | `create_sdk_mcp_server` integration point, `AgentSessionManager`, `build_sdk_options()` helper, `agent_run` FK target, `run_id` correlation contract (from agent-runtime-foundation) |
-| agents-chats-tabs | `/agents` + `/agents/:runId` + `/chats` + `/chats/:threadId` routes, sidebar `ga`/`gh` nav entries, `AgentsPage` + `AgentRunPage` + `ChatsPage` + `ChatThreadPage` React pages, `useAgentEvents` + `useChats` hooks, `chat` + `chat_message` SQLModels, `chat_service.py`, `/api/chats` REST endpoints, consolidated dashboard endpoint, Vite SSE proxy config, inline tool-call card + status-pill + approval-modal integration | `GET /api/agents/runs` + SSE `/events` + `POST /interrupt` (from agent-runtime-foundation), SSE event schema, `<AskUserModal>` + `<PermissionPrompt>` + `<ApprovalModal>` (from web-tool-bridge), `<SkillLauncher>` + `GET /api/skills` (from skill-invocation-ui) |
+| agents-chats-tabs | `/agents` + `/agents/:runId` + `/chats` + `/chats/:threadId` routes, sidebar `ga`/`gh` nav entries, `AgentsPage` + `AgentRunPage` + `ChatsPage` + `ChatThreadPage` React pages, `useAgentEvents` + `useChats` hooks, `chat` + `chat_message` SQLModels, `chat_service.py`, `/api/chats` REST endpoints, consolidated dashboard endpoint, Vite SSE proxy config, inline tool-call card + status-pill + approval-modal integration | `GET /api/agents/runs` + SSE `/events` + `POST /interrupt` (from agent-runtime-foundation), SSE event schema, `<AskUserModal>` + `<PermissionPrompt>` + `<ApprovalModal>` (from web-tool-bridge), `<SkillLauncher>` + `GET /api/skills` (from skill-invocation-ui), frontend shell + design tokens + component primitives (from wireframe-rollout) |
+| wireframe-rollout | Redesigned `web/frontend/**` layout, theme, routing, top-level components, design tokens, shared component primitives from the new branded wireframe; rewritten `CONTRACT.json` for `web-tool-bridge` + `skill-invocation-ui` + `kanban-autopilot` + `agents-chats-tabs` aligned to the redesigned UI surfaces; targeted `DEFINITION.md` edits on downstream sets where UI scope shifted | `app/agents/*` HTTP + SSE surface (from agent-runtime-foundation) — the redesigned frontend consumes these endpoints |
 
 ## Notes
 
@@ -90,4 +99,5 @@ agent-runtime-foundation (must go first; gates all others)
 - No scaffold report is present; there is no shared baseline of generated files to exclude from set ownership.
 - Team size is 1 (solo developer), so no foundation set and no Developer Groups section are included.
 - Five load-bearing foundations live in Set 1 because their retrofit cost is very high: run mutex (SQLite unique constraint + semaphore), logging substrate with `run_id` correlation, authentication model (localhost-only + optional bearer token), tool shim compatibility audit (all 30 skills), and the centralized SDK option-construction helper.
+- Set 6 (`wireframe-rollout`) was added mid-milestone (2026-04-15) after a UI redesign via the `/rapid:branding` skill produced a new wireframe. It rolls the wireframe into code AND rewrites the pending downstream sets' contracts so they execute against the redesigned surfaces rather than the pre-redesign shape.
 
