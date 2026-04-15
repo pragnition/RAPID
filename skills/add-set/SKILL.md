@@ -1,6 +1,6 @@
 ---
 description: Add a new set to an existing project mid-milestone with discovery and contract generation
-allowed-tools: Bash(rapid-tools:*), AskUserQuestion, Read, Write, Glob, Grep
+allowed-tools: Bash(rapid-tools:*), AskUserQuestion, mcp__rapid__webui_ask_user, Read, Write, Glob, Grep
 ---
 
 # /rapid:add-set -- Add Set Mid-Milestone
@@ -8,6 +8,8 @@ allowed-tools: Bash(rapid-tools:*), AskUserQuestion, Read, Write, Glob, Grep
 You are the RAPID set adder. This skill adds a new set to the current milestone through a lightweight interactive discovery flow. It creates a set directory with DEFINITION.md and CONTRACT.json, updates STATE.json and ROADMAP.md, and suggests `/rapid:start-set` as the next action.
 
 Follow these steps IN ORDER. Do not skip steps. This is a lightweight interactive command -- no subagent spawns.
+
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge (free-form prompts use a dedicated MCP tool); otherwise the built-in tool is used. The if/else branches at each call site make both modes explicit.
 
 ## Step 0: Environment Setup + Banner
 
@@ -91,18 +93,42 @@ Source: {source}
 ---------------------------------
 ```
 
-Use AskUserQuestion to confirm:
-
-> "A remediation artifact was found from {source}. Use this to pre-populate the new set?"
-> Options: ["Yes -- use artifact", "No -- start fresh"]
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "A remediation artifact was found from {source}. Use this to pre-populate the new set?"
+  #   options: ["Yes -- use artifact", "No -- start fresh"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion to confirm:
+  # > "A remediation artifact was found from {source}. Use this to pre-populate the new set?"
+  # > Options: ["Yes -- use artifact", "No -- start fresh"]
+fi
+```
 
 - If "Yes": Set `SET_SCOPE = artifact.scope`, `SET_FILES_AND_DEPS = "Files: " + artifact.files.join(", ") + " | Deps: " + artifact.deps.join(", ")`, and `ARTIFACT_SET_NAME = artifact.setName`. Skip Step 2 (interactive discovery) and proceed to Step 3 with the artifact's set name pre-filled.
 - If "No": Proceed to Step 2 as normal.
 
-**If PENDING_ARTIFACTS is more than 1:** Read all artifact files. Present a selection list using AskUserQuestion:
+**If PENDING_ARTIFACTS is more than 1:** Read all artifact files. Present a selection list:
 
-> "Multiple remediation artifacts found. Which one should be used for this set?"
-> Options: One option per artifact formatted as "{setName} -- {scope} ({severity})" plus a final "None -- start fresh" option.
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "Multiple remediation artifacts found. Which one should be used for this set?"
+  #   options: [one per artifact "{setName} -- {scope} ({severity})", plus "None -- start fresh"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Present a selection list using AskUserQuestion:
+  # > "Multiple remediation artifacts found. Which one should be used for this set?"
+  # > Options: One option per artifact formatted as "{setName} -- {scope} ({severity})" plus a final "None -- start fresh" option.
+fi
+```
 
 - If user selects an artifact: Pre-populate as described above for the single-artifact case.
 - If user selects "None -- start fresh": Proceed to Step 2 as normal.
@@ -115,15 +141,37 @@ Record `CONSUMED_ARTIFACT_NAME` (the setName of the consumed artifact, or null i
 
 Ask the user 2 focused questions to understand the new set's scope.
 
-**Question 1** -- Use AskUserQuestion (freeform):
+**Question 1**:
 
-> "What should this new set accomplish? Describe the scope, goals, and key deliverables."
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What should this new set accomplish? Describe the scope, goals, and key deliverables."
+  # Wait for the free-form text answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion (freeform):
+  # > "What should this new set accomplish? Describe the scope, goals, and key deliverables."
+fi
+```
 
 Record the answer as `SET_SCOPE`.
 
-**Question 2** -- Use AskUserQuestion (freeform):
+**Question 2**:
 
-> "What files or areas of the codebase will this set modify? Are there dependencies on existing sets?"
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What files or areas of the codebase will this set modify? Are there dependencies on existing sets?"
+  # Wait for the free-form text answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion (freeform):
+  # > "What files or areas of the codebase will this set modify? Are there dependencies on existing sets?"
+fi
+```
 
 Record the answer as `SET_FILES_AND_DEPS`.
 
@@ -138,17 +186,39 @@ Derive a kebab-case set ID from the user's scope description:
 - Convert to lowercase, hyphen-separated
 - Truncate to a reasonable length (e.g., "add payment processing" -> "payment-processing")
 
-Display the proposed set ID. Use AskUserQuestion:
+Display the proposed set ID.
 
 ```
-"Use set ID '{proposed-id}'?"
-Options:
-- "Yes" -- "Use this set ID"
-- "Custom ID" -- "I'll provide a different ID"
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "Use set ID '{proposed-id}'?"
+  #   options: ["Yes", "Custom ID"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion:
+  # "Use set ID '{proposed-id}'?"
+  # Options:
+  # - "Yes" -- "Use this set ID"
+  # - "Custom ID" -- "I'll provide a different ID"
+fi
 ```
 
 - If "Yes": Use the proposed ID.
-- If "Custom ID": Use AskUserQuestion (freeform): "Enter your preferred set ID (kebab-case):" and use the user's input.
+- If "Custom ID":
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: route through the web bridge.
+    # Call mcp__rapid__ask_free_text with:
+    #   question: "Enter your preferred set ID (kebab-case):"
+    # Wait for the free-form text answer, then use it.
+  else
+    # CLI mode: use the built-in tool exactly as before.
+    # Use AskUserQuestion (freeform): "Enter your preferred set ID (kebab-case):" and use the user's input.
+  fi
+  ```
 
 ### Validate Uniqueness
 
@@ -162,7 +232,19 @@ echo "$STATE_JSON"
 
 Parse the JSON and check if any existing set has the same ID.
 
-**If duplicate:** Display: "Set ID '{SET_ID}' already exists. Please choose a different ID." Use AskUserQuestion (freeform) to get a new ID. Re-validate until unique.
+**If duplicate:** Display: "Set ID '{SET_ID}' already exists. Please choose a different ID."
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "Enter a different set ID (kebab-case):"
+  # Wait for the free-form text answer, then re-validate.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion (freeform) to get a new ID. Re-validate until unique.
+fi
+```
 
 Record `SET_ID` for subsequent steps.
 
