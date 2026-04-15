@@ -3,6 +3,7 @@ export interface KeyBinding {
   ctrl?: boolean;
   shift?: boolean;
   alt?: boolean;
+  meta?: boolean;
   description: string;
   category: KeyCategory;
   action: () => void;

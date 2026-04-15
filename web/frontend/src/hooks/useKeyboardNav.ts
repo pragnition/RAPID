@@ -17,6 +17,7 @@ function matchesBinding(e: KeyboardEvent, b: KeyBinding): boolean {
   if (!!b.ctrl !== e.ctrlKey) return false;
   if (!!b.shift !== e.shiftKey) return false;
   if (!!b.alt !== e.altKey) return false;
+  if (!!b.meta !== e.metaKey) return false;
   if (b.when && !b.when()) return false;
   return true;
 }
