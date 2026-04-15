@@ -2,7 +2,7 @@
   "version": 1,
   "rapidVersion": "6.3.0",
   "projectName": "RAPID",
-  "currentMilestone": "v6.3.0",
+  "currentMilestone": "v7.0.0",
   "milestones": [
     {
       "id": "v1.0",
@@ -715,8 +715,50 @@
           "waves": []
         }
       ]
+    },
+    {
+      "id": "v7.0.0",
+      "name": "Mission Control Autopilot",
+      "sets": [
+        {
+          "id": "agent-runtime-foundation",
+          "status": "discussed",
+          "waves": [],
+          "name": "Agent Runtime Foundation",
+          "branch": "set/agent-runtime-foundation"
+        },
+        {
+          "id": "web-tool-bridge",
+          "status": "pending",
+          "waves": [],
+          "name": "Web Tool Bridge",
+          "branch": "set/web-tool-bridge"
+        },
+        {
+          "id": "skill-invocation-ui",
+          "status": "pending",
+          "waves": [],
+          "name": "Skill Invocation UI",
+          "branch": "set/skill-invocation-ui"
+        },
+        {
+          "id": "kanban-autopilot",
+          "status": "pending",
+          "waves": [],
+          "name": "Kanban Autopilot",
+          "branch": "set/kanban-autopilot"
+        },
+        {
+          "id": "agents-chats-tabs",
+          "status": "pending",
+          "waves": [],
+          "name": "Agents + Chats Tabs",
+          "branch": "set/agents-chats-tabs"
+        }
+      ],
+      "status": "active"
     }
   ],
-  "lastUpdatedAt": "2026-04-09T07:44:26.284Z",
+  "lastUpdatedAt": "2026-04-15T06:25:42.207Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
