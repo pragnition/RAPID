@@ -1,6 +1,6 @@
 {
   "setId": "skill-invocation-ui",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "exports": {
     "skill_args_frontmatter_schema": {
       "type": "file",
@@ -20,12 +20,13 @@
     "skill_launcher_component": {
       "type": "file",
       "signature": "<SkillLauncher skillName=string />; <RunLauncher /> (modal wrapper)",
-      "description": "React component + typed form generator. Renders typed inputs per arg schema (string, choice as dropdown, bool as switch, multi-line as textarea, set-ref as set picker from .planning/). Dedicated 'Skip discuss' toggle for applicable skills. Submits to POST /api/agents/runs from agent-runtime-foundation."
+      "description": "Launcher modal composed from wireframe-rollout Wave 1 primitives: PageHeader sits at the modal top (title=skill name, description=skill tagline, action slot for submit button), StructuredQuestion renders choice/bool args as radio groups, the Composer-pattern textarea handles multi-line args, SearchInput drives set-ref arg pickers against .planning/ paths, and ErrorCard renders precondition blockers inline. The primary Submit button uses the bg-accent text-bg-0 token pairing. Cites .planning/branding/components.html (form patterns) and BRANDING.md section chat-surface, Structured-question form subsection. Submits to POST /api/agents/runs from agent-runtime-foundation."
     },
-    "skill_gallery_page": {
+    "skill_gallery_component": {
       "type": "file",
-      "signature": "AgentsPage's 'Launch New Run' tab renders <SkillGallery /> with category filters (autonomous / interactive / human-in-loop)",
-      "description": "Gallery UI listing all dispatchable skills. Each card shows name, description, arg count, complexity hints. Click opens SkillLauncher modal."
+      "signature": "<SkillGallery skills={SkillMeta[]} filters={GalleryFilters} onPick={(skill) => void} />",
+      "description": "Gallery component (not a page) consumed inside AgentsPage's 'Launch New Run' tab and inside ChatsPage's 'New Chat' flow. Composes the StatCard grid pattern from .planning/branding/wireframe.html section 01 stat-card grid (lines 307-325) to show per-category counts, uses PageHeader at the modal top, and supports arrow-key navigation per BRANDING.md section interaction-patterns. Each card shows name, description, arg count, and complexity hints; click opens SkillLauncher modal. Category filters: autonomous / interactive / human-in-loop.",
+      "_redesign_rename": "was skill_gallery_page; gallery is now a component consumed by AgentsPage and ChatsPage, not a top-level route"
     },
     "sanitized_args_contract": {
       "type": "function",
@@ -35,7 +36,7 @@
     "precondition_check_endpoint": {
       "type": "endpoint",
       "signature": "POST /api/skills/{name}/check-preconditions {project_id, args} -> {ok: bool, blockers: [...]}",
-      "description": "Pre-dispatch validation. Returns human-readable blockers (e.g. 'execute-set requires a plan'). Launcher disables Submit button and surfaces blockers inline."
+      "description": "Pre-dispatch validation. Returns human-readable blockers. The launcher disables its Submit button and renders blockers via the ErrorCard primitive from wireframe-rollout, per BRANDING.md section chat-surface, Error card subsection. Server-side second check also rejects with 400 to handle race. Backend contract is unchanged from v1.0.0; only the UI rendering of blockers changed."
     }
   },
   "imports": {
@@ -83,6 +84,10 @@
     "frontmatter_schema_validated": {
       "description": "Frontmatter is validated by a Zod-equivalent Python schema at startup. Invalid frontmatter = loud startup error, not silent omission.",
       "enforced_by": "runtime"
+    },
+    "adopts_wireframe_primitives": {
+      "description": "SkillLauncher and SkillGallery compose components from web/frontend/src/components/primitives/ introduced by the wireframe-rollout set (StructuredQuestion, PageHeader, StatCard, SearchInput, ErrorCard). This set does not introduce new primitives; it consumes them.",
+      "enforced_by": "review"
     }
   }
 }
