@@ -19,3 +19,7 @@ export { PageHeader, type PageHeaderProps } from "./PageHeader";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { StatCard, type StatCardProps, type StatCardTone } from "./StatCard";
 export { NavGroup, type NavGroupProps } from "./NavGroup";
+
+// Data
+export { DataTable, type DataTableProps, type Column } from "./DataTable";
+export { SearchInput, type SearchInputProps } from "./SearchInput";
