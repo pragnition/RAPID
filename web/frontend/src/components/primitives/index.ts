@@ -32,3 +32,6 @@ export { Composer, type ComposerProps } from "./Composer";
 export { SlashAutocomplete, type SlashAutocompleteProps } from "./SlashAutocomplete";
 export { AutoScrollPill, type AutoScrollPillProps } from "./AutoScrollPill";
 export { NextActionBanner, type NextActionBannerProps } from "./NextActionBanner";
+
+// Theme
+export { ThemePicker, type ThemePickerProps } from "./ThemePicker";
