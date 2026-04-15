@@ -1,13 +1,15 @@
 ---
 description: Capture developer implementation vision for a set via structured discussion or auto-generate context with --skip
-allowed-tools: Bash(rapid-tools:*), Read, Write, AskUserQuestion, Glob, Grep, Agent
+allowed-tools: Bash(rapid-tools:*), Read, Write, AskUserQuestion, mcp__rapid__webui_ask_user, Glob, Grep, Agent
 ---
 
 # /rapid:discuss-set -- Set Discussion
 
 You are the RAPID set discussion facilitator. This skill captures developer implementation vision for a SET (not a wave) before autonomous planning begins.
 
-Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion at every decision point.
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge; otherwise the built-in tool is used. The if/else branches at each call site (and inline annotations on narrative mentions) make both modes explicit.
+
+Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion at every decision point (in sdk mode: routes to `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
 
 ## Step 1: Environment Setup + Banner
 
@@ -72,13 +74,24 @@ Parse the JSON to find the resolved set within the current milestone. Extract `M
 ### Status Check
 
 - **If `pending`:** Proceed normally to Step 3.
-- **If `discussed`:** Use AskUserQuestion:
+- **If `discussed`:**
   ```
-  "Set '{SET_ID}' already has a discussion in progress. What would you like to do?"
-  Options:
-  - "Re-discuss" -- "Start a fresh discussion (will overwrite existing CONTEXT.md)"
-  - "View existing context" -- "Read the current CONTEXT.md"
-  - "Cancel" -- "Return without changes"
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: route through the web bridge.
+    # Call mcp__rapid__webui_ask_user with:
+    #   question: "Set '{SET_ID}' already has a discussion in progress. What would you like to do?"
+    #   options: ["Re-discuss", "View existing context", "Cancel"]
+    #   allow_free_text: false
+    # Wait for the answer, then continue as below.
+  else
+    # CLI mode: use the built-in tool exactly as before.
+    # Use AskUserQuestion:
+    # "Set '{SET_ID}' already has a discussion in progress. What would you like to do?"
+    # Options:
+    # - "Re-discuss" -- "Start a fresh discussion (will overwrite existing CONTEXT.md)"
+    # - "View existing context" -- "Read the current CONTEXT.md"
+    # - "Cancel" -- "Return without changes"
+  fi
   ```
   If "View existing context": Read and display `.planning/sets/${SET_ID}/CONTEXT.md`, then STOP.
   If "Cancel": STOP.
@@ -182,9 +195,9 @@ Each gray area MUST have a title and a 1-sentence description.
 
 ### Presenting Gray Areas (Consolidated)
 
-Present gray areas using AskUserQuestion. All batches are packed into a SINGLE AskUserQuestion call with multiple questions (one question per batch of 4):
+Present gray areas using AskUserQuestion. All batches are packed into a SINGLE AskUserQuestion call with multiple questions (one question per batch of 4) (in sdk mode: use `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 
-**For n=1 (4 gray areas):** One AskUserQuestion call with 1 question:
+**For n=1 (4 gray areas):** One AskUserQuestion call with 1 question (sdk mode: one `mcp__rapid__webui_ask_user` call when `RAPID_RUN_MODE=sdk`):
 
 ```
 "I've analyzed set '{SET_ID}' and identified 4 areas that would benefit from your input.
@@ -196,7 +209,7 @@ Options (multiSelect: true):
 4. "{Gray area 4 title}" -- "{1-sentence description}"
 ```
 
-**For n=2 (5-8 gray areas):** One AskUserQuestion call with 2 questions:
+**For n=2 (5-8 gray areas):** One AskUserQuestion call with 2 questions (sdk mode: one `mcp__rapid__webui_ask_user` call when `RAPID_RUN_MODE=sdk`):
 
 ```
 "I've analyzed set '{SET_ID}' and identified 8 areas that would benefit from your input.
@@ -207,7 +220,7 @@ Question 2 (multiSelect: true): "Integration & Boundaries"
 Options 1-4: {next 4 gray areas}
 ```
 
-**For n=3 (9+ gray areas):** One AskUserQuestion call with 3 questions. Use descriptive category labels for each question (e.g., "Core Architecture", "Integration & Boundaries", "UX & Presentation").
+**For n=3 (9+ gray areas):** One AskUserQuestion call with 3 questions (sdk mode: one `mcp__rapid__webui_ask_user` call when `RAPID_RUN_MODE=sdk`). Use descriptive category labels for each question (e.g., "Core Architecture", "Integration & Boundaries", "UX & Presentation").
 
 ### Handling Responses
 
@@ -219,9 +232,9 @@ Options 1-4: {next 4 gray areas}
 
 ## Step 6: Deep-Dive Selected Areas (Rich Question Format)
 
-For EACH selected gray area (in order), prepare minimally 2 questions. For each batch of 4 questions, ask a SEPARATE AskUserQuestion with the batch of questions. EACH question should only ask the user about ONE thing. The user should not be thinking about multiple decisions within the same question.
+For EACH selected gray area (in order), prepare minimally 2 questions. For each batch of 4 questions, ask a SEPARATE AskUserQuestion with the batch of questions (sdk mode: SEPARATE `mcp__rapid__webui_ask_user` call when `RAPID_RUN_MODE=sdk`). EACH question should only ask the user about ONE thing. The user should not be thinking about multiple decisions within the same question.
 
-For example, if we have a gray area with 3 questions, we should ask one AskUserQuestion with the 3 questions within the same prompt. If we had 7 questions, then we would ask 2 AskUserQuestions, with 4 and 3 questions respectively.
+For example, if we have a gray area with 3 questions, we should ask one AskUserQuestion with the 3 questions within the same prompt. If we had 7 questions, then we would ask 2 AskUserQuestions, with 4 and 3 questions respectively (sdk mode: substitute `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
 
 Choose the most appropriate question format per question from the three formats below:
 
@@ -299,7 +312,7 @@ When the model has a clear recommendation, tag the option with `(Recommended)` i
 
 ### Context Length Guardrail
 
-Each question's context block (the text inside the AskUserQuestion prompt) should be 2-5 sentences. Tables and key-factor lists do not count toward this limit but should be kept concise.
+Each question's context block (the text inside the AskUserQuestion prompt, or the `mcp__rapid__webui_ask_user` question field when `RAPID_RUN_MODE=sdk`) should be 2-5 sentences. Tables and key-factor lists do not count toward this limit but should be kept concise.
 
 ### Recording Responses
 
@@ -311,7 +324,7 @@ Each question's context block (the text inside the AskUserQuestion prompt) shoul
 After ALL selected areas are discussed:
 
 - Compile follow-up questions if gaps in your understanding of the user's intentions remain after all areas were covered.
-- If gaps exist: Continue to prompt the user using AskUserQuestion with remaining questions until you are FULLY satisfied.
+- If gaps exist: Continue to prompt the user using AskUserQuestion with remaining questions until you are FULLY satisfied (sdk mode: use `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
 - If no gaps: Skip follow-up entirely.
 
 ---
@@ -472,7 +485,7 @@ Show what is done, what failed, and what to run next.
 - **Variable gray area count (4n):** Gray area count scales with set complexity in multiples of 4. The task count in CONTRACT.json drives the heuristic; the model may adjust based on overall complexity.
 - **Architect-level focus:** Gray areas target system architecture, integration boundaries, and UI/UX decisions. Never ask about specific coding patterns, library choices, or implementation details.
 - **Rich question context:** Each question provides 2-5 sentences of context with pros/cons or key factors. Use the most appropriate format (option descriptions, preview panels, or context blocks) per question.
-- **Consolidated questions with options:** Present all gray area batches as questions within a single AskUserQuestion call. Each question has prefilled options including "Claude decides".
+- **Consolidated questions with options:** Present all gray area batches as questions within a single AskUserQuestion call (sdk mode: single `mcp__rapid__webui_ask_user` call when `RAPID_RUN_MODE=sdk`). Each question has prefilled options including "Claude decides".
 - **"Claude decides" option:** Available as a prefilled option per question. Unselected gray areas in Step 5 automatically default to Claude's discretion.
 - **Deferred decisions:** Out-of-scope ideas raised during discussion are captured in DEFERRED.md, never silently dropped.
 - **Backlog capture:** When out-of-scope feature ideas emerge during discussion that are too concrete for DEFERRED.md (which tracks deferred decisions), suggest using `/rapid:backlog` to capture them as backlog items for future milestone review.
@@ -494,6 +507,6 @@ Show what is done, what failed, and what to run next.
 - Do NOT ask implementation-level questions (library choices, coding patterns, function signatures) -- keep gray areas at the architecture and UX level.
 - Do NOT present questions without inline context -- every question must include 2-5 sentences of context explaining the tradeoff.
 - Do NOT silently drop out-of-scope ideas -- capture them in DEFERRED.md.
-- Do NOT use freeform text in AskUserQuestion -- each question must have prefilled multiSelect options. Gray area batches are packed as structured questions within a single call, not as freeform prompts.
+- Do NOT use freeform text in AskUserQuestion (or `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`) -- each question must have prefilled multiSelect options. Gray area batches are packed as structured questions within a single call, not as freeform prompts.
 - Do NOT present "Let Claude decide all" as a checkbox option -- use the implicit unselected model instead.
 - Do NOT prompt for every implementation detail -- capture vision/what, not implementation/how.
