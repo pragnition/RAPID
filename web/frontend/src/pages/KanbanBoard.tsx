@@ -26,6 +26,7 @@ import { KanbanColumn } from "@/components/kanban/KanbanColumn";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { AddColumnButton } from "@/components/kanban/AddColumnButton";
 import { CardDetailModal } from "@/components/kanban/CardDetailModal";
+import { PageHeader, EmptyState } from "@/components/primitives";
 
 export function KanbanBoard() {
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
@@ -195,22 +196,27 @@ export function KanbanBoard() {
 
   if (!activeProjectId) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Kanban Board</h1>
-        <div className="bg-surface-1 border border-border rounded-lg p-8 text-center">
-          <p className="text-muted text-lg">
-            Select a project to view its kanban board
-          </p>
-        </div>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Kanban"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Kanban" }]}
+        />
+        <EmptyState
+          title="No project selected"
+          description="Select a project to view its kanban board."
+        />
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Kanban Board</h1>
-        <p className="text-muted mb-6">Loading board...</p>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Kanban"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Kanban" }]}
+          description="Loading board..."
+        />
         <LoadingSkeleton />
       </div>
     );
@@ -218,36 +224,35 @@ export function KanbanBoard() {
 
   if (isError) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Kanban Board</h1>
-        <div className="bg-surface-1 border border-border rounded-lg p-6 text-center">
-          <p className="text-error mb-3">
-            Failed to load board{error?.detail ? `: ${error.detail}` : ""}
-          </p>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="
-              px-4 py-2 text-sm font-medium
-              bg-accent text-bg-0 rounded
-              hover:opacity-90 transition-opacity
-            "
-          >
-            Retry
-          </button>
-        </div>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Kanban"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Kanban" }]}
+        />
+        <EmptyState
+          title="Failed to load board"
+          description={error?.detail ?? undefined}
+          actions={
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="px-4 py-2 text-sm font-medium bg-accent text-bg-0 rounded hover:opacity-90"
+            >
+              Retry
+            </button>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold text-fg">Kanban Board</h1>
-        <p className="text-muted text-sm mt-1">
-          {data?.columns.length ?? 0} columns
-        </p>
-      </div>
+    <div className="p-6 h-full flex flex-col gap-4">
+      <PageHeader
+        title="Kanban"
+        breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Kanban" }]}
+        description={`${data?.columns.length ?? 0} columns`}
+      />
 
       <DndContext
         sensors={sensors}
