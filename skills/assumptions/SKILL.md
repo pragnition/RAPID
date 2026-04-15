@@ -1,8 +1,25 @@
 ---
 description: Surface Claude's mental model and assumptions about a set before execution begins
 disable-model-invocation: true
-allowed-tools: Read, Bash, AskUserQuestion, mcp__rapid__webui_ask_user
+allowed-tools: Read, Bash
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:assumptions -- Surface Set Assumptions for Developer Review
 
@@ -126,7 +143,7 @@ Present the assumptions exactly as surfaced by the CLI. Do not add interpretatio
 
 ## Step 4: Developer Feedback
 
-After presenting assumptions, use AskUserQuestion to collect feedback (when `RAPID_RUN_MODE=sdk`, this routes to `mcp__rapid__webui_ask_user`):
+After presenting assumptions, collect developer feedback:
 
 ```
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
@@ -144,6 +161,17 @@ else
   #   - "Correct assumptions" -- "Describe what needs to change -- you will need to re-run /rapid:plan to modify set definitions"
   #   - "Note for execution" -- "Add notes to the set's DEFINITION.md for the executor to see during implementation"
   #   - "Looks good" -- "Assumptions are correct, proceed with confidence"
+fi
+```
+
+Then, follow up:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: the same mcp__rapid__webui_ask_user call collects the developer's choice.
+else
+  # CLI mode:
+  # Use AskUserQuestion to collect feedback.
 fi
 ```
 
