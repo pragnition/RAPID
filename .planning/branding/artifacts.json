@@ -40,5 +40,12 @@
     "filename": "index.html",
     "createdAt": "2026-04-15T06:43:33.542Z",
     "description": "Branding hub — entry point linking all artifacts"
+  },
+  {
+    "id": "33178b8e-eac0-4fb6-a91c-c97a06c528cb",
+    "type": "wireframe",
+    "filename": "chatbot-wireframe.html",
+    "createdAt": "2026-04-15T06:54:32.078Z",
+    "description": "Chatbot wireframe — Chats list, empty state, active thread with composer + tool cards, thread with artifact side panel"
   }
 ]

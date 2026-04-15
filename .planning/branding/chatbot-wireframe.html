@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RAPID Mission Control — Chatbot Wireframe</title>
+<style>
+  :root {
+    --bg-dim:#232A2E; --bg-0:#2D353B; --bg-1:#343F44; --bg-2:#3D484D; --bg-3:#475258; --bg-4:#4F585E;
+    --fg:#D3C6AA; --fg-dim:#9DA9A0; --muted:#859289;
+    --accent:#A7C080; --link:#83C092; --info:#7FBBB3; --warning:#DBBC7F; --error:#E67E80; --highlight:#D699B6; --orange:#E69875;
+    --border:#475258; --hover:#3D484D; --selection:rgba(167,192,128,0.2);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg-dim);
+    color: var(--fg);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  *, *::before, *::after { transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+  .doc { max-width: 1280px; margin: 0 auto; padding: 32px 24px 80px; }
+  .doc-title { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px; }
+  .doc-subtitle { font-size: 24px; font-weight: 700; margin: 0 0 24px; color: var(--fg); }
+  .doc-subtitle span { color: var(--accent); }
+  .doc-intro { color: var(--muted); font-size: 13px; line-height: 1.6; max-width: 820px; }
+  .section-label {
+    display: inline-block;
+    margin: 48px 0 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    border-left: 2px solid var(--accent);
+    padding-left: 8px;
+  }
+
+  /* Shell (same as wireframe.html) */
+  .mc {
+    background: var(--bg-0);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    grid-template-rows: 56px 1fr;
+    grid-template-areas: "sidebar header" "sidebar main";
+    min-height: 720px;
+  }
+  .mc-sidebar { grid-area: sidebar; background: var(--bg-0); border-right: 1px solid var(--border); padding: 16px 12px; display: flex; flex-direction: column; }
+  .mc-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .mc-brand-mark { width: 28px; height: 28px; border-radius: 6px; background: var(--bg-1); border: 1px solid var(--accent); display: grid; place-items: center; color: var(--accent); font-weight: 700; font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 1px; }
+  .mc-brand-text { font-weight: 700; letter-spacing: 1px; }
+  .mc-brand-text small { display: block; font-weight: 400; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+  .mc-nav { display: flex; flex-direction: column; gap: 2px; }
+  .mc-nav-group-label { padding: 12px 8px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); display: flex; align-items: center; justify-content: space-between; }
+  .mc-nav-group-label .hint { font-family: ui-monospace, monospace; color: var(--bg-4); font-size: 9px; }
+  .mc-nav a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; color: var(--fg-dim); text-decoration: none; font-size: 13px; }
+  .mc-nav a:hover { background: var(--hover); color: var(--fg); }
+  .mc-nav a.active { background: var(--bg-2); color: var(--accent); border-left: 2px solid var(--accent); padding-left: 8px; }
+  .mc-nav a .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .mc-nav a.active .dot { background: var(--accent); }
+  .mc-nav a .shortcut { margin-left: auto; font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); }
+  .mc-nav a .count { margin-left: auto; background: var(--bg-2); color: var(--fg-dim); padding: 1px 6px; border-radius: 10px; font-size: 10px; font-family: ui-monospace, monospace; }
+  .mc-nav a.active .count { background: var(--bg-3); color: var(--accent); }
+
+  .mc-sidebar-footer { margin-top: auto; padding: 12px 8px 4px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .health-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--selection); }
+
+  .mc-header { grid-area: header; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; background: var(--bg-0); }
+  .mc-crumbs { color: var(--muted); font-size: 13px; }
+  .mc-crumbs b { color: var(--fg); font-weight: 600; }
+  .mc-crumbs .skill { font-family: ui-monospace, monospace; color: var(--accent); font-size: 12px; }
+  .mc-header-spacer { flex: 1; }
+  .mc-search { min-width: 260px; padding: 6px 10px; background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-dim); font-size: 12px; font-family: ui-monospace, monospace; display: flex; align-items: center; gap: 8px; }
+  .mc-search kbd { margin-left: auto; background: var(--bg-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 10px; color: var(--muted); }
+  .mc-main { grid-area: main; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; font-weight: 500; border-radius: 4px; border: 1px solid transparent; cursor: pointer; font-family: inherit; }
+  .btn-primary { background: var(--accent); color: var(--bg-0); }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary { background: var(--bg-2); color: var(--fg); border-color: var(--border); }
+  .btn-ghost { background: transparent; color: var(--fg-dim); }
+  .btn-ghost:hover { background: var(--hover); color: var(--fg); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  .badge { display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: 4px; font-family: ui-monospace, monospace; }
+  .badge-streaming { background: rgba(127,187,179,0.2); color: var(--info); }
+  .badge-active    { background: rgba(167,192,128,0.2); color: var(--accent); }
+  .badge-waiting   { background: rgba(219,188,127,0.2); color: var(--warning); }
+  .badge-archived  { background: rgba(133,146,137,0.2); color: var(--muted); }
+  .badge-failed    { background: rgba(230,126,128,0.2); color: var(--error); }
+
+  /* =========================================================
+     1. CHATS LIST PAGE
+     ========================================================= */
+  .chats-page { padding: 24px; overflow: auto; flex: 1; }
+  .chats-header-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .chats-page h1 { font-size: 26px; font-weight: 700; margin: 0; }
+  .chats-page .subtitle { color: var(--muted); margin: 0 0 20px; font-size: 13px; }
+  .chats-toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .filter-chips { display: flex; gap: 4px; background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+  .chip { padding: 4px 12px; font-size: 12px; border-radius: 4px; cursor: pointer; color: var(--fg-dim); font-family: ui-monospace, monospace; }
+  .chip.active { background: var(--bg-3); color: var(--accent); }
+  .chip .count { margin-left: 6px; color: var(--muted); font-size: 10px; }
+  .chip.active .count { color: var(--fg-dim); }
+
+  .thread-list { background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .thread-row {
+    display: grid;
+    grid-template-columns: 42px 1fr 220px 120px 80px;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    align-items: center;
+  }
+  .thread-row:last-child { border-bottom: none; }
+  .thread-row:hover { background: var(--hover); }
+  .thread-row.selected { background: var(--bg-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+  .skill-avatar {
+    width: 36px; height: 36px;
+    background: var(--bg-0); border: 1px solid var(--border);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 700;
+  }
+  .sk-discuss    { color: var(--highlight); border-color: var(--highlight); }
+  .sk-quick      { color: var(--accent);    border-color: var(--accent); }
+  .sk-bugfix     { color: var(--error);     border-color: var(--error); }
+  .sk-init       { color: var(--info);      border-color: var(--info); }
+  .sk-branding   { color: var(--orange);    border-color: var(--orange); }
+
+  .thread-row .title { font-weight: 600; color: var(--fg); font-size: 14px; margin-bottom: 2px; }
+  .thread-row .preview { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thread-row .skill-line { font-family: ui-monospace, monospace; font-size: 11px; color: var(--fg-dim); }
+  .thread-row .skill-line .sep { color: var(--bg-4); margin: 0 6px; }
+  .thread-row .skill-line .set { color: var(--accent); }
+  .thread-row .time { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); text-align: right; }
+  .thread-row .msgs { font-family: ui-monospace, monospace; font-size: 11px; color: var(--fg-dim); text-align: right; }
+
+  /* =========================================================
+     2. CHATS EMPTY STATE
+     ========================================================= */
+  .empty-chats { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; flex: 1; text-align: center; }
+  .empty-chats .icon {
+    width: 72px; height: 72px;
+    border-radius: 16px;
+    background: var(--bg-1); border: 1px solid var(--border);
+    display: grid; place-items: center;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .empty-chats .icon::before,
+  .empty-chats .icon::after {
+    content: ""; position: absolute;
+    border-radius: 6px;
+  }
+  .empty-chats .icon::before {
+    width: 30px; height: 20px;
+    background: var(--accent); opacity: 0.7;
+    top: 16px; left: 10px;
+  }
+  .empty-chats .icon::after {
+    width: 32px; height: 20px;
+    background: var(--info); opacity: 0.6;
+    bottom: 16px; right: 10px;
+  }
+  .empty-chats h2 { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+  .empty-chats p { color: var(--muted); margin: 0 0 24px; max-width: 480px; font-size: 13px; line-height: 1.6; }
+  .empty-chats .dist {
+    display: inline-flex; gap: 24px;
+    background: var(--bg-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 20px;
+    margin-bottom: 28px;
+    font-size: 12px;
+  }
+  .empty-chats .dist > div { display: flex; align-items: center; gap: 8px; }
+  .empty-chats .dist .k { font-family: ui-monospace, monospace; color: var(--accent); }
+  .empty-chats .dist .desc { color: var(--muted); }
+  .empty-chats .dist .sep { color: var(--bg-4); }
+
+  .suggested { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 760px; width: 100%; }
+  .suggested .sug-card {
+    background: var(--bg-1); border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .suggested .sug-card:hover { border-color: var(--accent); background: var(--bg-2); }
+  .suggested .sug-card .sc-cmd { font-family: ui-monospace, monospace; color: var(--accent); font-size: 13px; font-weight: 600; }
+  .suggested .sug-card .sc-desc { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+
+  /* =========================================================
+     3. CHAT THREAD PAGE — ACTIVE CONVERSATION
+     ========================================================= */
+  .chat-main { flex: 1; display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+  .chat-header-bar {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+    background: var(--bg-0);
+  }
+  .chat-header-bar .title { font-weight: 700; font-size: 15px; }
+  .chat-header-bar .meta { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .chat-header-bar .meta b { color: var(--fg); }
+  .chat-header-bar .spacer { flex: 1; }
+  .chat-telemetry { display: flex; gap: 16px; font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .chat-telemetry span b { color: var(--fg); font-weight: 600; }
+
+  .messages { overflow: auto; padding: 24px 24px 20px; display: flex; flex-direction: column; gap: 16px; position: relative; }
+  .msg { display: grid; grid-template-columns: 36px 1fr; gap: 12px; }
+  .msg .avatar {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--bg-1); border: 1px solid var(--border);
+    display: grid; place-items: center;
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .msg.user .avatar { background: var(--bg-0); border-color: var(--bg-4); color: var(--fg-dim); }
+  .msg.assistant .avatar { border-color: var(--accent); color: var(--accent); }
+  .msg.tool .avatar { border-color: var(--info); color: var(--info); }
+  .msg .content { min-width: 0; }
+  .msg .role {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .msg.user .role      { color: var(--fg-dim); }
+  .msg.assistant .role { color: var(--accent); }
+  .msg.tool .role      { color: var(--info); }
+  .msg .role .time { margin-left: auto; color: var(--bg-4); letter-spacing: 0; }
+
+  .msg .body { font-size: 14px; line-height: 1.6; color: var(--fg); }
+  .msg.user .body { color: var(--fg); }
+
+  .msg .body p { margin: 0 0 10px; }
+  .msg .body p:last-child { margin-bottom: 0; }
+  .msg .body ul { margin: 6px 0; padding-left: 20px; }
+  .msg .body code { font-family: ui-monospace, monospace; background: var(--bg-1); padding: 1px 6px; border-radius: 3px; font-size: 12px; color: var(--accent); border: 1px solid var(--border); }
+  .msg .body pre { background: var(--bg-0); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font-size: 12px; font-family: ui-monospace, monospace; margin: 8px 0; }
+  .msg .body pre code { background: transparent; border: none; padding: 0; color: var(--fg); }
+
+  .cursor { display: inline-block; width: 7px; height: 16px; background: var(--accent); vertical-align: -2px; animation: blink 1.1s steps(2) infinite; margin-left: 2px; }
+  @keyframes blink { to { opacity: 0; } }
+
+  /* Tool-call card */
+  .tool-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 10px 0;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  .tool-card .tc-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  .tool-card.closed .tc-head { border-bottom: none; }
+  .tool-card .tc-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700; font-family: ui-monospace, monospace;
+    flex-shrink: 0;
+  }
+  .tool-card.running  .tc-icon { background: rgba(127,187,179,0.25); color: var(--info); }
+  .tool-card.complete .tc-icon { background: rgba(167,192,128,0.25); color: var(--accent); }
+  .tool-card.error    .tc-icon { background: rgba(230,126,128,0.25); color: var(--error); }
+  .tool-card .tc-name { font-family: ui-monospace, monospace; font-size: 12px; color: var(--fg); font-weight: 600; }
+  .tool-card .tc-args { font-family: ui-monospace, monospace; font-size: 11px; color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+  .tool-card .tc-duration { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .tool-card .tc-chevron { color: var(--muted); font-family: ui-monospace, monospace; font-size: 10px; }
+  .tool-card .tc-body { padding: 12px 14px; background: var(--bg-0); display: grid; gap: 10px; font-size: 12px; }
+  .tool-card .tc-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .tool-card pre { background: var(--bg-dim); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: ui-monospace, monospace; font-size: 11px; margin: 0; color: var(--fg); overflow-x: auto; line-height: 1.5; }
+
+  .spinner {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border: 2px solid var(--info);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Structured question form (can_use_tool) */
+  .question-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--warning);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin: 10px 0;
+  }
+  .question-card .qc-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--warning); font-family: ui-monospace, monospace; margin-bottom: 8px; }
+  .question-card .qc-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .question-card .qc-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+  .question-card .qc-options { display: grid; gap: 6px; }
+  .question-card .qc-opt {
+    display: grid; grid-template-columns: 18px 1fr auto;
+    gap: 10px; align-items: center;
+    padding: 10px 12px;
+    background: var(--bg-0);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .question-card .qc-opt:hover { border-color: var(--accent); }
+  .question-card .qc-opt .radio {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-0);
+  }
+  .question-card .qc-opt.selected .radio {
+    background: var(--accent); border-color: var(--accent);
+    box-shadow: inset 0 0 0 3px var(--bg-0);
+  }
+  .question-card .qc-opt .opt-label b { display: block; font-weight: 600; color: var(--fg); }
+  .question-card .qc-opt .opt-label span { color: var(--muted); font-size: 11px; }
+  .question-card .qc-opt .opt-kbd { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); background: var(--bg-1); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+  .question-card .qc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+  /* Error card */
+  .error-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--error);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 10px 0;
+    display: flex; gap: 12px;
+    align-items: flex-start;
+  }
+  .error-card .ec-icon { width: 22px; height: 22px; border-radius: 50%; background: rgba(230,126,128,0.2); color: var(--error); display: grid; place-items: center; font-family: ui-monospace, monospace; font-weight: 700; flex-shrink: 0; }
+  .error-card .ec-title { font-weight: 600; color: var(--error); margin-bottom: 2px; font-size: 13px; }
+  .error-card .ec-body { font-size: 12px; color: var(--fg-dim); line-height: 1.6; }
+  .error-card .ec-actions { margin-top: 8px; display: flex; gap: 6px; }
+
+  /* "New messages" pill (auto-scroll opt-out) */
+  .new-msgs-pill {
+    position: absolute;
+    bottom: 14px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-3);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: ui-monospace, monospace;
+    cursor: pointer;
+    z-index: 3;
+  }
+
+  /* Composer */
+  .composer {
+    border-top: 1px solid var(--border);
+    padding: 12px 20px 16px;
+    background: var(--bg-0);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .slash-dropdown {
+    background: var(--bg-1);
+    border: 1px solid var(--bg-4);
+    border-radius: 8px;
+    padding: 6px;
+    margin-bottom: 4px;
+    max-width: 600px;
+  }
+  .slash-dropdown .sd-row {
+    display: grid; grid-template-columns: 120px 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .slash-dropdown .sd-row.active { background: var(--bg-3); }
+  .slash-dropdown .sd-row .cmd { font-family: ui-monospace, monospace; color: var(--accent); }
+  .slash-dropdown .sd-row .desc { color: var(--muted); }
+  .slash-dropdown .sd-row .hint { font-family: ui-monospace, monospace; font-size: 10px; color: var(--bg-4); }
+
+  .composer-box {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: end;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 10px 8px 14px;
+  }
+  .composer-box:focus-within { border-color: var(--accent); }
+  .composer-input {
+    background: transparent;
+    border: none; outline: none;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 14px;
+    resize: none;
+    min-height: 22px;
+    max-height: 200px;
+    padding: 2px 0;
+    line-height: 1.5;
+    width: 100%;
+  }
+  .composer-input::placeholder { color: var(--muted); }
+  .composer-actions { display: flex; align-items: center; gap: 4px; }
+  .composer-actions button {
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--fg-dim);
+    cursor: pointer;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+  }
+  .composer-actions button:hover { background: var(--bg-2); color: var(--fg); }
+  .composer-actions .send {
+    background: var(--accent); color: var(--bg-0); border-color: var(--accent);
+    font-weight: 700;
+  }
+  .composer-hints { display: flex; justify-content: space-between; font-family: ui-monospace, monospace; font-size: 10px; color: var(--bg-4); padding: 0 4px; }
+  .composer-hints kbd { background: var(--bg-1); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; color: var(--muted); margin: 0 2px; }
+
+  /* =========================================================
+     4. CHAT THREAD + ARTIFACT SIDE PANEL
+     ========================================================= */
+  .mc.split { grid-template-columns: 232px 1fr 420px; grid-template-areas: "sidebar header header" "sidebar main artifact"; }
+  .artifact-pane {
+    grid-area: artifact;
+    border-left: 1px solid var(--border);
+    background: var(--bg-0);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .artifact-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .artifact-head .ah-title { font-weight: 600; font-size: 13px; }
+  .artifact-head .ah-path { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .artifact-head .spacer { flex: 1; }
+  .artifact-tabs { display: flex; padding: 0 12px; border-bottom: 1px solid var(--border); gap: 2px; }
+  .artifact-tabs .at-tab {
+    padding: 8px 12px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .artifact-tabs .at-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .artifact-body { flex: 1; overflow: auto; padding: 14px; background: var(--bg-dim); }
+  .diff { font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6; }
+  .diff .line { padding: 0 8px; border-radius: 2px; }
+  .diff .line.add { background: rgba(167,192,128,0.12); color: var(--accent); }
+  .diff .line.rem { background: rgba(230,126,128,0.12); color: var(--error); }
+  .diff .line.ctx { color: var(--fg-dim); }
+  .diff .line.hdr { color: var(--muted); padding-top: 6px; padding-bottom: 2px; }
+  .diff .line .gutter { display: inline-block; width: 20px; color: var(--bg-4); }
+
+  @media (max-width: 1024px) {
+    .mc { grid-template-columns: 180px 1fr; }
+    .mc.split { grid-template-columns: 180px 1fr; grid-template-areas: "sidebar header" "sidebar main"; }
+    .artifact-pane { display: none; }
+    .thread-row { grid-template-columns: 42px 1fr 100px; }
+    .thread-row .skill-line, .thread-row .msgs { display: none; }
+    .suggested { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <div class="doc-title">RAPID — Chatbot Wireframe</div>
+  <h1 class="doc-subtitle">Chats Tab <span>v7.0.0</span> — Interactive Agent Conversations</h1>
+  <p class="doc-intro">
+    Chats bind to long-lived agent sessions driven by interactive skills (<code style="color:var(--accent);font-family:ui-monospace,monospace;">/rapid:discuss-set</code>, <code style="color:var(--accent);font-family:ui-monospace,monospace;">/rapid:quick</code>, <code style="color:var(--accent);font-family:ui-monospace,monospace;">/rapid:bug-fix</code>). Distinct from autonomous Agent Runs: chats have a persistent composer at the bottom, runs do not. Users know from chrome alone which mode they are in.
+  </p>
+
+  <!-- ============================================================
+       MOCKUP 1 — CHATS LIST
+       ============================================================ -->
+  <div class="section-label">01 — Chats List (/chats)</div>
+  <div class="mc">
+    <aside class="mc-sidebar">
+      <div class="mc-brand">
+        <div class="mc-brand-mark">R</div>
+        <div class="mc-brand-text">RAPID<small>Mission Control</small></div>
+      </div>
+      <nav class="mc-nav">
+        <div class="mc-nav-group-label">Workspace</div>
+        <a href="#"><span class="dot"></span>Dashboard<span class="shortcut">gd</span></a>
+        <a href="#"><span class="dot"></span>Projects<span class="shortcut">gp</span></a>
+        <div class="mc-nav-group-label">Driver <span class="hint">interactive</span></div>
+        <a href="#"><span class="dot"></span>Agents<span class="shortcut">ga</span></a>
+        <a class="active" href="#"><span class="dot"></span>Chats<span class="count">4</span></a>
+        <a href="#"><span class="dot"></span>Kanban<span class="shortcut">gk</span></a>
+        <div class="mc-nav-group-label">Observer <span class="hint">inspect</span></div>
+        <a href="#"><span class="dot"></span>State<span class="shortcut">gs</span></a>
+        <a href="#"><span class="dot"></span>Worktrees<span class="shortcut">gw</span></a>
+        <a href="#"><span class="dot"></span>Knowledge Graph</a>
+        <a href="#"><span class="dot"></span>Codebase<span class="shortcut">gc</span></a>
+      </nav>
+      <div class="mc-sidebar-footer">
+        <span class="health-dot"></span>
+        <span>backend <b style="color:var(--accent)">online</b></span>
+      </div>
+    </aside>
+
+    <header class="mc-header">
+      <div class="mc-crumbs">RAPID / <b>Chats</b></div>
+      <div class="mc-header-spacer"></div>
+      <div class="mc-search mono">
+        <span style="color:var(--muted)">search threads…</span>
+        <kbd>/</kbd>
+      </div>
+      <button class="btn btn-primary">+ New Chat</button>
+    </header>
+
+    <main class="mc-main chats-page">
+      <div class="chats-header-row">
+        <h1>Chats</h1>
+      </div>
+      <p class="subtitle">Interactive agent conversations — composer-driven back-and-forth</p>
+
+      <div class="chats-toolbar">
+        <div class="filter-chips">
+          <span class="chip active">active<span class="count">3</span></span>
+          <span class="chip">awaiting<span class="count">1</span></span>
+          <span class="chip">archived<span class="count">12</span></span>
+          <span class="chip">all<span class="count">16</span></span>
+        </div>
+        <button class="btn btn-ghost btn-sm">project · RAPID ▾</button>
+        <button class="btn btn-ghost btn-sm">skill · all ▾</button>
+      </div>
+
+      <div class="thread-list">
+        <div class="thread-row selected">
+          <div class="skill-avatar sk-discuss">DSC</div>
+          <div>
+            <div class="title">Capture implementation vision for agent-runtime-foundation</div>
+            <div class="preview">assistant: The set binds FastAPI background tasks to claude-code-sdk. Before planning waves, should we use…</div>
+          </div>
+          <div class="skill-line mono">/rapid:discuss-set<span class="sep">·</span><span class="set">agent-runtime</span></div>
+          <div class="time">2 min ago<br/><span class="badge badge-streaming">streaming</span></div>
+          <div class="msgs">14 msgs</div>
+        </div>
+        <div class="thread-row">
+          <div class="skill-avatar sk-quick">QK</div>
+          <div>
+            <div class="title">Ad-hoc: rename `Concern` → `Scope` across planning docs</div>
+            <div class="preview">user: yep go ahead — all references under .planning/ and docs/</div>
+          </div>
+          <div class="skill-line mono">/rapid:quick<span class="sep">·</span>no set</div>
+          <div class="time">12 min ago<br/><span class="badge badge-waiting">awaiting</span></div>
+          <div class="msgs">7 msgs</div>
+        </div>
+        <div class="thread-row">
+          <div class="skill-avatar sk-bugfix">BUG</div>
+          <div>
+            <div class="title">merge-state.cjs reports false conflict on identical JSON whitespace</div>
+            <div class="preview">assistant: Reproduced. The L1 detector strips trailing newlines but not BOM markers. Fix proposed.</div>
+          </div>
+          <div class="skill-line mono">/rapid:bug-fix<span class="sep">·</span>no set</div>
+          <div class="time">1h 08m ago<br/><span class="badge badge-active">active</span></div>
+          <div class="msgs">22 msgs</div>
+        </div>
+        <div class="thread-row">
+          <div class="skill-avatar sk-branding">BRD</div>
+          <div>
+            <div class="title">Branding interview — Mission Control v6.3.0</div>
+            <div class="preview">assistant: BRANDING.md updated with Visual Identity, Component Style, and Interaction Patterns sections.</div>
+          </div>
+          <div class="skill-line mono">/rapid:branding<span class="sep">·</span>no set</div>
+          <div class="time">3h ago<br/><span class="badge badge-archived">archived</span></div>
+          <div class="msgs">9 msgs</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================================
+       MOCKUP 2 — EMPTY STATE
+       ============================================================ -->
+  <div class="section-label">02 — Chats Empty State (first-run onboarding)</div>
+  <div class="mc">
+    <aside class="mc-sidebar">
+      <div class="mc-brand">
+        <div class="mc-brand-mark">R</div>
+        <div class="mc-brand-text">RAPID<small>Mission Control</small></div>
+      </div>
+      <nav class="mc-nav">
+        <div class="mc-nav-group-label">Driver</div>
+        <a href="#"><span class="dot"></span>Agents<span class="shortcut">ga</span></a>
+        <a class="active" href="#"><span class="dot"></span>Chats<span class="count">0</span></a>
+        <a href="#"><span class="dot"></span>Kanban<span class="shortcut">gk</span></a>
+      </nav>
+      <div class="mc-sidebar-footer"><span class="health-dot"></span><span>backend <b style="color:var(--accent)">online</b></span></div>
+    </aside>
+
+    <header class="mc-header">
+      <div class="mc-crumbs">RAPID / <b>Chats</b></div>
+      <div class="mc-header-spacer"></div>
+      <button class="btn btn-primary">+ New Chat</button>
+    </header>
+
+    <main class="mc-main empty-chats">
+      <div class="icon"></div>
+      <h2>Start a conversation with an agent</h2>
+      <p>Chats let users drive interactive skills turn-by-turn. Ask questions, get structured answers, approve tool calls inline. Unlike autonomous Agent Runs, chats have a persistent composer — users stay in the loop.</p>
+
+      <div class="dist">
+        <div>
+          <span class="k">chat</span>
+          <span class="desc">back-and-forth with composer</span>
+        </div>
+        <span class="sep">│</span>
+        <div>
+          <span class="k">run</span>
+          <span class="desc">autonomous, no composer, monitor only</span>
+        </div>
+      </div>
+
+      <div class="suggested">
+        <div class="sug-card">
+          <div class="sc-cmd">/rapid:discuss-set</div>
+          <div class="sc-desc">Capture implementation vision for a set — answers 2–5 structured questions to ground subsequent planning waves.</div>
+        </div>
+        <div class="sug-card">
+          <div class="sc-cmd">/rapid:quick</div>
+          <div class="sc-desc">Make ad-hoc changes without set structure. Planner, verifier, executor pipeline with human approval at each step.</div>
+        </div>
+        <div class="sug-card">
+          <div class="sc-cmd">/rapid:bug-fix</div>
+          <div class="sc-desc">Describe a bug — the agent investigates, proposes a fix, and applies it after confirmation.</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================================
+       MOCKUP 3 — ACTIVE CONVERSATION
+       ============================================================ -->
+  <div class="section-label">03 — Chat Thread — Active Conversation (/chats/:id)</div>
+  <div class="mc">
+    <aside class="mc-sidebar">
+      <div class="mc-brand">
+        <div class="mc-brand-mark">R</div>
+        <div class="mc-brand-text">RAPID<small>Mission Control</small></div>
+      </div>
+      <nav class="mc-nav">
+        <div class="mc-nav-group-label">Driver</div>
+        <a href="#"><span class="dot"></span>Agents</a>
+        <a class="active" href="#"><span class="dot"></span>Chats</a>
+        <a href="#"><span class="dot"></span>Kanban</a>
+      </nav>
+      <div class="mc-sidebar-footer"><span class="health-dot"></span><span>backend <b style="color:var(--accent)">online</b></span></div>
+    </aside>
+
+    <header class="mc-header">
+      <div class="mc-crumbs">
+        Chats / <span class="skill">/rapid:discuss-set</span> / <b>agent-runtime-foundation</b>
+      </div>
+      <div class="mc-header-spacer"></div>
+      <span class="badge badge-streaming">streaming</span>
+      <button class="btn btn-ghost btn-sm">Archive</button>
+      <button class="btn btn-secondary btn-sm">Open linked run</button>
+    </header>
+
+    <div class="chat-main">
+      <div class="chat-header-bar">
+        <span class="title">Capture implementation vision for agent-runtime-foundation</span>
+        <span class="meta">thread · <b>th_9f2a</b></span>
+        <span class="meta">started · <b>14:02:11</b></span>
+        <div class="spacer"></div>
+        <div class="chat-telemetry">
+          <span>tokens <b>48.3k</b> in / <b>12.1k</b> out</span>
+          <span>duration <b>04:18</b></span>
+          <span>cache <b style="color:var(--accent)">72%</b></span>
+        </div>
+      </div>
+
+      <div class="messages">
+        <!-- User message -->
+        <div class="msg user">
+          <div class="avatar">JO</div>
+          <div class="content">
+            <div class="role">user<span class="time">14:02:11</span></div>
+            <div class="body">
+              <p>Start a discuss-set for <code>agent-runtime-foundation</code>. The set needs to bind FastAPI background tasks to claude-code-sdk so chats can talk to long-lived agent sessions. Want to align before planning.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assistant message -->
+        <div class="msg assistant">
+          <div class="avatar">AI</div>
+          <div class="content">
+            <div class="role">assistant<span class="time">14:02:14</span></div>
+            <div class="body">
+              <p>Understood. Scanning the existing state layer and contracts to ground the discussion.</p>
+
+              <!-- Tool call: running -->
+              <div class="tool-card running">
+                <div class="tc-head">
+                  <span class="tc-icon"><span class="spinner"></span></span>
+                  <span class="tc-name">Grep</span>
+                  <span class="tc-args mono">pattern: "AgentSession|AgentRun" · path: src/ · type: py</span>
+                  <span class="tc-duration">running…</span>
+                  <span class="tc-chevron">▸</span>
+                </div>
+              </div>
+
+              <!-- Tool call: complete, collapsed -->
+              <div class="tool-card complete closed">
+                <div class="tc-head">
+                  <span class="tc-icon">✓</span>
+                  <span class="tc-name">Read</span>
+                  <span class="tc-args mono">.planning/sets/agent-runtime-foundation/CONTRACT.json</span>
+                  <span class="tc-duration">0.18s</span>
+                  <span class="tc-chevron">▸</span>
+                </div>
+              </div>
+
+              <!-- Tool call: complete, expanded -->
+              <div class="tool-card complete">
+                <div class="tc-head">
+                  <span class="tc-icon">✓</span>
+                  <span class="tc-name">Glob</span>
+                  <span class="tc-args mono">**/agent_runtime/**/*.py</span>
+                  <span class="tc-duration">0.04s</span>
+                  <span class="tc-chevron">▾</span>
+                </div>
+                <div class="tc-body">
+                  <div>
+                    <div class="tc-section-label">Arguments</div>
+                    <pre>{ "pattern": "**/agent_runtime/**/*.py", "path": "/home/kek/Projects/RAPID" }</pre>
+                  </div>
+                  <div>
+                    <div class="tc-section-label">Result (4 files)</div>
+                    <pre>web/backend/app/agent_runtime/session.py
+web/backend/app/agent_runtime/runner.py
+web/backend/app/agent_runtime/events.py
+web/backend/app/agent_runtime/__init__.py</pre>
+                  </div>
+                </div>
+              </div>
+
+              <p>Context collected. The runtime already stubs an <code>AgentSession</code> class that wraps a claude-code-sdk client. To move forward, two questions need answers — please choose:</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Structured question form (can_use_tool / ask_user) -->
+        <div class="msg assistant">
+          <div class="avatar">AI</div>
+          <div class="content">
+            <div class="role">structured question<span class="time">14:02:31</span></div>
+            <div class="question-card">
+              <div class="qc-label">Awaiting Input</div>
+              <div class="qc-title">Session lifecycle model</div>
+              <div class="qc-sub">How should a chat thread relate to an agent run in the database and runtime?</div>
+              <div class="qc-options">
+                <div class="qc-opt selected">
+                  <span class="radio"></span>
+                  <div class="opt-label">
+                    <b>One AgentRun per chat thread (long-lived)</b>
+                    <span>Thread binds to a single run. Composer input appends to the same SDK session. Simpler, matches Cursor Composer.</span>
+                  </div>
+                  <span class="opt-kbd">A</span>
+                </div>
+                <div class="qc-opt">
+                  <span class="radio"></span>
+                  <div class="opt-label">
+                    <b>One AgentRun per user turn (ephemeral)</b>
+                    <span>Each user message spawns a new short-lived run. Better isolation, worse context continuity.</span>
+                  </div>
+                  <span class="opt-kbd">B</span>
+                </div>
+                <div class="qc-opt">
+                  <span class="radio"></span>
+                  <div class="opt-label">
+                    <b>Hybrid — persistent session, per-turn runs</b>
+                    <span>Session holds conversation state; runs are billable execution units. Most complex, most flexible.</span>
+                  </div>
+                  <span class="opt-kbd">C</span>
+                </div>
+              </div>
+              <div class="qc-actions">
+                <button class="btn btn-ghost btn-sm">Skip question</button>
+                <button class="btn btn-primary btn-sm">Submit answer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Streaming assistant message -->
+        <div class="msg assistant">
+          <div class="avatar">AI</div>
+          <div class="content">
+            <div class="role">assistant<span class="time">14:04:02</span></div>
+            <div class="body">
+              <p>Good choice — option A keeps the implementation small and matches the CONTRACT.json note that <code>ChatMessage.agent_run_id</code> is a foreign key, one-to-many.</p>
+              <p>Next, on the SSE transport<span class="cursor"></span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- New-messages pill (user scrolled up) -->
+        <div class="new-msgs-pill">↓ 2 new messages</div>
+      </div>
+
+      <!-- Composer with slash-command dropdown -->
+      <div class="composer">
+        <div class="slash-dropdown">
+          <div class="sd-row active">
+            <span class="cmd">/rapid:plan-set</span>
+            <span class="desc">plan all waves in the set with researcher → planner → verifier</span>
+            <span class="hint">↵</span>
+          </div>
+          <div class="sd-row">
+            <span class="cmd">/rapid:pause</span>
+            <span class="desc">pause the set and save state for later resumption</span>
+            <span class="hint">↵</span>
+          </div>
+          <div class="sd-row">
+            <span class="cmd">/rapid:backlog</span>
+            <span class="desc">capture out-of-scope ideas as backlog items</span>
+            <span class="hint">↵</span>
+          </div>
+        </div>
+        <div class="composer-box">
+          <textarea class="composer-input" rows="1" placeholder="Type a message…">/rapid:p</textarea>
+          <div class="composer-actions">
+            <button title="Attach file">@</button>
+            <button title="Insert code block">&lt;/&gt;</button>
+            <button class="send" title="Send">▶</button>
+          </div>
+        </div>
+        <div class="composer-hints">
+          <span><kbd>↵</kbd> send <kbd>⇧↵</kbd> newline <kbd>/</kbd> command <kbd>@</kbd> mention set</span>
+          <span>auto-scroll <b style="color:var(--warning)">paused</b> · scroll to bottom to resume</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MOCKUP 4 — THREAD + ARTIFACT SIDE PANEL
+       ============================================================ -->
+  <div class="section-label">04 — Chat Thread + Artifact Side Panel (diff view)</div>
+  <div class="mc split">
+    <aside class="mc-sidebar">
+      <div class="mc-brand">
+        <div class="mc-brand-mark">R</div>
+        <div class="mc-brand-text">RAPID<small>Mission Control</small></div>
+      </div>
+      <nav class="mc-nav">
+        <div class="mc-nav-group-label">Driver</div>
+        <a href="#"><span class="dot"></span>Agents</a>
+        <a class="active" href="#"><span class="dot"></span>Chats</a>
+        <a href="#"><span class="dot"></span>Kanban</a>
+      </nav>
+      <div class="mc-sidebar-footer"><span class="health-dot"></span><span>backend <b style="color:var(--accent)">online</b></span></div>
+    </aside>
+
+    <header class="mc-header">
+      <div class="mc-crumbs">Chats / <span class="skill">/rapid:bug-fix</span> / <b>merge-state whitespace</b></div>
+      <div class="mc-header-spacer"></div>
+      <button class="btn btn-ghost btn-sm">Collapse artifact</button>
+      <button class="btn btn-primary btn-sm">Apply patch</button>
+    </header>
+
+    <div class="chat-main">
+      <div class="chat-header-bar">
+        <span class="title">merge-state.cjs false-conflict on BOM</span>
+        <span class="meta">thread · <b>th_4b01</b></span>
+        <div class="spacer"></div>
+        <div class="chat-telemetry">
+          <span>tokens <b>22.7k</b> in / <b>4.2k</b> out</span>
+          <span>duration <b>07:52</b></span>
+        </div>
+      </div>
+
+      <div class="messages">
+        <div class="msg user">
+          <div class="avatar">JO</div>
+          <div class="content">
+            <div class="role">user<span class="time">13:55:02</span></div>
+            <div class="body"><p>When I re-import the same <code>DAG.json</code> the merge detector flags a textual conflict even though the content is identical. Repro: export from Mission Control, re-import via CLI.</p></div>
+          </div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="avatar">AI</div>
+          <div class="content">
+            <div class="role">assistant<span class="time">13:55:14</span></div>
+            <div class="body">
+              <p>Reproduced. The L1 textual detector strips trailing newlines but leaves BOM markers. Mission Control exports UTF-8 <em>with</em> BOM; the CLI writes without. I've drafted the fix — see the diff pane.</p>
+              <div class="tool-card complete closed">
+                <div class="tc-head">
+                  <span class="tc-icon">✓</span>
+                  <span class="tc-name">Edit</span>
+                  <span class="tc-args mono">src/lib/merge-state.cjs · normalize BOM + CRLF before hash</span>
+                  <span class="tc-duration">0.11s</span>
+                  <span class="tc-chevron">▸</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error card (regression check) -->
+        <div class="msg tool">
+          <div class="avatar">TL</div>
+          <div class="content">
+            <div class="role">tool<span class="time">13:58:40</span></div>
+            <div class="error-card">
+              <span class="ec-icon">!</span>
+              <div>
+                <div class="ec-title">1 existing test failed after patch</div>
+                <div class="ec-body">
+                  <code>merge-state.test.cjs:112</code> — <i>"preserves exact byte sequence"</i>. The test asserts raw equality, but normalization rewrites input. Recommended: update the test to reflect the new contract (normalize before hash, compare normalized forms).
+                </div>
+                <div class="ec-actions">
+                  <button class="btn btn-secondary btn-sm">Update test</button>
+                  <button class="btn btn-ghost btn-sm">Open file</button>
+                  <button class="btn btn-ghost btn-sm">Retry</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="avatar">AI</div>
+          <div class="content">
+            <div class="role">assistant<span class="time">13:58:52</span></div>
+            <div class="body"><p>Waiting on confirmation before updating the test. Once approved, I will re-run the suite and confirm green.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <div class="composer-box">
+          <textarea class="composer-input" rows="1" placeholder="Reply…"></textarea>
+          <div class="composer-actions">
+            <button>@</button>
+            <button class="send">▶</button>
+          </div>
+        </div>
+        <div class="composer-hints">
+          <span><kbd>↵</kbd> send <kbd>⇧↵</kbd> newline</span>
+          <span>auto-scroll <b style="color:var(--accent)">on</b></span>
+        </div>
+      </div>
+    </div>
+
+    <aside class="artifact-pane">
+      <div class="artifact-head">
+        <span class="ah-title">patch.diff</span>
+        <span class="ah-path">src/lib/merge-state.cjs</span>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost btn-sm">Raw</button>
+      </div>
+      <div class="artifact-tabs">
+        <span class="at-tab active">Diff</span>
+        <span class="at-tab">Before</span>
+        <span class="at-tab">After</span>
+        <span class="at-tab">Test output</span>
+      </div>
+      <div class="artifact-body">
+        <div class="diff">
+          <div class="line hdr">@@ src/lib/merge-state.cjs @@</div>
+          <div class="line ctx"><span class="gutter"> </span>function normalizeForHash(content) {</div>
+          <div class="line rem"><span class="gutter">-</span>  return content.replace(/\r\n/g, '\n').trimEnd();</div>
+          <div class="line add"><span class="gutter">+</span>  return content</div>
+          <div class="line add"><span class="gutter">+</span>    .replace(/^\uFEFF/, '')         // strip UTF-8 BOM</div>
+          <div class="line add"><span class="gutter">+</span>    .replace(/\r\n/g, '\n')          // normalize CRLF</div>
+          <div class="line add"><span class="gutter">+</span>    .trimEnd();</div>
+          <div class="line ctx"><span class="gutter"> </span>}</div>
+          <div class="line ctx"><span class="gutter"> </span></div>
+          <div class="line hdr">@@ merge-state.test.cjs @@</div>
+          <div class="line ctx"><span class="gutter"> </span>test('detects no-op when re-importing exported DAG.json', () =&gt; {</div>
+          <div class="line rem"><span class="gutter">-</span>  const a = readFile('DAG.original.json');</div>
+          <div class="line rem"><span class="gutter">-</span>  const b = readFile('DAG.reimported.json');</div>
+          <div class="line add"><span class="gutter">+</span>  const a = normalizeForHash(readFile('DAG.original.json'));</div>
+          <div class="line add"><span class="gutter">+</span>  const b = normalizeForHash(readFile('DAG.reimported.json'));</div>
+          <div class="line ctx"><span class="gutter"> </span>  assert.strictEqual(hash(a), hash(b));</div>
+          <div class="line ctx"><span class="gutter"> </span>});</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Component notes -->
+  <div class="section-label">Component Notes</div>
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: var(--muted); line-height: 1.6;">
+    <div style="background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+      <h2 style="margin: 0 0 6px; font-size: 13px; color: var(--fg); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Chat vs Run</h2>
+      <p style="margin: 0;">Chats <i>always</i> render a composer at the bottom. Runs <i>never</i> do. The presence or absence of the composer is the single load-bearing signal separating the two modes.</p>
+    </div>
+    <div style="background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+      <h2 style="margin: 0 0 6px; font-size: 13px; color: var(--fg); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Inline Tool Cards</h2>
+      <p style="margin: 0;">Every tool use renders in-line in the message flow. Spinner → checkmark when complete. Click to expand for args + result. No modal popovers — tools are part of the conversation.</p>
+    </div>
+    <div style="background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+      <h2 style="margin: 0 0 6px; font-size: 13px; color: var(--fg); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Auto-scroll Opt-out</h2>
+      <p style="margin: 0;">Messages auto-scroll to bottom by default. Scrolling up disables it; a "↓ N new messages" pill appears to jump back to live.</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
