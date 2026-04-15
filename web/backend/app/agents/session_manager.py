@@ -24,6 +24,8 @@ from pathlib import Path
 from typing import AsyncIterator
 from uuid import UUID, uuid4
 
+from sqlalchemy import text as sa_text
+
 import sqlalchemy
 from sqlmodel import Session, select
 
@@ -37,8 +39,9 @@ from app.agents.pid_liveness import is_pid_alive, send_sigterm
 from app.agents.session import AgentSession
 from app.config import settings
 from app.database import Project
+from app.models.agent_prompt import AgentPrompt
 from app.models.agent_run import AgentRun
-from app.schemas.sse_events import SseEvent
+from app.schemas.sse_events import AskUserEvent, SseEvent
 
 logger = logging.getLogger("rapid.agents.manager")
 
@@ -66,6 +69,15 @@ class AgentSessionManager:
         # Live sessions keyed by run_id.
         self._sessions: dict[UUID, AgentSession] = {}
         self._session_tasks: dict[UUID, asyncio.Task] = {}
+
+        # web-tool-bridge: pending prompt futures keyed by prompt_id. The MCP
+        # tool body creates the future then awaits it; resolve_prompt sets
+        # the result from the HTTP /answer path.
+        self._prompt_futures: dict[str, asyncio.Future[str]] = {}
+        # Per-run asyncio.Lock that fronts the partial unique index on
+        # agentprompt. Prevents concurrent tool calls on the same run from
+        # racing the DB constraint.
+        self._prompt_locks: dict[UUID, asyncio.Lock] = {}
 
         # Lifespan background tasks.
         self._orphan_sweep_task: asyncio.Task | None = None
@@ -240,6 +252,7 @@ class AgentSessionManager:
                         event_bus=self.event_bus,
                         engine=self.engine,
                         budget=budget,
+                        manager=self,
                     ) as session:
                         self._sessions[row.id] = session
                         await session.run()
@@ -292,6 +305,182 @@ class AgentSessionManager:
     ) -> AsyncIterator[SseEvent]:
         async for evt in self.event_bus.attach_events(run_id, since=since):
             yield evt
+
+    # ---------- prompt facade (web-tool-bridge) ----------
+
+    def _get_prompt_lock(self, run_id: UUID) -> asyncio.Lock:
+        return self._prompt_locks.setdefault(run_id, asyncio.Lock())
+
+    async def resolve_prompt(
+        self, run_id: UUID, prompt_id: str, answer: str
+    ) -> None:
+        """Settle a pending prompt with the user's answer.
+
+        Updates the row to ``status='answered'`` + ``answer`` + ``answered_at``
+        under the per-run prompt lock, then fulfils the in-memory future so
+        the tool body returns to the SDK. Raises StateError with a sub-code
+        when the prompt is missing or no longer pending.
+        """
+
+        def _load_and_answer() -> AgentPrompt | None:
+            with Session(self.engine) as s:
+                row = s.get(AgentPrompt, prompt_id)
+                if row is None:
+                    return None
+                if row.run_id != run_id:
+                    return None
+                if row.status != "pending":
+                    # Signal "stale" via the returned row's status field.
+                    return row
+                row.status = "answered"
+                row.answer = answer
+                row.answered_at = datetime.now(timezone.utc)
+                s.add(row)
+                s.commit()
+                s.refresh(row)
+                return row
+
+        async with self._get_prompt_lock(run_id):
+            row = await asyncio.to_thread(_load_and_answer)
+            if row is None:
+                raise StateError(
+                    "Prompt not found",
+                    detail={"prompt_id": prompt_id, "run_id": str(run_id)},
+                    error_code="prompt_not_found",
+                    http_status=404,
+                )
+            if row.status != "answered":
+                # Row existed but was not pending when we looked.
+                raise StateError(
+                    "Prompt is not pending",
+                    detail={
+                        "prompt_id": prompt_id,
+                        "run_id": str(run_id),
+                        "status": row.status,
+                    },
+                    error_code="prompt_stale",
+                    http_status=409,
+                )
+
+            fut = self._prompt_futures.get(prompt_id)
+            if fut is not None and not fut.done():
+                fut.set_result(answer)
+
+    async def get_pending_prompt(self, run_id: UUID) -> AgentPrompt | None:
+        """Return the single pending prompt for ``run_id`` (or None)."""
+
+        def _load() -> AgentPrompt | None:
+            with Session(self.engine) as s:
+                rows = s.exec(
+                    select(AgentPrompt)
+                    .where(AgentPrompt.run_id == run_id)
+                    .where(AgentPrompt.status == "pending")
+                    .order_by(AgentPrompt.created_at.desc())  # type: ignore[attr-defined]
+                    .limit(1)
+                ).all()
+                return rows[0] if rows else None
+
+        return await asyncio.to_thread(_load)
+
+    async def reopen_prompt(self, run_id: UUID, prompt_id: str) -> None:
+        """Transition an answered prompt back to ``pending``.
+
+        Downstream prompts (created after the target) are marked ``stale``.
+        Returns:
+          * 404 (``prompt_not_found``) when the id doesn't match a row for
+            this run.
+          * 400 (``prompt_already_pending``) when there's nothing to reopen.
+          * 409 (``answer_consumed``) when the agent already saw the answer.
+        """
+
+        def _load_target() -> AgentPrompt | None:
+            with Session(self.engine) as s:
+                row = s.get(AgentPrompt, prompt_id)
+                if row is None:
+                    return None
+                if row.run_id != run_id:
+                    return None
+                return row
+
+        def _stale_downstream_and_reopen(
+            target_created_at: datetime,
+        ) -> tuple[AgentPrompt, str]:
+            with Session(self.engine) as s:
+                rows = s.exec(
+                    select(AgentPrompt)
+                    .where(AgentPrompt.run_id == run_id)
+                    .where(AgentPrompt.created_at > target_created_at)
+                    .where(AgentPrompt.status.in_(["pending", "answered"]))  # type: ignore[attr-defined]
+                ).all()
+                for r in rows:
+                    r.status = "stale"
+                    s.add(r)
+                target = s.get(AgentPrompt, prompt_id)
+                assert target is not None
+                target.status = "pending"
+                target.answer = None
+                target.answered_at = None
+                target.consumed_at = None
+                s.add(target)
+                s.commit()
+                s.refresh(target)
+                return target, target.payload
+
+        async with self._get_prompt_lock(run_id):
+            target = await asyncio.to_thread(_load_target)
+            if target is None:
+                raise StateError(
+                    "Prompt not found",
+                    detail={"prompt_id": prompt_id, "run_id": str(run_id)},
+                    error_code="prompt_not_found",
+                    http_status=404,
+                )
+            if target.status == "pending":
+                raise StateError(
+                    "Nothing to reopen; prompt is already pending",
+                    detail={"prompt_id": prompt_id},
+                    error_code="prompt_already_pending",
+                    http_status=400,
+                )
+            if target.status == "answered" and target.consumed_at is not None:
+                raise StateError(
+                    "Answer already consumed; interrupt the run to revise",
+                    detail={"prompt_id": prompt_id},
+                    error_code="answer_consumed",
+                    http_status=409,
+                )
+
+            reopened, payload_json = await asyncio.to_thread(
+                _stale_downstream_and_reopen, target.created_at
+            )
+
+            # Cancel and replace any lingering future for this prompt_id so
+            # a future resolve_prompt() lands on a fresh awaitable.
+            old_fut = self._prompt_futures.pop(prompt_id, None)
+            if old_fut is not None and not old_fut.done():
+                old_fut.cancel()
+            loop = asyncio.get_running_loop()
+            self._prompt_futures[prompt_id] = loop.create_future()
+
+            # Re-emit the ask_user event so reconnected clients see the now-
+            # pending prompt in the SSE stream.
+            try:
+                payload = json.loads(payload_json)
+            except Exception:
+                payload = {}
+            channel = await self.event_bus.get_or_create_channel(run_id)
+            seq = channel.next_seq()
+            event = AskUserEvent(
+                seq=seq,
+                ts=datetime.now(timezone.utc),
+                run_id=run_id,
+                prompt_id=prompt_id,
+                tool_use_id="",
+                question=str(payload.get("question", "")),
+                options=payload.get("options"),
+                allow_free_text=bool(payload.get("allow_free_text", True)),
+            )
+            await self.event_bus.publish(run_id, event)
 
     # ---------- orphan sweep ----------
 

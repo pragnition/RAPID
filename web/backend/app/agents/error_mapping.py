@@ -19,6 +19,20 @@ from app.agents.errors import (
 )
 
 
+# Per-error_code HTTP status overrides. StateError's default http_status is 409
+# (generic conflict), but the web-tool-bridge prompt flow produces distinct
+# sub-codes that map to different HTTP statuses. Callers pass
+# ``error_code=`` to StateError; this dict is consulted as a defense-in-depth
+# fallback when the caller forgot to also pass ``http_status=``.
+PROMPT_ERROR_HTTP_STATUS: dict[str, int] = {
+    "prompt_not_found": 404,
+    "prompt_stale": 409,
+    "prompt_already_pending": 400,
+    "answer_consumed": 409,
+    "missing_prompt_id": 400,
+}
+
+
 def to_http_exception(exc: AgentBaseError) -> HTTPException:
     """Map a taxonomy error to ``HTTPException`` with ``{error_code, message, detail}``.
 
@@ -32,8 +46,15 @@ def to_http_exception(exc: AgentBaseError) -> HTTPException:
     headers: dict[str, str] | None = None
     if exc.error_code in RETRYABLE_ERROR_CODES:
         headers = {"Retry-After": "5"}
+    # Defensive: if the caller set an error_code that implies a non-default
+    # HTTP status but forgot to set http_status explicitly, honour the
+    # PROMPT_ERROR_HTTP_STATUS table.
+    status = exc.http_status
+    override = PROMPT_ERROR_HTTP_STATUS.get(exc.error_code)
+    if override is not None and status == type(exc).http_status:
+        status = override
     return HTTPException(
-        status_code=exc.http_status, detail=envelope, headers=headers
+        status_code=status, detail=envelope, headers=headers
     )
 
 

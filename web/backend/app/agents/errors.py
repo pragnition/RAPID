@@ -13,10 +13,26 @@ class AgentBaseError(Exception):
     error_code: str = "agent_error"
     http_status: int = 500
 
-    def __init__(self, message: str, detail: dict | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        detail: dict | None = None,
+        *,
+        error_code: str | None = None,
+        http_status: int | None = None,
+    ) -> None:
         super().__init__(message)
         self.message = message
         self.detail = detail or {}
+        # Per-instance overrides — used by the prompt flow where several
+        # sub-codes share the same StateError class but need distinct
+        # error_code/http_status mappings (prompt_not_found → 404,
+        # prompt_stale → 409, prompt_already_pending → 400, answer_consumed
+        # → 409). Falls back to the class-level default when not overridden.
+        if error_code is not None:
+            self.error_code = error_code
+        if http_status is not None:
+            self.http_status = http_status
 
 
 class SdkError(AgentBaseError):

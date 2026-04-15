@@ -16,13 +16,17 @@ when the run finishes.
 from __future__ import annotations
 
 import asyncio
+import functools
 import json
 import logging
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
+
+if TYPE_CHECKING:  # pragma: no cover — avoid runtime circular import
+    from app.agents.session_manager import AgentSessionManager
 
 import sqlalchemy
 from sqlmodel import Session
@@ -80,6 +84,7 @@ class AgentSession:
         event_bus: EventBus,
         engine: sqlalchemy.Engine,
         budget: RunBudget,
+        manager: "AgentSessionManager | None" = None,
     ) -> None:
         self.run_id = run_id
         self.project_root = project_root
@@ -90,6 +95,10 @@ class AgentSession:
         self.event_bus = event_bus
         self.engine = engine
         self.budget = budget
+        # web-tool-bridge: needed for build_tools() and can_use_tool rebind.
+        # Optional for backwards-compat with existing tests that construct
+        # AgentSession directly without a manager.
+        self.manager = manager
 
         self._client: Any = None  # ClaudeSDKClient | None
         self._options: Any = None
