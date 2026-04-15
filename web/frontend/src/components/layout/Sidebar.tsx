@@ -15,7 +15,7 @@ export function Sidebar() {
 
   // Width classes based on state
   const widthClass = isFull
-    ? "w-60"
+    ? "w-[232px]"
     : isCompact
       ? "w-16"
       : "w-0 overflow-hidden";

@@ -112,7 +112,7 @@ export function AppLayout() {
   // Content area margin based on sidebar state
   const marginClass =
     sidebarState === "full"
-      ? "md:ml-60"
+      ? "md:ml-[232px]"
       : sidebarState === "compact"
         ? "md:ml-16"
         : "md:ml-0";
@@ -125,7 +125,7 @@ export function AppLayout() {
       {/* Main content area */}
       <main
         className={`
-          pt-12 transition-all duration-200
+          pt-14 transition-all duration-200
           ${marginClass}
         `}
       >

@@ -14,7 +14,7 @@ export function Header({ onToggleShortcuts }: HeaderProps) {
   // Offset the header based on sidebar width
   const marginClass =
     sidebarState === "full"
-      ? "md:ml-60"
+      ? "md:ml-[232px]"
       : sidebarState === "compact"
         ? "md:ml-16"
         : "md:ml-0";
@@ -22,7 +22,7 @@ export function Header({ onToggleShortcuts }: HeaderProps) {
   return (
     <header
       className={`
-        fixed top-0 right-0 left-0 z-20 h-12
+        fixed top-0 right-0 left-0 z-20 h-14
         bg-surface-0 border-b border-border
         flex items-center justify-between px-4
         transition-all duration-200
