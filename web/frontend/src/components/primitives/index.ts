@@ -23,3 +23,12 @@ export { NavGroup, type NavGroupProps } from "./NavGroup";
 // Data
 export { DataTable, type DataTableProps, type Column } from "./DataTable";
 export { SearchInput, type SearchInputProps } from "./SearchInput";
+
+// Chat surface
+export { ToolCallCard, type ToolCallCardProps } from "./ToolCallCard";
+export { StructuredQuestion, type StructuredQuestionProps } from "./StructuredQuestion";
+export { ErrorCard, type ErrorCardProps } from "./ErrorCard";
+export { Composer, type ComposerProps } from "./Composer";
+export { SlashAutocomplete, type SlashAutocompleteProps } from "./SlashAutocomplete";
+export { AutoScrollPill, type AutoScrollPillProps } from "./AutoScrollPill";
+export { NextActionBanner, type NextActionBannerProps } from "./NextActionBanner";
