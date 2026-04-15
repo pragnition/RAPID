@@ -15,6 +15,7 @@ from uuid import UUID
 from fastapi import Request
 
 from app.agents import AgentSessionManager, StateError
+from app.models.agent_prompt import AgentPrompt
 from app.models.agent_run import AgentRun
 from app.schemas.sse_events import SseEvent
 
@@ -73,3 +74,24 @@ async def stream_events(
 ) -> AsyncIterator[SseEvent]:
     async for evt in mgr.attach_events(run_id, since=since):
         yield evt
+
+
+# ---------- web-tool-bridge prompt facade ----------
+
+
+async def resolve_prompt(
+    mgr: AgentSessionManager, run_id: UUID, prompt_id: str, answer: str
+) -> None:
+    await mgr.resolve_prompt(run_id, prompt_id, answer)
+
+
+async def get_pending_prompt(
+    mgr: AgentSessionManager, run_id: UUID
+) -> AgentPrompt | None:
+    return await mgr.get_pending_prompt(run_id)
+
+
+async def reopen_prompt(
+    mgr: AgentSessionManager, run_id: UUID, prompt_id: str
+) -> None:
+    await mgr.reopen_prompt(run_id, prompt_id)

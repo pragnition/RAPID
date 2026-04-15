@@ -26,6 +26,7 @@ from app.schemas.agents import (
     AgentRunResponse,
     AnswerRequest,
     InterruptResponse,
+    PendingPromptResponse,
     SendInputRequest,
     StartRunRequest,
 )
@@ -145,20 +146,91 @@ async def interrupt_endpoint(run_id: UUID, request: Request):
     return InterruptResponse(ok=True)
 
 
-@router.post("/runs/{run_id}/answer", status_code=501)
-async def answer_endpoint(run_id: UUID, body: AnswerRequest):
-    """Stub: implemented in Set 2 (web-tool-bridge). URL is frozen here."""
-    raise HTTPException(
-        status_code=501,
-        detail={
-            "error_code": "not_implemented",
-            "message": (
-                "ask_user answer bridge is owned by set web-tool-bridge "
-                "(Wave 2 of milestone)"
-            ),
-            "detail": {
-                "run_id": str(run_id),
-                "tool_use_id": body.tool_use_id,
+@router.post("/runs/{run_id}/answer", status_code=204)
+async def answer_endpoint(run_id: UUID, body: AnswerRequest, request: Request):
+    """Submit the user's answer to a pending ``ask_user`` prompt.
+
+    ``prompt_id`` is the real acknowledgement handle (server-minted).
+    Returns 204 on success, 404 if the prompt is unknown, 409 if it's no
+    longer pending.
+    """
+    mgr = agent_service.get_manager(request)
+    if not body.prompt_id:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error_code": "missing_prompt_id",
+                "message": "prompt_id is required",
+                "detail": {"run_id": str(run_id)},
             },
-        },
+        )
+    try:
+        await agent_service.resolve_prompt(
+            mgr, run_id, body.prompt_id, body.answer
+        )
+    except StateError as exc:
+        raise to_http_exception(exc)
+    return Response(status_code=204)
+
+
+@router.get("/runs/{run_id}/pending-prompt")
+async def get_pending_prompt_endpoint(run_id: UUID, request: Request):
+    """Return the current pending prompt for ``run_id``, or 204 if none.
+
+    Used by the frontend on SSE reconnect and on 409 auto-swap to rehydrate
+    the modal from SQLite truth.
+    """
+    mgr = agent_service.get_manager(request)
+    try:
+        row = await agent_service.get_pending_prompt(mgr, run_id)
+    except StateError as exc:
+        raise to_http_exception(exc)
+    if row is None:
+        return Response(status_code=204)
+
+    # Decode the stored payload JSON into typed fields.
+    try:
+        payload = json.loads(row.payload or "{}")
+    except Exception:
+        payload = {}
+
+    n_of_m = payload.get("n_of_m")
+    batch_total: int | None = None
+    if isinstance(n_of_m, (list, tuple)) and len(n_of_m) == 2:
+        try:
+            batch_total = int(n_of_m[1])
+        except Exception:
+            batch_total = None
+
+    return PendingPromptResponse(
+        prompt_id=row.id,
+        run_id=row.run_id,
+        kind="ask_user",
+        question=str(payload.get("question", "")),
+        options=payload.get("options"),
+        allow_free_text=bool(payload.get("allow_free_text", True)),
+        created_at=row.created_at,
+        batch_id=row.batch_id,
+        batch_position=row.batch_position,
+        batch_total=batch_total,
     )
+
+
+@router.post(
+    "/runs/{run_id}/prompts/{prompt_id}/reopen", status_code=204
+)
+async def reopen_prompt_endpoint(
+    run_id: UUID, prompt_id: str, request: Request
+):
+    """Reopen a previously-answered prompt for back-navigation.
+
+    Returns 204 on success, 404 if the prompt is unknown, 400 if nothing to
+    reopen (already pending), 409 if the agent has already consumed the
+    answer (``consumed_at`` is not null).
+    """
+    mgr = agent_service.get_manager(request)
+    try:
+        await agent_service.reopen_prompt(mgr, run_id, prompt_id)
+    except StateError as exc:
+        raise to_http_exception(exc)
+    return Response(status_code=204)

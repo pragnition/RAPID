@@ -220,18 +220,48 @@ def test_post_input_state_error_returns_409(app, client):
 
 
 # ---------------------------------------------------------------------------
-# POST /answer stub
+# POST /answer — web-tool-bridge Wave 1 (no longer a 501 stub)
 # ---------------------------------------------------------------------------
 
 
-def test_post_answer_returns_501(client):
+def test_post_answer_without_prompt_id_returns_400(client):
+    """Missing prompt_id in body should surface a 400 missing_prompt_id."""
     resp = client.post(
         f"/api/agents/runs/{uuid4()}/answer",
         json={"tool_use_id": "tu_1", "answer": "yes"},
     )
-    assert resp.status_code == 501
+    assert resp.status_code == 400
     envelope = resp.json().get("detail") or resp.json()
-    assert envelope["error_code"] == "not_implemented"
+    assert envelope["error_code"] == "missing_prompt_id"
+
+
+def test_post_answer_unknown_prompt_returns_404(client):
+    """Unknown prompt_id yields 404 prompt_not_found."""
+    from app.agents.errors import StateError
+
+    app = client.app
+
+    async def _resolve(run_id, prompt_id, answer):  # noqa: ARG001
+        raise StateError(
+            "Prompt not found",
+            detail={"prompt_id": prompt_id},
+            error_code="prompt_not_found",
+            http_status=404,
+        )
+
+    app.state.agent_manager.resolve_prompt = _resolve  # type: ignore[attr-defined]
+
+    resp = client.post(
+        f"/api/agents/runs/{uuid4()}/answer",
+        json={
+            "tool_use_id": "tu_1",
+            "answer": "yes",
+            "prompt_id": "p-nonexistent",
+        },
+    )
+    assert resp.status_code == 404
+    envelope = resp.json().get("detail") or resp.json()
+    assert envelope["error_code"] == "prompt_not_found"
 
 
 # ---------------------------------------------------------------------------
