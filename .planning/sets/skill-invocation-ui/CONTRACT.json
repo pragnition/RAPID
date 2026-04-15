@@ -1,0 +1,88 @@
+{
+  "setId": "skill-invocation-ui",
+  "version": "1.0.0",
+  "exports": {
+    "skill_args_frontmatter_schema": {
+      "type": "file",
+      "signature": "SKILL.md YAML frontmatter extension: args: [{name, type: 'string'|'choice'|'bool'|'multi-line'|'set-ref', description, required, default, choices?, maxLength?}]",
+      "description": "Extended frontmatter schema for all 30 SKILL.md files. Modeled on GitHub Actions workflow_dispatch inputs. Capped at ~10 inputs per skill. Parsed once at startup into skill_catalog."
+    },
+    "skill_catalog_service": {
+      "type": "file",
+      "signature": "app/services/skill_catalog_service.py: def load_catalog() -> SkillCatalog; def get_skill(name) -> SkillMeta; def check_preconditions(name, project_state) -> PreconditionResult",
+      "description": "Service that parses SKILL.md frontmatter at startup, exposes metadata, validates preconditions (e.g. /execute-set requires a plan). Cached; reloads on file-watch in dev."
+    },
+    "skills_catalog_endpoint": {
+      "type": "endpoint",
+      "signature": "GET /api/skills -> [{name, description, args: [...], categories: [...]}]; GET /api/skills/{name} -> full meta including preconditions against current project state",
+      "description": "Frontend catalog endpoint. Agents tab renders gallery from this. Launch modal fetches per-skill meta to render form."
+    },
+    "skill_launcher_component": {
+      "type": "file",
+      "signature": "<SkillLauncher skillName=string />; <RunLauncher /> (modal wrapper)",
+      "description": "React component + typed form generator. Renders typed inputs per arg schema (string, choice as dropdown, bool as switch, multi-line as textarea, set-ref as set picker from .planning/). Dedicated 'Skip discuss' toggle for applicable skills. Submits to POST /api/agents/runs from agent-runtime-foundation."
+    },
+    "skill_gallery_page": {
+      "type": "file",
+      "signature": "AgentsPage's 'Launch New Run' tab renders <SkillGallery /> with category filters (autonomous / interactive / human-in-loop)",
+      "description": "Gallery UI listing all dispatchable skills. Each card shows name, description, arg count, complexity hints. Click opens SkillLauncher modal."
+    },
+    "sanitized_args_contract": {
+      "type": "function",
+      "signature": "def sanitize_skill_args(skill_name, raw_args) -> sanitized_args; wraps string args in <user_input>...</user_input> tags; enforces maxLength per arg; rejects shell metacharacters in set-ref args",
+      "description": "Server-side sanitization before args reach SDK. Prevents shell injection into agent prompt. Length limits per arg type. Server-controlled SDK options (args never translate to SDK option names)."
+    },
+    "precondition_check_endpoint": {
+      "type": "endpoint",
+      "signature": "POST /api/skills/{name}/check-preconditions {project_id, args} -> {ok: bool, blockers: [...]}",
+      "description": "Pre-dispatch validation. Returns human-readable blockers (e.g. 'execute-set requires a plan'). Launcher disables Submit button and surfaces blockers inline."
+    }
+  },
+  "imports": {
+    "run_dispatch_endpoint": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "endpoint",
+      "signature": "POST /api/agents/runs {project_id, skill_name, skill_args} -> {run_id}",
+      "description": "Launcher posts to this endpoint after validating args"
+    },
+    "build_sdk_options": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "function",
+      "signature": "build_sdk_options(project_root, worktree, skill_name, skill_args, run_id) -> ClaudeAgentOptions",
+      "description": "The catalog service must pass skill_args in the shape build_sdk_options expects; skill_runner on the foundation side consumes them"
+    },
+    "skill_runner_contract": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "function",
+      "signature": "skill_runner.build_prompt(skill_name, sanitized_args) -> str",
+      "description": "The args we sanitize here are consumed by foundation's skill_runner to construct the SDK prompt"
+    },
+    "fromSets": [
+      {
+        "set": "agent-runtime-foundation"
+      }
+    ]
+  },
+  "behavioral": {
+    "args_never_shell_interpolated": {
+      "description": "User-supplied skill args are never shell-interpolated. Wrapped in <user_input> tags inside the prompt; passed to SDK via ClaudeAgentOptions, not as shell arguments.",
+      "enforced_by": "test"
+    },
+    "arg_length_limits": {
+      "description": "String args capped at 4096 chars default; multi-line at 32768. Server rejects oversized submissions with 400.",
+      "enforced_by": "runtime"
+    },
+    "preconditions_block_dispatch": {
+      "description": "If check-preconditions returns ok=false, the launcher disables Submit and dispatches cannot proceed. Server-side second check also rejects with 400 to handle race.",
+      "enforced_by": "runtime"
+    },
+    "all_30_skills_in_catalog": {
+      "description": "Every SKILL.md in skills/ directory has args frontmatter (possibly empty args: []) and appears in the catalog. Missing frontmatter = CI failure.",
+      "enforced_by": "test"
+    },
+    "frontmatter_schema_validated": {
+      "description": "Frontmatter is validated by a Zod-equivalent Python schema at startup. Invalid frontmatter = loud startup error, not silent omission.",
+      "enforced_by": "runtime"
+    }
+  }
+}

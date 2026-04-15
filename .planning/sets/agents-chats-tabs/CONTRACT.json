@@ -1,0 +1,164 @@
+{
+  "setId": "agents-chats-tabs",
+  "version": "1.0.0",
+  "exports": {
+    "agents_routes": {
+      "type": "file",
+      "signature": "frontend routes: /agents (list), /agents/:runId (detail), /chats (list), /chats/:threadId (detail)",
+      "description": "New deep-linkable routes under React Router. Sidebar ga/gh shortcuts navigate to /agents and /chats respectively."
+    },
+    "sidebar_nav_extension": {
+      "type": "file",
+      "signature": "NAV_ITEMS += [{label: 'Agents', href: '/agents', shortcut: 'ga'}, {label: 'Chats', href: '/chats', shortcut: 'gh'}]; grouped with Kanban under 'Driver surfaces', separated from 'Observer surfaces' (State/Worktrees/Graph/Codebase)",
+      "description": "Extends existing left sidebar. No new top tabs (UX constraint). Keyboard shortcuts follow existing vim-style pattern."
+    },
+    "agents_page": {
+      "type": "file",
+      "signature": "<AgentsPage /> with: runs list (status pill, skill name, duration, set ref, cost); filters (status, skill, set); 'Launch New Run' button opening <SkillLauncher> from set C; consolidated polling via /api/dashboard",
+      "description": "Primary list view for all agent runs across the project."
+    },
+    "agent_run_page": {
+      "type": "file",
+      "signature": "<AgentRunPage /> with: status pill (RUNNING 00:04:32 / WAITING / FAILED / COMPLETED -- color+label per WCAG 1.4.1); live activity feed; pause/stop controls; inline tool-call cards; cost/token/duration telemetry; NO composer; keyboard shortcuts Shift+P=pause, Shift+S=stop",
+      "description": "Run-detail page for autonomous skills. Closing the tab does not kill the run. Reopening re-attaches via SSE + polling fallback."
+    },
+    "chats_page": {
+      "type": "file",
+      "signature": "<ChatsPage /> with chat thread list + filters + 'New Chat' dispatcher for interactive skills",
+      "description": "Thread list view for all chat sessions."
+    },
+    "chat_thread_page": {
+      "type": "file",
+      "signature": "<ChatThreadPage /> with: persistent bottom composer; streaming cursor; inline tool-call cards (spinner/checkmark/duration/expandable args+result); inline structured-question forms for can_use_tool prompts; assistant message rendering (react-markdown)",
+      "description": "Chat detail page for interactive skills. Unlike AgentRunPage, has a composer for back-and-forth."
+    },
+    "use_agent_events_hook": {
+      "type": "function",
+      "signature": "function useAgentEvents(runId: string): {events, status, reconnect} -- SSE primary with 2-5s polling fallback, ?since=N replay on reconnect",
+      "description": "React hook for streaming agent events. Abstracts SSE + polling fallback. Reconnects on network hiccup with gap-replay."
+    },
+    "use_chats_hook": {
+      "type": "function",
+      "signature": "function useChats() -> {threads, createThread, sendMessage}; function useChatThread(id) -> {thread, messages, stream}",
+      "description": "React hooks for chat state management."
+    },
+    "chat_schema": {
+      "type": "class",
+      "signature": "class Chat(SQLModel, table=True): id, project_id, skill_name, created_at, last_message_at, title; class ChatMessage(SQLModel, table=True): id, chat_id (FK), role (user|assistant|tool), content, tool_calls (json), agent_run_id (FK | None), seq, created_at; class ChatAttachment(SQLModel, table=True, nullable fields): id, chat_id, message_id, kind, payload -- stubbed for v7.1",
+      "description": "Chat persistence schema. ChatAttachment stubbed with all-nullable fields per OVERSIGHTS guidance (avoid breaking migration in v7.1)."
+    },
+    "chat_service": {
+      "type": "file",
+      "signature": "app/services/chat_service.py: async def create_thread(project_id, skill_name) -> Chat; async def send_message(chat_id, content) -> ChatMessage; async def stream_response(chat_id) -> AsyncIterator[ChatMessage]",
+      "description": "Service layer bridging chat UI and agent runtime. A chat thread binds to a long-lived AgentSession with composer-based input."
+    },
+    "chats_http": {
+      "type": "endpoint",
+      "signature": "GET /api/chats; POST /api/chats (create); GET /api/chats/{id}; POST /api/chats/{id}/messages; GET /api/chats/{id}/events (SSE)",
+      "description": "Chat REST endpoints."
+    },
+    "consolidated_dashboard_endpoint": {
+      "type": "endpoint",
+      "signature": "GET /api/dashboard?project_id=X -> {runs_summary, chats_summary, kanban_summary, budget_remaining, recent_activity}",
+      "description": "Single endpoint that replaces 4-5 independent polls to prevent React Query thundering herd on tab focus. Jittered 5s TanStack Query interval."
+    },
+    "vite_sse_proxy_config": {
+      "type": "file",
+      "signature": "frontend/vite.config.ts proxy rule with correct headers for event-stream (no buffering, content-type preservation)",
+      "description": "Vite dev-server SSE proxy configuration. Without it, SSE buffers in dev and never flushes."
+    },
+    "accessibility_primitives": {
+      "type": "file",
+      "signature": "<LiveRegion aria-live='polite'>, useFocusTrap hook, usePrefersReducedMotion hook, useAutoScrollWithOptOut hook",
+      "description": "ARIA live regions for streaming content, aria-busy during token streams, focus-trapped approval modals (reused from web-tool-bridge), keyboard-accessible pause/stop/approve, prefers-reduced-motion respect, auto-scroll opt-out. WCAG AA color contrast verified."
+    },
+    "empty_state_onboarding": {
+      "type": "file",
+      "signature": "<AgentsEmptyState /> and <ChatsEmptyState /> components with 3 example actions each; explains chat-vs-run distinction",
+      "description": "First-time onboarding. Agents empty state: 'Try /rapid:status, /rapid:plan-set, /rapid:execute-set'. Chats empty state: 'Try /rapid:discuss-set, /rapid:quick, /rapid:bug-fix'."
+    }
+  },
+  "imports": {
+    "runs_http_and_sse": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "endpoint",
+      "signature": "GET /api/agents/runs, GET /api/agents/runs/{id}, SSE /events, POST /input, POST /interrupt",
+      "description": "AgentsPage and AgentRunPage consume these endpoints"
+    },
+    "sse_event_schema": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "event",
+      "signature": "typed event kinds (assistant_text, thinking, tool_use, tool_result, ask_user, permission_req, status, run_complete) with stable payloads",
+      "description": "useAgentEvents hook consumes this schema to render inline tool-call cards, streaming text, status pill updates"
+    },
+    "agent_run_model": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "class",
+      "signature": "AgentRun SQLModel",
+      "description": "ChatMessage.agent_run_id is an FK to agent_runs.id"
+    },
+    "ask_user_modal_components": {
+      "fromSet": "web-tool-bridge",
+      "type": "file",
+      "signature": "<AskUserModal>, <ApprovalModal>, <PermissionPrompt>",
+      "description": "Chat thread page and run detail page both mount these modals when can_use_tool/ask_user events arrive"
+    },
+    "skill_launcher_components": {
+      "fromSet": "skill-invocation-ui",
+      "type": "file",
+      "signature": "<SkillLauncher>, <SkillGallery>",
+      "description": "AgentsPage 'Launch New Run' button opens SkillLauncher; ChatsPage 'New Chat' uses same gallery filtered to interactive skills"
+    },
+    "skills_catalog_endpoint": {
+      "fromSet": "skill-invocation-ui",
+      "type": "endpoint",
+      "signature": "GET /api/skills",
+      "description": "Consumed for launcher rendering"
+    },
+    "fromSets": [
+      {
+        "set": "agent-runtime-foundation"
+      },
+      {
+        "set": "web-tool-bridge"
+      },
+      {
+        "set": "skill-invocation-ui"
+      }
+    ]
+  },
+  "behavioral": {
+    "run_survives_tab_close": {
+      "description": "Closing the browser tab does not interrupt the run. Reopening the same /agents/:runId route re-attaches via SSE (with ?since=N replay) + SQLite backfill. Matches user's CLAUDE.md polling preference and Replit Agent 3 / Devin / Manus conventions.",
+      "enforced_by": "test"
+    },
+    "polling_primary_sse_augmentation": {
+      "description": "Run list and run status poll at 2-5s jittered interval. SSE is used for streaming text and tool-call events only (not as the primary status signal). Consolidated dashboard endpoint to prevent thundering herd.",
+      "enforced_by": "test"
+    },
+    "status_pill_color_and_label": {
+      "description": "Every status pill uses both color and text label per WCAG 1.4.1 (RUNNING green+text, WAITING yellow+text, FAILED red+text, COMPLETED blue+text). Never color alone.",
+      "enforced_by": "test"
+    },
+    "keyboard_accessibility": {
+      "description": "All interactive controls are keyboard-reachable. Shift+P pauses, Shift+S stops (run detail). Modal focus-trap + ESC reject (approval modal). Tab order is logical. Screen-reader announcements via ARIA live regions.",
+      "enforced_by": "test"
+    },
+    "no_composer_on_run_detail": {
+      "description": "AgentRunPage has no composer -- it is NOT a chat. Autonomous runs do not accept user input mid-run (only pause/stop). This is load-bearing UX: users know from chrome alone whether they're in chat or autonomous mode.",
+      "enforced_by": "test"
+    },
+    "prefers_reduced_motion_respected": {
+      "description": "Streaming cursor, status-pill pulse, and activity-feed autoscroll animations are suppressed when prefers-reduced-motion is set.",
+      "enforced_by": "test"
+    },
+    "auto_scroll_opt_out": {
+      "description": "Activity feed and chat message list auto-scroll to bottom by default, but scrolling up manually disables auto-scroll until the user scrolls back to bottom. Prevents losing place during long streams.",
+      "enforced_by": "test"
+    },
+    "empty_state_onboarding_present": {
+      "description": "Agents and Chats tabs both render onboarding empty state when no runs/threads exist. Onboarding explains chat-vs-run distinction with 3 example actions.",
+      "enforced_by": "test"
+    }
+  }
+}

@@ -2,88 +2,101 @@
   "version": 3,
   "nodes": [
     {
-      "id": "code-graph-backend",
+      "id": "agent-runtime-foundation",
       "wave": 1,
-      "status": "merged",
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     },
     {
-      "id": "code-graph-frontend",
-      "wave": 1,
-      "status": "merged",
+      "id": "web-tool-bridge",
+      "wave": 2,
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     },
     {
-      "id": "fixes-and-housekeeping",
-      "wave": 1,
-      "status": "merged",
+      "id": "skill-invocation-ui",
+      "wave": 2,
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     },
     {
-      "id": "bugfix-wave-splitting",
-      "wave": 1,
-      "status": "merged",
+      "id": "kanban-autopilot",
+      "wave": 2,
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     },
     {
-      "id": "research-agent-reduction",
-      "wave": 1,
-      "status": "merged",
-      "type": "set",
-      "group": null,
-      "priority": null,
-      "description": null
-    },
-    {
-      "id": "branding-skill-overhaul",
-      "wave": 1,
-      "status": "merged",
-      "type": "set",
-      "group": null,
-      "priority": null,
-      "description": null
-    },
-    {
-      "id": "mission-control-polish",
-      "wave": 1,
-      "status": "merged",
+      "id": "agents-chats-tabs",
+      "wave": 3,
+      "status": "pending",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
     }
   ],
-  "edges": [],
+  "edges": [
+    {
+      "from": "agent-runtime-foundation",
+      "to": "web-tool-bridge"
+    },
+    {
+      "from": "agent-runtime-foundation",
+      "to": "skill-invocation-ui"
+    },
+    {
+      "from": "agent-runtime-foundation",
+      "to": "kanban-autopilot"
+    },
+    {
+      "from": "agent-runtime-foundation",
+      "to": "agents-chats-tabs"
+    },
+    {
+      "from": "web-tool-bridge",
+      "to": "agents-chats-tabs"
+    },
+    {
+      "from": "skill-invocation-ui",
+      "to": "agents-chats-tabs"
+    }
+  ],
   "waves": {
     "1": {
       "nodes": [
-        "code-graph-backend",
-        "code-graph-frontend",
-        "fixes-and-housekeeping",
-        "bugfix-wave-splitting",
-        "research-agent-reduction",
-        "branding-skill-overhaul",
-        "mission-control-polish"
+        "agent-runtime-foundation"
+      ]
+    },
+    "2": {
+      "nodes": [
+        "web-tool-bridge",
+        "skill-invocation-ui",
+        "kanban-autopilot"
+      ]
+    },
+    "3": {
+      "nodes": [
+        "agents-chats-tabs"
       ]
     }
   },
   "groups": {},
   "metadata": {
-    "created": "2026-04-09",
-    "totalWaves": 1,
-    "maxParallelism": 7,
-    "totalNodes": 7
+    "created": "2026-04-15",
+    "totalWaves": 3,
+    "maxParallelism": 3,
+    "totalNodes": 5
   }
 }

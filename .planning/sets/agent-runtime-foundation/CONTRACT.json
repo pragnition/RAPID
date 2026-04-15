@@ -1,0 +1,131 @@
+{
+  "setId": "agent-runtime-foundation",
+  "version": "1.0.0",
+  "exports": {
+    "build_sdk_options": {
+      "type": "function",
+      "signature": "def build_sdk_options(project_root: Path, worktree: Path | None, skill_name: str, skill_args: dict, run_id: str) -> ClaudeAgentOptions",
+      "description": "Centralized SDK ClaudeAgentOptions constructor. Sets setting_sources=['project'], cwd=project_root, additional_directories=[worktree] when provided, per-skill max_turns, per-skill allowed_tools/disallowed_tools, can_use_tool callback, no-op PreToolUse hook, env={} (scrub credentials; rely on proxy), never bypassPermissions. Single source of truth for every skill-route SDK invocation; unit-tested that setting_sources is always ['project']."
+    },
+    "AgentSessionManager": {
+      "type": "class",
+      "signature": "class AgentSessionManager: async def start_run(project_id, skill_name, args) -> AgentRun; async def get_run(run_id) -> AgentRun; async def send_input(run_id, text) -> None; async def interrupt(run_id) -> None; async def attach_events(run_id, since_seq: int = 0) -> AsyncIterator[AgentEvent]",
+      "description": "Long-lived lifespan-managed service owning all ClaudeSDKClient instances. Per-project asyncio.Semaphore (cap 3, configurable) for concurrency. Per-set SQLite unique constraint (project_id, set_id, status='running') for semantic mutex -- second run rejected with 409. Crash recovery marks in-flight runs 'interrupted' on startup; no SDK session resume across restarts. Orphan-process sweeper runs at startup, scanning PIDs tracked in agent_runs.pid column."
+    },
+    "AgentSession": {
+      "type": "class",
+      "signature": "class AgentSession: run_id: str; pid: int | None; pump_task: asyncio.Task; event_bus: EventBus; async def __aenter__(); async def __aexit__(); async def run() -> None",
+      "description": "Wraps a single ClaudeSDKClient + asyncio pump task. Async-context-managed so subprocess is always cleaned up. Emits events via EventBus with monotonic seq numbers. asyncio.wait_for-wrapped with per-skill timeout to prevent hangs."
+    },
+    "EventBus": {
+      "type": "class",
+      "signature": "class EventBus: async def publish(run_id, event: AgentEvent) -> None; async def subscribe(run_id, since_seq: int = 0) -> AsyncIterator[AgentEvent]",
+      "description": "Per-run asyncio pub/sub with in-memory ring buffer (last 1000 events). Backing store is agent_events SQLite table for durable replay across reconnects and backend restarts."
+    },
+    "can_use_tool_hook": {
+      "type": "function",
+      "signature": "async def can_use_tool(tool_name: str, tool_args: dict, context: ToolPermissionContext) -> ToolPermissionDecision",
+      "description": "Primary tool gate. Destructive-pattern regex (git push --force, rm -rf /, branch -D, env*, cat .env*) -> deny. Allowlisted per-skill tools -> allow. Unknown/ambiguous -> route to browser via EventBus ('permission_req' event) and await answer from POST /api/agents/runs/{id}/answer with timeout -> 409 on stale prompt_id. Paired with no-op PreToolUse hook because the SDK silently short-circuits can_use_tool without one (undocumented quirk)."
+    },
+    "disallowed_tools_registry": {
+      "type": "file",
+      "signature": "app/agents/permissions.py::DESTRUCTIVE_PATTERNS: list[re.Pattern]",
+      "description": "Unconditional firewall regex list for destructive Bash/Write/Edit patterns. Never overridable by any skill. Applied before allowlist check."
+    },
+    "agent_run_model": {
+      "type": "class",
+      "signature": "class AgentRun(SQLModel, table=True): id: str (uuid); project_id: str; set_id: str | None; skill_name: str; skill_args: str (json); status: Literal['pending','running','waiting','interrupted','failed','completed']; pid: int | None; started_at: datetime; ended_at: datetime | None; total_cost_usd: float; max_turns: int; turn_count: int; error_code: str | None; error_detail: str | None",
+      "description": "SQLite row per run. Unique constraint: (project_id, set_id) WHERE status='running' for per-set mutex. Canonical run identity; referenced by agent_event.run_id FK, agent_prompts.run_id FK, kanban_card.agent_run_id FK, chat_message.agent_run_id FK."
+    },
+    "agent_event_model": {
+      "type": "class",
+      "signature": "class AgentEvent(SQLModel, table=True): id: int (auto); run_id: str (FK); seq: int; ts: datetime; kind: Literal[...]; payload: str (json)",
+      "description": "Durable event log per run. Unique (run_id, seq). Supports ?since=N replay on SSE reconnect. Batched writes ~1/s to avoid SQLite write contention."
+    },
+    "sse_event_schema": {
+      "type": "event",
+      "signature": "kind in {assistant_text, thinking, tool_use, tool_result, ask_user, permission_req, status, run_complete}; payload shape per kind is stable typed contract",
+      "description": "Typed SSE event names and payload shapes. Every consumer (web-tool-bridge, agents-chats-tabs, kanban-autopilot) depends on this contract. Client reconnect uses ?since=<seq> query param to replay from ring buffer + SQLite backfill."
+    },
+    "run_dispatch_http": {
+      "type": "endpoint",
+      "signature": "POST /api/agents/runs {project_id, skill_name, skill_args} -> 200 {run_id} in <200ms; GET /api/agents/runs/{id} -> AgentRun; GET /api/agents/runs/{id}/events (SSE); POST /api/agents/runs/{id}/input {text}; POST /api/agents/runs/{id}/interrupt",
+      "description": "Task-queue dispatch shape. POST /runs returns <200ms with run_id; actual run is asyncio.Task owned by session manager. Never synchronous. No BackgroundTasks. Matches user's CLAUDE.md polling preference."
+    },
+    "per_skill_permission_policy": {
+      "type": "file",
+      "signature": "app/agents/permissions.py::PERMISSION_POLICY: dict[skill_name, {permission_mode, allowed_tools, disallowed_tools, max_turns}]",
+      "description": "Per-skill policy config. plan-set/execute-set: acceptEdits + scoped disallow. merge/cleanup: default. Interactive skills: default. Never bypassPermissions. Unit-tested that bypassPermissions never appears in any policy entry."
+    },
+    "create_sdk_mcp_server_integration": {
+      "type": "function",
+      "signature": "def register_mcp_tools(session: AgentSession, tools: list[Tool]) -> None",
+      "description": "Integration point for downstream sets to register in-process @tool functions. Used by web-tool-bridge (ask_user tools) and kanban-autopilot (kanban_tools) to expose MCP tools to the agent without a separate process."
+    },
+    "run_id_correlation": {
+      "type": "file",
+      "signature": "contextvars.ContextVar[str] named 'run_id' read by logger filter; threaded into SDK env (ClaudeAgentOptions.env['RAPID_RUN_ID']); present in every agent_event row; echoed in every .planning/ write the spawned skill performs",
+      "description": "Single run_id threaded through: stdout logs, SQLite agent_events/agent_runs/agent_prompts/chat_message rows, SSE event payloads, spawned-skill environment, and .planning/ artifact commit trailers. Schema decision is load-bearing for UI capabilities for next 2 years."
+    },
+    "rapid_run_mode_env": {
+      "type": "file",
+      "signature": "ClaudeAgentOptions.env['RAPID_RUN_MODE']: 'cli' | 'sdk'",
+      "description": "Env var gate passed to spawned skills. Skill prose branches on this to call either the SDK-only custom MCP tools (when sdk) or retain CLI AskUserQuestion behavior (when cli or unset). Enables additive-only CLI parity: no skill is forked."
+    },
+    "cost_budget_tracking": {
+      "type": "function",
+      "signature": "class RunBudget: max_turns: int; daily_cap_usd: float (default 10.0); async def record_turn(cost_usd) -> None; async def check() -> BudgetStatus",
+      "description": "Per-run max_turns (from per-skill policy); per-project daily cap enforced across all runs. Halts run with 'budget_exceeded' status when hit. Surfaces 'budget remaining' via dashboard endpoint."
+    },
+    "error_taxonomy": {
+      "type": "class",
+      "signature": "class SdkError(Exception); class RunError(Exception); class StateError(Exception); class ToolError(Exception); class UserError(Exception)",
+      "description": "Canonical error hierarchy. Every downstream set raises one of these; API error responses map error_code 1:1. Enables UI error taxonomy and BLOCKED-resume skeleton."
+    }
+  },
+  "imports": {
+    "fromSets": []
+  },
+  "behavioral": {
+    "sub_200ms_dispatch": {
+      "description": "POST /api/agents/runs must return {run_id} in under 200ms; actual run executes asynchronously on an asyncio.Task. Never block the request thread on SDK startup.",
+      "enforced_by": "test"
+    },
+    "setting_sources_project": {
+      "description": "Every ClaudeAgentOptions built by build_sdk_options() has setting_sources=['project'] so .claude/skills/*, CLAUDE.md, and slash commands are loaded. Unit test asserts this invariant on every code path.",
+      "enforced_by": "test"
+    },
+    "no_bypass_permissions": {
+      "description": "bypassPermissions is never set on any ClaudeAgentOptions anywhere in the codebase. Unit test greps source. Propagates to subagents silently and nullifies the safety model.",
+      "enforced_by": "test"
+    },
+    "credential_env_scrubbed": {
+      "description": "ANTHROPIC_API_KEY and related credentials never appear in the spawned SDK subprocess env. Options.env is set to {} (plus RAPID_RUN_MODE + RAPID_RUN_ID only); credentials flow via proxy pattern (ANTHROPIC_BASE_URL) or SDK's OAuth config, never inherited.",
+      "enforced_by": "test"
+    },
+    "per_set_run_mutex": {
+      "description": "Starting a second run against the same (project_id, set_id) while one is 'running' fails with HTTP 409. SQLite unique partial index enforces semantically; handler returns error before dispatch.",
+      "enforced_by": "runtime"
+    },
+    "concurrency_semaphore": {
+      "description": "At most 3 concurrent SDK runs per project (configurable) via asyncio.Semaphore. Prevents SDK >=0.1.59's 11+ concurrent query() warning and SQLite write contention.",
+      "enforced_by": "runtime"
+    },
+    "destructive_commands_firewalled": {
+      "description": "git push --force, rm -rf /, branch -D, env*, cat .env*, and related destructive Bash patterns are always denied regardless of skill policy. can_use_tool checks DESTRUCTIVE_PATTERNS before any allowlist.",
+      "enforced_by": "test"
+    },
+    "run_id_on_every_log_line": {
+      "description": "All log records emitted during a run include the run_id via contextvars. Every SQLite insert, every SSE event, every .planning/ artifact write carries the same run_id for correlation.",
+      "enforced_by": "test"
+    },
+    "orphan_subprocess_reaping": {
+      "description": "On backend startup, scan agent_runs WHERE status IN ('running','waiting') and reconcile against live PIDs; mark orphans as 'interrupted'. Prevents cost-burning zombies.",
+      "enforced_by": "runtime"
+    },
+    "cwd_is_project_root": {
+      "description": "SDK session cwd is always the project root. Worktree paths are exposed via additional_directories so spawned skills can cd into worktrees for git ops but session transcripts survive worktree cleanup.",
+      "enforced_by": "test"
+    }
+  }
+}

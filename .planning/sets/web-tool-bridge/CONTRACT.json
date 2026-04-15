@@ -1,0 +1,131 @@
+{
+  "setId": "web-tool-bridge",
+  "version": "1.0.0",
+  "exports": {
+    "webui_ask_user_tool": {
+      "type": "function",
+      "signature": "@tool('webui_ask_user', 'Ask the user a structured multi-choice question', schema) async def webui_ask_user(args) -> ToolResult",
+      "description": "In-process SDK MCP tool handling structured questions (free-form text OR N-choice OR N>4 questions that built-in AskUserQuestion can't handle). Mints a server-side prompt_id, persists to agent_prompts, emits SSE ask_user event, awaits POST /api/agents/runs/{id}/answer with timeout. Called by skill prose when RAPID_RUN_MODE=sdk."
+    },
+    "ask_free_text_tool": {
+      "type": "function",
+      "signature": "@tool('ask_free_text', 'Prompt the user for free-form text input', schema) async def ask_free_text(args) -> ToolResult",
+      "description": "Specialization of webui_ask_user for free-form text where the 4-question multi-choice limit of built-in AskUserQuestion doesn't fit."
+    },
+    "render_diff_tool": {
+      "type": "function",
+      "signature": "@tool('render_diff', 'Render a unified diff in the browser for user approval', schema) async def render_diff(args) -> ToolResult",
+      "description": "Optional tool for surfacing unified diffs before destructive edits; reuses approval modal infrastructure."
+    },
+    "ask_user_built_in_interception": {
+      "type": "function",
+      "signature": "in can_use_tool: if tool_name == 'AskUserQuestion': if len(questions) > 4: split into multiple prompt_ids; emit ask_user event per batch; await all answers",
+      "description": "Interception logic in can_use_tool that catches built-in AskUserQuestion tool uses, splits >4 questions into multiple batches (SDK limit), routes each batch through EventBus. Zero skill changes required for CLI compatibility."
+    },
+    "agent_prompts_model": {
+      "type": "class",
+      "signature": "class AgentPrompt(SQLModel, table=True): id: str (prompt_id); run_id: str (FK); kind: Literal['ask_user','permission_req','approve_tool']; payload: str (json); status: Literal['pending','answered','expired','stale']; answer: str | None; created_at: datetime; answered_at: datetime | None",
+      "description": "Server-minted prompt per round-trip. Prevents race (wrong answer applied to wrong question) via id-keyed acknowledgement. 409 returned on stale prompt_id; timeout auto-expires pending prompts."
+    },
+    "answer_endpoint": {
+      "type": "endpoint",
+      "signature": "POST /api/agents/runs/{run_id}/answer {prompt_id, answer} -> 200 | 409 stale | 404 expired",
+      "description": "Frontend submits the answer for a pending prompt. Backend validates prompt_id matches current pending prompt for run; rejects stale answers."
+    },
+    "approval_modal_component": {
+      "type": "file",
+      "signature": "<ApprovalModal prompt={Prompt} onApprove onReject onEdit />",
+      "description": "React component with Approve / Reject / Edit triad. Focus-trapped, ESC=reject, default=reject for destructive patterns. Edit mode allows modifying tool args before approving (e.g. change a file path)."
+    },
+    "ask_user_modal_component": {
+      "type": "file",
+      "signature": "<AskUserModal prompt={Prompt} onSubmit />",
+      "description": "React component rendering structured questions (multi-choice, free-form, N-questions) with sessionStorage-backed draft persistence across tab close."
+    },
+    "permission_prompt_component": {
+      "type": "file",
+      "signature": "<PermissionPrompt prompt={Prompt} onDecision />",
+      "description": "Specialization of ApprovalModal for permission_req events (when can_use_tool routes unknowns to user)."
+    },
+    "skill_prose_patches": {
+      "type": "file",
+      "signature": "Conditional skill-prose branches in 9 SKILL.md files based on $RAPID_RUN_MODE env var",
+      "description": "Minimal edits to skill files (discuss-set, init, new-version discovery half, bug-fix, scaffold, branding, quick scoping, assumptions, add-set mid-milestone). In sdk mode, call mcp__rapid__webui_ask_user; otherwise retain built-in AskUserQuestion. No file forking."
+    }
+  },
+  "imports": {
+    "build_sdk_options": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "function",
+      "signature": "build_sdk_options(...) -> ClaudeAgentOptions",
+      "description": "Needed to register our MCP tools via create_sdk_mcp_server() on ClaudeAgentOptions.mcp_servers"
+    },
+    "can_use_tool_hook": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "function",
+      "signature": "async def can_use_tool(tool_name, tool_args, context) -> ToolPermissionDecision",
+      "description": "We extend can_use_tool to intercept built-in AskUserQuestion. Hook point is owned by foundation; interception logic lives here."
+    },
+    "EventBus": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "class",
+      "signature": "EventBus.publish(run_id, event) / subscribe(run_id, since_seq)",
+      "description": "We publish ask_user and permission_req events via EventBus"
+    },
+    "sse_event_schema": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "event",
+      "signature": "'ask_user' and 'permission_req' event kinds with stable payload shapes",
+      "description": "Our events ride on the typed SSE event schema"
+    },
+    "agent_run_model": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "class",
+      "signature": "AgentRun SQLModel",
+      "description": "agent_prompts.run_id is an FK to agent_runs.id"
+    },
+    "rapid_run_mode_env": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "file",
+      "signature": "ClaudeAgentOptions.env['RAPID_RUN_MODE']='sdk' when dispatched through SessionManager",
+      "description": "Skill-prose patches branch on $RAPID_RUN_MODE; the foundation must set this for SDK runs"
+    },
+    "create_sdk_mcp_server_integration": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "function",
+      "signature": "register_mcp_tools(session, tools)",
+      "description": "We register our @tool functions through this integration point"
+    },
+    "fromSets": [
+      {
+        "set": "agent-runtime-foundation"
+      }
+    ]
+  },
+  "behavioral": {
+    "prompt_id_is_server_minted": {
+      "description": "Every ask_user or permission_req emits a server-side UUID prompt_id. Frontend cannot invent one. Stale prompt_id from old tab yields 409.",
+      "enforced_by": "test"
+    },
+    "four_question_split_enforced": {
+      "description": "Built-in AskUserQuestion with >4 questions is split server-side into multiple prompts before being emitted. Skills that batch 12 gray areas (e.g. discuss-set) work transparently.",
+      "enforced_by": "test"
+    },
+    "timeout_on_pending_prompt": {
+      "description": "A pending agent_prompts row older than per-skill answer_timeout (default 30 minutes) is marked 'expired' and the agent run enters 'waiting' -> 'interrupted' state. UI surfaces 'this run timed out'.",
+      "enforced_by": "runtime"
+    },
+    "cli_parity_additive_only": {
+      "description": "Skill-prose patches use if/else branches on $RAPID_RUN_MODE, never forking the skill file. CLI run (mode != 'sdk') uses built-in AskUserQuestion exactly as before. Regression CI test runs /rapid:execute-set via CLI against fixture every build.",
+      "enforced_by": "test"
+    },
+    "approval_modal_destructive_default_reject": {
+      "description": "When permission_req includes a destructive tool (Bash with rm/git push --force/branch -D regex match), the approval modal defaults to reject; user must explicitly click Approve. ESC still equals reject.",
+      "enforced_by": "test"
+    },
+    "draft_persists_across_tab_close": {
+      "description": "AskUserModal's in-progress answer is saved to sessionStorage keyed by prompt_id. Tab close + reopen restores draft. Server status is truth if the prompt was answered elsewhere.",
+      "enforced_by": "test"
+    }
+  }
+}
