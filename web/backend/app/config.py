@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     rapid_web: bool = False
     rapid_web_projects_file: Path = RAPID_DIR / "projects.json"
     rapid_web_sync_interval: float = 5.0
+    # CORS allow-origins for the web tier. Parsed as JSON when set via env:
+    # RAPID_WEB_CORS_ALLOW_ORIGINS='["https://app.example.com","https://admin.example.com"]'
+    # Note: combining allow_credentials=True with ["*"] is silently downgraded by Starlette;
+    # always enumerate explicit origins when credentials are enabled.
+    rapid_web_cors_allow_origins: list[str] = [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
 
     # --- agent runtime ---
     rapid_agent_max_concurrent: int = 3

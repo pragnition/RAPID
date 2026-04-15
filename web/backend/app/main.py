@@ -139,10 +139,10 @@ def create_app() -> FastAPI:
     app.state.engine = None
     app.state.agent_manager = None
 
-    # CORS — allow Vite dev server origins
+    # CORS — origins configurable via RAPID_WEB_CORS_ALLOW_ORIGINS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+        allow_origins=settings.rapid_web_cors_allow_origins,
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
