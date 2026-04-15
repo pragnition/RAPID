@@ -62,8 +62,8 @@ def test_upgrade_downgrade_upgrade_roundtrip(tmp_path: Path, monkeypatch):
         ).fetchall()
         assert len(rows) == 1
 
-    # Down one step (to 0003) drops the agent tables.
-    command.downgrade(cfg, "-1")
+    # Downgrade to 0003 drops the agent tables (regardless of current head).
+    command.downgrade(cfg, "0003")
     insp = inspect(eng)
     tables = set(insp.get_table_names())
     assert "agentrun" not in tables
