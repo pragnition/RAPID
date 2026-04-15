@@ -722,7 +722,7 @@
       "sets": [
         {
           "id": "agent-runtime-foundation",
-          "status": "planned",
+          "status": "merged",
           "waves": [],
           "name": "Agent Runtime Foundation",
           "branch": "set/agent-runtime-foundation"
@@ -759,6 +759,6 @@
       "status": "active"
     }
   ],
-  "lastUpdatedAt": "2026-04-15T07:40:21.701Z",
+  "lastUpdatedAt": "2026-04-15T09:49:15.975Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
