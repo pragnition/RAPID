@@ -17,6 +17,8 @@ from pydantic import BaseModel
 from sqlmodel import Session, text
 
 from app import __version__
+from app.agents import AgentSessionManager, install_agent_error_handlers
+from app.routers.agents import router as agents_router
 from app.routers.kanban import router as kanban_router
 from app.routers.notes import router as notes_router
 from app.routers.projects import router as projects_router
@@ -104,6 +106,11 @@ async def lifespan(app: FastAPI):
     watcher.start()
     app.state.file_watcher = watcher
 
+    # Start the agent session manager (owns SDK clients + orphan sweeper + archive)
+    agent_manager = AgentSessionManager(engine)
+    await agent_manager.start()
+    app.state.agent_manager = agent_manager
+
     logger.info(
         "RAPID Web service started",
         extra={"port": settings.rapid_web_port, "db_path": str(settings.rapid_web_db_path)},
@@ -112,6 +119,8 @@ async def lifespan(app: FastAPI):
     # Shutdown
     if hasattr(app.state, "file_watcher") and app.state.file_watcher:
         app.state.file_watcher.stop()
+    if hasattr(app.state, "agent_manager") and app.state.agent_manager:
+        await app.state.agent_manager.stop()
     app.state.engine.dispose()
     logger.info("RAPID Web service stopped")
 
@@ -128,6 +137,7 @@ def create_app() -> FastAPI:
     # Provide defaults so endpoints work even before lifespan runs (e.g., in tests)
     app.state.start_time = time.time()
     app.state.engine = None
+    app.state.agent_manager = None
 
     # CORS — allow Vite dev server origins
     app.add_middleware(
@@ -149,11 +159,15 @@ def create_app() -> FastAPI:
     async def http_exception_handler(request: Request, exc: HTTPException):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
+    # Install the agent-runtime error taxonomy handlers (StateError -> 409, etc.)
+    install_agent_error_handlers(app)
+
     app.include_router(health_router)
     app.include_router(projects_router)
     app.include_router(views_router)
     app.include_router(kanban_router)
     app.include_router(notes_router)
+    app.include_router(agents_router)
 
     # Serve frontend static files if the dist directory exists
     frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"

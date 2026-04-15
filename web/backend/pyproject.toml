@@ -17,6 +17,8 @@ dependencies = [
     "tree-sitter-typescript>=0.23,<1.0",
     "tree-sitter-go>=0.23,<1.0",
     "tree-sitter-rust>=0.23,<1.0",
+    "claude-agent-sdk>=0.1.59,<0.2",
+    "sse-starlette>=2.0,<3.0",
 ]
 
 [project.scripts]
