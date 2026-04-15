@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "./themes/index.css";
 
+/*
+ * Wireframe-rollout token audit (Wave 1, Task 0+8): zero new tokens required.
+ * All chat/surface/data primitives resolve against the existing 25 --color-* aliases.
+ * Severity tints (20%, 12%, 25%) use Tailwind's `/NN` opacity modifier on aliased colors
+ * (e.g., bg-accent/20, bg-error/12). The 3px severity stripes use `border-l-[3px]`
+ * (arbitrary value) per Wave 1 research R9 — preferring Tailwind arbitrary values over
+ * fresh tokens when a literal would not repeat across >2 primitives. Theme-picker
+ * swatches are consumer-supplied preview colors, not aliased.
+ */
 @theme inline {
   --color-bg-dim: var(--th-bg-dim);
   --color-bg-0: var(--th-bg-0);
