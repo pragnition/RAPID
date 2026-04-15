@@ -40,7 +40,7 @@
     "ask_user_modal_component": {
       "type": "file",
       "signature": "<AskUserModal prompt={Prompt} onSubmit />",
-      "description": "React component rendering structured questions (multi-choice, free-form, N-questions) with sessionStorage-backed draft persistence across tab close."
+      "description": "React component rendering structured questions. After wireframe-rollout, AskUserModal composes the StructuredQuestion primitive from components/primitives (multi-choice/radio), the Composer-pattern textarea from primitives (free-form), and ErrorCard (for validation blockers). Retains sessionStorage-backed draft persistence across tab close. Cites .planning/branding/chatbot-wireframe.html (Structured-question section) and BRANDING.md section chat-surface (Structured-question form)."
     },
     "skill_prose_patches": {
       "type": "file",
@@ -117,6 +117,10 @@
     "back_navigation_reopen_respects_consume_race": {
       "description": "POST /reopen for a target prompt transitions it to pending and marks downstream prompts stale ONLY when consumed_at IS NULL. If the agent has already consumed the answer (consumed_at IS NOT NULL), the endpoint returns 409 'too late to revise; interrupt the run instead'. At most one pending prompt per run is enforced via partial unique index.",
       "enforced_by": "test"
+    },
+    "redesign_note": {
+      "description": "WARNING: web-tool-bridge was merged when wireframe-rollout's CONTRACT.json rewrite landed. The ask_user_modal_component export has been updated editorially to document the redesigned composition using Wave 1 primitives; the live merged code may not yet match. Manual action required: either open a polish set that refactors AskUserModal to adopt the primitives, OR run /rapid:discuss-set web-tool-bridge and /rapid:plan-set web-tool-bridge to re-plan the full set against this contract. Every other export in this file is preserved verbatim from the merged implementation.",
+      "enforced_by": "review"
     }
   }
 }
