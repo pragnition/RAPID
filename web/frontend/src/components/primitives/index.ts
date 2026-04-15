@@ -35,3 +35,7 @@ export { NextActionBanner, type NextActionBannerProps } from "./NextActionBanner
 
 // Theme
 export { ThemePicker, type ThemePickerProps } from "./ThemePicker";
+
+// Hooks
+export { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion";
+export { useAutoScrollWithOptOut } from "./hooks/useAutoScrollWithOptOut";
