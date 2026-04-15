@@ -98,6 +98,7 @@ class AppConfig(SQLModel, table=True):
 # (avoids circular import with app.agents.correlation → app.config → app.database).
 from app.models.agent_run import AgentRun  # noqa: E402, F401
 from app.models.agent_event import AgentEvent  # noqa: E402, F401
+from app.models.agent_prompt import AgentPrompt  # noqa: E402, F401
 
 
 # ---------------------------------------------------------------------------
