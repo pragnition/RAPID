@@ -5,6 +5,8 @@ from pathlib import Path
 
 from pythonjsonlogger.json import JsonFormatter
 
+from app.agents.correlation import RunIdLogFilter
+
 
 def setup_logging(log_dir: Path, level: str = "INFO") -> None:
     """Configure structured JSON logging with file rotation and stderr output."""
@@ -22,14 +24,19 @@ def setup_logging(log_dir: Path, level: str = "INFO") -> None:
         maxBytes=10 * 1024 * 1024,  # 10 MB
         backupCount=5,
     )
-    file_handler.setFormatter(JsonFormatter())
-    root.addHandler(file_handler)
+    file_handler.setFormatter(JsonFormatter("%(asctime)s %(name)s %(levelname)s %(run_id)s %(message)s"))
 
     # Human-readable stderr handler for development
     stream_handler = logging.StreamHandler(sys.stderr)
     stream_handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)-8s %(name)s — %(message)s")
+        logging.Formatter("%(asctime)s %(levelname)-8s %(name)s [run=%(run_id)s] — %(message)s")
     )
+
+    run_id_filter = RunIdLogFilter()
+    file_handler.addFilter(run_id_filter)
+    stream_handler.addFilter(run_id_filter)
+
+    root.addHandler(file_handler)
     root.addHandler(stream_handler)
 
     # Suppress noisy loggers

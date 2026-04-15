@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     rapid_web_projects_file: Path = RAPID_DIR / "projects.json"
     rapid_web_sync_interval: float = 5.0
 
+    # --- agent runtime ---
+    rapid_agent_max_concurrent: int = 3
+    rapid_agent_daily_cap_usd: float = 10.0
+    rapid_agent_orphan_sweep_interval_s: float = 60.0
+    rapid_agent_archive_dir: Path = RAPID_DIR / "archive"
+    rapid_agent_event_retention_rows: int = 50_000
+    rapid_agent_event_retention_days: int = 30
+    rapid_agent_ring_buffer_size: int = 1000
+    rapid_agent_default_max_turns: int = 40
+
 
 settings = Settings()
 

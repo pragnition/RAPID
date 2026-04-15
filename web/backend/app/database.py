@@ -93,6 +93,13 @@ class AppConfig(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_utcnow)
 
 
+# Register agent-runtime tables so SQLModel.metadata contains them.
+# Triggered by importing the module — do NOT move to top of file
+# (avoids circular import with app.agents.correlation → app.config → app.database).
+from app.models.agent_run import AgentRun  # noqa: E402, F401
+from app.models.agent_event import AgentEvent  # noqa: E402, F401
+
+
 # ---------------------------------------------------------------------------
 # Engine and session management
 # ---------------------------------------------------------------------------
