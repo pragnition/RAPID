@@ -1,11 +1,13 @@
 ---
 description: Initialize a new RAPID project with research and roadmap generation
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep, Skill
+allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, mcp__rapid__webui_ask_user, Read, Write, Glob, Grep, Skill
 ---
 
 # /rapid:init -- Project Initialization
 
 You are the RAPID project initializer. This skill orchestrates the complete multi-agent pipeline: prerequisites, scaffolding, codebase analysis, parallel research, synthesis, and roadmap generation with user approval.
+
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge (with `allow_free_text` flagged per prompt); otherwise the built-in tool is used. Inline annotations on each prompt mention below make the dual routing explicit.
 
 Follow these steps IN ORDER. Do not skip steps.
 
@@ -86,14 +88,14 @@ Display the results as a formatted markdown table:
 
 **Decision logic:**
 
-- If `summary.hasBlockers` is true: Display the blocker table, then use AskUserQuestion with:
+- If `summary.hasBlockers` is true: Display the blocker table, then use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
   - question: "Prerequisites missing. Critical tools are not installed."
   - Options:
     - "Retry check" -- "Re-run prerequisite validation after installing missing tools"
     - "View install guide" -- "Show install commands for each missing tool"
     - "Cancel init" -- "Exit initialization. No changes made."
   - If "Retry check": Loop back to the top of Step 1 and re-run.
-  - If "View install guide": Display install commands for each blocker (e.g., `apt install git`, `brew install git`), then re-prompt with the same AskUserQuestion.
+  - If "View install guide": Display install commands for each blocker (e.g., `apt install git`, `brew install git`), then re-prompt with the same AskUserQuestion (sdk mode: the same `mcp__rapid__webui_ask_user` call when `RAPID_RUN_MODE=sdk`).
   - If "Cancel init": Print "Cancelled. No changes made." and end the skill.
 
 - If `summary.hasWarnings` is true: Display warnings but continue. Tell the user which optional tools are missing and why they are helpful.
@@ -116,7 +118,7 @@ Parse the JSON output containing `isRepo` (boolean) and `toplevel` (string or nu
 
 **Decision logic:**
 
-- If `isRepo` is false: Use AskUserQuestion with:
+- If `isRepo` is false: Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
   - question: "This directory is not a git repository. RAPID requires git for worktree-based parallel development."
   - Options:
     - "Run git init" -- "Initialize a git repository in the current directory"
@@ -142,7 +144,7 @@ Parse the JSON output containing `exists` (boolean) and `files` (string array of
 
 **Decision logic:**
 
-- If `exists` is true: Show the user the list of existing files, then use AskUserQuestion with:
+- If `exists` is true: Show the user the list of existing files, then use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
   - question: "Existing RAPID project detected with the following files: {files list}"
   - Options:
     - "Reinitialize" -- "Back up .planning/ to .planning.backup.{timestamp}/ and create fresh. All previous planning data is preserved in the backup."
@@ -170,7 +172,7 @@ Detect the current directory name:
 basename "$(pwd)"
 ```
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Project name"
 - Options:
   - "{detected directory name}" -- "Use the current directory name"
@@ -180,7 +182,7 @@ If the user selects "Other", ask freeform: "What would you like to name the proj
 
 **Team Size:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Team size"
 - Options:
   - "Solo (1 developer)" -- "Single developer workflow. Simpler worktree management."
@@ -196,7 +198,7 @@ Map selection to integer for `--team-size`:
 
 **Model Selection:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Model selection for AI agents"
 - Options:
   - "Opus" -- "Higher quality, slower, more expensive. Best for complex projects."
@@ -209,7 +211,7 @@ Store the selection as `opus` or `sonnet`.
 **This is a thorough requirements interview, NOT a form fill.** You must conduct an in-depth conversational discovery session to understand EVERYTHING about the project before proceeding to research and roadmapping. The quality of the entire pipeline depends on the depth of understanding gained here.
 
 **Ground rules:**
-- Ask questions in TOPIC BATCHES using AskUserQuestion. Each batch uses a hybrid approach: freeform AskUserQuestion for open-ended areas (vision, features, experience) and structured AskUserQuestion with pre-filled options for areas with well-defined option spaces (target users, scale, tech stack, compliance, etc.).
+- Ask questions in TOPIC BATCHES using AskUserQuestion (sdk mode: substitute `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`). Each batch uses a hybrid approach: freeform AskUserQuestion for open-ended areas (vision, features, experience) and structured AskUserQuestion with pre-filled options for areas with well-defined option spaces (target users, scale, tech stack, compliance, etc.).
 - LISTEN carefully to each batch response. After each batch, analyze the response for follow-up needs. Only ask follow-up questions for genuinely ambiguous or vague responses. Do NOT re-ask areas already covered.
 - Continue asking until you have a comprehensive understanding. This should take 3-4 batch questions plus 0-2 targeted follow-ups depending on project complexity.
 - Mentally track what you know and what gaps remain. Only proceed when no significant gaps exist.
@@ -242,13 +244,13 @@ This batch uses a hybrid approach: one freeform question for the open-ended visi
 
 **Area 1 (Vision/problem statement) -- freeform:**
 
-Use AskUserQuestion (freeform) with:
+Use AskUserQuestion (freeform) with (sdk mode: call `mcp__rapid__webui_ask_user` with allow_free_text=true when `RAPID_RUN_MODE=sdk`):
 
 > "What are you building and why? What problem does it solve? What makes this different from existing solutions? Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
 
 **Area 2 (Target users) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Who are the primary target users?"
 - Options:
   - "B2C consumers" -- "End users interacting through web or mobile apps"
@@ -258,7 +260,7 @@ Use AskUserQuestion with:
 
 **Area 3 (Scale targets) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "What scale are you targeting initially?"
 - Options:
   - "Prototype (<100 users)" -- "Proof of concept or personal project"
@@ -274,13 +276,13 @@ This batch uses a hybrid approach: one freeform question for features (inherentl
 
 **Area 4 (Must-have features) -- freeform:**
 
-Use AskUserQuestion (freeform) with:
+Use AskUserQuestion (freeform) with (sdk mode: call `mcp__rapid__webui_ask_user` with allow_free_text=true when `RAPID_RUN_MODE=sdk`):
 
 > "What are the must-have features for v1? Walk me through the primary user journey from start to finish. Also mention any nice-to-have features that can wait, and anything you explicitly do NOT want."
 
 **Area 5 (Tech stack) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "What is your primary tech stack preference?"
 - Options:
   - "React/Next.js + Node" -- "JavaScript/TypeScript full stack with React frontend"
@@ -290,7 +292,7 @@ Use AskUserQuestion with:
 
 **Area 6 (Existing dependencies) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "What is the starting point for this project?"
 - Options:
   - "Greenfield" -- "Starting from scratch, no existing code"
@@ -306,7 +308,7 @@ This batch uses all structured questions since each area has a well-defined opti
 
 **Area 7 (Performance requirements) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "What are your real-time and performance requirements?"
 - Options:
   - "Standard web app" -- "Page loads, form submissions, typical CRUD operations"
@@ -316,7 +318,7 @@ Use AskUserQuestion with:
 
 **Area 8 (Compliance) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Any compliance or regulatory requirements?"
 - Options:
   - "None required" -- "No specific regulatory requirements"
@@ -326,7 +328,7 @@ Use AskUserQuestion with:
 
 **Area 9 (Third-party integrations) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "What types of third-party integrations are needed?"
 - Options:
   - "Payment processing" -- "Stripe, PayPal, or similar payment APIs"
@@ -336,7 +338,7 @@ Use AskUserQuestion with:
 
 **Area 10 (Auth approach) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "What authentication approach do you prefer?"
 - Options:
   - "OAuth / social login" -- "Google, GitHub, social sign-in"
@@ -352,13 +354,13 @@ This batch uses a hybrid approach: one freeform question for experience and insp
 
 **Area 11 (Team experience and inspiration) -- freeform:**
 
-Use AskUserQuestion (freeform) with:
+Use AskUserQuestion (freeform) with (sdk mode: call `mcp__rapid__webui_ask_user` with allow_free_text=true when `RAPID_RUN_MODE=sdk`):
 
 > "What is your team's experience with the likely tech stack? Any lessons learned from similar projects? Are there existing products that do something similar -- what do they do well or poorly?"
 
 **Area 12 (Non-functional requirements) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "What non-functional requirements are important?"
 - Options:
   - "Security beyond basics" -- "Encryption at rest, audit logging, penetration testing"
@@ -368,7 +370,7 @@ Use AskUserQuestion with:
 
 **Area 13 (Success criteria) -- structured:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "What does 'done' look like for v1?"
 - Options:
   - "Working MVP" -- "Core features functional, rough edges acceptable"
@@ -455,7 +457,7 @@ Before asking the opt-in question, check whether branding has already been confi
 [ -f ".planning/branding/BRANDING.md" ] && echo "EXISTS" || echo "NEW"
 ```
 
-If `EXISTS`, use AskUserQuestion with:
+If `EXISTS`, use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Existing project branding found. Would you like to keep it or set up new branding?"
 - Options:
   - "Keep existing branding" -- "Preserve current BRANDING.md and continue to granularity preferences"
@@ -465,11 +467,11 @@ If the user selects "Keep existing branding": skip this entire step (proceed to 
 If the user selects "Set up new branding": continue to the opt-in question below.
 If `NEW`: continue to the opt-in question below.
 
-This AskUserQuestion counts toward the 7-call budget (1 of max 7).
+This AskUserQuestion counts toward the 7-call budget (1 of max 7; sdk mode counterpart `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk` counts the same).
 
 #### Opt-in Question
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Would you like to set up project branding guidelines now? This configures visual identity, terminology, and interaction patterns that agents will follow throughout development."
 - Options:
   - "Skip branding" -- "Continue without branding. You can always run /rapid:branding later."
@@ -479,7 +481,7 @@ If "Skip branding": skip the rest of this step entirely. Set `brandingStatus = "
 
 If "Set up branding": continue to the branding interview below.
 
-This AskUserQuestion counts toward the 7-call budget (1 of max 7; or 2 if re-init check was also asked).
+This AskUserQuestion counts toward the 7-call budget (1 of max 7; or 2 if re-init check was also asked; sdk mode counterpart `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk` counts the same).
 
 #### Delegate to Branding Skill
 
@@ -516,7 +518,7 @@ Then proceed to Step 4C.
 
 After the project brief is compiled, ask the user about their preferred level of decomposition granularity.
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "How granular should the project be decomposed into parallel sets?"
 - Options:
   - "Compact (3-5 sets)" -- "Fewer, larger sets. Less coordination overhead, but less parallelism."
@@ -578,7 +580,7 @@ Display the acceptance criteria to the user alongside the project brief.
 
 **Confirmation prompt:**
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Please review the project brief and acceptance criteria above. Is everything accurate?"
 - Options:
   - "Looks good, proceed" -- "Continue to scaffold, research, and roadmap generation"
@@ -617,7 +619,7 @@ Present the 8 predefined categories one at a time. For each category, offer 2-3 
 
 Before starting the category walkthrough, offer an escape hatch:
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Would you like to define project principles now?"
 - Options:
   - "Yes, walk me through categories" -- "Define principles category by category (recommended)"
@@ -637,7 +639,7 @@ Use AskUserQuestion with:
 
 For each category in order (architecture, code style, testing, security, UX, performance, data handling, documentation):
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Principles for **{Category}** -- Select any that apply, or add your own:"
 - Options (vary per category -- see recommended principles below):
   - {Recommended principle 1} -- "{brief rationale}"
@@ -758,7 +760,7 @@ Inform the user: "Existing codebase detected. Running codebase analysis before r
    Write CODEBASE-ANALYSIS.md to .planning/research/
    ```
 
-4. Wait for the agent to complete. If it fails, use AskUserQuestion to offer recovery:
+4. Wait for the agent to complete. If it fails, use AskUserQuestion to offer recovery (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
    - question: "Codebase analysis encountered an error: {error details}"
    - Options:
      - "Retry" -- "Re-run codebase analysis"
@@ -1009,7 +1011,7 @@ Write output to .planning/research/UX.md
 
 **Sequential fallback:** If parallel spawning fails (Claude Code limitation), fall back to sequential execution. Inform the user: "Running research agents sequentially (parallel spawning unavailable)."
 
-Wait for ALL 6 agents to complete. If any agent fails, use AskUserQuestion:
+Wait for ALL 6 agents to complete. If any agent fails, use AskUserQuestion (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "{agent name} research agent encountered an error: {error details}"
 - Options:
   - "Retry" -- "Re-run this research agent"
@@ -1043,7 +1045,7 @@ Synthesize all research outputs into a unified research summary.
 Write synthesized summary to .planning/research/SUMMARY.md
 ```
 
-3. Wait for completion. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 6).
+3. Wait for completion. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 6; sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
 
 4. After completion, read `.planning/research/SUMMARY.md` to confirm it was written and to pass its content to the roadmapper.
 
@@ -1102,7 +1104,7 @@ Return a structured JSON response with three keys:
 - contracts -- array of { setId, contract } objects for CONTRACT.json files
 ```
 
-4. Wait for the agent to complete. If it fails, use AskUserQuestion with Retry/Skip/Cancel options.
+4. Wait for the agent to complete. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
 
 5. Parse the agent's JSON response.
 
@@ -1113,7 +1115,7 @@ Display a summary of the proposed roadmap:
 - Set names and their high-level descriptions
 - Key contracts and dependencies between sets
 
-Use AskUserQuestion with:
+Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
 - question: "Review the proposed roadmap above."
 - Options:
   - "Accept roadmap" -- "Proceed with this roadmap. Files will be written to .planning/"
@@ -1213,7 +1215,7 @@ d) Generate DAG.json and OWNERSHIP.json from the newly written STATE.json and CO
    node "${RAPID_TOOLS}" dag generate
    ```
 
-   If the second attempt also fails, use AskUserQuestion with:
+   If the second attempt also fails, use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
    - question: "DAG.json generation failed after two attempts. The project was initialized but the dependency graph is missing."
    - Options:
      - "Retry" -- "Try generating DAG.json again"
@@ -1233,7 +1235,7 @@ Re-spawn the roadmapper agent with:
 - The previous roadmap proposal for reference
 - The same CRITICAL sets-only instruction (no waves or jobs)
 
-Present the revised roadmap and use AskUserQuestion again (same Accept/Request changes/Cancel options). This loop continues until the user accepts or cancels.
+Present the revised roadmap and use AskUserQuestion again (same Accept/Request changes/Cancel options; sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`). This loop continues until the user accepts or cancels.
 
 **If "Cancel":**
 
@@ -1407,7 +1409,7 @@ node "${RAPID_TOOLS}" display footer "/rapid:status" --breadcrumb "init [done] >
 At every agent step (Steps 6-9), if an agent fails or returns an error:
 
 1. Do NOT use bare STOP or halt.
-2. Use AskUserQuestion with structured recovery options:
+2. Use AskUserQuestion with structured recovery options (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
    - "Retry" -- Re-run the failed agent with the same inputs
    - "Skip" -- Continue without this agent's output (downstream agents will have less context)
    - "Cancel" -- Exit initialization cleanly
