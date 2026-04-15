@@ -1,7 +1,24 @@
 ---
 description: Investigate and fix bugs -- user describes a bug, model investigates and applies a fix
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, mcp__rapid__webui_ask_user, Read, Write, Glob, Grep
+allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:bug-fix -- Bug Investigation and Fix
 
