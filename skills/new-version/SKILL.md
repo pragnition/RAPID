@@ -1,7 +1,24 @@
 ---
 description: Complete current milestone and start a new version with adaptive research pipeline and roadmap generation
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, mcp__rapid__webui_ask_user, Read, Write, Glob, Grep
+allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:new-version -- New Milestone Lifecycle
 
@@ -9,7 +26,17 @@ You are the RAPID milestone manager. This skill creates a new milestone -- archi
 
 **Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge (with `allow_free_text` flagged per prompt); otherwise the built-in tool is used. Inline annotations on each prompt mention below make the dual routing explicit.
 
-Follow these steps IN ORDER. Do not skip steps. Use AskUserQuestion at every decision point (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
+Follow these steps IN ORDER. Do not skip steps. At every decision point:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the decision-point question and options.
+else
+  # CLI mode:
+  # Use AskUserQuestion.
+fi
+```
 
 ## Step 0: Environment Setup + Banner
 
@@ -63,26 +90,50 @@ Parse the JSON output. Display a summary to the user:
 - **Number of sets:** {milestones[current].sets.length}
 - **Set statuses:** List each set with its id and status (pending/discussed/planned/executed/complete/merged)
 
-If state cannot be read, display the error and use AskUserQuestion (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+If state cannot be read, display the error and use AskUserQuestion :
 
 - question: "Project state unavailable"
 - Options:
   - "Retry" -- "Attempt to read project state again"
   - "Cancel" -- "Exit without changes"
+fi
+```
 
 **On error:** Show progress breadcrumb: `new-version [state read failed] > start-set > discuss-set > plan-set > execute-set > review > merge`
 
 ## Step 2: Get New Milestone Details
 
-Use AskUserQuestion to gather details about the new milestone (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion to gather details about the new milestone:
 
+fi
+```
 **Question A: Milestone ID/Version**
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "New milestone version"
 - Options:
   - Suggest the next logical version based on current milestone (e.g., if current is "v1.0", suggest "v2.0")
   - "Other" -- "Enter a custom milestone ID/version"
+fi
+```
 
 If "Other" is selected, ask freeform: "What version/ID should the new milestone have?"
 
@@ -92,7 +143,18 @@ Ask freeform: "Give a short name or description for this milestone (e.g., 'Mark 
 
 **Question C: Milestone Goals (Structured Categories)**
 
-Gather goals across 5 categories using sequential AskUserQuestion prompts (sdk mode: substitute `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`). Each category collects freeform input. Initialize an empty goals collection object with keys: features, bugFixes, techDebt, uxImprovements, deferredDecisions.
+Gather goals across 5 categories using sequential prompts:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: substitute mcp__rapid__webui_ask_user for each category prompt.
+else
+  # CLI mode:
+  # Use sequential AskUserQuestion prompts, one per category.
+fi
+```
+
+Each category collects freeform input. Initialize an empty goals collection object with keys: features, bugFixes, techDebt, uxImprovements, deferredDecisions.
 
 **If `specContent` is not null, execute the Spec-Aware Goal Extraction flow instead of Steps 2C-i through 2C-v:**
 
@@ -102,16 +164,30 @@ Gather goals across 5 categories using sequential AskUserQuestion prompts (sdk m
 
 2. **Deferred Items Injection:** Before presenting the extracted goals, also run the DEFERRED.md auto-discovery from Step 2C-v (including the expanded archive discovery). Append any discovered deferred items to the `deferredDecisions` category automatically.
 
-3. **Single Confirmation Prompt:** Display the extracted goals in the same summary format as Step 2C-vi (the category-grouped summary). Then use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+3. **Single Confirmation Prompt:** Display the extracted goals in the same summary format as Step 2C-vi (the category-grouped summary). Then use AskUserQuestion with:
    - question: "Goals extracted from spec file. Review and confirm."
    - Options:
      - "Accept all" -- "Proceed with these goals as-is"
      - "Review individually" -- "Step through each category with Accept/Augment/Replace options"
      - "Add more" -- "Add additional goals beyond what the spec contains"
+fi
+```
 
 4. **If "Accept all":** Set all goal categories from extracted content. Skip to Step 2C-vi completeness confirmation (the "Yes, proceed" gate).
 
-5. **If "Review individually":** For each of the 5 categories, display the extracted content (or "-- empty --" if spec had nothing for that category) and use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+5. **If "Review individually":** For each of the 5 categories, display the extracted content (or "-- empty --" if spec had nothing for that category) and use AskUserQuestion with:
    - question: "Category {N}/5: {categoryName}"
    - Options:
      - "Accept" -- "Keep extracted content as-is"
@@ -121,6 +197,8 @@ Gather goals across 5 categories using sequential AskUserQuestion prompts (sdk m
    - If "Replace": Ask freeform "Enter new content for this category." and replace the extracted content entirely.
    - If the category was empty in the spec, fall back to the original interactive prompt for that category (the existing Step 2C-i through 2C-v behavior for that single category).
    After all 5 categories reviewed, proceed to Step 2C-vi completeness confirmation.
+fi
+```
 
 6. **If "Add more":** Same behavior as the existing "Add more" in Step 2C-vi -- ask freeform and append to additionalGoals, then re-display and re-prompt.
 
@@ -128,44 +206,76 @@ Gather goals across 5 categories using sequential AskUserQuestion prompts (sdk m
 
 **Step 2C-i: Features**
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Category 1/5: New Features -- What new features or capabilities should this milestone deliver?"
 - Options:
   - "Nothing for this category" -- "Skip -- no new features planned"
   - "Enter features" -- "Describe new features for this milestone"
+fi
+```
 
 If "Enter features": Ask freeform: "Describe the new features for this milestone. Be specific about what each feature should do."
 Store response in goals.features.
 
 **Step 2C-ii: Bug Fixes**
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Category 2/5: Bug Fixes -- Are there known bugs or issues to address in this milestone?"
 - Options:
   - "Nothing for this category" -- "Skip -- no bug fixes planned"
   - "Enter bug fixes" -- "Describe bugs to fix in this milestone"
+fi
+```
 
 If "Enter bug fixes": Ask freeform: "Describe the bugs or issues to fix. Include reproduction steps or symptoms if known."
 Store response in goals.bugFixes.
 
 **Step 2C-iii: Tech Debt**
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Category 3/5: Tech Debt -- Any refactoring, cleanup, or infrastructure improvements?"
 - Options:
   - "Nothing for this category" -- "Skip -- no tech debt work planned"
   - "Enter tech debt items" -- "Describe tech debt to address in this milestone"
+fi
+```
 
 If "Enter tech debt items": Ask freeform: "Describe the tech debt or infrastructure improvements to tackle."
 Store response in goals.techDebt.
 
 **Step 2C-iv: UX Improvements**
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Category 4/5: UX Improvements -- Any user experience, developer experience, or workflow improvements?"
 - Options:
   - "Nothing for this category" -- "Skip -- no UX improvements planned"
   - "Enter UX improvements" -- "Describe UX improvements for this milestone"
+fi
+```
 
 If "Enter UX improvements": Ask freeform: "Describe the UX or developer experience improvements to make."
 Store response in goals.uxImprovements.
@@ -210,11 +320,19 @@ Parse each DEFERRED.md file. The format is a markdown table with columns: #, Dec
 
 Collect all non-empty deferred items into a list. For each item, format as: "{Decision/Idea} (from set: {source set ID})".
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Category 5/5: Deferred Decisions -- Select which deferred items to include as goals for this milestone"
 - multiSelect: true
 - Options: one option per deferred item, formatted as "{Decision/Idea} (from set: {source set ID})" with description "{Suggested Target}"
 - Plus a final option: "None of these" -- "Skip all deferred items"
+fi
+```
 
 Store selected items in goals.deferredDecisions.
 
@@ -241,11 +359,19 @@ Display a consolidated summary of all captured goals, grouped by category:
 {goals.deferredDecisions formatted as bullet list, or "-- none --"}
 ```
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Is this complete? Review the goals above."
 - Options:
   - "Yes, proceed" -- "All requirements captured. Continue to research pipeline."
   - "Add more" -- "Add additional goals (freeform, no category constraints)"
+fi
+```
 
 **If "Add more":**
 Ask freeform: "What additional goals should be included? (These will be added as general goals without a specific category.)"
@@ -281,13 +407,21 @@ This category-tagged string replaces `{goals from Step 2}` in all downstream ref
 
 ### Step 2D: Set Count Granularity
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Set count granularity -- How many sets should the roadmapper target for this milestone?"
 - Options (4 total):
   - "Compact (3-5 sets)" -- "Fewer, larger sets. Good for small milestones or solo developers."
   - "Standard (6-10 sets)" -- "Balanced decomposition. Good for most projects."
   - "Granular (11-15 sets)" -- "Many small sets. Good for large teams or highly parallel work."
   - "Auto" -- "Let the roadmapper decide based on project complexity and scope."
+fi
+```
 
 **Value mapping:**
 - "Compact (3-5 sets)" maps to `targetSetCount = "3-5"`
@@ -311,20 +445,36 @@ If there are unfinished sets, display them:
 |--------|--------|-------------|
 | (from state) | ... | ... |
 
-Then use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Then use AskUserQuestion with:
 - question: "Unfinished sets found"
 - Options:
   - "Carry all forward" -- "Move all unfinished sets to the new milestone. They will be included in the new milestone's scope alongside new work."
   - "Select which to carry" -- "Choose which unfinished sets to bring forward. Others will remain in the current milestone as-is."
   - "Start fresh" -- "Leave all sets in the current milestone. The new milestone starts with a clean slate."
+fi
+```
 
 If "Carry all forward": Collect all unfinished sets as carryForwardSets.
 
-If "Select which to carry": For each unfinished set, use AskUserQuestion (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+If "Select which to carry": For each unfinished set, use AskUserQuestion :
 - question: "Carry forward set '{set.id}'?"
 - Options:
   - "Yes, carry forward" -- "Include this set in the new milestone"
   - "No, leave behind" -- "Keep this set in the current milestone"
+fi
+```
 
 Collect the selected sets as carryForwardSets.
 
@@ -350,11 +500,19 @@ Parse the JSON result and confirm:
 - "Created milestone {milestoneId} ({milestoneName})"
 - "{setsCarried} sets carried forward" (if any)
 
-If the command fails (e.g., duplicate milestone ID), display the error and use AskUserQuestion (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+If the command fails (e.g., duplicate milestone ID), display the error and use AskUserQuestion :
 - question: "Milestone creation failed"
 - Options:
   - "Try different ID" -- "Choose a different milestone ID/version"
   - "Cancel" -- "Exit without creating the milestone"
+fi
+```
 
 If "Try different ID": Loop back to Step 2 Question A only.
 
@@ -362,11 +520,19 @@ If "Try different ID": Loop back to Step 2 Question A only.
 
 After creating the new milestone, offer the user the option to archive the old milestone's planning artifacts.
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Archive old milestone '{previousMilestone}' planning artifacts?"
 - Options:
   - "Archive" -- "Move old planning artifacts to .planning/archive/{previousMilestone}/"
   - "Keep" -- "Leave artifacts in place. You can archive later."
+fi
+```
 
 **If "Archive":**
 
@@ -613,12 +779,20 @@ Write output to .planning/research/{milestoneId}-research-ux.md
 
 **Sequential fallback:** If parallel spawning fails (Claude Code limitation), fall back to sequential execution. Inform the user: "Running research agents sequentially (parallel spawning unavailable)."
 
-Wait for all selected agents to complete. If any agent fails, use AskUserQuestion (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Wait for all selected agents to complete. If any agent fails, use AskUserQuestion :
 - question: "{agent name} research agent encountered an error: {error details}"
 - Options:
   - "Retry" -- "Re-run this research agent"
   - "Skip" -- "Continue without this research output. Synthesis will have less context."
   - "Cancel" -- "Exit the milestone creation flow"
+fi
+```
 
 **On error:** Show progress breadcrumb: `new-version [research failed ({agent name})] > start-set > discuss-set > plan-set > execute-set > review > merge`
 
@@ -641,7 +815,16 @@ Synthesize all research outputs into a unified research summary for milestone '{
 Write synthesized summary to .planning/research/{milestoneId}-synthesis.md
 ```
 
-Wait for completion. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 5; sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
+Wait for completion. If it fails, offer Retry/Skip/Cancel recovery (same pattern as Step 5):
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: call mcp__rapid__webui_ask_user with Retry/Skip/Cancel options.
+else
+  # CLI mode:
+  # Use AskUserQuestion with Retry/Skip/Cancel options.
+fi
+```
 
 After completion, read `.planning/research/{milestoneId}-synthesis.md` to pass its content to the roadmapper.
 
@@ -682,7 +865,16 @@ Output sets ONLY -- do NOT include wave or job structure. Waves are determined l
 5. For each set: provide id, description, success criteria, and estimated complexity
 ```
 
-Wait for the agent to complete. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 5; sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
+Wait for the agent to complete. If it fails, offer Retry/Skip/Cancel recovery (same pattern as Step 5):
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: call mcp__rapid__webui_ask_user with Retry/Skip/Cancel options.
+else
+  # CLI mode:
+  # Use AskUserQuestion with Retry/Skip/Cancel options.
+fi
+```
 
 Parse the roadmapper's JSON response.
 
@@ -706,12 +898,20 @@ Display the proposed roadmap to the user in a readable format:
 ...
 ```
 
-Use AskUserQuestion with (sdk mode: call `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Use AskUserQuestion with:
 - question: "Accept this roadmap?"
 - Options:
   - "Accept" -- "Approve the roadmap and write it to project state. Sets will be created in STATE.json."
   - "Revise" -- "Provide feedback for the roadmapper to adjust the plan"
   - "Cancel" -- "Discard the proposed roadmap. The milestone exists but has no planned work."
+fi
+```
 
 **If "Accept":**
 
@@ -809,7 +1009,18 @@ node "${RAPID_TOOLS}" display footer "/rapid:status" --breadcrumb "new-version [
 - **Roadmapper uses propose-then-approve.** The roadmapper returns a proposal; the user must explicitly accept before any files are written.
 - **Sets only in state.** STATE.json contains project > milestone > sets hierarchy. Do NOT include waves or jobs in STATE.json -- wave decomposition happens later during /plan-set.
 - **Archive is optional.** The user chooses whether to archive. Do NOT force archiving.
-- **Goal-gathering is sequential by category.** Each of the 5 categories (features, bugs, tech debt, UX, deferred) is presented as a separate AskUserQuestion (sdk mode: separate `mcp__rapid__webui_ask_user` call when `RAPID_RUN_MODE=sdk`). Users can skip any category.
+- **Goal-gathering is sequential by category.** Each of the 5 categories (features, bugs, tech debt, UX, deferred) is presented as a separate prompt.
+
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: separate mcp__rapid__webui_ask_user call per category.
+  else
+    # CLI mode:
+    # Separate AskUserQuestion per category.
+  fi
+  ```
+
+  Users can skip any category.
 - **Completeness gate is mandatory.** Users must explicitly confirm "Yes, proceed" before the research pipeline starts. The confirmation loop continues until the user approves.
 - **Deferred import is graceful.** If no DEFERRED.md files exist, the deferred category is silently skipped with a brief message. Graceful skip is the expected default.
 - **Spec file is optional.** The `--spec` argument is never required. Omitting it produces identical behavior to the pre-spec implementation.
@@ -825,7 +1036,16 @@ node "${RAPID_TOOLS}" display footer "/rapid:status" --breadcrumb "new-version [
 - Do NOT skip agents without explicit reasoning -- every excluded agent must have a logged justification in Step 5A.
 - Do NOT use keyword matching or category-to-agent mapping for agent selection -- use semantic analysis of goal content.
 - Do NOT artificially reduce agent count -- when uncertain, err on the side of spawning the agent to preserve research depth.
-- Do NOT force archiving -- user explicitly chooses via AskUserQuestion (or `mcp__rapid__webui_ask_user` when `RAPID_RUN_MODE=sdk`).
+- Do NOT force archiving -- user explicitly chooses via the prompt.
+
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: mcp__rapid__webui_ask_user presents the archive choice.
+  else
+    # CLI mode:
+    # AskUserQuestion presents the archive choice.
+  fi
+  ```
 - Do NOT ask a single freeform question for all goals -- use the structured 5-category prompt sequence.
 - Do NOT skip the completeness confirmation -- it is the final gate before research begins.
 - Do NOT fail when DEFERRED.md files are missing -- graceful skip is the expected default.
