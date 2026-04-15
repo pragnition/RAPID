@@ -1,5 +1,6 @@
 import { useHealthCheck, useProjects } from "@/hooks/useProjects";
 import { useProjectStore } from "@/stores/projectStore";
+import { PendingPromptController } from "@/components/prompts/PendingPromptController";
 
 export function DashboardPage() {
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
@@ -52,6 +53,17 @@ export function DashboardPage() {
 
       {/* Health indicator */}
       <HealthIndicator />
+
+      {/*
+        Ask-user prompt bridge (web-tool-bridge wave 2, task 6).
+        Mounted with runId={null} as a deliberate placeholder: the backend
+        bridge (Wave 1) + modal + hooks infrastructure are all landed, but
+        the "current active agent run" accessor is owned by a downstream
+        set (see wave-2-PLAN.md Task 6 rationale). When that wiring lands,
+        swap null for the active run id and the modal will light up.
+        Until then, this controller renders null unconditionally.
+      */}
+      <PendingPromptController runId={null} />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { AskUserModal } from "./AskUserModal";
 import { useAgentEventStream } from "@/hooks/useAgentEventStream";
 import { useAnswerPrompt } from "@/hooks/useAnswerPrompt";
 import { usePendingPrompt } from "@/hooks/usePendingPrompt";
-import type { AgentPromptPayload } from "@/types/agentPrompt";
+import type { AgentPromptPayload, AskUserSseEvent } from "@/types/agentPrompt";
 
 interface PendingPromptControllerProps {
   runId: string | null;
@@ -33,7 +33,7 @@ export function PendingPromptController({ runId }: PendingPromptControllerProps)
   // appears without waiting for a poll/refetch round-trip.
   useAgentEventStream(runId, {
     onAskUser: useCallback(
-      (evt) => {
+      (evt: AskUserSseEvent) => {
         if (!runId) return;
         // Strip the SSE-envelope-only fields so the cache value matches the
         // AgentPromptPayload shape produced by GET /pending-prompt.

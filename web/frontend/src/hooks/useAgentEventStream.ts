@@ -21,7 +21,9 @@ export function useAgentEventStream(
 
   // Pin the latest callback in a ref so changing it across renders does not
   // trigger EventSource teardown + resubscription.
-  const onAskUserRef = useRef<typeof opts.onAskUser>(opts?.onAskUser);
+  const onAskUserRef = useRef<
+    ((evt: AskUserSseEvent) => void) | undefined
+  >(opts?.onAskUser);
   useEffect(() => {
     onAskUserRef.current = opts?.onAskUser;
   }, [opts?.onAskUser]);
