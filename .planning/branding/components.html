@@ -18,7 +18,7 @@
 
   .doc { max-width: 1080px; margin: 0 auto; padding: 40px 32px 80px; }
   h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
-  .lead { color: var(--muted); margin: 0 0 24px; }
+  .lead { color: var(--muted); margin: 0 0 24px; max-width: 780px; }
   h2 { font-size: 18px; font-weight: 700; margin: 40px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   .demo { background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .demo.block { flex-direction: column; align-items: stretch; }
@@ -53,13 +53,10 @@
   .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; width: 260px; }
   .field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
   .field input, .field select, .field textarea {
-    background: var(--bg-0);
-    color: var(--fg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
+    background: var(--bg-0); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 4px;
     padding: 8px 10px;
-    font-family: inherit;
-    font-size: 13px;
+    font-family: inherit; font-size: 13px;
   }
   .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
   .field .hint { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
@@ -76,9 +73,7 @@
   /* Cards */
   .card-demo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
   .card {
-    background: var(--bg-0);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    background: var(--bg-0); border: 1px solid var(--border); border-radius: 8px;
     padding: 16px;
     display: flex; flex-direction: column; gap: 8px;
   }
@@ -97,14 +92,7 @@
     font-size: 13px;
     width: 100%;
   }
-  .alert .icon {
-    width: 22px; height: 22px; flex-shrink: 0;
-    border-radius: 50%;
-    display: grid; place-items: center;
-    font-family: ui-monospace, monospace;
-    font-size: 12px;
-    font-weight: 700;
-  }
+  .alert .icon { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; }
   .alert .content strong { display: block; font-weight: 600; margin-bottom: 2px; }
   .alert .content span { color: var(--fg-dim); }
   .alert-info    { border-left-color: var(--info); }
@@ -118,10 +106,8 @@
 
   /* Badges */
   .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: 600;
+    display: inline-block; padding: 2px 8px;
+    font-size: 11px; font-weight: 600;
     border-radius: 4px;
     font-family: ui-monospace, monospace;
   }
@@ -131,17 +117,192 @@
   .badge-executed  { background: rgba(230,152,117,0.2); color: var(--orange); }
   .badge-complete  { background: rgba(167,192,128,0.2); color: var(--accent); }
   .badge-merged    { background: rgba(131,192,146,0.2); color: var(--link); }
+  .badge-active    { background: rgba(167,192,128,0.2); color: var(--accent); }
+  .badge-streaming { background: rgba(127,187,179,0.2); color: var(--info); }
+  .badge-awaiting  { background: rgba(219,188,127,0.2); color: var(--warning); }
+  .badge-archived  { background: rgba(133,146,137,0.2); color: var(--muted); }
 
   /* Progress */
   .progress { width: 100%; height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
   .progress > span { display: block; height: 100%; background: var(--accent); }
+
+  /* -----------------------------------------------------
+     Chat Primitives
+     ----------------------------------------------------- */
+  .chat-demo {
+    width: 100%;
+    background: var(--bg-0);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .msg { display: grid; grid-template-columns: 32px 1fr; gap: 12px; font-size: 13px; }
+  .msg .avatar {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--bg-1); border: 1px solid var(--border);
+    display: grid; place-items: center;
+    font-family: ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .msg.user .avatar      { border-color: var(--bg-4); color: var(--fg-dim); }
+  .msg.assistant .avatar { border-color: var(--accent); color: var(--accent); }
+  .msg.tool .avatar      { border-color: var(--info); color: var(--info); }
+  .msg .role {
+    font-family: ui-monospace, monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--muted); margin-bottom: 3px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .msg.user .role      { color: var(--fg-dim); }
+  .msg.assistant .role { color: var(--accent); }
+  .msg.tool .role      { color: var(--info); }
+  .msg .role .time { margin-left: auto; color: var(--bg-4); letter-spacing: 0; font-size: 10px; }
+  .msg .body { color: var(--fg); line-height: 1.6; }
+  .msg .body code { font-family: ui-monospace, monospace; background: var(--bg-1); padding: 1px 6px; border-radius: 3px; font-size: 12px; color: var(--accent); border: 1px solid var(--border); }
+  .cursor { display: inline-block; width: 7px; height: 15px; background: var(--accent); vertical-align: -2px; animation: blink 1.1s steps(2) infinite; margin-left: 2px; }
+  @keyframes blink { to { opacity: 0; } }
+
+  /* Tool card */
+  .tool-card {
+    background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .tool-card .tc-head { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; }
+  .tool-card.open .tc-head { border-bottom: 1px solid var(--border); }
+  .tool-card.running .tc-icon  { background: rgba(127,187,179,0.25); color: var(--info); }
+  .tool-card.complete .tc-icon { background: rgba(167,192,128,0.25); color: var(--accent); }
+  .tool-card.error .tc-icon    { background: rgba(230,126,128,0.25); color: var(--error); }
+  .tc-icon { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-family: ui-monospace, monospace; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .tc-name { font-family: ui-monospace, monospace; color: var(--fg); font-weight: 600; }
+  .tc-args { font-family: ui-monospace, monospace; color: var(--fg-dim); flex: 1; min-width: 0; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tc-duration { font-family: ui-monospace, monospace; color: var(--muted); font-size: 11px; }
+  .tc-chevron { color: var(--muted); font-family: ui-monospace, monospace; font-size: 10px; }
+  .tool-card .tc-body { padding: 10px 12px; background: var(--bg-0); display: grid; gap: 8px; }
+  .tc-section-label { font-family: ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
+  .tool-card pre { background: var(--bg-dim); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; font-family: ui-monospace, monospace; font-size: 11px; margin: 0; color: var(--fg); overflow-x: auto; line-height: 1.5; }
+  .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--info); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Question card */
+  .question-card {
+    background: var(--bg-1); border: 1px solid var(--border);
+    border-left: 3px solid var(--warning);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 6px;
+  }
+  .qc-label { font-family: ui-monospace, monospace; font-size: 10px; color: var(--warning); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .qc-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; color: var(--fg); }
+  .qc-sub { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+  .qc-opt {
+    display: grid; grid-template-columns: 16px 1fr auto;
+    gap: 10px; align-items: center;
+    padding: 9px 11px;
+    background: var(--bg-0); border: 1px solid var(--border); border-radius: 6px;
+    font-size: 12px; margin-bottom: 4px;
+  }
+  .qc-opt.selected { border-color: var(--accent); }
+  .qc-opt .radio-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-0); }
+  .qc-opt.selected .radio-dot { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--bg-0); }
+  .qc-opt .opt-label b { display: block; color: var(--fg); font-weight: 600; }
+  .qc-opt .opt-label span { color: var(--muted); font-size: 11px; }
+  .qc-opt .opt-kbd { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); background: var(--bg-1); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+  .qc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+  /* Error card inline */
+  .error-card {
+    background: var(--bg-1); border: 1px solid var(--border);
+    border-left: 3px solid var(--error);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex; gap: 10px;
+    align-items: flex-start;
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  .error-card .ec-icon { width: 20px; height: 20px; border-radius: 50%; background: rgba(230,126,128,0.2); color: var(--error); display: grid; place-items: center; font-family: ui-monospace, monospace; font-weight: 700; flex-shrink: 0; }
+  .error-card .ec-title { font-weight: 600; color: var(--error); margin-bottom: 1px; font-size: 12px; }
+  .error-card .ec-body { color: var(--fg-dim); line-height: 1.55; }
+  .error-card .ec-actions { margin-top: 6px; display: flex; gap: 6px; }
+
+  /* Composer */
+  .composer-wrap { border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .slash-dropdown {
+    background: var(--bg-1); border: 1px solid var(--bg-4);
+    border-radius: 8px; padding: 6px;
+  }
+  .sd-row {
+    display: grid; grid-template-columns: 140px 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 6px 10px; border-radius: 4px; font-size: 12px;
+  }
+  .sd-row.active { background: var(--bg-3); }
+  .sd-row .cmd { font-family: ui-monospace, monospace; color: var(--accent); }
+  .sd-row .desc { color: var(--muted); }
+  .sd-row .hint { font-family: ui-monospace, monospace; font-size: 10px; color: var(--bg-4); }
+
+  .composer-box {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 8px; align-items: end;
+    background: var(--bg-1); border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 10px 8px 14px;
+  }
+  .composer-box:focus-within { border-color: var(--accent); }
+  .composer-input {
+    background: transparent; border: none; outline: none;
+    color: var(--fg); font-family: inherit; font-size: 14px;
+    resize: none; min-height: 22px; max-height: 200px;
+    padding: 2px 0; line-height: 1.5; width: 100%;
+  }
+  .composer-input::placeholder { color: var(--muted); }
+  .composer-actions { display: flex; align-items: center; gap: 4px; }
+  .composer-actions button {
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--fg-dim); cursor: pointer;
+    font-family: ui-monospace, monospace; font-size: 13px;
+  }
+  .composer-actions button:hover { background: var(--bg-2); color: var(--fg); }
+  .composer-actions .send { background: var(--accent); color: var(--bg-0); border-color: var(--accent); font-weight: 700; }
+  .composer-hints { display: flex; justify-content: space-between; font-family: ui-monospace, monospace; font-size: 10px; color: var(--bg-4); padding: 0 4px; }
+  .composer-hints kbd { background: var(--bg-1); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; color: var(--muted); margin: 0 2px; }
+
+  /* Auto-scroll pill */
+  .pill {
+    display: inline-block;
+    background: var(--bg-3); border: 1px solid var(--accent); color: var(--accent);
+    padding: 5px 14px; border-radius: 20px;
+    font-family: ui-monospace, monospace; font-size: 11px;
+    cursor: pointer;
+  }
+
+  /* Chat-thread list row (for list primitive) */
+  .thread-list { background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: 100%; }
+  .thread-row { display: grid; grid-template-columns: 38px 1fr 160px 110px; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; }
+  .thread-row:last-child { border-bottom: none; }
+  .thread-row:hover { background: var(--hover); }
+  .thread-row.selected { background: var(--bg-2); border-left: 2px solid var(--accent); padding-left: 12px; }
+  .skill-avatar { width: 32px; height: 32px; background: var(--bg-0); border: 1px solid var(--border); border-radius: 7px; display: grid; place-items: center; font-family: ui-monospace, monospace; font-size: 10px; font-weight: 700; }
+  .sk-discuss { color: var(--highlight); border-color: var(--highlight); }
+  .sk-quick   { color: var(--accent);    border-color: var(--accent); }
+  .sk-bugfix  { color: var(--error);     border-color: var(--error); }
+  .thread-row .title { font-weight: 600; color: var(--fg); font-size: 13px; margin-bottom: 2px; }
+  .thread-row .preview { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thread-row .skill-line { font-family: ui-monospace, monospace; font-size: 11px; color: var(--fg-dim); }
+  .thread-row .time { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); text-align: right; }
 </style>
 </head>
 <body>
 <div class="doc">
 
   <h1>Component Library</h1>
-  <p class="lead">Live implementations of the primitives defined in BRANDING.md. All surfaces use Everforest Dark tokens. Every component below is keyboard-accessible and focus-ring visible.</p>
+  <p class="lead">Live implementations of the primitives defined in BRANDING.md — dashboard core (buttons, forms, cards, alerts, badges, progress) and chat surface (messages, tool cards, structured-question form, composer, error card, auto-scroll pill, thread list). Every component is keyboard-accessible and focus-ring visible.</p>
 
   <!-- BUTTONS -->
   <h2>Buttons</h2>
@@ -171,11 +332,7 @@
     </div>
     <div class="field">
       <label for="ml">Milestone</label>
-      <select id="ml">
-        <option>v6.3.0</option>
-        <option>v6.4.0</option>
-        <option>v7.0.0</option>
-      </select>
+      <select id="ml"><option>v6.3.0</option><option>v7.0.0</option></select>
       <span class="hint">Target release</span>
     </div>
     <div class="field error">
@@ -199,7 +356,7 @@
     <div class="card-demo">
       <div class="card">
         <h3>Basic Set Card</h3>
-        <p>A canonical card on surface-0 with 1px border. No shadow, no elevation beyond the surface token.</p>
+        <p>Canonical card on surface-0 with 1px border. Elevation via surface token, never shadow.</p>
         <div class="meta"><span>set-34</span><span class="badge badge-complete">complete</span></div>
       </div>
       <div class="card">
@@ -210,7 +367,7 @@
       </div>
       <div class="card">
         <h3>With Action</h3>
-        <p>Primary action rendered inline. Accent color reserved for the single primary CTA per card.</p>
+        <p>Primary action inline. Accent color reserved for the single primary CTA per card.</p>
         <button class="btn btn-primary btn-sm" style="align-self:flex-start">Execute</button>
         <div class="meta"><span>set-39</span><span class="badge badge-discussed">discussed</span></div>
       </div>
@@ -222,38 +379,26 @@
   <div class="demo block">
     <div class="alert alert-info">
       <span class="icon">i</span>
-      <div class="content">
-        <strong>Backend connected.</strong>
-        <span>Version v6.3.0 · uptime 2h 14m</span>
-      </div>
+      <div class="content"><strong>Backend connected.</strong><span>Version v6.3.0 · uptime 2h 14m</span></div>
     </div>
     <div class="alert alert-success">
       <span class="icon">✓</span>
-      <div class="content">
-        <strong>Wave 2 complete.</strong>
-        <span>4 of 4 jobs succeeded in auth-refactor · 14:03:11</span>
-      </div>
+      <div class="content"><strong>Wave 2 complete.</strong><span>4 of 4 jobs succeeded in auth-refactor · 14:03:11</span></div>
     </div>
     <div class="alert alert-warning">
       <span class="icon">!</span>
-      <div class="content">
-        <strong>Contract drift detected.</strong>
-        <span>state-sync · 2 fields removed since last plan. Regenerate plan before execute.</span>
-      </div>
+      <div class="content"><strong>Contract drift detected.</strong><span>state-sync · 2 fields removed since last plan. Regenerate plan before execute.</span></div>
     </div>
     <div class="alert alert-error">
       <span class="icon">✗</span>
-      <div class="content">
-        <strong>Merge conflict — level 3 (dependency).</strong>
-        <span>auth-refactor vs main · package.json version mismatch. Manual resolution required.</span>
-      </div>
+      <div class="content"><strong>Merge conflict — level 3 (dependency).</strong><span>auth-refactor vs main · package.json version mismatch.</span></div>
     </div>
   </div>
 
   <!-- BADGES + PROGRESS -->
   <h2>Status Badges &amp; Progress</h2>
   <div class="demo">
-    <span class="demo-label">Lifecycle badges</span>
+    <span class="demo-label">Set / wave / job lifecycle</span>
     <span class="badge badge-pending">pending</span>
     <span class="badge badge-discussed">discussed</span>
     <span class="badge badge-planned">planned</span>
@@ -261,12 +406,236 @@
     <span class="badge badge-complete">complete</span>
     <span class="badge badge-merged">merged</span>
   </div>
+  <div class="demo">
+    <span class="demo-label">Chat thread / agent run lifecycle</span>
+    <span class="badge badge-active">active</span>
+    <span class="badge badge-streaming">streaming</span>
+    <span class="badge badge-awaiting">awaiting</span>
+    <span class="badge badge-archived">archived</span>
+  </div>
   <div class="demo block">
     <span class="demo-label">Progress bar</span>
     <div class="progress" role="progressbar" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"><span style="width:33%"></span></div>
     <span class="mono" style="font-size:11px; color:var(--muted)">3 / 9 jobs · wave 1 of 3</span>
     <div class="progress" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"><span style="width:75%"></span></div>
     <span class="mono" style="font-size:11px; color:var(--muted)">9 / 12 jobs · wave 3 of 3</span>
+  </div>
+
+  <!-- =========================================================
+       CHAT PRIMITIVES
+       ========================================================= -->
+  <h2 style="margin-top: 56px; color: var(--accent); border-bottom-color: var(--accent);">Chat — Messages</h2>
+  <div class="demo block">
+    <span class="demo-label">User / Assistant / Tool roles — with streaming cursor</span>
+    <div class="chat-demo">
+      <div class="msg user">
+        <div class="avatar">JO</div>
+        <div class="content">
+          <div class="role">user<span class="time">14:02:11</span></div>
+          <div class="body">Start a <code>discuss-set</code> for <code>agent-runtime-foundation</code>. Want to align on the session lifecycle before planning.</div>
+        </div>
+      </div>
+      <div class="msg assistant">
+        <div class="avatar">AI</div>
+        <div class="content">
+          <div class="role">assistant<span class="time">14:02:14</span></div>
+          <div class="body">Understood. Scanning the state layer and contracts to ground the discussion<span class="cursor"></span></div>
+        </div>
+      </div>
+      <div class="msg tool">
+        <div class="avatar">TL</div>
+        <div class="content">
+          <div class="role">tool<span class="time">14:02:16</span></div>
+          <div class="tool-card complete">
+            <div class="tc-head">
+              <span class="tc-icon">✓</span>
+              <span class="tc-name">Read</span>
+              <span class="tc-args mono">.planning/sets/agent-runtime-foundation/CONTRACT.json</span>
+              <span class="tc-duration">0.18s</span>
+              <span class="tc-chevron">▸</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Chat — Tool-Call Cards</h2>
+  <div class="demo block">
+    <span class="demo-label">Running · Complete (collapsed) · Complete (expanded) · Error</span>
+    <div class="chat-demo" style="gap: 10px;">
+      <div class="tool-card running"><div class="tc-head">
+        <span class="tc-icon"><span class="spinner"></span></span>
+        <span class="tc-name">Grep</span>
+        <span class="tc-args mono">pattern: "AgentSession|AgentRun" · path: src/</span>
+        <span class="tc-duration">running…</span>
+        <span class="tc-chevron">▸</span>
+      </div></div>
+
+      <div class="tool-card complete"><div class="tc-head">
+        <span class="tc-icon">✓</span>
+        <span class="tc-name">Read</span>
+        <span class="tc-args mono">src/lib/branding-server.cjs</span>
+        <span class="tc-duration">0.04s</span>
+        <span class="tc-chevron">▸</span>
+      </div></div>
+
+      <div class="tool-card complete open">
+        <div class="tc-head">
+          <span class="tc-icon">✓</span>
+          <span class="tc-name">Glob</span>
+          <span class="tc-args mono">**/agent_runtime/**/*.py</span>
+          <span class="tc-duration">0.04s</span>
+          <span class="tc-chevron">▾</span>
+        </div>
+        <div class="tc-body">
+          <div>
+            <div class="tc-section-label">Arguments</div>
+            <pre>{ "pattern": "**/agent_runtime/**/*.py", "path": "/home/kek/Projects/RAPID" }</pre>
+          </div>
+          <div>
+            <div class="tc-section-label">Result (4 files)</div>
+            <pre>web/backend/app/agent_runtime/session.py
+web/backend/app/agent_runtime/runner.py
+web/backend/app/agent_runtime/events.py
+web/backend/app/agent_runtime/__init__.py</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card error"><div class="tc-head">
+        <span class="tc-icon">✗</span>
+        <span class="tc-name">Bash</span>
+        <span class="tc-args mono">npm test — exit code 1</span>
+        <span class="tc-duration">12.7s</span>
+        <span class="tc-chevron">▸</span>
+      </div></div>
+    </div>
+  </div>
+
+  <h2>Chat — Structured Question Form</h2>
+  <div class="demo block">
+    <span class="demo-label">Inline ask_user / can_use_tool with keyboard shortcuts</span>
+    <div class="chat-demo" style="padding: 18px 20px;">
+      <div class="question-card">
+        <div class="qc-label">Awaiting Input</div>
+        <div class="qc-title">Session lifecycle model</div>
+        <div class="qc-sub">How should a chat thread relate to an agent run in the database and runtime?</div>
+        <div class="qc-opt selected">
+          <span class="radio-dot"></span>
+          <div class="opt-label"><b>One AgentRun per chat thread (long-lived)</b><span>Thread binds to a single run. Matches Cursor Composer.</span></div>
+          <span class="opt-kbd">A</span>
+        </div>
+        <div class="qc-opt">
+          <span class="radio-dot"></span>
+          <div class="opt-label"><b>One AgentRun per user turn (ephemeral)</b><span>Each user message spawns a new short-lived run.</span></div>
+          <span class="opt-kbd">B</span>
+        </div>
+        <div class="qc-opt">
+          <span class="radio-dot"></span>
+          <div class="opt-label"><b>Hybrid — persistent session, per-turn runs</b><span>Session holds context; runs are billable units.</span></div>
+          <span class="opt-kbd">C</span>
+        </div>
+        <div class="qc-actions">
+          <button class="btn btn-ghost btn-sm">Skip question</button>
+          <button class="btn btn-primary btn-sm">Submit answer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Chat — Composer</h2>
+  <div class="demo block">
+    <span class="demo-label">Slash-command autocomplete · textarea auto-grow · send · hint strip</span>
+    <div class="chat-demo" style="padding: 18px 20px 12px;">
+      <div class="composer-wrap" style="border-top: none; padding-top: 0; margin-top: 0;">
+        <div class="slash-dropdown">
+          <div class="sd-row active">
+            <span class="cmd">/rapid:plan-set</span>
+            <span class="desc">plan all waves in the set with researcher → planner → verifier</span>
+            <span class="hint">↵</span>
+          </div>
+          <div class="sd-row">
+            <span class="cmd">/rapid:pause</span>
+            <span class="desc">pause the set and save state for later resumption</span>
+            <span class="hint">↵</span>
+          </div>
+          <div class="sd-row">
+            <span class="cmd">/rapid:backlog</span>
+            <span class="desc">capture out-of-scope ideas as backlog items</span>
+            <span class="hint">↵</span>
+          </div>
+        </div>
+        <div class="composer-box">
+          <textarea class="composer-input" rows="1" placeholder="Type a message…">/rapid:p</textarea>
+          <div class="composer-actions">
+            <button title="Attach file">@</button>
+            <button title="Insert code block">&lt;/&gt;</button>
+            <button class="send" title="Send">▶</button>
+          </div>
+        </div>
+        <div class="composer-hints">
+          <span><kbd>↵</kbd> send <kbd>⇧↵</kbd> newline <kbd>/</kbd> command <kbd>@</kbd> mention</span>
+          <span>auto-scroll <b style="color:var(--accent)">on</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Chat — Error Card &amp; Auto-Scroll Pill</h2>
+  <div class="demo block">
+    <span class="demo-label">Inline error card with actionable next steps · "N new messages" pill</span>
+    <div class="chat-demo" style="padding: 18px 20px; gap: 12px;">
+      <div class="error-card">
+        <span class="ec-icon">!</span>
+        <div>
+          <div class="ec-title">1 existing test failed after patch</div>
+          <div class="ec-body">
+            <code class="mono">merge-state.test.cjs:112</code> — <i>"preserves exact byte sequence"</i>. Normalization rewrites input. Recommended: update the test to reflect the new contract.
+          </div>
+          <div class="ec-actions">
+            <button class="btn btn-secondary btn-sm">Update test</button>
+            <button class="btn btn-ghost btn-sm">Open file</button>
+            <button class="btn btn-ghost btn-sm">Retry</button>
+          </div>
+        </div>
+      </div>
+      <div style="text-align: center;"><span class="pill">↓ 2 new messages</span></div>
+    </div>
+  </div>
+
+  <h2>Chat — Thread List Row</h2>
+  <div class="demo block">
+    <span class="demo-label">Chats list row primitive — skill avatar · title + preview · skill/set · time + status</span>
+    <div class="thread-list">
+      <div class="thread-row selected">
+        <div class="skill-avatar sk-discuss">DSC</div>
+        <div>
+          <div class="title">Capture implementation vision for agent-runtime-foundation</div>
+          <div class="preview">assistant: The set binds FastAPI background tasks to claude-code-sdk…</div>
+        </div>
+        <div class="skill-line">/rapid:discuss-set</div>
+        <div class="time">2m ago<br/><span class="badge badge-streaming">streaming</span></div>
+      </div>
+      <div class="thread-row">
+        <div class="skill-avatar sk-quick">QK</div>
+        <div>
+          <div class="title">Ad-hoc: rename Concern → Scope across planning docs</div>
+          <div class="preview">user: yep go ahead — all references under .planning/ and docs/</div>
+        </div>
+        <div class="skill-line">/rapid:quick</div>
+        <div class="time">12m ago<br/><span class="badge badge-awaiting">awaiting</span></div>
+      </div>
+      <div class="thread-row">
+        <div class="skill-avatar sk-bugfix">BUG</div>
+        <div>
+          <div class="title">merge-state.cjs reports false conflict on identical JSON whitespace</div>
+          <div class="preview">assistant: Reproduced. The L1 detector strips newlines but not BOM markers.</div>
+        </div>
+        <div class="skill-line">/rapid:bug-fix</div>
+        <div class="time">1h ago<br/><span class="badge badge-active">active</span></div>
+      </div>
+    </div>
   </div>
 
 </div>
