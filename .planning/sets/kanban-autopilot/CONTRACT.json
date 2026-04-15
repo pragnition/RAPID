@@ -1,6 +1,6 @@
 {
   "setId": "kanban-autopilot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "exports": {
     "kanban_v2_schema": {
       "type": "file",
@@ -44,8 +44,13 @@
     },
     "ui_agent_badges": {
       "type": "file",
-      "signature": "<KanbanCard /> component renders badges: 'Agent claimed' (locked_by_run_id set), 'Agent created' (created_by starts with 'agent:'), 'Agent completed' (completed_by_run_id set)",
-      "description": "Visual indication on kanban cards showing agent involvement. 'Run with RAPID' per-card action button routes through the same dispatch flow."
+      "signature": "<KanbanCard /> composes SurfaceCard + StatusBadge instances per agent state",
+      "description": "Kanban card visual composed from wireframe-rollout Wave 1 primitives. Each card is a SurfaceCard (elevation=1) with StatusBadge instances for agent state: 'Agent claimed' (tone=\"info\", when locked_by_run_id set), 'Agent created' (tone=\"highlight\", when created_by starts with 'agent:'), 'Agent completed' (tone=\"accent\", when completed_by_run_id set), and 'Blocked' (tone=\"error\", when card lives in Blocked column). The per-card 'Run with RAPID' action button uses primary bg-accent styling. Cites .planning/branding/wireframe.html section 03 Kanban (lines 983-1080) and BRANDING.md section component-style, Badges subsection."
+    },
+    "kanban_column_surface": {
+      "type": "file",
+      "signature": "<KanbanColumn /> composed from SurfaceCard elevation=1 + column header (mono uppercase muted text) + card stack",
+      "description": "Column visual shape, extracted because wireframe-rollout standardizes surfaces. Cites wireframe.html section 03 column header pattern (lines ~990-1020) and BRANDING.md component-style Elevation via surface tokens. Consumed by the kanban page in the shell and by any embedded kanban views."
     }
   },
   "imports": {
@@ -119,6 +124,10 @@
     "commit_trailer_present_on_every_autopilot_commit": {
       "description": "Every git commit authored during an autopilot run has Autopilot-Card-Id and Autopilot-Run-Id trailers. Verified by PreToolUse hook on Bash git commit.",
       "enforced_by": "runtime"
+    },
+    "adopts_wireframe_primitives": {
+      "description": "Agent-badged kanban cards compose primitives (SurfaceCard, StatusBadge) from wireframe-rollout Wave 1. No new primitives introduced here.",
+      "enforced_by": "review"
     }
   }
 }
