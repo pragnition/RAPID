@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RAPID Mission Control — Component Library</title>
+<style>
+  :root {
+    --bg-dim:#232A2E; --bg-0:#2D353B; --bg-1:#343F44; --bg-2:#3D484D; --bg-3:#475258; --bg-4:#4F585E;
+    --fg:#D3C6AA; --fg-dim:#9DA9A0; --muted:#859289;
+    --accent:#A7C080; --link:#83C092; --info:#7FBBB3; --warning:#DBBC7F; --error:#E67E80; --highlight:#D699B6; --orange:#E69875;
+    --border:#475258; --hover:#3D484D; --selection:rgba(167,192,128,0.2);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-dim); color: var(--fg); font-family: "Inter", system-ui, sans-serif; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  *, *::before, *::after { transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+  .doc { max-width: 1080px; margin: 0 auto; padding: 40px 32px 80px; }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  h2 { font-size: 18px; font-weight: 700; margin: 40px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .demo { background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .demo.block { flex-direction: column; align-items: stretch; }
+  .demo-label { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: -4px; width: 100%; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    font-size: 13px; font-weight: 500;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-primary { background: var(--accent); color: var(--bg-0); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary { background: var(--bg-2); color: var(--fg); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--bg-3); }
+  .btn-outline { background: transparent; color: var(--fg); border-color: var(--border); }
+  .btn-outline:hover { background: var(--bg-2); }
+  .btn-ghost { background: transparent; color: var(--fg-dim); }
+  .btn-ghost:hover { background: var(--hover); color: var(--fg); }
+  .btn-destructive { background: transparent; color: var(--error); border-color: var(--error); }
+  .btn-destructive:hover { background: rgba(230,126,128,0.12); }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-lg { padding: 10px 18px; font-size: 14px; }
+
+  /* Form */
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; width: 260px; }
+  .field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .field input, .field select, .field textarea {
+    background: var(--bg-0);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  .field .hint { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .field.error input { border-color: var(--error); }
+  .field.error .hint { color: var(--error); }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+  .check input { appearance: none; width: 16px; height: 16px; border: 1px solid var(--border); background: var(--bg-0); border-radius: 3px; display: grid; place-items: center; cursor: pointer; }
+  .check input:checked { background: var(--accent); border-color: var(--accent); }
+  .check input:checked::after { content: "✓"; color: var(--bg-0); font-size: 11px; font-weight: 700; }
+  .radio { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+  .radio input { appearance: none; width: 16px; height: 16px; border: 1px solid var(--border); background: var(--bg-0); border-radius: 50%; cursor: pointer; }
+  .radio input:checked { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 3px var(--bg-0); }
+
+  /* Cards */
+  .card-demo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+  .card {
+    background: var(--bg-0);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .card h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--fg); }
+  .card p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .card .img-placeholder { background: var(--bg-2); height: 80px; border-radius: 4px; margin: -4px 0 6px; display: grid; place-items: center; color: var(--muted); font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: 1px; }
+  .card .meta { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); margin-top: 2px; padding-top: 8px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; }
+
+  /* Alerts */
+  .alert {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border-left: 3px solid var(--border);
+    background: var(--bg-0);
+    font-size: 13px;
+    width: 100%;
+  }
+  .alert .icon {
+    width: 22px; height: 22px; flex-shrink: 0;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .alert .content strong { display: block; font-weight: 600; margin-bottom: 2px; }
+  .alert .content span { color: var(--fg-dim); }
+  .alert-info    { border-left-color: var(--info); }
+  .alert-info    .icon { background: rgba(127,187,179,0.2); color: var(--info); }
+  .alert-success { border-left-color: var(--accent); }
+  .alert-success .icon { background: rgba(167,192,128,0.2); color: var(--accent); }
+  .alert-warning { border-left-color: var(--warning); }
+  .alert-warning .icon { background: rgba(219,188,127,0.2); color: var(--warning); }
+  .alert-error   { border-left-color: var(--error); }
+  .alert-error   .icon { background: rgba(230,126,128,0.2); color: var(--error); }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+  }
+  .badge-pending   { background: rgba(133,146,137,0.2); color: var(--muted); }
+  .badge-discussed { background: rgba(127,187,179,0.2); color: var(--info); }
+  .badge-planned   { background: rgba(214,153,182,0.2); color: var(--highlight); }
+  .badge-executed  { background: rgba(230,152,117,0.2); color: var(--orange); }
+  .badge-complete  { background: rgba(167,192,128,0.2); color: var(--accent); }
+  .badge-merged    { background: rgba(131,192,146,0.2); color: var(--link); }
+
+  /* Progress */
+  .progress { width: 100%; height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
+  .progress > span { display: block; height: 100%; background: var(--accent); }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <h1>Component Library</h1>
+  <p class="lead">Live implementations of the primitives defined in BRANDING.md. All surfaces use Everforest Dark tokens. Every component below is keyboard-accessible and focus-ring visible.</p>
+
+  <!-- BUTTONS -->
+  <h2>Buttons</h2>
+  <div class="demo">
+    <span class="demo-label">Primary</span>
+    <button class="btn btn-primary">Run Execute</button>
+    <button class="btn btn-primary btn-sm">Save</button>
+    <button class="btn btn-primary btn-lg">+ New Set</button>
+    <button class="btn btn-primary" disabled>Disabled</button>
+  </div>
+  <div class="demo">
+    <span class="demo-label">Secondary / Outline / Ghost / Destructive</span>
+    <button class="btn btn-secondary">Cancel</button>
+    <button class="btn btn-outline">View Details</button>
+    <button class="btn btn-ghost">Skip</button>
+    <button class="btn btn-destructive">Delete worktree</button>
+  </div>
+
+  <!-- FORMS -->
+  <h2>Form Inputs</h2>
+  <div class="demo">
+    <span class="demo-label">Text · Select · Textarea</span>
+    <div class="field">
+      <label for="nm">Set name</label>
+      <input id="nm" type="text" value="auth-refactor" />
+      <span class="hint">3-64 chars · kebab-case</span>
+    </div>
+    <div class="field">
+      <label for="ml">Milestone</label>
+      <select id="ml">
+        <option>v6.3.0</option>
+        <option>v6.4.0</option>
+        <option>v7.0.0</option>
+      </select>
+      <span class="hint">Target release</span>
+    </div>
+    <div class="field error">
+      <label for="pt">Path</label>
+      <input id="pt" type="text" value="~/Projects/missing" />
+      <span class="hint">Path does not exist</span>
+    </div>
+  </div>
+  <div class="demo">
+    <span class="demo-label">Checkbox · Radio</span>
+    <label class="check"><input type="checkbox" checked /> Use worktree isolation</label>
+    <label class="check"><input type="checkbox" /> Auto-merge on complete</label>
+    <label class="radio"><input type="radio" name="wf" checked /> Sequential waves</label>
+    <label class="radio"><input type="radio" name="wf" /> Parallel waves</label>
+  </div>
+
+  <!-- CARDS -->
+  <h2>Cards</h2>
+  <div class="demo block">
+    <span class="demo-label">Basic · With media · With action</span>
+    <div class="card-demo">
+      <div class="card">
+        <h3>Basic Set Card</h3>
+        <p>A canonical card on surface-0 with 1px border. No shadow, no elevation beyond the surface token.</p>
+        <div class="meta"><span>set-34</span><span class="badge badge-complete">complete</span></div>
+      </div>
+      <div class="card">
+        <h3>With Media</h3>
+        <div class="img-placeholder">GRAPH PREVIEW</div>
+        <p>Media placeholder uses surface-2 to differentiate from the card surface.</p>
+        <div class="meta"><span>set-37</span><span class="badge badge-planned">planned</span></div>
+      </div>
+      <div class="card">
+        <h3>With Action</h3>
+        <p>Primary action rendered inline. Accent color reserved for the single primary CTA per card.</p>
+        <button class="btn btn-primary btn-sm" style="align-self:flex-start">Execute</button>
+        <div class="meta"><span>set-39</span><span class="badge badge-discussed">discussed</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTS -->
+  <h2>Alerts &amp; Notifications</h2>
+  <div class="demo block">
+    <div class="alert alert-info">
+      <span class="icon">i</span>
+      <div class="content">
+        <strong>Backend connected.</strong>
+        <span>Version v6.3.0 · uptime 2h 14m</span>
+      </div>
+    </div>
+    <div class="alert alert-success">
+      <span class="icon">✓</span>
+      <div class="content">
+        <strong>Wave 2 complete.</strong>
+        <span>4 of 4 jobs succeeded in auth-refactor · 14:03:11</span>
+      </div>
+    </div>
+    <div class="alert alert-warning">
+      <span class="icon">!</span>
+      <div class="content">
+        <strong>Contract drift detected.</strong>
+        <span>state-sync · 2 fields removed since last plan. Regenerate plan before execute.</span>
+      </div>
+    </div>
+    <div class="alert alert-error">
+      <span class="icon">✗</span>
+      <div class="content">
+        <strong>Merge conflict — level 3 (dependency).</strong>
+        <span>auth-refactor vs main · package.json version mismatch. Manual resolution required.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BADGES + PROGRESS -->
+  <h2>Status Badges &amp; Progress</h2>
+  <div class="demo">
+    <span class="demo-label">Lifecycle badges</span>
+    <span class="badge badge-pending">pending</span>
+    <span class="badge badge-discussed">discussed</span>
+    <span class="badge badge-planned">planned</span>
+    <span class="badge badge-executed">executed</span>
+    <span class="badge badge-complete">complete</span>
+    <span class="badge badge-merged">merged</span>
+  </div>
+  <div class="demo block">
+    <span class="demo-label">Progress bar</span>
+    <div class="progress" role="progressbar" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"><span style="width:33%"></span></div>
+    <span class="mono" style="font-size:11px; color:var(--muted)">3 / 9 jobs · wave 1 of 3</span>
+    <div class="progress" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"><span style="width:75%"></span></div>
+    <span class="mono" style="font-size:11px; color:var(--muted)">9 / 12 jobs · wave 3 of 3</span>
+  </div>
+
+</div>
+</body>
+</html>

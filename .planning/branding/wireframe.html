@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RAPID Mission Control — Wireframe Mockup</title>
+<style>
+  :root {
+    --bg-dim: #232A2E;
+    --bg-0: #2D353B;
+    --bg-1: #343F44;
+    --bg-2: #3D484D;
+    --bg-3: #475258;
+    --bg-4: #4F585E;
+    --fg: #D3C6AA;
+    --fg-dim: #9DA9A0;
+    --muted: #859289;
+    --accent: #A7C080;
+    --link: #83C092;
+    --info: #7FBBB3;
+    --warning: #DBBC7F;
+    --error: #E67E80;
+    --highlight: #D699B6;
+    --orange: #E69875;
+    --border: #475258;
+    --hover: #3D484D;
+    --selection: rgba(167, 192, 128, 0.2);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg-dim);
+    color: var(--fg);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  *, *::before, *::after {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+  /* Wireframe frame (meta chrome) */
+  .doc {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+  .doc-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .doc-subtitle {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 24px;
+    color: var(--fg);
+  }
+  .doc-subtitle span { color: var(--accent); }
+  .section-label {
+    display: inline-block;
+    margin: 48px 0 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    border-left: 2px solid var(--accent);
+    padding-left: 8px;
+  }
+
+  /* Mission Control shell (shared across mockups) */
+  .mc {
+    background: var(--bg-0);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    grid-template-rows: 56px 1fr;
+    grid-template-areas: "sidebar header" "sidebar main";
+    min-height: 620px;
+  }
+  .mc-sidebar {
+    grid-area: sidebar;
+    background: var(--bg-0);
+    border-right: 1px solid var(--border);
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+  }
+  .mc-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .mc-brand-mark {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--bg-1);
+    border: 1px solid var(--accent);
+    display: grid; place-items: center;
+    color: var(--accent);
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .mc-brand-text { font-weight: 700; letter-spacing: 1px; }
+  .mc-brand-text small { display: block; font-weight: 400; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+  .mc-nav { display: flex; flex-direction: column; gap: 2px; }
+  .mc-nav-group-label {
+    padding: 12px 8px 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+  }
+  .mc-nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: var(--fg-dim);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .mc-nav a:hover { background: var(--hover); color: var(--fg); }
+  .mc-nav a.active {
+    background: var(--bg-2);
+    color: var(--accent);
+    border-left: 2px solid var(--accent);
+    padding-left: 8px;
+  }
+  .mc-nav a .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted);
+  }
+  .mc-nav a.active .dot { background: var(--accent); }
+
+  .mc-sidebar-footer {
+    margin-top: auto;
+    padding: 12px 8px 4px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .health-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--selection);
+  }
+
+  .mc-header {
+    grid-area: header;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    background: var(--bg-0);
+  }
+  .mc-crumbs { color: var(--muted); font-size: 13px; }
+  .mc-crumbs b { color: var(--fg); font-weight: 600; }
+  .mc-header-spacer { flex: 1; }
+  .mc-search {
+    min-width: 280px;
+    padding: 6px 10px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--fg-dim);
+    font-size: 12px;
+    font-family: ui-monospace, monospace;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mc-search kbd {
+    margin-left: auto;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .mc-theme-picker {
+    display: flex; gap: 4px;
+    padding: 2px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .mc-theme-picker span {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .mc-theme-picker span.active { border-color: var(--accent); }
+  .mc-main {
+    grid-area: main;
+    padding: 24px;
+    overflow: auto;
+  }
+
+  /* Primitives */
+  .card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .card-nested { background: var(--bg-2); }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .metric-value { font-size: 28px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .metric-sub { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; margin-top: 4px; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    font-family: ui-monospace, monospace;
+  }
+  .badge-pending   { background: rgba(133, 146, 137, 0.2); color: var(--muted); }
+  .badge-discussed { background: rgba(127, 187, 179, 0.2); color: var(--info); }
+  .badge-planned   { background: rgba(214, 153, 182, 0.2); color: var(--highlight); }
+  .badge-executed  { background: rgba(230, 152, 117, 0.2); color: var(--orange); }
+  .badge-complete  { background: rgba(167, 192, 128, 0.2); color: var(--accent); }
+  .badge-merged    { background: rgba(131, 192, 146, 0.2); color: var(--link); }
+  .badge-error     { background: rgba(230, 126, 128, 0.2); color: var(--error); }
+  .badge-warning   { background: rgba(219, 188, 127, 0.2); color: var(--warning); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    font-size: 13px; font-weight: 500;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--accent); color: var(--bg-0); }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary { background: var(--bg-2); color: var(--fg); border-color: var(--border); }
+  .btn-ghost { background: transparent; color: var(--fg-dim); }
+  .btn-ghost:hover { background: var(--hover); color: var(--fg); }
+
+  .status-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  /* =========================================================
+     1. DASHBOARD + NEXT-ACTION BANNER
+     ========================================================= */
+  .dash h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .dash .subtitle { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+
+  .next-action-banner {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex; align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  .nab-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
+  .nab-command { font-family: ui-monospace, monospace; color: var(--accent); font-weight: 600; }
+  .nab-target { color: var(--fg); }
+  .nab-meta { color: var(--muted); margin-left: auto; font-size: 12px; font-family: ui-monospace, monospace; }
+
+  .active-project {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+  .active-project .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 4px;
+  }
+  .active-project .name { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .active-project .path { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .active-project .switch-btn { font-size: 12px; }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .sparkline {
+    margin-top: 8px; height: 32px;
+    display: flex; align-items: end; gap: 3px;
+  }
+  .sparkline span {
+    flex: 1;
+    background: var(--accent);
+    opacity: 0.4;
+    border-radius: 1px;
+  }
+  .sparkline span.peak { opacity: 0.9; }
+
+  .dash-wide {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+  }
+  .activity-feed .row {
+    display: grid;
+    grid-template-columns: 90px 70px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .activity-feed .row:last-child { border-bottom: none; }
+  .activity-feed .time { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; }
+  .activity-feed .agent { color: var(--info); font-family: ui-monospace, monospace; font-size: 11px; }
+  .activity-feed .msg { color: var(--fg-dim); }
+  .activity-feed .msg b { color: var(--fg); }
+
+  /* =========================================================
+     2. KNOWLEDGE GRAPH (Hypermodern Redesign)
+     ========================================================= */
+  .graph-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+    height: 580px;
+  }
+  .graph-canvas {
+    position: relative;
+    background: var(--bg-0);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background-image:
+      linear-gradient(var(--bg-1) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-1) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .graph-toolbar {
+    position: absolute;
+    top: 12px; left: 12px;
+    display: flex; gap: 4px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px;
+    z-index: 5;
+  }
+  .graph-toolbar button {
+    padding: 4px 10px;
+    font-size: 11px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--fg-dim);
+    cursor: pointer;
+    font-family: ui-monospace, monospace;
+  }
+  .graph-toolbar button.on { background: var(--bg-3); color: var(--accent); }
+  .graph-legend {
+    position: absolute;
+    bottom: 12px; left: 12px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    z-index: 5;
+    display: flex; gap: 14px;
+    align-items: center;
+  }
+  .graph-legend span { display: flex; align-items: center; gap: 6px; }
+  .graph-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .graph-svg { width: 100%; height: 100%; display: block; }
+  .graph-sidebar {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow: auto;
+  }
+  .graph-sidebar h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+  .graph-sidebar .set-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+  .graph-sidebar .set-id {
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .kv { display: grid; grid-template-columns: 90px 1fr; row-gap: 8px; column-gap: 12px; font-size: 12px; align-items: center; }
+  .kv dt { color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; }
+  .kv dd { margin: 0; color: var(--fg); font-family: ui-monospace, monospace; font-size: 12px; }
+
+  .progress-bar {
+    height: 4px; background: var(--bg-3);
+    border-radius: 2px; overflow: hidden;
+    margin: 12px 0;
+  }
+  .progress-bar > span { display: block; height: 100%; background: var(--accent); }
+
+  .dep-list { list-style: none; padding: 0; margin: 12px 0 0; font-size: 12px; }
+  .dep-list li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+  }
+  .dep-list li:hover { background: var(--bg-2); }
+
+  /* =========================================================
+     3. KANBAN BOARD
+     ========================================================= */
+  .kanban {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    min-height: 540px;
+  }
+  .kanban-col {
+    background: var(--bg-0);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .kanban-col-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 2px 2px 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .kanban-col-header .count {
+    font-family: ui-monospace, monospace;
+    background: var(--bg-2);
+    color: var(--fg-dim);
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+  .set-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 12px;
+    display: flex; flex-direction: column; gap: 6px;
+    cursor: grab;
+  }
+  .set-card:hover { background: var(--bg-2); border-color: var(--bg-4); }
+  .set-card .name { font-weight: 600; color: var(--fg); font-size: 13px; }
+  .set-card .id { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); }
+  .set-card .meta {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted);
+    margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--border);
+  }
+  .avatars { display: flex; gap: -4px; }
+  .avatar {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1px solid var(--bg-1);
+    background: var(--bg-3);
+    display: inline-grid; place-items: center;
+    font-size: 9px; color: var(--fg);
+    font-family: ui-monospace, monospace;
+    margin-left: -4px;
+  }
+  .avatar:first-child { margin-left: 0; }
+  .avatar.a { background: var(--accent); color: var(--bg-0); }
+  .avatar.b { background: var(--info); color: var(--bg-0); }
+  .avatar.c { background: var(--highlight); color: var(--bg-0); }
+  .avatar.d { background: var(--orange); color: var(--bg-0); }
+
+  /* =========================================================
+     4. PROJECTS LIST + NAV SHELL (also shows command palette)
+     ========================================================= */
+  .projects-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .projects-table thead th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    background: var(--bg-0);
+  }
+  .projects-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .projects-table tbody tr:hover { background: var(--hover); }
+  .projects-table td {
+    padding: 12px 14px;
+  }
+  .projects-table .name-cell { color: var(--fg); font-weight: 500; }
+  .projects-table .path-cell { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; }
+
+  .cmd-palette {
+    position: relative;
+    background: var(--bg-1);
+    border: 1px solid var(--bg-4);
+    border-radius: 10px;
+    max-width: 540px;
+    margin: 20px auto;
+  }
+  .cmd-input {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    font-family: ui-monospace, monospace;
+    color: var(--fg-dim);
+    font-size: 14px;
+  }
+  .cmd-input::before { content: ">"; color: var(--accent); font-weight: 700; }
+  .cmd-results { padding: 6px; }
+  .cmd-row {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .cmd-row:hover,
+  .cmd-row.active { background: var(--bg-3); }
+  .cmd-row .icon { color: var(--muted); font-family: ui-monospace, monospace; text-align: center; }
+  .cmd-row .label b { color: var(--accent); }
+  .cmd-row .hint { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); }
+
+  /* Swatches */
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+  }
+  .swatch {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 11px;
+  }
+  .swatch-color { height: 56px; }
+  .swatch-label {
+    padding: 6px 8px;
+    background: var(--bg-1);
+    font-family: ui-monospace, monospace;
+    color: var(--fg-dim);
+  }
+  .swatch-label b { display: block; color: var(--fg); }
+
+  @media (max-width: 1024px) {
+    .graph-layout { grid-template-columns: 1fr; height: auto; }
+    .graph-canvas { height: 420px; }
+    .dash-grid { grid-template-columns: repeat(2, 1fr); }
+    .dash-wide { grid-template-columns: 1fr; }
+    .kanban { grid-template-columns: repeat(3, 1fr); }
+    .mc { grid-template-columns: 180px 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <div class="doc-title">RAPID — Wireframe Mockup</div>
+  <h1 class="doc-subtitle">Mission Control <span>v6.3.0</span> — Hypermodern Terminal Dashboard</h1>
+  <p style="color: var(--muted); max-width: 820px; font-size: 13px; line-height: 1.6;">
+    Dark-first, theme-switchable (Everforest / Catppuccin / Gruvbox / Tokyonight). Surface hierarchy over shadows. Rounded-lg cards, 1px borders, 0.15s transitions. Inter body with ui-monospace accents. Lifecycle state rendered as semantic badges.
+  </p>
+
+  <!-- ============== PALETTE STRIP ============== -->
+  <div class="section-label">Palette — Everforest Dark</div>
+  <div class="palette">
+    <div class="swatch"><div class="swatch-color" style="background:#2D353B"></div><div class="swatch-label"><b>bg-0</b>#2D353B</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#343F44"></div><div class="swatch-label"><b>bg-1</b>#343F44</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#3D484D"></div><div class="swatch-label"><b>bg-2</b>#3D484D</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#475258"></div><div class="swatch-label"><b>bg-3</b>#475258</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#A7C080"></div><div class="swatch-label"><b>accent</b>#A7C080</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#7FBBB3"></div><div class="swatch-label"><b>info</b>#7FBBB3</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#E69875"></div><div class="swatch-label"><b>orange</b>#E69875</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#E67E80"></div><div class="swatch-label"><b>error</b>#E67E80</div></div>
+  </div>
+
+  <!-- ============================================================
+       MOCKUP 1 — DASHBOARD
+       ============================================================ -->
+  <div class="section-label">01 — Dashboard + Next-Action Banner</div>
+  <div class="mc">
+    <aside class="mc-sidebar">
+      <div class="mc-brand">
+        <div class="mc-brand-mark">R</div>
+        <div class="mc-brand-text">RAPID<small>Mission Control</small></div>
+      </div>
+      <nav class="mc-nav">
+        <div class="mc-nav-group-label">Workspace</div>
+        <a class="active" href="#"><span class="dot"></span>Dashboard</a>
+        <a href="#"><span class="dot"></span>Projects</a>
+        <a href="#"><span class="dot"></span>Codebase</a>
+        <div class="mc-nav-group-label">Execution</div>
+        <a href="#"><span class="dot"></span>Knowledge Graph</a>
+        <a href="#"><span class="dot"></span>Kanban</a>
+        <a href="#"><span class="dot"></span>Worktrees</a>
+        <a href="#"><span class="dot"></span>State</a>
+        <div class="mc-nav-group-label">Library</div>
+        <a href="#"><span class="dot"></span>Notes</a>
+        <a href="#"><span class="dot"></span>Settings</a>
+      </nav>
+      <div class="mc-sidebar-footer">
+        <span class="health-dot"></span>
+        <span>backend <b style="color:var(--accent)">online</b> · 2h 14m</span>
+      </div>
+    </aside>
+
+    <header class="mc-header">
+      <div class="mc-crumbs">RAPID / <b>Dashboard</b></div>
+      <div class="mc-header-spacer"></div>
+      <div class="mc-search mono">
+        <span style="color:var(--muted)">search or jump to…</span>
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="mc-theme-picker" title="Theme">
+        <span class="active" style="background:#A7C080"></span>
+        <span style="background:#89B4FA"></span>
+        <span style="background:#FABD2F"></span>
+        <span style="background:#BB9AF7"></span>
+      </div>
+    </header>
+
+    <main class="mc-main dash">
+      <h1>Dashboard</h1>
+      <p class="subtitle">Welcome to Mission Control</p>
+
+      <div class="next-action-banner">
+        <span class="nab-label">Next Action</span>
+        <span class="mono nab-command">/rapid:execute-set</span>
+        <span class="nab-target">auth-refactor</span>
+        <span class="badge badge-planned">planned</span>
+        <span class="nab-meta">wave 2 · 4 jobs · ready</span>
+      </div>
+
+      <div class="active-project">
+        <div>
+          <div class="label">Active Project</div>
+          <div class="name">RAPID</div>
+          <div class="path">~/Projects/RAPID</div>
+        </div>
+        <button class="btn btn-secondary switch-btn">Switch project</button>
+      </div>
+
+      <div class="dash-grid">
+        <div class="card">
+          <h2>Active Projects</h2>
+          <div class="metric-value">7</div>
+          <div class="metric-sub">+1 this week</div>
+        </div>
+        <div class="card">
+          <h2>Running Agents</h2>
+          <div class="metric-value">3</div>
+          <div class="metric-sub">2 planners · 1 executor</div>
+          <div class="sparkline">
+            <span style="height:30%"></span><span style="height:55%"></span><span style="height:40%"></span>
+            <span style="height:60%"></span><span style="height:75%" class="peak"></span><span style="height:50%"></span>
+            <span style="height:80%" class="peak"></span><span style="height:45%"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Sets in Progress</h2>
+          <div class="metric-value">5</div>
+          <div class="metric-sub">2 executing · 3 planned</div>
+        </div>
+        <div class="card">
+          <h2>Merge Queue</h2>
+          <div class="metric-value" style="color:var(--orange)">2</div>
+          <div class="metric-sub">1 awaiting review</div>
+        </div>
+      </div>
+
+      <div class="dash-wide">
+        <div class="card activity-feed">
+          <h2>Recent Activity</h2>
+          <div class="row">
+            <span class="time">14:03:11</span>
+            <span class="agent">executor</span>
+            <span class="msg">completed wave 2 of <b>auth-refactor</b> — 4/4 jobs</span>
+            <span class="badge badge-complete">complete</span>
+          </div>
+          <div class="row">
+            <span class="time">13:58:42</span>
+            <span class="agent">planner</span>
+            <span class="msg">generated plan for <b>graph-redesign</b> — 3 waves</span>
+            <span class="badge badge-planned">planned</span>
+          </div>
+          <div class="row">
+            <span class="time">13:41:02</span>
+            <span class="agent">merger</span>
+            <span class="msg">merged <b>shrink-next-action-banner</b> to main</span>
+            <span class="badge badge-merged">merged</span>
+          </div>
+          <div class="row">
+            <span class="time">13:22:17</span>
+            <span class="agent">discuss</span>
+            <span class="msg">captured implementation vision for <b>agent-runtime</b></span>
+            <span class="badge badge-discussed">discussed</span>
+          </div>
+          <div class="row">
+            <span class="time">13:09:53</span>
+            <span class="agent">verifier</span>
+            <span class="msg">flagged contract drift in <b>state-sync</b></span>
+            <span class="badge badge-warning">warning</span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>System Health</h2>
+          <div class="kv" style="grid-template-columns:110px 1fr; row-gap:10px;">
+            <dt>Backend</dt><dd style="color:var(--accent)">● online</dd>
+            <dt>WebSocket</dt><dd style="color:var(--accent)">● connected</dd>
+            <dt>Version</dt><dd>v6.3.0</dd>
+            <dt>Uptime</dt><dd>2h 14m</dd>
+            <dt>Worktrees</dt><dd>7 active</dd>
+            <dt>Disk</dt><dd>142 MB / set</dd>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================================
+       MOCKUP 2 — KNOWLEDGE GRAPH
+       ============================================================ -->
+  <div class="section-label">02 — Knowledge Graph (DAG Visualization)</div>
+  <div class="mc">
+    <aside class="mc-sidebar">
+      <div class="mc-brand">
+        <div class="mc-brand-mark">R</div>
+        <div class="mc-brand-text">RAPID<small>Mission Control</small></div>
+      </div>
+      <nav class="mc-nav">
+        <div class="mc-nav-group-label">Workspace</div>
+        <a href="#"><span class="dot"></span>Dashboard</a>
+        <a href="#"><span class="dot"></span>Projects</a>
+        <a href="#"><span class="dot"></span>Codebase</a>
+        <div class="mc-nav-group-label">Execution</div>
+        <a class="active" href="#"><span class="dot"></span>Knowledge Graph</a>
+        <a href="#"><span class="dot"></span>Kanban</a>
+        <a href="#"><span class="dot"></span>Worktrees</a>
+      </nav>
+      <div class="mc-sidebar-footer">
+        <span class="health-dot"></span>
+        <span>backend <b style="color:var(--accent)">online</b></span>
+      </div>
+    </aside>
+
+    <header class="mc-header">
+      <div class="mc-crumbs">RAPID / Execution / <b>Knowledge Graph</b> / milestone-v6.3.0</div>
+      <div class="mc-header-spacer"></div>
+      <button class="btn btn-ghost">Export PNG</button>
+      <button class="btn btn-secondary">Fit to view</button>
+    </header>
+
+    <main class="mc-main">
+      <div class="graph-layout">
+        <div class="graph-canvas">
+          <div class="graph-toolbar mono">
+            <button class="on">dagre</button>
+            <button>fcose</button>
+            <button>elk</button>
+            <button>|</button>
+            <button class="on">zoom</button>
+            <button>pan</button>
+            <button>|</button>
+            <button>+</button>
+            <button>-</button>
+          </div>
+
+          <svg class="graph-svg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#475258"/>
+              </marker>
+              <marker id="arrow-accent" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#A7C080"/>
+              </marker>
+            </defs>
+
+            <!-- Wave bands -->
+            <g opacity="0.35">
+              <rect x="30"  y="40" width="160" height="440" fill="none" stroke="#475258" stroke-dasharray="2 4"/>
+              <rect x="220" y="40" width="180" height="440" fill="none" stroke="#475258" stroke-dasharray="2 4"/>
+              <rect x="430" y="40" width="200" height="440" fill="none" stroke="#475258" stroke-dasharray="2 4"/>
+              <rect x="660" y="40" width="210" height="440" fill="none" stroke="#475258" stroke-dasharray="2 4"/>
+              <text x="110" y="60" text-anchor="middle" fill="#859289" font-size="10" font-family="ui-monospace" letter-spacing="2">WAVE 1</text>
+              <text x="310" y="60" text-anchor="middle" fill="#859289" font-size="10" font-family="ui-monospace" letter-spacing="2">WAVE 2</text>
+              <text x="530" y="60" text-anchor="middle" fill="#859289" font-size="10" font-family="ui-monospace" letter-spacing="2">WAVE 3</text>
+              <text x="765" y="60" text-anchor="middle" fill="#859289" font-size="10" font-family="ui-monospace" letter-spacing="2">WAVE 4</text>
+            </g>
+
+            <!-- Edges (drawn first so nodes sit on top) -->
+            <g fill="none" stroke="#475258" stroke-width="1.5" marker-end="url(#arrow)">
+              <path d="M 165,140 C 195,140 200,220 220,220"/>
+              <path d="M 165,140 C 195,140 200,330 220,330"/>
+              <path d="M 165,260 C 195,260 200,220 220,220"/>
+              <path d="M 165,260 C 195,260 200,340 220,340"/>
+              <path d="M 165,380 C 195,380 200,340 220,340"/>
+              <path d="M 395,220 C 425,220 430,210 430,210"/>
+              <path d="M 395,340 C 425,340 430,320 430,320"/>
+              <path d="M 395,220 C 425,220 430,320 430,320"/>
+              <path d="M 395,430 C 425,430 430,430 430,430"/>
+            </g>
+            <!-- Highlighted selected edge chain -->
+            <g fill="none" stroke="#A7C080" stroke-width="2" marker-end="url(#arrow-accent)">
+              <path d="M 605,210 C 635,210 645,260 660,260"/>
+              <path d="M 605,320 C 635,320 645,260 660,260"/>
+            </g>
+
+            <!-- Wave 1 -->
+            <g transform="translate(100,120)">
+              <rect width="130" height="40" rx="6" fill="#343F44" stroke="#83C092"/>
+              <text x="12" y="17" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="600">scaffold-core</text>
+              <text x="12" y="31" font-size="10" font-family="ui-monospace" fill="#859289">merged · 12 jobs</text>
+              <circle cx="120" cy="8" r="4" fill="#83C092"/>
+            </g>
+            <g transform="translate(100,240)">
+              <rect width="130" height="40" rx="6" fill="#343F44" stroke="#83C092"/>
+              <text x="12" y="17" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="600">data-layer</text>
+              <text x="12" y="31" font-size="10" font-family="ui-monospace" fill="#859289">merged · 8 jobs</text>
+              <circle cx="120" cy="8" r="4" fill="#83C092"/>
+            </g>
+            <g transform="translate(100,360)">
+              <rect width="130" height="40" rx="6" fill="#343F44" stroke="#A7C080"/>
+              <text x="12" y="17" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="600">theme-system</text>
+              <text x="12" y="31" font-size="10" font-family="ui-monospace" fill="#859289">complete · 6 jobs</text>
+              <circle cx="120" cy="8" r="4" fill="#A7C080"/>
+            </g>
+
+            <!-- Wave 2 -->
+            <g transform="translate(290,200)">
+              <rect width="130" height="40" rx="6" fill="#343F44" stroke="#E69875"/>
+              <text x="12" y="17" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="600">auth-refactor</text>
+              <text x="12" y="31" font-size="10" font-family="ui-monospace" fill="#859289">executing · 2/4</text>
+              <circle cx="120" cy="8" r="4" fill="#E69875"/>
+              <!-- progress bar inside -->
+              <rect x="12" y="38" width="106" height="3" rx="1" fill="#475258"/>
+              <rect x="12" y="38" width="53" height="3" rx="1" fill="#E69875"/>
+            </g>
+            <g transform="translate(290,320)">
+              <rect width="130" height="40" rx="6" fill="#343F44" stroke="#D699B6"/>
+              <text x="12" y="17" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="600">graph-redesign</text>
+              <text x="12" y="31" font-size="10" font-family="ui-monospace" fill="#859289">planned · 3 waves</text>
+              <circle cx="120" cy="8" r="4" fill="#D699B6"/>
+            </g>
+
+            <!-- Wave 3 (selected node highlighted) -->
+            <g transform="translate(500,190)">
+              <rect width="130" height="52" rx="6" fill="#3D484D" stroke="#A7C080" stroke-width="2"/>
+              <text x="12" y="18" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="700">agent-runtime</text>
+              <text x="12" y="32" font-size="10" font-family="ui-monospace" fill="#D3C6AA">discussed · 9 jobs</text>
+              <text x="12" y="45" font-size="9" font-family="ui-monospace" fill="#A7C080">● SELECTED</text>
+              <circle cx="120" cy="8" r="4" fill="#7FBBB3"/>
+            </g>
+            <g transform="translate(500,320)">
+              <rect width="130" height="40" rx="6" fill="#343F44" stroke="#475258"/>
+              <text x="12" y="17" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="600">state-sync</text>
+              <text x="12" y="31" font-size="10" font-family="ui-monospace" fill="#859289">pending · 5 jobs</text>
+              <circle cx="120" cy="8" r="4" fill="#859289"/>
+            </g>
+            <g transform="translate(500,410)">
+              <rect width="130" height="40" rx="6" fill="#343F44" stroke="#475258"/>
+              <text x="12" y="17" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="600">telemetry</text>
+              <text x="12" y="31" font-size="10" font-family="ui-monospace" fill="#859289">pending · 4 jobs</text>
+              <circle cx="120" cy="8" r="4" fill="#859289"/>
+            </g>
+
+            <!-- Wave 4 -->
+            <g transform="translate(730,240)">
+              <rect width="130" height="40" rx="6" fill="#343F44" stroke="#475258"/>
+              <text x="12" y="17" font-size="12" font-family="Inter" fill="#D3C6AA" font-weight="600">release-cut</text>
+              <text x="12" y="31" font-size="10" font-family="ui-monospace" fill="#859289">pending · 2 jobs</text>
+              <circle cx="120" cy="8" r="4" fill="#859289"/>
+            </g>
+          </svg>
+
+          <div class="graph-legend">
+            <span><i style="background:#83C092"></i>merged</span>
+            <span><i style="background:#A7C080"></i>complete</span>
+            <span><i style="background:#E69875"></i>executing</span>
+            <span><i style="background:#D699B6"></i>planned</span>
+            <span><i style="background:#7FBBB3"></i>discussed</span>
+            <span><i style="background:#859289"></i>pending</span>
+          </div>
+        </div>
+
+        <aside class="graph-sidebar">
+          <h3>Selected Set</h3>
+          <div class="set-title">agent-runtime</div>
+          <div class="set-id">set-id: agent-runtime-foundation</div>
+          <span class="badge badge-discussed">discussed</span>
+
+          <h3 style="margin-top:20px;">Progress</h3>
+          <div class="progress-bar"><span style="width:33%"></span></div>
+          <div class="mono" style="font-size: 11px; color: var(--muted);">3 / 9 jobs · wave 1 of 3</div>
+
+          <h3 style="margin-top:20px;">Metadata</h3>
+          <dl class="kv">
+            <dt>wave</dt><dd>3 of 4</dd>
+            <dt>owner</dt><dd>joey</dd>
+            <dt>branch</dt><dd>set/agent-runtime</dd>
+            <dt>worktree</dt><dd>.rapid-worktrees/agent-runtime</dd>
+            <dt>last run</dt><dd>14:02:11</dd>
+            <dt>contract</dt><dd style="color:var(--accent)">valid</dd>
+          </dl>
+
+          <h3 style="margin-top:20px;">Dependencies</h3>
+          <ul class="dep-list">
+            <li><span class="status-dot" style="background:#83C092"></span>scaffold-core</li>
+            <li><span class="status-dot" style="background:#83C092"></span>data-layer</li>
+            <li><span class="status-dot" style="background:#E69875"></span>auth-refactor</li>
+          </ul>
+
+          <h3 style="margin-top:20px;">Next Action</h3>
+          <button class="btn btn-primary" style="width: 100%;">/rapid:plan-set agent-runtime</button>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================================
+       MOCKUP 3 — KANBAN BOARD
+       ============================================================ -->
+  <div class="section-label">03 — Kanban Board (Set Lifecycle)</div>
+  <div class="mc">
+    <aside class="mc-sidebar">
+      <div class="mc-brand">
+        <div class="mc-brand-mark">R</div>
+        <div class="mc-brand-text">RAPID<small>Mission Control</small></div>
+      </div>
+      <nav class="mc-nav">
+        <div class="mc-nav-group-label">Execution</div>
+        <a href="#"><span class="dot"></span>Knowledge Graph</a>
+        <a class="active" href="#"><span class="dot"></span>Kanban</a>
+        <a href="#"><span class="dot"></span>Worktrees</a>
+      </nav>
+      <div class="mc-sidebar-footer">
+        <span class="health-dot"></span>
+        <span>backend <b style="color:var(--accent)">online</b></span>
+      </div>
+    </aside>
+
+    <header class="mc-header">
+      <div class="mc-crumbs">RAPID / Execution / <b>Kanban</b></div>
+      <div class="mc-header-spacer"></div>
+      <div class="mono" style="font-size:11px; color: var(--muted);">filter: milestone:v6.3.0</div>
+      <button class="btn btn-secondary">+ New set</button>
+    </header>
+
+    <main class="mc-main">
+      <div class="kanban">
+        <div class="kanban-col">
+          <div class="kanban-col-header">pending <span class="count">3</span></div>
+          <div class="set-card">
+            <div class="id">set-42</div>
+            <div class="name">telemetry</div>
+            <span class="badge badge-pending">pending</span>
+            <div class="meta"><span>4 jobs</span><div class="avatars"><span class="avatar c">JL</span></div></div>
+          </div>
+          <div class="set-card">
+            <div class="id">set-43</div>
+            <div class="name">release-cut</div>
+            <span class="badge badge-pending">pending</span>
+            <div class="meta"><span>2 jobs</span><div class="avatars"><span class="avatar a">JO</span></div></div>
+          </div>
+          <div class="set-card">
+            <div class="id">set-44</div>
+            <div class="name">docs-refresh</div>
+            <span class="badge badge-pending">pending</span>
+            <div class="meta"><span>6 jobs</span><div class="avatars"><span class="avatar b">SM</span></div></div>
+          </div>
+        </div>
+
+        <div class="kanban-col">
+          <div class="kanban-col-header">discussed <span class="count">1</span></div>
+          <div class="set-card">
+            <div class="id">set-39</div>
+            <div class="name">agent-runtime</div>
+            <span class="badge badge-discussed">discussed</span>
+            <div class="meta"><span>9 jobs · 3 waves</span><div class="avatars"><span class="avatar a">JO</span><span class="avatar b">SM</span></div></div>
+          </div>
+        </div>
+
+        <div class="kanban-col">
+          <div class="kanban-col-header">planned <span class="count">2</span></div>
+          <div class="set-card">
+            <div class="id">set-37</div>
+            <div class="name">graph-redesign</div>
+            <span class="badge badge-planned">planned</span>
+            <div class="meta"><span>12 jobs · 3 waves</span><div class="avatars"><span class="avatar c">JL</span></div></div>
+          </div>
+          <div class="set-card">
+            <div class="id">set-38</div>
+            <div class="name">state-sync</div>
+            <span class="badge badge-planned">planned</span>
+            <div class="meta"><span>5 jobs · 2 waves</span><div class="avatars"><span class="avatar d">RV</span></div></div>
+          </div>
+        </div>
+
+        <div class="kanban-col">
+          <div class="kanban-col-header">executed <span class="count">1</span></div>
+          <div class="set-card" style="border-color:var(--orange)">
+            <div class="id">set-34</div>
+            <div class="name">auth-refactor</div>
+            <span class="badge badge-executed">executed</span>
+            <div class="meta"><span>4 / 4 jobs</span><div class="avatars"><span class="avatar a">JO</span></div></div>
+          </div>
+        </div>
+
+        <div class="kanban-col">
+          <div class="kanban-col-header">complete <span class="count">1</span></div>
+          <div class="set-card" style="border-color:var(--accent)">
+            <div class="id">set-33</div>
+            <div class="name">theme-system</div>
+            <span class="badge badge-complete">complete</span>
+            <div class="meta"><span>6 / 6 jobs</span><div class="avatars"><span class="avatar b">SM</span></div></div>
+          </div>
+        </div>
+
+        <div class="kanban-col">
+          <div class="kanban-col-header">merged <span class="count">3</span></div>
+          <div class="set-card" style="border-color:var(--link); opacity: 0.92;">
+            <div class="id">set-30</div>
+            <div class="name">scaffold-core</div>
+            <span class="badge badge-merged">merged</span>
+            <div class="meta"><span>12 jobs</span><div class="avatars"><span class="avatar a">JO</span></div></div>
+          </div>
+          <div class="set-card" style="border-color:var(--link); opacity: 0.92;">
+            <div class="id">set-31</div>
+            <div class="name">data-layer</div>
+            <span class="badge badge-merged">merged</span>
+            <div class="meta"><span>8 jobs</span><div class="avatars"><span class="avatar b">SM</span></div></div>
+          </div>
+          <div class="set-card" style="border-color:var(--link); opacity: 0.92;">
+            <div class="id">set-32</div>
+            <div class="name">banner-shrink</div>
+            <span class="badge badge-merged">merged</span>
+            <div class="meta"><span>1 job</span><div class="avatars"><span class="avatar c">JL</span></div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================================
+       MOCKUP 4 — PROJECTS LIST + COMMAND PALETTE
+       ============================================================ -->
+  <div class="section-label">04 — Projects List + Navigation Shell + Command Palette</div>
+  <div class="mc">
+    <aside class="mc-sidebar">
+      <div class="mc-brand">
+        <div class="mc-brand-mark">R</div>
+        <div class="mc-brand-text">RAPID<small>Mission Control</small></div>
+      </div>
+      <nav class="mc-nav">
+        <div class="mc-nav-group-label">Workspace</div>
+        <a href="#"><span class="dot"></span>Dashboard</a>
+        <a class="active" href="#"><span class="dot"></span>Projects</a>
+        <a href="#"><span class="dot"></span>Codebase</a>
+        <div class="mc-nav-group-label">Execution</div>
+        <a href="#"><span class="dot"></span>Knowledge Graph</a>
+        <a href="#"><span class="dot"></span>Kanban</a>
+        <a href="#"><span class="dot"></span>Worktrees</a>
+      </nav>
+      <div class="mc-sidebar-footer">
+        <span class="health-dot"></span>
+        <span>backend <b style="color:var(--accent)">online</b></span>
+      </div>
+    </aside>
+
+    <header class="mc-header">
+      <div class="mc-crumbs">RAPID / <b>Projects</b></div>
+      <div class="mc-header-spacer"></div>
+      <div class="mc-search mono">
+        <span style="color:var(--muted)">search or jump to…</span>
+        <kbd>⌘K</kbd>
+      </div>
+      <button class="btn btn-primary">+ Add project</button>
+    </header>
+
+    <main class="mc-main">
+      <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 4px;">Projects</h1>
+      <p style="color: var(--muted); font-size: 13px; margin: 0 0 20px;">Registered RAPID projects (7)</p>
+
+      <div style="background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+        <table class="projects-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Path</th>
+              <th>Status</th>
+              <th>Milestone</th>
+              <th>Sets</th>
+              <th>Registered</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="name-cell">RAPID</td>
+              <td class="path-cell">~/Projects/RAPID</td>
+              <td><span class="badge badge-complete">active</span></td>
+              <td class="mono" style="font-size:11px; color:var(--accent)">v6.3.0</td>
+              <td class="mono" style="font-size:11px;">7 / 14</td>
+              <td class="mono" style="font-size:11px; color:var(--muted)">2025-11-02</td>
+            </tr>
+            <tr>
+              <td class="name-cell">mission-control-cli</td>
+              <td class="path-cell">~/Projects/rapid-cli</td>
+              <td><span class="badge badge-executed">executing</span></td>
+              <td class="mono" style="font-size:11px;">v1.2.0</td>
+              <td class="mono" style="font-size:11px;">3 / 5</td>
+              <td class="mono" style="font-size:11px; color:var(--muted)">2026-01-08</td>
+            </tr>
+            <tr>
+              <td class="name-cell">ingest-pipeline</td>
+              <td class="path-cell">~/work/ingest-pipeline</td>
+              <td><span class="badge badge-planned">planned</span></td>
+              <td class="mono" style="font-size:11px;">v3.0.0</td>
+              <td class="mono" style="font-size:11px;">2 / 6</td>
+              <td class="mono" style="font-size:11px; color:var(--muted)">2026-02-14</td>
+            </tr>
+            <tr>
+              <td class="name-cell">design-system</td>
+              <td class="path-cell">~/work/design-system</td>
+              <td><span class="badge badge-discussed">discussed</span></td>
+              <td class="mono" style="font-size:11px;">v2.1.0</td>
+              <td class="mono" style="font-size:11px;">1 / 3</td>
+              <td class="mono" style="font-size:11px; color:var(--muted)">2026-03-01</td>
+            </tr>
+            <tr>
+              <td class="name-cell">observability</td>
+              <td class="path-cell">~/work/observability</td>
+              <td><span class="badge badge-warning">stalled</span></td>
+              <td class="mono" style="font-size:11px; color:var(--muted)">v0.1.0</td>
+              <td class="mono" style="font-size:11px;">0 / 2</td>
+              <td class="mono" style="font-size:11px; color:var(--muted)">2026-03-22</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-label" style="margin-top: 32px;">Command Palette (⌘K overlay)</div>
+      <div class="cmd-palette">
+        <div class="cmd-input mono">rapid:exec</div>
+        <div class="cmd-results">
+          <div class="cmd-row active">
+            <span class="icon">></span>
+            <span class="label"><b>rapid:exec</b>ute-set — run all waves in a set</span>
+            <span class="hint">↵</span>
+          </div>
+          <div class="cmd-row">
+            <span class="icon">></span>
+            <span class="label"><b>rapid:exec</b>ute-wave — run a single wave</span>
+            <span class="hint">↵</span>
+          </div>
+          <div class="cmd-row">
+            <span class="icon">#</span>
+            <span class="label">Go to <b>exec</b>ution / Knowledge Graph</span>
+            <span class="hint">g g</span>
+          </div>
+          <div class="cmd-row">
+            <span class="icon">@</span>
+            <span class="label">Jump to set <b>auth-refactor</b> (executing)</span>
+            <span class="hint">↵</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Legend footer -->
+  <div class="section-label">Component Notes</div>
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 12px; color: var(--muted); line-height: 1.6;">
+    <div class="card">
+      <h2>Surface Hierarchy</h2>
+      <p>Elevation signaled by surface token (bg-0 → bg-4), never by shadow. Nested cards step one level higher. Hover applies <code class="mono" style="color:var(--accent)">bg-hover</code>.</p>
+    </div>
+    <div class="card">
+      <h2>Status Badges</h2>
+      <p>Semantic lifecycle state rendered as monospace pill with 20% tinted background. Never plain prose. Consistent across tables, cards, graph nodes.</p>
+    </div>
+    <div class="card">
+      <h2>Transitions</h2>
+      <p>Global 0.15s ease on bg, color, border. No transforms, no opacity toggles. Theme swap via <code class="mono">data-theme</code> attribute — instant.</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

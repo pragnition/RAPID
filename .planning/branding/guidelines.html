@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RAPID Mission Control — Design System Guidelines</title>
+<style>
+  :root {
+    --bg-dim:#232A2E; --bg-0:#2D353B; --bg-1:#343F44; --bg-2:#3D484D; --bg-3:#475258; --bg-4:#4F585E;
+    --fg:#D3C6AA; --fg-dim:#9DA9A0; --muted:#859289;
+    --accent:#A7C080; --link:#83C092; --info:#7FBBB3; --warning:#DBBC7F; --error:#E67E80; --highlight:#D699B6; --orange:#E69875;
+    --border:#475258; --hover:#3D484D; --selection:rgba(167,192,128,0.2);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-dim); color: var(--fg); font-family: "Inter", system-ui, sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  a { color: var(--link); text-decoration: none; }
+
+  .doc { max-width: 1080px; margin: 0 auto; padding: 40px 32px 80px; }
+  h1 { font-size: 32px; font-weight: 700; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 24px; max-width: 780px; }
+  h2 { font-size: 20px; font-weight: 700; margin: 48px 0 4px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 14px; font-weight: 600; color: var(--fg-dim); margin: 24px 0 8px; text-transform: uppercase; letter-spacing: 1.5px; }
+  p { margin: 8px 0; color: var(--fg-dim); }
+  code { font-family: ui-monospace, monospace; background: var(--bg-1); padding: 1px 6px; border-radius: 3px; color: var(--accent); font-size: 12px; border: 1px solid var(--border); }
+  pre { background: var(--bg-0); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; overflow-x: auto; font-size: 12px; color: var(--fg); line-height: 1.5; margin: 12px 0; }
+
+  nav.toc { position: sticky; top: 0; background: var(--bg-dim); padding: 12px 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); z-index: 10; display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; }
+  nav.toc a { color: var(--muted); padding: 4px 8px; border-radius: 4px; }
+  nav.toc a:hover { background: var(--bg-1); color: var(--fg); }
+
+  /* Palette grid */
+  .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
+  .swatch { background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .swatch-head { height: 64px; position: relative; }
+  .swatch-body { padding: 8px 10px; font-family: ui-monospace, monospace; font-size: 11px; }
+  .swatch-body b { display: block; font-size: 12px; color: var(--fg); margin-bottom: 2px; }
+  .swatch-body span { color: var(--muted); }
+  .swatch-body small { display: block; color: var(--muted); margin-top: 2px; font-size: 10px; }
+
+  /* Typography scale demo */
+  .type-demo { background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+  .type-demo > div { padding: 8px 0; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 140px 1fr; align-items: baseline; gap: 16px; }
+  .type-demo > div:last-child { border-bottom: none; }
+  .type-demo .label { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .t-h1 { font-size: 30px; font-weight: 700; color: var(--fg); }
+  .t-h2 { font-size: 20px; font-weight: 700; color: var(--fg); }
+  .t-h3 { font-size: 14px; font-weight: 600; color: var(--fg); text-transform: uppercase; letter-spacing: 1px; }
+  .t-body { font-size: 14px; font-weight: 400; color: var(--fg); }
+  .t-caption { font-size: 12px; font-weight: 400; color: var(--muted); }
+  .t-mono { font-family: ui-monospace, monospace; font-size: 12px; color: var(--fg); }
+
+  /* Spacing demo */
+  .spacing-demo { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .sp { background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px; padding: 12px; text-align: center; }
+  .sp .bar { background: var(--accent); height: 8px; border-radius: 2px; margin: 0 auto 8px; }
+  .sp .tok { font-family: ui-monospace, monospace; font-size: 11px; color: var(--fg); }
+  .sp .val { font-size: 10px; color: var(--muted); margin-top: 2px; font-family: ui-monospace, monospace; }
+
+  /* Do / Don't */
+  .do-dont { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .dd { border-radius: 8px; padding: 16px; border: 1px solid var(--border); }
+  .dd-do    { background: var(--bg-1); border-left: 3px solid var(--accent); }
+  .dd-dont  { background: var(--bg-1); border-left: 3px solid var(--error); }
+  .dd .tag { display: inline-block; font-family: ui-monospace, monospace; font-size: 10px; padding: 2px 8px; border-radius: 3px; margin-bottom: 8px; letter-spacing: 1px; }
+  .dd-do .tag   { background: rgba(167,192,128,0.2); color: var(--accent); }
+  .dd-dont .tag { background: rgba(230,126,128,0.2); color: var(--error); }
+
+  /* Badges demo */
+  .badge { display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: 4px; font-family: ui-monospace, monospace; margin-right: 6px; margin-bottom: 6px; }
+  .badge-pending   { background: rgba(133,146,137,0.2); color: var(--muted); }
+  .badge-discussed { background: rgba(127,187,179,0.2); color: var(--info); }
+  .badge-planned   { background: rgba(214,153,182,0.2); color: var(--highlight); }
+  .badge-executed  { background: rgba(230,152,117,0.2); color: var(--orange); }
+  .badge-complete  { background: rgba(167,192,128,0.2); color: var(--accent); }
+  .badge-merged    { background: rgba(131,192,146,0.2); color: var(--link); }
+  .badge-error     { background: rgba(230,126,128,0.2); color: var(--error); }
+  .badge-warning   { background: rgba(219,188,127,0.2); color: var(--warning); }
+
+  /* Contrast table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  td.mono { font-family: ui-monospace, monospace; font-size: 12px; }
+  td .chip { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); vertical-align: middle; margin-right: 6px; }
+  .pass { color: var(--accent); font-family: ui-monospace, monospace; font-size: 12px; }
+  .fail { color: var(--error); font-family: ui-monospace, monospace; font-size: 12px; }
+
+  /* Tone examples */
+  .tone { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .tone > div { background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px; padding: 14px; font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6; }
+  .tone h4 { margin: 0 0 6px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; font-family: "Inter", sans-serif; }
+  .tone .ok { color: var(--fg); }
+  .tone .ok::before { content: "✓ "; color: var(--accent); font-weight: 700; }
+  .tone .bad { color: var(--fg-dim); text-decoration: line-through; text-decoration-color: var(--error); }
+  .tone .bad::before { content: "✗ "; color: var(--error); font-weight: 700; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <h1>Design System Guidelines</h1>
+  <p class="lead">RAPID Mission Control — comprehensive reference for visual tokens, component usage, accessibility, and writing voice. Load these rules into any agent, document, or component that rendrs Mission Control UI.</p>
+
+  <nav class="toc">
+    <a href="#palette">Palette</a>
+    <a href="#typography">Typography</a>
+    <a href="#spacing">Spacing</a>
+    <a href="#components">Components</a>
+    <a href="#dodont">Do / Don't</a>
+    <a href="#snippets">Copy-Paste Snippets</a>
+    <a href="#a11y">Accessibility</a>
+    <a href="#voice">Voice &amp; Tone</a>
+  </nav>
+
+  <!-- PALETTE -->
+  <h2 id="palette">Color Palette</h2>
+  <p>Everforest Dark is the default theme. Tokens are exposed as CSS custom properties in <code>web/frontend/src/styles/global.css</code> and remapped for each theme variant. Reference tokens by semantic name — never hardcode hex values in components.</p>
+
+  <h3>Surface &amp; Foreground</h3>
+  <div class="palette-grid">
+    <div class="swatch"><div class="swatch-head" style="background:#232A2E"></div><div class="swatch-body"><b>bg-dim</b><span>#232A2E</span><small>Page beneath surfaces</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#2D353B"></div><div class="swatch-body"><b>bg-0 / surface-0</b><span>#2D353B</span><small>Root surface, rows</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#343F44"></div><div class="swatch-body"><b>bg-1 / surface-1</b><span>#343F44</span><small>Cards, panels</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#3D484D"></div><div class="swatch-body"><b>bg-2 / surface-2</b><span>#3D484D</span><small>Hovered, nested</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#475258"></div><div class="swatch-body"><b>bg-3 / surface-3</b><span>#475258</span><small>Active, selected</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#4F585E"></div><div class="swatch-body"><b>bg-4 / surface-4</b><span>#4F585E</span><small>Top elevation</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#D3C6AA"></div><div class="swatch-body"><b>fg</b><span>#D3C6AA</span><small>Body, headings</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#859289"></div><div class="swatch-body"><b>muted</b><span>#859289</span><small>Captions, meta</small></div></div>
+  </div>
+
+  <h3>Semantic</h3>
+  <div class="palette-grid">
+    <div class="swatch"><div class="swatch-head" style="background:#A7C080"></div><div class="swatch-body"><b>accent</b><span>#A7C080</span><small>Primary action, success, complete</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#83C092"></div><div class="swatch-body"><b>link</b><span>#83C092</span><small>Links, merged</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#7FBBB3"></div><div class="swatch-body"><b>info</b><span>#7FBBB3</span><small>Info, discussed</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#D699B6"></div><div class="swatch-body"><b>highlight</b><span>#D699B6</span><small>Selection, planned</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#E69875"></div><div class="swatch-body"><b>orange</b><span>#E69875</span><small>In-progress, executed</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#DBBC7F"></div><div class="swatch-body"><b>warning</b><span>#DBBC7F</span><small>Warnings, stalled</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#E67E80"></div><div class="swatch-body"><b>error</b><span>#E67E80</span><small>Errors, destructive</small></div></div>
+    <div class="swatch"><div class="swatch-head" style="background:#475258"></div><div class="swatch-body"><b>border</b><span>#475258</span><small>Dividers, outlines</small></div></div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <h2 id="typography">Typography</h2>
+  <p>Body font: <code>Inter</code> with system fallback. Monospace: <code>ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace</code>. Monospace is reserved for file paths, set IDs, commit hashes, timestamps, and keyboard shortcuts.</p>
+  <div class="type-demo">
+    <div><span class="label">heading-1</span>         <span class="t-h1">Mission Control Dashboard</span></div>
+    <div><span class="label">heading-2</span>         <span class="t-h2">Active Project</span></div>
+    <div><span class="label">heading-3</span>         <span class="t-h3">Recent Activity</span></div>
+    <div><span class="label">body</span>              <span class="t-body">The merge subsystem detects five levels of conflict.</span></div>
+    <div><span class="label">caption</span>           <span class="t-caption">Registered 2026-01-08 · 14:03:11</span></div>
+    <div><span class="label">mono</span>              <span class="t-mono">~/Projects/RAPID</span></div>
+  </div>
+
+  <!-- SPACING -->
+  <h2 id="spacing">Spacing</h2>
+  <p>Tailwind default scale. Canonical application:</p>
+  <div class="spacing-demo">
+    <div class="sp"><div class="bar" style="width:4px"></div><div class="tok">xs</div><div class="val">4px · gap-1</div></div>
+    <div class="sp"><div class="bar" style="width:8px"></div><div class="tok">sm</div><div class="val">8px · p-2</div></div>
+    <div class="sp"><div class="bar" style="width:16px"></div><div class="tok">md</div><div class="val">16px · p-4</div></div>
+    <div class="sp"><div class="bar" style="width:24px"></div><div class="tok">lg</div><div class="val">24px · p-6</div></div>
+    <div class="sp"><div class="bar" style="width:32px"></div><div class="tok">xl</div><div class="val">32px · mb-8</div></div>
+  </div>
+
+  <!-- STATUS BADGES -->
+  <h2 id="components">Status Badges</h2>
+  <p>Lifecycle state is always rendered as a monospace badge with semantic color at 20% background opacity. Never render lifecycle state as plain prose. Consistent across tables, cards, graph nodes, Kanban columns.</p>
+  <div style="margin: 12px 0; padding: 16px; background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px;">
+    <span class="badge badge-pending">pending</span>
+    <span class="badge badge-discussed">discussed</span>
+    <span class="badge badge-planned">planned</span>
+    <span class="badge badge-executed">executed</span>
+    <span class="badge badge-complete">complete</span>
+    <span class="badge badge-merged">merged</span>
+    <span class="badge badge-warning">warning</span>
+    <span class="badge badge-error">error</span>
+  </div>
+
+  <!-- DO / DON'T -->
+  <h2 id="dodont">Do / Don't</h2>
+
+  <div class="do-dont">
+    <div class="dd dd-do">
+      <span class="tag">DO</span>
+      <h3 style="margin-top:0">Signal elevation with surface tokens</h3>
+      <p>Stack surface-0 → surface-4 to indicate depth. Nested cards go one level higher than their parent.</p>
+      <pre class="mono">&lt;div class="bg-surface-1 border border-border rounded-lg p-4"&gt;
+  &lt;div class="bg-surface-2 rounded p-3"&gt;nested&lt;/div&gt;
+&lt;/div&gt;</pre>
+    </div>
+    <div class="dd dd-dont">
+      <span class="tag">DON'T</span>
+      <h3 style="margin-top:0">Use drop shadows or blur</h3>
+      <p>Shadows break the flat terminal-dashboard aesthetic and fail against light theme variants.</p>
+      <pre class="mono">&lt;div class="shadow-lg backdrop-blur"&gt;...&lt;/div&gt;</pre>
+    </div>
+  </div>
+
+  <div class="do-dont">
+    <div class="dd dd-do">
+      <span class="tag">DO</span>
+      <h3 style="margin-top:0">Render state as a semantic badge</h3>
+      <pre class="mono">&lt;span class="badge badge-planned"&gt;planned&lt;/span&gt;</pre>
+    </div>
+    <div class="dd dd-dont">
+      <span class="tag">DON'T</span>
+      <h3 style="margin-top:0">Describe state in prose</h3>
+      <pre class="mono">&lt;p&gt;This set is currently in the planned state.&lt;/p&gt;</pre>
+    </div>
+  </div>
+
+  <div class="do-dont">
+    <div class="dd dd-do">
+      <span class="tag">DO</span>
+      <h3 style="margin-top:0">Use domain terminology</h3>
+      <p><b>Set</b>, <b>Wave</b>, <b>Job</b>, <b>Contract</b>, <b>Worktree</b>, <b>DAG</b>.</p>
+    </div>
+    <div class="dd dd-dont">
+      <span class="tag">DON'T</span>
+      <h3 style="margin-top:0">Substitute generic alternatives</h3>
+      <p>"task", "module", "feature", "sandbox", "schema", "graph".</p>
+    </div>
+  </div>
+
+  <!-- SNIPPETS -->
+  <h2 id="snippets">Copy-Paste Snippets</h2>
+
+  <h3>CSS Custom Properties (Everforest Dark)</h3>
+  <pre class="mono">:root {
+  --bg-dim: #232A2E;
+  --bg-0: #2D353B; --bg-1: #343F44; --bg-2: #3D484D;
+  --bg-3: #475258; --bg-4: #4F585E;
+  --fg: #D3C6AA; --fg-dim: #9DA9A0; --muted: #859289;
+  --accent: #A7C080; --link: #83C092; --info: #7FBBB3;
+  --warning: #DBBC7F; --error: #E67E80; --highlight: #D699B6; --orange: #E69875;
+  --border: #475258; --hover: #3D484D; --selection: rgba(167,192,128,0.2);
+}</pre>
+
+  <h3>Canonical Card</h3>
+  <pre class="mono">&lt;div class="bg-surface-1 border border-border rounded-lg p-4"&gt;
+  &lt;h2 class="text-sm font-semibold text-muted mb-1"&gt;Label&lt;/h2&gt;
+  &lt;p class="text-2xl font-bold text-accent"&gt;42&lt;/p&gt;
+&lt;/div&gt;</pre>
+
+  <h3>Status Dot + Label</h3>
+  <pre class="mono">&lt;span class="inline-block w-2.5 h-2.5 rounded-full bg-accent" /&gt;
+&lt;span class="text-sm font-medium text-accent"&gt;Backend connected&lt;/span&gt;</pre>
+
+  <h3>Primary Button</h3>
+  <pre class="mono">&lt;button class="px-4 py-2 text-sm font-medium bg-accent text-bg-0 rounded hover:opacity-90 transition-opacity"&gt;
+  Run /rapid:execute-set
+&lt;/button&gt;</pre>
+
+  <!-- A11Y -->
+  <h2 id="a11y">Accessibility</h2>
+
+  <h3>Contrast Ratios (Everforest Dark)</h3>
+  <table>
+    <thead><tr><th>Token pair</th><th>Ratio</th><th>WCAG AA body</th><th>WCAG AA large</th></tr></thead>
+    <tbody>
+      <tr><td class="mono"><span class="chip" style="background:#D3C6AA"></span>fg on <span class="chip" style="background:#2D353B"></span>bg-0</td><td class="mono">10.2 : 1</td><td class="pass">PASS</td><td class="pass">PASS</td></tr>
+      <tr><td class="mono"><span class="chip" style="background:#D3C6AA"></span>fg on <span class="chip" style="background:#343F44"></span>bg-1</td><td class="mono">8.6 : 1</td><td class="pass">PASS</td><td class="pass">PASS</td></tr>
+      <tr><td class="mono"><span class="chip" style="background:#A7C080"></span>accent on <span class="chip" style="background:#2D353B"></span>bg-0</td><td class="mono">7.1 : 1</td><td class="pass">PASS</td><td class="pass">PASS</td></tr>
+      <tr><td class="mono"><span class="chip" style="background:#859289"></span>muted on <span class="chip" style="background:#2D353B"></span>bg-0</td><td class="mono">4.9 : 1</td><td class="pass">PASS</td><td class="pass">PASS</td></tr>
+      <tr><td class="mono"><span class="chip" style="background:#E67E80"></span>error on <span class="chip" style="background:#2D353B"></span>bg-0</td><td class="mono">5.4 : 1</td><td class="pass">PASS</td><td class="pass">PASS</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Focus &amp; Keyboard</h3>
+  <ul>
+    <li>All interactive elements render a 2px focus ring in <code>--accent</code> with 2px offset.</li>
+    <li>Command palette opens with <code>Cmd/Ctrl + K</code> and returns focus to the trigger on close.</li>
+    <li>Kanban cards are draggable via pointer AND keyboard (arrow keys to move between columns when focused).</li>
+    <li>Theme swap is triggered by button, never on hover — respecting <code>prefers-reduced-motion</code>.</li>
+  </ul>
+
+  <h3>Screen Readers</h3>
+  <ul>
+    <li>Status badges include <code>aria-label="status: planned"</code>.</li>
+    <li>Graph nodes expose set ID + status via <code>aria-label</code>; SVG uses <code>role="img"</code>.</li>
+    <li>Progress bars use <code>role="progressbar"</code> with <code>aria-valuenow</code>, <code>aria-valuemin</code>, <code>aria-valuemax</code>.</li>
+  </ul>
+
+  <!-- VOICE -->
+  <h2 id="voice">Voice &amp; Tone</h2>
+  <p>Third-person, formal, declarative. Avoid <code>you</code>, <code>we</code>, <code>I</code>, <code>let's</code>. Never use emojis, marketing language, or filler words. Use RAPID domain terminology consistently.</p>
+
+  <div class="tone">
+    <div>
+      <h4>Documentation</h4>
+      <div class="ok">"The merge subsystem detects five levels of conflict: textual, structural, dependency, API, and semantic."</div>
+      <div class="bad">"We check for five kinds of conflicts when merging your code!"</div>
+    </div>
+    <div>
+      <h4>Error message</h4>
+      <div class="ok">"Backend offline. Retry available."</div>
+      <div class="bad">"Oops! Something went wrong. Please try again 😊"</div>
+    </div>
+    <div>
+      <h4>Empty state</h4>
+      <div class="ok">"No projects registered."</div>
+      <div class="bad">"Looks like you haven't added any projects yet — let's get started!"</div>
+    </div>
+    <div>
+      <h4>Commit message</h4>
+      <div class="ok">"feat(mission-control): add kanban board for set lifecycle"</div>
+      <div class="bad">"🎉 Added a super cool new kanban view!"</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
