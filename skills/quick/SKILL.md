@@ -1,7 +1,24 @@
 ---
 description: Ad-hoc changes without set structure -- planner, verifier, executor pipeline
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, mcp__rapid__webui_ask_user, Read, Write, Glob, Grep
+allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:quick -- Quick Task
 
@@ -304,7 +321,22 @@ Do NOT add to STATE.json sets array (quick tasks are not sets -- avoids pollutin
 ### Pipeline Failures
 
 - Planner agent fails: STOP with error breadcrumb
-- Verifier returns FAIL: Offer Override/Cancel via AskUserQuestion (when `RAPID_RUN_MODE=sdk`, routes to `mcp__rapid__webui_ask_user`)
+- Verifier returns FAIL: Offer Override/Cancel to the user.
+
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: route through the web bridge.
+    # Call mcp__rapid__webui_ask_user with:
+    #   question: "Verifier returned FAIL. Override or Cancel?"
+    #   options: ["Override", "Cancel"]
+    #   allow_free_text: false
+    # Wait for the answer, then continue as below.
+  else
+    # CLI mode: use the built-in tool exactly as before.
+    # Use AskUserQuestion to offer Override/Cancel.
+  fi
+  ```
+
 - Executor returns CHECKPOINT: Write handoff file, suggest re-running `/rapid:quick`
 - Executor returns BLOCKED: Display blocker details, STOP
 
