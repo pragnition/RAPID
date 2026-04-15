@@ -1,7 +1,24 @@
 ---
 description: Generate project-type-aware foundation files for the target codebase
-allowed-tools: Bash(rapid-tools:*), AskUserQuestion, mcp__rapid__webui_ask_user, Read
+allowed-tools: Bash(rapid-tools:*), Read
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:scaffold -- Project Scaffolding
 
