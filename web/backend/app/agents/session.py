@@ -56,7 +56,11 @@ from app.agents.budget import RunBudget
 from app.agents.correlation import bind_run_id
 from app.agents.errors import RunError, SdkError
 from app.agents.event_bus import EventBus
+from app.agents.mcp_registration import register_mcp_tools
+from app.agents.permission_hooks import can_use_tool_hook_bound
 from app.agents.sdk_options import build_sdk_options
+from app.agents.tools import build_tools
+from app.models.agent_prompt import AgentPrompt
 from app.models.agent_run import AgentRun
 from app.schemas.sse_events import (
     AssistantTextEvent,
@@ -122,6 +126,19 @@ class AgentSession:
             skill_args=self.skill_args,
             run_id=str(self.run_id),
         )
+        # web-tool-bridge: register in-process MCP tools (webui_ask_user,
+        # ask_free_text) with run_id + manager captured in closure, and
+        # re-bind can_use_tool so AskUserQuestion interception has the
+        # per-run context it needs. Both happen BEFORE ClaudeSDKClient
+        # construction so the options are fully assembled.
+        if self.manager is not None:
+            tools = build_tools(run_id=self.run_id, manager=self.manager)
+            register_mcp_tools(self._options, tools)
+            self._options.can_use_tool = functools.partial(
+                can_use_tool_hook_bound,
+                run_id=self.run_id,
+                manager=self.manager,
+            )
         if ClaudeSDKClient is None:  # pragma: no cover — guarded for tests
             raise RunError("claude_agent_sdk is not importable in this environment")
         self._client = ClaudeSDKClient(options=self._options)
