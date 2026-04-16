@@ -38,6 +38,7 @@ async def start_run(
     set_id: str | None,
     worktree: str | None,
 ) -> AgentRun:
+    logger.info("start_run request", extra={"project_id": str(project_id), "skill_name": skill_name, "set_id": set_id})
     wt_path: Path | None = None
     if worktree is not None:
         candidate = Path(worktree)
@@ -47,7 +48,7 @@ async def start_run(
                 detail={"worktree": worktree},
             )
         wt_path = candidate.resolve()
-    return await mgr.start_run(
+    row = await mgr.start_run(
         project_id=project_id,
         skill_name=skill_name,
         skill_args=skill_args,
@@ -55,6 +56,8 @@ async def start_run(
         set_id=set_id,
         worktree=wt_path,
     )
+    logger.info("start_run accepted", extra={"run_id": str(row.id), "skill_name": skill_name})
+    return row
 
 
 async def get_run(mgr: AgentSessionManager, run_id: UUID) -> AgentRun:
@@ -62,10 +65,12 @@ async def get_run(mgr: AgentSessionManager, run_id: UUID) -> AgentRun:
 
 
 async def send_input(mgr: AgentSessionManager, run_id: UUID, text: str) -> None:
+    logger.info("send_input request", extra={"run_id": str(run_id), "text_length": len(text)})
     await mgr.send_input(run_id, text)
 
 
 async def interrupt(mgr: AgentSessionManager, run_id: UUID) -> None:
+    logger.info("interrupt request", extra={"run_id": str(run_id)})
     await mgr.interrupt(run_id)
 
 
@@ -82,6 +87,7 @@ async def stream_events(
 async def resolve_prompt(
     mgr: AgentSessionManager, run_id: UUID, prompt_id: str, answer: str
 ) -> None:
+    logger.info("resolve_prompt request", extra={"run_id": str(run_id), "prompt_id": prompt_id})
     await mgr.resolve_prompt(run_id, prompt_id, answer)
 
 

@@ -156,6 +156,7 @@ class AgentSession:
                 status="running",
             )
         )
+        logger.info("agent session connected", extra={"run_id": str(self.run_id), "skill_name": self.skill_name, "pid": self.pid})
         return self
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
@@ -180,6 +181,7 @@ class AgentSession:
         """Drive the SDK event pump to completion. Call after ``__aenter__``."""
         try:
             with bind_run_id(str(self.run_id)):
+                logger.info("agent run pump starting", extra={"run_id": str(self.run_id), "prompt_length": len(self.prompt)})
                 await self._client.query(self.prompt)
                 async for msg in self._client.receive_response():
                     if self._interrupted.is_set():
@@ -321,11 +323,13 @@ class AgentSession:
                 )
             )
             self._run_complete_emitted = True
+            logger.info("agent run completed", extra={"run_id": str(self.run_id), "status": status_text, "cost_usd": cost, "turns": turn_count, "wall_s": round(wall, 2), "active_s": round(active, 2)})
 
     # ---------- facade ----------
 
     async def interrupt(self) -> None:
         """Signal interrupt. Always synthesizes a terminal ``run_complete``."""
+        logger.info("agent session interrupt requested", extra={"run_id": str(self.run_id)})
         if self._run_complete_emitted:
             return
         self._interrupted.set()
@@ -431,3 +435,4 @@ class AgentSession:
             )
         )
         self._run_complete_emitted = True
+        logger.info("agent run terminal", extra={"run_id": str(self.run_id), "status": status_text, "error_code": error_code})

@@ -95,6 +95,7 @@ class AgentSessionManager:
         self._archive_task = asyncio.create_task(self._periodic_archive())
 
     async def stop(self) -> None:
+        logger.info("shutting down agent manager", extra={"live_sessions": len(self._sessions)})
         self._stopping.set()
         for task in (self._orphan_sweep_task, self._archive_task):
             if task is None:
@@ -142,6 +143,7 @@ class AgentSessionManager:
         this method returns. If a run is already active for ``(project_id,
         set_id)``, raises :class:`StateError` (HTTP 409).
         """
+        logger.info("starting agent run", extra={"project_id": str(project_id), "skill_name": skill_name, "set_id": set_id})
         # Fast-path Python mutex check before touching the DB.
         if set_id is not None:
             async with self._set_lock_lock:
@@ -226,6 +228,7 @@ class AgentSessionManager:
             self._run_session(row, project_root, worktree, prompt, set_lock)
         )
         self._session_tasks[run_id] = task
+        logger.info("agent run dispatched", extra={"run_id": str(run_id), "skill_name": skill_name, "set_id": set_id})
         return row
 
     # ---------- task body ----------
@@ -241,6 +244,7 @@ class AgentSessionManager:
         try:
             sem = await self._get_semaphore(row.project_id)
             async with sem:
+                logger.info("agent run acquired semaphore", extra={"run_id": str(row.id), "skill_name": row.skill_name})
                 budget = RunBudget(max_turns=row.max_turns)
                 with bind_run_id(str(row.id)):
                     # Autopilot runs carry a card_id in skill_args for trailer injection.
@@ -264,6 +268,7 @@ class AgentSessionManager:
         except Exception:
             logger.exception("run crashed", extra={"run_id": str(row.id)})
         finally:
+            logger.info("agent run session ended", extra={"run_id": str(row.id)})
             self._sessions.pop(row.id, None)
             self._session_tasks.pop(row.id, None)
             if set_lock is not None and set_lock.locked():
