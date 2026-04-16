@@ -289,6 +289,7 @@ export function ChatThreadPage() {
 
   const [composerValue, setComposerValue] = useState("");
   const [pendingAnswer, setPendingAnswer] = useState<string>("");
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
   const slash = useSlashAutocomplete(composerValue);
@@ -342,6 +343,12 @@ export function ChatThreadPage() {
   const pendingQuestion = ssePendingQuestion ?? hydratedQuestion;
   const composerDisabled = isArchived || pendingQuestion !== null;
 
+  // Reset selected option when the pending question changes
+  const pendingPromptId = pendingQuestion?.promptId ?? null;
+  useEffect(() => {
+    setSelectedOption(null);
+  }, [pendingPromptId]);
+
   const { pinned, newCount, scrollToBottom } = useAutoScrollWithOptOut({
     containerRef: feedRef,
     deps: [messages.length, streamingText.length],
@@ -377,6 +384,7 @@ export function ChatThreadPage() {
           },
         );
         setPendingAnswer("");
+        setSelectedOption(null);
       } catch {
         // swallow
       }
@@ -530,23 +538,34 @@ export function ChatThreadPage() {
                     <button
                       key={opt}
                       type="button"
-                      onClick={() => handleAnswer(opt)}
-                      className="text-left px-3 py-2 rounded border border-border hover:border-accent hover:bg-hover text-sm"
+                      onClick={() => {
+                        setSelectedOption(opt);
+                        setPendingAnswer("");
+                      }}
+                      className={`text-left px-3 py-2 rounded border text-sm transition-colors ${
+                        selectedOption === opt
+                          ? "border-accent bg-accent/10 ring-1 ring-accent/40"
+                          : "border-border hover:border-accent hover:bg-hover"
+                      }`}
                     >
                       {opt}
                     </button>
                   ))}
                 </div>
               )}
-            {pendingQuestion.allowFreeText && (
+            {pendingQuestion.allowFreeText ? (
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={pendingAnswer}
-                  onChange={(e) => setPendingAnswer(e.target.value)}
+                  onChange={(e) => {
+                    setPendingAnswer(e.target.value);
+                    setSelectedOption(null);
+                  }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && pendingAnswer.trim()) {
-                      handleAnswer(pendingAnswer.trim());
+                    if (e.key === "Enter") {
+                      const answer = selectedOption ?? pendingAnswer.trim();
+                      if (answer) handleAnswer(answer);
                     }
                   }}
                   placeholder="Type your answer..."
@@ -554,16 +573,30 @@ export function ChatThreadPage() {
                 />
                 <button
                   type="button"
-                  onClick={() =>
-                    pendingAnswer.trim() &&
-                    handleAnswer(pendingAnswer.trim())
-                  }
-                  disabled={!pendingAnswer.trim()}
+                  onClick={() => {
+                    const answer = selectedOption ?? pendingAnswer.trim();
+                    if (answer) handleAnswer(answer);
+                  }}
+                  disabled={!selectedOption && !pendingAnswer.trim()}
                   className="px-3 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Submit
                 </button>
               </div>
+            ) : (
+              pendingQuestion.options &&
+              pendingQuestion.options.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedOption) handleAnswer(selectedOption);
+                  }}
+                  disabled={!selectedOption}
+                  className="px-3 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Submit
+                </button>
+              )
             )}
           </div>
         </div>
