@@ -112,6 +112,13 @@ async def lifespan(app: FastAPI):
     await agent_manager.start()
     app.state.agent_manager = agent_manager
 
+    # Start the autopilot worker (polls autopilot-enabled kanban columns)
+    from app.agents.autopilot_worker import AutopilotWorker
+
+    autopilot = AutopilotWorker(engine, agent_manager)
+    await autopilot.start()
+    app.state.autopilot_worker = autopilot
+
     # Load skill catalog from skills/ directory
     from app.services.skill_catalog_service import SkillCatalogService
     from app.services.skill_catalog_watcher import SkillCatalogWatcher
@@ -137,6 +144,8 @@ async def lifespan(app: FastAPI):
         app.state.skill_catalog_watcher.stop()
     if hasattr(app.state, "file_watcher") and app.state.file_watcher:
         app.state.file_watcher.stop()
+    if hasattr(app.state, "autopilot_worker") and app.state.autopilot_worker:
+        await app.state.autopilot_worker.stop()
     if hasattr(app.state, "agent_manager") and app.state.agent_manager:
         await app.state.agent_manager.stop()
     app.state.engine.dispose()
