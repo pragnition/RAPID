@@ -743,14 +743,14 @@
         },
         {
           "id": "kanban-autopilot",
-          "status": "discussed",
+          "status": "executed",
           "waves": [],
           "name": "Kanban Autopilot",
           "branch": "set/kanban-autopilot"
         },
         {
           "id": "agents-chats-tabs",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Agents + Chats Tabs",
           "branch": "set/agents-chats-tabs"
@@ -764,6 +764,6 @@
       "status": "active"
     }
   ],
-  "lastUpdatedAt": "2026-04-16T03:06:38.370Z",
+  "lastUpdatedAt": "2026-04-16T04:05:12.638Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
