@@ -130,6 +130,12 @@ PERMISSION_POLICY: dict[str, dict] = {
         "disallowed_tools": [],
         "max_turns": 60,
     },
+    "autopilot": {
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [],
+        "disallowed_tools": [],
+        "max_turns": 100,
+    },
     "_default": {
         "permission_mode": "default",
         "allowed_tools": [],
