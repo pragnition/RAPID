@@ -124,7 +124,7 @@ export function useMoveCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { cardId: string; column_id: string; position: number },
+    { cardId: string; column_id: string; position: number; rev?: number },
     { previous: KanbanBoardResponse | undefined }
   >({
     mutationFn: ({ cardId, ...body }) =>
@@ -216,6 +216,30 @@ export function useDeleteCard(projectId: string) {
     mutationFn: ({ cardId }) =>
       apiClient.delete<void>(
         `/projects/${projectId}/kanban/cards/${cardId}`,
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["kanban-board", projectId],
+      });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Column autopilot toggle
+// ---------------------------------------------------------------------------
+
+export function useToggleColumnAutopilot(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    KanbanColumnResponse,
+    ApiError,
+    { columnId: string; isAutopilot: boolean }
+  >({
+    mutationFn: ({ columnId, isAutopilot }) =>
+      apiClient.put<KanbanColumnResponse>(
+        `/projects/${projectId}/kanban/columns/${columnId}/autopilot`,
+        { is_autopilot: isAutopilot },
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({
