@@ -61,6 +61,7 @@ class KanbanColumn(SQLModel, table=True):
     title: str
     position: int = Field(default=0)
     created_at: datetime = Field(default_factory=_utcnow)
+    is_autopilot: bool = Field(default=False)
 
 
 class KanbanCard(SQLModel, table=True):
@@ -73,6 +74,14 @@ class KanbanCard(SQLModel, table=True):
     position: int = Field(default=0)
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
+    rev: int = Field(default=0)
+    created_by: str = Field(default="human")
+    locked_by_run_id: UUID | None = Field(default=None, foreign_key="agentrun.id")
+    completed_by_run_id: UUID | None = Field(default=None, foreign_key="agentrun.id")
+    agent_status: str = Field(default="idle")
+    metadata_json: str = Field(default="{}")
+    agent_run_id: UUID | None = Field(default=None, foreign_key="agentrun.id")
+    retry_count: int = Field(default=0)
 
 
 class SyncState(SQLModel, table=True):
