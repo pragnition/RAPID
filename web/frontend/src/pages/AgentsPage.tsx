@@ -6,6 +6,8 @@ import {
   StatCard,
   DataTable,
   StatusBadge,
+  EmptyState,
+  ErrorCard,
   type Column,
 } from "@/components/primitives";
 import { SkillGallery } from "@/components/skills/SkillGallery";
@@ -91,7 +93,7 @@ export function AgentsPage() {
   // Data hooks
   useDashboard(projectId);
   const runs = useStatusStore((s) => s.runs);
-  const { data: runsList, isLoading } = useAgentRuns();
+  const { data: runsList, isLoading, error } = useAgentRuns();
   const { data: skills = [] } = useSkills();
 
   // Build skill category lookup for navigation routing
@@ -205,7 +207,12 @@ export function AgentsPage() {
             <button
               type="button"
               onClick={() => setGalleryOpen(true)}
-              className="px-4 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90 whitespace-nowrap"
+              disabled={!projectId}
+              className={`px-4 py-1.5 text-sm font-semibold rounded whitespace-nowrap ${
+                projectId
+                  ? "bg-accent text-bg-0 hover:opacity-90"
+                  : "bg-muted/30 text-muted cursor-not-allowed"
+              }`}
             >
               Launch New Run
             </button>
@@ -220,7 +227,17 @@ export function AgentsPage() {
         <StatCard label="Completed" value={runs?.completed ?? 0} tone="info" />
       </div>
 
-      {!isLoading && filtered.length === 0 ? (
+      {!projectId ? (
+        <EmptyState
+          title="No project selected"
+          description="Select a project from the sidebar to view agent runs."
+        />
+      ) : error ? (
+        <ErrorCard
+          title="Failed to load agent runs"
+          body={error.message ?? "An unexpected error occurred."}
+        />
+      ) : !isLoading && filtered.length === 0 ? (
         <AgentsEmptyState />
       ) : (
         <DataTable
