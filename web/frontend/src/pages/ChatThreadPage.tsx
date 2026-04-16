@@ -1,0 +1,539 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router";
+import Markdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
+import {
+  Composer,
+  ToolCallCard,
+  ErrorCard,
+  AutoScrollPill,
+  StreamingCursor,
+  SlashAutocomplete,
+  PageHeader,
+  StatusBadge,
+} from "@/components/primitives";
+import type { SlashAutocompleteItem } from "@/components/primitives/SlashAutocomplete";
+import { LiveRegion } from "@/components/a11y";
+import { useChats, useChatThread } from "@/hooks/useChats";
+import { useSkills } from "@/hooks/useSkills";
+import { useAutoScrollWithOptOut } from "@/components/primitives/hooks/useAutoScrollWithOptOut";
+import type { ChatMessage, ChatToolCall } from "@/types/chats";
+import type { SseEvent } from "@/types/sseEvents";
+
+// ---------------------------------------------------------------------------
+// Session status badge
+// ---------------------------------------------------------------------------
+
+type BadgeTone = Parameters<typeof StatusBadge>[0]["tone"];
+
+const SESSION_TONE: Record<string, BadgeTone> = {
+  active: "accent",
+  idle: "muted",
+  archived: "info",
+};
+
+// ---------------------------------------------------------------------------
+// Streaming text accumulator
+// ---------------------------------------------------------------------------
+
+function accumulateStreamingText(events: SseEvent[]): string {
+  let text = "";
+  for (const ev of events) {
+    if (ev.kind === "assistant_text") {
+      text += ev.text;
+    }
+  }
+  return text;
+}
+
+function hasActiveStream(events: SseEvent[]): boolean {
+  if (events.length === 0) return false;
+  // Active if we have text events but no run_complete yet
+  const hasText = events.some((e) => e.kind === "assistant_text");
+  const complete = events.some((e) => e.kind === "run_complete");
+  return hasText && !complete;
+}
+
+// ---------------------------------------------------------------------------
+// Tool call pairing helper
+// ---------------------------------------------------------------------------
+
+interface PairedToolCall {
+  toolUseId: string;
+  toolName: string;
+  input: Record<string, unknown>;
+  output?: unknown;
+  isError: boolean;
+  status: "running" | "complete" | "error";
+}
+
+function pairToolCalls(toolCalls: ChatToolCall[]): PairedToolCall[] {
+  return toolCalls.map((tc) => ({
+    toolUseId: tc.tool_use_id,
+    toolName: tc.tool_name,
+    input: tc.input,
+    output: tc.output,
+    isError: tc.is_error ?? false,
+    status: tc.output !== undefined ? (tc.is_error ? "error" : "complete") : "running",
+  }));
+}
+
+function pairStreamToolEvents(events: SseEvent[]): PairedToolCall[] {
+  const map = new Map<string, PairedToolCall>();
+  for (const ev of events) {
+    if (ev.kind === "tool_use") {
+      map.set(ev.tool_use_id, {
+        toolUseId: ev.tool_use_id,
+        toolName: ev.tool_name,
+        input: ev.input,
+        isError: false,
+        status: "running",
+      });
+    } else if (ev.kind === "tool_result") {
+      const entry = map.get(ev.tool_use_id);
+      if (entry) {
+        entry.output = ev.output;
+        entry.isError = ev.is_error;
+        entry.status = ev.is_error ? "error" : "complete";
+      }
+    }
+  }
+  return Array.from(map.values());
+}
+
+// ---------------------------------------------------------------------------
+// Pending question detection
+// ---------------------------------------------------------------------------
+
+interface PendingQuestion {
+  promptId: string;
+  runId: string;
+  question: string;
+  options: string[] | null;
+  allowFreeText: boolean;
+}
+
+function findPendingQuestion(events: SseEvent[]): PendingQuestion | null {
+  // Look for the latest ask_user that hasn't been answered
+  for (let i = events.length - 1; i >= 0; i--) {
+    const ev = events[i]!;
+    if (ev.kind === "ask_user") {
+      return {
+        promptId: ev.prompt_id,
+        runId: ev.run_id,
+        question: ev.question,
+        options: ev.options,
+        allowFreeText: ev.allow_free_text,
+      };
+    }
+    // If we see a run_complete or another assistant_text after ask_user, question is answered
+    if (ev.kind === "run_complete" || ev.kind === "assistant_text") {
+      break;
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Message bubble
+// ---------------------------------------------------------------------------
+
+function MessageBubble({
+  message,
+}: {
+  message: ChatMessage;
+}) {
+  const isUser = message.role === "user";
+  const pairedTools = useMemo(
+    () => pairToolCalls(message.tool_calls),
+    [message.tool_calls],
+  );
+
+  // Skip tool-result-only messages (they are inlined into ToolCallCard)
+  if (message.role === "tool") return null;
+
+  return (
+    <div
+      className={`flex ${isUser ? "justify-end" : "justify-start"} w-full`}
+    >
+      <div
+        className={`max-w-[80%] rounded-lg px-4 py-3 ${
+          isUser
+            ? "bg-accent/10 border border-accent/20"
+            : "bg-surface-1 border border-border"
+        }`}
+      >
+        {message.content && (
+          <div className="text-sm text-fg">
+            {isUser ? (
+              <span className="whitespace-pre-wrap">{message.content}</span>
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <Markdown rehypePlugins={[rehypeSanitize]}>
+                  {message.content}
+                </Markdown>
+              </div>
+            )}
+          </div>
+        )}
+        {pairedTools.length > 0 && (
+          <div className="flex flex-col gap-2 mt-2">
+            {pairedTools.map((tc) => (
+              <ToolCallCard
+                key={tc.toolUseId}
+                toolName={tc.toolName}
+                argsPreview={JSON.stringify(tc.input).slice(0, 80)}
+                status={tc.status}
+                argumentsBody={JSON.stringify(tc.input, null, 2)}
+                resultBody={
+                  tc.output !== undefined
+                    ? typeof tc.output === "string"
+                      ? tc.output
+                      : JSON.stringify(tc.output, null, 2)
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Slash autocomplete logic
+// ---------------------------------------------------------------------------
+
+function useSlashAutocomplete(composerValue: string) {
+  const { data: skills = [] } = useSkills();
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const interactiveSkills = useMemo(
+    () =>
+      skills.filter(
+        (s) =>
+          s.categories.includes("interactive") ||
+          s.categories.includes("human-in-loop"),
+      ),
+    [skills],
+  );
+
+  // Detect if slash autocomplete should be shown
+  const slashTrigger = useMemo(() => {
+    const trimmed = composerValue.trimStart();
+    if (trimmed.startsWith("/")) {
+      return trimmed.slice(1).toLowerCase();
+    }
+    return null;
+  }, [composerValue]);
+
+  const items: SlashAutocompleteItem[] = useMemo(() => {
+    if (slashTrigger === null) return [];
+    return interactiveSkills
+      .filter((s) => s.name.toLowerCase().includes(slashTrigger))
+      .map((s) => ({
+        value: `/rapid:${s.name}`,
+        label: `/rapid:${s.name}`,
+        hint: s.description,
+      }));
+  }, [slashTrigger, interactiveSkills]);
+
+  // Clamp active index
+  const clampedIndex = Math.min(activeIndex, Math.max(0, items.length - 1));
+
+  return {
+    visible: items.length > 0,
+    items,
+    activeIndex: clampedIndex,
+    setActiveIndex,
+    moveUp: () =>
+      setActiveIndex((i) => (i > 0 ? i - 1 : items.length - 1)),
+    moveDown: () =>
+      setActiveIndex((i) => (i < items.length - 1 ? i + 1 : 0)),
+    selectedValue: items[clampedIndex]?.value ?? null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function ChatThreadPage() {
+  const { threadId } = useParams<{ threadId: string }>();
+  const { sendMessage } = useChats();
+  const {
+    thread,
+    messages,
+    stream,
+    isLoading,
+  } = useChatThread(threadId ?? null);
+
+  const [composerValue, setComposerValue] = useState("");
+  const [pendingAnswer, setPendingAnswer] = useState<string>("");
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  const slash = useSlashAutocomplete(composerValue);
+
+  const isArchived = thread?.session_status === "archived";
+  const streaming = hasActiveStream(stream.events);
+  const streamingText = useMemo(
+    () => accumulateStreamingText(stream.events),
+    [stream.events],
+  );
+  const streamToolCalls = useMemo(
+    () => pairStreamToolEvents(stream.events),
+    [stream.events],
+  );
+
+  const pendingQuestion = useMemo(
+    () => findPendingQuestion(stream.events),
+    [stream.events],
+  );
+  const composerDisabled = isArchived || pendingQuestion !== null;
+
+  const { pinned, newCount, scrollToBottom } = useAutoScrollWithOptOut({
+    containerRef: feedRef,
+    deps: [messages.length, streamingText.length],
+  });
+
+  // Send message handler
+  const handleSend = useCallback(() => {
+    if (!threadId || !composerValue.trim() || composerDisabled) return;
+    const tempId = crypto.randomUUID();
+    void sendMessage({
+      chatId: threadId,
+      content: composerValue.trim(),
+      tempId,
+    });
+    setComposerValue("");
+  }, [threadId, composerValue, composerDisabled, sendMessage]);
+
+  // Answer a pending question
+  const handleAnswer = useCallback(
+    async (answer: string) => {
+      if (!pendingQuestion) return;
+      try {
+        await fetch(
+          `/api/agents/runs/${pendingQuestion.runId}/answer`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt_id: pendingQuestion.promptId,
+              answer,
+            }),
+          },
+        );
+        setPendingAnswer("");
+      } catch {
+        // swallow
+      }
+    },
+    [pendingQuestion],
+  );
+
+  // Slash autocomplete keyboard handling
+  const handleComposerKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!slash.visible) return;
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        slash.moveUp();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        slash.moveDown();
+      } else if (e.key === "Enter" && slash.selectedValue) {
+        e.preventDefault();
+        setComposerValue(slash.selectedValue + " ");
+      }
+    },
+    [slash],
+  );
+
+  // Register keydown on document for slash autocomplete interception
+  useEffect(() => {
+    if (!slash.visible) return;
+    document.addEventListener("keydown", handleComposerKeyDown);
+    return () =>
+      document.removeEventListener("keydown", handleComposerKeyDown);
+  }, [slash.visible, handleComposerKeyDown]);
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="shrink-0 p-6 pb-0">
+        <PageHeader
+          title={thread?.title ?? "Chat Thread"}
+          breadcrumb={[
+            { label: "RAPID", to: "/" },
+            { label: "Chats", to: "/chats" },
+            { label: thread?.title ?? threadId ?? "Thread" },
+          ]}
+          description={thread?.skill_name}
+          actions={
+            thread ? (
+              <StatusBadge
+                label={
+                  thread.session_status.toUpperCase()
+                }
+                tone={SESSION_TONE[thread.session_status] ?? "muted"}
+              />
+            ) : undefined
+          }
+        />
+      </div>
+
+      {/* Archived banner */}
+      {isArchived && (
+        <div className="mx-6 mt-3 px-4 py-2 bg-warning/10 border border-warning/20 rounded text-sm text-warning">
+          Thread archived -- un-archive to continue.
+        </div>
+      )}
+
+      {/* Message list */}
+      <div
+        ref={feedRef}
+        className="flex-1 overflow-y-auto p-6 space-y-4"
+      >
+        {isLoading && (
+          <div className="text-sm text-muted animate-pulse">
+            Loading messages...
+          </div>
+        )}
+
+        {messages.map((msg) => (
+          <MessageBubble key={msg.id} message={msg} />
+        ))}
+
+        {/* Streaming assistant row */}
+        {streaming && streamingText && (
+          <div className="flex justify-start w-full">
+            <div className="max-w-[80%] rounded-lg px-4 py-3 bg-surface-1 border border-border">
+              <LiveRegion mode="polite" busy={streaming}>
+                {streamingText}
+              </LiveRegion>
+              <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-fg">
+                <Markdown rehypePlugins={[rehypeSanitize]}>
+                  {streamingText}
+                </Markdown>
+                <StreamingCursor active={streaming} />
+              </div>
+              {streamToolCalls.length > 0 && (
+                <div className="flex flex-col gap-2 mt-2">
+                  {streamToolCalls.map((tc) => (
+                    <ToolCallCard
+                      key={tc.toolUseId}
+                      toolName={tc.toolName}
+                      argsPreview={JSON.stringify(tc.input).slice(0, 80)}
+                      status={tc.status}
+                      argumentsBody={JSON.stringify(tc.input, null, 2)}
+                      resultBody={
+                        tc.output !== undefined
+                          ? typeof tc.output === "string"
+                            ? tc.output
+                            : JSON.stringify(tc.output, null, 2)
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Stream errors */}
+        {stream.error && (
+          <ErrorCard title="Connection error" body={stream.error} />
+        )}
+      </div>
+
+      <AutoScrollPill
+        count={newCount}
+        visible={!pinned}
+        onClick={scrollToBottom}
+      />
+
+      {/* Pending question inline above composer */}
+      {pendingQuestion && (
+        <div className="shrink-0 px-6 pb-2">
+          <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+            <div className="text-xs text-warning uppercase tracking-wider font-semibold mb-2">
+              Awaiting Input
+            </div>
+            <div className="text-sm font-bold text-fg mb-3">
+              {pendingQuestion.question}
+            </div>
+            {pendingQuestion.options &&
+              pendingQuestion.options.length > 0 && (
+                <div className="flex flex-col gap-1.5 mb-3">
+                  {pendingQuestion.options.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => handleAnswer(opt)}
+                      className="text-left px-3 py-2 rounded border border-border hover:border-accent hover:bg-hover text-sm"
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            {pendingQuestion.allowFreeText && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={pendingAnswer}
+                  onChange={(e) => setPendingAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && pendingAnswer.trim()) {
+                      handleAnswer(pendingAnswer.trim());
+                    }
+                  }}
+                  placeholder="Type your answer..."
+                  className="flex-1 bg-surface-1 border border-border rounded px-3 py-1.5 text-sm text-fg placeholder:text-muted outline-none focus:border-accent"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    pendingAnswer.trim() &&
+                    handleAnswer(pendingAnswer.trim())
+                  }
+                  disabled={!pendingAnswer.trim()}
+                  className="px-3 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Submit
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Composer */}
+      <div className="shrink-0 p-6 pt-2 relative">
+        {slash.visible && (
+          <SlashAutocomplete
+            items={slash.items}
+            activeIndex={slash.activeIndex}
+            onPick={(value) => setComposerValue(value + " ")}
+          />
+        )}
+        <Composer
+          value={composerValue}
+          onChange={setComposerValue}
+          onSubmit={handleSend}
+          disabled={composerDisabled}
+          placeholder={
+            isArchived
+              ? "Thread archived"
+              : pendingQuestion
+                ? "Answer the question above first..."
+                : "Type a message..."
+          }
+        />
+      </div>
+    </div>
+  );
+}
