@@ -11,7 +11,9 @@ import { NotesPage } from "@/pages/NotesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { AgentsPage } from "@/pages/AgentsPage";
+import { AgentRunPage } from "@/pages/AgentRunPage";
 import { ChatsPage } from "@/pages/ChatsPage";
+import { ChatThreadPage } from "@/pages/ChatThreadPage";
 
 const LazyCodeGraphPage = lazy(() =>
   import("@/pages/KnowledgeGraphPage").then((m) => ({ default: m.CodeGraphPage }))
@@ -30,7 +32,9 @@ export const router = createBrowserRouter([
       { path: "codebase", element: <CodebasePage /> },
       { path: "kanban", element: <KanbanBoard /> },
       { path: "agents", element: <AgentsPage /> },
+      { path: "agents/:runId", element: <AgentRunPage /> },
       { path: "chats", element: <ChatsPage /> },
+      { path: "chats/:threadId", element: <ChatThreadPage /> },
       { path: "notes", element: <NotesPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <NotFoundPage /> },
