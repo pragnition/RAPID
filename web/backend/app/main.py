@@ -177,6 +177,25 @@ def create_app() -> FastAPI:
         allow_credentials=True,
     )
 
+    # Request/response logging middleware
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        start = time.time()
+        response = await call_next(request)
+        duration_ms = (time.time() - start) * 1000
+        path = request.url.path
+        if not path.startswith(("/api/health", "/api/ready", "/assets/")):
+            logger.info(
+                "request",
+                extra={
+                    "method": request.method,
+                    "path": path,
+                    "status": response.status_code,
+                    "duration_ms": round(duration_ms, 1),
+                },
+            )
+        return response
+
     # Global exception handler
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
