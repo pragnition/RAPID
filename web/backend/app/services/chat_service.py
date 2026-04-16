@@ -177,6 +177,29 @@ async def send_message(
 
     session.commit()
     session.refresh(msg)
+
+    # Start agent run for this message
+    try:
+        run = await mgr.start_run(
+            project_id=chat.project_id,
+            skill_name=chat.skill_name,
+            skill_args={},
+            prompt=content,
+            set_id=None,
+            worktree=None,
+        )
+        # Bind run to chat
+        chat.active_run_id = run.id
+        session.add(chat)
+        session.commit()
+    except StateError:
+        # A run is already active -- the existing SSE stream handles it.
+        # Don't fail the message save.
+        logger.warning(
+            "could not start agent run for chat",
+            extra={"chat_id": str(chat_id)},
+        )
+
     return msg
 
 

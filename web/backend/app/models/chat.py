@@ -22,6 +22,7 @@ class Chat(SQLModel, table=True):
     skill_name: str
     title: str = Field(default="")  # auto-filled from first user message if empty
     session_status: str = Field(default="active", index=True)  # active | idle | archived
+    active_run_id: UUID | None = Field(default=None, foreign_key="agentrun.id", index=True)
     created_at: datetime = Field(default_factory=_utcnow, index=True)
     last_message_at: datetime = Field(default_factory=_utcnow, index=True)
     archived_at: datetime | None = Field(default=None)

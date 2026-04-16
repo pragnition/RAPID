@@ -27,6 +27,7 @@ class ChatResponse(BaseModel):
     skill_name: str
     title: str
     session_status: Literal["active", "idle", "archived"]
+    active_run_id: UUID | None
     created_at: datetime
     last_message_at: datetime
     archived_at: datetime | None

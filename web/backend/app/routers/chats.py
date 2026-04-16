@@ -172,6 +172,8 @@ async def stream_events(
     Delegates to the agent event bus if the chat has an active agent run.
     If no active run, returns an empty stream.
     """
+    from app.schemas.sse_events import serialize_event
+
     # Determine since from query or Last-Event-ID header
     since_q = request.query_params.get("since")
     since = 0
@@ -182,13 +184,11 @@ async def stream_events(
         if lei is not None and lei.lstrip("-").isdigit():
             since = int(lei)
 
-    # Check if the chat has an active agent run. For now, return empty stream
-    # if no run is bound. Full session-binding wiring will evolve in later waves.
     chat = await chat_service.get_thread(session, chat_id)
     if chat is None or chat.session_status == "archived":
         async def _empty():
             return
-            yield  # noqa: RET504 -- makes this an async generator
+            yield  # noqa: RET504
 
         return EventSourceResponse(
             _empty(),
@@ -196,11 +196,99 @@ async def stream_events(
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
-    # TODO: resolve chat -> active_run_id binding when session management lands.
-    # For now, return an empty stream placeholder.
+    run_id = chat.active_run_id
+    if run_id is None:
+        async def _empty():
+            return
+            yield  # noqa: RET504
+
+        return EventSourceResponse(
+            _empty(),
+            ping=15,
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    mgr = chat_service.get_manager(request)
+
     async def _gen():
-        return
-        yield  # noqa: RET504 -- makes this an async generator
+        accumulated_text = ""
+        tool_calls: list[dict] = []
+        try:
+            async for evt in mgr.attach_events(run_id, since=since):
+                if await request.is_disconnected():
+                    logger.info(
+                        "chat SSE client disconnected",
+                        extra={"chat_id": str(chat_id), "run_id": str(run_id)},
+                    )
+                    break
+
+                # Accumulate for materialization
+                if evt.kind == "assistant_text":
+                    accumulated_text += evt.text
+                elif evt.kind == "tool_use":
+                    tool_calls.append({
+                        "tool_use_id": evt.tool_use_id,
+                        "tool_name": evt.tool_name,
+                        "input": evt.input,
+                    })
+                elif evt.kind == "tool_result":
+                    for tc in tool_calls:
+                        if tc["tool_use_id"] == evt.tool_use_id:
+                            tc["output"] = evt.output
+                            tc["is_error"] = evt.is_error
+                            break
+
+                yield {
+                    "id": str(evt.seq),
+                    "event": evt.kind,
+                    "data": json.dumps(serialize_event(evt)),
+                }
+
+                if evt.kind == "run_complete":
+                    # Materialize the assistant turn
+                    if accumulated_text or tool_calls:
+                        try:
+                            engine = request.app.state.engine
+                            with Session(engine) as fresh_session:
+                                await chat_service.materialize_assistant_turn(
+                                    fresh_session,
+                                    chat_id,
+                                    run_id,
+                                    accumulated_text,
+                                    tool_calls if tool_calls else None,
+                                )
+                                # Clear active_run_id
+                                from app.models.chat import Chat as ChatModel
+                                db_chat = fresh_session.get(ChatModel, chat_id)
+                                if db_chat is not None:
+                                    db_chat.active_run_id = None
+                                    fresh_session.add(db_chat)
+                                    fresh_session.commit()
+                        except Exception:
+                            logger.exception(
+                                "failed to materialize assistant turn",
+                                extra={
+                                    "chat_id": str(chat_id),
+                                    "run_id": str(run_id),
+                                },
+                            )
+                    return
+        except StateError as exc:
+            yield {
+                "event": "error",
+                "data": json.dumps(
+                    {
+                        "error": exc.message,
+                        "detail": exc.detail,
+                    }
+                ),
+            }
+        except Exception:
+            logger.exception(
+                "chat SSE stream crashed",
+                extra={"chat_id": str(chat_id), "run_id": str(run_id)},
+            )
+            raise
 
     return EventSourceResponse(
         _gen(),
