@@ -20,6 +20,7 @@ import {
   useUpdateCard,
   useMoveCard,
   useDeleteCard,
+  useToggleColumnAutopilot,
 } from "@/hooks/useKanban";
 import type { KanbanCardResponse, KanbanBoardResponse } from "@/types/api";
 import { KanbanColumn } from "@/components/kanban/KanbanColumn";
@@ -41,6 +42,7 @@ export function KanbanBoard() {
   const updateCard = useUpdateCard(projectId);
   const moveCard = useMoveCard(projectId);
   const deleteCard = useDeleteCard(projectId);
+  const toggleAutopilot = useToggleColumnAutopilot(projectId);
 
   const [activeCard, setActiveCard] = useState<KanbanCardResponse | null>(null);
   const [editingCard, setEditingCard] = useState<KanbanCardResponse | null>(null);
@@ -128,10 +130,12 @@ export function KanbanBoard() {
         destPosition = targetCol.cards.length;
       }
 
+      const movedCard = sourceCol.cards.find((c) => c.id === activeId);
       moveCard.mutate({
         cardId: activeId,
         column_id: destColId,
         position: destPosition,
+        rev: movedCard?.rev,
       });
     },
     [data, findCardColumn, moveCard],
@@ -188,6 +192,13 @@ export function KanbanBoard() {
       deleteCard.mutate({ cardId });
     },
     [deleteCard],
+  );
+
+  const handleToggleAutopilot = useCallback(
+    (columnId: string, enabled: boolean) => {
+      toggleAutopilot.mutate({ columnId, isAutopilot: enabled });
+    },
+    [toggleAutopilot],
   );
 
   // -----------------------------------------------------------------------
@@ -271,6 +282,7 @@ export function KanbanBoard() {
               onAddCard={handleAddCard}
               onUpdateColumn={handleUpdateColumn}
               onDeleteColumn={handleDeleteColumn}
+              onToggleAutopilot={handleToggleAutopilot}
             />
           ))}
           <AddColumnButton onAdd={handleAddColumn} />
