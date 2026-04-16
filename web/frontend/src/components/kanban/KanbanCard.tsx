@@ -1,6 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { KanbanCardResponse } from "@/types/api";
+import { AgentStatusBadge } from "./AgentStatusBadge";
 
 interface KanbanCardProps {
   card: KanbanCardResponse;
@@ -27,6 +28,16 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const isAgentActive =
+    card.agent_status === "claimed" || card.agent_status === "running";
+  const isAgentCompleted = card.agent_status === "completed";
+
+  const accentBorder = isAgentActive
+    ? "border-l-2 border-l-blue-500/50"
+    : isAgentCompleted
+      ? "border-l-2 border-l-emerald-500/50"
+      : "";
+
   return (
     <div
       ref={setNodeRef}
@@ -34,12 +45,13 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
       {...attributes}
       {...listeners}
       onClick={() => onEdit(card)}
-      className="
+      className={`
         group relative
         bg-surface-1 border border-border rounded-lg
         p-3 cursor-grab active:cursor-grabbing
         hover:bg-hover transition-colors duration-100
-      "
+        ${accentBorder}
+      `}
     >
       <button
         type="button"
@@ -61,6 +73,14 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
       </button>
 
       <p className="font-semibold text-fg text-sm pr-4">{card.title}</p>
+
+      <AgentStatusBadge
+        agentStatus={card.agent_status}
+        createdBy={card.created_by}
+        lockedByRunId={card.locked_by_run_id}
+        completedByRunId={card.completed_by_run_id}
+        retryCount={card.retry_count}
+      />
 
       {card.description && (
         <p className="text-muted text-xs mt-1 line-clamp-3">
