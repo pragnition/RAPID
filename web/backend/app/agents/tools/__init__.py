@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, List
 from uuid import UUID
 
 from app.agents.tools.ask_user import build_ask_user_tools
+from app.agents.tools.kanban_tools import build_kanban_tools
 
 if TYPE_CHECKING:  # pragma: no cover — avoid circular import at runtime
     from app.agents.session_manager import AgentSessionManager
@@ -23,7 +24,8 @@ def build_tools(run_id: UUID, manager: "AgentSessionManager") -> List[Any]:
     ``run_id`` and ``manager`` are captured in closure so each tool call knows
     which run to persist prompts against and which manager to drive futures on.
     """
-    return build_ask_user_tools(run_id=run_id, manager=manager)
+    return build_ask_user_tools(run_id=run_id, manager=manager) + \
+           build_kanban_tools(run_id=run_id, manager=manager)
 
 
 __all__ = ["build_tools"]
