@@ -1,5 +1,8 @@
 import { useEffect, useRef, useMemo } from "react";
 import { useParams } from "react-router";
+import Markdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
 import {
   PageHeader,
   StatusBadge,
@@ -344,9 +347,11 @@ export function AgentRunPage() {
                 return (
                   <div
                     key={item.key}
-                    className="text-sm text-fg whitespace-pre-wrap"
+                    className="text-sm text-fg prose prose-sm dark:prose-invert max-w-none"
                   >
-                    {item.text}
+                    <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                      {item.text ?? ""}
+                    </Markdown>
                   </div>
                 );
               case "error":
