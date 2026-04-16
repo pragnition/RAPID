@@ -25,6 +25,30 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _build_conversation_prompt(
+    history: list[ChatMessage],
+    current_message: str,
+) -> str:
+    """Build a prompt that includes prior conversation context.
+
+    Only user and assistant messages are included (tool messages are internal).
+    """
+    if not history:
+        return current_message
+
+    lines: list[str] = []
+    lines.append("<conversation_history>")
+    for msg in history:
+        if msg.role == "user":
+            lines.append(f"[user]: {msg.content}")
+        elif msg.role == "assistant" and msg.content:
+            lines.append(f"[assistant]: {msg.content}")
+    lines.append("</conversation_history>")
+    lines.append("")
+    lines.append(current_message)
+    return "\n".join(lines)
+
+
 def get_manager(request: Request) -> AgentSessionManager:
     """Retrieve the lifespan-owned AgentSessionManager from app state."""
     mgr = getattr(request.app.state, "agent_manager", None)
@@ -178,13 +202,21 @@ async def send_message(
     session.commit()
     session.refresh(msg)
 
+    # Load prior messages for conversation context
+    prior_messages = list(session.exec(
+        select(ChatMessage)
+        .where(ChatMessage.chat_id == chat_id, ChatMessage.seq < seq)
+        .order_by(ChatMessage.seq.asc())
+    ).all())
+    prompt = _build_conversation_prompt(prior_messages, content)
+
     # Start agent run for this message
     try:
         run = await mgr.start_run(
             project_id=chat.project_id,
             skill_name=chat.skill_name,
             skill_args={},
-            prompt=content,
+            prompt=prompt,
             set_id=None,
             worktree=None,
         )
