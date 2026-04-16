@@ -56,10 +56,12 @@ class AutopilotWorker:
 
     async def start(self) -> None:
         """Start the background poll loop."""
+        logger.info("autopilot worker started", extra={"interval_s": self.interval_s})
         self._task = asyncio.create_task(self._poll_loop())
 
     async def stop(self) -> None:
         """Stop the background poll loop gracefully."""
+        logger.info("autopilot worker stopping")
         self._stopping.set()
         if self._task:
             self._task.cancel()
@@ -86,8 +88,8 @@ class AutopilotWorker:
                     dispatched = await self._poll_once()
                     if dispatched > 0:
                         logger.info(
-                            "autopilot cycle dispatched %d runs",
-                            dispatched,
+                            "autopilot cycle complete",
+                            extra={"dispatched": dispatched},
                         )
                 except Exception:
                     logger.exception("autopilot poll cycle failed")
@@ -103,6 +105,7 @@ class AutopilotWorker:
 
         # Discover autopilot columns and their unclaimed cards
         candidates = await asyncio.to_thread(self._find_candidates)
+        logger.info("autopilot poll cycle", extra={"candidates": len(candidates)})
 
         for col_project_id, card_id, card_snapshot in candidates:
             try:

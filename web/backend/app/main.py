@@ -99,6 +99,7 @@ async def lifespan(app: FastAPI):
     setup_logging(settings.rapid_web_log_dir, settings.rapid_web_log_level)
     engine = get_engine()
     run_migrations(engine)
+    logger.info("database migrations complete")
     app.state.engine = engine
     app.state.start_time = time.time()
 
@@ -107,11 +108,13 @@ async def lifespan(app: FastAPI):
 
     watcher = FileWatcherService(engine)
     watcher.start()
+    logger.info("file watcher started")
     app.state.file_watcher = watcher
 
     # Start the agent session manager (owns SDK clients + orphan sweeper + archive)
     agent_manager = AgentSessionManager(engine)
     await agent_manager.start()
+    logger.info("agent session manager started")
     app.state.agent_manager = agent_manager
 
     # Start the autopilot worker (polls autopilot-enabled kanban columns)
@@ -119,6 +122,7 @@ async def lifespan(app: FastAPI):
 
     autopilot = AutopilotWorker(engine, agent_manager)
     await autopilot.start()
+    logger.info("autopilot worker started")
     app.state.autopilot_worker = autopilot
 
     # Load skill catalog from skills/ directory
@@ -128,6 +132,7 @@ async def lifespan(app: FastAPI):
     skills_root = Path(__file__).resolve().parents[3] / "skills"
     skill_catalog_service = SkillCatalogService()
     skill_catalog_service.load_initial(skills_root)
+    logger.info("skill catalog loaded", extra={"skills_root": str(skills_root)})
     app.state.skill_catalog_service = skill_catalog_service
 
     # Hot-reload watcher (only in dev mode)
