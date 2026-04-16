@@ -20,8 +20,6 @@ from claude_agent_sdk import tool
 from sqlmodel import Session, select, func
 
 from app.database import KanbanCard, KanbanColumn
-from app.services import kanban_service
-from app.services.kanban_service import StaleRevisionError
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.agents.session_manager import AgentSessionManager
@@ -190,6 +188,8 @@ def build_kanban_tools(
         created_by = f"agent:{run_id}"
 
         def _create() -> dict | str:
+            from app.services import kanban_service as ks
+
             with Session(manager.engine) as s:
                 # Enforce creation cap
                 count = s.exec(
@@ -207,7 +207,7 @@ def build_kanban_tools(
                 # Parse labels
                 labels = [l.strip() for l in labels_raw.split(",") if l.strip()] if labels_raw else []
 
-                card = kanban_service.create_card(
+                card = ks.create_card(
                     s, col.id, title, description, created_by=created_by
                 )
 
@@ -248,6 +248,9 @@ def build_kanban_tools(
         rev = int(args.get("rev", 0))
 
         def _move() -> dict | str:
+            from app.services import kanban_service as ks
+            from app.services.kanban_service import StaleRevisionError
+
             with Session(manager.engine) as s:
                 try:
                     card_uuid = UUID(card_id_str)
@@ -267,7 +270,7 @@ def build_kanban_tools(
                     return f"Column '{to_column}' not found."
 
                 try:
-                    moved = kanban_service.move_card(
+                    moved = ks.move_card(
                         s, card_uuid, target_col.id, 0, rev=rev
                     )
                 except StaleRevisionError as e:
@@ -304,6 +307,9 @@ def build_kanban_tools(
         rev = int(args.get("rev", 0))
 
         def _update() -> dict | str:
+            from app.services import kanban_service as ks
+            from app.services.kanban_service import StaleRevisionError
+
             with Session(manager.engine) as s:
                 try:
                     card_uuid = UUID(card_id_str)
@@ -319,7 +325,7 @@ def build_kanban_tools(
                     return f"Card {card_id_str} is not locked by this run."
 
                 try:
-                    updated = kanban_service.update_card(
+                    updated = ks.update_card(
                         s, card_uuid,
                         title=new_title,
                         description=new_description,

@@ -9,7 +9,7 @@ from sqlmodel import Session
 from app.schemas.kanban import (
     KanbanBoardResponse,
     KanbanCardCreate,
-    KanbanCardMove,
+    KanbanCardMoveWithRev,
     KanbanCardResponse,
     KanbanCardUpdate,
     KanbanColumnCreate,
@@ -17,6 +17,7 @@ from app.schemas.kanban import (
     KanbanColumnUpdate,
 )
 from app.services import kanban_service
+from app.services.kanban_service import StaleRevisionError
 from app.services.project_service import get_project
 
 logger = logging.getLogger(__name__)
@@ -74,6 +75,7 @@ def create_column(
         title=column.title,
         position=column.position,
         created_at=column.created_at.isoformat(),
+        is_autopilot=column.is_autopilot,
         cards=[],
     )
 
@@ -97,6 +99,12 @@ def update_column(
     except ValueError:
         raise HTTPException(status_code=404, detail="Column not found")
 
+    # Handle autopilot toggle if provided
+    if body.is_autopilot is not None:
+        column = kanban_service.update_column_autopilot(
+            session, column_id, body.is_autopilot
+        )
+
     # Load cards for response
     from sqlmodel import select
     from app.database import KanbanCard
@@ -114,6 +122,7 @@ def update_column(
         title=column.title,
         position=column.position,
         created_at=column.created_at.isoformat(),
+        is_autopilot=column.is_autopilot,
         cards=[
             KanbanCardResponse(
                 id=str(c.id),
@@ -123,10 +132,37 @@ def update_column(
                 position=c.position,
                 created_at=c.created_at.isoformat(),
                 updated_at=c.updated_at.isoformat(),
+                rev=c.rev,
+                created_by=c.created_by,
+                agent_status=c.agent_status,
+                locked_by_run_id=str(c.locked_by_run_id) if c.locked_by_run_id else None,
+                completed_by_run_id=str(c.completed_by_run_id) if c.completed_by_run_id else None,
+                agent_run_id=str(c.agent_run_id) if c.agent_run_id else None,
+                retry_count=c.retry_count,
             )
             for c in cards
         ],
     )
+
+
+@router.put("/{project_id}/kanban/columns/{column_id}/autopilot")
+def toggle_column_autopilot(
+    project_id: UUID,
+    column_id: UUID,
+    body: dict,
+    session: Session = Depends(get_db),
+):
+    """Toggle autopilot mode on a kanban column."""
+    _require_project(session, project_id)
+    is_autopilot = body.get("is_autopilot", False)
+    try:
+        column = kanban_service.update_column_autopilot(
+            session, column_id, bool(is_autopilot)
+        )
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Column not found")
+
+    return {"id": str(column.id), "is_autopilot": column.is_autopilot}
 
 
 @router.delete("/{project_id}/kanban/columns/{column_id}", status_code=204)
@@ -175,6 +211,13 @@ def create_card(
         position=card.position,
         created_at=card.created_at.isoformat(),
         updated_at=card.updated_at.isoformat(),
+        rev=card.rev,
+        created_by=card.created_by,
+        agent_status=card.agent_status,
+        locked_by_run_id=str(card.locked_by_run_id) if card.locked_by_run_id else None,
+        completed_by_run_id=str(card.completed_by_run_id) if card.completed_by_run_id else None,
+        agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
+        retry_count=card.retry_count,
     )
 
 
@@ -205,6 +248,13 @@ def update_card(
         position=card.position,
         created_at=card.created_at.isoformat(),
         updated_at=card.updated_at.isoformat(),
+        rev=card.rev,
+        created_by=card.created_by,
+        agent_status=card.agent_status,
+        locked_by_run_id=str(card.locked_by_run_id) if card.locked_by_run_id else None,
+        completed_by_run_id=str(card.completed_by_run_id) if card.completed_by_run_id else None,
+        agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
+        retry_count=card.retry_count,
     )
 
 
@@ -215,15 +265,17 @@ def update_card(
 def move_card(
     project_id: UUID,
     card_id: UUID,
-    body: KanbanCardMove,
+    body: KanbanCardMoveWithRev,
     session: Session = Depends(get_db),
 ):
     """Move a card to a different column and/or position."""
     _require_project(session, project_id)
     try:
         card = kanban_service.move_card(
-            session, card_id, UUID(body.column_id), body.position
+            session, card_id, UUID(body.column_id), body.position, rev=body.rev
         )
+    except StaleRevisionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
@@ -235,6 +287,13 @@ def move_card(
         position=card.position,
         created_at=card.created_at.isoformat(),
         updated_at=card.updated_at.isoformat(),
+        rev=card.rev,
+        created_by=card.created_by,
+        agent_status=card.agent_status,
+        locked_by_run_id=str(card.locked_by_run_id) if card.locked_by_run_id else None,
+        completed_by_run_id=str(card.completed_by_run_id) if card.completed_by_run_id else None,
+        agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
+        retry_count=card.retry_count,
     )
 
 
