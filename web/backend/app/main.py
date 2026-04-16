@@ -22,6 +22,7 @@ from app.routers.agents import router as agents_router
 from app.routers.kanban import router as kanban_router
 from app.routers.notes import router as notes_router
 from app.routers.projects import router as projects_router
+from app.routers.skills import router as skills_router
 from app.routers.views import router as views_router
 from app.config import settings
 from app.database import get_engine, run_migrations
@@ -185,6 +186,7 @@ def create_app() -> FastAPI:
     app.include_router(kanban_router)
     app.include_router(notes_router)
     app.include_router(agents_router)
+    app.include_router(skills_router)
 
     # Serve frontend static files if the dist directory exists
     frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
