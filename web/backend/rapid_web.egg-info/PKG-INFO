@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: rapid-web
-Version: 6.2.0
+Version: 6.3.0
 Summary: RAPID Mission Control web service
 Requires-Python: >=3.12
 Requires-Dist: fastapi[standard]<1.0,>=0.135
@@ -9,6 +9,7 @@ Requires-Dist: alembic<2.0,>=1.18
 Requires-Dist: pydantic-settings<3.0,>=2.13
 Requires-Dist: python-json-logger<4.0,>=3.0
 Requires-Dist: uvicorn[standard]<1.0,>=0.34
+Requires-Dist: pyyaml<7.0,>=6.0
 Requires-Dist: watchdog<7.0,>=6.0
 Requires-Dist: tree-sitter<1.0,>=0.24
 Requires-Dist: tree-sitter-python<1.0,>=0.23
@@ -16,3 +17,5 @@ Requires-Dist: tree-sitter-javascript<1.0,>=0.23
 Requires-Dist: tree-sitter-typescript<1.0,>=0.23
 Requires-Dist: tree-sitter-go<1.0,>=0.23
 Requires-Dist: tree-sitter-rust<1.0,>=0.23
+Requires-Dist: claude-agent-sdk<0.2,>=0.1.59
+Requires-Dist: sse-starlette<3.0,>=2.0

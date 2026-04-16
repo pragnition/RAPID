@@ -4,7 +4,7 @@
     {
       "id": "agent-runtime-foundation",
       "wave": 1,
-      "status": "pending",
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
@@ -13,7 +13,7 @@
     {
       "id": "web-tool-bridge",
       "wave": 2,
-      "status": "pending",
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
@@ -22,7 +22,7 @@
     {
       "id": "skill-invocation-ui",
       "wave": 2,
-      "status": "pending",
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
@@ -31,7 +31,7 @@
     {
       "id": "kanban-autopilot",
       "wave": 2,
-      "status": "pending",
+      "status": "discussed",
       "type": "set",
       "group": null,
       "priority": null,
@@ -41,6 +41,15 @@
       "id": "agents-chats-tabs",
       "wave": 3,
       "status": "pending",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
+    },
+    {
+      "id": "wireframe-rollout",
+      "wave": 1,
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
@@ -76,7 +85,8 @@
   "waves": {
     "1": {
       "nodes": [
-        "agent-runtime-foundation"
+        "agent-runtime-foundation",
+        "wireframe-rollout"
       ]
     },
     "2": {
@@ -97,6 +107,6 @@
     "created": "2026-04-15",
     "totalWaves": 3,
     "maxParallelism": 3,
-    "totalNodes": 5
+    "totalNodes": 6
   }
 }
