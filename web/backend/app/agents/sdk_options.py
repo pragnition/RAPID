@@ -16,7 +16,11 @@ from typing import Any
 from claude_agent_sdk import ClaudeAgentOptions, HookMatcher
 
 from app.agents.correlation import SAFE_ENV_KEYS
-from app.agents.permission_hooks import can_use_tool_hook, destructive_pre_tool_hook
+from app.agents.permission_hooks import (
+    can_use_tool_hook,
+    destructive_pre_tool_hook,
+    inject_commit_trailers,
+)
 from app.agents.permissions import resolve_policy
 from app.config import settings
 
@@ -62,7 +66,9 @@ def build_sdk_options(
         env=env,
         can_use_tool=can_use_tool_hook,
         hooks={
-            "PreToolUse": [HookMatcher(matcher="Bash", hooks=[destructive_pre_tool_hook])],
+            "PreToolUse": [
+                HookMatcher(matcher="Bash", hooks=[destructive_pre_tool_hook, inject_commit_trailers]),
+            ],
         },
         max_budget_usd=float(settings.rapid_agent_daily_cap_usd),
     )
