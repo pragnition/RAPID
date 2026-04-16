@@ -23,6 +23,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from app.agents import StateError, to_http_exception
 from app.schemas.agents import (
+    AgentRunListResponse,
     AgentRunResponse,
     AnswerRequest,
     InterruptResponse,
@@ -54,6 +55,16 @@ async def start_run_endpoint(body: StartRunRequest, request: Request):
     except StateError as exc:
         raise to_http_exception(exc)
     return AgentRunResponse.model_validate(row)
+
+
+@router.get("/runs", response_model=AgentRunListResponse)
+async def list_runs_endpoint(project_id: UUID, request: Request):
+    mgr = agent_service.get_manager(request)
+    items, total = await agent_service.list_runs(mgr, project_id)
+    return AgentRunListResponse(
+        items=[AgentRunResponse.model_validate(r) for r in items],
+        total=total,
+    )
 
 
 @router.get("/runs/{run_id}", response_model=AgentRunResponse)

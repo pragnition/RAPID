@@ -74,5 +74,10 @@ class PendingPromptResponse(BaseModel):
     batch_total: int | None = None
 
 
+class AgentRunListResponse(BaseModel):
+    items: list[AgentRunResponse]
+    total: int
+
+
 class InterruptResponse(BaseModel):
     ok: bool = True

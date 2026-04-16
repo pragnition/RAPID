@@ -64,6 +64,12 @@ async def get_run(mgr: AgentSessionManager, run_id: UUID) -> AgentRun:
     return await mgr.get_run(run_id)
 
 
+async def list_runs(
+    mgr: AgentSessionManager, project_id: UUID
+) -> tuple[list[AgentRun], int]:
+    return await mgr.list_runs(project_id)
+
+
 async def send_input(mgr: AgentSessionManager, run_id: UUID, text: str) -> None:
     logger.info("send_input request", extra={"run_id": str(run_id), "text_length": len(text)})
     await mgr.send_input(run_id, text)

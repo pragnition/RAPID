@@ -298,6 +298,18 @@ class AgentSessionManager:
             raise StateError("Run not found", detail={"run_id": str(run_id)})
         return row
 
+    async def list_runs(self, project_id: UUID) -> tuple[list[AgentRun], int]:
+        def _query() -> tuple[list[AgentRun], int]:
+            with Session(self.engine) as s:
+                rows = s.exec(
+                    select(AgentRun)
+                    .where(AgentRun.project_id == project_id)
+                    .order_by(AgentRun.started_at.desc())
+                ).all()
+                return list(rows), len(rows)
+
+        return await asyncio.to_thread(_query)
+
     async def send_input(self, run_id: UUID, text: str) -> None:
         session = self._sessions.get(run_id)
         if session is None:
