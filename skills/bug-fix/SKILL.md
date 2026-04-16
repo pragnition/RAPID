@@ -1,6 +1,13 @@
 ---
 description: Investigate and fix bugs -- user describes a bug, model investigates and applies a fix
 allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
+args:
+  - name: prompt
+    type: multi-line
+    description: Description of the bug to investigate and fix
+    required: true
+    maxLength: 16000
+categories: [human-in-loop]
 ---
 
 

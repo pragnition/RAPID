@@ -1,6 +1,12 @@
 ---
 description: Resume a paused set from its last checkpoint
 allowed-tools: Bash, Read, AskUserQuestion
+args:
+  - name: set
+    type: set-ref
+    description: Set to resume
+    required: true
+categories: [autonomous]
 ---
 
 # /rapid:resume -- Resume a Paused Set

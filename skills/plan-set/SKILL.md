@@ -1,6 +1,12 @@
 ---
 description: Plan all waves in a set with a single command -- researcher, planner, verifier pipeline (2-4 agent spawns)
 allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
+args:
+  - name: set
+    type: set-ref
+    description: Set to plan
+    required: true
+categories: [interactive]
 ---
 
 # /rapid:plan-set -- Set Planning

@@ -2,6 +2,8 @@
 description: Install and configure RAPID v6.3.0 plugin for Claude Code
 disable-model-invocation: true
 allowed-tools: Read, Bash, AskUserQuestion
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:install -- v6.3.0 Plugin Installation and Setup

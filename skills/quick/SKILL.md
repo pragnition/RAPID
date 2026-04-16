@@ -1,6 +1,13 @@
 ---
 description: Ad-hoc changes without set structure -- planner, verifier, executor pipeline
 allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
+args:
+  - name: prompt
+    type: multi-line
+    description: Description of the ad-hoc changes to make
+    required: true
+    maxLength: 16000
+categories: [human-in-loop]
 ---
 
 

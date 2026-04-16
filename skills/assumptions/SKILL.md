@@ -2,6 +2,8 @@
 description: Surface Claude's mental model and assumptions about a set before execution begins
 disable-model-invocation: true
 allowed-tools: Read, Bash
+args: []
+categories: [autonomous]
 ---
 
 

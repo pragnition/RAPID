@@ -1,6 +1,12 @@
 ---
 description: Clean up completed set worktrees with safety checks and optional branch deletion
 allowed-tools: Bash, Read, AskUserQuestion
+args:
+  - name: set
+    type: set-ref
+    description: Set to clean up
+    required: true
+categories: [autonomous]
 ---
 
 # /rapid:cleanup -- Worktree Cleanup with Branch Deletion

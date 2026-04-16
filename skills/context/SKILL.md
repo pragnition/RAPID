@@ -2,6 +2,8 @@
 description: Analyze codebase and generate project context files (CLAUDE.md, style guide, conventions)
 disable-model-invocation: true
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:context -- Codebase Analysis and Context Generation

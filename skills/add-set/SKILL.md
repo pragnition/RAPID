@@ -1,6 +1,12 @@
 ---
 description: Add a new set to an existing project mid-milestone with discovery and contract generation
 allowed-tools: Bash(rapid-tools:*), Read, Write, Glob, Grep
+args:
+  - name: set
+    type: set-ref
+    description: Set to add
+    required: true
+categories: [human-in-loop]
 ---
 
 

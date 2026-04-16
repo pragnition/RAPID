@@ -1,6 +1,8 @@
 ---
 description: Conduct a structured branding interview with codebase-aware visual/UX brand guidelines, artifact gallery, and live-reloading webserver
 allowed-tools: Bash(rapid-tools:*), Read, Write, Glob, Grep
+args: []
+categories: [interactive]
 ---
 
 

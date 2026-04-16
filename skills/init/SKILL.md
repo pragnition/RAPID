@@ -1,6 +1,8 @@
 ---
 description: Initialize a new RAPID project with research and roadmap generation
 allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep, Skill
+args: []
+categories: [autonomous]
 ---
 
 

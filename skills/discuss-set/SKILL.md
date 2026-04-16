@@ -1,6 +1,12 @@
 ---
 description: Capture developer implementation vision for a set via structured discussion or auto-generate context with --skip
 allowed-tools: Bash(rapid-tools:*), Read, Write, Glob, Grep, Agent
+args:
+  - name: set
+    type: set-ref
+    description: Set to discuss
+    required: true
+categories: [interactive]
 ---
 
 

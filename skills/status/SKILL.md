@@ -1,6 +1,8 @@
 ---
 description: Show project dashboard with set statuses, last activity, and next actions
 allowed-tools: Bash, Read, AskUserQuestion
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:status -- v6.3.0 Set Dashboard

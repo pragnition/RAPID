@@ -1,6 +1,17 @@
 ---
 description: Complete current milestone and start a new version with adaptive research pipeline and roadmap generation
 allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
+args:
+  - name: version
+    type: string
+    description: Version identifier for the new milestone
+    required: true
+    maxLength: 32
+  - name: notes
+    type: multi-line
+    description: Optional notes for the new version
+    required: false
+categories: [autonomous]
 ---
 
 

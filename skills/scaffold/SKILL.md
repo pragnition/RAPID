@@ -1,6 +1,8 @@
 ---
 description: Generate project-type-aware foundation files for the target codebase
 allowed-tools: Bash(rapid-tools:*), Read
+args: []
+categories: [autonomous]
 ---
 
 

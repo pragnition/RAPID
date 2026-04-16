@@ -1,6 +1,18 @@
 ---
 description: Capture out-of-scope feature ideas as backlog items in .planning/backlog/
 allowed-tools: Bash(rapid-tools:*), AskUserQuestion, Read, Write, Glob
+args:
+  - name: title
+    type: string
+    description: Short title for the backlog item
+    required: true
+    maxLength: 200
+  - name: description
+    type: multi-line
+    description: Detailed description of the backlog item
+    required: true
+    maxLength: 8000
+categories: [autonomous]
 ---
 
 # /rapid:backlog -- Capture Backlog Item

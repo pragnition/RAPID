@@ -1,6 +1,8 @@
 ---
 description: Register the current project with the RAPID Mission Control web dashboard
 allowed-tools: Bash, Read
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:register-web -- Register Project with Mission Control

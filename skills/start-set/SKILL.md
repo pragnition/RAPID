@@ -1,6 +1,8 @@
 ---
 description: Initialize a set for development -- creates isolated worktree (or solo mode without worktree) and generates scoped CLAUDE.md
 allowed-tools: Bash(rapid-tools:*), Read, AskUserQuestion, Agent
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:start-set -- Set Initialization

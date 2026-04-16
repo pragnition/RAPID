@@ -1,6 +1,8 @@
 ---
 description: Show all available RAPID commands and workflow guidance
 disable-model-invocation: true
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:help -- Command Reference
