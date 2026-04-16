@@ -194,7 +194,11 @@ export function AskUserModal({
             {prompt.options!.map((opt) => (
               <label
                 key={opt}
-                className="flex items-start gap-2 px-3 py-2 rounded border border-border bg-surface-1 cursor-pointer hover:border-accent transition-colors"
+                className={`flex items-start gap-2 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                  selectedOption === opt
+                    ? "border-accent bg-accent/10 ring-1 ring-accent/40"
+                    : "border-border bg-surface-1 hover:border-accent"
+                }`}
               >
                 <input
                   type="radio"
@@ -212,7 +216,11 @@ export function AskUserModal({
 
             {prompt.allow_free_text && (
               <>
-                <label className="flex items-start gap-2 px-3 py-2 rounded border border-border bg-surface-1 cursor-pointer hover:border-accent transition-colors">
+                <label className={`flex items-start gap-2 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                  selectedOption === OTHER_OPTION_SENTINEL
+                    ? "border-accent bg-accent/10 ring-1 ring-accent/40"
+                    : "border-border bg-surface-1 hover:border-accent"
+                }`}>
                   <input
                     type="radio"
                     name={`ask-user-${prompt.prompt_id}`}
