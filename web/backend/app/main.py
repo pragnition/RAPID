@@ -96,9 +96,12 @@ def get_db(request: Request):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    setup_logging(settings.rapid_web_log_dir, settings.rapid_web_log_level)
     engine = get_engine()
     run_migrations(engine)
+    # setup_logging runs AFTER migrations: alembic's fileConfig sets
+    # disable_existing_loggers=True, disabling rapid.* loggers created at
+    # module import time. Our setup_logging re-enables them.
+    setup_logging(settings.rapid_web_log_dir, settings.rapid_web_log_level)
     logger.info("database migrations complete")
     app.state.engine = engine
     app.state.start_time = time.time()
