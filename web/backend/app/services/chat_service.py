@@ -1,0 +1,236 @@
+"""Chat service — thin facade for chat thread CRUD and message persistence.
+
+Follows the same pattern as ``agent_service.py`` and ``note_service.py``:
+routers stay declarative, business logic lives here.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from datetime import datetime, timezone
+from uuid import UUID
+
+from fastapi import Request
+from sqlmodel import Session, func, select
+
+from app.agents import AgentSessionManager, StateError
+from app.database import Project
+from app.models.chat import Chat, ChatMessage
+
+logger = logging.getLogger("rapid.services.chat")
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def get_manager(request: Request) -> AgentSessionManager:
+    """Retrieve the lifespan-owned AgentSessionManager from app state."""
+    mgr = getattr(request.app.state, "agent_manager", None)
+    if mgr is None:
+        raise StateError("AgentSessionManager not initialized", detail={})
+    return mgr
+
+
+# ---------------------------------------------------------------------------
+# Thread CRUD
+# ---------------------------------------------------------------------------
+
+
+async def create_thread(
+    session: Session,
+    project_id: UUID,
+    skill_name: str,
+    title: str | None = None,
+) -> Chat:
+    """Create a new chat thread. Returns the row.
+
+    Does NOT start a session yet -- session is lazily created on first
+    send_message call.
+    """
+    # Verify project exists
+    project = session.get(Project, project_id)
+    if project is None:
+        raise StateError(
+            "Project not found",
+            detail={"project_id": str(project_id)},
+            error_code="project_not_found",
+        )
+
+    chat = Chat(
+        project_id=project_id,
+        skill_name=skill_name,
+        title=title or "",
+    )
+    session.add(chat)
+    session.commit()
+    session.refresh(chat)
+    return chat
+
+
+async def list_threads(
+    session: Session,
+    project_id: UUID,
+    include_archived: bool = False,
+) -> tuple[list[Chat], int]:
+    """List threads for a project, newest last_message_at first.
+
+    Filters out archived threads unless ``include_archived=True``.
+    """
+    base = select(Chat).where(Chat.project_id == project_id)
+    count_base = select(func.count(Chat.id)).where(Chat.project_id == project_id)
+
+    if not include_archived:
+        base = base.where(Chat.archived_at.is_(None))  # type: ignore[union-attr]
+        count_base = count_base.where(Chat.archived_at.is_(None))  # type: ignore[union-attr]
+
+    total = session.exec(count_base).one()
+    stmt = base.order_by(Chat.last_message_at.desc())  # type: ignore[union-attr]
+    items = list(session.exec(stmt).all())
+    return items, total
+
+
+async def get_thread(session: Session, chat_id: UUID) -> Chat | None:
+    """Get a single chat thread by ID."""
+    return session.get(Chat, chat_id)
+
+
+async def archive_thread(session: Session, chat_id: UUID) -> Chat:
+    """Archive a chat thread."""
+    chat = session.get(Chat, chat_id)
+    if chat is None:
+        raise StateError(
+            "Chat not found",
+            detail={"chat_id": str(chat_id)},
+            error_code="chat_not_found",
+            http_status=404,
+        )
+    now = _utcnow()
+    chat.session_status = "archived"
+    chat.archived_at = now
+    session.add(chat)
+    session.commit()
+    session.refresh(chat)
+    return chat
+
+
+# ---------------------------------------------------------------------------
+# Messages
+# ---------------------------------------------------------------------------
+
+
+def _next_seq(session: Session, chat_id: UUID) -> int:
+    """Compute the next monotonic seq for a chat thread (inside same txn)."""
+    result = session.exec(
+        select(func.coalesce(func.max(ChatMessage.seq), 0)).where(
+            ChatMessage.chat_id == chat_id
+        )
+    ).one()
+    return int(result) + 1
+
+
+async def send_message(
+    session: Session,
+    mgr: AgentSessionManager,
+    chat_id: UUID,
+    content: str,
+    temp_id: str | None = None,
+) -> ChatMessage:
+    """Persist a user message (role='user').
+
+    Returns the persisted user ChatMessage immediately. The assistant
+    response arrives later via SSE / stream_response.
+    """
+    chat = session.get(Chat, chat_id)
+    if chat is None:
+        raise StateError(
+            "Chat not found",
+            detail={"chat_id": str(chat_id)},
+            error_code="chat_not_found",
+            http_status=404,
+        )
+    if chat.session_status == "archived":
+        raise StateError(
+            "Cannot send message to archived thread",
+            detail={"chat_id": str(chat_id)},
+            error_code="thread_archived",
+        )
+
+    seq = _next_seq(session, chat_id)
+    msg = ChatMessage(
+        chat_id=chat_id,
+        seq=seq,
+        role="user",
+        content=content,
+        temp_id=temp_id,
+    )
+    session.add(msg)
+
+    # Update chat metadata
+    now = _utcnow()
+    chat.last_message_at = now
+    # Auto-fill title from first user message if empty
+    if not chat.title and seq == 1:
+        chat.title = content[:255]
+    session.add(chat)
+
+    session.commit()
+    session.refresh(msg)
+    return msg
+
+
+async def list_messages(
+    session: Session, chat_id: UUID, since_seq: int = 0
+) -> list[ChatMessage]:
+    """Load messages for replay (historical).
+
+    Used by GET /api/chats/{id}/messages and by SSE reconnect before
+    joining the live stream.
+    """
+    stmt = (
+        select(ChatMessage)
+        .where(ChatMessage.chat_id == chat_id, ChatMessage.seq > since_seq)
+        .order_by(ChatMessage.seq.asc())  # type: ignore[union-attr]
+    )
+    return list(session.exec(stmt).all())
+
+
+# ---------------------------------------------------------------------------
+# Assistant turn materialization (called from event-stream consumer)
+# ---------------------------------------------------------------------------
+
+
+async def materialize_assistant_turn(
+    session: Session,
+    chat_id: UUID,
+    agent_run_id: UUID,
+    text: str,
+    tool_calls: list[dict] | None = None,
+) -> ChatMessage:
+    """Persist a single assistant ChatMessage at run_complete time.
+
+    Accumulates assistant_text deltas + tool_use blocks from the agent_event
+    stream, writing a single ChatMessage(role='assistant') with the final text
+    and tool_calls JSON.
+    """
+    seq = _next_seq(session, chat_id)
+    msg = ChatMessage(
+        chat_id=chat_id,
+        seq=seq,
+        role="assistant",
+        content=text,
+        tool_calls=json.dumps(tool_calls or []),
+        agent_run_id=agent_run_id,
+    )
+    session.add(msg)
+
+    # Update last_message_at
+    chat = session.get(Chat, chat_id)
+    if chat is not None:
+        chat.last_message_at = _utcnow()
+        session.add(chat)
+
+    session.commit()
+    session.refresh(msg)
+    return msg
