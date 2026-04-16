@@ -108,6 +108,7 @@ class AppConfig(SQLModel, table=True):
 from app.models.agent_run import AgentRun  # noqa: E402, F401
 from app.models.agent_event import AgentEvent  # noqa: E402, F401
 from app.models.agent_prompt import AgentPrompt  # noqa: E402, F401
+from app.models.chat import Chat, ChatMessage, ChatAttachment  # noqa: E402, F401
 
 
 # ---------------------------------------------------------------------------
