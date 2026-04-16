@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
 import Markdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
 import {
   Composer,
   ToolCallCard,
@@ -48,10 +49,16 @@ function accumulateStreamingText(events: SseEvent[]): string {
 
 function hasActiveStream(events: SseEvent[]): boolean {
   if (events.length === 0) return false;
-  // Active if we have text events but no run_complete yet
-  const hasText = events.some((e) => e.kind === "assistant_text");
   const complete = events.some((e) => e.kind === "run_complete");
-  return hasText && !complete;
+  if (complete) return false;
+  // Active if we have any content events (text, tool calls, or thinking)
+  return events.some(
+    (e) =>
+      e.kind === "assistant_text" ||
+      e.kind === "tool_use" ||
+      e.kind === "thinking" ||
+      e.kind === "status",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -68,18 +75,20 @@ interface PairedToolCall {
 }
 
 function pairToolCalls(toolCalls: ChatToolCall[]): PairedToolCall[] {
+  // Materialized tool calls are from completed runs — never "running"
   return toolCalls.map((tc) => ({
     toolUseId: tc.tool_use_id,
     toolName: tc.tool_name,
     input: tc.input,
     output: tc.output,
     isError: tc.is_error ?? false,
-    status: tc.output !== undefined ? (tc.is_error ? "error" : "complete") : "running",
+    status: tc.is_error ? "error" : "complete",
   }));
 }
 
 function pairStreamToolEvents(events: SseEvent[]): PairedToolCall[] {
   const map = new Map<string, PairedToolCall>();
+  const isComplete = events.some((e) => e.kind === "run_complete");
   for (const ev of events) {
     if (ev.kind === "tool_use") {
       map.set(ev.tool_use_id, {
@@ -95,6 +104,15 @@ function pairStreamToolEvents(events: SseEvent[]): PairedToolCall[] {
         entry.output = ev.output;
         entry.isError = ev.is_error;
         entry.status = ev.is_error ? "error" : "complete";
+      }
+    }
+  }
+  // If the run completed, mark any tools still "running" as complete
+  // (tool_result events may not be emitted for all tool calls)
+  if (isComplete) {
+    for (const tc of map.values()) {
+      if (tc.status === "running") {
+        tc.status = "complete";
       }
     }
   }
@@ -169,7 +187,7 @@ function MessageBubble({
               <span className="whitespace-pre-wrap">{message.content}</span>
             ) : (
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <Markdown rehypePlugins={[rehypeSanitize]}>
+                <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
                   {message.content}
                 </Markdown>
               </div>
@@ -321,6 +339,7 @@ export function ChatThreadPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               prompt_id: pendingQuestion.promptId,
+              tool_use_id: pendingQuestion.promptId,
               answer,
             }),
           },
@@ -407,20 +426,24 @@ export function ChatThreadPage() {
         ))}
 
         {/* Streaming assistant row */}
-        {streaming && streamingText && (
+        {streaming && (
           <div className="flex justify-start w-full">
             <div className="max-w-[80%] rounded-lg px-4 py-3 bg-surface-1 border border-border">
-              <LiveRegion mode="polite" busy={streaming}>
-                {streamingText}
-              </LiveRegion>
-              <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-fg">
-                <Markdown rehypePlugins={[rehypeSanitize]}>
-                  {streamingText}
-                </Markdown>
-                <StreamingCursor active={streaming} />
-              </div>
+              {streamingText && (
+                <>
+                  <LiveRegion mode="polite" busy={streaming}>
+                    {streamingText}
+                  </LiveRegion>
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-fg">
+                    <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                      {streamingText}
+                    </Markdown>
+                    <StreamingCursor active={streaming} />
+                  </div>
+                </>
+              )}
               {streamToolCalls.length > 0 && (
-                <div className="flex flex-col gap-2 mt-2">
+                <div className={`flex flex-col gap-2${streamingText ? " mt-2" : ""}`}>
                   {streamToolCalls.map((tc) => (
                     <ToolCallCard
                       key={tc.toolUseId}
@@ -438,6 +461,9 @@ export function ChatThreadPage() {
                     />
                   ))}
                 </div>
+              )}
+              {!streamingText && streamToolCalls.length === 0 && (
+                <StreamingCursor active={streaming} />
               )}
             </div>
           </div>

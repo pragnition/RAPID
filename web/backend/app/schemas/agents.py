@@ -54,7 +54,7 @@ class AnswerRequest(BaseModel):
     is preserved for backwards compatibility during the frozen-contract transition.
     """
 
-    tool_use_id: str
+    tool_use_id: str = ""
     answer: str
     prompt_id: str | None = None
 
