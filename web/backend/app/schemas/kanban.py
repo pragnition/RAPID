@@ -14,6 +14,7 @@ class KanbanColumnUpdate(BaseModel):
 
     title: str | None = None
     position: int | None = None
+    is_autopilot: bool | None = None
 
 
 class KanbanCardCreate(BaseModel):
@@ -39,6 +40,14 @@ class KanbanCardMove(BaseModel):
     position: int
 
 
+class KanbanCardMoveWithRev(BaseModel):
+    """Request body for moving a card with optional optimistic concurrency rev."""
+
+    column_id: str
+    position: int
+    rev: int | None = None
+
+
 class KanbanCardResponse(BaseModel):
     """Response schema for a single kanban card."""
 
@@ -51,6 +60,13 @@ class KanbanCardResponse(BaseModel):
     position: int
     created_at: str
     updated_at: str
+    rev: int
+    created_by: str
+    agent_status: str
+    locked_by_run_id: str | None = None
+    completed_by_run_id: str | None = None
+    agent_run_id: str | None = None
+    retry_count: int
 
 
 class KanbanColumnResponse(BaseModel):
@@ -63,6 +79,7 @@ class KanbanColumnResponse(BaseModel):
     title: str
     position: int
     created_at: str
+    is_autopilot: bool
     cards: list[KanbanCardResponse]
 
 
