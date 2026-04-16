@@ -1,6 +1,6 @@
 {
   "setId": "skill-invocation-ui",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "exports": {
     "skill_args_frontmatter_schema": {
       "type": "file",
@@ -30,7 +30,7 @@
     },
     "sanitized_args_contract": {
       "type": "function",
-      "signature": "def sanitize_skill_args(skill_name, raw_args) -> sanitized_args; wraps string args in <user_input>...</user_input> tags; enforces maxLength per arg; rejects shell metacharacters in set-ref args",
+      "signature": "def sanitize_skill_args(catalog_meta, raw_args) -> sanitized_args; wraps string args in <user_input>...</user_input> tags; enforces maxLength per arg; validates set-ref arg shape against `^[a-zA-Z0-9._-]+$` (shape only, not shell defense)",
       "description": "Server-side sanitization before args reach SDK. Prevents shell injection into agent prompt. Length limits per arg type. Server-controlled SDK options (args never translate to SDK option names)."
     },
     "precondition_check_endpoint": {
