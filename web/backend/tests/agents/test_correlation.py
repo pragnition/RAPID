@@ -7,7 +7,9 @@ import logging
 from app.agents.correlation import (
     SAFE_ENV_KEYS,
     RunIdLogFilter,
+    bind_card_id,
     bind_run_id,
+    get_card_id,
     get_run_id,
 )
 
@@ -40,6 +42,31 @@ def test_log_filter_attaches_run_id(caplog):
         assert getattr(outside, "run_id") == "-"
     finally:
         caplog.handler.removeFilter(flt)
+
+
+def test_card_id_var_default_none():
+    assert get_card_id() is None
+
+
+def test_bind_card_id_restores():
+    assert get_card_id() is None
+    with bind_card_id("card-42"):
+        assert get_card_id() == "card-42"
+    assert get_card_id() is None
+
+
+def test_bind_card_id_nested_with_run_id():
+    """Both bind_run_id and bind_card_id can be nested; each ContextVar is independent."""
+    assert get_run_id() is None
+    assert get_card_id() is None
+    with bind_run_id("run-1"):
+        with bind_card_id("card-99"):
+            assert get_run_id() == "run-1"
+            assert get_card_id() == "card-99"
+        assert get_run_id() == "run-1"
+        assert get_card_id() is None
+    assert get_run_id() is None
+    assert get_card_id() is None
 
 
 def test_safe_env_keys_blocks_credentials():
