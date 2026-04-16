@@ -111,12 +111,29 @@ async def lifespan(app: FastAPI):
     await agent_manager.start()
     app.state.agent_manager = agent_manager
 
+    # Load skill catalog from skills/ directory
+    from app.services.skill_catalog_service import SkillCatalogService
+    from app.services.skill_catalog_watcher import SkillCatalogWatcher
+
+    skills_root = Path(__file__).resolve().parents[3] / "skills"
+    skill_catalog_service = SkillCatalogService()
+    skill_catalog_service.load_initial(skills_root)
+    app.state.skill_catalog_service = skill_catalog_service
+
+    # Hot-reload watcher (only in dev mode)
+    if settings.rapid_dev:
+        skill_watcher = SkillCatalogWatcher(skills_root, skill_catalog_service)
+        skill_watcher.start()
+        app.state.skill_catalog_watcher = skill_watcher
+
     logger.info(
         "RAPID Web service started",
         extra={"port": settings.rapid_web_port, "db_path": str(settings.rapid_web_db_path)},
     )
     yield
     # Shutdown
+    if hasattr(app.state, "skill_catalog_watcher") and app.state.skill_catalog_watcher:
+        app.state.skill_catalog_watcher.stop()
     if hasattr(app.state, "file_watcher") and app.state.file_watcher:
         app.state.file_watcher.stop()
     if hasattr(app.state, "agent_manager") and app.state.agent_manager:
