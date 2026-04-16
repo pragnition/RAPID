@@ -28,3 +28,8 @@ export interface AgentRun {
   error_code: string | null;
   last_seq: number;
 }
+
+export interface AgentRunListResponse {
+  items: AgentRun[];
+  total: number;
+}
