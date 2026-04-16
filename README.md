@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-6.2.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
+  <img src="https://img.shields.io/badge/version-7.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
   <img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" /> 
   <img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" /> 
   <img src="https://img.shields.io/badge/Node.js-22%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
@@ -139,7 +139,7 @@ See [DOCS.md](DOCS.md) for the full reference covering all 30 commands.
 
 ## Changelog
 
-See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v6.3.0** (2026-04-08) -- branding server with SSE auto-reload, opt-in init branding step, deferred update-reminder banner, runtime dependency pinning, context-file refresh.
+See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v7.0.0** (in progress) -- see CHANGELOG for details.
 
 ## Documentation
 

@@ -131,4 +131,4 @@
 | zod | 3.25.76 | TypeScript-first schema validation for state |
 | proper-lockfile | 4.1.2 | File-based locking for concurrent access |
 
-No dev dependencies. Tests use Node.js built-in `node:test` module. The v6.2.0 pin policy is enforced by `src/lib/version.test.cjs` (`runtime dependency pins` describe block) -- any future `npm install` regression surfaces immediately.
+No dev dependencies. Tests use Node.js built-in `node:test` module. The v7.0.0 pin policy is enforced by `src/lib/version.test.cjs` (`runtime dependency pins` describe block) -- any future `npm install` regression surfaces immediately.
