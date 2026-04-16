@@ -736,14 +736,14 @@
         },
         {
           "id": "skill-invocation-ui",
-          "status": "planned",
+          "status": "merged",
           "waves": [],
           "name": "Skill Invocation UI",
           "branch": "set/skill-invocation-ui"
         },
         {
           "id": "kanban-autopilot",
-          "status": "pending",
+          "status": "discussed",
           "waves": [],
           "name": "Kanban Autopilot",
           "branch": "set/kanban-autopilot"
@@ -764,6 +764,6 @@
       "status": "active"
     }
   ],
-  "lastUpdatedAt": "2026-04-15T18:28:28.128Z",
+  "lastUpdatedAt": "2026-04-16T03:06:38.370Z",
   "createdAt": "2026-03-03T00:00:00.000Z"
 }
