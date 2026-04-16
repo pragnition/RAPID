@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -29,7 +30,7 @@ from claude_agent_sdk import (
     ToolPermissionContext,
 )
 
-from app.agents.correlation import get_run_id  # noqa: F401 — re-exported for symmetry
+from app.agents.correlation import get_card_id, get_run_id  # noqa: F401 — re-exported for symmetry
 from app.agents.permissions import is_destructive
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -213,3 +214,54 @@ async def destructive_pre_tool_hook(
                 }
             }
     return {}
+
+
+# ---------------------------------------------------------------------------
+# Commit-trailer injection for autopilot runs
+# ---------------------------------------------------------------------------
+
+_GIT_COMMIT_RE = re.compile(
+    r"^\s*git\s+commit\b",
+    re.MULTILINE,
+)
+
+
+def _is_simple_git_commit(cmd: str) -> bool:
+    """Return True if *cmd* is a simple git commit (no pipes, no chaining)."""
+    if any(sep in cmd for sep in ("|", "&&", "||", ";")):
+        return False
+    return bool(_GIT_COMMIT_RE.search(cmd))
+
+
+async def inject_commit_trailers(
+    input_data: dict,
+    tool_use_id: str | None,
+    context: HookContext,
+) -> dict:
+    """PreToolUse hook: inject Autopilot-Card-Id and Autopilot-Run-Id trailers
+    into git commit commands when running inside an autopilot session."""
+    tool_name = input_data.get("tool_name", "")
+    tool_input = input_data.get("tool_input", {})
+    if tool_name != "Bash":
+        return {}
+
+    cmd = str(tool_input.get("command", ""))
+
+    if not _is_simple_git_commit(cmd):
+        return {}
+
+    card_id = get_card_id()
+    run_id = get_run_id()
+    if card_id is None and run_id is None:
+        return {}
+
+    trailers: list[str] = []
+    if card_id is not None:
+        trailers.append(f'--trailer "Autopilot-Card-Id: {card_id}"')
+    if run_id is not None:
+        trailers.append(f'--trailer "Autopilot-Run-Id: {run_id}"')
+
+    updated_cmd = cmd.rstrip() + " " + " ".join(trailers)
+    updated_input = dict(input_data)
+    updated_input["tool_input"] = {**tool_input, "command": updated_cmd}
+    return {"updatedInput": updated_input}
