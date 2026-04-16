@@ -101,7 +101,17 @@ async def _route_auq_through_bridge(
         # the client shows one at a time (sequential split UX per CONTEXT.md).
         for q_idx, q in enumerate(chunk):
             question_text = str(q.get("question") or "")
-            options = q.get("options")
+            raw_opts = q.get("options")
+            # The SDK's built-in AskUserQuestion sends options as dicts
+            # ({"label": ..., "description": ...}); normalise to plain
+            # strings so AskUserEvent (list[str]) validates cleanly.
+            if raw_opts is not None:
+                options = [
+                    o["label"] if isinstance(o, dict) and "label" in o else str(o)
+                    for o in raw_opts
+                ]
+            else:
+                options = None
             # Built-in AUQ supports multi-select; we surface it as list[str]
             # with allow_free_text determined per-question (default False).
             allow_free_text = bool(q.get("allow_free_text", False))
@@ -109,7 +119,7 @@ async def _route_auq_through_bridge(
                 run_id=run_id,
                 manager=manager,
                 question=question_text,
-                options=list(options) if options is not None else None,
+                options=options,
                 allow_free_text=allow_free_text,
                 n_of_m=(chunk_idx + 1, total_chunks),
                 batch_id=batch_id,
