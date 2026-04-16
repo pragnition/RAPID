@@ -20,6 +20,7 @@ export interface Chat {
   skill_name: string;
   title: string;
   session_status: ChatSessionStatus;
+  active_run_id: string | null;
   created_at: string; // ISO-8601
   last_message_at: string;
   archived_at: string | null;

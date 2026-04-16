@@ -144,8 +144,8 @@ function findPendingQuestion(events: SseEvent[]): PendingQuestion | null {
         allowFreeText: ev.allow_free_text,
       };
     }
-    // If we see a run_complete or another assistant_text after ask_user, question is answered
-    if (ev.kind === "run_complete" || ev.kind === "assistant_text") {
+    // Only dismiss if the agent responded after asking (not if the run just ended)
+    if (ev.kind === "assistant_text") {
       break;
     }
   }
@@ -304,10 +304,42 @@ export function ChatThreadPage() {
     [stream.events],
   );
 
-  const pendingQuestion = useMemo(
+  const ssePendingQuestion = useMemo(
     () => findPendingQuestion(stream.events),
     [stream.events],
   );
+
+  // Hydrate pending question from REST (survives page refresh)
+  const activeRunId = thread?.active_run_id ?? null;
+  const [hydratedQuestion, setHydratedQuestion] = useState<PendingQuestion | null>(null);
+
+  useEffect(() => {
+    if (!activeRunId) {
+      setHydratedQuestion(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/agents/runs/${activeRunId}/pending-prompt`)
+      .then((r) => {
+        if (r.status === 204 || !r.ok) return null;
+        return r.json();
+      })
+      .then((data) => {
+        if (cancelled || !data) return;
+        setHydratedQuestion({
+          promptId: data.prompt_id,
+          runId: data.run_id,
+          question: data.question,
+          options: data.options ?? null,
+          allowFreeText: data.allow_free_text ?? true,
+        });
+      })
+      .catch(() => {/* ignore */});
+    return () => { cancelled = true; };
+  }, [activeRunId]);
+
+  // SSE-derived question takes priority; fall back to REST-hydrated one
+  const pendingQuestion = ssePendingQuestion ?? hydratedQuestion;
   const composerDisabled = isArchived || pendingQuestion !== null;
 
   const { pinned, newCount, scrollToBottom } = useAutoScrollWithOptOut({

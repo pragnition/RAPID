@@ -12,12 +12,13 @@ Endpoints:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlmodel import Session
+from sqlmodel import Session, select
 from sse_starlette.sse import EventSourceResponse
 
 from app.agents import StateError, to_http_exception
@@ -161,6 +162,9 @@ async def archive_chat(
     return ChatResponse.model_validate(chat)
 
 
+_POLL_INTERVAL_S = 1.0
+
+
 @router.get("/{chat_id}/events")
 async def stream_events(
     chat_id: UUID,
@@ -169,9 +173,13 @@ async def stream_events(
 ):
     """SSE stream for live chat events.
 
-    Delegates to the agent event bus if the chat has an active agent run.
-    If no active run, returns an empty stream.
+    Keeps the connection open for the lifetime of the chat. When no agent
+    run is active, polls every second for ``active_run_id`` to appear.
+    When a run is active, streams events from the event bus. After
+    ``run_complete``, materializes the assistant turn and loops back to
+    polling.
     """
+    from app.models.chat import Chat as ChatModel
     from app.schemas.sse_events import serialize_event
 
     # Determine since from query or Last-Event-ID header
@@ -196,99 +204,141 @@ async def stream_events(
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
-    run_id = chat.active_run_id
-    if run_id is None:
-        async def _empty():
-            return
-            yield  # noqa: RET504
-
-        return EventSourceResponse(
-            _empty(),
-            ping=15,
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-        )
-
     mgr = chat_service.get_manager(request)
+    engine = request.app.state.engine
 
     async def _gen():
-        accumulated_text = ""
-        tool_calls: list[dict] = []
-        try:
-            async for evt in mgr.attach_events(run_id, since=since):
-                if await request.is_disconnected():
-                    logger.info(
-                        "chat SSE client disconnected",
-                        extra={"chat_id": str(chat_id), "run_id": str(run_id)},
-                    )
-                    break
+        nonlocal since
+        while True:
+            if await request.is_disconnected():
+                return
 
-                # Accumulate for materialization
-                if evt.kind == "assistant_text":
-                    accumulated_text += evt.text
-                elif evt.kind == "tool_use":
-                    tool_calls.append({
-                        "tool_use_id": evt.tool_use_id,
-                        "tool_name": evt.tool_name,
-                        "input": evt.input,
-                    })
-                elif evt.kind == "tool_result":
-                    for tc in tool_calls:
-                        if tc["tool_use_id"] == evt.tool_use_id:
-                            tc["output"] = evt.output
-                            tc["is_error"] = evt.is_error
-                            break
+            # Poll for active_run_id
+            def _load_run_id():
+                with Session(engine) as s:
+                    c = s.get(ChatModel, chat_id)
+                    if c is None:
+                        return None, True  # chat deleted
+                    return c.active_run_id, False
 
-                yield {
-                    "id": str(evt.seq),
-                    "event": evt.kind,
-                    "data": json.dumps(serialize_event(evt)),
-                }
+            run_id, gone = await asyncio.to_thread(_load_run_id)
+            if gone:
+                return
 
-                if evt.kind == "run_complete":
-                    # Materialize the assistant turn
-                    if accumulated_text or tool_calls:
-                        try:
-                            engine = request.app.state.engine
-                            with Session(engine) as fresh_session:
-                                await chat_service.materialize_assistant_turn(
-                                    fresh_session,
-                                    chat_id,
-                                    run_id,
-                                    accumulated_text,
-                                    tool_calls if tool_calls else None,
-                                )
-                                # Clear active_run_id
-                                from app.models.chat import Chat as ChatModel
-                                db_chat = fresh_session.get(ChatModel, chat_id)
-                                if db_chat is not None:
-                                    db_chat.active_run_id = None
-                                    fresh_session.add(db_chat)
-                                    fresh_session.commit()
-                        except Exception:
-                            logger.exception(
-                                "failed to materialize assistant turn",
-                                extra={
-                                    "chat_id": str(chat_id),
-                                    "run_id": str(run_id),
-                                },
-                            )
-                    return
-        except StateError as exc:
-            yield {
-                "event": "error",
-                "data": json.dumps(
-                    {
-                        "error": exc.message,
-                        "detail": exc.detail,
+            if run_id is None:
+                await asyncio.sleep(_POLL_INTERVAL_S)
+                continue
+
+            # Stream events from the active run
+            accumulated_text = ""
+            tool_calls: list[dict] = []
+            try:
+                async for evt in mgr.attach_events(run_id, since=since):
+                    if await request.is_disconnected():
+                        logger.info(
+                            "chat SSE client disconnected",
+                            extra={"chat_id": str(chat_id), "run_id": str(run_id)},
+                        )
+                        return
+
+                    # Accumulate for materialization
+                    if evt.kind == "assistant_text":
+                        accumulated_text += evt.text
+                    elif evt.kind == "tool_use":
+                        tool_calls.append({
+                            "tool_use_id": evt.tool_use_id,
+                            "tool_name": evt.tool_name,
+                            "input": evt.input,
+                        })
+                    elif evt.kind == "tool_result":
+                        for tc in tool_calls:
+                            if tc["tool_use_id"] == evt.tool_use_id:
+                                tc["output"] = evt.output
+                                tc["is_error"] = evt.is_error
+                                break
+
+                    yield {
+                        "id": str(evt.seq),
+                        "event": evt.kind,
+                        "data": json.dumps(serialize_event(evt)),
                     }
-                ),
-            }
-        except Exception:
-            logger.exception(
-                "chat SSE stream crashed",
-                extra={"chat_id": str(chat_id), "run_id": str(run_id)},
-            )
-            raise
+
+                    if evt.kind == "run_complete":
+                        from app.models.agent_prompt import AgentPrompt
+
+                        # Materialize the assistant turn
+                        if accumulated_text or tool_calls:
+                            try:
+                                with Session(engine) as fresh_session:
+                                    await chat_service.materialize_assistant_turn(
+                                        fresh_session,
+                                        chat_id,
+                                        run_id,
+                                        accumulated_text,
+                                        tool_calls if tool_calls else None,
+                                    )
+                                    # Only clear active_run_id if no pending prompt exists
+                                    has_pending = fresh_session.exec(
+                                        select(AgentPrompt)
+                                        .where(AgentPrompt.run_id == run_id)
+                                        .where(AgentPrompt.status == "pending")
+                                        .limit(1)
+                                    ).first()
+                                    db_chat = fresh_session.get(ChatModel, chat_id)
+                                    if db_chat is not None and not has_pending:
+                                        db_chat.active_run_id = None
+                                        fresh_session.add(db_chat)
+                                        fresh_session.commit()
+                            except Exception:
+                                logger.exception(
+                                    "failed to materialize assistant turn",
+                                    extra={
+                                        "chat_id": str(chat_id),
+                                        "run_id": str(run_id),
+                                    },
+                                )
+                        else:
+                            # No content to materialize, but still check for pending prompts
+                            try:
+                                with Session(engine) as fresh_session:
+                                    has_pending = fresh_session.exec(
+                                        select(AgentPrompt)
+                                        .where(AgentPrompt.run_id == run_id)
+                                        .where(AgentPrompt.status == "pending")
+                                        .limit(1)
+                                    ).first()
+                                    db_chat = fresh_session.get(ChatModel, chat_id)
+                                    if db_chat is not None and not has_pending:
+                                        db_chat.active_run_id = None
+                                        fresh_session.add(db_chat)
+                                        fresh_session.commit()
+                            except Exception:
+                                logger.exception(
+                                    "failed to check pending prompt",
+                                    extra={
+                                        "chat_id": str(chat_id),
+                                        "run_id": str(run_id),
+                                    },
+                                )
+                        # Reset since for next run, loop back to polling
+                        since = 0
+                        break
+            except StateError as exc:
+                yield {
+                    "event": "error",
+                    "data": json.dumps(
+                        {
+                            "error": exc.message,
+                            "detail": exc.detail,
+                        }
+                    ),
+                }
+            except Exception:
+                logger.exception(
+                    "chat SSE stream crashed",
+                    extra={"chat_id": str(chat_id), "run_id": str(run_id)},
+                )
+                raise
 
     return EventSourceResponse(
         _gen(),
