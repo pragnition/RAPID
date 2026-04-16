@@ -14,6 +14,7 @@ interface KanbanColumnProps {
   onAddCard: (columnId: string, title: string) => void;
   onUpdateColumn: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
+  onToggleAutopilot: (columnId: string, enabled: boolean) => void;
 }
 
 export function KanbanColumn({
@@ -23,6 +24,7 @@ export function KanbanColumn({
   onAddCard,
   onUpdateColumn,
   onDeleteColumn,
+  onToggleAutopilot,
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({ id: column.id });
 
@@ -103,6 +105,31 @@ export function KanbanColumn({
         <span className="text-xs text-muted tabular-nums">
           {column.cards.length}
         </span>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleAutopilot(column.id, !column.is_autopilot);
+          }}
+          className={`
+            w-5 h-5 flex items-center justify-center
+            rounded text-xs transition-all duration-100
+            ${
+              column.is_autopilot
+                ? "text-blue-400 opacity-100"
+                : "text-muted opacity-0 group-hover:opacity-100 hover:text-blue-400"
+            }
+          `}
+          aria-label={
+            column.is_autopilot ? "Disable autopilot" : "Enable autopilot"
+          }
+          title={
+            column.is_autopilot ? "Autopilot enabled" : "Enable autopilot"
+          }
+        >
+          &#x26A1;
+        </button>
 
         <button
           type="button"
