@@ -87,6 +87,40 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
           placeholder="Add a description..."
         />
 
+        {/* Agent metadata */}
+        {(card.agent_status !== "idle" || card.created_by !== "human") && (
+          <div className="mt-4 p-3 bg-surface-1 border border-border rounded space-y-1.5">
+            <p className="text-xs font-semibold text-fg">Agent Activity</p>
+            {card.created_by !== "human" && (
+              <p className="text-xs text-muted">
+                <span className="text-fg/60">Created by:</span>{" "}
+                {card.created_by}
+              </p>
+            )}
+            {card.agent_status !== "idle" && (
+              <p className="text-xs text-muted">
+                <span className="text-fg/60">Status:</span>{" "}
+                {card.agent_status}
+              </p>
+            )}
+            {card.agent_run_id && (
+              <p className="text-xs text-muted">
+                <span className="text-fg/60">Run ID:</span>{" "}
+                {card.agent_run_id.slice(0, 8)}
+              </p>
+            )}
+            {card.retry_count > 0 && (
+              <p className="text-xs text-muted">
+                <span className="text-fg/60">Retries:</span>{" "}
+                {card.retry_count}
+              </p>
+            )}
+            <p className="text-xs text-muted">
+              <span className="text-fg/60">Rev:</span> {card.rev}
+            </p>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex justify-end gap-3 mt-4">
           <button
