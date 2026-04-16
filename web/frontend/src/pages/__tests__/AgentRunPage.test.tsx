@@ -227,4 +227,36 @@ describe("AgentRunPage", () => {
     const liveRegion = document.querySelector('[aria-live="polite"]');
     expect(liveRegion).toBeInTheDocument();
   });
+
+  it("renders markdown in activity feed text items", async () => {
+    mockEvents.push({
+      seq: 1,
+      ts: "2026-01-01T10:00:01Z",
+      run_id: "run-abc-123",
+      kind: "assistant_text",
+      text: "**bold text**",
+    });
+    renderPage();
+    await waitFor(() => {
+      const strong = document.querySelector("strong");
+      expect(strong).toBeInTheDocument();
+      expect(strong?.textContent).toBe("bold text");
+    });
+  });
+
+  it("sanitizes script tags in activity feed text items", async () => {
+    mockEvents.push({
+      seq: 1,
+      ts: "2026-01-01T10:00:01Z",
+      run_id: "run-abc-123",
+      kind: "assistant_text",
+      text: "Safe text <script>alert('xss')</script>",
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/Safe text/)).toBeInTheDocument();
+    });
+    const scripts = document.querySelectorAll("script");
+    expect(scripts.length).toBe(0);
+  });
 });
