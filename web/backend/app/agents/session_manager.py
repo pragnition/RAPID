@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import AsyncIterator
@@ -31,7 +32,7 @@ from sqlmodel import Session, select
 
 from app.agents.archive import archive_expired_runs
 from app.agents.budget import RunBudget
-from app.agents.correlation import bind_run_id
+from app.agents.correlation import bind_card_id, bind_run_id
 from app.agents.errors import StateError
 from app.agents.event_bus import EventBus
 from app.agents.permissions import resolve_policy
@@ -242,20 +243,24 @@ class AgentSessionManager:
             async with sem:
                 budget = RunBudget(max_turns=row.max_turns)
                 with bind_run_id(str(row.id)):
-                    async with AgentSession(
-                        run_id=row.id,
-                        project_root=project_root,
-                        worktree=worktree,
-                        skill_name=row.skill_name,
-                        skill_args=json.loads(row.skill_args),
-                        prompt=prompt,
-                        event_bus=self.event_bus,
-                        engine=self.engine,
-                        budget=budget,
-                        manager=self,
-                    ) as session:
-                        self._sessions[row.id] = session
-                        await session.run()
+                    # Autopilot runs carry a card_id in skill_args for trailer injection.
+                    _card_id = json.loads(row.skill_args).get("card_id")
+                    _card_ctx = bind_card_id(_card_id) if _card_id else nullcontext()
+                    with _card_ctx:
+                        async with AgentSession(
+                            run_id=row.id,
+                            project_root=project_root,
+                            worktree=worktree,
+                            skill_name=row.skill_name,
+                            skill_args=json.loads(row.skill_args),
+                            prompt=prompt,
+                            event_bus=self.event_bus,
+                            engine=self.engine,
+                            budget=budget,
+                            manager=self,
+                        ) as session:
+                            self._sessions[row.id] = session
+                            await session.run()
         except Exception:
             logger.exception("run crashed", extra={"run_id": str(row.id)})
         finally:
