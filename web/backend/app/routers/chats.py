@@ -21,7 +21,6 @@ from sqlmodel import Session
 from sse_starlette.sse import EventSourceResponse
 
 from app.agents import StateError, to_http_exception
-from app.main import get_db
 from app.schemas.chats import (
     ChatCreateRequest,
     ChatListResponse,
@@ -34,6 +33,13 @@ from app.services import chat_service
 logger = logging.getLogger("rapid.routers.chats")
 
 router = APIRouter(prefix="/api/chats", tags=["chats"])
+
+
+def get_db(request: Request):
+    """Yield a request-scoped SQLModel session from app.state.engine."""
+    engine = request.app.state.engine
+    with Session(engine) as session:
+        yield session
 
 
 # ---------------------------------------------------------------------------

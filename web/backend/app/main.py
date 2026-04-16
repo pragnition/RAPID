@@ -19,6 +19,8 @@ from sqlmodel import Session, text
 from app import __version__
 from app.agents import AgentSessionManager, install_agent_error_handlers
 from app.routers.agents import router as agents_router
+from app.routers.chats import router as chats_router
+from app.routers.dashboard import router as dashboard_router
 from app.routers.kanban import router as kanban_router
 from app.routers.notes import router as notes_router
 from app.routers.projects import router as projects_router
@@ -196,6 +198,8 @@ def create_app() -> FastAPI:
     app.include_router(notes_router)
     app.include_router(agents_router)
     app.include_router(skills_router)
+    app.include_router(chats_router)
+    app.include_router(dashboard_router)
 
     # Serve frontend static files if the dist directory exists
     frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"

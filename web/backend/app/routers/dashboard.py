@@ -14,12 +14,11 @@ import time
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session, func, select
 
 from app.config import settings
 from app.database import KanbanCard, KanbanColumn
-from app.main import get_db
 from app.models.agent_run import AgentRun
 from app.models.chat import Chat
 from app.schemas.dashboard import (
@@ -36,6 +35,13 @@ from app.schemas.dashboard import (
 logger = logging.getLogger("rapid.routers.dashboard")
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+
+
+def get_db(request: Request):
+    """Yield a request-scoped SQLModel session from app.state.engine."""
+    engine = request.app.state.engine
+    with Session(engine) as session:
+        yield session
 
 
 # ---------------------------------------------------------------------------
