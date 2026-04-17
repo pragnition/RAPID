@@ -77,6 +77,7 @@ def get_board(session: Session, project_id: UUID) -> dict:
             "position": col.position,
             "created_at": col.created_at.isoformat(),
             "is_autopilot": col.is_autopilot,
+            "default_agent_type": col.default_agent_type,
             "cards": [
                 {
                     "id": str(card.id),
@@ -94,6 +95,7 @@ def get_board(session: Session, project_id: UUID) -> dict:
                     "agent_run_id": str(card.agent_run_id) if card.agent_run_id else None,
                     "retry_count": card.retry_count,
                     "autopilot_ignore": card.autopilot_ignore,
+                    "agent_type": card.agent_type,
                 }
                 for card in cards
             ],
@@ -105,7 +107,7 @@ def get_board(session: Session, project_id: UUID) -> dict:
     }
 
 
-def create_column(session: Session, project_id: UUID, title: str) -> KanbanColumn:
+def create_column(session: Session, project_id: UUID, title: str, default_agent_type: str = "quick") -> KanbanColumn:
     """Create a new column. On first creation, seed default columns instead."""
     existing_count = session.exec(
         select(func.count(KanbanColumn.id)).where(KanbanColumn.project_id == project_id)
@@ -142,6 +144,7 @@ def create_column(session: Session, project_id: UUID, title: str) -> KanbanColum
         project_id=project_id,
         title=title,
         position=new_position,
+        default_agent_type=default_agent_type,
     )
     session.add(column)
     session.commit()
@@ -151,7 +154,8 @@ def create_column(session: Session, project_id: UUID, title: str) -> KanbanColum
 
 
 def update_column(
-    session: Session, column_id: UUID, title: str | None = None, position: int | None = None
+    session: Session, column_id: UUID, title: str | None = None, position: int | None = None,
+    default_agent_type: str | None = None,
 ) -> KanbanColumn:
     """Update column title and/or reorder position."""
     column = session.get(KanbanColumn, column_id)
@@ -160,6 +164,9 @@ def update_column(
 
     if title is not None:
         column.title = title
+
+    if default_agent_type is not None:
+        column.default_agent_type = default_agent_type
 
     if position is not None and position != column.position:
         old_pos = column.position
@@ -239,6 +246,7 @@ def create_card(
     description: str = "",
     created_by: str = "human",
     autopilot_ignore: bool = False,
+    agent_type: str = "quick",
 ) -> KanbanCard:
     """Create a card at the bottom of the specified column."""
     # Verify column exists
@@ -258,6 +266,7 @@ def create_card(
         position=new_position,
         created_by=created_by,
         autopilot_ignore=autopilot_ignore,
+        agent_type=agent_type,
     )
     session.add(card)
     session.commit()
@@ -273,6 +282,7 @@ def update_card(
     description: str | None = None,
     rev: int | None = None,
     autopilot_ignore: bool | None = None,
+    agent_type: str | None = None,
 ) -> KanbanCard:
     """Update card title and/or description.
 
@@ -295,6 +305,8 @@ def update_card(
         card.description = description
     if autopilot_ignore is not None:
         card.autopilot_ignore = autopilot_ignore
+    if agent_type is not None:
+        card.agent_type = agent_type
 
     card.updated_at = _utcnow()
     session.add(card)

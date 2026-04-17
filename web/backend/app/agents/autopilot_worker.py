@@ -154,6 +154,7 @@ class AutopilotWorker:
                         "title": card.title,
                         "description": card.description,
                         "metadata_json": card.metadata_json,
+                        "agent_type": card.agent_type,
                     }
                     results.append((col.project_id, card.id, snapshot))
         return results
@@ -172,6 +173,7 @@ class AutopilotWorker:
                 self.title = snap["title"]
                 self.description = snap["description"]
                 self.metadata_json = snap["metadata_json"]
+                self.agent_type = snap.get("agent_type", "quick")
 
         proxy = _CardProxy(card_snapshot)
         skill_name, skill_args = route_card_to_skill(proxy)  # type: ignore[arg-type]

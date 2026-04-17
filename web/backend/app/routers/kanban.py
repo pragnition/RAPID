@@ -67,7 +67,7 @@ def create_column(
 ):
     """Create a new kanban column."""
     _require_project(session, project_id)
-    column = kanban_service.create_column(session, project_id, body.title)
+    column = kanban_service.create_column(session, project_id, body.title, default_agent_type=body.default_agent_type)
     # Build response with empty cards list
     return KanbanColumnResponse(
         id=str(column.id),
@@ -76,6 +76,7 @@ def create_column(
         position=column.position,
         created_at=column.created_at.isoformat(),
         is_autopilot=column.is_autopilot,
+        default_agent_type=column.default_agent_type,
         cards=[],
     )
 
@@ -94,7 +95,8 @@ def update_column(
     _require_project(session, project_id)
     try:
         column = kanban_service.update_column(
-            session, column_id, title=body.title, position=body.position
+            session, column_id, title=body.title, position=body.position,
+            default_agent_type=body.default_agent_type,
         )
     except ValueError:
         raise HTTPException(status_code=404, detail="Column not found")
@@ -123,6 +125,7 @@ def update_column(
         position=column.position,
         created_at=column.created_at.isoformat(),
         is_autopilot=column.is_autopilot,
+        default_agent_type=column.default_agent_type,
         cards=[
             KanbanCardResponse(
                 id=str(c.id),
@@ -140,6 +143,7 @@ def update_column(
                 agent_run_id=str(c.agent_run_id) if c.agent_run_id else None,
                 retry_count=c.retry_count,
                 autopilot_ignore=c.autopilot_ignore,
+                agent_type=c.agent_type,
             )
             for c in cards
         ],
@@ -201,6 +205,7 @@ def create_card(
         card = kanban_service.create_card(
             session, column_id, body.title, body.description,
             autopilot_ignore=body.autopilot_ignore,
+            agent_type=body.agent_type,
         )
     except ValueError:
         raise HTTPException(status_code=404, detail="Column not found")
@@ -221,6 +226,7 @@ def create_card(
         agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
         retry_count=card.retry_count,
         autopilot_ignore=card.autopilot_ignore,
+        agent_type=card.agent_type,
     )
 
 
@@ -240,6 +246,7 @@ def update_card(
         card = kanban_service.update_card(
             session, card_id, title=body.title, description=body.description,
             autopilot_ignore=body.autopilot_ignore,
+            agent_type=body.agent_type,
         )
     except ValueError:
         raise HTTPException(status_code=404, detail="Card not found")
@@ -260,6 +267,7 @@ def update_card(
         agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
         retry_count=card.retry_count,
         autopilot_ignore=card.autopilot_ignore,
+        agent_type=card.agent_type,
     )
 
 
@@ -300,6 +308,7 @@ def move_card(
         agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
         retry_count=card.retry_count,
         autopilot_ignore=card.autopilot_ignore,
+        agent_type=card.agent_type,
     )
 
 

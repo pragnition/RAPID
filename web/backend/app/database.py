@@ -62,6 +62,7 @@ class KanbanColumn(SQLModel, table=True):
     position: int = Field(default=0)
     created_at: datetime = Field(default_factory=_utcnow)
     is_autopilot: bool = Field(default=False)
+    default_agent_type: str = Field(default="quick")
 
 
 class KanbanCard(SQLModel, table=True):
@@ -83,6 +84,7 @@ class KanbanCard(SQLModel, table=True):
     agent_run_id: UUID | None = Field(default=None, foreign_key="agentrun.id")
     retry_count: int = Field(default=0)
     autopilot_ignore: bool = Field(default=False)
+    agent_type: str = Field(default="quick")
 
 
 class SyncState(SQLModel, table=True):
