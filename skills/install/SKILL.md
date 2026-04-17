@@ -188,7 +188,7 @@ Then auto-source and verify in ONE Bash tool call. The source + verify must happ
 For fish:
 
 ```bash
-fish -c "source ~/.config/fish/config.fish; echo RAPID_TOOLS=\$RAPID_TOOLS; node \$RAPID_TOOLS prereqs"
+fish -i -c "source ~/.config/fish/config.fish; echo RAPID_TOOLS=\$RAPID_TOOLS; node \$RAPID_TOOLS prereqs"
 ```
 
 For bash:
