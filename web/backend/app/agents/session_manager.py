@@ -51,9 +51,10 @@ from app.services.skill_frontmatter import read_skill_body
 
 logger = logging.getLogger("rapid.agents.manager")
 
-_ACTIVE_STATES = ("running", "waiting")
+_ACTIVE_STATES = ("running", "waiting", "idle")
 _ARCHIVE_INTERVAL_S = 3600.0
 _YOUNG_RUN_GUARD_S = 10.0
+_IDLE_TIMEOUT_S = 300.0  # 5 minutes
 
 
 class AgentSessionManager:
@@ -75,6 +76,7 @@ class AgentSessionManager:
         # Live sessions keyed by run_id.
         self._sessions: dict[UUID, AgentSession] = {}
         self._session_tasks: dict[UUID, asyncio.Task] = {}
+        self._idle_timeouts: dict[UUID, asyncio.Task] = {}
 
         # web-tool-bridge: pending prompt futures keyed by prompt_id. The MCP
         # tool body creates the future then awaits it; resolve_prompt sets
@@ -115,6 +117,11 @@ class AgentSessionManager:
                 pass
             except Exception:
                 logger.exception("background task raised on shutdown")
+
+        # Cancel all idle timeout tasks.
+        for task in self._idle_timeouts.values():
+            task.cancel()
+        self._idle_timeouts.clear()
 
         # Interrupt all live sessions.
         for run_id, session in list(self._sessions.items()):
@@ -168,6 +175,7 @@ class AgentSessionManager:
         prompt: str,
         set_id: str | None = None,
         worktree: Path | None = None,
+        persistent: bool = False,
     ) -> AgentRun:
         """Contract: return the created ``AgentRun`` row in under 200ms.
 
@@ -257,7 +265,7 @@ class AgentSessionManager:
 
         # Dispatch the async task — does NOT block this return.
         task = asyncio.create_task(
-            self._run_session(row, project_root, worktree, prompt, set_lock)
+            self._run_session(row, project_root, worktree, prompt, set_lock, persistent)
         )
         self._session_tasks[run_id] = task
         logger.info("agent run dispatched", extra={"run_id": str(run_id), "skill_name": skill_name, "set_id": set_id})
@@ -272,6 +280,7 @@ class AgentSessionManager:
         worktree: Path | None,
         prompt: str,
         set_lock: asyncio.Lock | None,
+        persistent: bool = False,
     ) -> None:
         # Parse card_id once so it's available in the finally block for
         # post-run card status updates.
@@ -303,8 +312,11 @@ class AgentSessionManager:
                             engine=self.engine,
                             budget=budget,
                             manager=self,
+                            persistent=persistent,
                         ) as session:
                             self._sessions[row.id] = session
+                            if persistent:
+                                self._start_idle_timeout(row.id)
                             await session.run()
         except Exception:
             logger.exception("run crashed", extra={"run_id": str(row.id)})
@@ -312,6 +324,9 @@ class AgentSessionManager:
             logger.info("agent run session ended", extra={"run_id": str(row.id)})
             self._sessions.pop(row.id, None)
             self._session_tasks.pop(row.id, None)
+            idle_task = self._idle_timeouts.pop(row.id, None)
+            if idle_task is not None:
+                idle_task.cancel()
             if set_lock is not None and set_lock.locked():
                 try:
                     set_lock.release()
@@ -428,6 +443,69 @@ class AgentSessionManager:
         if session is None:
             raise StateError("Run not active", detail={"run_id": str(run_id)})
         await session.send_input(text)
+
+    async def continue_session(self, run_id: UUID, text: str) -> bool:
+        """Try to reuse a persistent idle session.
+
+        Returns ``True`` if the session was found and resumed, ``False`` if the
+        session is not in the registry or is not idle (caller must start a new
+        run).
+        """
+        session = self._sessions.get(run_id)
+        if session is None or not session.is_idle:
+            return False
+        # Cancel the idle timeout since a new query arrived
+        timeout_task = self._idle_timeouts.pop(run_id, None)
+        if timeout_task is not None:
+            timeout_task.cancel()
+        await session.send_input(text)
+        # Start a new idle timeout for after this response finishes
+        self._start_idle_timeout(run_id)
+        return True
+
+    def _start_idle_timeout(self, run_id: UUID) -> None:
+        """Start (or restart) the idle timeout for a persistent session."""
+        old = self._idle_timeouts.pop(run_id, None)
+        if old is not None:
+            old.cancel()
+        self._idle_timeouts[run_id] = asyncio.create_task(
+            self._idle_timeout_task(run_id)
+        )
+
+    async def _idle_timeout_task(self, run_id: UUID) -> None:
+        """Monitor a persistent session: when it goes idle, wait
+        ``_IDLE_TIMEOUT_S`` then interrupt it. Loops to handle multiple
+        idle/resume cycles. Cancelled when the session exits.
+        """
+        try:
+            while True:
+                session = self._sessions.get(run_id)
+                if session is None:
+                    return
+                # Wait for the session to enter idle
+                await session._idle.wait()
+                # Now idle — wait for the timeout
+                try:
+                    await asyncio.sleep(_IDLE_TIMEOUT_S)
+                except asyncio.CancelledError:
+                    return
+                # Check if still idle after sleeping
+                session = self._sessions.get(run_id)
+                if session is not None and session.is_idle:
+                    logger.info(
+                        "idle timeout — interrupting persistent session",
+                        extra={"run_id": str(run_id)},
+                    )
+                    try:
+                        await session.interrupt()
+                    except Exception:
+                        logger.exception(
+                            "error interrupting idle session",
+                            extra={"run_id": str(run_id)},
+                        )
+                    return
+        except asyncio.CancelledError:
+            return
 
     async def interrupt(self, run_id: UUID) -> None:
         session = self._sessions.get(run_id)

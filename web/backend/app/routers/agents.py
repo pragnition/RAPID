@@ -22,6 +22,9 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from sse_starlette.sse import EventSourceResponse
 
 from app.agents import StateError, to_http_exception
+from fastapi import Depends
+from sqlmodel import Session
+
 from app.schemas.agents import (
     AgentRunListResponse,
     AgentRunResponse,
@@ -31,12 +34,20 @@ from app.schemas.agents import (
     SendInputRequest,
     StartRunRequest,
 )
+from app.schemas.chats import ChatResponse
 from app.schemas.sse_events import serialize_event
 from app.services import agent_service
 
 logger = logging.getLogger("rapid.routers.agents")
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
+
+
+def get_db(request: Request):
+    """Yield a request-scoped SQLModel session from app.state.engine."""
+    engine = request.app.state.engine
+    with Session(engine) as session:
+        yield session
 
 
 @router.post("/runs", response_model=AgentRunResponse, status_code=201)
@@ -157,6 +168,21 @@ async def interrupt_endpoint(run_id: UUID, request: Request):
     return InterruptResponse(ok=True)
 
 
+@router.post("/runs/{run_id}/chat", response_model=ChatResponse)
+async def chat_for_run_endpoint(
+    run_id: UUID, session: Session = Depends(get_db)
+):
+    """Find or create a chat thread linked to an agent run.
+
+    Idempotent: calling twice for the same ``run_id`` returns the same thread.
+    """
+    try:
+        chat = await agent_service.find_or_create_chat_for_run(session, run_id)
+    except StateError as exc:
+        raise to_http_exception(exc)
+    return ChatResponse.model_validate(chat)
+
+
 @router.post("/runs/{run_id}/answer", status_code=204)
 async def answer_endpoint(run_id: UUID, body: AnswerRequest, request: Request):
     """Submit the user's answer to a pending ``ask_user`` prompt.
@@ -224,6 +250,7 @@ async def get_pending_prompt_endpoint(run_id: UUID, request: Request):
         batch_id=row.batch_id,
         batch_position=row.batch_position,
         batch_total=batch_total,
+        questions=payload.get("questions"),
     )
 
 

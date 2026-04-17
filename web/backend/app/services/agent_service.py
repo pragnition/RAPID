@@ -14,10 +14,14 @@ from uuid import UUID
 
 from fastapi import Request
 
+from sqlmodel import Session as DbSession
+
 from app.agents import AgentSessionManager, StateError
 from app.models.agent_prompt import AgentPrompt
 from app.models.agent_run import AgentRun
+from app.models.chat import Chat
 from app.schemas.sse_events import SseEvent
+from app.services import chat_service
 
 logger = logging.getLogger("rapid.agents.service")
 
@@ -85,6 +89,16 @@ async def stream_events(
 ) -> AsyncIterator[SseEvent]:
     async for evt in mgr.attach_events(run_id, since=since):
         yield evt
+
+
+# ---------- chat for run ----------
+
+
+async def find_or_create_chat_for_run(
+    db: DbSession, run_id: UUID
+) -> Chat:
+    """Find or create a chat thread linked to an agent run."""
+    return await chat_service.find_or_create_for_run(db, run_id)
 
 
 # ---------- web-tool-bridge prompt facade ----------

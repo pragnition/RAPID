@@ -17,6 +17,7 @@ from sqlmodel import Session, func, select
 from app.agents import AgentSessionManager, StateError
 from app.database import Project
 from app.models.chat import Chat, ChatMessage
+from app.models.agent_run import AgentRun
 
 logger = logging.getLogger("rapid.services.chat")
 
@@ -120,6 +121,58 @@ async def get_thread(session: Session, chat_id: UUID) -> Chat | None:
     return session.get(Chat, chat_id)
 
 
+async def find_or_create_for_run(
+    session: Session,
+    run_id: UUID,
+) -> Chat:
+    """Find an existing chat thread linked to ``run_id``, or create one.
+
+    Lookup order:
+    1. ``Chat.active_run_id == run_id``
+    2. ``ChatMessage.agent_run_id == run_id`` → parent chat
+    3. Create a new ``Chat`` using the run's ``project_id`` / ``skill_name``
+
+    Idempotent: calling twice for the same run returns the same chat.
+    """
+    # 1. Check Chat.active_run_id
+    existing = session.exec(
+        select(Chat).where(Chat.active_run_id == run_id).limit(1)
+    ).first()
+    if existing is not None:
+        return existing
+
+    # 2. Check ChatMessage.agent_run_id -> chat_id
+    msg = session.exec(
+        select(ChatMessage)
+        .where(ChatMessage.agent_run_id == run_id)
+        .limit(1)
+    ).first()
+    if msg is not None:
+        chat = session.get(Chat, msg.chat_id)
+        if chat is not None:
+            return chat
+
+    # 3. Load the run to get project_id and skill_name, then create
+    run = session.get(AgentRun, run_id)
+    if run is None:
+        raise StateError(
+            "Run not found",
+            detail={"run_id": str(run_id)},
+            error_code="run_not_found",
+            http_status=404,
+        )
+
+    chat = Chat(
+        project_id=run.project_id,
+        skill_name=run.skill_name,
+        title=f"Chat — {run.skill_name}",
+    )
+    session.add(chat)
+    session.commit()
+    session.refresh(chat)
+    return chat
+
+
 async def archive_thread(session: Session, chat_id: UUID) -> Chat:
     """Archive a chat thread."""
     chat = session.get(Chat, chat_id)
@@ -210,27 +263,45 @@ async def send_message(
     ).all())
     prompt = _build_conversation_prompt(prior_messages, content)
 
-    # Start agent run for this message
-    try:
-        run = await mgr.start_run(
-            project_id=chat.project_id,
-            skill_name=chat.skill_name,
-            skill_args={},
-            prompt=prompt,
-            set_id=None,
-            worktree=None,
+    # Try to reuse an idle persistent session before spawning a new one
+    reused = False
+    if chat.active_run_id is not None:
+        try:
+            reused = await mgr.continue_session(chat.active_run_id, prompt)
+        except Exception:
+            logger.debug(
+                "continue_session failed, will start new run",
+                extra={"chat_id": str(chat_id), "run_id": str(chat.active_run_id)},
+            )
+
+    if reused:
+        logger.info(
+            "reused persistent session",
+            extra={"chat_id": str(chat_id), "run_id": str(chat.active_run_id)},
         )
-        # Bind run to chat
-        chat.active_run_id = run.id
-        session.add(chat)
-        session.commit()
-    except StateError:
-        # A run is already active -- the existing SSE stream handles it.
-        # Don't fail the message save.
-        logger.warning(
-            "could not start agent run for chat",
-            extra={"chat_id": str(chat_id)},
-        )
+    else:
+        # Start a new agent run (persistent so session stays alive)
+        try:
+            run = await mgr.start_run(
+                project_id=chat.project_id,
+                skill_name=chat.skill_name,
+                skill_args={},
+                prompt=prompt,
+                set_id=None,
+                worktree=None,
+                persistent=True,
+            )
+            # Bind run to chat
+            chat.active_run_id = run.id
+            session.add(chat)
+            session.commit()
+        except StateError:
+            # A run is already active -- the existing SSE stream handles it.
+            # Don't fail the message save.
+            logger.warning(
+                "could not start agent run for chat",
+                extra={"chat_id": str(chat_id)},
+            )
 
     return msg
 

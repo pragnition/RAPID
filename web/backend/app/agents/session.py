@@ -1,9 +1,16 @@
-"""``AgentSession`` — one-shot async-context wrapper around ``ClaudeSDKClient``.
+"""``AgentSession`` — async-context wrapper around ``ClaudeSDKClient``.
 
-Each :class:`AgentSession` owns exactly one SDK run: connect → pump messages →
-emit SSE events → update the backing ``AgentRun`` row → disconnect. The
-enclosing :class:`~app.agents.session_manager.AgentSessionManager` creates one
-per incoming request and keeps the live instance in its registry so that
+Each :class:`AgentSession` owns exactly one SDK connection. In the default
+one-shot mode it works as before: connect → pump messages → emit SSE events →
+update the backing ``AgentRun`` row → disconnect.
+
+In **persistent** mode (``persistent=True``), the session stays alive after
+the first ``ResultMessage``. Instead of disconnecting, it transitions to an
+*idle* state and waits for a new ``send_input()`` call. This reuses the same
+Claude subprocess and keeps full conversation context.
+
+The enclosing :class:`~app.agents.session_manager.AgentSessionManager` creates
+one per incoming request and keeps the live instance in its registry so that
 ``send_input`` / ``interrupt`` facade calls can reach the right session.
 
 Invariant: ``total_wall_clock_s >= active_duration_s >= 0``. Active duration
@@ -40,13 +47,14 @@ try:
         SystemMessage,
         TextBlock,
         ThinkingBlock,
+        ToolResultBlock,
         ToolUseBlock,
         UserMessage,
     )
 except ImportError:  # pragma: no cover — exercised in non-SDK envs via mocks
     ClaudeSDKClient = None  # type: ignore[assignment]
     AssistantMessage = UserMessage = SystemMessage = ResultMessage = object  # type: ignore[assignment]
-    TextBlock = ToolUseBlock = ThinkingBlock = object  # type: ignore[assignment]
+    TextBlock = ToolUseBlock = ThinkingBlock = ToolResultBlock = object  # type: ignore[assignment]
 
     class ClaudeSDKError(Exception):  # type: ignore[no-redef]
         """Fallback when the SDK is not installed."""
@@ -89,6 +97,7 @@ class AgentSession:
         engine: sqlalchemy.Engine,
         budget: RunBudget,
         manager: "AgentSessionManager | None" = None,
+        persistent: bool = False,
     ) -> None:
         self.run_id = run_id
         self.project_root = project_root
@@ -108,6 +117,11 @@ class AgentSession:
         self._options: Any = None
         self._interrupted = asyncio.Event()
         self._run_complete_emitted = False
+
+        # Persistent session support.
+        self._persistent = persistent
+        self._idle = asyncio.Event()
+        self._new_query = asyncio.Event()
 
         # Dual-time tracking.
         self._started_ts_mono: float = 0.0
@@ -178,33 +192,61 @@ class AgentSession:
     # ---------- pump ----------
 
     async def run(self) -> None:
-        """Drive the SDK event pump to completion. Call after ``__aenter__``."""
+        """Drive the SDK event pump to completion. Call after ``__aenter__``.
+
+        In persistent mode, the pump loops: after each ``ResultMessage`` it
+        transitions to idle and waits for ``send_input()`` to fire
+        ``_new_query``, then resumes pumping. The loop exits on interrupt,
+        budget halt, or SDK error.
+        """
         try:
             with bind_run_id(str(self.run_id)):
                 logger.info("agent run pump starting", extra={"run_id": str(self.run_id), "prompt_length": len(self.prompt)})
                 await self._client.query(self.prompt)
-                async for msg in self._client.receive_response():
+                while True:
+                    pump_result = await self._pump_once()
+                    if pump_result == "halted":
+                        return
+                    if pump_result == "interrupted":
+                        break
+                    # pump_result == "completed"
+                    if not self._persistent:
+                        break
+                    # Persistent mode: transition to idle instead of exiting
+                    self._idle.set()
+                    await self._update_db(status="idle")
+                    await self._emit(
+                        StatusEvent(
+                            seq=await self._next_seq(),
+                            ts=datetime.now(timezone.utc),
+                            run_id=self.run_id,
+                            status="idle",
+                        )
+                    )
+                    logger.info("persistent session idle", extra={"run_id": str(self.run_id)})
+                    # Wait for new query or interrupt
+                    self._new_query.clear()
+                    self._run_complete_emitted = False
+                    while not self._new_query.is_set() and not self._interrupted.is_set():
+                        try:
+                            await asyncio.wait_for(self._new_query.wait(), timeout=1.0)
+                        except asyncio.TimeoutError:
+                            continue
                     if self._interrupted.is_set():
                         break
-                    await self._handle_message(msg)
-                    if isinstance(msg, ResultMessage):
-                        # ResultMessage handler emits run_complete; pump stops.
-                        break
-                    status = await self.budget.check()
-                    if status.halted:
-                        logger.info(
-                            "budget halted", extra={"reason": status.halt_reason}
+                    # Resume: new query arrived
+                    self._idle.clear()
+                    await self._update_db(status="running")
+                    await self._emit(
+                        StatusEvent(
+                            seq=await self._next_seq(),
+                            ts=datetime.now(timezone.utc),
+                            run_id=self.run_id,
+                            status="running",
                         )
-                        try:
-                            await self._client.interrupt()
-                        except Exception:
-                            logger.exception("interrupt during budget halt failed")
-                        await self._emit_run_complete(
-                            status_text="failed",
-                            error_code="budget_exceeded",
-                            error_detail={"halt_reason": status.halt_reason},
-                        )
-                        return
+                    )
+                    logger.info("persistent session resumed", extra={"run_id": str(self.run_id)})
+
             if self._interrupted.is_set() and not self._run_complete_emitted:
                 await self._emit_run_complete(status_text="interrupted")
         except ClaudeSDKError as e:
@@ -223,6 +265,37 @@ class AgentSession:
                 error_detail={"type": type(e).__name__, "msg": str(e)},
             )
             raise RunError(str(e)) from e
+
+    async def _pump_once(self) -> str:
+        """Pump messages from ``receive_response()`` until ``ResultMessage``.
+
+        Returns:
+            ``"completed"`` on normal ``ResultMessage``,
+            ``"interrupted"`` if the interrupt flag was set,
+            ``"halted"`` if the budget was exceeded.
+        """
+        async for msg in self._client.receive_response():
+            if self._interrupted.is_set():
+                return "interrupted"
+            await self._handle_message(msg)
+            if isinstance(msg, ResultMessage):
+                return "completed"
+            status = await self.budget.check()
+            if status.halted:
+                logger.info(
+                    "budget halted", extra={"reason": status.halt_reason}
+                )
+                try:
+                    await self._client.interrupt()
+                except Exception:
+                    logger.exception("interrupt during budget halt failed")
+                await self._emit_run_complete(
+                    status_text="failed",
+                    error_code="budget_exceeded",
+                    error_detail={"halt_reason": status.halt_reason},
+                )
+                return "halted"
+        return "completed"
 
     # ---------- message handlers ----------
 
@@ -268,8 +341,11 @@ class AgentSession:
                     )
         elif isinstance(msg, UserMessage):
             # tool_result messages come back as UserMessage with tool_result blocks.
-            for block in getattr(msg, "content", []) or []:
-                if getattr(block, "type", None) == "tool_result":
+            content = getattr(msg, "content", []) or []
+            if isinstance(content, str):
+                content = []  # string content has no tool result blocks
+            for block in content:
+                if isinstance(block, ToolResultBlock):
                     await self._emit(
                         ToolResultEvent(
                             seq=await self._next_seq(),
@@ -351,10 +427,17 @@ class AgentSession:
         if not self._run_complete_emitted:
             await self._emit_run_complete(status_text="interrupted")
 
+    @property
+    def is_idle(self) -> bool:
+        """True when the session is in persistent-idle state, ready for new input."""
+        return self._persistent and self._idle.is_set()
+
     async def send_input(self, text: str) -> None:
         if self._client is None:
             raise RunError("session not connected")
         await self._client.query(text)
+        if self._persistent and self._idle.is_set():
+            self._new_query.set()
 
     # ---------- waiting-state hooks ----------
 
