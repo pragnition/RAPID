@@ -54,7 +54,7 @@ logger = logging.getLogger("rapid.agents.manager")
 _ACTIVE_STATES = ("running", "waiting", "idle")
 _ARCHIVE_INTERVAL_S = 3600.0
 _YOUNG_RUN_GUARD_S = 10.0
-_IDLE_TIMEOUT_S = 300.0  # 5 minutes
+_IDLE_TIMEOUT_S = 900.0  # 15 minutes
 
 
 class AgentSessionManager:

@@ -16,6 +16,7 @@ from sqlmodel import Session, func, select
 
 from app.agents import AgentSessionManager, StateError
 from app.database import Project
+from app.models.agent_event import AgentEvent
 from app.models.chat import Chat, ChatMessage
 from app.models.agent_run import AgentRun
 
@@ -121,6 +122,87 @@ async def get_thread(session: Session, chat_id: UUID) -> Chat | None:
     return session.get(Chat, chat_id)
 
 
+def _materialize_run_history(
+    session: Session,
+    chat_id: UUID,
+    run_id: UUID,
+) -> None:
+    """Replay ``AgentEvent`` rows for *run_id* and create ``ChatMessage``
+    rows so the chat thread shows the agent's prior output.
+
+    Walks events in seq order, accumulating assistant text and tool calls
+    per response turn (delimited by ``run_complete`` or end-of-events).
+    Each accumulated turn becomes one ``ChatMessage(role='assistant')``.
+    """
+    events = session.exec(
+        select(AgentEvent)
+        .where(AgentEvent.run_id == run_id)
+        .order_by(AgentEvent.seq.asc())  # type: ignore[union-attr]
+    ).all()
+
+    if not events:
+        return
+
+    seq_counter = 0
+    text_parts: list[str] = []
+    tool_calls: list[dict] = []
+
+    def _flush_turn() -> None:
+        nonlocal seq_counter, text_parts, tool_calls
+        accumulated = "".join(text_parts).strip()
+        if not accumulated and not tool_calls:
+            return
+        seq_counter += 1
+        msg = ChatMessage(
+            chat_id=chat_id,
+            seq=seq_counter,
+            role="assistant",
+            content=accumulated,
+            tool_calls=json.dumps(tool_calls) if tool_calls else "[]",
+            agent_run_id=run_id,
+        )
+        session.add(msg)
+        text_parts.clear()
+        tool_calls.clear()
+
+    for ev in events:
+        try:
+            payload = json.loads(ev.payload)
+        except Exception:
+            continue
+
+        if ev.kind == "assistant_text":
+            text_parts.append(payload.get("text", ""))
+        elif ev.kind == "tool_use":
+            tool_calls.append({
+                "tool_use_id": payload.get("tool_use_id", ""),
+                "tool_name": payload.get("tool_name", ""),
+                "input": payload.get("input", {}),
+            })
+        elif ev.kind == "tool_result":
+            for tc in tool_calls:
+                if tc["tool_use_id"] == payload.get("tool_use_id"):
+                    tc["output"] = payload.get("output")
+                    tc["is_error"] = payload.get("is_error", False)
+                    break
+        elif ev.kind == "run_complete":
+            _flush_turn()
+
+    # Flush any remaining content (run may still be active / no run_complete)
+    _flush_turn()
+
+    if seq_counter > 0:
+        session.commit()
+        logger.info(
+            "materialized run history into chat",
+            extra={
+                "chat_id": str(chat_id),
+                "run_id": str(run_id),
+                "messages": seq_counter,
+            },
+        )
+
+
 async def find_or_create_for_run(
     session: Session,
     run_id: UUID,
@@ -166,10 +248,16 @@ async def find_or_create_for_run(
         project_id=run.project_id,
         skill_name=run.skill_name,
         title=f"Chat — {run.skill_name}",
+        active_run_id=run_id if run.status in ("running", "waiting", "idle") else None,
     )
     session.add(chat)
     session.commit()
     session.refresh(chat)
+
+    # Materialize the run's event history as ChatMessages so the chat
+    # thread displays the agent's prior output.
+    _materialize_run_history(session, chat.id, run_id)
+
     return chat
 
 

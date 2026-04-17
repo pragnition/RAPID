@@ -6,10 +6,13 @@ from uuid import UUID, uuid4
 
 import pytest
 import sqlalchemy
-from sqlmodel import Session
+from sqlmodel import Session, select
+
+import json
 
 from app.agents.errors import StateError
 from app.database import Project
+from app.models.agent_event import AgentEvent
 from app.models.agent_run import AgentRun
 from app.models.chat import Chat, ChatMessage
 from app.services import chat_service
@@ -136,3 +139,63 @@ async def test_404_for_nonexistent_run(tables: sqlalchemy.Engine):
         with pytest.raises(StateError) as exc_info:
             await chat_service.find_or_create_for_run(s, fake_run_id)
         assert exc_info.value.error_code == "run_not_found"
+
+
+@pytest.mark.asyncio
+async def test_materializes_run_history_into_new_chat(tables: sqlalchemy.Engine):
+    """When creating a new chat for a run, agent events are materialized as ChatMessages."""
+    project_id = _seed_project(tables)
+    run_id = _seed_run(tables, project_id, "my-skill")
+
+    # Seed some AgentEvent rows for this run
+    with Session(tables) as s:
+        s.add(AgentEvent(run_id=run_id, seq=1, kind="status", payload=json.dumps({"status": "running"})))
+        s.add(AgentEvent(run_id=run_id, seq=2, kind="assistant_text", payload=json.dumps({"text": "Hello, "})))
+        s.add(AgentEvent(run_id=run_id, seq=3, kind="assistant_text", payload=json.dumps({"text": "world!"})))
+        s.add(AgentEvent(run_id=run_id, seq=4, kind="tool_use", payload=json.dumps({
+            "tool_use_id": "tu1", "tool_name": "Bash", "input": {"command": "ls"},
+        })))
+        s.add(AgentEvent(run_id=run_id, seq=5, kind="tool_result", payload=json.dumps({
+            "tool_use_id": "tu1", "output": "file.txt", "is_error": False,
+        })))
+        s.add(AgentEvent(run_id=run_id, seq=6, kind="run_complete", payload=json.dumps({
+            "status": "completed", "total_cost_usd": 0.01,
+        })))
+        s.commit()
+
+    with Session(tables) as s:
+        chat = await chat_service.find_or_create_for_run(s, run_id)
+        chat_id = chat.id
+
+    # Verify ChatMessages were created
+    with Session(tables) as s:
+        messages = list(s.exec(
+            select(ChatMessage)
+            .where(ChatMessage.chat_id == chat_id)
+            .order_by(ChatMessage.seq.asc())
+        ).all())
+        assert len(messages) == 1
+        assert messages[0].role == "assistant"
+        assert "Hello, world!" in messages[0].content
+        tool_calls = json.loads(messages[0].tool_calls)
+        assert len(tool_calls) == 1
+        assert tool_calls[0]["tool_name"] == "Bash"
+        assert tool_calls[0]["output"] == "file.txt"
+        assert messages[0].agent_run_id == run_id
+
+
+@pytest.mark.asyncio
+async def test_no_materialization_when_no_events(tables: sqlalchemy.Engine):
+    """No ChatMessages created when run has no events."""
+    project_id = _seed_project(tables)
+    run_id = _seed_run(tables, project_id)
+
+    with Session(tables) as s:
+        chat = await chat_service.find_or_create_for_run(s, run_id)
+        chat_id = chat.id
+
+    with Session(tables) as s:
+        messages = list(s.exec(
+            select(ChatMessage).where(ChatMessage.chat_id == chat_id)
+        ).all())
+        assert len(messages) == 0
