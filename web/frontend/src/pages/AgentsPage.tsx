@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   PageHeader,
@@ -15,6 +15,7 @@ import { RunLauncher } from "@/components/skills/RunLauncher";
 import { useAgentRuns } from "@/hooks/useAgentRuns";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useSkills } from "@/hooks/useSkills";
+import { apiClient } from "@/lib/apiClient";
 import { useStatusStore } from "@/stores/statusStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { AgentsEmptyState } from "@/components/empty-states/AgentsEmptyState";
@@ -30,6 +31,7 @@ type BadgeTone = Parameters<typeof StatusBadge>[0]["tone"];
 const STATUS_TONE: Record<AgentRunStatus, BadgeTone> = {
   running: "accent",
   waiting: "warning",
+  idle: "muted",
   failed: "error",
   interrupted: "error",
   completed: "link",
@@ -39,6 +41,7 @@ const STATUS_TONE: Record<AgentRunStatus, BadgeTone> = {
 const STATUS_LABEL: Record<AgentRunStatus, string> = {
   running: "RUNNING",
   waiting: "WAITING",
+  idle: "IDLE",
   failed: "FAILED",
   interrupted: "INTERRUPTED",
   completed: "COMPLETED",
@@ -115,6 +118,22 @@ export function AgentsPage() {
     }
   };
 
+  // Chat button handler — find-or-create a chat thread for a run
+  const handleChatForRun = useCallback(
+    async (runId: string) => {
+      try {
+        const chat = await apiClient.post<{ id: string }>(
+          `/agents/runs/${runId}/chat`,
+          {},
+        );
+        navigate(`/chats/${chat.id}`);
+      } catch (err) {
+        console.error("Failed to create/find chat for run:", err);
+      }
+    },
+    [navigate],
+  );
+
   // Filter runs by query
   const filtered = useMemo(() => {
     const items = runsList?.items ?? [];
@@ -128,6 +147,16 @@ export function AgentsPage() {
   }, [runsList, query]);
 
   // Gallery skills filtered for the launcher
+  // Close gallery on Escape key
+  useEffect(() => {
+    if (!galleryOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setGalleryOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [galleryOpen]);
+
   const gallerySkills = useMemo(() => {
     if (galleryFilters.showAll) return skills;
     return skills.filter((s) =>
@@ -187,8 +216,25 @@ export function AgentsPage() {
           </span>
         ),
       },
+      {
+        id: "actions",
+        header: "",
+        cell: (row) => (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleChatForRun(row.id);
+            }}
+            className="px-2 py-1 text-xs rounded border border-border text-muted hover:text-accent hover:border-accent transition-colors"
+            title="Open chat for this run"
+          >
+            Chat
+          </button>
+        ),
+      },
     ],
-    [],
+    [handleChatForRun],
   );
 
   return (

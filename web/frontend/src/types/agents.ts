@@ -7,6 +7,7 @@ export type AgentRunStatus =
   | "pending"
   | "running"
   | "waiting"
+  | "idle"
   | "interrupted"
   | "failed"
   | "completed";

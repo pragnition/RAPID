@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import Markdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
@@ -35,6 +35,7 @@ type BadgeTone = Parameters<typeof StatusBadge>[0]["tone"];
 const STATUS_TONE: Record<AgentRunStatus, BadgeTone> = {
   running: "accent",
   waiting: "warning",
+  idle: "muted",
   failed: "error",
   interrupted: "error",
   completed: "link",
@@ -44,6 +45,7 @@ const STATUS_TONE: Record<AgentRunStatus, BadgeTone> = {
 const STATUS_LABEL: Record<AgentRunStatus, string> = {
   running: "RUNNING",
   waiting: "WAITING",
+  idle: "IDLE",
   failed: "FAILED",
   interrupted: "INTERRUPTED",
   completed: "COMPLETED",
@@ -191,6 +193,7 @@ function buildFeed(events: SseEvent[]): FeedItem[] {
 // ---------------------------------------------------------------------------
 
 export function AgentRunPage() {
+  const navigate = useNavigate();
   const { runId } = useParams<{ runId: string }>();
   const { data: run } = useAgentRun(runId ?? null);
   const { events, status: liveStatus } = useAgentEvents(runId ?? null);
@@ -262,6 +265,24 @@ export function AgentRunPage() {
         description={run?.skill_name ?? "Loading..."}
         actions={
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!runId) return;
+                try {
+                  const chat = await apiClient.post<{ id: string }>(
+                    `/agents/runs/${runId}/chat`,
+                    {},
+                  );
+                  navigate(`/chats/${chat.id}`);
+                } catch (err) {
+                  console.error("Failed to open chat:", err);
+                }
+              }}
+              className="px-3 py-1.5 text-sm rounded border border-accent text-accent hover:bg-accent/10"
+            >
+              Chat
+            </button>
             <button
               type="button"
               onClick={() =>
