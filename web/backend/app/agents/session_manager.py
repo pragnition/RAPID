@@ -22,7 +22,10 @@ import logging
 from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import AsyncIterator
+from typing import TYPE_CHECKING, Any, AsyncIterator
+
+if TYPE_CHECKING:
+    from app.services.skill_catalog_service import SkillCatalogService
 from uuid import UUID, uuid4
 
 from sqlalchemy import text as sa_text
@@ -43,6 +46,8 @@ from app.database import Project
 from app.models.agent_prompt import AgentPrompt
 from app.models.agent_run import AgentRun
 from app.schemas.sse_events import AskUserEvent, SseEvent
+from app.services import kanban_service
+from app.services.skill_frontmatter import read_skill_body
 
 logger = logging.getLogger("rapid.agents.manager")
 
@@ -79,6 +84,9 @@ class AgentSessionManager:
         # agentprompt. Prevents concurrent tool calls on the same run from
         # racing the DB constraint.
         self._prompt_locks: dict[UUID, asyncio.Lock] = {}
+
+        # Skill catalog reference — set from lifespan after catalog init.
+        self._skill_catalog: "SkillCatalogService | None" = None
 
         # Lifespan background tasks.
         self._orphan_sweep_task: asyncio.Task | None = None
@@ -125,6 +133,30 @@ class AgentSessionManager:
             )
 
         await self.event_bus.close()
+
+    def set_skill_catalog(self, catalog: "SkillCatalogService") -> None:
+        """Inject the skill catalog after lifespan initializes both services."""
+        self._skill_catalog = catalog
+
+    def _enrich_prompt_with_skill(self, skill_name: str, prompt: str) -> str:
+        """Prepend SKILL.md body to *prompt*, mirroring how the CLI injects skill content.
+
+        Returns *prompt* unchanged when the catalog is unavailable or the
+        skill has no body content.
+        """
+        if self._skill_catalog is None:
+            return prompt
+        meta = self._skill_catalog.current.get(skill_name)
+        if meta is None or not meta.source_path.is_file():
+            return prompt
+        body = read_skill_body(meta.source_path)
+        if not body.strip():
+            return prompt
+        return (
+            f"<command-name>/rapid:{skill_name}</command-name>\n"
+            f"{body}\n\n"
+            f"ARGUMENTS: {prompt}"
+        )
 
     # ---------- start_run ----------
 
@@ -241,6 +273,11 @@ class AgentSessionManager:
         prompt: str,
         set_lock: asyncio.Lock | None,
     ) -> None:
+        # Parse card_id once so it's available in the finally block for
+        # post-run card status updates.
+        _raw_card_id: str | None = json.loads(row.skill_args).get("card_id")
+        _card_uuid: UUID | None = UUID(_raw_card_id) if _raw_card_id else None
+
         try:
             sem = await self._get_semaphore(row.project_id)
             async with sem:
@@ -248,8 +285,12 @@ class AgentSessionManager:
                 budget = RunBudget(max_turns=row.max_turns)
                 with bind_run_id(str(row.id)):
                     # Autopilot runs carry a card_id in skill_args for trailer injection.
-                    _card_id = json.loads(row.skill_args).get("card_id")
-                    _card_ctx = bind_card_id(_card_id) if _card_id else nullcontext()
+                    _card_ctx = bind_card_id(_raw_card_id) if _raw_card_id else nullcontext()
+                    # Inject SKILL.md body into the user prompt so the agent
+                    # has the full skill instructions (mirrors CLI behavior).
+                    enriched_prompt = self._enrich_prompt_with_skill(
+                        row.skill_name, prompt,
+                    )
                     with _card_ctx:
                         async with AgentSession(
                             run_id=row.id,
@@ -257,7 +298,7 @@ class AgentSessionManager:
                             worktree=worktree,
                             skill_name=row.skill_name,
                             skill_args=json.loads(row.skill_args),
-                            prompt=prompt,
+                            prompt=enriched_prompt,
                             event_bus=self.event_bus,
                             engine=self.engine,
                             budget=budget,
@@ -277,6 +318,78 @@ class AgentSessionManager:
                 except RuntimeError:
                     # Lock was held by a different task — ignore.
                     pass
+
+            # --- Post-run card status update for autopilot cards ---
+            if _card_uuid is not None:
+                try:
+                    await self._update_card_status_after_run(
+                        row.id, _card_uuid
+                    )
+                except Exception:
+                    logger.exception(
+                        "failed to update card status after run",
+                        extra={
+                            "run_id": str(row.id),
+                            "card_id": str(_card_uuid),
+                        },
+                    )
+
+    def _update_card_status_after_run(
+        self, run_id: UUID, card_id: UUID
+    ) -> "asyncio.coroutine":
+        """Read the final AgentRun status and update the kanban card accordingly.
+
+        On success: set agent_status="completed", completed_by_run_id=run_id.
+        On failure/interruption: set agent_status="blocked", increment
+        retry_count, clear locked_by_run_id so autopilot can re-dispatch.
+        """
+
+        def _do(run_id: UUID, card_id: UUID) -> None:
+            from app.database import KanbanCard
+
+            with Session(self.engine) as s:
+                run_row = s.get(AgentRun, run_id)
+                if run_row is None:
+                    logger.warning(
+                        "card status update skipped: run not found",
+                        extra={"run_id": str(run_id)},
+                    )
+                    return
+
+                card = s.get(KanbanCard, card_id)
+                if card is None:
+                    logger.warning(
+                        "card status update skipped: card not found",
+                        extra={"run_id": str(run_id), "card_id": str(card_id)},
+                    )
+                    return
+
+                final_status = run_row.status
+                if final_status == "completed":
+                    card.agent_status = "completed"
+                    card.completed_by_run_id = run_id
+                    card.rev += 1
+                elif final_status in ("failed", "interrupted"):
+                    card.agent_status = "blocked"
+                    card.retry_count += 1
+                    card.locked_by_run_id = None
+                    card.rev += 1
+                else:
+                    # Run is still in a non-terminal state; skip update.
+                    return
+
+                s.add(card)
+                s.commit()
+                logger.info(
+                    "card status updated after run",
+                    extra={
+                        "run_id": str(run_id),
+                        "card_id": str(card_id),
+                        "agent_status": card.agent_status,
+                    },
+                )
+
+        return asyncio.to_thread(_do, run_id, card_id)
 
     async def _get_semaphore(self, project_id: UUID) -> asyncio.Semaphore:
         async with self._semaphore_lock:
