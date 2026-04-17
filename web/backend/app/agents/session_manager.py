@@ -492,6 +492,19 @@ class AgentSessionManager:
                 # Check if still idle after sleeping
                 session = self._sessions.get(run_id)
                 if session is not None and session.is_idle:
+                    # Do not disconnect a session that is waiting on a user
+                    # answer. The AgentPrompt row (status='pending') is the
+                    # source of truth — if one exists, re-arm the timer.
+                    pending = await self.get_pending_prompt(run_id)
+                    if pending is not None:
+                        logger.info(
+                            "idle timeout deferred — prompt pending",
+                            extra={
+                                "run_id": str(run_id),
+                                "prompt_id": pending.id,
+                            },
+                        )
+                        continue  # re-arm: loop back to await session._idle.wait()
                     logger.info(
                         "idle timeout — interrupting persistent session",
                         extra={"run_id": str(run_id)},
