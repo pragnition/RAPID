@@ -341,3 +341,50 @@ def test_create_card_autopilot_ignore_defaults_false(
     """Cards default to autopilot_ignore=False."""
     card = create_card(session, column.id, "Normal task")
     assert card.autopilot_ignore is False
+
+
+# ---------------------------------------------------------------------------
+# agent_type field
+# ---------------------------------------------------------------------------
+
+
+def test_create_card_default_agent_type(session: Session, column: KanbanColumn):
+    """Card created without specifying agent_type defaults to 'quick'."""
+    card = create_card(session, column.id, "Default agent type card")
+    assert card.agent_type == "quick"
+
+
+def test_create_card_custom_agent_type(session: Session, column: KanbanColumn):
+    """Card created with agent_type='bug-fix' persists the value."""
+    card = create_card(session, column.id, "Bug fix card", agent_type="bug-fix")
+    assert card.agent_type == "bug-fix"
+
+
+def test_update_card_agent_type(session: Session, column: KanbanColumn):
+    """Updating a card's agent_type from 'quick' to 'bug-fix' persists."""
+    card = create_card(session, column.id, "Changeable agent type")
+    assert card.agent_type == "quick"
+    updated = update_card(session, card.id, agent_type="bug-fix")
+    assert updated.agent_type == "bug-fix"
+
+
+def test_column_default_agent_type(session: Session, project: Project):
+    """Column created without specifying default_agent_type defaults to 'quick'."""
+    col = create_column(session, project.id, "Test Column")
+    assert col.default_agent_type == "quick"
+
+
+def test_board_includes_agent_type_fields(
+    session: Session, project: Project, column: KanbanColumn
+):
+    """get_board() includes agent_type on cards and default_agent_type on columns."""
+    create_card(session, column.id, "Agent type board card", agent_type="bug-fix")
+    board = get_board(session, project.id)
+
+    col_data = board["columns"][0]
+    assert "default_agent_type" in col_data
+    assert col_data["default_agent_type"] == "quick"
+
+    card_data = col_data["cards"][0]
+    assert "agent_type" in card_data
+    assert card_data["agent_type"] == "bug-fix"

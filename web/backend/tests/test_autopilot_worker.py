@@ -231,3 +231,34 @@ async def test_find_candidates_skips_ignored_cards(
     card_ids = [c[1] for c in candidates]
     assert normal_card.id in card_ids
     assert ignored_card.id not in card_ids
+
+
+# ---------------------------------------------------------------------------
+# agent_type routing
+# ---------------------------------------------------------------------------
+
+
+def test_dispatch_routes_by_agent_type(
+    session: Session, autopilot_column: KanbanColumn
+):
+    """Card with agent_type='bug-fix' routes to 'rapid:bug-fix'."""
+    from app.agents.card_routing import route_card_to_skill
+
+    card = kanban_service.create_card(
+        session, autopilot_column.id, "Bug card", agent_type="bug-fix"
+    )
+    skill_name, _args = route_card_to_skill(card)
+    assert skill_name == "rapid:bug-fix"
+
+
+def test_dispatch_routes_quick_by_default(
+    session: Session, autopilot_column: KanbanColumn
+):
+    """Card with default agent_type routes to 'rapid:quick'."""
+    from app.agents.card_routing import route_card_to_skill
+
+    card = kanban_service.create_card(
+        session, autopilot_column.id, "Quick card"
+    )
+    skill_name, _args = route_card_to_skill(card)
+    assert skill_name == "rapid:quick"
