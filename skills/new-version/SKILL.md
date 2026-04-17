@@ -20,7 +20,24 @@ categories: [autonomous]
 This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
 follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
 
+**In SDK mode, the MCP tool you call depends on the question shape:**
+
+- **Free-form questions** (no options -- the user types their own answer) MUST use `mcp__rapid__ask_free_text`. This renders as a textarea in the web UI.
+- **Multiple-choice questions** (a fixed set of answer options) MUST use `mcp__rapid__webui_ask_user`. This renders as a radio list in the web UI.
+
+Each call site below names the correct tool for that specific question -- call it exactly as the Step-N instructions specify. DO NOT substitute one MCP tool for the other. In particular, any `Ask freeform:` prompt in the body is a free-form question and MUST use `mcp__rapid__ask_free_text`, not `mcp__rapid__webui_ask_user`.
+
 ```
+# Free-form (textarea) example:
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with the free-form question below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion (freeform) with the question below.
+fi
+
+# Multiple-choice (radio list) example:
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
   # SDK mode: route through the web bridge.
   # Call mcp__rapid__webui_ask_user with the question/options below.
@@ -35,9 +52,9 @@ fi
 
 You are the RAPID milestone manager. This skill creates a new milestone -- archiving the current milestone context, bumping the version, gathering new goals from the user, and re-running the adaptive research > synthesizer > roadmapper pipeline for new scope.
 
-**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge (with `allow_free_text` flagged per prompt); otherwise the built-in tool is used. Inline annotations on each prompt mention below make the dual routing explicit.
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge. Free-form prompts use `mcp__rapid__ask_free_text` (textarea); multiple-choice prompts use `mcp__rapid__webui_ask_user` (radio list). Inline annotations on each prompt below name the correct MCP tool -- do NOT substitute one for the other.
 
-Follow these steps IN ORDER. Do not skip steps. At every decision point:
+Follow these steps IN ORDER. Do not skip steps. At every **decision point with fixed options**:
 
 ```
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
@@ -48,6 +65,8 @@ else
   # Use AskUserQuestion.
 fi
 ```
+
+For **free-form questions** (no options -- the user types their own answer), use `mcp__rapid__ask_free_text` in SDK mode instead.
 
 ## Step 0: Environment Setup + Banner
 
@@ -146,22 +165,47 @@ Use AskUserQuestion with:
 fi
 ```
 
-If "Other" is selected, ask freeform: "What version/ID should the new milestone have?"
-
-**Question B: Milestone Name**
-
-Ask freeform: "Give a short name or description for this milestone (e.g., 'Mark III', 'API Rewrite', 'Performance Overhaul')."
-
-**Question C: Milestone Goals (Structured Categories)**
-
-Gather goals across 5 categories using sequential prompts:
+If "Other" is selected, ask the free-form follow-up below. In SDK mode this is a FREE-FORM question and MUST use `mcp__rapid__ask_free_text` -- DO NOT call `mcp__rapid__webui_ask_user` here. DO NOT pass any values as options; this question has NO options.
 
 ```
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
-  # SDK mode: substitute mcp__rapid__webui_ask_user for each category prompt.
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What version/ID should the new milestone have?"
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass any values as options.
 else
   # CLI mode:
-  # Use sequential AskUserQuestion prompts, one per category.
+  # Ask freeform: "What version/ID should the new milestone have?"
+fi
+```
+
+**Question B: Milestone Name**
+
+This is a FREE-FORM question -- the user types a short name or description for the milestone.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "Give a short name or description for this milestone (e.g., 'Mark III', 'API Rewrite', 'Performance Overhaul')."
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass any values as options.
+else
+  # CLI mode:
+  # Ask freeform: "Give a short name or description for this milestone (e.g., 'Mark III', 'API Rewrite', 'Performance Overhaul')."
+fi
+```
+
+**Question C: Milestone Goals (Structured Categories)**
+
+Gather goals across 5 categories using sequential prompts. **Each category prompt is a FREE-FORM question** -- the user types natural-language content for that category. Do NOT treat these as multiple-choice.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: each category prompt is FREE-FORM -- call mcp__rapid__ask_free_text per category.
+  # DO NOT call mcp__rapid__webui_ask_user for the category prompts. DO NOT pass options.
+else
+  # CLI mode:
+  # Use sequential AskUserQuestion (freeform) prompts, one per category.
 fi
 ```
 
@@ -231,7 +275,7 @@ Use AskUserQuestion with:
 fi
 ```
 
-If "Enter features": Ask freeform: "Describe the new features for this milestone. Be specific about what each feature should do."
+If "Enter features": this is a FREE-FORM follow-up. In SDK mode, call `mcp__rapid__ask_free_text` with question: "Describe the new features for this milestone. Be specific about what each feature should do." DO NOT call `mcp__rapid__webui_ask_user` here. In CLI mode, ask freeform with the same question.
 Store response in goals.features.
 
 **Step 2C-ii: Bug Fixes**
@@ -250,7 +294,7 @@ Use AskUserQuestion with:
 fi
 ```
 
-If "Enter bug fixes": Ask freeform: "Describe the bugs or issues to fix. Include reproduction steps or symptoms if known."
+If "Enter bug fixes": this is a FREE-FORM follow-up. In SDK mode, call `mcp__rapid__ask_free_text` with question: "Describe the bugs or issues to fix. Include reproduction steps or symptoms if known." DO NOT call `mcp__rapid__webui_ask_user` here. In CLI mode, ask freeform with the same question.
 Store response in goals.bugFixes.
 
 **Step 2C-iii: Tech Debt**
@@ -269,7 +313,7 @@ Use AskUserQuestion with:
 fi
 ```
 
-If "Enter tech debt items": Ask freeform: "Describe the tech debt or infrastructure improvements to tackle."
+If "Enter tech debt items": this is a FREE-FORM follow-up. In SDK mode, call `mcp__rapid__ask_free_text` with question: "Describe the tech debt or infrastructure improvements to tackle." DO NOT call `mcp__rapid__webui_ask_user` here. In CLI mode, ask freeform with the same question.
 Store response in goals.techDebt.
 
 **Step 2C-iv: UX Improvements**
@@ -288,7 +332,7 @@ Use AskUserQuestion with:
 fi
 ```
 
-If "Enter UX improvements": Ask freeform: "Describe the UX or developer experience improvements to make."
+If "Enter UX improvements": this is a FREE-FORM follow-up. In SDK mode, call `mcp__rapid__ask_free_text` with question: "Describe the UX or developer experience improvements to make." DO NOT call `mcp__rapid__webui_ask_user` here. In CLI mode, ask freeform with the same question.
 Store response in goals.uxImprovements.
 
 **Step 2C-v: Deferred Decisions from Previous Milestone**
@@ -385,7 +429,7 @@ fi
 ```
 
 **If "Add more":**
-Ask freeform: "What additional goals should be included? (These will be added as general goals without a specific category.)"
+This is a FREE-FORM follow-up. In SDK mode, call `mcp__rapid__ask_free_text` with question: "What additional goals should be included? (These will be added as general goals without a specific category.)" DO NOT call `mcp__rapid__webui_ask_user` here. In CLI mode, ask freeform with the same question.
 Store the response as goals.additionalGoals.
 Redisplay the updated summary with a new section "### Additional Goals" and re-prompt the completeness confirmation. Loop until user selects "Yes, proceed".
 
@@ -954,7 +998,7 @@ Confirm: "Roadmap written, DAG generated, and state updated."
 
 **If "Revise":**
 
-Ask freeform: "What changes would you like to the roadmap?"
+This is a FREE-FORM follow-up. In SDK mode, call `mcp__rapid__ask_free_text` with question: "What changes would you like to the roadmap?" DO NOT call `mcp__rapid__webui_ask_user` here. In CLI mode, ask freeform with the same question.
 
 Re-spawn the roadmapper agent with:
 - All original context (synthesis, milestone goals, milestone name)

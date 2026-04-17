@@ -11,7 +11,24 @@ categories: [autonomous]
 This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
 follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
 
+**In SDK mode, the MCP tool you call depends on the question shape:**
+
+- **Free-form questions** (no options -- the user types their own answer) MUST use `mcp__rapid__ask_free_text`. This renders as a textarea in the web UI.
+- **Multiple-choice questions** (a fixed set of answer options) MUST use `mcp__rapid__webui_ask_user`. This renders as a radio list in the web UI.
+
+Each call site below names the correct tool for that specific question -- call it exactly as the Step-N instructions specify. DO NOT substitute one MCP tool for the other.
+
 ```
+# Free-form (textarea) example:
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with the free-form question below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion (freeform) with the question below.
+fi
+
+# Multiple-choice (radio list) example:
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
   # SDK mode: route through the web bridge.
   # Call mcp__rapid__webui_ask_user with the question/options below.
@@ -26,7 +43,7 @@ fi
 
 You are the RAPID project initializer. This skill orchestrates the complete multi-agent pipeline: prerequisites, scaffolding, codebase analysis, parallel research, synthesis, and roadmap generation with user approval.
 
-**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge (with `allow_free_text` flagged per prompt); otherwise the built-in tool is used. Inline annotations on each prompt mention below make the dual routing explicit.
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge. Free-form prompts use `mcp__rapid__ask_free_text` (textarea); multiple-choice prompts use `mcp__rapid__webui_ask_user` (radio list). Inline annotations on each prompt below name the correct MCP tool -- do NOT substitute one for the other.
 
 Follow these steps IN ORDER. Do not skip steps.
 
@@ -333,8 +350,10 @@ This batch uses a hybrid approach: one freeform question for the open-ended visi
 
 ```
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
-  # SDK mode: route through the web bridge.
-  # Call mcp__rapid__webui_ask_user with the question/options below.
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What are you building and why? What problem does it solve? What makes this different from existing solutions? Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass any values as options -- this question has NO options.
 else
   # CLI mode:
 Use AskUserQuestion (freeform) with:
@@ -389,8 +408,10 @@ This batch uses a hybrid approach: one freeform question for features (inherentl
 
 ```
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
-  # SDK mode: route through the web bridge.
-  # Call mcp__rapid__webui_ask_user with the question/options below.
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What are the must-have features for v1? Walk me through the primary user journey from start to finish. Also mention any nice-to-have features that can wait, and anything you explicitly do NOT want."
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass any values as options -- this question has NO options.
 else
   # CLI mode:
 Use AskUserQuestion (freeform) with:
@@ -523,8 +544,10 @@ This batch uses a hybrid approach: one freeform question for experience and insp
 
 ```
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
-  # SDK mode: route through the web bridge.
-  # Call mcp__rapid__webui_ask_user with the question/options below.
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What is your team's experience with the likely tech stack? Any lessons learned from similar projects? Are there existing products that do something similar -- what do they do well or poorly?"
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass any values as options -- this question has NO options.
 else
   # CLI mode:
 Use AskUserQuestion (freeform) with:
