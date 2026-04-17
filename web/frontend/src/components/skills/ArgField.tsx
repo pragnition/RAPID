@@ -1,10 +1,9 @@
 import {
   useEffect,
   useRef,
-  useState,
   type ChangeEvent,
 } from "react";
-import { SearchInput, StructuredQuestion } from "@/components/primitives";
+import { StructuredQuestion } from "@/components/primitives";
 import type { SkillArg, PreconditionBlocker } from "@/types/skills";
 
 // ---------------------------------------------------------------------------
@@ -57,32 +56,6 @@ function MultiLineInput({
   );
 }
 
-/** Simple absolutely-positioned dropdown for set-ref suggestions. */
-function SuggestionPopover({
-  suggestions,
-  onPick,
-}: {
-  suggestions: string[];
-  onPick: (v: string) => void;
-}) {
-  if (suggestions.length === 0) return null;
-  return (
-    <ul className="absolute left-0 right-0 top-full mt-1 z-10 bg-surface-1 border border-border rounded shadow-lg max-h-48 overflow-y-auto">
-      {suggestions.map((s) => (
-        <li key={s}>
-          <button
-            type="button"
-            onClick={() => onPick(s)}
-            className="w-full text-left px-3 py-1.5 text-sm text-fg hover:bg-hover"
-          >
-            {s}
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -94,8 +67,6 @@ export function ArgField({
   blocker,
   setSuggestions,
 }: ArgFieldProps) {
-  const [showSuggestions, setShowSuggestions] = useState(false);
-
   const strValue = typeof value === "string" ? value : (value != null ? String(value) : "");
   const isDefault = arg.default != null && value === arg.default;
 
@@ -166,35 +137,28 @@ export function ArgField({
     }
 
     case "set-ref": {
-      const suggestions = setSuggestions ?? [];
-      const filtered = strValue
-        ? suggestions.filter((s) =>
-            s.toLowerCase().includes(strValue.toLowerCase()),
-          )
-        : suggestions;
-
+      const options = setSuggestions ?? [];
+      const visibleRows = Math.min(Math.max(options.length, 2), 12);
       field = (
-        <div className="relative">
-          <SearchInput
-            value={strValue}
-            onChange={(v) => {
-              onChange(v);
-              setShowSuggestions(true);
-            }}
-            placeholder="e.g. my-set-name"
-            aria-label={arg.name}
-            className="w-full"
-          />
-          {showSuggestions && filtered.length > 0 && (
-            <SuggestionPopover
-              suggestions={filtered}
-              onPick={(v) => {
-                onChange(v);
-                setShowSuggestions(false);
-              }}
-            />
-          )}
-        </div>
+        <select
+          value={strValue}
+          onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
+          size={visibleRows}
+          className={[
+            "w-full bg-surface-1 border border-border rounded px-3 py-1.5",
+            "text-sm text-fg outline-none focus:border-accent",
+            "[&>option]:py-1.5 [&>option]:px-2 [&>option:checked]:bg-accent/20",
+          ].join(" ")}
+        >
+          <option value="" disabled>
+            Select a set...
+          </option>
+          {options.map((s, i) => (
+            <option key={`${i}-${s}`} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
       );
       break;
     }
