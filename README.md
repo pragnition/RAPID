@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-7.0.0-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
+  <img src="https://img.shields.io/badge/version-7.0.1-d3c6aa?style=flat-square&labelColor=2d353b" alt="Version" /> 
   <img src="https://img.shields.io/badge/license-MIT-a7c080?style=flat-square&labelColor=2d353b" alt="License" /> 
   <img src="https://img.shields.io/badge/Claude_Code-plugin-a7c080?style=flat-square&labelColor=2d353b" alt="Claude Code" /> 
   <img src="https://img.shields.io/badge/Node.js-22%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
@@ -127,6 +127,18 @@ That is the full cycle for one set. In a real project, multiple sets run in para
 
 For a detailed explanation of how each stage works, see [DOCS.md](DOCS.md#architecture-overview).
 
+## Mission Control
+
+Mission Control is RAPID's local web dashboard (FastAPI + React) that runs at `localhost:<port>`, giving a browser-native view of sets, waves, the kanban board, and -- new in v7.0.0 -- autonomous agent runs and persistent chat sessions driven by the Claude Agent SDK.
+
+- **Agents tab** -- browser-invokable skills (`plan-set`, `execute-set`, `review`, `merge`, and more) with real-time SSE event streaming and `AskUserQuestion` prompts surfaced as browser modals via the `webui_ask_user` MCP tool bridge.
+- **Chats tab** -- persistent conversational sessions with transcripts, materialized run history, and a 15-minute idle timeout for session reuse.
+- **Kanban board** -- SQLite-backed canonical board with agent autopilot; agents claim, move, and update cards via in-process MCP tools.
+- **Autopilot poller** -- backend-managed dispatcher that claims cards from autopilot-enabled columns and runs agents against them end-to-end, with per-card retry limits and a "Blocked" column for halted work.
+- **Safety rails** -- per-skill `permission_mode` defaults, `disallowed_tools` for destructive operations, per-project daily token caps, and `can_use_tool` gating on every agent invocation.
+
+To get started, set `RAPID_WEB=true` before `/rapid:init`, or run `/rapid:register-web` in an existing project. See [DOCS.md](DOCS.md) for the full dashboard reference.
+
 ## Command Reference
 
 | Command | Description |
@@ -143,7 +155,7 @@ See [DOCS.md](DOCS.md) for the full reference covering all 30 commands.
 
 ## Changelog
 
-See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v7.0.0** (in progress) -- see CHANGELOG for details.
+See [CHANGELOG](docs/CHANGELOG.md) for full history. Latest: **v7.0.1** (in progress) -- see CHANGELOG for details.
 
 ## Documentation
 

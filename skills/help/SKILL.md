@@ -19,7 +19,7 @@ Output this content now:
 
 ---
 
-## RAPID v7.0.0 Workflow
+## RAPID v7.0.1 Workflow
 
 ```
   INIT -> /clear -> START-SET -> /clear -> DISCUSS-SET -> /clear -> PLAN-SET
@@ -134,4 +134,4 @@ Start next cycle:
 
 ---
 
-RAPID v7.0.0 | 30 commands | Rapid Agentic Parallelizable and Isolatable Development
+RAPID v7.0.1 | 30 commands | Rapid Agentic Parallelizable and Isolatable Development
