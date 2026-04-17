@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import {
   Composer,
   ToolCallCard,
+  ToolCallDrawer,
   ErrorCard,
   AutoScrollPill,
   StreamingCursor,
@@ -20,6 +21,8 @@ import { useSkills } from "@/hooks/useSkills";
 import { useAutoScrollWithOptOut } from "@/components/primitives/hooks/useAutoScrollWithOptOut";
 import type { ChatMessage, ChatToolCall } from "@/types/chats";
 import type { SseEvent } from "@/types/sseEvents";
+import type { QuestionDef } from "@/types/agentPrompt";
+import { AskUserModal } from "@/components/prompts/AskUserModal";
 
 // ---------------------------------------------------------------------------
 // Session status badge
@@ -129,6 +132,7 @@ interface PendingQuestion {
   question: string;
   options: string[] | null;
   allowFreeText: boolean;
+  questions?: QuestionDef[] | null;
 }
 
 function findPendingQuestion(events: SseEvent[]): PendingQuestion | null {
@@ -142,6 +146,7 @@ function findPendingQuestion(events: SseEvent[]): PendingQuestion | null {
         question: ev.question,
         options: ev.options,
         allowFreeText: ev.allow_free_text,
+        questions: ev.questions ?? null,
       };
     }
     // Only dismiss if the agent responded after asking (not if the run just ended)
@@ -195,23 +200,25 @@ function MessageBubble({
           </div>
         )}
         {pairedTools.length > 0 && (
-          <div className="flex flex-col gap-2 mt-2">
-            {pairedTools.map((tc) => (
-              <ToolCallCard
-                key={tc.toolUseId}
-                toolName={tc.toolName}
-                argsPreview={JSON.stringify(tc.input).slice(0, 80)}
-                status={tc.status}
-                argumentsBody={JSON.stringify(tc.input, null, 2)}
-                resultBody={
-                  tc.output !== undefined
-                    ? typeof tc.output === "string"
-                      ? tc.output
-                      : JSON.stringify(tc.output, null, 2)
-                    : undefined
-                }
-              />
-            ))}
+          <div className="mt-2">
+            <ToolCallDrawer statuses={pairedTools.map((tc) => tc.status)}>
+              {pairedTools.map((tc) => (
+                <ToolCallCard
+                  key={tc.toolUseId}
+                  toolName={tc.toolName}
+                  argsPreview={JSON.stringify(tc.input).slice(0, 80)}
+                  status={tc.status}
+                  argumentsBody={JSON.stringify(tc.input, null, 2)}
+                  resultBody={
+                    tc.output !== undefined
+                      ? typeof tc.output === "string"
+                        ? tc.output
+                        : JSON.stringify(tc.output, null, 2)
+                      : undefined
+                  }
+                />
+              ))}
+            </ToolCallDrawer>
           </div>
         )}
       </div>
@@ -290,7 +297,11 @@ export function ChatThreadPage() {
   const [composerValue, setComposerValue] = useState("");
   const [pendingAnswer, setPendingAnswer] = useState<string>("");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [showMultiQuestionModal, setShowMultiQuestionModal] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
+  // Track the prompt id we've already answered so we can optimistically
+  // dismiss the inline question UI before the SSE stream catches up.
+  const answeredPromptIdRef = useRef<string | null>(null);
 
   const slash = useSlashAutocomplete(composerValue);
 
@@ -333,21 +344,35 @@ export function ChatThreadPage() {
           question: data.question,
           options: data.options ?? null,
           allowFreeText: data.allow_free_text ?? true,
+          questions: data.questions ?? null,
         });
       })
       .catch(() => {/* ignore */});
     return () => { cancelled = true; };
   }, [activeRunId]);
 
-  // SSE-derived question takes priority; fall back to REST-hydrated one
-  const pendingQuestion = ssePendingQuestion ?? hydratedQuestion;
+  // SSE-derived question takes priority; fall back to REST-hydrated one.
+  // Filter out prompts we've already answered (optimistic dismiss).
+  const rawPendingQuestion = ssePendingQuestion ?? hydratedQuestion;
+  const pendingQuestion =
+    rawPendingQuestion &&
+    rawPendingQuestion.promptId !== answeredPromptIdRef.current
+      ? rawPendingQuestion
+      : null;
   const composerDisabled = isArchived || pendingQuestion !== null;
 
-  // Reset selected option when the pending question changes
-  const pendingPromptId = pendingQuestion?.promptId ?? null;
+  // Reset selection state when a NEW pending question arrives.
+  // Use the raw (unfiltered) question to detect new prompts — if a new
+  // prompt_id appears that differs from the one we answered, clear the
+  // optimistic dismiss flag so it renders.
+  const rawPromptId = rawPendingQuestion?.promptId ?? null;
   useEffect(() => {
+    if (rawPromptId && rawPromptId !== answeredPromptIdRef.current) {
+      answeredPromptIdRef.current = null;
+    }
     setSelectedOption(null);
-  }, [pendingPromptId]);
+    setShowMultiQuestionModal(false);
+  }, [rawPromptId]);
 
   const { pinned, newCount, scrollToBottom } = useAutoScrollWithOptOut({
     containerRef: feedRef,
@@ -357,7 +382,8 @@ export function ChatThreadPage() {
   // Send message handler
   const handleSend = useCallback(() => {
     if (!threadId || !composerValue.trim() || composerDisabled) return;
-    const tempId = crypto.randomUUID();
+    const tempId = globalThis.crypto?.randomUUID?.()
+      ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
     void sendMessage({
       chatId: threadId,
       content: composerValue.trim(),
@@ -385,6 +411,11 @@ export function ChatThreadPage() {
         );
         setPendingAnswer("");
         setSelectedOption(null);
+        setShowMultiQuestionModal(false);
+        // Optimistically dismiss: mark this prompt as answered so the UI
+        // hides immediately rather than waiting for an SSE stream update.
+        answeredPromptIdRef.current = pendingQuestion.promptId;
+        setHydratedQuestion(null);
       } catch {
         // swallow
       }
@@ -483,23 +514,25 @@ export function ChatThreadPage() {
                 </>
               )}
               {streamToolCalls.length > 0 && (
-                <div className={`flex flex-col gap-2${streamingText ? " mt-2" : ""}`}>
-                  {streamToolCalls.map((tc) => (
-                    <ToolCallCard
-                      key={tc.toolUseId}
-                      toolName={tc.toolName}
-                      argsPreview={JSON.stringify(tc.input).slice(0, 80)}
-                      status={tc.status}
-                      argumentsBody={JSON.stringify(tc.input, null, 2)}
-                      resultBody={
-                        tc.output !== undefined
-                          ? typeof tc.output === "string"
-                            ? tc.output
-                            : JSON.stringify(tc.output, null, 2)
-                          : undefined
-                      }
-                    />
-                  ))}
+                <div className={streamingText ? "mt-2" : ""}>
+                  <ToolCallDrawer statuses={streamToolCalls.map((tc) => tc.status)}>
+                    {streamToolCalls.map((tc) => (
+                      <ToolCallCard
+                        key={tc.toolUseId}
+                        toolName={tc.toolName}
+                        argsPreview={JSON.stringify(tc.input).slice(0, 80)}
+                        status={tc.status}
+                        argumentsBody={JSON.stringify(tc.input, null, 2)}
+                        resultBody={
+                          tc.output !== undefined
+                            ? typeof tc.output === "string"
+                              ? tc.output
+                              : JSON.stringify(tc.output, null, 2)
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </ToolCallDrawer>
                 </div>
               )}
               {!streamingText && streamToolCalls.length === 0 && (
@@ -528,78 +561,134 @@ export function ChatThreadPage() {
             <div className="text-xs text-warning uppercase tracking-wider font-semibold mb-2">
               Awaiting Input
             </div>
-            <div className="text-sm font-bold text-fg mb-3">
-              {pendingQuestion.question}
-            </div>
-            {pendingQuestion.options &&
-              pendingQuestion.options.length > 0 && (
-                <div className="flex flex-col gap-1.5 mb-3">
-                  {pendingQuestion.options.map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => {
-                        setSelectedOption(opt);
-                        setPendingAnswer("");
-                      }}
-                      className={`text-left px-3 py-2 rounded border text-sm transition-colors ${
-                        selectedOption === opt
-                          ? "border-accent bg-accent/10 ring-1 ring-accent/40"
-                          : "border-border hover:border-accent hover:bg-hover"
-                      }`}
-                    >
-                      {opt}
-                    </button>
+            {pendingQuestion.questions &&
+            pendingQuestion.questions.length > 1 ? (
+              /* --- Multi-question: summary + "Answer Questions" button --- */
+              <div>
+                <div className="text-sm text-fg mb-3">
+                  {pendingQuestion.questions.length} questions to answer
+                </div>
+                <div className="flex flex-col gap-1 mb-3">
+                  {pendingQuestion.questions.map((q, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-muted">
+                      {q.header && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20 font-medium">
+                          {q.header}
+                        </span>
+                      )}
+                      <span className="truncate">{q.question}</span>
+                    </div>
                   ))}
                 </div>
-              )}
-            {pendingQuestion.allowFreeText ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={pendingAnswer}
-                  onChange={(e) => {
-                    setPendingAnswer(e.target.value);
-                    setSelectedOption(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      const answer = selectedOption ?? pendingAnswer.trim();
-                      if (answer) handleAnswer(answer);
-                    }
-                  }}
-                  placeholder="Type your answer..."
-                  className="flex-1 bg-surface-1 border border-border rounded px-3 py-1.5 text-sm text-fg placeholder:text-muted outline-none focus:border-accent"
-                />
                 <button
                   type="button"
-                  onClick={() => {
-                    const answer = selectedOption ?? pendingAnswer.trim();
-                    if (answer) handleAnswer(answer);
-                  }}
-                  disabled={!selectedOption && !pendingAnswer.trim()}
-                  className="px-3 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowMultiQuestionModal(true)}
+                  className="px-3 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90"
                 >
-                  Submit
+                  Answer Questions
                 </button>
               </div>
             ) : (
-              pendingQuestion.options &&
-              pendingQuestion.options.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (selectedOption) handleAnswer(selectedOption);
-                  }}
-                  disabled={!selectedOption}
-                  className="px-3 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Submit
-                </button>
-              )
+              /* --- Single question: existing inline UI --- */
+              <>
+                <div className="text-sm font-bold text-fg mb-3">
+                  {pendingQuestion.question}
+                </div>
+                {pendingQuestion.options &&
+                  pendingQuestion.options.length > 0 && (
+                    <div className="flex flex-col gap-1.5 mb-3">
+                      {pendingQuestion.options.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setSelectedOption(opt);
+                            setPendingAnswer("");
+                          }}
+                          className={`text-left px-3 py-2 rounded border text-sm transition-colors ${
+                            selectedOption === opt
+                              ? "border-accent bg-accent/10 ring-1 ring-accent/40"
+                              : "border-border hover:border-accent hover:bg-hover"
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                {pendingQuestion.allowFreeText ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={pendingAnswer}
+                      onChange={(e) => {
+                        setPendingAnswer(e.target.value);
+                        setSelectedOption(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const answer = selectedOption ?? pendingAnswer.trim();
+                          if (answer) handleAnswer(answer);
+                        }
+                      }}
+                      placeholder="Type your answer..."
+                      className="flex-1 bg-surface-1 border border-border rounded px-3 py-1.5 text-sm text-fg placeholder:text-muted outline-none focus:border-accent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const answer = selectedOption ?? pendingAnswer.trim();
+                        if (answer) handleAnswer(answer);
+                      }}
+                      disabled={!selectedOption && !pendingAnswer.trim()}
+                      className="px-3 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                ) : (
+                  pendingQuestion.options &&
+                  pendingQuestion.options.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedOption) handleAnswer(selectedOption);
+                      }}
+                      disabled={!selectedOption}
+                      className="px-3 py-1.5 text-sm font-semibold rounded bg-accent text-bg-0 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Submit
+                    </button>
+                  )
+                )}
+              </>
             )}
           </div>
         </div>
+      )}
+
+      {/* Multi-question modal overlay */}
+      {showMultiQuestionModal && pendingQuestion && (
+        <AskUserModal
+          prompt={{
+            prompt_id: pendingQuestion.promptId,
+            run_id: pendingQuestion.runId,
+            kind: "ask_user",
+            question: pendingQuestion.question,
+            options: pendingQuestion.options,
+            allow_free_text: pendingQuestion.allowFreeText,
+            created_at: new Date().toISOString(),
+            batch_id: null,
+            batch_position: null,
+            batch_total: null,
+            questions: pendingQuestion.questions,
+          }}
+          onSubmit={(answer) => {
+            handleAnswer(answer);
+            setShowMultiQuestionModal(false);
+          }}
+          onCancel={() => setShowMultiQuestionModal(false)}
+        />
       )}
 
       {/* Composer */}
