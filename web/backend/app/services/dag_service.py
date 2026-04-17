@@ -53,9 +53,17 @@ def get_dag_graph(project_path: Path) -> dict | None:
             "target": edge.get("to", edge.get("target", "")),
         })
 
+    # Map wave keys: nodes -> sets
+    waves = {}
+    for wave_id, wave_data in data.get("waves", {}).items():
+        waves[wave_id] = {
+            "sets": wave_data.get("nodes", wave_data.get("sets", [])),
+            **{k: v for k, v in wave_data.items() if k not in ("nodes", "sets")},
+        }
+
     return {
         "nodes": nodes,
         "edges": edges,
-        "waves": data.get("waves", {}),
+        "waves": waves,
         "metadata": data.get("metadata", {}),
     }

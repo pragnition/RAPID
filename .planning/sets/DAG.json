@@ -1,8 +1,45 @@
 {
+  "version": 3,
   "nodes": [
     {
-      "id": "code-graph-backend",
+      "id": "agent-runtime-foundation",
       "wave": 1,
+      "status": "merged",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
+    },
+    {
+      "id": "web-tool-bridge",
+      "wave": 2,
+      "status": "merged",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
+    },
+    {
+      "id": "skill-invocation-ui",
+      "wave": 2,
+      "status": "merged",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
+    },
+    {
+      "id": "kanban-autopilot",
+      "wave": 2,
+      "status": "discussed",
+      "type": "set",
+      "group": null,
+      "priority": null,
+      "description": null
+    },
+    {
+      "id": "agents-chats-tabs",
+      "wave": 3,
       "status": "pending",
       "type": "set",
       "group": null,
@@ -10,94 +47,66 @@
       "description": null
     },
     {
-      "id": "code-graph-frontend",
+      "id": "wireframe-rollout",
       "wave": 1,
-      "status": "pending",
+      "status": "merged",
       "type": "set",
       "group": null,
       "priority": null,
       "description": null
-    },
-    {
-      "id": "fixes-and-housekeeping",
-      "wave": 1,
-      "status": "pending",
-      "type": "set",
-      "group": null,
-      "priority": null,
-      "description": null
-    },
-    {
-      "id": "bugfix-wave-splitting",
-      "wave": 1,
-      "status": "pending",
-      "type": "set",
-      "group": null,
-      "priority": null,
-      "description": null
-    },
-    {
-      "id": "research-agent-reduction",
-      "wave": 1,
-      "status": "pending",
-      "type": "set",
-      "group": null,
-      "priority": null,
-      "description": null
-    },
-    {
-      "id": "branding-skill-overhaul",
-      "wave": 1,
-      "status": "pending",
-      "type": "set",
-      "group": null,
-      "priority": null,
-      "description": null
-    },
-    {
-      "id": "mission-control-polish",
-      "wave": 1,
-      "status": "pending"
     }
   ],
-  "edges": [],
+  "edges": [
+    {
+      "from": "agent-runtime-foundation",
+      "to": "web-tool-bridge"
+    },
+    {
+      "from": "agent-runtime-foundation",
+      "to": "skill-invocation-ui"
+    },
+    {
+      "from": "agent-runtime-foundation",
+      "to": "kanban-autopilot"
+    },
+    {
+      "from": "agent-runtime-foundation",
+      "to": "agents-chats-tabs"
+    },
+    {
+      "from": "web-tool-bridge",
+      "to": "agents-chats-tabs"
+    },
+    {
+      "from": "skill-invocation-ui",
+      "to": "agents-chats-tabs"
+    }
+  ],
   "waves": {
     "1": {
-      "sets": [
-        "code-graph-backend",
-        "code-graph-frontend",
-        "fixes-and-housekeeping",
-        "bugfix-wave-splitting",
-        "research-agent-reduction",
-        "branding-skill-overhaul",
-        "mission-control-polish"
-      ],
-      "checkpoint": {
-        "contracts": [
-          "rapid://contracts/code-graph-backend",
-          "rapid://contracts/code-graph-frontend",
-          "rapid://contracts/fixes-and-housekeeping",
-          "rapid://contracts/bugfix-wave-splitting",
-          "rapid://contracts/research-agent-reduction",
-          "rapid://contracts/branding-skill-overhaul",
-          "rapid://contracts/mission-control-polish"
-        ],
-        "artifacts": [
-          ".planning/sets/code-graph-backend/CONTRACT.json",
-          ".planning/sets/code-graph-frontend/CONTRACT.json",
-          ".planning/sets/fixes-and-housekeeping/CONTRACT.json",
-          ".planning/sets/bugfix-wave-splitting/CONTRACT.json",
-          ".planning/sets/research-agent-reduction/CONTRACT.json",
-          ".planning/sets/branding-skill-overhaul/CONTRACT.json",
-          ".planning/sets/mission-control-polish/CONTRACT.json"
-        ]
-      }
+      "nodes": [
+        "agent-runtime-foundation",
+        "wireframe-rollout"
+      ]
+    },
+    "2": {
+      "nodes": [
+        "web-tool-bridge",
+        "skill-invocation-ui",
+        "kanban-autopilot"
+      ]
+    },
+    "3": {
+      "nodes": [
+        "agents-chats-tabs"
+      ]
     }
   },
+  "groups": {},
   "metadata": {
-    "created": "2026-04-09",
-    "totalSets": 7,
-    "totalWaves": 1,
-    "maxParallelism": 7
+    "created": "2026-04-15",
+    "totalWaves": 3,
+    "maxParallelism": 3,
+    "totalNodes": 6
   }
 }

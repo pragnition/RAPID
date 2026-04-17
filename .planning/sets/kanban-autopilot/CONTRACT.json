@@ -1,0 +1,133 @@
+{
+  "setId": "kanban-autopilot",
+  "version": "1.1.0",
+  "exports": {
+    "kanban_v2_schema": {
+      "type": "file",
+      "signature": "KanbanCard adds: created_by (str), locked_by_run_id (str | None FK), completed_by_run_id (str | None FK), agent_status (Literal['idle','claimed','running','blocked','completed']), metadata (str | None, json), agent_run_id (str | None FK). KanbanColumn adds: is_autopilot (bool, default false)",
+      "description": "Schema v2 migration extending existing Kanban tables. Alembic migration includes backfill: existing cards get created_by='human' and agent_status='idle'. SQLite canonical; board.json becomes read-only projection."
+    },
+    "kanban_tools": {
+      "type": "function",
+      "signature": "@tool list_cards(column: str | None) -> [KanbanCard]; @tool get_card(id: str) -> KanbanCard; @tool add_card(column: str, title: str, description: str, labels: [str]) -> KanbanCard; @tool move_card(id: str, to_column: str, rev: int) -> KanbanCard; @tool update_card(id: str, fields: dict, rev: int) -> KanbanCard; @tool comment_card(id: str, comment: str) -> None",
+      "description": "In-process SDK @tool functions exposing kanban CRUD to agents. All writes route through kanban_service.move_card with optimistic concurrency (per-card rev numbers). Card description is delimited as <untrusted>...</untrusted> before going into any agent prompt to mitigate prompt injection."
+    },
+    "kanban_service_extensions": {
+      "type": "function",
+      "signature": "def move_card(id, to_column, rev) -> Card; def update_card(id, fields, rev) -> Card; def lock_card(id, run_id) -> bool; def unlock_card(id, run_id) -> None",
+      "description": "Extended kanban_service methods enforcing SQL transactions, re-read before write, rev-bump on update, locked_by_run_id check, and board.json regeneration (read-only projection) after each mutation."
+    },
+    "autopilot_skill": {
+      "type": "file",
+      "signature": "skills/rapid:autopilot/SKILL.md",
+      "description": "New skill file. Polls autopilot-flagged columns; for each unclaimed card, claims via lock, dispatches card-to-skill route (bug -> bug-fix, feature -> add-set, default -> quick), passes card id and description as skill args, monitors result, marks card completed or moves to 'Blocked' on failure after N=3 retries."
+    },
+    "autopilot_worker": {
+      "type": "file",
+      "signature": "app/agents/autopilot_worker.py: async def run_autopilot_loop(session_manager, kanban_service, stop_event)",
+      "description": "Lifespan-managed async poller (60s interval configurable). Checks is_autopilot columns for unclaimed cards. For each card, dispatches a /rapid:autopilot run through SessionManager. Respects per-project concurrency cap (reuses semaphore). Dies gracefully on stop_event."
+    },
+    "card_to_skill_routing": {
+      "type": "function",
+      "signature": "def route_card_to_skill(card: KanbanCard) -> (skill_name, args)",
+      "description": "Label-based routing: 'bug' -> /rapid:bug-fix; 'feature' -> /rapid:add-set; 'chore' or default -> /rapid:quick. Configurable via kanban_service.route_config in SQLite."
+    },
+    "retry_and_blocked_policy": {
+      "type": "function",
+      "signature": "per-card retries limited to N=3 (configurable); card-level timeout configurable; on failure moves card to 'Blocked' column and clears locked_by_run_id",
+      "description": "Prevents runaway loops. 'Blocked' / 'Needs Review' column halts retries. UI surfaces 'this card failed 3 times' badge."
+    },
+    "commit_trailer_traceability": {
+      "type": "file",
+      "signature": "Every git commit produced during an autopilot run appends: Autopilot-Card-Id: <card_id>\\nAutopilot-Run-Id: <run_id>",
+      "description": "Git trailers traceable back to originating kanban card. Enables /rapid:status-style views of agent-produced work."
+    },
+    "ui_agent_badges": {
+      "type": "file",
+      "signature": "<KanbanCard /> composes SurfaceCard + StatusBadge instances per agent state",
+      "description": "Kanban card visual composed from wireframe-rollout Wave 1 primitives. Each card is a SurfaceCard (elevation=1) with StatusBadge instances for agent state: 'Agent claimed' (tone=\"info\", when locked_by_run_id set), 'Agent created' (tone=\"highlight\", when created_by starts with 'agent:'), 'Agent completed' (tone=\"accent\", when completed_by_run_id set), and 'Blocked' (tone=\"error\", when card lives in Blocked column). The per-card 'Run with RAPID' action button uses primary bg-accent styling. Cites .planning/branding/wireframe.html section 03 Kanban (lines 983-1080) and BRANDING.md section component-style, Badges subsection."
+    },
+    "kanban_column_surface": {
+      "type": "file",
+      "signature": "<KanbanColumn /> composed from SurfaceCard elevation=1 + column header (mono uppercase muted text) + card stack",
+      "description": "Column visual shape, extracted because wireframe-rollout standardizes surfaces. Cites wireframe.html section 03 column header pattern (lines ~990-1020) and BRANDING.md component-style Elevation via surface tokens. Consumed by the kanban page in the shell and by any embedded kanban views."
+    }
+  },
+  "imports": {
+    "create_sdk_mcp_server_integration": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "function",
+      "signature": "register_mcp_tools(session, tools)",
+      "description": "We register kanban @tools through this integration so agent runs have kanban access"
+    },
+    "AgentSessionManager": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "class",
+      "signature": "session_manager.start_run(project_id, skill_name, args) -> AgentRun",
+      "description": "Autopilot worker dispatches runs via session manager; reuses per-project semaphore"
+    },
+    "build_sdk_options": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "function",
+      "signature": "build_sdk_options(...)",
+      "description": "Our MCP server must be registered into ClaudeAgentOptions by build_sdk_options; we provide the tool list and server name"
+    },
+    "agent_run_model": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "class",
+      "signature": "AgentRun SQLModel",
+      "description": "kanban_card.agent_run_id is an FK to agent_runs.id; completed_by_run_id too"
+    },
+    "run_id_correlation": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "file",
+      "signature": "contextvars run_id + RAPID_RUN_ID env var",
+      "description": "Used for commit trailers and lock ownership (locked_by_run_id)"
+    },
+    "per_skill_permission_policy": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "file",
+      "signature": "PERMISSION_POLICY['autopilot'] = {...}",
+      "description": "We add an 'autopilot' entry to the foundation's permission policy registry (default mode + restricted Bash allowlist)"
+    },
+    "fromSets": [
+      {
+        "set": "agent-runtime-foundation"
+      }
+    ]
+  },
+  "behavioral": {
+    "board_json_is_read_only_projection": {
+      "description": "No agent or code path writes to board.json directly. It is regenerated from SQLite after every mutation. Tests verify: mutate kanban card -> board.json on disk matches SQLite state.",
+      "enforced_by": "test"
+    },
+    "optimistic_concurrency_via_rev": {
+      "description": "move_card and update_card require the caller's current rev; writes fail with StaleRevError if rev mismatches. Prevents torn writes when human and agent mutate concurrently.",
+      "enforced_by": "runtime"
+    },
+    "max_3_retries_per_card": {
+      "description": "After 3 failed autopilot attempts, card moves to 'Blocked' column and autopilot stops retrying. 'Needs Review' column likewise halts. Prevents runaway loops and token burn.",
+      "enforced_by": "runtime"
+    },
+    "card_description_untrusted_wrapped": {
+      "description": "Every kanban card description is wrapped as <untrusted>...</untrusted> before inclusion in any agent prompt. System prompt warns the agent to treat content as untrusted input.",
+      "enforced_by": "test"
+    },
+    "autopilot_worker_respects_concurrency_cap": {
+      "description": "The autopilot worker does NOT bypass the per-project semaphore. If the cap is saturated, worker backs off and retries on next poll cycle.",
+      "enforced_by": "test"
+    },
+    "locked_by_run_id_prevents_double_claim": {
+      "description": "Lock acquisition (SQL UPDATE WHERE locked_by_run_id IS NULL) is atomic. A card that is already claimed cannot be claimed a second time in the same poll cycle.",
+      "enforced_by": "runtime"
+    },
+    "commit_trailer_present_on_every_autopilot_commit": {
+      "description": "Every git commit authored during an autopilot run has Autopilot-Card-Id and Autopilot-Run-Id trailers. Verified by PreToolUse hook on Bash git commit.",
+      "enforced_by": "runtime"
+    },
+    "adopts_wireframe_primitives": {
+      "description": "Agent-badged kanban cards compose primitives (SurfaceCard, StatusBadge) from wireframe-rollout Wave 1. No new primitives introduced here.",
+      "enforced_by": "review"
+    }
+  }
+}

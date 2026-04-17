@@ -1,6 +1,8 @@
 ---
 description: Migrate .planning/ state from older RAPID versions to current version
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:migrate -- Version Migration

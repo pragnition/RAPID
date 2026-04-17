@@ -1,6 +1,12 @@
 ---
 description: Scope a completed set for review -- produces REVIEW-SCOPE.md
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
+args:
+  - name: set
+    type: set-ref
+    description: Set to review
+    required: true
+categories: [autonomous]
 ---
 
 # /rapid:review -- Review Scoping

@@ -1,307 +1,182 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAPID — Branding Guidelines</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RAPID Mission Control — Branding Preview</title>
 <style>
   :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --border: #30363d;
-    --text: #c9d1d9;
-    --text-muted: #8b949e;
-    --heading: #e6edf3;
-    --accent: #58a6ff;
-    --danger-bg: #1c1214;
-    --danger-border: #f85149;
-    --danger-text: #f85149;
-    --success: #3fb950;
-    --code-bg: #1c2128;
+    --bg-dim:#232A2E; --bg-0:#2D353B; --bg-1:#343F44; --bg-2:#3D484D; --bg-3:#475258; --bg-4:#4F585E;
+    --fg:#D3C6AA; --fg-dim:#9DA9A0; --muted:#859289;
+    --accent:#A7C080; --link:#83C092; --info:#7FBBB3; --warning:#DBBC7F; --error:#E67E80; --highlight:#D699B6; --orange:#E69875;
+    --border:#475258; --hover:#3D484D; --selection:rgba(167,192,128,0.2);
   }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-dim); color: var(--fg); font-family: "Inter", system-ui, sans-serif; font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  *, *::before, *::after { transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  a { color: var(--link); }
+  .doc { max-width: 1080px; margin: 0 auto; padding: 40px 32px 80px; }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
+  .hero {
+    display: grid; grid-template-columns: 64px 1fr; gap: 18px; align-items: center;
+    padding-bottom: 32px; border-bottom: 1px solid var(--border);
   }
-
-  h1 {
-    color: var(--heading);
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-    letter-spacing: -0.5px;
+  .hero .mark {
+    width: 56px; height: 56px; border-radius: 10px;
+    background: var(--bg-0); border: 1px solid var(--accent);
+    display: grid; place-items: center; color: var(--accent); font-weight: 700; font-family: ui-monospace, monospace; letter-spacing: 2px;
   }
+  .hero h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.3px; }
+  .hero .sub { color: var(--muted); font-size: 13px; font-family: ui-monospace, monospace; }
 
-  .subtitle {
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    margin-bottom: 2.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  h2 {
-    color: var(--heading);
-    font-size: 1.35rem;
-    font-weight: 600;
-    margin-top: 2.5rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  h3 {
-    color: var(--accent);
-    font-size: 1rem;
-    font-weight: 600;
-    margin-top: 1.25rem;
-    margin-bottom: 0.5rem;
-  }
-
-  p { margin-bottom: 0.75rem; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+  @media (max-width: 780px) { .grid { grid-template-columns: 1fr; } }
 
   .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1rem;
+    background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;
   }
-
-  .identity-card {
-    border-left: 3px solid var(--accent);
+  .card h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--fg); }
+  .card p { margin: 0; color: var(--fg-dim); font-size: 13px; }
+  .card .tag {
+    display: inline-block; font-family: ui-monospace, monospace; font-size: 10px;
+    padding: 2px 8px; border-radius: 3px; letter-spacing: 1.5px; align-self: flex-start;
   }
+  .tag-theme       { background: rgba(167,192,128,0.2); color: var(--accent); }
+  .tag-logo        { background: rgba(127,187,179,0.2); color: var(--info); }
+  .tag-wireframe   { background: rgba(214,153,182,0.2); color: var(--highlight); }
+  .tag-guidelines  { background: rgba(230,152,117,0.2); color: var(--orange); }
+  .tag-components  { background: rgba(131,192,146,0.2); color: var(--link); }
+  .tag-preview     { background: rgba(219,188,127,0.2); color: var(--warning); }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-    font-size: 0.9rem;
+  .open {
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 6px 12px;
+    font-size: 12px; font-weight: 600;
+    font-family: ui-monospace, monospace;
+    background: var(--bg-2); color: var(--fg); text-decoration: none;
+    border: 1px solid var(--border); border-radius: 4px;
   }
+  .open:hover { background: var(--bg-3); color: var(--accent); border-color: var(--accent); }
 
-  th {
-    background: var(--surface);
-    color: var(--accent);
-    text-align: left;
-    padding: 0.6rem 0.8rem;
-    border: 1px solid var(--border);
-    font-weight: 600;
+  .palette-strip { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 24px; }
+  .palette-strip .sw { aspect-ratio: 1; border-radius: 4px; border: 1px solid var(--border); position: relative; }
+  .palette-strip .sw::after { content: attr(data-t); position: absolute; bottom: 4px; left: 6px; font-family: ui-monospace, monospace; font-size: 9px; color: rgba(45,53,59,0.8); font-weight: 700; }
+
+  section h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin: 40px 0 10px; border-left: 2px solid var(--accent); padding-left: 10px; border-bottom: none; }
+
+  .meta-strip {
+    margin-top: 32px; padding: 12px 16px;
+    background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px;
+    display: flex; gap: 20px; flex-wrap: wrap; font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted);
+    align-items: center;
   }
-
-  td {
-    padding: 0.5rem 0.8rem;
-    border: 1px solid var(--border);
-  }
-
-  tr:nth-child(even) td { background: var(--surface); }
-
-  .do-dont {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin: 1rem 0;
-  }
-
-  .do-box, .dont-box {
-    background: var(--surface);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-    border: 1px solid var(--border);
-  }
-
-  .do-box { border-top: 3px solid var(--success); }
-  .dont-box { border-top: 3px solid var(--danger-text); }
-
-  .do-box .label { color: var(--success); font-weight: 600; margin-bottom: 0.5rem; }
-  .dont-box .label { color: var(--danger-text); font-weight: 600; margin-bottom: 0.5rem; }
-
-  .example {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    line-height: 1.5;
-  }
-
-  .danger-callout {
-    background: var(--danger-bg);
-    border: 1px solid var(--danger-border);
-    border-radius: 8px;
-    padding: 1.25rem 1.5rem;
-    margin: 1.5rem 0;
-  }
-
-  .danger-callout .callout-title {
-    color: var(--danger-text);
-    font-weight: 700;
-    font-size: 1rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .danger-callout ul {
-    list-style: none;
-    padding: 0;
-  }
-
-  .danger-callout li {
-    padding: 0.3rem 0;
-    padding-left: 1.25rem;
-    position: relative;
-    color: var(--text);
-  }
-
-  .danger-callout li::before {
-    content: "\00d7";
-    position: absolute;
-    left: 0;
-    color: var(--danger-text);
-    font-weight: 700;
-  }
-
-  code {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    background: var(--code-bg);
-    padding: 0.15rem 0.4rem;
-    border-radius: 4px;
-    font-size: 0.85em;
-    color: var(--accent);
-  }
-
-  .lifecycle {
-    font-family: 'SFMono-Regular', Consolas, monospace;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    background: var(--code-bg);
-    padding: 0.6rem 1rem;
-    border-radius: 6px;
-    margin: 0.5rem 0;
-    overflow-x: auto;
-  }
-
-  .badge {
-    display: inline-block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.15rem 0.5rem;
-    border-radius: 12px;
-    margin-left: 0.5rem;
-    vertical-align: middle;
-  }
-
-  .badge-formal { background: #1f3a5f; color: var(--accent); }
-  .badge-precise { background: #1a3528; color: var(--success); }
-
-  @media (max-width: 640px) {
-    .do-dont { grid-template-columns: 1fr; }
-    body { padding: 1rem; }
-  }
+  .meta-strip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--selection); }
+  .meta-strip b { color: var(--fg); }
 </style>
 </head>
 <body>
+<div class="doc">
 
-<h1>RAPID <span class="badge badge-precise">v4.2.1</span></h1>
-<p class="subtitle">Project Branding Guidelines &mdash; Technical &amp; Precise | Formal / Third-Person | Detailed with Examples</p>
-
-<h2>Project Identity</h2>
-<div class="card identity-card">
-  <p>RAPID is a technical-first developer tool for orchestrating parallel, isolated development workflows. The project presents itself as precise, specification-grade infrastructure &mdash; comparable to protocol documentation or compiler references.</p>
-  <p>Communication conveys exactness, authority, and deep domain knowledge without unnecessary embellishment.</p>
-</div>
-
-<h2>Tone &amp; Voice</h2>
-<p>Perspective: <strong>Third-person</strong> <span class="badge badge-formal">Formal</span>. Declarative statements. No colloquialisms.</p>
-
-<div class="do-dont">
-  <div class="do-box">
-    <div class="label">DO</div>
-    <div class="example">
-      "The merge subsystem detects five levels of conflict: textual, structural, dependency, API, and semantic."
+  <div class="hero">
+    <div class="mark">R</div>
+    <div>
+      <h1>RAPID — Branding Preview</h1>
+      <div class="sub">mission-control · v6.3.0 · everforest-dark · hypermodern terminal-dashboard</div>
     </div>
   </div>
-  <div class="dont-box">
-    <div class="label">DON'T</div>
-    <div class="example">
-      "We check for five kinds of conflicts when merging your code."
-    </div>
+
+  <div class="palette-strip" title="Everforest Dark — core palette">
+    <div class="sw" data-t="bg-0" style="background:#2D353B"></div>
+    <div class="sw" data-t="bg-1" style="background:#343F44"></div>
+    <div class="sw" data-t="bg-2" style="background:#3D484D"></div>
+    <div class="sw" data-t="bg-3" style="background:#475258"></div>
+    <div class="sw" data-t="accent" style="background:#A7C080"></div>
+    <div class="sw" data-t="info" style="background:#7FBBB3"></div>
+    <div class="sw" data-t="orange" style="background:#E69875"></div>
+    <div class="sw" data-t="error" style="background:#E67E80"></div>
   </div>
-</div>
 
-<div class="do-dont">
-  <div class="do-box">
-    <div class="label">DO</div>
-    <div class="example">
-      "The executor agent transitions the set status from <code>planned</code> to <code>executed</code> upon completion."
+  <section>
+    <h2 class="section">Artifacts</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag tag-theme">theme</span>
+        <h2>BRANDING.md</h2>
+        <p>Authoritative design system reference injected into all RAPID agent prompts. Palette tokens, typography, component rules, terminology, tone.</p>
+        <a class="open" href="/BRANDING.md">Open markdown →</a>
+      </div>
+      <div class="card">
+        <span class="tag tag-logo">logo</span>
+        <h2>logo.svg</h2>
+        <p>Placeholder DAG-node motif on Everforest surface. Replace with final wordmark when ready.</p>
+        <a class="open" href="/logo.svg">Open SVG →</a>
+      </div>
+      <div class="card">
+        <span class="tag tag-wireframe">wireframe</span>
+        <h2>wireframe.html</h2>
+        <p>Four-page Mission Control mockup: Dashboard + next-action banner, Knowledge Graph DAG, Kanban lifecycle board, Projects list with command palette.</p>
+        <a class="open" href="/wireframe.html">Open wireframe →</a>
+      </div>
+      <div class="card">
+        <span class="tag tag-wireframe">wireframe</span>
+        <h2>chatbot-wireframe.html</h2>
+        <p>Chatbot mockup (v7.0.0): Chats list, empty-state onboarding, active thread with persistent composer + streaming cursor + inline tool-call cards + structured question forms, thread with artifact side panel (diff view).</p>
+        <a class="open" href="/chatbot-wireframe.html">Open chatbot wireframe →</a>
+      </div>
+      <div class="card">
+        <span class="tag tag-guidelines">guidelines</span>
+        <h2>guidelines.html</h2>
+        <p>Comprehensive design-system reference: token tables, do/don't, copy-paste snippets, contrast ratios, tone examples.</p>
+        <a class="open" href="/guidelines.html">Open guidelines →</a>
+      </div>
+      <div class="card">
+        <span class="tag tag-components">components</span>
+        <h2>components.html</h2>
+        <p>Live component primitives: buttons, form inputs, cards, badges, alerts, progress — all using Everforest Dark tokens.</p>
+        <a class="open" href="/components.html">Open components →</a>
+      </div>
+      <div class="card">
+        <span class="tag tag-preview">preview</span>
+        <h2>This preview</h2>
+        <p>Entry hub for the branding server. Auto-reloads on artifact change.</p>
+        <a class="open" href="/">Reload hub</a>
+      </div>
     </div>
-  </div>
-  <div class="dont-box">
-    <div class="label">DON'T</div>
-    <div class="example">
-      "Once you're done planning, we'll basically just run the executor and it moves things along."
+  </section>
+
+  <section>
+    <h2 class="section">Design Principles</h2>
+    <div class="grid">
+      <div class="card">
+        <h2>Surface over shadow</h2>
+        <p>Elevation is expressed by the surface token (bg-0 through bg-4), never by drop shadows or glass blur. The look remains flat and readable across every theme.</p>
+      </div>
+      <div class="card">
+        <h2>Theme-agnostic semantics</h2>
+        <p>Every semantic token (accent, info, warning, error, highlight, orange) is redefined per theme. Components consume <code class="mono" style="background:var(--bg-2); padding:1px 4px; border-radius:3px; color:var(--accent);">--color-*</code> vars and never reference raw hex.</p>
+      </div>
+      <div class="card">
+        <h2>Badges for lifecycle</h2>
+        <p>Set, wave, and job status render as semantic monospace badges with 20% tinted backgrounds. Never describe lifecycle state in prose.</p>
+      </div>
+      <div class="card">
+        <h2>Deliberate feedback</h2>
+        <p>Every long-running action shows an explicit state — skeleton, progress bar, or status badge. No silent optimistic updates. Command palette on ⌘K.</p>
+      </div>
     </div>
+  </section>
+
+  <div class="meta-strip">
+    <span class="dot"></span>
+    <span>hub · <b>.planning/branding/index.html</b></span>
+    <span>theme · <b>everforest-dark</b></span>
+    <span>font · <b>Inter</b> + ui-monospace</span>
+    <span>type · <b>webapp</b></span>
   </div>
+
 </div>
-
-<h2>Terminology &amp; Naming</h2>
-
-<h3>Code Conventions</h3>
-<table>
-  <tr><th>Element</th><th>Convention</th><th>Example</th></tr>
-  <tr><td>Variables / Functions</td><td><code>camelCase</code></td><td><code>readState()</code>, <code>createDAG()</code></td></tr>
-  <tr><td>Constants</td><td><code>UPPER_SNAKE_CASE</code></td><td><code>PLANNING_DIR</code>, <code>CHUNK_THRESHOLD</code></td></tr>
-  <tr><td>Booleans</td><td><code>is*</code>, <code>has*</code>, <code>can*</code></td><td><code>isLocked()</code>, <code>hasAttachments()</code></td></tr>
-  <tr><td>Source files</td><td><code>{name}.cjs</code></td><td><code>merge-state.cjs</code></td></tr>
-  <tr><td>Test files</td><td><code>{name}.test.cjs</code></td><td><code>dag.test.cjs</code></td></tr>
-  <tr><td>Planning docs</td><td>UPPERCASE + hyphens</td><td><code>STATE.json</code>, <code>CONTRACT.json</code></td></tr>
-</table>
-
-<h3>Domain Terms</h3>
-<table>
-  <tr><th>Preferred Term</th><th>Instead Of</th><th>Context</th></tr>
-  <tr><td><strong>Set</strong></td><td>task, module, feature</td><td>Core parallelizable unit of work with isolated worktree</td></tr>
-  <tr><td><strong>Wave</strong></td><td>batch, phase, stage</td><td>Parallel execution group determined by dependency depth</td></tr>
-  <tr><td><strong>Job</strong></td><td>task, step, action</td><td>Granular implementation item within a wave</td></tr>
-  <tr><td><strong>Milestone</strong></td><td>release, sprint</td><td>Collection of related sets on the project roadmap</td></tr>
-  <tr><td><strong>Contract</strong></td><td>interface, schema, spec</td><td>JSON Schema interface definition (<code>CONTRACT.json</code>)</td></tr>
-  <tr><td><strong>DAG</strong></td><td>dependency tree</td><td>Directed Acyclic Graph of set precedence</td></tr>
-  <tr><td><strong>Worktree</strong></td><td>branch, workspace</td><td>Isolated git worktree per set</td></tr>
-  <tr><td><strong>Phase</strong></td><td>step, stage</td><td>Workflow stage: <code>discuss</code>, <code>plan</code>, <code>execute</code></td></tr>
-  <tr><td><strong>Concern</strong></td><td>category, group</td><td>Thematic file grouping during review scoping</td></tr>
-  <tr><td><strong>Checkpoint</strong></td><td>save point, snapshot</td><td>Execution pause point with resumption context</td></tr>
-</table>
-
-<h3>Status Lifecycle</h3>
-<div class="lifecycle">Sets: pending &rarr; discussed &rarr; planned &rarr; executed &rarr; complete &rarr; merged</div>
-<div class="lifecycle">Waves: pending &rarr; executing &rarr; complete</div>
-<div class="lifecycle">Jobs: pending &rarr; executing &rarr; complete</div>
-
-<h2>Output Style</h2>
-<div class="card">
-  <p><strong>Documentation:</strong> Detailed with examples. Each non-trivial concept receives a code sample or usage example demonstrating correct application.</p>
-  <p><strong>Code comments:</strong> Explain non-obvious behavior, architectural decisions, and edge cases. Include inline examples where a function signature alone is insufficient.</p>
-  <p><strong>Commit messages:</strong> <code>type(scope): description</code> format. Types: <code>feat</code>, <code>fix</code>, <code>refactor</code>, <code>test</code>, <code>chore</code>, <code>docs</code>.</p>
-  <p><strong>Planning artifacts:</strong> Structured markdown with explicit section headers, tables for tabular data, and numbered lists for sequential procedures.</p>
-</div>
-
-<h2>Anti-Patterns</h2>
-<div class="danger-callout">
-  <div class="callout-title">DO NOT</div>
-  <ul>
-    <li>Use emojis in documentation, comments, commit messages, or agent output</li>
-    <li>Use marketing language, superlatives, or promotional tone ("blazing fast", "revolutionary", "game-changing")</li>
-    <li>Use filler words: "basically", "simply", "just", "very", "really", "actually", "literally"</li>
-    <li>Use second-person ("you") or first-person ("we", "I") in documentation or comments</li>
-    <li>Use colloquialisms, slang, or casual abbreviations ("gonna", "wanna", "LGTM" in prose)</li>
-    <li>Substitute domain terms with generic alternatives (e.g., "task" instead of "job", "module" instead of "set")</li>
-    <li>Omit examples when documenting non-trivial interfaces or behaviors</li>
-  </ul>
-</div>
-
 </body>
 </html>

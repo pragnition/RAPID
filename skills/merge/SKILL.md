@@ -1,6 +1,18 @@
 ---
 description: Merge completed sets into main -- subagent delegation per set, fast-path merge-tree, 5-level conflict detection, 4-tier resolution, adaptive conflict resolution via resolver agents, DAG-ordered merging, bisection recovery, rollback
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion
+args:
+  - name: set
+    type: set-ref
+    description: Set to merge
+    required: true
+  - name: strategy
+    type: choice
+    description: Merge strategy to use
+    required: false
+    default: auto
+    choices: [auto, manual]
+categories: [autonomous]
 ---
 
 # /rapid:merge -- Merge Pipeline Orchestrator (v2.2)

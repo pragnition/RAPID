@@ -28,8 +28,11 @@ export function AppLayout() {
     setShowShortcuts((prev) => !prev);
   }, []);
 
+  const openPalette = useCallback(() => setShowCommandPalette(true), []);
+
   const bindings = useMemo<KeyBinding[]>(
     () => [
+      // Sidebar
       {
         key: "l",
         description: "Expand sidebar",
@@ -42,11 +45,26 @@ export function AppLayout() {
         category: "sidebar",
         action: cycleSidebarBack,
       },
+      // Global
       {
         key: "/",
         description: "Open command palette",
         category: "global",
-        action: () => setShowCommandPalette(true),
+        action: openPalette,
+      },
+      {
+        key: "k",
+        ctrl: true,
+        description: "Open command palette (Ctrl+K)",
+        category: "global",
+        action: openPalette,
+      },
+      {
+        key: "k",
+        meta: true,
+        description: "Open command palette (⌘K)",
+        category: "global",
+        action: openPalette,
       },
       {
         key: "?",
@@ -61,17 +79,12 @@ export function AppLayout() {
         category: "global",
         action: closeAllOverlays,
       },
+      // Navigation chords
       {
         key: "gg",
         description: "Scroll to top",
         category: "navigation",
         action: () => window.scrollTo({ top: 0, behavior: "smooth" }),
-      },
-      {
-        key: "gp",
-        description: "Go to Projects",
-        category: "navigation",
-        action: () => navigate("/projects"),
       },
       {
         key: "gd",
@@ -80,10 +93,22 @@ export function AppLayout() {
         action: () => navigate("/"),
       },
       {
-        key: "gs",
-        description: "Go to State",
+        key: "gp",
+        description: "Go to Projects",
         category: "navigation",
-        action: () => navigate("/state"),
+        action: () => navigate("/projects"),
+      },
+      {
+        key: "gh",
+        description: "Go to Knowledge Graph",
+        category: "navigation",
+        action: () => navigate("/graph"),
+      },
+      {
+        key: "gk",
+        description: "Go to Kanban",
+        category: "navigation",
+        action: () => navigate("/kanban"),
       },
       {
         key: "gw",
@@ -92,19 +117,25 @@ export function AppLayout() {
         action: () => navigate("/worktrees"),
       },
       {
-        key: "gk",
-        description: "Go to Graph",
+        key: "gs",
+        description: "Go to State",
         category: "navigation",
-        action: () => navigate("/graph"),
+        action: () => navigate("/state"),
+      },
+      {
+        key: "ga",
+        description: "Go to Agents",
+        category: "navigation",
+        action: () => navigate("/agents"),
       },
       {
         key: "gc",
-        description: "Go to Codebase",
+        description: "Go to Chats",
         category: "navigation",
-        action: () => navigate("/codebase"),
+        action: () => navigate("/chats"),
       },
     ],
-    [cycleSidebarForward, cycleSidebarBack, closeAllOverlays, toggleShortcuts, navigate],
+    [cycleSidebarForward, cycleSidebarBack, closeAllOverlays, toggleShortcuts, navigate, openPalette],
   );
 
   useRegisterBindings(bindings);
@@ -112,7 +143,7 @@ export function AppLayout() {
   // Content area margin based on sidebar state
   const marginClass =
     sidebarState === "full"
-      ? "md:ml-60"
+      ? "md:ml-[232px]"
       : sidebarState === "compact"
         ? "md:ml-16"
         : "md:ml-0";
@@ -120,12 +151,12 @@ export function AppLayout() {
   return (
     <div className="min-h-screen bg-bg-0">
       <Sidebar />
-      <Header onToggleShortcuts={toggleShortcuts} />
+      <Header onToggleShortcuts={toggleShortcuts} onOpenPalette={openPalette} />
 
       {/* Main content area */}
       <main
         className={`
-          pt-12 transition-all duration-200
+          pt-14 transition-all duration-200
           ${marginClass}
         `}
       >

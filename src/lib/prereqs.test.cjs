@@ -147,19 +147,20 @@ describe('checkTool', () => {
 // --- validatePrereqs ---
 
 describe('validatePrereqs', () => {
-  it('returns array of exactly 3 results (git, Node.js, jq)', async () => {
+  it('returns array of exactly 4 results (git, Node.js, jq, uv)', async () => {
     const results = await validatePrereqs();
     assert.equal(Array.isArray(results), true);
-    assert.equal(results.length, 3);
+    assert.equal(results.length, 4);
   });
 
   it('never short-circuits -- all results present even if one fails', async () => {
     const results = await validatePrereqs();
-    // All three should have name properties
+    // All four should have name properties
     const names = results.map((r) => r.name);
     assert.ok(names.includes('git'));
     assert.ok(names.includes('Node.js'));
     assert.ok(names.includes('jq'));
+    assert.ok(names.includes('uv'));
   });
 
   it('returns pass for git and Node.js on dev machines', async () => {
@@ -168,6 +169,17 @@ describe('validatePrereqs', () => {
     const node = results.find((r) => r.name === 'Node.js');
     assert.equal(git.status, 'pass');
     assert.equal(node.status, 'pass');
+  });
+
+  it('uv is marked optional (required: false) so missing uv never blocks', async () => {
+    const results = await validatePrereqs();
+    const uv = results.find((r) => r.name === 'uv');
+    assert.ok(uv, 'uv entry must be present');
+    assert.equal(uv.required, false);
+    // When uv is absent, status should be warn (not fail/blocker).
+    // When uv is present on the dev machine, status should be pass.
+    assert.ok(['pass', 'warn'].includes(uv.status),
+      `uv status must be pass or warn, got: ${uv.status}`);
   });
 });
 

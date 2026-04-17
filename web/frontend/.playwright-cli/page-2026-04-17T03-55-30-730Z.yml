@@ -1,0 +1,628 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: R
+          - generic [ref=e8]: RAPID
+        - combobox "Select project" [ref=e124]:
+          - option "Select a project..."
+          - option "Weavrly"
+          - option "better-ccflare"
+          - option "rapid_test"
+          - option "ASS"
+          - option "TISC"
+          - option "ARIA-rapid"
+          - option "RAPID" [selected]
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]: Workspace
+          - link "Dashboard gd" [ref=e13] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e15]: Dashboard
+            - generic [ref=e16]: gd
+          - link "Projects gp" [ref=e17] [cursor=pointer]:
+            - /url: /projects
+            - generic [ref=e19]: Projects
+            - generic [ref=e20]: gp
+          - link "Codebase" [ref=e21] [cursor=pointer]:
+            - /url: /codebase
+            - generic [ref=e23]: Codebase
+        - generic [ref=e24]:
+          - generic [ref=e25]: Execution
+          - link "Knowledge Graph gh" [ref=e26] [cursor=pointer]:
+            - /url: /graph
+            - generic [ref=e28]: Knowledge Graph
+            - generic [ref=e29]: gh
+          - link "Kanban gk" [ref=e30] [cursor=pointer]:
+            - /url: /kanban
+            - generic [ref=e32]: Kanban
+            - generic [ref=e33]: gk
+          - link "Worktrees gw" [ref=e34] [cursor=pointer]:
+            - /url: /worktrees
+            - generic [ref=e36]: Worktrees
+            - generic [ref=e37]: gw
+          - link "State gs" [ref=e38] [cursor=pointer]:
+            - /url: /state
+            - generic [ref=e40]: State
+            - generic [ref=e41]: gs
+          - link "Agents ga" [ref=e42] [cursor=pointer]:
+            - /url: /agents
+            - generic [ref=e44]: Agents
+            - generic [ref=e45]: ga
+          - link "Chats gc" [ref=e46] [cursor=pointer]:
+            - /url: /chats
+            - generic [ref=e48]: Chats
+            - generic [ref=e49]: gc
+        - generic [ref=e50]:
+          - generic [ref=e51]: Library
+          - link "Notes" [ref=e52] [cursor=pointer]:
+            - /url: /notes
+            - generic [ref=e54]: Notes
+          - link "Settings" [ref=e55] [cursor=pointer]:
+            - /url: /settings
+            - generic [ref=e57]: Settings
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - img "online" [ref=e60]
+          - generic [ref=e61]: backend online
+        - generic [ref=e62]: RAPID v7.0.0
+    - banner [ref=e63]:
+      - navigation "Breadcrumb" [ref=e66]:
+        - link "RAPID" [ref=e241] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e68]: /
+        - generic [ref=e242]: Agents
+      - button "Open command palette" [ref=e70]:
+        - generic [ref=e71] [cursor=pointer]:
+          - searchbox "Search sets, pages, commands" [ref=e72]
+          - generic [ref=e74]: ⌘K
+      - generic [ref=e75]:
+        - group "Theme picker" [ref=e76]:
+          - generic [ref=e77]:
+            - button "Select Everforest theme" [pressed] [ref=e78]
+            - button "Select Catppuccin theme" [ref=e79]
+            - button "Select Gruvbox theme" [ref=e80]
+            - button "Select Tokyo Night theme" [ref=e81]
+          - button "Switch to light mode" [ref=e82]: dark
+        - button "Show keyboard shortcuts" [ref=e83]: "?"
+    - main [ref=e84]:
+      - generic [ref=e243]:
+        - generic [ref=e244]:
+          - navigation "Breadcrumb" [ref=e245]:
+            - link "RAPID" [ref=e246] [cursor=pointer]:
+              - /url: /
+            - generic [ref=e247]: /
+            - generic [ref=e248]: Agents
+          - generic [ref=e249]:
+            - heading "Agents" [level=1] [ref=e250]
+            - generic [ref=e252]:
+              - searchbox "Filter runs..." [ref=e254]
+              - button "Launch New Run" [active] [ref=e255]
+          - paragraph [ref=e256]: Autonomous skill runs.
+        - generic [ref=e257]:
+          - generic [ref=e258]:
+            - heading "Running" [level=2] [ref=e259]
+            - generic [ref=e260]: "0"
+          - generic [ref=e261]:
+            - heading "Waiting" [level=2] [ref=e262]
+            - generic [ref=e263]: "0"
+          - generic [ref=e264]:
+            - heading "Failed" [level=2] [ref=e265]
+            - generic [ref=e266]: "2"
+          - generic [ref=e267]:
+            - heading "Completed" [level=2] [ref=e268]
+            - generic [ref=e269]: "32"
+        - table [ref=e271]:
+          - rowgroup [ref=e272]:
+            - row "Status Skill Started Duration Set Cost" [ref=e273]:
+              - columnheader "Status" [ref=e274]
+              - columnheader "Skill" [ref=e275]
+              - columnheader "Started" [ref=e276]
+              - columnheader "Duration" [ref=e277]
+              - columnheader "Set" [ref=e278]
+              - columnheader "Cost" [ref=e279]
+          - rowgroup [ref=e280]:
+            - row "COMPLETED rapid:quick 02:50:26 00:16 — $0.0625" [ref=e281] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e282]:
+                - generic [ref=e283]: COMPLETED
+              - cell "rapid:quick" [ref=e284]
+              - cell "02:50:26" [ref=e285]
+              - cell "00:16" [ref=e286]
+              - cell "—" [ref=e287]
+              - cell "$0.0625" [ref=e288]
+            - row "COMPLETED rapid:quick 02:32:27 00:12 — $0.0561" [ref=e289] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e290]:
+                - generic [ref=e291]: COMPLETED
+              - cell "rapid:quick" [ref=e292]
+              - cell "02:32:27" [ref=e293]
+              - cell "00:12" [ref=e294]
+              - cell "—" [ref=e295]
+              - cell "$0.0561" [ref=e296]
+            - row "COMPLETED rapid:quick 02:13:23 00:17 — $0.0571" [ref=e297] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e298]:
+                - generic [ref=e299]: COMPLETED
+              - cell "rapid:quick" [ref=e300]
+              - cell "02:13:23" [ref=e301]
+              - cell "00:17" [ref=e302]
+              - cell "—" [ref=e303]
+              - cell "$0.0571" [ref=e304]
+            - row "COMPLETED rapid:quick 01:56:26 00:36 — $0.0955" [ref=e305] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e306]:
+                - generic [ref=e307]: COMPLETED
+              - cell "rapid:quick" [ref=e308]
+              - cell "01:56:26" [ref=e309]
+              - cell "00:36" [ref=e310]
+              - cell "—" [ref=e311]
+              - cell "$0.0955" [ref=e312]
+            - row "COMPLETED quick 01:53:18 02:08 — $0.4764" [ref=e313] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e314]:
+                - generic [ref=e315]: COMPLETED
+              - cell "quick" [ref=e316]
+              - cell "01:53:18" [ref=e317]
+              - cell "02:08" [ref=e318]
+              - cell "—" [ref=e319]
+              - cell "$0.4764" [ref=e320]
+            - row "COMPLETED quick 01:51:58 00:19 — $0.0666" [ref=e321] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e322]:
+                - generic [ref=e323]: COMPLETED
+              - cell "quick" [ref=e324]
+              - cell "01:51:58" [ref=e325]
+              - cell "00:19" [ref=e326]
+              - cell "—" [ref=e327]
+              - cell "$0.0666" [ref=e328]
+            - row "COMPLETED quick 01:51:30 00:09 — $0.0604" [ref=e329] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e330]:
+                - generic [ref=e331]: COMPLETED
+              - cell "quick" [ref=e332]
+              - cell "01:51:30" [ref=e333]
+              - cell "00:09" [ref=e334]
+              - cell "—" [ref=e335]
+              - cell "$0.0604" [ref=e336]
+            - row "COMPLETED quick 01:47:44 00:35 — $0.1599" [ref=e337] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e338]:
+                - generic [ref=e339]: COMPLETED
+              - cell "quick" [ref=e340]
+              - cell "01:47:44" [ref=e341]
+              - cell "00:35" [ref=e342]
+              - cell "—" [ref=e343]
+              - cell "$0.1599" [ref=e344]
+            - row "COMPLETED quick 15:48:16 00:13 — $0.1333" [ref=e345] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e346]:
+                - generic [ref=e347]: COMPLETED
+              - cell "quick" [ref=e348]
+              - cell "15:48:16" [ref=e349]
+              - cell "00:13" [ref=e350]
+              - cell "—" [ref=e351]
+              - cell "$0.1333" [ref=e352]
+            - row "COMPLETED status 10:13:56 00:00 — $0.0000" [ref=e353] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e354]:
+                - generic [ref=e355]: COMPLETED
+              - cell "status" [ref=e356]
+              - cell "10:13:56" [ref=e357]
+              - cell "00:00" [ref=e358]
+              - cell "—" [ref=e359]
+              - cell "$0.0000" [ref=e360]
+            - row "INTERRUPTED quick 10:08:01 00:10 — $0.0000" [ref=e361] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e362]:
+                - generic [ref=e363]: INTERRUPTED
+              - cell "quick" [ref=e364]
+              - cell "10:08:01" [ref=e365]
+              - cell "00:10" [ref=e366]
+              - cell "—" [ref=e367]
+              - cell "$0.0000" [ref=e368]
+            - row "COMPLETED status 09:48:51 00:02 — $0.0186" [ref=e369] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e370]:
+                - generic [ref=e371]: COMPLETED
+              - cell "status" [ref=e372]
+              - cell "09:48:51" [ref=e373]
+              - cell "00:02" [ref=e374]
+              - cell "—" [ref=e375]
+              - cell "$0.0186" [ref=e376]
+            - row "COMPLETED quick 09:39:26 00:00 — $0.0000" [ref=e377] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e378]:
+                - generic [ref=e379]: COMPLETED
+              - cell "quick" [ref=e380]
+              - cell "09:39:26" [ref=e381]
+              - cell "00:00" [ref=e382]
+              - cell "—" [ref=e383]
+              - cell "$0.0000" [ref=e384]
+            - row "COMPLETED quick 09:33:04 00:19 — $0.0549" [ref=e385] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e386]:
+                - generic [ref=e387]: COMPLETED
+              - cell "quick" [ref=e388]
+              - cell "09:33:04" [ref=e389]
+              - cell "00:19" [ref=e390]
+              - cell "—" [ref=e391]
+              - cell "$0.0549" [ref=e392]
+            - row "COMPLETED quick 09:31:58 00:13 — $0.0594" [ref=e393] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e394]:
+                - generic [ref=e395]: COMPLETED
+              - cell "quick" [ref=e396]
+              - cell "09:31:58" [ref=e397]
+              - cell "00:13" [ref=e398]
+              - cell "—" [ref=e399]
+              - cell "$0.0594" [ref=e400]
+            - row "COMPLETED quick 09:31:35 00:05 — $0.0245" [ref=e401] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e402]:
+                - generic [ref=e403]: COMPLETED
+              - cell "quick" [ref=e404]
+              - cell "09:31:35" [ref=e405]
+              - cell "00:05" [ref=e406]
+              - cell "—" [ref=e407]
+              - cell "$0.0245" [ref=e408]
+            - row "INTERRUPTED quick 09:20:16 00:10 — $0.0000" [ref=e409] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e410]:
+                - generic [ref=e411]: INTERRUPTED
+              - cell "quick" [ref=e412]
+              - cell "09:20:16" [ref=e413]
+              - cell "00:10" [ref=e414]
+              - cell "—" [ref=e415]
+              - cell "$0.0000" [ref=e416]
+            - row "COMPLETED quick 09:13:47 00:14 — $0.0484" [ref=e417] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e418]:
+                - generic [ref=e419]: COMPLETED
+              - cell "quick" [ref=e420]
+              - cell "09:13:47" [ref=e421]
+              - cell "00:14" [ref=e422]
+              - cell "—" [ref=e423]
+              - cell "$0.0484" [ref=e424]
+            - row "COMPLETED quick 09:07:55 00:20 — $0.0418" [ref=e425] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e426]:
+                - generic [ref=e427]: COMPLETED
+              - cell "quick" [ref=e428]
+              - cell "09:07:55" [ref=e429]
+              - cell "00:20" [ref=e430]
+              - cell "—" [ref=e431]
+              - cell "$0.0418" [ref=e432]
+            - row "COMPLETED quick 09:06:14 00:12 — $0.0433" [ref=e433] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e434]:
+                - generic [ref=e435]: COMPLETED
+              - cell "quick" [ref=e436]
+              - cell "09:06:14" [ref=e437]
+              - cell "00:12" [ref=e438]
+              - cell "—" [ref=e439]
+              - cell "$0.0433" [ref=e440]
+            - row "COMPLETED quick 08:58:22 00:15 — $0.0411" [ref=e441] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e442]:
+                - generic [ref=e443]: COMPLETED
+              - cell "quick" [ref=e444]
+              - cell "08:58:22" [ref=e445]
+              - cell "00:15" [ref=e446]
+              - cell "—" [ref=e447]
+              - cell "$0.0411" [ref=e448]
+            - row "COMPLETED quick 08:57:02 00:09 — $0.0240" [ref=e449] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e450]:
+                - generic [ref=e451]: COMPLETED
+              - cell "quick" [ref=e452]
+              - cell "08:57:02" [ref=e453]
+              - cell "00:09" [ref=e454]
+              - cell "—" [ref=e455]
+              - cell "$0.0240" [ref=e456]
+            - row "INTERRUPTED quick 08:48:26 00:06 — $0.0000" [ref=e457] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e458]:
+                - generic [ref=e459]: INTERRUPTED
+              - cell "quick" [ref=e460]
+              - cell "08:48:26" [ref=e461]
+              - cell "00:06" [ref=e462]
+              - cell "—" [ref=e463]
+              - cell "$0.0000" [ref=e464]
+            - row "COMPLETED quick 08:48:13 00:02 — $0.0072" [ref=e465] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e466]:
+                - generic [ref=e467]: COMPLETED
+              - cell "quick" [ref=e468]
+              - cell "08:48:13" [ref=e469]
+              - cell "00:02" [ref=e470]
+              - cell "—" [ref=e471]
+              - cell "$0.0072" [ref=e472]
+            - row "COMPLETED quick 08:43:06 00:12 — $0.0484" [ref=e473] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e474]:
+                - generic [ref=e475]: COMPLETED
+              - cell "quick" [ref=e476]
+              - cell "08:43:06" [ref=e477]
+              - cell "00:12" [ref=e478]
+              - cell "—" [ref=e479]
+              - cell "$0.0484" [ref=e480]
+            - row "COMPLETED quick 08:42:17 00:12 — $0.0342" [ref=e481] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e482]:
+                - generic [ref=e483]: COMPLETED
+              - cell "quick" [ref=e484]
+              - cell "08:42:17" [ref=e485]
+              - cell "00:12" [ref=e486]
+              - cell "—" [ref=e487]
+              - cell "$0.0342" [ref=e488]
+            - row "COMPLETED quick 08:38:40 00:13 — $0.0499" [ref=e489] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e490]:
+                - generic [ref=e491]: COMPLETED
+              - cell "quick" [ref=e492]
+              - cell "08:38:40" [ref=e493]
+              - cell "00:13" [ref=e494]
+              - cell "—" [ref=e495]
+              - cell "$0.0499" [ref=e496]
+            - row "FAILED quick 08:31:37 00:07 — $0.0000" [ref=e497] [cursor=pointer]:
+              - cell "FAILED" [ref=e498]:
+                - generic [ref=e499]: FAILED
+              - cell "quick" [ref=e500]
+              - cell "08:31:37" [ref=e501]
+              - cell "00:07" [ref=e502]
+              - cell "—" [ref=e503]
+              - cell "$0.0000" [ref=e504]
+            - row "FAILED quick 08:30:20 00:03 — $0.0000" [ref=e505] [cursor=pointer]:
+              - cell "FAILED" [ref=e506]:
+                - generic [ref=e507]: FAILED
+              - cell "quick" [ref=e508]
+              - cell "08:30:20" [ref=e509]
+              - cell "00:03" [ref=e510]
+              - cell "—" [ref=e511]
+              - cell "$0.0000" [ref=e512]
+            - row "COMPLETED branding 07:53:39 00:14 — $0.0520" [ref=e513] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e514]:
+                - generic [ref=e515]: COMPLETED
+              - cell "branding" [ref=e516]
+              - cell "07:53:39" [ref=e517]
+              - cell "00:14" [ref=e518]
+              - cell "—" [ref=e519]
+              - cell "$0.0520" [ref=e520]
+            - row "COMPLETED quick 07:52:31 00:00 — $0.0000" [ref=e521] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e522]:
+                - generic [ref=e523]: COMPLETED
+              - cell "quick" [ref=e524]
+              - cell "07:52:31" [ref=e525]
+              - cell "00:00" [ref=e526]
+              - cell "—" [ref=e527]
+              - cell "$0.0000" [ref=e528]
+            - row "COMPLETED branding 07:48:32 00:09 — $0.0339" [ref=e529] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e530]:
+                - generic [ref=e531]: COMPLETED
+              - cell "branding" [ref=e532]
+              - cell "07:48:32" [ref=e533]
+              - cell "00:09" [ref=e534]
+              - cell "—" [ref=e535]
+              - cell "$0.0339" [ref=e536]
+            - row "COMPLETED branding 07:47:53 00:07 — $0.0231" [ref=e537] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e538]:
+                - generic [ref=e539]: COMPLETED
+              - cell "branding" [ref=e540]
+              - cell "07:47:53" [ref=e541]
+              - cell "00:07" [ref=e542]
+              - cell "—" [ref=e543]
+              - cell "$0.0231" [ref=e544]
+            - row "COMPLETED branding 07:44:53 00:10 — $0.0251" [ref=e545] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e546]:
+                - generic [ref=e547]: COMPLETED
+              - cell "branding" [ref=e548]
+              - cell "07:44:53" [ref=e549]
+              - cell "00:10" [ref=e550]
+              - cell "—" [ref=e551]
+              - cell "$0.0251" [ref=e552]
+            - row "COMPLETED branding 07:44:34 00:03 — $0.0182" [ref=e553] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e554]:
+                - generic [ref=e555]: COMPLETED
+              - cell "branding" [ref=e556]
+              - cell "07:44:34" [ref=e557]
+              - cell "00:03" [ref=e558]
+              - cell "—" [ref=e559]
+              - cell "$0.0182" [ref=e560]
+            - row "COMPLETED status 07:13:22 00:00 — $0.0000" [ref=e561] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e562]:
+                - generic [ref=e563]: COMPLETED
+              - cell "status" [ref=e564]
+              - cell "07:13:22" [ref=e565]
+              - cell "00:00" [ref=e566]
+              - cell "—" [ref=e567]
+              - cell "$0.0000" [ref=e568]
+            - row "INTERRUPTED rapid:quick 07:00:52 00:00 — $0.0000" [ref=e569] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e570]:
+                - generic [ref=e571]: INTERRUPTED
+              - cell "rapid:quick" [ref=e572]
+              - cell "07:00:52" [ref=e573]
+              - cell "00:00" [ref=e574]
+              - cell "—" [ref=e575]
+              - cell "$0.0000" [ref=e576]
+            - row "INTERRUPTED rapid:quick 07:00:52 00:00 — $0.0000" [ref=e577] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e578]:
+                - generic [ref=e579]: INTERRUPTED
+              - cell "rapid:quick" [ref=e580]
+              - cell "07:00:52" [ref=e581]
+              - cell "00:00" [ref=e582]
+              - cell "—" [ref=e583]
+              - cell "$0.0000" [ref=e584]
+            - row "INTERRUPTED rapid:quick 07:00:52 00:00 — $0.0000" [ref=e585] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e586]:
+                - generic [ref=e587]: INTERRUPTED
+              - cell "rapid:quick" [ref=e588]
+              - cell "07:00:52" [ref=e589]
+              - cell "00:00" [ref=e590]
+              - cell "—" [ref=e591]
+              - cell "$0.0000" [ref=e592]
+            - row "COMPLETED status 07:00:43 00:00 — $0.0000" [ref=e593] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e594]:
+                - generic [ref=e595]: COMPLETED
+              - cell "status" [ref=e596]
+              - cell "07:00:43" [ref=e597]
+              - cell "00:00" [ref=e598]
+              - cell "—" [ref=e599]
+              - cell "$0.0000" [ref=e600]
+        - generic [ref=e602]:
+          - generic [ref=e603]:
+            - generic [ref=e604]:
+              - generic [ref=e605]:
+                - heading "Skills" [level=1] [ref=e606]
+                - generic [ref=e608]:
+                  - button "Autonomous" [ref=e609]
+                  - button "Interactive" [ref=e610]
+                  - button "Human-in-loop" [ref=e611]
+                  - button "All skills" [ref=e612]
+              - paragraph [ref=e613]: 27 skills available
+            - searchbox "Filter skills" [ref=e615]
+            - grid [ref=e616]:
+              - heading "Autonomous" [level=3] [ref=e617]
+              - generic [ref=e619] [cursor=pointer]:
+                - heading "assumptions" [level=4] [ref=e620]
+                - paragraph [ref=e621]: Surface Claude's mental model and assumptions about a set before execution begins
+                - generic [ref=e622]:
+                  - generic [ref=e623]: 0 args
+                  - generic [ref=e624]: autonomous
+              - generic [ref=e626] [cursor=pointer]:
+                - heading "audit-version" [level=4] [ref=e627]
+                - paragraph [ref=e628]: Audit a completed milestone for gaps between planned requirements and actual delivery
+                - generic [ref=e629]:
+                  - generic [ref=e630]: 1 arg
+                  - generic [ref=e631]: autonomous
+              - generic [ref=e633] [cursor=pointer]:
+                - heading "autopilot" [level=4] [ref=e634]
+                - paragraph [ref=e635]: Backend-managed autopilot poller that claims kanban cards from autopilot-enabled columns and dispatches agent runs
+                - generic [ref=e636]:
+                  - generic [ref=e637]: 0 args
+                  - generic [ref=e638]: autonomous
+              - generic [ref=e640] [cursor=pointer]:
+                - heading "backlog" [level=4] [ref=e641]
+                - paragraph [ref=e642]: Capture out-of-scope feature ideas as backlog items in .planning/backlog/
+                - generic [ref=e643]:
+                  - generic [ref=e644]: 2 args
+                  - generic [ref=e645]: autonomous
+              - generic [ref=e647] [cursor=pointer]:
+                - heading "bug-hunt" [level=4] [ref=e648]
+                - paragraph [ref=e649]: Run adversarial bug hunt on a scoped set -- reads REVIEW-SCOPE.md
+                - generic [ref=e650]:
+                  - generic [ref=e651]: 0 args
+                  - generic [ref=e652]: autonomous
+              - generic [ref=e654] [cursor=pointer]:
+                - heading "cleanup" [level=4] [ref=e655]
+                - paragraph [ref=e656]: Clean up completed set worktrees with safety checks and optional branch deletion
+                - generic [ref=e657]:
+                  - generic [ref=e658]: 1 arg
+                  - generic [ref=e659]: autonomous
+              - generic [ref=e661] [cursor=pointer]:
+                - heading "context" [level=4] [ref=e662]
+                - paragraph [ref=e663]: Analyze codebase and generate project context files (CLAUDE.md, style guide, conventions)
+                - generic [ref=e664]:
+                  - generic [ref=e665]: 0 args
+                  - generic [ref=e666]: autonomous
+              - generic [ref=e668] [cursor=pointer]:
+                - heading "documentation" [level=4] [ref=e669]
+                - paragraph [ref=e670]: Generate, update, and maintain project documentation from git history and RAPID artifacts
+                - generic [ref=e671]:
+                  - generic [ref=e672]: 0 args
+                  - generic [ref=e673]: autonomous
+              - generic [ref=e675] [cursor=pointer]:
+                - heading "help" [level=4] [ref=e676]
+                - paragraph [ref=e677]: Show all available RAPID commands and workflow guidance
+                - generic [ref=e678]:
+                  - generic [ref=e679]: 0 args
+                  - generic [ref=e680]: autonomous
+              - generic [ref=e682] [cursor=pointer]:
+                - heading "init" [level=4] [ref=e683]
+                - paragraph [ref=e684]: Initialize a new RAPID project with research and roadmap generation
+                - generic [ref=e685]:
+                  - generic [ref=e686]: 0 args
+                  - generic [ref=e687]: autonomous
+              - generic [ref=e689] [cursor=pointer]:
+                - heading "install" [level=4] [ref=e690]
+                - paragraph [ref=e691]: Install and configure RAPID v7.0.0 plugin for Claude Code
+                - generic [ref=e692]:
+                  - generic [ref=e693]: 0 args
+                  - generic [ref=e694]: autonomous
+              - generic [ref=e696] [cursor=pointer]:
+                - heading "merge" [level=4] [ref=e697]
+                - paragraph [ref=e698]: Merge completed sets into main -- subagent delegation per set, fast-path merge-tree, 5-level conflict detection, 4-tier resolution, adaptive conflict resolution via resolver agents, DAG-ordered merging, bisection recovery, rollback
+                - generic [ref=e699]:
+                  - generic [ref=e700]: 2 args
+                  - generic [ref=e701]: autonomous
+              - generic [ref=e703] [cursor=pointer]:
+                - heading "migrate" [level=4] [ref=e704]
+                - paragraph [ref=e705]: Migrate .planning/ state from older RAPID versions to current version
+                - generic [ref=e706]:
+                  - generic [ref=e707]: 0 args
+                  - generic [ref=e708]: autonomous
+              - generic [ref=e710] [cursor=pointer]:
+                - heading "new-version" [level=4] [ref=e711]
+                - paragraph [ref=e712]: Complete current milestone and start a new version with adaptive research pipeline and roadmap generation
+                - generic [ref=e713]:
+                  - generic [ref=e714]: 2 args
+                  - generic [ref=e715]: autonomous
+              - generic [ref=e717] [cursor=pointer]:
+                - heading "pause" [level=4] [ref=e718]
+                - paragraph [ref=e719]: Pause a set and save state for later resumption
+                - generic [ref=e720]:
+                  - generic [ref=e721]: 1 arg
+                  - generic [ref=e722]: autonomous
+              - generic [ref=e724] [cursor=pointer]:
+                - heading "register-web" [level=4] [ref=e725]
+                - paragraph [ref=e726]: Register the current project with the RAPID Mission Control web dashboard
+                - generic [ref=e727]:
+                  - generic [ref=e728]: 0 args
+                  - generic [ref=e729]: autonomous
+              - generic [ref=e731] [cursor=pointer]:
+                - heading "resume" [level=4] [ref=e732]
+                - paragraph [ref=e733]: Resume a paused set from its last checkpoint
+                - generic [ref=e734]:
+                  - generic [ref=e735]: 1 arg
+                  - generic [ref=e736]: autonomous
+              - generic [ref=e738] [cursor=pointer]:
+                - heading "review" [level=4] [ref=e739]
+                - paragraph [ref=e740]: Scope a completed set for review -- produces REVIEW-SCOPE.md
+                - generic [ref=e741]:
+                  - generic [ref=e742]: 1 arg
+                  - generic [ref=e743]: autonomous
+              - generic [ref=e745] [cursor=pointer]:
+                - heading "scaffold" [level=4] [ref=e746]
+                - paragraph [ref=e747]: Generate project-type-aware foundation files for the target codebase
+                - generic [ref=e748]:
+                  - generic [ref=e749]: 0 args
+                  - generic [ref=e750]: autonomous
+              - generic [ref=e752] [cursor=pointer]:
+                - heading "start-set" [level=4] [ref=e753]
+                - paragraph [ref=e754]: Initialize a set for development -- creates isolated worktree (or solo mode without worktree) and generates scoped CLAUDE.md
+                - generic [ref=e755]:
+                  - generic [ref=e756]: 0 args
+                  - generic [ref=e757]: autonomous
+              - generic [ref=e759] [cursor=pointer]:
+                - heading "status" [level=4] [ref=e760]
+                - paragraph [ref=e761]: Show project dashboard with set statuses, last activity, and next actions
+                - generic [ref=e762]:
+                  - generic [ref=e763]: 0 args
+                  - generic [ref=e764]: autonomous
+              - generic [ref=e766] [cursor=pointer]:
+                - heading "uat" [level=4] [ref=e767]
+                - paragraph [ref=e768]: Run user acceptance testing on a scoped set -- reads REVIEW-SCOPE.md
+                - generic [ref=e769]:
+                  - generic [ref=e770]: 1 arg
+                  - generic [ref=e771]: autonomous
+              - generic [ref=e773] [cursor=pointer]:
+                - heading "unit-test" [level=4] [ref=e774]
+                - paragraph [ref=e775]: Run unit test pipeline on a scoped set -- reads REVIEW-SCOPE.md
+                - generic [ref=e776]:
+                  - generic [ref=e777]: 1 arg
+                  - generic [ref=e778]: autonomous
+              - heading "Human-in-loop" [level=3] [ref=e779]
+              - generic [ref=e781] [cursor=pointer]:
+                - heading "add-set" [level=4] [ref=e782]
+                - paragraph [ref=e783]: Add a new set to an existing project mid-milestone with discovery and contract generation
+                - generic [ref=e784]:
+                  - generic [ref=e785]: 1 arg
+                  - generic [ref=e786]: human-in-loop
+              - generic [ref=e788] [cursor=pointer]:
+                - heading "bug-fix" [level=4] [ref=e789]
+                - paragraph [ref=e790]: Investigate and fix bugs -- user describes a bug, model investigates and applies a fix
+                - generic [ref=e791]:
+                  - generic [ref=e792]: 1 arg
+                  - generic [ref=e793]: human-in-loop
+              - generic [ref=e795] [cursor=pointer]:
+                - heading "execute-set" [level=4] [ref=e796]
+                - paragraph [ref=e797]: Execute all waves in a set -- parallel dispatch for independent waves, sequential commits, artifact-based re-entry
+                - generic [ref=e798]:
+                  - generic [ref=e799]: 1 arg
+                  - generic [ref=e800]: human-in-loop
+              - generic [ref=e802] [cursor=pointer]:
+                - heading "quick" [level=4] [ref=e803]
+                - paragraph [ref=e804]: Ad-hoc changes without set structure -- planner, verifier, executor pipeline
+                - generic [ref=e805]:
+                  - generic [ref=e806]: 1 arg
+                  - generic [ref=e807]: human-in-loop
+          - button "Cancel" [ref=e809]
+  - generic [ref=e125]:
+    - img [ref=e127]
+    - button "Open Tanstack query devtools" [ref=e175] [cursor=pointer]:
+      - img [ref=e176]

@@ -7,6 +7,7 @@ class KanbanColumnCreate(BaseModel):
     """Request body for creating a kanban column."""
 
     title: str
+    default_agent_type: str = "quick"
 
 
 class KanbanColumnUpdate(BaseModel):
@@ -14,6 +15,8 @@ class KanbanColumnUpdate(BaseModel):
 
     title: str | None = None
     position: int | None = None
+    is_autopilot: bool | None = None
+    default_agent_type: str | None = None
 
 
 class KanbanCardCreate(BaseModel):
@@ -21,6 +24,8 @@ class KanbanCardCreate(BaseModel):
 
     title: str
     description: str = ""
+    autopilot_ignore: bool = False
+    agent_type: str = "quick"
 
 
 class KanbanCardUpdate(BaseModel):
@@ -30,6 +35,8 @@ class KanbanCardUpdate(BaseModel):
     description: str | None = None
     column_id: str | None = None
     position: int | None = None
+    autopilot_ignore: bool | None = None
+    agent_type: str | None = None
 
 
 class KanbanCardMove(BaseModel):
@@ -37,6 +44,14 @@ class KanbanCardMove(BaseModel):
 
     column_id: str
     position: int
+
+
+class KanbanCardMoveWithRev(BaseModel):
+    """Request body for moving a card with optional optimistic concurrency rev."""
+
+    column_id: str
+    position: int
+    rev: int | None = None
 
 
 class KanbanCardResponse(BaseModel):
@@ -51,6 +66,15 @@ class KanbanCardResponse(BaseModel):
     position: int
     created_at: str
     updated_at: str
+    rev: int
+    created_by: str
+    agent_status: str
+    locked_by_run_id: str | None = None
+    completed_by_run_id: str | None = None
+    agent_run_id: str | None = None
+    retry_count: int
+    autopilot_ignore: bool
+    agent_type: str
 
 
 class KanbanColumnResponse(BaseModel):
@@ -63,6 +87,8 @@ class KanbanColumnResponse(BaseModel):
     title: str
     position: int
     created_at: str
+    is_autopilot: bool
+    default_agent_type: str
     cards: list[KanbanCardResponse]
 
 

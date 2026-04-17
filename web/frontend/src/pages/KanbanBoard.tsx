@@ -20,12 +20,14 @@ import {
   useUpdateCard,
   useMoveCard,
   useDeleteCard,
+  useToggleColumnAutopilot,
 } from "@/hooks/useKanban";
 import type { KanbanCardResponse, KanbanBoardResponse } from "@/types/api";
 import { KanbanColumn } from "@/components/kanban/KanbanColumn";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { AddColumnButton } from "@/components/kanban/AddColumnButton";
 import { CardDetailModal } from "@/components/kanban/CardDetailModal";
+import { PageHeader, EmptyState } from "@/components/primitives";
 
 export function KanbanBoard() {
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
@@ -40,9 +42,11 @@ export function KanbanBoard() {
   const updateCard = useUpdateCard(projectId);
   const moveCard = useMoveCard(projectId);
   const deleteCard = useDeleteCard(projectId);
+  const toggleAutopilot = useToggleColumnAutopilot(projectId);
 
   const [activeCard, setActiveCard] = useState<KanbanCardResponse | null>(null);
   const [editingCard, setEditingCard] = useState<KanbanCardResponse | null>(null);
+  const [overColumnId, setOverColumnId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -76,16 +80,31 @@ export function KanbanBoard() {
   );
 
   const handleDragOver = useCallback(
-    (_event: DragOverEvent) => {
-      // Visual cross-column tracking is handled by dnd-kit's SortableContext
-      // The actual move happens in onDragEnd
+    (event: DragOverEvent) => {
+      if (!data) return;
+      const { over } = event;
+      if (!over) {
+        setOverColumnId(null);
+        return;
+      }
+      const overId = String(over.id);
+      // Check if over is a card — find its column
+      const col = findCardColumn(overId, data);
+      if (col) {
+        setOverColumnId(col.id);
+      } else {
+        // Over might be a column droppable directly
+        const targetCol = data.columns.find((c) => c.id === overId);
+        setOverColumnId(targetCol ? targetCol.id : null);
+      }
     },
-    [],
+    [data, findCardColumn],
   );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       setActiveCard(null);
+      setOverColumnId(null);
 
       if (!data) return;
 
@@ -127,10 +146,12 @@ export function KanbanBoard() {
         destPosition = targetCol.cards.length;
       }
 
+      const movedCard = sourceCol.cards.find((c) => c.id === activeId);
       moveCard.mutate({
         cardId: activeId,
         column_id: destColId,
         position: destPosition,
+        rev: movedCard?.rev,
       });
     },
     [data, findCardColumn, moveCard],
@@ -141,8 +162,8 @@ export function KanbanBoard() {
   // -----------------------------------------------------------------------
 
   const handleAddColumn = useCallback(
-    (title: string) => {
-      createColumn.mutate({ title });
+    (title: string, defaultAgentType: string) => {
+      createColumn.mutate({ title, default_agent_type: defaultAgentType });
     },
     [createColumn],
   );
@@ -162,8 +183,14 @@ export function KanbanBoard() {
   );
 
   const handleAddCard = useCallback(
-    (columnId: string, title: string) => {
-      createCard.mutate({ columnId, title });
+    (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean; agent_type: string }) => {
+      createCard.mutate({
+        columnId,
+        title: data.title,
+        description: data.description,
+        autopilot_ignore: data.autopilot_ignore,
+        agent_type: data.agent_type,
+      });
     },
     [createCard],
   );
@@ -176,7 +203,7 @@ export function KanbanBoard() {
   );
 
   const handleSaveCard = useCallback(
-    (cardId: string, updates: { title?: string; description?: string }) => {
+    (cardId: string, updates: { title?: string; description?: string; autopilot_ignore?: boolean; agent_type?: string }) => {
       updateCard.mutate({ cardId, ...updates });
     },
     [updateCard],
@@ -189,28 +216,59 @@ export function KanbanBoard() {
     [deleteCard],
   );
 
+  const handleToggleAutopilot = useCallback(
+    (columnId: string, enabled: boolean) => {
+      toggleAutopilot.mutate({ columnId, isAutopilot: enabled });
+    },
+    [toggleAutopilot],
+  );
+
+  const handleUpdateAgentType = useCallback(
+    (columnId: string, agentType: string) => {
+      updateColumn.mutate({ columnId, default_agent_type: agentType });
+    },
+    [updateColumn],
+  );
+
+  const handleMoveColumn = useCallback(
+    (columnId: string, direction: "left" | "right") => {
+      if (!data) return;
+      const idx = data.columns.findIndex((c) => c.id === columnId);
+      if (idx === -1) return;
+      const newPos = direction === "left" ? idx - 1 : idx + 1;
+      if (newPos < 0 || newPos >= data.columns.length) return;
+      updateColumn.mutate({ columnId, position: newPos });
+    },
+    [data, updateColumn],
+  );
+
   // -----------------------------------------------------------------------
   // Render
   // -----------------------------------------------------------------------
 
   if (!activeProjectId) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Kanban Board</h1>
-        <div className="bg-surface-1 border border-border rounded-lg p-8 text-center">
-          <p className="text-muted text-lg">
-            Select a project to view its kanban board
-          </p>
-        </div>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Kanban"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Kanban" }]}
+        />
+        <EmptyState
+          title="No project selected"
+          description="Select a project to view its kanban board."
+        />
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Kanban Board</h1>
-        <p className="text-muted mb-6">Loading board...</p>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Kanban"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Kanban" }]}
+          description="Loading board..."
+        />
         <LoadingSkeleton />
       </div>
     );
@@ -218,36 +276,35 @@ export function KanbanBoard() {
 
   if (isError) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Kanban Board</h1>
-        <div className="bg-surface-1 border border-border rounded-lg p-6 text-center">
-          <p className="text-error mb-3">
-            Failed to load board{error?.detail ? `: ${error.detail}` : ""}
-          </p>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="
-              px-4 py-2 text-sm font-medium
-              bg-accent text-bg-0 rounded
-              hover:opacity-90 transition-opacity
-            "
-          >
-            Retry
-          </button>
-        </div>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Kanban"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Kanban" }]}
+        />
+        <EmptyState
+          title="Failed to load board"
+          description={error?.detail ?? undefined}
+          actions={
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="px-4 py-2 text-sm font-medium bg-accent text-bg-0 rounded hover:opacity-90"
+            >
+              Retry
+            </button>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold text-fg">Kanban Board</h1>
-        <p className="text-muted text-sm mt-1">
-          {data?.columns.length ?? 0} columns
-        </p>
-      </div>
+    <div className="p-6 h-full flex flex-col gap-4">
+      <PageHeader
+        title="Kanban"
+        breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Kanban" }]}
+        description={`${data?.columns.length ?? 0} columns`}
+      />
 
       <DndContext
         sensors={sensors}
@@ -257,15 +314,21 @@ export function KanbanBoard() {
         onDragEnd={handleDragEnd}
       >
         <div className="flex-1 flex gap-4 overflow-x-auto pb-4">
-          {data?.columns.map((column) => (
+          {data?.columns.map((column, idx) => (
             <KanbanColumn
               key={column.id}
               column={column}
+              isDropTarget={overColumnId === column.id && activeCard?.column_id !== column.id}
+              isFirst={idx === 0}
+              isLast={idx === (data?.columns.length ?? 0) - 1}
               onEditCard={handleEditCard}
               onDeleteCard={handleDeleteCard}
               onAddCard={handleAddCard}
               onUpdateColumn={handleUpdateColumn}
               onDeleteColumn={handleDeleteColumn}
+              onToggleAutopilot={handleToggleAutopilot}
+              onUpdateAgentType={handleUpdateAgentType}
+              onMoveColumn={handleMoveColumn}
             />
           ))}
           <AddColumnButton onAdd={handleAddColumn} />

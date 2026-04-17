@@ -87,10 +87,10 @@ async function checkTool({ name, command, parseVersion, minVersion, required, re
 }
 
 /**
- * Validate all prerequisites: git, Node.js, jq.
+ * Validate all prerequisites: git, Node.js, jq, uv.
  * Always returns ALL results (never short-circuits).
  *
- * @returns {Promise<Array>} Array of 3 result objects
+ * @returns {Promise<Array>} Array of 4 result objects
  */
 async function validatePrereqs() {
   const checks = [
@@ -126,6 +126,20 @@ async function validatePrereqs() {
       minVersion: '1.6',
       required: false,
       reason: 'nice-to-have for JSON processing',
+    }),
+    checkTool({
+      name: 'uv',
+      command: 'uv --version',
+      parseVersion: (out) => {
+        // `uv --version` prints e.g. "uv 0.10.8"
+        const parts = out.trim().split(/\s+/);
+        return parts.length >= 2 ? parts[1] : null;
+      },
+      // 0.3 is where `uv venv` stabilized (per Astral changelog 0.3.0);
+      // both `uv venv` and `uv pip install -e .` are stable from here up.
+      minVersion: '0.3',
+      required: false,
+      reason: 'needed for web backend (Mission Control)',
     }),
   ];
 

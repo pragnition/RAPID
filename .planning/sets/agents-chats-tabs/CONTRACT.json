@@ -1,0 +1,182 @@
+{
+  "setId": "agents-chats-tabs",
+  "version": "1.1.0",
+  "exports": {
+    "agents_routes": {
+      "type": "file",
+      "signature": "frontend routes: /agents (list), /agents/:runId (detail), /chats (list), /chats/:threadId (detail)",
+      "description": "New deep-linkable routes under React Router. Sidebar ga/gc shortcuts navigate to /agents and /chats respectively (shortcut reconciled from the prior gh=/chats binding that collided with gh=/graph in the CONTEXT authoritative keymap). Wave 2 of wireframe-rollout creates placeholder /agents and /chats routes; this set replaces those placeholders with real content."
+    },
+    "sidebar_nav_extension": {
+      "type": "file",
+      "signature": "NAV_GROUPS['Execution'].items += [{ id: 'agents', label: 'Agents', path: '/agents', shortcut: 'ga' }, { id: 'chats', label: 'Chats', path: '/chats', shortcut: 'gc' }]",
+      "description": "Extends the Execution nav group introduced in wireframe-rollout Wave 2 (types/layout.ts NAV_GROUPS with workspace/execution/library sections). Previous contract bound gh=/chats; this rewrite reconciles to CONTEXT authoritative map gc=/chats (matching wireframe-rollout Wave 2's types/layout.ts grouping and avoiding the gh=/graph collision). Wave 2 already inserts stub nav entries; this set adjusts icons and wires real behavior."
+    },
+    "agents_page": {
+      "type": "file",
+      "signature": "<AgentsPage /> composing PageHeader (title 'Agents', action slot with SearchInput + 'Launch New Run' button), StatCard grid ('Running' / 'Waiting' / 'Failed' / 'Completed'), DataTable for runs (status StatusBadge, skill mono, duration mono, set ref mono, cost mono), EmptyState when no runs",
+      "description": "Primary list view for all agent runs across the project. Composes wireframe-rollout Wave 1 primitives: PageHeader at the top, StatCard grid for per-status counts, DataTable for the runs list with mono tokens for technical fields, EmptyState for first-time onboarding. 'Launch New Run' button opens the SkillLauncher modal from skill-invocation-ui. Consolidated polling via /api/dashboard. Cites .planning/branding/wireframe.html section 01 (lines 640-785)."
+    },
+    "agent_run_page": {
+      "type": "file",
+      "signature": "<AgentRunPage /> composing PageHeader (title: run ID, description: skill name, action slot: pause/stop), StatusBadge pill (RUNNING 00:04:32 / WAITING / FAILED / COMPLETED -- color+label per WCAG 1.4.1), live activity feed as stacked ToolCallCard instances, telemetry SurfaceCard + DataTable for cost/token/duration; NO composer; keyboard shortcuts Shift+P=pause, Shift+S=stop",
+      "description": "Run-detail page for autonomous skills. Composes wireframe-rollout Wave 1 primitives: PageHeader at the top, StatusBadge for status indication (color + text per WCAG 1.4.1), stacked ToolCallCard components for the live activity feed (spinner/checkmark/duration/expandable args+result), SurfaceCard wrapping a DataTable for telemetry. Closing the tab does not kill the run. Reopening re-attaches via SSE + polling fallback. Cites .planning/branding/chatbot-wireframe.html tool-call section and BRANDING.md section chat-surface, Tool-call cards subsection."
+    },
+    "chats_page": {
+      "type": "file",
+      "signature": "<ChatsPage /> composing PageHeader (title 'Chats', action slot: 'New Chat' button opening SkillGallery filtered to interactive skills), DataTable for threads (title, skill mono, timestamp mono, status StatusBadge), EmptyState when no threads",
+      "description": "Thread list view for all chat sessions. Composes wireframe-rollout Wave 1 primitives: PageHeader at the top, DataTable for the threads list with mono tokens for timestamp/skill, StatusBadge for per-thread status, EmptyState for first-time onboarding. 'New Chat' opens the SkillGallery component from skill-invocation-ui filtered to interactive skills. Cites .planning/branding/wireframe.html section 01."
+    },
+    "chat_thread_page": {
+      "type": "file",
+      "signature": "<ChatThreadPage /> with persistent bottom Composer, scrollable message list, inline ToolCallCard components, inline StructuredQuestion for can_use_tool prompts, ErrorCard for errors, AutoScrollPill for auto-scroll opt-out, StreamingCursor during token streams, SlashAutocomplete above composer when user types /",
+      "description": "Chat detail page for interactive skills. Composes wireframe-rollout Wave 1 chat-surface primitives: Composer persistent at the bottom, scrollable message list rendered with react-markdown, inline ToolCallCard components per tool use (spinner/checkmark/duration/expandable args+result), inline StructuredQuestion forms for can_use_tool / AskUserQuestion prompts, ErrorCard for run errors, AutoScrollPill when the user scrolls up, StreamingCursor while tokens stream, SlashAutocomplete above the composer triggered on '/'. Unlike AgentRunPage, has a composer for back-and-forth. Cites the entire .planning/branding/chatbot-wireframe.html and BRANDING.md section chat-surface (all subsections: Message bubbles, Structured-question form, Tool-call cards, Error card, Composer, Autoscroll pill, Streaming cursor, Slash autocomplete)."
+    },
+    "use_agent_events_hook": {
+      "type": "function",
+      "signature": "function useAgentEvents(runId: string): {events, status, reconnect} -- SSE primary with 2-5s polling fallback, ?since=N replay on reconnect",
+      "description": "React hook for streaming agent events. Abstracts SSE + polling fallback. Reconnects on network hiccup with gap-replay."
+    },
+    "use_chats_hook": {
+      "type": "function",
+      "signature": "function useChats() -> {threads, createThread, sendMessage}; function useChatThread(id) -> {thread, messages, stream}",
+      "description": "React hooks for chat state management."
+    },
+    "chat_schema": {
+      "type": "class",
+      "signature": "class Chat(SQLModel, table=True): id, project_id, skill_name, created_at, last_message_at, title; class ChatMessage(SQLModel, table=True): id, chat_id (FK), role (user|assistant|tool), content, tool_calls (json), agent_run_id (FK | None), seq, created_at; class ChatAttachment(SQLModel, table=True, nullable fields): id, chat_id, message_id, kind, payload -- stubbed for v7.1",
+      "description": "Chat persistence schema. ChatAttachment stubbed with all-nullable fields per OVERSIGHTS guidance (avoid breaking migration in v7.1)."
+    },
+    "chat_service": {
+      "type": "file",
+      "signature": "app/services/chat_service.py: async def create_thread(project_id, skill_name) -> Chat; async def send_message(chat_id, content) -> ChatMessage; async def stream_response(chat_id) -> AsyncIterator[ChatMessage]",
+      "description": "Service layer bridging chat UI and agent runtime. A chat thread binds to a long-lived AgentSession with composer-based input."
+    },
+    "chats_http": {
+      "type": "endpoint",
+      "signature": "GET /api/chats; POST /api/chats (create); GET /api/chats/{id}; POST /api/chats/{id}/messages; GET /api/chats/{id}/events (SSE)",
+      "description": "Chat REST endpoints."
+    },
+    "consolidated_dashboard_endpoint": {
+      "type": "endpoint",
+      "signature": "GET /api/dashboard?project_id=X -> {runs_summary, chats_summary, kanban_summary, budget_remaining, recent_activity}",
+      "description": "Single endpoint that replaces 4-5 independent polls to prevent React Query thundering herd on tab focus. Jittered 5s TanStack Query interval. Note: Wave 2 of wireframe-rollout wires dashboard stat cards to stub values with a TODO to consume this endpoint once this set ships; this set fulfills those TODOs."
+    },
+    "vite_sse_proxy_config": {
+      "type": "file",
+      "signature": "frontend/vite.config.ts proxy rule with correct headers for event-stream (no buffering, content-type preservation)",
+      "description": "Vite dev-server SSE proxy configuration. Without it, SSE buffers in dev and never flushes."
+    },
+    "accessibility_hooks": {
+      "type": "file",
+      "signature": "<LiveRegion aria-live='polite'>, useFocusTrap hook",
+      "description": "A11y surface narrowed in the redesign. The primitive-scoped hooks usePrefersReducedMotion and useAutoScrollWithOptOut are absorbed into wireframe-rollout's web/frontend/src/components/primitives/hooks/ (co-located with the primitives that need them, per Wave 1 of wireframe-rollout). This set's remaining a11y surface is: LiveRegion aria-live component for streaming content and aria-busy announcements during token streams, and useFocusTrap hook for approval modals (reused from web-tool-bridge). Keyboard-accessible pause/stop/approve controls, WCAG AA color contrast, and prefers-reduced-motion respect all flow through the wireframe-rollout primitive hooks. Cites BRANDING.md section anti-patterns and section chat-surface.",
+      "_redesign_rename": "was accessibility_primitives; renamed to accessibility_hooks because the redesign absorbs primitive-scoped a11y hooks (usePrefersReducedMotion, useAutoScrollWithOptOut) into components/primitives/hooks/ in wireframe-rollout Wave 1"
+    },
+    "empty_state_onboarding": {
+      "type": "file",
+      "signature": "<AgentsEmptyState /> and <ChatsEmptyState /> compose the EmptyState primitive with 3-action lists",
+      "description": "First-time onboarding components composing wireframe-rollout Wave 1's EmptyState primitive with 3 example actions each. Agents empty state: 'Try /rapid:status, /rapid:plan-set, /rapid:execute-set'. Chats empty state: 'Try /rapid:discuss-set, /rapid:quick, /rapid:bug-fix'. Explains chat-vs-run distinction. Cites CONTEXT Cross-Page Shared Patterns section."
+    }
+  },
+  "imports": {
+    "runs_http_and_sse": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "endpoint",
+      "signature": "GET /api/agents/runs, GET /api/agents/runs/{id}, SSE /events, POST /input, POST /interrupt",
+      "description": "AgentsPage and AgentRunPage consume these endpoints"
+    },
+    "sse_event_schema": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "event",
+      "signature": "typed event kinds (assistant_text, thinking, tool_use, tool_result, ask_user, permission_req, status, run_complete) with stable payloads",
+      "description": "useAgentEvents hook consumes this schema to render inline tool-call cards, streaming text, status pill updates"
+    },
+    "agent_run_model": {
+      "fromSet": "agent-runtime-foundation",
+      "type": "class",
+      "signature": "AgentRun SQLModel",
+      "description": "ChatMessage.agent_run_id is an FK to agent_runs.id"
+    },
+    "ask_user_modal_components": {
+      "fromSet": "web-tool-bridge",
+      "type": "file",
+      "signature": "<AskUserModal>, <ApprovalModal>, <PermissionPrompt>",
+      "description": "Chat thread page and run detail page both mount these modals when can_use_tool/ask_user events arrive"
+    },
+    "skill_launcher_components": {
+      "fromSet": "skill-invocation-ui",
+      "type": "file",
+      "signature": "<SkillLauncher>, <SkillGallery>",
+      "description": "AgentsPage 'Launch New Run' button opens SkillLauncher; ChatsPage 'New Chat' uses same gallery filtered to interactive skills"
+    },
+    "skills_catalog_endpoint": {
+      "fromSet": "skill-invocation-ui",
+      "type": "endpoint",
+      "signature": "GET /api/skills",
+      "description": "Consumed for launcher rendering"
+    },
+    "wireframe_primitives": {
+      "fromSet": "wireframe-rollout",
+      "type": "file",
+      "signature": "components exported from web/frontend/src/components/primitives/index.ts",
+      "description": "All page/component exports above compose primitives from wireframe-rollout Wave 1: PageHeader, EmptyState, StatCard, DataTable, StatusBadge, StatusDot, HealthDot, SurfaceCard, ToolCallCard, StructuredQuestion, ErrorCard, Composer, SlashAutocomplete, AutoScrollPill, StreamingCursor, Kbd, SearchInput."
+    },
+    "fromSets": [
+      {
+        "set": "agent-runtime-foundation"
+      },
+      {
+        "set": "web-tool-bridge"
+      },
+      {
+        "set": "skill-invocation-ui"
+      },
+      {
+        "set": "wireframe-rollout"
+      }
+    ]
+  },
+  "behavioral": {
+    "run_survives_tab_close": {
+      "description": "Closing the browser tab does not interrupt the run. Reopening the same /agents/:runId route re-attaches via SSE (with ?since=N replay) + SQLite backfill. Matches user's CLAUDE.md polling preference and Replit Agent 3 / Devin / Manus conventions.",
+      "enforced_by": "test"
+    },
+    "polling_primary_sse_augmentation": {
+      "description": "Run list and run status poll at 2-5s jittered interval. SSE is used for streaming text and tool-call events only (not as the primary status signal). Consolidated dashboard endpoint to prevent thundering herd.",
+      "enforced_by": "test"
+    },
+    "status_pill_color_and_label": {
+      "description": "Every status pill uses both color and text label per WCAG 1.4.1 (RUNNING green+text, WAITING yellow+text, FAILED red+text, COMPLETED blue+text). Never color alone.",
+      "enforced_by": "test"
+    },
+    "keyboard_accessibility": {
+      "description": "All interactive controls are keyboard-reachable. Shift+P pauses, Shift+S stops (run detail). Modal focus-trap + ESC reject (approval modal). Tab order is logical. Screen-reader announcements via ARIA live regions.",
+      "enforced_by": "test"
+    },
+    "no_composer_on_run_detail": {
+      "description": "AgentRunPage has no composer -- it is NOT a chat. Autonomous runs do not accept user input mid-run (only pause/stop). This is load-bearing UX: users know from chrome alone whether they're in chat or autonomous mode.",
+      "enforced_by": "test"
+    },
+    "prefers_reduced_motion_respected": {
+      "description": "Streaming cursor, status-pill pulse, and activity-feed autoscroll animations are suppressed when prefers-reduced-motion is set.",
+      "enforced_by": "test"
+    },
+    "auto_scroll_opt_out": {
+      "description": "Activity feed and chat message list auto-scroll to bottom by default, but scrolling up manually disables auto-scroll until the user scrolls back to bottom. Prevents losing place during long streams.",
+      "enforced_by": "test"
+    },
+    "empty_state_onboarding_present": {
+      "description": "Agents and Chats tabs both render onboarding empty state when no runs/threads exist. Onboarding explains chat-vs-run distinction with 3 example actions.",
+      "enforced_by": "test"
+    },
+    "adopts_wireframe_primitives": {
+      "description": "All chat-surface and list-surface components in this set compose primitives from wireframe-rollout (components/primitives/). This set does NOT ship new primitives; new composition or new primitive needs must be raised as wireframe-rollout follow-up, not added here.",
+      "enforced_by": "review"
+    },
+    "sidebar_shortcut_map_matches_context": {
+      "description": "Sidebar nav shortcuts for Agents and Chats are ga and gc respectively, matching wireframe-rollout CONTEXT authoritative map. The previous contract encoded gh=/chats which collided with gh=/graph; this rewrite reconciles.",
+      "enforced_by": "review"
+    }
+  }
+}

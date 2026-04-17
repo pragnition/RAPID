@@ -9,6 +9,7 @@ import { GraphTabBar } from "@/components/graph/GraphTabBar";
 import { FileViewerPanel } from "@/components/graph/FileViewerPanel";
 import { GraphSearchFilter } from "@/components/graph/GraphSearchFilter";
 import type { DagGraph, CodeGraph as CodeGraphData } from "@/types/api";
+import { PageHeader } from "@/components/primitives";
 
 // Register dagre layout extension once
 let dagreRegistered = false;
@@ -600,9 +601,12 @@ export function CodeGraphPage() {
 
   if (!activeProjectId) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Code Graph</h1>
-        <p className="text-muted">Select a project from the sidebar to view the dependency graph</p>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Knowledge Graph"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Knowledge Graph" }]}
+          description="Select a project from the sidebar to view the dependency graph"
+        />
       </div>
     );
   }
@@ -628,8 +632,12 @@ export function CodeGraphPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold text-fg mb-2">Code Graph</h1>
-      {statsText && <p className="text-muted mb-4">{statsText}</p>}
+      <PageHeader
+        title="Knowledge Graph"
+        breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Knowledge Graph" }]}
+        description={statsText ?? undefined}
+        className="mb-4"
+      />
 
       <GraphTabBar
         activeTab={activeTab}

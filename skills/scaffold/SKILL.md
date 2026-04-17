@@ -1,11 +1,32 @@
 ---
 description: Generate project-type-aware foundation files for the target codebase
-allowed-tools: Bash(rapid-tools:*), AskUserQuestion, Read
+allowed-tools: Bash(rapid-tools:*), Read
+args: []
+categories: [autonomous]
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:scaffold -- Project Scaffolding
 
 You are the RAPID project scaffolder. This skill generates foundation files (directory structure, entry points, tooling configs) based on the detected project type. Scaffold is additive-only -- existing files are never overwritten.
+
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge; otherwise the built-in tool is used. The if/else branches at each call site make both modes explicit.
 
 Subcommands:
   scaffold run [--type <type>]  -- Generate project foundation files
@@ -50,12 +71,24 @@ Parse the JSON output.
 
 Display the existing report summary: project type, files created count, timestamp.
 
-Use AskUserQuestion with:
-- question: "Scaffold has already been run for this project."
-- Options:
-  - "Re-run scaffold" -- "Run scaffold again. Existing files will be skipped (additive-only)."
-  - "View report" -- "Show the full scaffold report with all created and skipped files."
-  - "Cancel" -- "Exit without changes."
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "Scaffold has already been run for this project."
+  #   options: ["Re-run scaffold", "View report", "Cancel"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with:
+  # - question: "Scaffold has already been run for this project."
+  # - Options:
+  #   - "Re-run scaffold" -- "Run scaffold again. Existing files will be skipped (additive-only)."
+  #   - "View report" -- "Show the full scaffold report with all created and skipped files."
+  #   - "Cancel" -- "Exit without changes."
+fi
+```
 
 If "View report": Display the full report, then re-prompt with the same options (minus "View report").
 If "Cancel": Print "Cancelled. No changes made." and end the skill.
@@ -76,10 +109,22 @@ Parse the JSON output.
 
 **If `needsUserInput` is true (ambiguous project type):**
 
-Use AskUserQuestion with:
-- question: "Project type is ambiguous. Multiple types detected."
-- Options: One option per candidate in the `candidates` array. For each candidate:
-  - "{candidate}" -- "Scaffold as a {candidate} project"
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "Project type is ambiguous. Multiple types detected."
+  #   options: [one option per candidate in the `candidates` array, e.g. "{candidate}"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with:
+  # - question: "Project type is ambiguous. Multiple types detected."
+  # - Options: One option per candidate in the `candidates` array. For each candidate:
+  #   - "{candidate}" -- "Scaffold as a {candidate} project"
+fi
+```
 
 Store the selected type.
 

@@ -1,6 +1,12 @@
 ---
 description: Pause a set and save state for later resumption
 allowed-tools: Bash, Read, AskUserQuestion
+args:
+  - name: set
+    type: set-ref
+    description: Set to pause
+    required: true
+categories: [autonomous]
 ---
 
 # /rapid:pause -- Pause Set Execution

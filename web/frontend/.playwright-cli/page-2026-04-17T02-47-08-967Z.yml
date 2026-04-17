@@ -1,0 +1,180 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: R
+          - generic [ref=e8]: RAPID
+        - combobox "Select project" [ref=e96]:
+          - option "Select a project..."
+          - option "better-ccflare"
+          - option "rapid_test"
+          - option "ASS"
+          - option "TISC"
+          - option "ARIA-rapid"
+          - option "RAPID" [selected]
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]: Workspace
+          - link "Dashboard gd" [ref=e13] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e15]: Dashboard
+            - generic [ref=e16]: gd
+          - link "Projects gp" [ref=e17] [cursor=pointer]:
+            - /url: /projects
+            - generic [ref=e19]: Projects
+            - generic [ref=e20]: gp
+          - link "Codebase" [ref=e21] [cursor=pointer]:
+            - /url: /codebase
+            - generic [ref=e23]: Codebase
+        - generic [ref=e24]:
+          - generic [ref=e25]: Execution
+          - link "Knowledge Graph gh" [ref=e26] [cursor=pointer]:
+            - /url: /graph
+            - generic [ref=e28]: Knowledge Graph
+            - generic [ref=e29]: gh
+          - link "Kanban gk" [ref=e30] [cursor=pointer]:
+            - /url: /kanban
+            - generic [ref=e32]: Kanban
+            - generic [ref=e33]: gk
+          - link "Worktrees gw" [ref=e34] [cursor=pointer]:
+            - /url: /worktrees
+            - generic [ref=e36]: Worktrees
+            - generic [ref=e37]: gw
+          - link "State gs" [ref=e38] [cursor=pointer]:
+            - /url: /state
+            - generic [ref=e40]: State
+            - generic [ref=e41]: gs
+          - link "Agents ga" [ref=e42] [cursor=pointer]:
+            - /url: /agents
+            - generic [ref=e44]: Agents
+            - generic [ref=e45]: ga
+          - link "Chats gc" [ref=e46] [cursor=pointer]:
+            - /url: /chats
+            - generic [ref=e48]: Chats
+            - generic [ref=e49]: gc
+        - generic [ref=e50]:
+          - generic [ref=e51]: Library
+          - link "Notes" [ref=e52] [cursor=pointer]:
+            - /url: /notes
+            - generic [ref=e54]: Notes
+          - link "Settings" [ref=e55] [cursor=pointer]:
+            - /url: /settings
+            - generic [ref=e57]: Settings
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - img "online" [ref=e60]
+          - generic [ref=e61]: backend online
+        - generic [ref=e62]: RAPID v7.0.0
+    - banner [ref=e63]:
+      - navigation "Breadcrumb" [ref=e66]:
+        - link "RAPID" [ref=e67] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e68]: /
+        - generic [ref=e69]: Kanban
+      - button "Open command palette" [ref=e70]:
+        - generic [ref=e71] [cursor=pointer]:
+          - searchbox "Search sets, pages, commands" [ref=e72]
+          - generic [ref=e74]: ⌘K
+      - generic [ref=e75]:
+        - group "Theme picker" [ref=e76]:
+          - generic [ref=e77]:
+            - button "Select Everforest theme" [pressed] [ref=e78]
+            - button "Select Catppuccin theme" [ref=e79]
+            - button "Select Gruvbox theme" [ref=e80]
+            - button "Select Tokyo Night theme" [ref=e81]
+          - button "Switch to light mode" [ref=e82]: dark
+        - button "Show keyboard shortcuts" [ref=e83]: "?"
+    - main [ref=e84]:
+      - generic [ref=e85]:
+        - generic [ref=e86]:
+          - navigation "Breadcrumb" [ref=e87]:
+            - link "RAPID" [ref=e88] [cursor=pointer]:
+              - /url: /
+            - generic [ref=e89]: /
+            - generic [ref=e90]: Kanban
+          - heading "Kanban" [level=1] [ref=e92]
+          - paragraph [ref=e196]: 3 columns
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - button "Backlog" [ref=e200]
+              - generic [ref=e201]: "1"
+              - button "Disable autopilot" [ref=e202]: ⚡
+              - button "Delete column" [ref=e203]: x
+            - button "Delete card worktrees yay or nay Agent running consider whether worktrees should even be used" [ref=e205]:
+              - button "Delete card" [ref=e206]: x
+              - paragraph [ref=e207]: worktrees yay or nay
+              - generic [ref=e210]: Agent running
+              - paragraph [ref=e212]: consider whether worktrees should even be used
+            - button "+ Add card" [ref=e214]
+          - generic [ref=e215]:
+            - generic [ref=e216]:
+              - button "In Progress" [ref=e217]
+              - generic [ref=e218]: "2"
+              - button "Enable autopilot" [ref=e219]: ⚡
+              - button "Delete column" [ref=e220]: x
+            - generic [ref=e221]:
+              - button "Delete card Code graph Agent running explorable code graph" [ref=e222]:
+                - button "Delete card" [ref=e223]: x
+                - paragraph [ref=e224]: Code graph
+                - generic [ref=e227]: Agent running
+                - paragraph [ref=e229]: explorable code graph
+              - button "Delete card claude.md rewritten per worktree Agent running we should capture meta principles that will be written in the claude.md everytime it creates a worktree" [ref=e230]:
+                - button "Delete card" [ref=e231]: x
+                - paragraph [ref=e232]: claude.md rewritten per worktree
+                - generic [ref=e235]: Agent running
+                - paragraph [ref=e237]: we should capture meta principles that will be written in the claude.md everytime it creates a worktree
+            - button "+ Add card" [ref=e239]
+          - generic [ref=e240]:
+            - generic [ref=e241]:
+              - button "Done" [ref=e242]
+              - generic [ref=e243]: "8"
+              - button "Enable autopilot" [ref=e244]: ⚡
+              - button "Delete column" [ref=e245]: x
+            - generic [ref=e246]:
+              - button "Delete card dqwd Agent running ⊘ dqwdqw" [ref=e247]:
+                - button "Delete card" [ref=e248]: x
+                - paragraph [ref=e249]: dqwd
+                - generic [ref=e250]:
+                  - generic [ref=e252]: Agent running
+                  - generic "Autopilot ignored" [ref=e254]: ⊘
+                - paragraph [ref=e255]: dqwdqw
+              - button "Delete card autpilot test Agent completed this is a test for the autopilot feature, just say hi" [ref=e256]:
+                - button "Delete card" [ref=e257]: x
+                - paragraph [ref=e258]: autpilot test
+                - generic [ref=e261]: Agent completed
+                - paragraph [ref=e262]: this is a test for the autopilot feature, just say hi
+              - button "Delete card autopilot test Agent running this is a test of the autopilot feature. do nothing except create the file autopilot/test.md" [ref=e263]:
+                - button "Delete card" [ref=e264]: x
+                - paragraph [ref=e265]: autopilot test
+                - generic [ref=e268]: Agent running
+                - paragraph [ref=e270]: this is a test of the autopilot feature. do nothing except create the file autopilot/test.md
+              - button "Delete card shell updated not fully complete when there are rapid_tools env var set in 2 different shells, the bash command only shows one and therefore the agent only updates one of them" [ref=e271]:
+                - button "Delete card" [ref=e272]: x
+                - paragraph [ref=e273]: shell updated not fully complete
+                - paragraph [ref=e274]: when there are rapid_tools env var set in 2 different shells, the bash command only shows one and therefore the agent only updates one of them
+              - button "Delete card update reminder update reminder/documentation" [ref=e275]:
+                - button "Delete card" [ref=e276]: x
+                - paragraph [ref=e277]: update reminder
+                - paragraph [ref=e278]: update reminder/documentation
+              - 'button "Delete card Integrate branding into init Instead of branding being a seperate command, integrate the branding flow into the init command -> helps with deduplication of work Improvements: artifact based branding" [ref=e279]':
+                - button "Delete card" [ref=e280]: x
+                - paragraph [ref=e281]: Integrate branding into init
+                - paragraph [ref=e282]: "Instead of branding being a seperate command, integrate the branding flow into the init command -> helps with deduplication of work Improvements: artifact based branding"
+              - button "Delete card Pog Dedede" [ref=e283]:
+                - button "Delete card" [ref=e284]: x
+                - paragraph [ref=e285]: Pog
+                - paragraph [ref=e286]: Dedede
+              - button "Delete card multiple bugfix agents if too many bugs let the bug-hunt agent spawn multiple bug-fix agent if too many bugs persist" [ref=e287]:
+                - button "Delete card" [ref=e288]: x
+                - paragraph [ref=e289]: multiple bugfix agents if too many bugs
+                - paragraph [ref=e290]: let the bug-hunt agent spawn multiple bug-fix agent if too many bugs persist
+            - button "+ Add card" [ref=e292]
+          - button "+ Add Column" [ref=e293]
+        - status [ref=e294]
+  - generic [ref=e97]:
+    - img [ref=e99]
+    - button "Open Tanstack query devtools" [ref=e147] [cursor=pointer]:
+      - img [ref=e148]

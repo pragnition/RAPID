@@ -1,6 +1,12 @@
 ---
 description: Run user acceptance testing on a scoped set -- reads REVIEW-SCOPE.md
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion, Glob, Grep
+args:
+  - name: set
+    type: set-ref
+    description: Set to run user acceptance testing on
+    required: true
+categories: [autonomous]
 ---
 
 # /rapid:uat -- User Acceptance Testing

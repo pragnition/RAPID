@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="RAPID logo">
+  <rect width="200" height="200" rx="16" fill="#2D353B"/>
+  <g stroke="#A7C080" stroke-width="3" fill="none" stroke-linecap="square">
+    <circle cx="60" cy="60" r="10" fill="#A7C080"/>
+    <circle cx="140" cy="60" r="10" fill="#A7C080"/>
+    <circle cx="60" cy="140" r="10" fill="#A7C080"/>
+    <circle cx="140" cy="140" r="10" fill="#A7C080"/>
+    <circle cx="100" cy="100" r="14" fill="#2D353B" stroke="#A7C080"/>
+    <line x1="60" y1="60" x2="100" y2="100"/>
+    <line x1="140" y1="60" x2="100" y2="100"/>
+    <line x1="60" y1="140" x2="100" y2="100"/>
+    <line x1="140" y1="140" x2="100" y2="100"/>
+  </g>
+  <text x="100" y="178" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="700" fill="#D3C6AA" text-anchor="middle" letter-spacing="4">RAPID</text>
+</svg>

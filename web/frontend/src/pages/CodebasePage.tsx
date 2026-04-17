@@ -2,6 +2,12 @@ import { useState } from "react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useCodebaseTree } from "@/hooks/useViews";
 import type { CodeFile, CodeSymbol } from "@/types/api";
+import {
+  PageHeader,
+  SurfaceCard,
+  StatCard,
+  EmptyState,
+} from "@/components/primitives";
 
 const LANG_COLORS: Record<string, string> = {
   python: "bg-blue-500/20 text-blue-400",
@@ -109,17 +115,26 @@ export function CodebasePage() {
 
   if (!activeProjectId) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Codebase</h1>
-        <p className="text-muted">Select a project from the sidebar to view codebase structure</p>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Codebase"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Codebase" }]}
+        />
+        <EmptyState
+          title="No project selected"
+          description="Select a project from the sidebar to view codebase structure."
+        />
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Codebase</h1>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Codebase"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Codebase" }]}
+        />
         <div className="space-y-4">
           <div className="h-12 bg-surface-1 rounded-lg animate-pulse" />
           <div className="h-64 bg-surface-1 rounded-lg animate-pulse" />
@@ -128,84 +143,86 @@ export function CodebasePage() {
     );
   }
 
-  if (isError) {
+  if (isError || !data) {
     const is404 = error && "status" in error && error.status === 404;
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Codebase</h1>
-        {is404 ? (
-          <p className="text-muted">No codebase data available for this project</p>
-        ) : (
-          <p className="text-red-400">
-            Failed to load codebase data. Check that the backend is running and try again.
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Codebase</h1>
-        <p className="text-muted">No codebase data available for this project</p>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Codebase"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Codebase" }]}
+        />
+        <EmptyState
+          title={is404 ? "No codebase data" : "Failed to load codebase"}
+          description={
+            is404
+              ? "No codebase data available for this project."
+              : "Check that the backend is running and try again."
+          }
+        />
       </div>
     );
   }
 
   if (data.files.length === 0 && data.parse_errors.length === 0) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Codebase</h1>
-        <p className="text-muted">No supported source files found</p>
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Codebase"
+          breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Codebase" }]}
+        />
+        <EmptyState
+          title="No supported source files found"
+          description="Add supported source files to see the codebase tree."
+        />
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-fg mb-2">Codebase</h1>
-      <div className="flex items-center gap-2 mb-6">
-        {data.languages.map((lang) => (
-          <LanguageBadge key={lang} language={lang} />
-        ))}
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Codebase"
+        breadcrumb={[{ label: "RAPID", to: "/" }, { label: "Codebase" }]}
+        actions={
+          <div className="flex items-center gap-2">
+            {data.languages.map((lang) => (
+              <LanguageBadge key={lang} language={lang} />
+            ))}
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
+        {/* Left rail: summary stats */}
+        <SurfaceCard elevation={1} className="p-4 space-y-3">
+          <StatCard label="Files Parsed" value={data.total_files} tone="accent" />
+          <StatCard label="Languages" value={data.languages.length} tone="info" />
+          <StatCard
+            label="Parse Errors"
+            value={data.parse_errors.length}
+            tone={data.parse_errors.length > 0 ? "warning" : "accent"}
+          />
+        </SurfaceCard>
+
+        {/* Right: file tree */}
+        <SurfaceCard elevation={1} className="p-0 overflow-hidden">
+          {data.files.map((file) => (
+            <FileTreeItem key={file.path} file={file} />
+          ))}
+        </SurfaceCard>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-surface-1 border border-border rounded-lg p-4">
-          <h2 className="text-sm font-semibold text-muted mb-1">Files Parsed</h2>
-          <p className="text-2xl font-bold text-accent">{data.total_files}</p>
-        </div>
-        <div className="bg-surface-1 border border-border rounded-lg p-4">
-          <h2 className="text-sm font-semibold text-muted mb-1">Languages</h2>
-          <p className="text-2xl font-bold text-accent">{data.languages.length}</p>
-        </div>
-        <div className="bg-surface-1 border border-border rounded-lg p-4">
-          <h2 className="text-sm font-semibold text-muted mb-1">Parse Errors</h2>
-          <p className={`text-2xl font-bold ${data.parse_errors.length > 0 ? "text-red-400" : "text-accent"}`}>
-            {data.parse_errors.length}
-          </p>
-        </div>
-      </div>
-
-      {/* File tree */}
-      <div className="bg-surface-1 border border-border rounded-lg overflow-hidden mb-6">
-        {data.files.map((file) => (
-          <FileTreeItem key={file.path} file={file} />
-        ))}
-      </div>
-
-      {/* Parse errors section */}
       {data.parse_errors.length > 0 && (
-        <div className="bg-surface-1 border border-border rounded-lg">
+        <SurfaceCard elevation={1}>
           <button
             type="button"
             className="flex items-center gap-2 px-4 py-3 w-full text-left"
             onClick={() => setShowErrors(!showErrors)}
           >
-            <span className="text-muted text-xs">{showErrors ? "\u25BC" : "\u25B6"}</span>
-            <span className="text-red-400 font-medium text-sm">
+            <span className="text-muted text-xs">
+              {showErrors ? "\u25BC" : "\u25B6"}
+            </span>
+            <span className="text-error font-medium text-sm">
               Parse Errors ({data.parse_errors.length})
             </span>
           </button>
@@ -214,14 +231,14 @@ export function CodebasePage() {
               {data.parse_errors.map((err, i) => (
                 <div
                   key={i}
-                  className="px-3 py-1.5 rounded bg-red-500/10 text-red-400 text-sm font-mono"
+                  className="px-3 py-1.5 rounded bg-error/10 text-error text-sm font-mono"
                 >
                   {err}
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </SurfaceCard>
       )}
     </div>
   );

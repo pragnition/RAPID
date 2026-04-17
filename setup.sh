@@ -57,8 +57,30 @@ echo "  OK: npm $(npm -v)"
 if command -v uv &>/dev/null; then
     echo "  OK: uv $(uv --version | awk '{print $2}')"
 else
-    echo "  INFO: uv not found (optional, needed for web backend)"
-    echo "  Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    case "${RAPID_INSTALL_UV:-}" in
+        auto)
+            echo "  INFO: uv not found -- attempting auto-install via astral.sh installer"
+            # Wrap curl|sh in an if so failure is caught (set -e would otherwise abort).
+            if curl -LsSf https://astral.sh/uv/install.sh | sh; then
+                # Astral installer drops uv in ~/.local/bin (current, since uv v0.5)
+                # or ~/.cargo/bin (legacy). Add both defensively so the re-probe finds it.
+                export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+                if command -v uv &>/dev/null; then
+                    echo "  OK: uv $(uv --version | awk '{print $2}') installed"
+                else
+                    echo "  WARNING: uv installer ran but 'uv' not on PATH"
+                    echo "  Restart your shell or add ~/.local/bin to PATH, then re-run setup."
+                fi
+            else
+                echo "  WARNING: uv auto-install failed."
+                echo "  Install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            fi
+            ;;
+        skip|*)
+            echo "  INFO: uv not found (optional, needed for web backend)"
+            echo "  Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            ;;
+    esac
 fi
 
 # Step 2: Install npm dependencies
@@ -138,7 +160,13 @@ if [[ -d "$BACKEND_DIR" ]]; then
         }
         echo "  OK: Backend venv created"
     else
-        echo "  [skip] uv not found -- install uv, then run: cd $BACKEND_DIR && uv venv .venv && uv pip install -e ."
+        if [[ "${RAPID_INSTALL_UV:-}" == "auto" ]]; then
+            echo "  WARNING: uv still not available after auto-install attempt."
+            echo "  Install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            echo "  Then run: cd $BACKEND_DIR && uv venv .venv && uv pip install -e ."
+        else
+            echo "  [skip] uv not found -- install uv, then run: cd $BACKEND_DIR && uv venv .venv && uv pip install -e ."
+        fi
     fi
 else
     echo "  [skip] Backend directory not found at $BACKEND_DIR"
@@ -148,9 +176,9 @@ fi
 echo "[7/8] Building web frontend..."
 FRONTEND_DIR="$SCRIPT_DIR/web/frontend"
 if [[ -d "$FRONTEND_DIR" ]]; then
-    (cd "$FRONTEND_DIR" && npm install && npm run build 2>&1) || {
+    (cd "$FRONTEND_DIR" && npm install && npx vite build 2>&1) || {
         echo "  WARNING: Frontend build failed (non-fatal)"
-        echo "  You can build manually with: cd $FRONTEND_DIR && npm install && npm run build"
+        echo "  You can build manually with: cd $FRONTEND_DIR && npm install && npx vite build"
     }
     echo "  OK: Frontend built"
 else

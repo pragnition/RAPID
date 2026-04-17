@@ -26,7 +26,7 @@ export function useKanbanBoard(projectId: string | null) {
 
 export function useCreateColumn(projectId: string) {
   const queryClient = useQueryClient();
-  return useMutation<KanbanColumnResponse, ApiError, { title: string }>({
+  return useMutation<KanbanColumnResponse, ApiError, { title: string; default_agent_type?: string }>({
     mutationFn: (body) =>
       apiClient.post<KanbanColumnResponse>(
         `/projects/${projectId}/kanban/columns`,
@@ -45,7 +45,7 @@ export function useUpdateColumn(projectId: string) {
   return useMutation<
     KanbanColumnResponse,
     ApiError,
-    { columnId: string; title?: string; position?: number }
+    { columnId: string; title?: string; position?: number; default_agent_type?: string }
   >({
     mutationFn: ({ columnId, ...body }) =>
       apiClient.put<KanbanColumnResponse>(
@@ -84,7 +84,7 @@ export function useCreateCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { columnId: string; title: string; description?: string }
+    { columnId: string; title: string; description?: string; autopilot_ignore?: boolean; agent_type?: string }
   >({
     mutationFn: ({ columnId, ...body }) =>
       apiClient.post<KanbanCardResponse>(
@@ -104,7 +104,7 @@ export function useUpdateCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { cardId: string; title?: string; description?: string }
+    { cardId: string; title?: string; description?: string; autopilot_ignore?: boolean; agent_type?: string }
   >({
     mutationFn: ({ cardId, ...body }) =>
       apiClient.put<KanbanCardResponse>(
@@ -124,7 +124,7 @@ export function useMoveCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { cardId: string; column_id: string; position: number },
+    { cardId: string; column_id: string; position: number; rev?: number },
     { previous: KanbanBoardResponse | undefined }
   >({
     mutationFn: ({ cardId, ...body }) =>
@@ -216,6 +216,30 @@ export function useDeleteCard(projectId: string) {
     mutationFn: ({ cardId }) =>
       apiClient.delete<void>(
         `/projects/${projectId}/kanban/cards/${cardId}`,
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["kanban-board", projectId],
+      });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Column autopilot toggle
+// ---------------------------------------------------------------------------
+
+export function useToggleColumnAutopilot(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    KanbanColumnResponse,
+    ApiError,
+    { columnId: string; isAutopilot: boolean }
+  >({
+    mutationFn: ({ columnId, isAutopilot }) =>
+      apiClient.put<KanbanColumnResponse>(
+        `/projects/${projectId}/kanban/columns/${columnId}/autopilot`,
+        { is_autopilot: isAutopilot },
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({

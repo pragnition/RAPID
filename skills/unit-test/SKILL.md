@@ -1,6 +1,12 @@
 ---
 description: Run unit test pipeline on a scoped set -- reads REVIEW-SCOPE.md
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion, Glob, Grep
+args:
+  - name: set
+    type: set-ref
+    description: Set to run unit tests on
+    required: true
+categories: [autonomous]
 ---
 
 # /rapid:unit-test -- Unit Test Pipeline

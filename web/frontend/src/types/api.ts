@@ -195,6 +195,16 @@ export interface KanbanCardResponse {
   position: number;
   created_at: string;
   updated_at: string;
+  // Agent fields (v2)
+  rev: number;
+  created_by: string;
+  agent_status: "idle" | "claimed" | "running" | "blocked" | "completed";
+  locked_by_run_id: string | null;
+  completed_by_run_id: string | null;
+  agent_run_id: string | null;
+  retry_count: number;
+  autopilot_ignore: boolean;
+  agent_type: string;
 }
 
 export interface KanbanColumnResponse {
@@ -203,6 +213,8 @@ export interface KanbanColumnResponse {
   title: string;
   position: number;
   created_at: string;
+  is_autopilot: boolean;
+  default_agent_type: string;
   cards: KanbanCardResponse[];
 }
 

@@ -1,0 +1,118 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: R
+          - generic [ref=e8]: RAPID
+        - generic [ref=e9]: Loading...
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]: Workspace
+          - link "Dashboard gd" [ref=e13] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e15]: Dashboard
+            - generic [ref=e16]: gd
+          - link "Projects gp" [ref=e17] [cursor=pointer]:
+            - /url: /projects
+            - generic [ref=e19]: Projects
+            - generic [ref=e20]: gp
+          - link "Codebase" [ref=e21] [cursor=pointer]:
+            - /url: /codebase
+            - generic [ref=e23]: Codebase
+        - generic [ref=e24]:
+          - generic [ref=e25]: Execution
+          - link "Knowledge Graph gh" [ref=e26] [cursor=pointer]:
+            - /url: /graph
+            - generic [ref=e28]: Knowledge Graph
+            - generic [ref=e29]: gh
+          - link "Kanban gk" [ref=e30] [cursor=pointer]:
+            - /url: /kanban
+            - generic [ref=e32]: Kanban
+            - generic [ref=e33]: gk
+          - link "Worktrees gw" [ref=e34] [cursor=pointer]:
+            - /url: /worktrees
+            - generic [ref=e36]: Worktrees
+            - generic [ref=e37]: gw
+          - link "State gs" [ref=e38] [cursor=pointer]:
+            - /url: /state
+            - generic [ref=e40]: State
+            - generic [ref=e41]: gs
+          - link "Agents ga" [ref=e42] [cursor=pointer]:
+            - /url: /agents
+            - generic [ref=e44]: Agents
+            - generic [ref=e45]: ga
+          - link "Chats gc" [ref=e46] [cursor=pointer]:
+            - /url: /chats
+            - generic [ref=e48]: Chats
+            - generic [ref=e49]: gc
+        - generic [ref=e50]:
+          - generic [ref=e51]: Library
+          - link "Notes" [ref=e52] [cursor=pointer]:
+            - /url: /notes
+            - generic [ref=e54]: Notes
+          - link "Settings" [ref=e55] [cursor=pointer]:
+            - /url: /settings
+            - generic [ref=e57]: Settings
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - img "online" [ref=e60]
+          - generic [ref=e61]: backend online
+        - generic [ref=e62]: RAPID v7.0.0
+    - banner [ref=e63]:
+      - navigation "Breadcrumb" [ref=e66]:
+        - link "RAPID" [ref=e67] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e68]: /
+        - link "Chats" [ref=e69] [cursor=pointer]:
+          - /url: /chats
+        - generic [ref=e70]: /
+        - generic [ref=e71]: 3610c61b-2eba-48ae-9477-e64eb609ae69
+      - button "Open command palette" [ref=e72]:
+        - generic [ref=e73] [cursor=pointer]:
+          - searchbox "Search sets, pages, commands" [ref=e74]
+          - generic [ref=e76]: ⌘K
+      - generic [ref=e77]:
+        - group "Theme picker" [ref=e78]:
+          - generic [ref=e79]:
+            - button "Select Everforest theme" [pressed] [ref=e80]
+            - button "Select Catppuccin theme" [ref=e81]
+            - button "Select Gruvbox theme" [ref=e82]
+            - button "Select Tokyo Night theme" [ref=e83]
+          - button "Switch to light mode" [ref=e84]: dark
+        - button "Show keyboard shortcuts" [ref=e85]: "?"
+    - main [ref=e86]:
+      - generic [ref=e87]:
+        - generic [ref=e89]:
+          - navigation "Breadcrumb" [ref=e90]:
+            - link "RAPID" [ref=e91] [cursor=pointer]:
+              - /url: /
+            - generic [ref=e92]: /
+            - link "Chats" [ref=e93] [cursor=pointer]:
+              - /url: /chats
+            - generic [ref=e94]: /
+            - generic [ref=e95]: 3610c61b-2eba-48ae-9477-e64eb609ae69
+          - heading "Chat Thread" [level=1] [ref=e97]
+        - generic [ref=e99]: Loading messages...
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - textbox "Type a message..." [ref=e103]
+            - button "Send" [disabled] [ref=e104]
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - generic [ref=e107]: ↵
+              - text: send
+            - generic [ref=e108]:
+              - generic [ref=e109]: ⇧↵
+              - text: newline
+            - generic [ref=e110]:
+              - generic [ref=e111]: /
+              - text: commands
+            - generic [ref=e112]:
+              - generic [ref=e113]: "@"
+              - text: mention
+  - generic [ref=e114]:
+    - img [ref=e116]
+    - button "Open Tanstack query devtools" [ref=e164] [cursor=pointer]:
+      - img [ref=e165]

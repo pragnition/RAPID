@@ -1,6 +1,8 @@
 ---
 description: Run adversarial bug hunt on a scoped set -- reads REVIEW-SCOPE.md
 allowed-tools: Read, Write, Bash, Agent, AskUserQuestion, Glob, Grep
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:bug-hunt -- Adversarial Bug Hunt Pipeline

@@ -1,11 +1,32 @@
 ---
 description: Conduct a structured branding interview with codebase-aware visual/UX brand guidelines, artifact gallery, and live-reloading webserver
-allowed-tools: Bash(rapid-tools:*), Read, Write, AskUserQuestion, Glob, Grep
+allowed-tools: Bash(rapid-tools:*), Read, Write, Glob, Grep
+args: []
+categories: [interactive]
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:branding -- Codebase-Aware Project Branding Interview
 
 You are the RAPID branding interviewer. This skill detects the project type, then captures visual identity, component style, terminology, and interaction preferences through a structured interview. It generates a BRANDING.md artifact that shapes how all RAPID agents communicate and style their output, along with optional expanded assets (guidelines, README template, component library) all browseable from a hub gallery.
+
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge; otherwise the built-in tool is used. The if/else branches at each call site (and inline annotations on narrative mentions) make both modes explicit.
 
 Follow these steps IN ORDER. Do not skip steps.
 
@@ -65,7 +86,19 @@ Detect the project type to tailor the interview and output. Use multiple signals
 
 5. **Assign project type** as one of: `webapp`, `cli`, `library`, `hybrid`, `unknown`.
 
-6. **If confidence is low or type is `hybrid`/`unknown`**, use AskUserQuestion to confirm:
+6. **If confidence is low or type is `hybrid`/`unknown`**, confirm the type:
+   ```
+   if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+     # SDK mode: route through the web bridge.
+     # Call mcp__rapid__webui_ask_user with:
+     #   question: "I detected your project might be a {detected_type}. What best describes your project?"
+     #   options: ["Web application", "CLI tool", "Library / SDK", ...]
+     #   allow_free_text: false
+     # Wait for the answer.
+   else
+     # CLI mode: use the built-in tool exactly as before. Use AskUserQuestion to confirm with the prose below.
+   fi
+   ```
    ```
    "I detected your project might be a {detected_type}. What best describes your project?"
    Options:
@@ -94,7 +127,18 @@ Check if `.planning/branding/BRANDING.md` already exists:
 
 2. Read the `> Project type:` line from the existing BRANDING.md to determine the current type.
 
-3. Use AskUserQuestion to ask:
+3. Ask the user:
+   ```
+   if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+     # SDK mode: route through the web bridge.
+     # Call mcp__rapid__webui_ask_user with:
+     #   question: "BRANDING.md already exists. What would you like to do?"
+     #   options: ["Update specific sections", "Start fresh", "View current and exit"]
+     #   allow_free_text: false
+   else
+     # CLI mode: Use AskUserQuestion with the prose below.
+   fi
+   ```
    ```
    "BRANDING.md already exists. What would you like to do?"
    Options:
@@ -104,7 +148,18 @@ Check if `.planning/branding/BRANDING.md` already exists:
    ```
 
 4. Handle each response:
-   - **"Update specific sections":** Use AskUserQuestion to ask which sections to update. The section list is project-type-aware:
+   - **"Update specific sections":** Ask which sections to update. The section list is project-type-aware:
+
+     ```
+     if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+       # SDK mode: route through the web bridge.
+       # Call mcp__rapid__webui_ask_user with the project-type-aware section options below.
+     else
+       # CLI mode:
+       # Use AskUserQuestion with the project-type-aware section options below.
+     fi
+     ```
+
 
      For **webapp** projects (or when `> Project type: webapp` is found):
      ```
@@ -148,11 +203,28 @@ Continue to Step 4.
 
 ## Step 4: Branding Interview
 
-Conduct the interview in 4 rounds, one per dimension. Each round is adapted to the detected project type. For each round, use ONE AskUserQuestion call with 3-4 prefilled options plus "Other" for custom input.
+Conduct the interview in 4 rounds, one per dimension. Each round is adapted to the detected project type. For each round issue ONE call with 3-4 prefilled options plus "Other" for custom input:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: ONE mcp__rapid__webui_ask_user call per round.
+else
+  # CLI mode:
+  # ONE AskUserQuestion call per round.
+fi
+```
 
 ### Round 1 -- Visual Identity / Output Identity
 
-**For webapp projects**, use AskUserQuestion:
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+**For webapp projects**, use AskUserQuestion :
+fi
+```
 ```
 "What visual identity direction fits your project?"
 Options:
@@ -162,7 +234,15 @@ Options:
 - "Other" -- "Describe your visual direction"
 ```
 
-**For CLI/library projects**, use AskUserQuestion:
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+**For CLI/library projects**, use AskUserQuestion :
+fi
+```
 ```
 "How should your tool's terminal output look and feel?"
 Options:
@@ -174,7 +254,15 @@ Options:
 
 ### Round 2 -- Component Style / Error & Status Style
 
-**For webapp projects**, use AskUserQuestion:
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+**For webapp projects**, use AskUserQuestion :
+fi
+```
 ```
 "What component and layout style do you prefer?"
 Options:
@@ -184,7 +272,15 @@ Options:
 - "Other" -- "Describe your UI component style"
 ```
 
-**For CLI/library projects**, use AskUserQuestion:
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+**For CLI/library projects**, use AskUserQuestion :
+fi
+```
 ```
 "How should errors and status messages be formatted?"
 Options:
@@ -196,7 +292,16 @@ Options:
 
 ### Round 3 -- Terminology & Naming
 
-Use AskUserQuestion (same for all project types):
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below (same for all project types).
+else
+  # CLI mode:
+  Use AskUserQuestion (same for all project types):
+fi
+```
+
 ```
 "Do you have specific naming conventions or domain terminology agents should follow?"
 Options:
@@ -206,7 +311,17 @@ Options:
 - "Other" -- "Describe your terminology preferences"
 ```
 
-If the user selects "I have a terminology list" or "Other", use a follow-up AskUserQuestion:
+If the user selects "I have a terminology list" or "Other", issue a follow-up prompt:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: call mcp__rapid__webui_ask_user with the follow-up question/options below.
+else
+  # CLI mode:
+  Use a follow-up AskUserQuestion.
+fi
+```
+
 ```
 "Please provide your terminology preferences. List terms to use, terms to avoid, or naming patterns."
 Options:
@@ -216,7 +331,15 @@ Record whatever the user provides for the terminology table.
 
 ### Round 4 -- Interaction Patterns / Log & Progress Style
 
-**For webapp projects**, use AskUserQuestion:
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+**For webapp projects**, use AskUserQuestion :
+fi
+```
 ```
 "What interaction and feedback patterns should your UI follow?"
 Options:
@@ -226,7 +349,15 @@ Options:
 - "Other" -- "Describe your interaction patterns"
 ```
 
-**For CLI/library projects**, use AskUserQuestion:
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+**For CLI/library projects**, use AskUserQuestion :
+fi
+```
 ```
 "How should progress and logging be displayed?"
 Options:
@@ -238,7 +369,17 @@ Options:
 
 ### Final Question -- Anti-Patterns
 
-After all 4 rounds, use one final AskUserQuestion:
+After all 4 rounds, issue one final prompt:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: call mcp__rapid__webui_ask_user with the anti-pattern question/options below.
+else
+  # CLI mode:
+  Use one final AskUserQuestion.
+fi
+```
+
 ```
 "What should agents explicitly AVOID in their output?"
 Options:
@@ -471,7 +612,16 @@ If the command fails, display: `"[WARN] Could not register wireframe.html artifa
 
 ## Step 8: Expanded Asset Generation
 
-After the wireframe is generated, present a multi-select prompt using AskUserQuestion:
+After the wireframe is generated, present a multi-select prompt:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+  Use AskUserQuestion with the question/options below.
+fi
+```
 
 ```
 "Which additional branding assets would you like to generate?"
@@ -643,7 +793,17 @@ const server = require('./src/lib/branding-server.cjs');
 ```
 
 **Handle server start results:**
-- If output contains `PORT_CONFLICT`: Use AskUserQuestion to prompt the user for an alternative port:
+- If output contains `PORT_CONFLICT`: Prompt the user for an alternative port.
+
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: call mcp__rapid__webui_ask_user with the port question/options below.
+  else
+    # CLI mode:
+    Use AskUserQuestion with the port question/options below.
+  fi
+  ```
+
   ```
   "Port 3141 is already in use. Which port should the branding server use?"
   Options:
@@ -673,8 +833,16 @@ The hub gallery links to `index.html` for the visual preview, but the hub is wha
 
 ## Step 10: Server Lifecycle, Commit, and Summary
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 After the user has reviewed the branding hub, use AskUserQuestion to ask:
 
+fi
+```
 ```
 "Would you like to stop the branding server?"
 Options:
@@ -739,7 +907,18 @@ node "${RAPID_TOOLS}" display footer "/rapid:status"
 ## Error Handling
 
 - **If RAPID_TOOLS is not set:** Show `[RAPID ERROR] RAPID_TOOLS is not set. Run /rapid:install or ./setup.sh to configure RAPID.` and STOP.
-- **If AskUserQuestion fails:** Gracefully fall back to sensible defaults (Professional tone, Standard English terminology, Concise style, No emojis). Log a warning: "AskUserQuestion unavailable -- using default branding preferences."
+- **If the prompt tool fails:** Gracefully fall back to sensible defaults (Professional tone, Standard English terminology, Concise style, No emojis).
+
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: fall back if mcp__rapid__webui_ask_user raises.
+  else
+    # CLI mode:
+    # Fall back if AskUserQuestion fails.
+  fi
+  ```
+
+  Log a warning: "interactive prompt unavailable -- using default branding preferences."
 - **If git commit fails:** Show the error but do not fail the skill. The artifacts are still written to disk.
 - All errors should be descriptive with clear next steps for the user.
 
@@ -750,7 +929,18 @@ node "${RAPID_TOOLS}" display footer "/rapid:status"
 - **Branding is FULLY OPTIONAL.** This skill should never be required for any other RAPID workflow. If BRANDING.md does not exist, all other skills work normally.
 - **Hub gallery at `/` is the primary branding URL.** All artifacts are browseable from there.
 - **BRANDING.md is the authoritative artifact.** `index.html` is for human review and sharing. Agents consume BRANDING.md, not the HTML page.
-- **Each AskUserQuestion must have 3-4 prefilled options with clear descriptions.** The "Other" option on every question allows full customization.
+- **Each prompt must have 3-4 prefilled options with clear descriptions.**
+
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: supply 3-4 options to mcp__rapid__webui_ask_user (do NOT set allow_free_text).
+  else
+    # CLI mode:
+    # Each AskUserQuestion must have 3-4 prefilled options.
+  fi
+  ```
+
+  The "Other" option on every question allows full customization.
 - **50-150 line budget.** BRANDING.md must be concise enough to inject into prompts without blowing context limits.
 - **Project type detection drives everything.** The detected type determines which interview questions are asked, what BRANDING.md sections are generated, and how the HTML preview renders.
 

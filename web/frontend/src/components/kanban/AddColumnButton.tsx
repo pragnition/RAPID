@@ -1,18 +1,20 @@
 import { useState } from "react";
 
 interface AddColumnButtonProps {
-  onAdd: (title: string) => void;
+  onAdd: (title: string, defaultAgentType: string) => void;
 }
 
 export function AddColumnButton({ onAdd }: AddColumnButtonProps) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
+  const [defaultAgentType, setDefaultAgentType] = useState("quick");
 
   const handleSubmit = () => {
     const trimmed = title.trim();
     if (trimmed) {
-      onAdd(trimmed);
+      onAdd(trimmed, defaultAgentType);
       setTitle("");
+      setDefaultAgentType("quick");
       setEditing(false);
     }
   };
@@ -48,6 +50,19 @@ export function AddColumnButton({ onAdd }: AddColumnButtonProps) {
             focus:outline-none focus:border-accent
           "
         />
+        <select
+          value={defaultAgentType}
+          onChange={(e) => setDefaultAgentType(e.target.value)}
+          className="
+            w-full px-2.5 py-1.5 text-sm
+            bg-surface-1 border border-border rounded
+            text-fg
+            focus:outline-none focus:border-accent
+          "
+        >
+          <option value="quick">Default: Quick task</option>
+          <option value="bug-fix">Default: Bug fix</option>
+        </select>
         <div className="flex gap-2">
           <button
             type="button"
@@ -60,6 +75,7 @@ export function AddColumnButton({ onAdd }: AddColumnButtonProps) {
             type="button"
             onClick={() => {
               setTitle("");
+              setDefaultAgentType("quick");
               setEditing(false);
             }}
             className="px-3 py-1 text-xs text-muted hover:text-fg transition-colors"

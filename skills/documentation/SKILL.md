@@ -1,6 +1,8 @@
 ---
 description: Generate, update, and maintain project documentation from git history and RAPID artifacts
 allowed-tools: Bash(rapid-tools:*), Read, Write, Edit
+args: []
+categories: [autonomous]
 ---
 
 # /rapid:documentation -- Documentation Generation

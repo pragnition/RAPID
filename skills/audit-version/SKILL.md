@@ -1,6 +1,13 @@
 ---
 description: Audit a completed milestone for gaps between planned requirements and actual delivery
 allowed-tools: Bash(rapid-tools:*), AskUserQuestion, Read, Write, Glob, Grep, Agent
+args:
+  - name: version
+    type: string
+    description: Version identifier to audit
+    required: false
+    maxLength: 32
+categories: [autonomous]
 ---
 
 # /rapid:audit-version -- Milestone Audit

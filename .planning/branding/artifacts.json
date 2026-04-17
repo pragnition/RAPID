@@ -1,0 +1,51 @@
+[
+  {
+    "id": "30ea8f3f-be92-420d-a38b-ad1b33c7b039",
+    "type": "theme",
+    "filename": "BRANDING.md",
+    "createdAt": "2026-04-15T06:33:02.929Z",
+    "description": "Project branding guidelines and style tokens"
+  },
+  {
+    "id": "d8971fb0-1120-474d-af3e-ecfbbbaaea5a",
+    "type": "logo",
+    "filename": "logo.svg",
+    "createdAt": "2026-04-15T06:33:15.751Z",
+    "description": "RAPID logo — DAG node motif on Everforest surface (placeholder)"
+  },
+  {
+    "id": "c53f240a-dd70-4b72-a93d-c26c929346b3",
+    "type": "wireframe",
+    "filename": "wireframe.html",
+    "createdAt": "2026-04-15T06:36:42.535Z",
+    "description": "Mission Control wireframe — Dashboard, Knowledge Graph, Kanban, Projects list + command palette"
+  },
+  {
+    "id": "19d689cf-7c2d-44e4-a333-d029759be84b",
+    "type": "guidelines",
+    "filename": "guidelines.html",
+    "createdAt": "2026-04-15T06:40:58.035Z",
+    "description": "Design system reference: tokens, do/dont, snippets, accessibility, voice"
+  },
+  {
+    "id": "eb3b4dc6-d632-4065-b60a-03e7e7bb251e",
+    "type": "component-library",
+    "filename": "components.html",
+    "createdAt": "2026-04-15T06:42:04.900Z",
+    "description": "Interactive component library: buttons, forms, cards, alerts, badges, progress"
+  },
+  {
+    "id": "bf1b3f78-9d23-4bff-9993-1ccaf9c5ca1b",
+    "type": "preview",
+    "filename": "index.html",
+    "createdAt": "2026-04-15T06:43:33.542Z",
+    "description": "Branding hub — entry point linking all artifacts"
+  },
+  {
+    "id": "33178b8e-eac0-4fb6-a91c-c97a06c528cb",
+    "type": "wireframe",
+    "filename": "chatbot-wireframe.html",
+    "createdAt": "2026-04-15T06:54:32.078Z",
+    "description": "Chatbot wireframe — Chats list, empty state, active thread with composer + tool cards, thread with artifact side panel"
+  }
+]

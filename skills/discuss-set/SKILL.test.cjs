@@ -194,4 +194,107 @@ describe('discuss-set SKILL.md structural assertions', () => {
       'Format A should use **Cons:** labeled blocks',
     );
   });
+
+  // ── Test 14: Step 4 names self-interview ─────────────────────
+
+  it('Step 4 names self-interview', () => {
+    const step4Match = content.match(/^## Step 4[\s\S]*?(?=^## Step 5)/m);
+    assert.ok(step4Match, 'Should find Step 4 section');
+    const step4 = step4Match[0];
+    assert.ok(
+      step4.includes('self-interview'),
+      'Step 4 should contain the literal string "self-interview"',
+    );
+  });
+
+  // ── Test 15: Step 4 drops the old stub-generation directives ─
+
+  it('Step 4 drops the old stub-generation directives', () => {
+    const step4Match = content.match(/^## Step 4[\s\S]*?(?=^## Step 5)/m);
+    assert.ok(step4Match, 'Should find Step 4 section');
+    const step4 = step4Match[0];
+    // The blanket "no user decisions captured" directive must be gone.
+    assert.ok(
+      !step4.includes('no user decisions captured'),
+      'Step 4 must not contain the old "no user decisions captured" directive',
+    );
+    // The unconditional "No deferred items identified (auto-skip mode)"
+    // directive must be gone. Start with strict-zero per plan guidance;
+    // relax only if the implementation legitimately needs the phrase as a
+    // quoted empty-DEFERRED fallback.
+    assert.ok(
+      !step4.includes('No deferred items identified (auto-skip mode)'),
+      'Step 4 must not contain the unconditional "No deferred items identified (auto-skip mode)" directive',
+    );
+  });
+
+  // ── Test 16: Step 4 references all 5 CONTEXT.md XML tags ─────
+
+  it('Step 4 references all 5 CONTEXT.md XML tags', () => {
+    const step4Match = content.match(/^## Step 4[\s\S]*?(?=^## Step 5)/m);
+    assert.ok(step4Match, 'Should find Step 4 section');
+    const step4 = step4Match[0];
+    const requiredTags = ['<domain>', '<decisions>', '<specifics>', '<code_context>', '<deferred>'];
+    for (const tag of requiredTags) {
+      assert.ok(
+        step4.includes(tag),
+        `Step 4 should reference the ${tag} XML tag (all 5 CONTEXT.md tags required in --skip agent prompt)`,
+      );
+    }
+  });
+
+  // ── Test 17: Step 4 references the 4n gray-area heuristic ────
+
+  it('Step 4 references the 4n gray-area heuristic', () => {
+    const step4Match = content.match(/^## Step 4[\s\S]*?(?=^## Step 5)/m);
+    assert.ok(step4Match, 'Should find Step 4 section');
+    const step4 = step4Match[0];
+    // Any of these signals that the 4n routing made it into Step 4.
+    const hasContractTasks = /CONTRACT\.json[\s\S]*?definition\.tasks/.test(step4);
+    const has4n = step4.includes('4n');
+    const hasNEquals = /n=1|n=2|n=3/.test(step4);
+    assert.ok(
+      hasContractTasks || has4n || hasNEquals,
+      'Step 4 should reference the 4n heuristic (via CONTRACT.json definition.tasks, "4n", or "n=1/n=2/n=3")',
+    );
+  });
+
+  // ── Test 18: Step 4 post-check verifies DEFERRED.md ──────────
+
+  it('Step 4 post-check verifies DEFERRED.md', () => {
+    const step4Match = content.match(/^## Step 4[\s\S]*?(?=^## Step 5)/m);
+    assert.ok(step4Match, 'Should find Step 4 section');
+    const step4 = step4Match[0];
+    assert.ok(
+      step4.includes('DEFERRED.md'),
+      'Step 4 should reference DEFERRED.md (post-check must verify both CONTEXT.md and DEFERRED.md)',
+    );
+  });
+
+  // ── Test 19: Key Principles bullet updated to --skip self-interview
+
+  it('Key Principles bullet updated to --skip self-interview', () => {
+    const principlesMatch = content.match(/## Key Principles[\s\S]*?(?=## Anti-Patterns|$)/);
+    assert.ok(principlesMatch, 'Should find Key Principles section');
+    const principles = principlesMatch[0];
+    assert.ok(
+      principles.includes('--skip self-interview'),
+      'Key Principles should contain the "--skip self-interview" bullet',
+    );
+    assert.ok(
+      !principles.includes('auto-generate CONTEXT.md and an empty DEFERRED.md'),
+      'Key Principles must not contain the old "auto-generate CONTEXT.md and an empty DEFERRED.md" wording',
+    );
+  });
+
+  // ── Test 20: Anti-Patterns forbids stub CONTEXT.md in --skip ─
+
+  it('Anti-Patterns forbids stub CONTEXT.md in --skip', () => {
+    const antiMatch = content.match(/## Anti-Patterns[\s\S]*$/);
+    assert.ok(antiMatch, 'Should find Anti-Patterns section');
+    assert.ok(
+      antiMatch[0].includes('Do NOT emit a stub CONTEXT.md'),
+      'Anti-Patterns should contain the "Do NOT emit a stub CONTEXT.md" bullet',
+    );
+  });
 });

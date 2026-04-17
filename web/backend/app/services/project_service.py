@@ -145,10 +145,12 @@ def get_project_detail(session: Session, project_id: UUID) -> dict | None:
     # Read STATE.json fresh from disk
     state_file = Path(project.path) / ".planning" / "STATE.json"
     milestones: list[dict] = []
+    current_milestone: str | None = None
     try:
         raw = state_file.read_text(encoding="utf-8")
         data = json.loads(raw)
         milestones = data.get("milestones", [])
+        current_milestone = data.get("currentMilestone")
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         pass
 
@@ -157,6 +159,7 @@ def get_project_detail(session: Session, project_id: UUID) -> dict | None:
         "name": project.name,
         "path": project.path,
         "status": project.status,
+        "current_milestone": current_milestone,
         "registered_at": project.registered_at,
         "last_seen_at": project.last_seen_at,
         "metadata_json": project.metadata_json or "{}",

@@ -1,6 +1,12 @@
 ---
 description: Execute all waves in a set -- parallel dispatch for independent waves, sequential commits, artifact-based re-entry
 allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
+args:
+  - name: set
+    type: set-ref
+    description: Set to execute
+    required: true
+categories: [human-in-loop]
 ---
 
 # /rapid:execute-set -- Set Execution

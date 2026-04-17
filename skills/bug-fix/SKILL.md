@@ -1,11 +1,37 @@
 ---
 description: Investigate and fix bugs -- user describes a bug, model investigates and applies a fix
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
+allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
+args:
+  - name: prompt
+    type: multi-line
+    description: Description of the bug to investigate and fix
+    required: true
+    maxLength: 16000
+categories: [human-in-loop]
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:bug-fix -- Bug Investigation and Fix
 
 You are the RAPID bug-fix skill. The user describes a bug they are facing, you investigate the codebase to find the root cause, and apply a fix using the executor agent. This is a general-purpose debugging tool that works from any branch or directory -- no set association required. When invoked with `--uat <set-id>`, it reads UAT failure reports and fixes them automatically without manual investigation.
+
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge (free-form prompts use a dedicated MCP tool); otherwise the built-in tool is used. The if/else branches at each call site make both modes explicit.
 
 Follow these steps IN ORDER. Do not skip steps.
 
@@ -192,9 +218,18 @@ If the user provided a bug description inline with the command (e.g., `/rapid:bu
 
 ### Freeform invocation path
 
-If the user did NOT provide an inline description, use AskUserQuestion (freeform):
-
-> "Describe the bug you are experiencing. Include any error messages, reproduction steps, or symptoms."
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "Describe the bug you are experiencing. Include any error messages, reproduction steps, or symptoms."
+  # Wait for the free-form text answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # If the user did NOT provide an inline description, use AskUserQuestion (freeform):
+  # > "Describe the bug you are experiencing. Include any error messages, reproduction steps, or symptoms."
+fi
+```
 
 After receiving the response, run the same multi-bug detection described above on the response. If the response contains multiple items on separate lines each beginning with `-`, `*`, or a number followed by a period, treat each as a separate bug and populate the `BUGS` array. Otherwise, treat it as a single bug.
 
@@ -231,12 +266,24 @@ Proposed Fix: {description of the fix to apply}
 ---------------------------------
 ```
 
-Use AskUserQuestion:
-- **question:** "Apply the proposed fix?"
-- **options:**
-  - "Apply fix" -- description: "Dispatch executor agent to apply the fix and commit"
-  - "Investigate further" -- description: "Continue investigating with additional context"
-  - "Cancel" -- description: "Exit without making changes"
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "Apply the proposed fix?"
+  #   options: ["Apply fix", "Investigate further", "Cancel"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion:
+  # - **question:** "Apply the proposed fix?"
+  # - **options:**
+  #   - "Apply fix" -- description: "Dispatch executor agent to apply the fix and commit"
+  #   - "Investigate further" -- description: "Continue investigating with additional context"
+  #   - "Cancel" -- description: "Exit without making changes"
+fi
+```
 
 If "Cancel": Display "Bug fix cancelled." and exit.
 

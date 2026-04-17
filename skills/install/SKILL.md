@@ -1,12 +1,14 @@
 ---
-description: Install and configure RAPID v6.3.0 plugin for Claude Code
+description: Install and configure RAPID v7.0.1 plugin for Claude Code
 disable-model-invocation: true
 allowed-tools: Read, Bash, AskUserQuestion
+args: []
+categories: [autonomous]
 ---
 
-# /rapid:install -- v6.3.0 Plugin Installation and Setup
+# /rapid:install -- v7.0.1 Plugin Installation and Setup
 
-You are the RAPID installer. This skill bootstraps RAPID v6.3.0 by running the non-interactive setup script, then handles shell detection, config file selection via AskUserQuestion, auto-sourcing with verification, and fallback guidance. It works for both marketplace and git clone installations.
+You are the RAPID installer. This skill bootstraps RAPID v7.0.1 by running the non-interactive setup script, then handles shell detection, config file selection via AskUserQuestion, auto-sourcing with verification, and fallback guidance. It works for both marketplace and git clone installations.
 
 ## Step 0: Detect Installation Location
 
@@ -25,14 +27,61 @@ fi
 echo "RAPID_PLUGIN_DIR=${CLAUDE_SKILL_DIR}/../.."
 ```
 
-There is a caveat: if the user has previously installed RAPID via marketplace, there may be old versions in ~/.claude/plugins/cache. You are on version 3.0, so your install location should contain some sort of reference to v6.3.0! So you need to make sure to update the RAPID_TOOLS path in the shell config if it points to an old version. You can detect this by checking if RAPID_TOOLS is already configured in any shell config file and if it points to a path within ~/.claude/plugins/cache. If so, prompt the user to update their config to point to the new plugin root path.
+There is a caveat: if the user has previously installed RAPID via marketplace, there may be old versions in ~/.claude/plugins/cache. You are on version 3.0, so your install location should contain some sort of reference to v7.0.1! So you need to make sure to update the RAPID_TOOLS path in the shell config if it points to an old version. You can detect this by checking if RAPID_TOOLS is already configured in any shell config file and if it points to a path within ~/.claude/plugins/cache. If so, prompt the user to update their config to point to the new plugin root path.
+
+## Step 0.5: Probe Optional Prerequisites (uv)
+
+Before running `setup.sh`, check whether `uv` (Astral's Python package manager) is available. `uv` is required for the RAPID web backend (Mission Control) and for Step 6 of `setup.sh`. It is NOT required for core RAPID (solo-mode users who don't use the web dashboard don't need it).
+
+Run a bash probe:
+
+```bash
+if command -v uv &>/dev/null; then
+    echo "UV=present $(uv --version | awk '{print $2}')"
+else
+    echo "UV=missing"
+fi
+```
+
+**If `UV=present`:** Display `"uv <version> found -- continuing."` and proceed to Step 1 with `RAPID_INSTALL_UV` unset.
+
+**If `UV=missing`:** Use `AskUserQuestion`:
+
+- Header: "uv not found -- install now?"
+- Text: "The 'uv' Python package manager is required for the RAPID web backend (Mission Control). It's not currently on your PATH. Astral provides a one-line installer: curl -LsSf https://astral.sh/uv/install.sh | sh"
+- Options:
+  - "Yes, auto-install uv" -- description: "Run the Astral installer now. RAPID setup will continue after uv is installed."
+  - "Skip -- I'll install it later" -- description: "Continue install without uv. Mission Control and backend features won't work until you install uv and re-run /rapid:install."
+  - "Show manual install instructions" -- description: "Display platform-specific install commands (homebrew, curl, pipx) so you can install outside Claude Code."
+
+Handle the answers:
+
+- **"Yes, auto-install uv":** Export `RAPID_INSTALL_UV=auto` so Step 1 forwards it to `setup.sh`. `setup.sh` will run the Astral installer and re-probe PATH.
+- **"Skip -- I'll install it later":** Export `RAPID_INSTALL_UV=skip` (explicit, matches existing non-interactive behavior).
+- **"Show manual install instructions":** Display the following block, then re-prompt with the same question. Cap the re-prompt loop at two iterations -- if the user picks "Show manual install instructions" a third time, treat it as "Skip".
+
+  ```
+  # macOS (Homebrew)
+  brew install uv
+
+  # Linux / macOS (Astral installer)
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+
+  # Windows (PowerShell)
+  powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+  # Python users with pipx
+  pipx install uv
+  ```
+
+Proceed to Step 1 with `RAPID_INSTALL_UV` set (or unset if `uv` was already present).
 
 ## Step 1: Run Non-Interactive Bootstrap
 
-Run setup.sh to handle prereqs, npm install, validation, .env writing, plugin registration, and `build-agents` (generates all agent .md files from source modules):
+Run setup.sh to handle prereqs, npm install, validation, .env writing, plugin registration, and `build-agents` (generates all agent .md files from source modules). Forward `RAPID_INSTALL_UV` (set in Step 0.5) so setup.sh can honor the user's auto-install / skip choice:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../setup.sh"
+RAPID_INSTALL_UV="${RAPID_INSTALL_UV:-}" bash "${CLAUDE_SKILL_DIR}/../../setup.sh"
 ```
 
 If setup.sh fails, use AskUserQuestion:
@@ -88,7 +137,7 @@ done
 If RAPID_TOOLS is already configured, it might be an old version that requires updating, user AskUserQuestion:
 
 - Header: "RAPID_TOOLS already configured"
-- Text: "RAPID_TOOLS is already configured in {config_file}. Do you want to update it to the new path for RAPID v6.3.0?"
+- Text: "RAPID_TOOLS is already configured in {config_file}. Do you want to update it to the new path for RAPID v7.0.1?"
 - Options:
   - "Yes, update config" -- description: "Update the existing config file with the new RAPID_TOOLS path"
   - "No, keep existing config" -- description: "Keep the existing RAPID_TOOLS configuration (you may need to update it manually if it's an old version)"
@@ -139,7 +188,7 @@ Then auto-source and verify in ONE Bash tool call. The source + verify must happ
 For fish:
 
 ```bash
-fish -c "source ~/.config/fish/config.fish; echo RAPID_TOOLS=\$RAPID_TOOLS; node \$RAPID_TOOLS prereqs"
+fish -i -c "source ~/.config/fish/config.fish; echo RAPID_TOOLS=\$RAPID_TOOLS; node \$RAPID_TOOLS prereqs"
 ```
 
 For bash:
@@ -291,10 +340,10 @@ echo 'export RAPID_WEB=true' >> {chosen_config_file}
 ```bash
 # Copy service file if not already in place
 mkdir -p ~/.config/systemd/user
-cp "${CLAUDE_SKILL_DIR}/../../web/backend/service/rapid-web.service" ~/.config/systemd/user/rapid-web.service
+cp "${CLAUDE_SKILL_DIR}/../../web/backend/service/rapid-web.generated.service" ~/.config/systemd/user/rapid-web.service
 systemctl --user daemon-reload
 systemctl --user enable rapid-web
-systemctl --user start rapid-web
+systemctl --user restart rapid-web
 sleep 2
 systemctl --user status rapid-web --no-pager
 ```
@@ -315,7 +364,7 @@ Proceed to Step 5 regardless of service start outcome.
 
 Use AskUserQuestion:
 
-- Header: "RAPID v6.3.0 installation complete"
+- Header: "RAPID v7.0.1 installation complete"
 - Options:
   - "Run /rapid:help" -- description: "See all available RAPID commands and workflow guidance"
   - "Run /rapid:init" -- description: "Initialize planning infrastructure for a new project"
@@ -327,7 +376,7 @@ If "Run /rapid:help": invoke the /rapid:help skill.
 If "Run /rapid:init": invoke the /rapid:init skill.
 If "Run /rapid:status": invoke the /rapid:status skill.
 If "Run /rapid:register-web": invoke the /rapid:register-web skill.
-If "Done": display "RAPID v6.3.0 is ready. Happy building!"
+If "Done": display "RAPID v7.0.1 is ready. Happy building!"
 
 ## Step 6: Update Reminder
 

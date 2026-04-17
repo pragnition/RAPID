@@ -2,6 +2,7 @@
 
 import logging
 import socket
+import subprocess
 import time
 import traceback
 from contextlib import asynccontextmanager
@@ -17,9 +18,14 @@ from pydantic import BaseModel
 from sqlmodel import Session, text
 
 from app import __version__
+from app.agents import AgentSessionManager, install_agent_error_handlers
+from app.routers.agents import router as agents_router
+from app.routers.chats import router as chats_router
+from app.routers.dashboard import router as dashboard_router
 from app.routers.kanban import router as kanban_router
 from app.routers.notes import router as notes_router
 from app.routers.projects import router as projects_router
+from app.routers.skills import router as skills_router
 from app.routers.views import router as views_router
 from app.config import settings
 from app.database import get_engine, run_migrations
@@ -91,9 +97,13 @@ def get_db(request: Request):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    setup_logging(settings.rapid_web_log_dir, settings.rapid_web_log_level)
     engine = get_engine()
     run_migrations(engine)
+    # setup_logging runs AFTER migrations: alembic's fileConfig sets
+    # disable_existing_loggers=True, disabling rapid.* loggers created at
+    # module import time. Our setup_logging re-enables them.
+    setup_logging(settings.rapid_web_log_dir, settings.rapid_web_log_level)
+    logger.info("database migrations complete")
     app.state.engine = engine
     app.state.start_time = time.time()
 
@@ -102,7 +112,39 @@ async def lifespan(app: FastAPI):
 
     watcher = FileWatcherService(engine)
     watcher.start()
+    logger.info("file watcher started")
     app.state.file_watcher = watcher
+
+    # Start the agent session manager (owns SDK clients + orphan sweeper + archive)
+    agent_manager = AgentSessionManager(engine)
+    await agent_manager.start()
+    logger.info("agent session manager started")
+    app.state.agent_manager = agent_manager
+
+    # Start the autopilot worker (polls autopilot-enabled kanban columns)
+    from app.agents.autopilot_worker import AutopilotWorker
+
+    autopilot = AutopilotWorker(engine, agent_manager)
+    await autopilot.start()
+    logger.info("autopilot worker started")
+    app.state.autopilot_worker = autopilot
+
+    # Load skill catalog from skills/ directory
+    from app.services.skill_catalog_service import SkillCatalogService
+    from app.services.skill_catalog_watcher import SkillCatalogWatcher
+
+    skills_root = Path(__file__).resolve().parents[3] / "skills"
+    skill_catalog_service = SkillCatalogService()
+    skill_catalog_service.load_initial(skills_root)
+    logger.info("skill catalog loaded", extra={"skills_root": str(skills_root)})
+    app.state.skill_catalog_service = skill_catalog_service
+    agent_manager.set_skill_catalog(skill_catalog_service)
+
+    # Hot-reload watcher (only in dev mode)
+    if settings.rapid_dev:
+        skill_watcher = SkillCatalogWatcher(skills_root, skill_catalog_service)
+        skill_watcher.start()
+        app.state.skill_catalog_watcher = skill_watcher
 
     logger.info(
         "RAPID Web service started",
@@ -110,8 +152,14 @@ async def lifespan(app: FastAPI):
     )
     yield
     # Shutdown
+    if hasattr(app.state, "skill_catalog_watcher") and app.state.skill_catalog_watcher:
+        app.state.skill_catalog_watcher.stop()
     if hasattr(app.state, "file_watcher") and app.state.file_watcher:
         app.state.file_watcher.stop()
+    if hasattr(app.state, "autopilot_worker") and app.state.autopilot_worker:
+        await app.state.autopilot_worker.stop()
+    if hasattr(app.state, "agent_manager") and app.state.agent_manager:
+        await app.state.agent_manager.stop()
     app.state.engine.dispose()
     logger.info("RAPID Web service stopped")
 
@@ -128,15 +176,35 @@ def create_app() -> FastAPI:
     # Provide defaults so endpoints work even before lifespan runs (e.g., in tests)
     app.state.start_time = time.time()
     app.state.engine = None
+    app.state.agent_manager = None
 
-    # CORS — allow Vite dev server origins
+    # CORS — origins configurable via RAPID_WEB_CORS_ALLOW_ORIGINS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+        allow_origins=settings.rapid_web_cors_allow_origins,
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
     )
+
+    # Request/response logging middleware
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        start = time.time()
+        response = await call_next(request)
+        duration_ms = (time.time() - start) * 1000
+        path = request.url.path
+        if not path.startswith(("/api/health", "/api/ready", "/assets/")):
+            logger.info(
+                "request",
+                extra={
+                    "method": request.method,
+                    "path": path,
+                    "status": response.status_code,
+                    "duration_ms": round(duration_ms, 1),
+                },
+            )
+        return response
 
     # Global exception handler
     @app.exception_handler(Exception)
@@ -149,11 +217,18 @@ def create_app() -> FastAPI:
     async def http_exception_handler(request: Request, exc: HTTPException):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
+    # Install the agent-runtime error taxonomy handlers (StateError -> 409, etc.)
+    install_agent_error_handlers(app)
+
     app.include_router(health_router)
     app.include_router(projects_router)
     app.include_router(views_router)
     app.include_router(kanban_router)
     app.include_router(notes_router)
+    app.include_router(agents_router)
+    app.include_router(skills_router)
+    app.include_router(chats_router)
+    app.include_router(dashboard_router)
 
     # Serve frontend static files if the dist directory exists
     frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
@@ -180,13 +255,42 @@ app = create_app()
 # ---------------------------------------------------------------------------
 
 
+def _find_port_owner(port: int) -> str | None:
+    """Best-effort lookup of the process holding a TCP port. Never raises."""
+    try:
+        result = subprocess.run(
+            ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-Fpc"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0 or not result.stdout:
+        return None
+    pid: str | None = None
+    name: str | None = None
+    for line in result.stdout.splitlines():
+        if line.startswith("p"):
+            pid = line[1:]
+        elif line.startswith("c"):
+            name = line[1:]
+    if not pid:
+        return None
+    return f"PID {pid} ({name})" if name else f"PID {pid}"
+
+
 def check_port_available(host: str, port: int) -> None:
     """Raise SystemExit if the given host:port is already in use."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind((host, port))
     except OSError:
-        raise SystemExit(f"Port {port} is already in use. Check with: lsof -i :{port}")
+        owner = _find_port_owner(port)
+        held_by = f" Held by {owner}." if owner else ""
+        raise SystemExit(
+            f"Port {port} is already in use.{held_by} Check with: lsof -i :{port}"
+        )
     finally:
         sock.close()
 

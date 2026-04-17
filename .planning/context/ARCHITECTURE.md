@@ -106,9 +106,9 @@ Agents communicate completion status via embedded markers:
 
 Statuses: `COMPLETE`, `CHECKPOINT` (pause/resume), `BLOCKED` (escalation needed)
 
-## v6.2.0 Subsystems
+## v7.0.0 Subsystems
 
-Three subsystems landed in v6.2.0. Each is isolated from the core state machine and loads lazily at invocation time.
+Three subsystems landed in v7.0.0. Each is isolated from the core state machine and loads lazily at invocation time.
 
 ### Branding Server (src/lib/branding-server.cjs)
 - HTTP + SSE server bound to port 3141 by default

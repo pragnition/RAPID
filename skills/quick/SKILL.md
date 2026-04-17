@@ -1,11 +1,37 @@
 ---
 description: Ad-hoc changes without set structure -- planner, verifier, executor pipeline
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep
+allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep
+args:
+  - name: prompt
+    type: multi-line
+    description: Description of the ad-hoc changes to make
+    required: true
+    maxLength: 16000
+categories: [human-in-loop]
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:quick -- Quick Task
 
 You are the RAPID quick task runner. This skill enables ad-hoc fire-and-forget changes without requiring full set lifecycle. It runs a 3-agent pipeline (planner -> plan-verifier -> executor) in-place on the current branch.
+
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge (free-form prompts use a dedicated MCP tool); otherwise the built-in tool is used. Treat the `RAPID_RUN_MODE=sdk` branch and the CLI else branch as two renderings of the same question.
 
 Follow these steps IN ORDER. Do not skip steps. The flow is fully autonomous after the initial task description -- do NOT prompt the user between pipeline steps.
 
@@ -31,9 +57,18 @@ node "${RAPID_TOOLS}" display banner quick
 
 ## Step 1: Gather Task Description
 
-Use AskUserQuestion (freeform):
-
-> "Describe what you'd like to do. Be specific about the changes needed -- files, behavior, constraints."
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "Describe what you'd like to do. Be specific about the changes needed -- files, behavior, constraints."
+  # Wait for the free-form text answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion (freeform):
+  # > "Describe what you'd like to do. Be specific about the changes needed -- files, behavior, constraints."
+fi
+```
 
 Record the user's task description verbatim. This is the sole input -- no further user interaction during the pipeline.
 
@@ -144,17 +179,28 @@ Write VERIFICATION-REPORT.md to {TASK_DIR}/VERIFICATION-REPORT.md
 Parse RAPID:RETURN for verdict.
 
 **If FAIL:**
-Display the issues from the verification report. Use AskUserQuestion:
+Display the issues from the verification report.
 
 ```
-"Plan verification failed for quick task {NEXT_ID}.
-
-Issues: {summary from VERIFICATION-REPORT.md}
-
-What would you like to do?"
-Options:
-- "Override" -- "Execute the plan despite verification failures"
-- "Cancel" -- "Cancel this quick task"
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with:
+  #   question: "Plan verification failed for quick task {NEXT_ID}. Issues: {summary from VERIFICATION-REPORT.md}. What would you like to do?"
+  #   options: ["Override", "Cancel"]
+  #   allow_free_text: false
+  # Wait for the answer, then continue as below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion:
+  # "Plan verification failed for quick task {NEXT_ID}.
+  #
+  # Issues: {summary from VERIFICATION-REPORT.md}
+  #
+  # What would you like to do?"
+  # Options:
+  # - "Override" -- "Execute the plan despite verification failures"
+  # - "Cancel" -- "Cancel this quick task"
+fi
 ```
 
 - If "Cancel": Display "Quick task {NEXT_ID} cancelled." and STOP.
@@ -282,7 +328,22 @@ Do NOT add to STATE.json sets array (quick tasks are not sets -- avoids pollutin
 ### Pipeline Failures
 
 - Planner agent fails: STOP with error breadcrumb
-- Verifier returns FAIL: Offer Override/Cancel via AskUserQuestion
+- Verifier returns FAIL: Offer Override/Cancel to the user.
+
+  ```
+  if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+    # SDK mode: route through the web bridge.
+    # Call mcp__rapid__webui_ask_user with:
+    #   question: "Verifier returned FAIL. Override or Cancel?"
+    #   options: ["Override", "Cancel"]
+    #   allow_free_text: false
+    # Wait for the answer, then continue as below.
+  else
+    # CLI mode: use the built-in tool exactly as before.
+    # Use AskUserQuestion to offer Override/Cancel.
+  fi
+  ```
+
 - Executor returns CHECKPOINT: Write handoff file, suggest re-running `/rapid:quick`
 - Executor returns BLOCKED: Display blocker details, STOP
 

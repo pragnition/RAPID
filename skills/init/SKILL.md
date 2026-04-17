@@ -1,11 +1,49 @@
 ---
 description: Initialize a new RAPID project with research and roadmap generation
-allowed-tools: Bash(rapid-tools:*), Agent, AskUserQuestion, Read, Write, Glob, Grep, Skill
+allowed-tools: Bash(rapid-tools:*), Agent, Read, Write, Glob, Grep, Skill
+args: []
+categories: [autonomous]
 ---
+
+
+## Dual-Mode Operation Reference
+
+This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
+follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
+
+**In SDK mode, the MCP tool you call depends on the question shape:**
+
+- **Free-form questions** (no options -- the user types their own answer) MUST use `mcp__rapid__ask_free_text`. This renders as a textarea in the web UI.
+- **Multiple-choice questions** (a fixed set of answer options) MUST use `mcp__rapid__webui_ask_user`. This renders as a radio list in the web UI.
+
+Each call site below names the correct tool for that specific question -- call it exactly as the Step-N instructions specify. DO NOT substitute one MCP tool for the other.
+
+```
+# Free-form (textarea) example:
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with the free-form question below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion (freeform) with the question below.
+fi
+
+# Multiple-choice (radio list) example:
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion with the question/options below.
+fi
+```
+
 
 # /rapid:init -- Project Initialization
 
 You are the RAPID project initializer. This skill orchestrates the complete multi-agent pipeline: prerequisites, scaffolding, codebase analysis, parallel research, synthesis, and roadmap generation with user approval.
+
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge. Free-form prompts use `mcp__rapid__ask_free_text` (textarea); multiple-choice prompts use `mcp__rapid__webui_ask_user` (radio list). Inline annotations on each prompt below name the correct MCP tool -- do NOT substitute one for the other.
 
 Follow these steps IN ORDER. Do not skip steps.
 
@@ -86,6 +124,12 @@ Display the results as a formatted markdown table:
 
 **Decision logic:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 - If `summary.hasBlockers` is true: Display the blocker table, then use AskUserQuestion with:
   - question: "Prerequisites missing. Critical tools are not installed."
   - Options:
@@ -93,8 +137,20 @@ Display the results as a formatted markdown table:
     - "View install guide" -- "Show install commands for each missing tool"
     - "Cancel init" -- "Exit initialization. No changes made."
   - If "Retry check": Loop back to the top of Step 1 and re-run.
-  - If "View install guide": Display install commands for each blocker (e.g., `apt install git`, `brew install git`), then re-prompt with the same AskUserQuestion.
   - If "Cancel init": Print "Cancelled. No changes made." and end the skill.
+fi
+```
+
+If "View install guide": Display install commands for each blocker (e.g., `apt install git`, `brew install git`), then re-prompt with the same question:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: re-issue the same mcp__rapid__webui_ask_user call with the same question/options.
+else
+  # CLI mode:
+  # Re-issue the same AskUserQuestion with the same question/options.
+fi
+```
 
 - If `summary.hasWarnings` is true: Display warnings but continue. Tell the user which optional tools are missing and why they are helpful.
 
@@ -116,6 +172,12 @@ Parse the JSON output containing `isRepo` (boolean) and `toplevel` (string or nu
 
 **Decision logic:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 - If `isRepo` is false: Use AskUserQuestion with:
   - question: "This directory is not a git repository. RAPID requires git for worktree-based parallel development."
   - Options:
@@ -123,6 +185,8 @@ Parse the JSON output containing `isRepo` (boolean) and `toplevel` (string or nu
     - "Cancel" -- "Exit initialization. Run git init manually, then /rapid:init again."
   - If "Run git init": Execute `git init` and confirm. Continue to Step 3.
   - If "Cancel": Print "Cancelled. No changes made." and end the skill.
+fi
+```
 
 - If `isRepo` is true: Continue silently to Step 3.
 
@@ -142,6 +206,12 @@ Parse the JSON output containing `exists` (boolean) and `files` (string array of
 
 **Decision logic:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 - If `exists` is true: Show the user the list of existing files, then use AskUserQuestion with:
   - question: "Existing RAPID project detected with the following files: {files list}"
   - Options:
@@ -149,6 +219,8 @@ Parse the JSON output containing `exists` (boolean) and `files` (string array of
     - "Upgrade" -- "Add any missing files to existing .planning/ without overwriting existing content."
     - "Cancel" -- "Exit initialization. No changes will be made."
   - Store the selection. Map to `--mode` argument: Reinitialize -> `reinitialize`, Upgrade -> `upgrade`, Cancel -> end the skill with "Cancelled. No changes made."
+fi
+```
 
 - If `exists` is false: Set mode to `fresh`. Continue to Step 4.
 
@@ -170,16 +242,30 @@ Detect the current directory name:
 basename "$(pwd)"
 ```
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Project name"
 - Options:
   - "{detected directory name}" -- "Use the current directory name"
   - "Other" -- "Enter a custom project name"
+fi
+```
 
 If the user selects "Other", ask freeform: "What would you like to name the project?" and accept their input.
 
 **Team Size:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Team size"
 - Options:
@@ -187,6 +273,8 @@ Use AskUserQuestion with:
   - "Small team (2-3 developers)" -- "Recommended for most projects. Balanced parallelism."
   - "Medium team (4-5 developers)" -- "Higher parallelism. More worktrees and sets."
   - "Large team (6+ developers)" -- "Maximum parallelism. Complex merge coordination."
+fi
+```
 
 Map selection to integer for `--team-size`:
 - "Solo (1 developer)" -> 1
@@ -196,11 +284,19 @@ Map selection to integer for `--team-size`:
 
 **Model Selection:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Model selection for AI agents"
 - Options:
   - "Opus" -- "Higher quality, slower, more expensive. Best for complex projects."
   - "Sonnet" -- "Good balance of quality and speed. Recommended for most projects."
+fi
+```
 
 Store the selection as `opus` or `sonnet`.
 
@@ -209,7 +305,17 @@ Store the selection as `opus` or `sonnet`.
 **This is a thorough requirements interview, NOT a form fill.** You must conduct an in-depth conversational discovery session to understand EVERYTHING about the project before proceeding to research and roadmapping. The quality of the entire pipeline depends on the depth of understanding gained here.
 
 **Ground rules:**
-- Ask questions in TOPIC BATCHES using AskUserQuestion. Each batch uses a hybrid approach: freeform AskUserQuestion for open-ended areas (vision, features, experience) and structured AskUserQuestion with pre-filled options for areas with well-defined option spaces (target users, scale, tech stack, compliance, etc.).
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user for every batch (hybrid freeform/structured).
+else
+  # CLI mode:
+  - Ask questions in TOPIC BATCHES using AskUserQuestion. Each batch uses a hybrid approach: freeform AskUserQuestion for open-ended areas (vision, features, experience) and structured AskUserQuestion with pre-filled options for areas with well-defined option spaces (target users, scale, tech stack, compliance, etc.).
+fi
+```
+
 - LISTEN carefully to each batch response. After each batch, analyze the response for follow-up needs. Only ask follow-up questions for genuinely ambiguous or vague responses. Do NOT re-ask areas already covered.
 - Continue asking until you have a comprehensive understanding. This should take 3-4 batch questions plus 0-2 targeted follow-ups depending on project complexity.
 - Mentally track what you know and what gaps remain. Only proceed when no significant gaps exist.
@@ -242,12 +348,28 @@ This batch uses a hybrid approach: one freeform question for the open-ended visi
 
 **Area 1 (Vision/problem statement) -- freeform:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What are you building and why? What problem does it solve? What makes this different from existing solutions? Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass any values as options -- this question has NO options.
+else
+  # CLI mode:
 Use AskUserQuestion (freeform) with:
 
 > "What are you building and why? What problem does it solve? What makes this different from existing solutions? Feel free to be as detailed as you like -- the more context here, the better the research and planning downstream."
+fi
+```
 
 **Area 2 (Target users) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Who are the primary target users?"
 - Options:
@@ -255,9 +377,17 @@ Use AskUserQuestion with:
   - "B2B enterprise" -- "Business customers with team/org structures"
   - "Internal team tools" -- "Internal company tools for employees"
   - "Developer/open-source" -- "Developers, CLI users, or open-source community"
+fi
+```
 
 **Area 3 (Scale targets) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "What scale are you targeting initially?"
 - Options:
@@ -265,6 +395,8 @@ Use AskUserQuestion with:
   - "Startup (100-10K users)" -- "Early product with growing user base"
   - "Growth (10K-100K users)" -- "Scaling product with significant traffic"
   - "Scale (100K+ users)" -- "High-scale production system"
+fi
+```
 
 After receiving the responses, analyze them. If the user's vision or target audience is vague (e.g., "a task management app" with no differentiation), ask ONE targeted follow-up before proceeding to the next batch. Otherwise, continue.
 
@@ -274,12 +406,28 @@ This batch uses a hybrid approach: one freeform question for features (inherentl
 
 **Area 4 (Must-have features) -- freeform:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What are the must-have features for v1? Walk me through the primary user journey from start to finish. Also mention any nice-to-have features that can wait, and anything you explicitly do NOT want."
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass any values as options -- this question has NO options.
+else
+  # CLI mode:
 Use AskUserQuestion (freeform) with:
 
 > "What are the must-have features for v1? Walk me through the primary user journey from start to finish. Also mention any nice-to-have features that can wait, and anything you explicitly do NOT want."
+fi
+```
 
 **Area 5 (Tech stack) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "What is your primary tech stack preference?"
 - Options:
@@ -287,9 +435,17 @@ Use AskUserQuestion with:
   - "Python + FastAPI/Django" -- "Python backend with your choice of framework"
   - "Go/Rust backend" -- "Systems-oriented backend language"
   - "No preference" -- "Let research determine the best stack for this project"
+fi
+```
 
 **Area 6 (Existing dependencies) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "What is the starting point for this project?"
 - Options:
@@ -297,6 +453,8 @@ Use AskUserQuestion with:
   - "Brownfield" -- "Building on or modifying an existing codebase"
   - "Integration" -- "New code that integrates with existing external APIs/services"
   - "Migration" -- "Porting or rewriting an existing system"
+fi
+```
 
 After receiving the responses, analyze for gaps. If any must-have feature is unclear or the tech approach is contradictory, ask ONE targeted follow-up.
 
@@ -306,6 +464,12 @@ This batch uses all structured questions since each area has a well-defined opti
 
 **Area 7 (Performance requirements) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "What are your real-time and performance requirements?"
 - Options:
@@ -313,9 +477,17 @@ Use AskUserQuestion with:
   - "Real-time features needed" -- "WebSockets, live updates, collaborative editing"
   - "High throughput" -- "Batch processing, data pipelines, high API call volume"
   - "Low latency critical" -- "Sub-100ms response times, gaming, trading"
+fi
+```
 
 **Area 8 (Compliance) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Any compliance or regulatory requirements?"
 - Options:
@@ -323,9 +495,17 @@ Use AskUserQuestion with:
   - "GDPR" -- "EU data protection regulation"
   - "HIPAA" -- "Healthcare data protection (US)"
   - "SOC2" -- "Security and availability auditing"
+fi
+```
 
 **Area 9 (Third-party integrations) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "What types of third-party integrations are needed?"
 - Options:
@@ -333,9 +513,17 @@ Use AskUserQuestion with:
   - "Auth providers" -- "OAuth, SSO/SAML, or identity providers"
   - "Cloud services" -- "AWS, GCP, Azure services, storage, CDN"
   - "None / minimal" -- "Mostly self-contained, few external dependencies"
+fi
+```
 
 **Area 10 (Auth approach) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "What authentication approach do you prefer?"
 - Options:
@@ -343,6 +531,8 @@ Use AskUserQuestion with:
   - "Email / password" -- "Traditional email and password with sessions"
   - "SSO / SAML" -- "Enterprise single sign-on"
   - "API keys" -- "Token-based authentication for API/developer use"
+fi
+```
 
 If the user has already addressed some of these areas in previous batches, note that and skip the already-covered items. Do NOT re-ask what's already been answered.
 
@@ -352,12 +542,28 @@ This batch uses a hybrid approach: one freeform question for experience and insp
 
 **Area 11 (Team experience and inspiration) -- freeform:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
+  # Call mcp__rapid__ask_free_text with:
+  #   question: "What is your team's experience with the likely tech stack? Any lessons learned from similar projects? Are there existing products that do something similar -- what do they do well or poorly?"
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass any values as options -- this question has NO options.
+else
+  # CLI mode:
 Use AskUserQuestion (freeform) with:
 
 > "What is your team's experience with the likely tech stack? Any lessons learned from similar projects? Are there existing products that do something similar -- what do they do well or poorly?"
+fi
+```
 
 **Area 12 (Non-functional requirements) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "What non-functional requirements are important?"
 - Options:
@@ -365,9 +571,17 @@ Use AskUserQuestion with:
   - "Accessibility (a11y)" -- "WCAG compliance, screen reader support"
   - "Internationalization (i18n)" -- "Multi-language, multi-locale support"
   - "Monitoring/observability" -- "APM, distributed tracing, alerting"
+fi
+```
 
 **Area 13 (Success criteria) -- structured:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "What does 'done' look like for v1?"
 - Options:
@@ -375,6 +589,8 @@ Use AskUserQuestion with:
   - "Production-ready with tests" -- "Fully tested, deployment pipeline, monitoring"
   - "Specific deadline target" -- "Must ship by a particular date"
   - "Feature-complete per spec" -- "All specified features implemented and polished"
+fi
+```
 
 **Adaptive behavior:**
 - If a batch response thoroughly covers areas from upcoming batches, acknowledge what you learned and SKIP those items in the next batch.
@@ -455,31 +671,61 @@ Before asking the opt-in question, check whether branding has already been confi
 [ -f ".planning/branding/BRANDING.md" ] && echo "EXISTS" || echo "NEW"
 ```
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 If `EXISTS`, use AskUserQuestion with:
 - question: "Existing project branding found. Would you like to keep it or set up new branding?"
 - Options:
   - "Keep existing branding" -- "Preserve current BRANDING.md and continue to granularity preferences"
   - "Set up new branding" -- "Replace existing branding with a fresh interview"
+fi
+```
 
 If the user selects "Keep existing branding": skip this entire step (proceed to Step 4C). Set `brandingStatus = "configured (preserved)"`.
 If the user selects "Set up new branding": continue to the opt-in question below.
 If `NEW`: continue to the opt-in question below.
 
-This AskUserQuestion counts toward the 7-call budget (1 of max 7).
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: the mcp__rapid__webui_ask_user call above counts the same toward the 7-call budget.
+else
+  # CLI mode:
+  # This AskUserQuestion counts toward the 7-call budget (1 of max 7).
+fi
+```
 
 #### Opt-in Question
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Would you like to set up project branding guidelines now? This configures visual identity, terminology, and interaction patterns that agents will follow throughout development."
 - Options:
   - "Skip branding" -- "Continue without branding. You can always run /rapid:branding later."
   - "Set up branding" -- "Answer 5 quick questions to configure branding guidelines (~2 minutes)."
+fi
+```
 
 If "Skip branding": skip the rest of this step entirely. Set `brandingStatus = "skipped"`. Proceed to Step 4C. Zero files created, zero directories created, zero state changes.
 
 If "Set up branding": continue to the branding interview below.
 
-This AskUserQuestion counts toward the 7-call budget (1 of max 7; or 2 if re-init check was also asked).
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: the mcp__rapid__webui_ask_user call above counts the same toward the 7-call budget.
+else
+  # CLI mode:
+  # This AskUserQuestion counts toward the 7-call budget (1 of max 7; or 2 if re-init check was also asked).
+fi
+```
 
 #### Delegate to Branding Skill
 
@@ -516,6 +762,12 @@ Then proceed to Step 4C.
 
 After the project brief is compiled, ask the user about their preferred level of decomposition granularity.
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "How granular should the project be decomposed into parallel sets?"
 - Options:
@@ -523,6 +775,8 @@ Use AskUserQuestion with:
   - "Standard (6-10 sets)" -- "Balanced decomposition. Recommended for most projects."
   - "Granular (11-15 sets)" -- "Many smaller sets. Maximum parallelism, but more merge coordination."
   - "Let Claude decide" -- "The roadmapper will determine the optimal set count based on project complexity and team size."
+fi
+```
 
 Map the selection to a `targetSetCount` value:
 - "Compact (3-5 sets)" -> targetSetCount = "3-5"
@@ -578,12 +832,20 @@ Display the acceptance criteria to the user alongside the project brief.
 
 **Confirmation prompt:**
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Please review the project brief and acceptance criteria above. Is everything accurate?"
 - Options:
   - "Looks good, proceed" -- "Continue to scaffold, research, and roadmap generation"
   - "Need to change something" -- "Specify which section needs changes"
   - "Start over" -- "Restart the discovery conversation from the beginning"
+fi
+```
 
 **If "Looks good, proceed":**
 
@@ -617,12 +879,20 @@ Present the 8 predefined categories one at a time. For each category, offer 2-3 
 
 Before starting the category walkthrough, offer an escape hatch:
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Would you like to define project principles now?"
 - Options:
   - "Yes, walk me through categories" -- "Define principles category by category (recommended)"
   - "Use sensible defaults" -- "Infer principles from existing code patterns (brownfield) or use generic best practices (greenfield)"
   - "Skip principles" -- "Do not generate PRINCIPLES.md. You can add it later."
+fi
+```
 
 **If "Yes, walk me through categories":** Proceed with the category walkthrough below.
 
@@ -637,6 +907,12 @@ Use AskUserQuestion with:
 
 For each category in order (architecture, code style, testing, security, UX, performance, data handling, documentation):
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Principles for **{Category}** -- Select any that apply, or add your own:"
 - Options (vary per category -- see recommended principles below):
@@ -645,6 +921,8 @@ Use AskUserQuestion with:
   - {Recommended principle 3} -- "{brief rationale}"
   - "Add custom" -- "Write your own principle for this category"
   - "Skip this category" -- "No principles needed for {category}"
+fi
+```
 
 If the user selects "Add custom", ask freeform: "Enter your principle statement for {Category}:" and then "Brief rationale (why this matters):" -- collect both and add to the principles list.
 
@@ -758,12 +1036,20 @@ Inform the user: "Existing codebase detected. Running codebase analysis before r
    Write CODEBASE-ANALYSIS.md to .planning/research/
    ```
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 4. Wait for the agent to complete. If it fails, use AskUserQuestion to offer recovery:
    - question: "Codebase analysis encountered an error: {error details}"
    - Options:
      - "Retry" -- "Re-run codebase analysis"
      - "Skip" -- "Continue without codebase analysis. Research agents will have less context."
      - "Cancel" -- "Exit initialization."
+fi
+```
 
 5. After completion, read `.planning/research/CODEBASE-ANALYSIS.md` to pass its content to research agents.
 
@@ -1009,12 +1295,20 @@ Write output to .planning/research/UX.md
 
 **Sequential fallback:** If parallel spawning fails (Claude Code limitation), fall back to sequential execution. Inform the user: "Running research agents sequentially (parallel spawning unavailable)."
 
-Wait for ALL 6 agents to complete. If any agent fails, use AskUserQuestion:
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
+Wait for ALL 6 agents to complete. If any agent fails, use AskUserQuestion :
 - question: "{agent name} research agent encountered an error: {error details}"
 - Options:
   - "Retry" -- "Re-run this research agent"
   - "Skip" -- "Continue without this research output. Synthesis will have less context."
   - "Cancel" -- "Exit initialization."
+fi
+```
 
 **On error:** Show progress breadcrumb: `init [scaffold done, research failed ({agent name})] > start-set > discuss-set > plan-set > execute-set > review > merge`
 
@@ -1043,7 +1337,17 @@ Synthesize all research outputs into a unified research summary.
 Write synthesized summary to .planning/research/SUMMARY.md
 ```
 
-3. Wait for completion. If it fails, use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 6).
+3. Wait for completion. If it fails, offer Retry/Skip/Cancel recovery (same pattern as Step 6):
+
+   ```
+   if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+     # SDK mode: route through the web bridge.
+     # Call mcp__rapid__webui_ask_user with Retry/Skip/Cancel options.
+   else
+     # CLI mode:
+     Use AskUserQuestion with Retry/Skip/Cancel options (same pattern as Step 6).
+   fi
+   ```
 
 4. After completion, read `.planning/research/SUMMARY.md` to confirm it was written and to pass its content to the roadmapper.
 
@@ -1102,7 +1406,17 @@ Return a structured JSON response with three keys:
 - contracts -- array of { setId, contract } objects for CONTRACT.json files
 ```
 
-4. Wait for the agent to complete. If it fails, use AskUserQuestion with Retry/Skip/Cancel options.
+4. Wait for the agent to complete. If it fails, offer Retry/Skip/Cancel recovery:
+
+   ```
+   if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+     # SDK mode: route through the web bridge.
+     # Call mcp__rapid__webui_ask_user with Retry/Skip/Cancel options.
+   else
+     # CLI mode:
+     Use AskUserQuestion with Retry/Skip/Cancel options.
+   fi
+   ```
 
 5. Parse the agent's JSON response.
 
@@ -1113,12 +1427,20 @@ Display a summary of the proposed roadmap:
 - Set names and their high-level descriptions
 - Key contracts and dependencies between sets
 
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the question/options below.
+else
+  # CLI mode:
 Use AskUserQuestion with:
 - question: "Review the proposed roadmap above."
 - Options:
   - "Accept roadmap" -- "Proceed with this roadmap. Files will be written to .planning/"
   - "Request changes" -- "Describe what to change. The roadmapper will revise the proposal."
   - "Cancel" -- "Exit without writing roadmap. Scaffold and research files are preserved."
+fi
+```
 
 **If "Accept roadmap":**
 
@@ -1213,6 +1535,12 @@ d) Generate DAG.json and OWNERSHIP.json from the newly written STATE.json and CO
    node "${RAPID_TOOLS}" dag generate
    ```
 
+   ```
+   if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+     # SDK mode: route through the web bridge.
+     # Call mcp__rapid__webui_ask_user with the question/options below.
+   else
+     # CLI mode:
    If the second attempt also fails, use AskUserQuestion with:
    - question: "DAG.json generation failed after two attempts. The project was initialized but the dependency graph is missing."
    - Options:
@@ -1222,6 +1550,8 @@ d) Generate DAG.json and OWNERSHIP.json from the newly written STATE.json and CO
    - If "Retry": Loop back and attempt DAG generation again.
    - If "Skip": Log a warning "WARNING: DAG.json was not generated. Run `dag generate` before starting sets." and continue to Step 10.
    - If "Cancel": End the skill with "Cancelled. Planning files preserved."
+   fi
+   ```
 
 **If "Request changes":**
 
@@ -1233,7 +1563,19 @@ Re-spawn the roadmapper agent with:
 - The previous roadmap proposal for reference
 - The same CRITICAL sets-only instruction (no waves or jobs)
 
-Present the revised roadmap and use AskUserQuestion again (same Accept/Request changes/Cancel options). This loop continues until the user accepts or cancels.
+Present the revised roadmap, then re-prompt:
+
+```
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__webui_ask_user with the Accept/Request changes/Cancel options (same as the prior round).
+else
+  # CLI mode:
+  Use AskUserQuestion again (same Accept/Request changes/Cancel options).
+fi
+```
+
+This loop continues until the user accepts or cancels.
 
 **If "Cancel":**
 
@@ -1407,10 +1749,20 @@ node "${RAPID_TOOLS}" display footer "/rapid:status" --breadcrumb "init [done] >
 At every agent step (Steps 6-9), if an agent fails or returns an error:
 
 1. Do NOT use bare STOP or halt.
-2. Use AskUserQuestion with structured recovery options:
-   - "Retry" -- Re-run the failed agent with the same inputs
-   - "Skip" -- Continue without this agent's output (downstream agents will have less context)
-   - "Cancel" -- Exit initialization cleanly
+2. Offer structured recovery options:
+
+   ```
+   if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+     # SDK mode: route through the web bridge.
+     # Call mcp__rapid__webui_ask_user with the recovery options below.
+   else
+     # CLI mode:
+     Use AskUserQuestion with structured recovery options:
+     - "Retry" -- Re-run the failed agent with the same inputs
+     - "Skip" -- Continue without this agent's output (downstream agents will have less context)
+     - "Cancel" -- Exit initialization cleanly
+   fi
+   ```
 
 3. On ANY error in Steps 5-9, show a progress breadcrumb indicating what has been completed and what failed:
    ```

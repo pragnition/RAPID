@@ -1012,6 +1012,61 @@
       "startCommit": "b6f4effeef80dd989cd893f2bddbb7bf26a2cf9f",
       "wave": null,
       "createdAt": "2026-04-09T07:12:57.915Z"
+    },
+    "agent-runtime-foundation": {
+      "setName": "agent-runtime-foundation",
+      "branch": "auto",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "171bd5464db6cce56f81326a41413361e14d3905",
+      "wave": null,
+      "createdAt": "2026-04-15T06:01:50.297Z"
+    },
+    "wireframe-rollout": {
+      "setName": "wireframe-rollout",
+      "branch": "auto",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "1885a594981c061e8b20282227f7d8a52f79049f",
+      "wave": null,
+      "createdAt": "2026-04-15T10:12:59.243Z"
+    },
+    "web-tool-bridge": {
+      "setName": "web-tool-bridge",
+      "branch": "auto",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "17c3e7e3a699ed7bdfbd263c29a602e3b04ca045",
+      "wave": null,
+      "createdAt": "2026-04-15T12:11:59.820Z"
+    },
+    "skill-invocation-ui": {
+      "setName": "skill-invocation-ui",
+      "branch": "auto",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "49a521b1be4330572cfadfc6bc856d213d21bee0",
+      "wave": null,
+      "createdAt": "2026-04-15T17:39:46.846Z"
+    },
+    "kanban-autopilot": {
+      "setName": "kanban-autopilot",
+      "branch": "auto",
+      "path": ".",
+      "phase": "Created",
+      "status": "active",
+      "solo": true,
+      "startCommit": "06fa2284034e23f97e18638c08e62f63e134ef47",
+      "wave": null,
+      "createdAt": "2026-04-16T02:35:24.201Z"
     }
   }
 }
