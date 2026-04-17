@@ -82,6 +82,30 @@ from app.schemas.sse_events import (
 logger = logging.getLogger("rapid.agents.session")
 
 
+def _consume_auq_success(
+    manager: "AgentSessionManager",
+    run_id: UUID,
+    tool_use_id: str,
+) -> bool:
+    """Return True iff ``tool_use_id`` was recorded as a successful AUQ
+    bridge response for ``run_id``, and consume the entry.
+
+    ``permission_hooks.can_use_tool_hook_bound`` registers the tool_use_id on
+    the manager after a successful ``_route_auq_through_bridge`` call — the
+    SDK surfaces the Deny-as-payload hack with ``is_error=True`` even on
+    success, so the session pump consults this set to flip is_error=False
+    for the user-visible ToolResultEvent. Returns False when the set is
+    missing the id (e.g. the auq_bridge_failed path, or a non-AUQ tool).
+    """
+    success_ids = manager._auq_success_tool_use_ids.get(run_id)
+    if not success_ids or tool_use_id not in success_ids:
+        return False
+    success_ids.discard(tool_use_id)
+    if not success_ids:
+        manager._auq_success_tool_use_ids.pop(run_id, None)
+    return True
+
+
 class AgentSession:
     """One-shot async-context-managed wrapper around ``ClaudeSDKClient``."""
 
@@ -346,14 +370,32 @@ class AgentSession:
                 content = []  # string content has no tool result blocks
             for block in content:
                 if isinstance(block, ToolResultBlock):
+                    tool_use_id = getattr(block, "tool_use_id", "")
+                    raw_is_error = bool(getattr(block, "is_error", False))
+                    # web-tool-bridge: AUQ interception returns
+                    # PermissionResultDeny on success as a payload-delivery
+                    # hack; the SDK surfaces that as is_error=True. The
+                    # manager records tool_use_ids that were actually
+                    # answered successfully — flip is_error=False for those
+                    # so the UI doesn't render an ✗ on a successful
+                    # AskUserQuestion.
+                    if (
+                        raw_is_error
+                        and self.manager is not None
+                        and tool_use_id
+                        and _consume_auq_success(
+                            self.manager, self.run_id, tool_use_id
+                        )
+                    ):
+                        raw_is_error = False
                     await self._emit(
                         ToolResultEvent(
                             seq=await self._next_seq(),
                             ts=ts,
                             run_id=self.run_id,
-                            tool_use_id=getattr(block, "tool_use_id", ""),
+                            tool_use_id=tool_use_id,
                             output=getattr(block, "content", None),
-                            is_error=bool(getattr(block, "is_error", False)),
+                            is_error=raw_is_error,
                         )
                     )
         elif isinstance(msg, SystemMessage):

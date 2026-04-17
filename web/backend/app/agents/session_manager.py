@@ -87,6 +87,14 @@ class AgentSessionManager:
         # racing the DB constraint.
         self._prompt_locks: dict[UUID, asyncio.Lock] = {}
 
+        # web-tool-bridge: tool_use_ids of AskUserQuestion calls that were
+        # intercepted and answered successfully via _route_auq_through_bridge.
+        # The SDK delivers the payload via PermissionResultDeny (is_error=True)
+        # even on success, so the session pump consults this set to override
+        # is_error=False on the emitted ToolResultEvent. Entries are removed
+        # once observed.
+        self._auq_success_tool_use_ids: dict[UUID, set[str]] = {}
+
         # Skill catalog reference — set from lifespan after catalog init.
         self._skill_catalog: "SkillCatalogService | None" = None
 

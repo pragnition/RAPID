@@ -184,6 +184,15 @@ async def can_use_tool_hook_bound(
                 message=json.dumps({"error": "auq_bridge_failed"}),
                 interrupt=False,
             )
+        # Record the tool_use_id so the session pump can override
+        # is_error=False on the tool_result event. The SDK surfaces Deny as
+        # is_error=True even though the user answered successfully; see
+        # ``_auq_success_tool_use_ids`` on AgentSessionManager for context.
+        tool_use_id = getattr(context, "tool_use_id", None)
+        if tool_use_id:
+            manager._auq_success_tool_use_ids.setdefault(run_id, set()).add(
+                tool_use_id
+            )
         # Returning a Deny with the answers JSON in ``message`` is how the
         # SDK delivers this payload back to the agent as tool_result content.
         return PermissionResultDeny(
