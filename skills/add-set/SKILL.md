@@ -181,14 +181,18 @@ Record `CONSUMED_ARTIFACT_NAME` (the setName of the consumed artifact, or null i
 
 Ask the user 2 focused questions to understand the new set's scope.
 
+**Both questions in this step are FREE-FORM text prompts** -- the user types their own answer into a textarea. They have NO answer options. Do NOT reuse the existing-sets listing from Step 1 (or any other values) as answer choices. In SDK mode, both questions MUST be routed through `mcp__rapid__ask_free_text`, NOT `mcp__rapid__webui_ask_user`.
+
 **Question 1**:
 
 ```
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
-  # SDK mode: route through the web bridge.
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
   # Call mcp__rapid__ask_free_text with:
   #   question: "What should this new set accomplish? Describe the scope, goals, and key deliverables."
   # Wait for the free-form text answer, then continue as below.
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass existing set IDs
+  # (or any other values) as options -- this question has NO options.
 else
   # CLI mode: use the built-in tool exactly as before.
   # Use AskUserQuestion (freeform):
@@ -202,10 +206,12 @@ Record the answer as `SET_SCOPE`.
 
 ```
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
-  # SDK mode: route through the web bridge.
+  # SDK mode: this is a FREE-FORM question -- the user types their own answer.
   # Call mcp__rapid__ask_free_text with:
   #   question: "What files or areas of the codebase will this set modify? Are there dependencies on existing sets?"
   # Wait for the free-form text answer, then continue as below.
+  # DO NOT call mcp__rapid__webui_ask_user here. DO NOT pass existing set IDs
+  # (or any other values) as options -- this question has NO options.
 else
   # CLI mode: use the built-in tool exactly as before.
   # Use AskUserQuestion (freeform):
