@@ -96,12 +96,23 @@ export function SkillLauncher({
     }
   }, [skill, defaultSetId]);
 
+  // Derive setId from the set-ref form field, falling back to defaultSetId.
+  // This ensures precondition checks and submit use the value the user selected.
+  const effectiveSetId = useMemo(() => {
+    if (defaultSetId) return defaultSetId;
+    if (!skill) return null;
+    const setRefArg = skill.args.find((a) => a.type === "set-ref");
+    if (!setRefArg) return null;
+    const v = formValues[setRefArg.name];
+    return typeof v === "string" && v.length > 0 ? v : null;
+  }, [defaultSetId, skill, formValues]);
+
   // Debounced precondition check
   const preconditions = useSkillPreconditions({
     skillName: skill ? skillName : null,
     projectId,
     skillArgs: formValues,
-    setId: defaultSetId ?? null,
+    setId: effectiveSetId,
   });
 
   // Merge debounced + override blockers
@@ -147,7 +158,7 @@ export function SkillLauncher({
         skillName,
         projectId,
         skillArgs: formValues,
-        setId: defaultSetId ?? null,
+        setId: effectiveSetId,
       });
       if (!check.ok) {
         setOverrideBlockers(check.blockers);
@@ -162,7 +173,7 @@ export function SkillLauncher({
           skill_name: skillName,
           skill_args: formValues,
           prompt: buildClientPromptPreview(skill, formValues),
-          set_id: defaultSetId ?? null,
+          set_id: effectiveSetId,
           worktree: null,
         },
       );
@@ -187,7 +198,7 @@ export function SkillLauncher({
     } finally {
       setSubmitting(false);
     }
-  }, [skill, skillName, projectId, formValues, defaultSetId, onDispatched, submitting]);
+  }, [skill, skillName, projectId, formValues, effectiveSetId, onDispatched, submitting]);
 
   // ---- Loading / error states ----
 
