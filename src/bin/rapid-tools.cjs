@@ -64,7 +64,7 @@ const USAGE = `Usage: rapid-tools <command> [subcommand] [args...]
   plan list-sets              List all defined sets
   plan load-set <name>        Load a set's definition and contract
   set-init create <set-name>     Initialize a set: create worktree + scoped CLAUDE.md + register
-  set-init list-available        List pending sets without worktrees
+  set-init list-available        List pending sets without worktrees, ordered by DAG waves
   resolve set <input>                Resolve set reference (numeric index or string ID) to JSON
   resolve wave <input>               Resolve wave reference (N.N dot notation or string ID) to JSON
   assumptions [set-name]      Surface assumptions about a set (or list sets)

@@ -65,7 +65,7 @@ const TOOL_REGISTRY = {
 
   // Set init
   'set-init-create':      'set-init create <set:str> -- Init set: worktree + CLAUDE.md + register',
-  'set-init-list':        'set-init list-available -- List pending sets without worktrees',
+  'set-init-list':        'set-init list-available -- List pending sets without worktrees, ordered by DAG waves',
 
   // Review
   'review-scope':         'review scope <set:str> <wave:str> -- Scope wave files for review',
