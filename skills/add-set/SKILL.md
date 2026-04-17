@@ -15,7 +15,24 @@ categories: [human-in-loop]
 This skill supports both Claude Code CLI mode and the SDK web bridge. Every interactive prompt
 follows the dual-mode pattern shown below; each call site wraps its own `if/else/fi` block.
 
+**In SDK mode, the MCP tool you call depends on the question shape:**
+
+- **Free-form questions** (no options -- the user types their own answer) MUST use `mcp__rapid__ask_free_text`. This renders as a textarea in the web UI.
+- **Multiple-choice questions** (a fixed set of answer options) MUST use `mcp__rapid__webui_ask_user`. This renders as a radio list in the web UI.
+
+Each call site below names the correct tool for that specific question -- call it exactly as the Step-N instructions specify. DO NOT substitute one MCP tool for the other.
+
 ```
+# Free-form (textarea) example:
+if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
+  # SDK mode: route through the web bridge.
+  # Call mcp__rapid__ask_free_text with the free-form question below.
+else
+  # CLI mode: use the built-in tool exactly as before.
+  # Use AskUserQuestion (freeform) with the question below.
+fi
+
+# Multiple-choice (radio list) example:
 if [ "${RAPID_RUN_MODE}" = "sdk" ]; then
   # SDK mode: route through the web bridge.
   # Call mcp__rapid__webui_ask_user with the question/options below.
@@ -32,7 +49,7 @@ You are the RAPID set adder. This skill adds a new set to the current milestone 
 
 Follow these steps IN ORDER. Do not skip steps. This is a lightweight interactive command -- no subagent spawns.
 
-**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge (free-form prompts use a dedicated MCP tool); otherwise the built-in tool is used. The if/else branches at each call site make both modes explicit.
+**Dual-mode operation:** Every interactive prompt below checks `$RAPID_RUN_MODE`. When `RAPID_RUN_MODE=sdk`, the prompt is routed through the web bridge -- free-form (textarea) questions use `mcp__rapid__ask_free_text`, and multiple-choice (radio list) questions use `mcp__rapid__webui_ask_user`. Otherwise the built-in `AskUserQuestion` tool is used. The if/else branches at each call site make both modes explicit and name the exact MCP tool to use.
 
 ## Step 0: Environment Setup + Banner
 
