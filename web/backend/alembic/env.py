@@ -4,6 +4,24 @@ from sqlalchemy import pool
 
 from alembic import context
 
+
+def _disable_sqlite_fks(connection) -> None:
+    """Set PRAGMA foreign_keys=OFF on the raw DBAPI connection.
+
+    Batch_alter_table swaps a table by recreating it, copying data, dropping
+    the old, and renaming. On SQLite with FK enforcement on, the drop step
+    fails when any other table references the one being altered. We must use
+    the raw cursor — routing through SQLAlchemy's Connection.execute opens an
+    implicit transaction that later swallows the alembic commit. And SQLite
+    forbids toggling this pragma inside a transaction, so we set it before
+    begin_transaction(). The app engine re-enables FKs per connection, so
+    runtime is unaffected.
+    """
+    raw = connection.connection
+    cur = raw.cursor()
+    cur.execute("PRAGMA foreign_keys=OFF")
+    cur.close()
+
 # Import all models so metadata is populated
 from app.database import SQLModel  # noqa: F401 -- triggers model registration
 from app.config import settings
@@ -52,6 +70,7 @@ def run_migrations_online() -> None:
 
     if hasattr(connectable, "connect"):
         with connectable.connect() as connection:
+            _disable_sqlite_fks(connection)
             context.configure(
                 connection=connection,
                 target_metadata=target_metadata,
@@ -61,6 +80,7 @@ def run_migrations_online() -> None:
                 context.run_migrations()
     else:
         # Already a connection
+        _disable_sqlite_fks(connectable)
         context.configure(
             connection=connectable,
             target_metadata=target_metadata,
