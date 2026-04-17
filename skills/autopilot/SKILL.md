@@ -1,6 +1,6 @@
 ---
 description: Backend-managed autopilot poller that claims kanban cards from autopilot-enabled columns and dispatches agent runs
-allowed-tools: []
+allowed-tools: ""
 args: []
 categories: [autonomous]
 ---
