@@ -29,12 +29,59 @@ echo "RAPID_PLUGIN_DIR=${CLAUDE_SKILL_DIR}/../.."
 
 There is a caveat: if the user has previously installed RAPID via marketplace, there may be old versions in ~/.claude/plugins/cache. You are on version 3.0, so your install location should contain some sort of reference to v7.0.0! So you need to make sure to update the RAPID_TOOLS path in the shell config if it points to an old version. You can detect this by checking if RAPID_TOOLS is already configured in any shell config file and if it points to a path within ~/.claude/plugins/cache. If so, prompt the user to update their config to point to the new plugin root path.
 
-## Step 1: Run Non-Interactive Bootstrap
+## Step 0.5: Probe Optional Prerequisites (uv)
 
-Run setup.sh to handle prereqs, npm install, validation, .env writing, plugin registration, and `build-agents` (generates all agent .md files from source modules):
+Before running `setup.sh`, check whether `uv` (Astral's Python package manager) is available. `uv` is required for the RAPID web backend (Mission Control) and for Step 6 of `setup.sh`. It is NOT required for core RAPID (solo-mode users who don't use the web dashboard don't need it).
+
+Run a bash probe:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/../../setup.sh"
+if command -v uv &>/dev/null; then
+    echo "UV=present $(uv --version | awk '{print $2}')"
+else
+    echo "UV=missing"
+fi
+```
+
+**If `UV=present`:** Display `"uv <version> found -- continuing."` and proceed to Step 1 with `RAPID_INSTALL_UV` unset.
+
+**If `UV=missing`:** Use `AskUserQuestion`:
+
+- Header: "uv not found -- install now?"
+- Text: "The 'uv' Python package manager is required for the RAPID web backend (Mission Control). It's not currently on your PATH. Astral provides a one-line installer: curl -LsSf https://astral.sh/uv/install.sh | sh"
+- Options:
+  - "Yes, auto-install uv" -- description: "Run the Astral installer now. RAPID setup will continue after uv is installed."
+  - "Skip -- I'll install it later" -- description: "Continue install without uv. Mission Control and backend features won't work until you install uv and re-run /rapid:install."
+  - "Show manual install instructions" -- description: "Display platform-specific install commands (homebrew, curl, pipx) so you can install outside Claude Code."
+
+Handle the answers:
+
+- **"Yes, auto-install uv":** Export `RAPID_INSTALL_UV=auto` so Step 1 forwards it to `setup.sh`. `setup.sh` will run the Astral installer and re-probe PATH.
+- **"Skip -- I'll install it later":** Export `RAPID_INSTALL_UV=skip` (explicit, matches existing non-interactive behavior).
+- **"Show manual install instructions":** Display the following block, then re-prompt with the same question. Cap the re-prompt loop at two iterations -- if the user picks "Show manual install instructions" a third time, treat it as "Skip".
+
+  ```
+  # macOS (Homebrew)
+  brew install uv
+
+  # Linux / macOS (Astral installer)
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+
+  # Windows (PowerShell)
+  powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+  # Python users with pipx
+  pipx install uv
+  ```
+
+Proceed to Step 1 with `RAPID_INSTALL_UV` set (or unset if `uv` was already present).
+
+## Step 1: Run Non-Interactive Bootstrap
+
+Run setup.sh to handle prereqs, npm install, validation, .env writing, plugin registration, and `build-agents` (generates all agent .md files from source modules). Forward `RAPID_INSTALL_UV` (set in Step 0.5) so setup.sh can honor the user's auto-install / skip choice:
+
+```bash
+RAPID_INSTALL_UV="${RAPID_INSTALL_UV:-}" bash "${CLAUDE_SKILL_DIR}/../../setup.sh"
 ```
 
 If setup.sh fails, use AskUserQuestion:
