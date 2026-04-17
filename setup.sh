@@ -176,9 +176,9 @@ fi
 echo "[7/8] Building web frontend..."
 FRONTEND_DIR="$SCRIPT_DIR/web/frontend"
 if [[ -d "$FRONTEND_DIR" ]]; then
-    (cd "$FRONTEND_DIR" && npm install && npm run build 2>&1) || {
+    (cd "$FRONTEND_DIR" && npm install && npx vite build 2>&1) || {
         echo "  WARNING: Frontend build failed (non-fatal)"
-        echo "  You can build manually with: cd $FRONTEND_DIR && npm install && npm run build"
+        echo "  You can build manually with: cd $FRONTEND_DIR && npm install && npx vite build"
     }
     echo "  OK: Frontend built"
 else
