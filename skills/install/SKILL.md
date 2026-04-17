@@ -340,10 +340,10 @@ echo 'export RAPID_WEB=true' >> {chosen_config_file}
 ```bash
 # Copy service file if not already in place
 mkdir -p ~/.config/systemd/user
-cp "${CLAUDE_SKILL_DIR}/../../web/backend/service/rapid-web.service" ~/.config/systemd/user/rapid-web.service
+cp "${CLAUDE_SKILL_DIR}/../../web/backend/service/rapid-web.generated.service" ~/.config/systemd/user/rapid-web.service
 systemctl --user daemon-reload
 systemctl --user enable rapid-web
-systemctl --user start rapid-web
+systemctl --user restart rapid-web
 sleep 2
 systemctl --user status rapid-web --no-pager
 ```
