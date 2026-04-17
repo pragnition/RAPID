@@ -84,19 +84,18 @@ export function SkillLauncher({
   const { data: skill, isLoading, error } = useSkill(skillName);
   const { data: projectDetail } = useProjectDetail(projectId);
 
-  // Extract set IDs from project milestones for set-ref autocomplete
+  // Extract set IDs from the current milestone only
   const setSuggestions = useMemo(() => {
-    if (!projectDetail?.milestones) return [];
-    const ids: string[] = [];
-    for (const ms of projectDetail.milestones) {
-      const sets = (ms as Record<string, unknown>).sets;
-      if (!Array.isArray(sets)) continue;
-      for (const s of sets) {
-        const rec = s as Record<string, unknown>;
-        if (typeof rec.id === "string") ids.push(rec.id);
-      }
-    }
-    return ids;
+    if (!projectDetail?.milestones || !projectDetail.current_milestone) return [];
+    const current = projectDetail.milestones.find(
+      (ms) => (ms as Record<string, unknown>).id === projectDetail.current_milestone,
+    );
+    if (!current) return [];
+    const sets = (current as Record<string, unknown>).sets;
+    if (!Array.isArray(sets)) return [];
+    return sets
+      .map((s) => (s as Record<string, unknown>).id)
+      .filter((id): id is string => typeof id === "string");
   }, [projectDetail]);
 
   // Form state -- initialized once the skill loads

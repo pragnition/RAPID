@@ -22,7 +22,7 @@ export function useSkillPreconditions(
   const debouncedHash = useDebouncedValue(argsHash, 500);
 
   return useQuery<PreconditionCheckResponse, ApiError>({
-    queryKey: ["preconditions", skillName, debouncedHash],
+    queryKey: ["preconditions", skillName, debouncedHash, setId ?? null],
     queryFn: () =>
       apiClient.post<PreconditionCheckResponse>(
         `/skills/${skillName}/check-preconditions`,
