@@ -4,6 +4,7 @@ import {
   ErrorCard,
 } from "@/components/primitives";
 import { useSkill } from "@/hooks/useSkills";
+import { useProjectDetail } from "@/hooks/useProjects";
 import {
   useSkillPreconditions,
   runPreconditionCheck,
@@ -81,6 +82,22 @@ export function SkillLauncher({
   onCancel,
 }: SkillLauncherProps) {
   const { data: skill, isLoading, error } = useSkill(skillName);
+  const { data: projectDetail } = useProjectDetail(projectId);
+
+  // Extract set IDs from project milestones for set-ref autocomplete
+  const setSuggestions = useMemo(() => {
+    if (!projectDetail?.milestones) return [];
+    const ids: string[] = [];
+    for (const ms of projectDetail.milestones) {
+      const sets = (ms as Record<string, unknown>).sets;
+      if (!Array.isArray(sets)) continue;
+      for (const s of sets) {
+        const rec = s as Record<string, unknown>;
+        if (typeof rec.id === "string") ids.push(rec.id);
+      }
+    }
+    return ids;
+  }, [projectDetail]);
 
   // Form state -- initialized once the skill loads
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
@@ -284,6 +301,7 @@ export function SkillLauncher({
               value={formValues[arg.name]}
               onChange={(v) => updateField(arg.name, v)}
               blocker={argBlockerMap.get(arg.name)}
+              setSuggestions={arg.type === "set-ref" ? setSuggestions : undefined}
             />
           ))}
         </div>
@@ -303,6 +321,7 @@ export function SkillLauncher({
                 value={formValues[arg.name]}
                 onChange={(v) => updateField(arg.name, v)}
                 blocker={argBlockerMap.get(arg.name)}
+                setSuggestions={arg.type === "set-ref" ? setSuggestions : undefined}
               />
             ))}
           </div>
