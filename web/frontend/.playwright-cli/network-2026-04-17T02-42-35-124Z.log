@@ -1,0 +1,5 @@
+[GET] http://localhost:5173/api/projects => [200] OK
+[GET] http://localhost:5173/api/health => [200] OK
+[GET] http://localhost:5173/api/projects/f0397be5-4677-4672-a752-f14d8abb4ce7/kanban => [200] OK
+[PUT] http://localhost:5173/api/projects/f0397be5-4677-4672-a752-f14d8abb4ce7/kanban/cards/77f370d9-4b3a-4513-84d4-7695b78b7252/move => [200] OK
+[GET] http://localhost:5173/api/projects/f0397be5-4677-4672-a752-f14d8abb4ce7/kanban => [200] OK

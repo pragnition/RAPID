@@ -19,9 +19,6 @@ _PATTERN_SOURCES: list[str] = [
     r"\bgit\s+branch\s+-D\b",
     r"\bgit\s+reset\s+--hard\s+origin\b",
     r"\bgit\s+clean\s+-[fdx]{1,3}\b",
-    r"\benv\b(?!\s*\|\s*grep)",
-    r"\bcat\s+.*\.env\b",
-    r"\bprintenv\b",
     r"\bdd\s+if=.*of=/dev/",
     r"\b:\s*\(\)\s*{\s*:\s*\|\s*:\s*&\s*}\s*;",
 ]

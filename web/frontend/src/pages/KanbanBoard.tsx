@@ -223,6 +223,25 @@ export function KanbanBoard() {
     [toggleAutopilot],
   );
 
+  const handleUpdateAgentType = useCallback(
+    (columnId: string, agentType: string) => {
+      updateColumn.mutate({ columnId, default_agent_type: agentType });
+    },
+    [updateColumn],
+  );
+
+  const handleMoveColumn = useCallback(
+    (columnId: string, direction: "left" | "right") => {
+      if (!data) return;
+      const idx = data.columns.findIndex((c) => c.id === columnId);
+      if (idx === -1) return;
+      const newPos = direction === "left" ? idx - 1 : idx + 1;
+      if (newPos < 0 || newPos >= data.columns.length) return;
+      updateColumn.mutate({ columnId, position: newPos });
+    },
+    [data, updateColumn],
+  );
+
   // -----------------------------------------------------------------------
   // Render
   // -----------------------------------------------------------------------
@@ -295,17 +314,21 @@ export function KanbanBoard() {
         onDragEnd={handleDragEnd}
       >
         <div className="flex-1 flex gap-4 overflow-x-auto pb-4">
-          {data?.columns.map((column) => (
+          {data?.columns.map((column, idx) => (
             <KanbanColumn
               key={column.id}
               column={column}
               isDropTarget={overColumnId === column.id && activeCard?.column_id !== column.id}
+              isFirst={idx === 0}
+              isLast={idx === (data?.columns.length ?? 0) - 1}
               onEditCard={handleEditCard}
               onDeleteCard={handleDeleteCard}
               onAddCard={handleAddCard}
               onUpdateColumn={handleUpdateColumn}
               onDeleteColumn={handleDeleteColumn}
               onToggleAutopilot={handleToggleAutopilot}
+              onUpdateAgentType={handleUpdateAgentType}
+              onMoveColumn={handleMoveColumn}
             />
           ))}
           <AddColumnButton onAdd={handleAddColumn} />

@@ -6,6 +6,8 @@
  * `kind` discriminator for type-safe event handling.
  */
 
+import type { QuestionDef } from "@/types/agentPrompt";
+
 export type SseEventKind =
   | "assistant_text"
   | "thinking"
@@ -44,7 +46,7 @@ export interface ToolUseEvent extends BaseSseEvent {
 export interface ToolResultEvent extends BaseSseEvent {
   kind: "tool_result";
   tool_use_id: string;
-  output: unknown;
+  output: Record<string, unknown> | unknown[] | string | null;
   is_error: boolean;
 }
 
@@ -55,6 +57,8 @@ export interface AskUserEvent extends BaseSseEvent {
   question: string;
   options: string[] | null;
   allow_free_text: boolean;
+  /** Multi-question support: when present, supersedes question/options/allow_free_text. */
+  questions?: QuestionDef[] | null;
 }
 
 export interface PermissionReqEvent extends BaseSseEvent {

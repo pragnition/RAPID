@@ -45,7 +45,7 @@ export function useUpdateColumn(projectId: string) {
   return useMutation<
     KanbanColumnResponse,
     ApiError,
-    { columnId: string; title?: string; position?: number }
+    { columnId: string; title?: string; position?: number; default_agent_type?: string }
   >({
     mutationFn: ({ columnId, ...body }) =>
       apiClient.put<KanbanColumnResponse>(

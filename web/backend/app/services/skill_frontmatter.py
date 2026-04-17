@@ -51,6 +51,18 @@ def parse_skill_file(path: Path) -> SkillFrontmatter:
         raise FrontmatterError(path, f"schema validation failed: {exc}") from exc
 
 
+def read_skill_body(path: Path) -> str:
+    """Read a SKILL.md file and return everything after the frontmatter block.
+
+    Returns an empty string if the file has no frontmatter or is empty.
+    """
+    text = path.read_text(encoding="utf-8")
+    match = FRONTMATTER_RE.match(text)
+    if not match:
+        return text  # no frontmatter — return the whole file
+    return text[match.end():]
+
+
 def discover_skill_files(skills_root: Path) -> List[Path]:
     """Walk skills_root one level deep and return paths to all SKILL.md files.
 

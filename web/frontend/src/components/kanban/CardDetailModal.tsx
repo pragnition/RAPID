@@ -95,21 +95,25 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
           placeholder="Add a description..."
         />
 
-        {/* Agent type */}
-        <label className="block text-xs text-muted mt-3 mb-1">Agent type</label>
-        <select
-          value={agentType}
-          onChange={(e) => setAgentType(e.target.value)}
-          className="
-            w-full px-3 py-1.5 text-sm
-            bg-surface-1 border border-border rounded
-            text-fg
-            focus:outline-none focus:border-accent
-          "
-        >
-          <option value="quick">Quick task</option>
-          <option value="bug-fix">Bug fix</option>
-        </select>
+        {/* Agent type — hidden when autopilot is ignored */}
+        {!autopilotIgnore && (
+          <>
+            <label className="block text-xs text-muted mt-3 mb-1">Agent type</label>
+            <select
+              value={agentType}
+              onChange={(e) => setAgentType(e.target.value)}
+              className="
+                w-full px-3 py-1.5 text-sm
+                bg-surface-1 border border-border rounded
+                text-fg
+                focus:outline-none focus:border-accent
+              "
+            >
+              <option value="quick">Quick task</option>
+              <option value="bug-fix">Bug fix</option>
+            </select>
+          </>
+        )}
 
         {/* Autopilot ignore */}
         <label className="flex items-center gap-2 mt-3">

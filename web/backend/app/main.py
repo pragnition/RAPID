@@ -138,6 +138,7 @@ async def lifespan(app: FastAPI):
     skill_catalog_service.load_initial(skills_root)
     logger.info("skill catalog loaded", extra={"skills_root": str(skills_root)})
     app.state.skill_catalog_service = skill_catalog_service
+    agent_manager.set_skill_catalog(skill_catalog_service)
 
     # Hot-reload watcher (only in dev mode)
     if settings.rapid_dev:

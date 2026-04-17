@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from app.schemas.skill_frontmatter import SkillFrontmatter
-from app.services.skill_frontmatter import FrontmatterError, parse_skill_file
+from app.services.skill_frontmatter import FrontmatterError, parse_skill_file, read_skill_body
 
 
 def _write_skill(tmp_path: Path, content: str) -> Path:
@@ -136,3 +136,48 @@ class TestParseSkillFile:
         fm = parse_skill_file(path)
         assert fm.args[0].choices == ["auto", "manual"]
         assert fm.args[0].default == "auto"
+
+
+class TestReadSkillBody:
+    def test_returns_body_after_frontmatter(self, tmp_path: Path) -> None:
+        path = _write_skill(
+            tmp_path,
+            """\
+            ---
+            description: A test skill
+            args: []
+            categories: [autonomous]
+            ---
+
+            # Step 1
+            Do the thing.
+            """,
+        )
+        body = read_skill_body(path)
+        assert "# Step 1" in body
+        assert "Do the thing." in body
+        assert "description:" not in body
+
+    def test_returns_empty_for_frontmatter_only(self, tmp_path: Path) -> None:
+        path = _write_skill(
+            tmp_path,
+            """\
+            ---
+            description: A test skill
+            args: []
+            categories: [autonomous]
+            ---
+            """,
+        )
+        body = read_skill_body(path)
+        assert body.strip() == ""
+
+    def test_returns_whole_file_when_no_frontmatter(self, tmp_path: Path) -> None:
+        path = _write_skill(
+            tmp_path,
+            """\
+            Just plain instructions, no frontmatter.
+            """,
+        )
+        body = read_skill_body(path)
+        assert "Just plain instructions" in body

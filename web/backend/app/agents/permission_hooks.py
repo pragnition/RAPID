@@ -79,54 +79,74 @@ async def _route_auq_through_bridge(
     manager: "AgentSessionManager",
     questions: list[dict[str, Any]],
 ) -> list[str]:
-    """Synthesise per-chunk ``ask_user`` prompts for a built-in AUQ call.
+    """Emit a single multi-question prompt for a built-in AUQ call.
 
-    Chunks the questions into groups of up to 4 (the SDK's built-in AUQ
-    limit), emits one ``AskUserEvent`` per chunk via the shared
-    ``emit_and_await_prompt`` primitive, and concatenates the answers in
-    original question order. Returns ``list[str]`` sized to ``len(questions)``.
+    Converts the SDK's AUQ question dicts into ``QuestionDef``-compatible
+    dicts, emits ONE ``AskUserEvent`` carrying the full ``questions`` array,
+    and parses the structured JSON answer back into ``list[str]`` (one per
+    question) for the SDK return value.
     """
     from app.agents.tools.ask_user import emit_and_await_prompt
 
-    chunks: list[list[dict[str, Any]]] = [
-        questions[i : i + _AUQ_CHUNK_SIZE]
-        for i in range(0, len(questions), _AUQ_CHUNK_SIZE)
-    ]
-    total_chunks = len(chunks)
     batch_id = str(uuid.uuid4())
 
-    answers: list[str] = []
-    for chunk_idx, chunk in enumerate(chunks):
-        # For each sub-question inside the chunk, emit a distinct prompt —
-        # the client shows one at a time (sequential split UX per CONTEXT.md).
-        for q_idx, q in enumerate(chunk):
-            question_text = str(q.get("question") or "")
-            raw_opts = q.get("options")
-            # The SDK's built-in AskUserQuestion sends options as dicts
-            # ({"label": ..., "description": ...}); normalise to plain
-            # strings so AskUserEvent (list[str]) validates cleanly.
-            if raw_opts is not None:
-                options = [
-                    o["label"] if isinstance(o, dict) and "label" in o else str(o)
-                    for o in raw_opts
-                ]
-            else:
-                options = None
-            # Built-in AUQ supports multi-select; we surface it as list[str]
-            # with allow_free_text determined per-question (default False).
-            allow_free_text = bool(q.get("allow_free_text", False))
-            answer = await emit_and_await_prompt(
-                run_id=run_id,
-                manager=manager,
-                question=question_text,
-                options=options,
-                allow_free_text=allow_free_text,
-                n_of_m=(chunk_idx + 1, total_chunks),
-                batch_id=batch_id,
-                batch_position=chunk_idx * _AUQ_CHUNK_SIZE + q_idx,
+    # Convert SDK AUQ question dicts into QuestionDef-compatible dicts,
+    # preserving rich option metadata (label, description, preview).
+    question_defs: list[dict[str, Any]] = []
+    for q in questions:
+        raw_opts = q.get("options")
+        opts: list[dict[str, Any]] | None = None
+        if raw_opts is not None:
+            opts = [
+                {
+                    "label": o["label"] if isinstance(o, dict) and "label" in o else str(o),
+                    "description": o.get("description") if isinstance(o, dict) else None,
+                    "preview": o.get("preview") if isinstance(o, dict) else None,
+                }
+                for o in raw_opts
+            ]
+        question_defs.append({
+            "question": str(q.get("question") or ""),
+            "header": (str(q.get("header") or "")[:12] or None),
+            "options": opts,
+            "multi_select": bool(q.get("multiSelect", False)),
+            "allow_free_text": bool(q.get("allow_free_text", True)),
+        })
+
+    # Legacy SSE fields populated from the first question for backward compat.
+    first_q = question_defs[0] if question_defs else {}
+    legacy_options: list[str] | None = (
+        [o["label"] for o in (first_q.get("options") or [])]
+        if first_q.get("options") else None
+    )
+
+    answer_json = await emit_and_await_prompt(
+        run_id=run_id,
+        manager=manager,
+        question=str(first_q.get("question", "")),
+        options=legacy_options,
+        allow_free_text=bool(first_q.get("allow_free_text", True)),
+        batch_id=batch_id,
+        batch_position=0,
+        questions=question_defs,
+    )
+
+    # Parse the structured answer back into list[str] for the SDK.
+    try:
+        parsed = json.loads(answer_json)
+        answers_map = parsed.get("answers", {})
+        return [
+            # multiSelect answers arrive as lists; serialise to JSON string
+            # so the SDK gets a clean list[str] return.
+            json.dumps(v) if isinstance(v, list) else str(v)
+            for i, v in (
+                (i, answers_map.get(str(i), ""))
+                for i in range(len(questions))
             )
-            answers.append(answer)
-    return answers
+        ]
+    except (json.JSONDecodeError, AttributeError, TypeError):
+        # Fallback: old client sent a plain string — assign to first question.
+        return [answer_json] + ["" for _ in range(len(questions) - 1)]
 
 
 async def can_use_tool_hook_bound(

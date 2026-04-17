@@ -122,3 +122,8 @@ def test_unknown_skill_falls_back_to_default():
     opts = _build(skill_name="does-not-exist-xyz")
     assert opts.permission_mode == "default"
     assert opts.max_turns == settings.rapid_agent_default_max_turns
+
+
+def test_system_prompt_is_none_by_default():
+    opts = _build()
+    assert opts.system_prompt is None

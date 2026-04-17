@@ -1,0 +1,471 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: R
+          - generic [ref=e8]: RAPID
+        - combobox "Select project" [ref=e221]:
+          - option "Select a project..."
+          - option "Weavrly"
+          - option "better-ccflare"
+          - option "rapid_test"
+          - option "ASS"
+          - option "TISC"
+          - option "ARIA-rapid"
+          - option "RAPID" [selected]
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]: Workspace
+          - link "Dashboard gd" [ref=e13] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e15]: Dashboard
+            - generic [ref=e16]: gd
+          - link "Projects gp" [ref=e17] [cursor=pointer]:
+            - /url: /projects
+            - generic [ref=e19]: Projects
+            - generic [ref=e20]: gp
+          - link "Codebase" [ref=e21] [cursor=pointer]:
+            - /url: /codebase
+            - generic [ref=e23]: Codebase
+        - generic [ref=e24]:
+          - generic [ref=e25]: Execution
+          - link "Knowledge Graph gh" [ref=e26] [cursor=pointer]:
+            - /url: /graph
+            - generic [ref=e28]: Knowledge Graph
+            - generic [ref=e29]: gh
+          - link "Kanban gk" [ref=e30] [cursor=pointer]:
+            - /url: /kanban
+            - generic [ref=e32]: Kanban
+            - generic [ref=e33]: gk
+          - link "Worktrees gw" [ref=e34] [cursor=pointer]:
+            - /url: /worktrees
+            - generic [ref=e36]: Worktrees
+            - generic [ref=e37]: gw
+          - link "State gs" [ref=e38] [cursor=pointer]:
+            - /url: /state
+            - generic [ref=e40]: State
+            - generic [ref=e41]: gs
+          - link "Agents ga" [ref=e42] [cursor=pointer]:
+            - /url: /agents
+            - generic [ref=e44]: Agents
+            - generic [ref=e45]: ga
+          - link "Chats gc" [ref=e46] [cursor=pointer]:
+            - /url: /chats
+            - generic [ref=e48]: Chats
+            - generic [ref=e49]: gc
+        - generic [ref=e50]:
+          - generic [ref=e51]: Library
+          - link "Notes" [ref=e52] [cursor=pointer]:
+            - /url: /notes
+            - generic [ref=e54]: Notes
+          - link "Settings" [ref=e55] [cursor=pointer]:
+            - /url: /settings
+            - generic [ref=e57]: Settings
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - img "online" [ref=e60]
+          - generic [ref=e61]: backend online
+        - generic [ref=e62]: RAPID v7.0.0
+    - banner [ref=e63]:
+      - navigation "Breadcrumb" [ref=e66]:
+        - link "RAPID" [ref=e67] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e68]: /
+        - generic [ref=e69]: Agents
+      - button "Open command palette" [ref=e70]:
+        - generic [ref=e71] [cursor=pointer]:
+          - searchbox "Search sets, pages, commands" [ref=e72]
+          - generic [ref=e74]: ⌘K
+      - generic [ref=e75]:
+        - group "Theme picker" [ref=e76]:
+          - generic [ref=e77]:
+            - button "Select Everforest theme" [pressed] [ref=e78]
+            - button "Select Catppuccin theme" [ref=e79]
+            - button "Select Gruvbox theme" [ref=e80]
+            - button "Select Tokyo Night theme" [ref=e81]
+          - button "Switch to light mode" [ref=e82]: dark
+        - button "Show keyboard shortcuts" [ref=e83]: "?"
+    - main [ref=e84]:
+      - generic [ref=e85]:
+        - generic [ref=e86]:
+          - navigation "Breadcrumb" [ref=e87]:
+            - link "RAPID" [ref=e88] [cursor=pointer]:
+              - /url: /
+            - generic [ref=e89]: /
+            - generic [ref=e90]: Agents
+          - generic [ref=e91]:
+            - heading "Agents" [level=1] [ref=e92]
+            - generic [ref=e94]:
+              - searchbox "Filter runs..." [ref=e96]
+              - button "Launch New Run" [ref=e97]
+          - paragraph [ref=e98]: Autonomous skill runs.
+        - generic [ref=e99]:
+          - generic [ref=e100]:
+            - heading "Running" [level=2] [ref=e101]
+            - generic [ref=e102]: "0"
+          - generic [ref=e103]:
+            - heading "Waiting" [level=2] [ref=e104]
+            - generic [ref=e105]: "0"
+          - generic [ref=e106]:
+            - heading "Failed" [level=2] [ref=e107]
+            - generic [ref=e108]: "2"
+          - generic [ref=e109]:
+            - heading "Completed" [level=2] [ref=e110]
+            - generic [ref=e111]: "32"
+        - table [ref=e113]:
+          - rowgroup [ref=e114]:
+            - row "Status Skill Started Duration Set Cost" [ref=e115]:
+              - columnheader "Status" [ref=e116]
+              - columnheader "Skill" [ref=e117]
+              - columnheader "Started" [ref=e118]
+              - columnheader "Duration" [ref=e119]
+              - columnheader "Set" [ref=e120]
+              - columnheader "Cost" [ref=e121]
+          - rowgroup [ref=e222]:
+            - row "COMPLETED rapid:quick 02:50:26 00:16 — $0.0625" [ref=e223] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e224]:
+                - generic [ref=e225]: COMPLETED
+              - cell "rapid:quick" [ref=e226]
+              - cell "02:50:26" [ref=e227]
+              - cell "00:16" [ref=e228]
+              - cell "—" [ref=e229]
+              - cell "$0.0625" [ref=e230]
+            - row "COMPLETED rapid:quick 02:32:27 00:12 — $0.0561" [ref=e231] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e232]:
+                - generic [ref=e233]: COMPLETED
+              - cell "rapid:quick" [ref=e234]
+              - cell "02:32:27" [ref=e235]
+              - cell "00:12" [ref=e236]
+              - cell "—" [ref=e237]
+              - cell "$0.0561" [ref=e238]
+            - row "COMPLETED rapid:quick 02:13:23 00:17 — $0.0571" [ref=e239] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e240]:
+                - generic [ref=e241]: COMPLETED
+              - cell "rapid:quick" [ref=e242]
+              - cell "02:13:23" [ref=e243]
+              - cell "00:17" [ref=e244]
+              - cell "—" [ref=e245]
+              - cell "$0.0571" [ref=e246]
+            - row "COMPLETED rapid:quick 01:56:26 00:36 — $0.0955" [ref=e247] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e248]:
+                - generic [ref=e249]: COMPLETED
+              - cell "rapid:quick" [ref=e250]
+              - cell "01:56:26" [ref=e251]
+              - cell "00:36" [ref=e252]
+              - cell "—" [ref=e253]
+              - cell "$0.0955" [ref=e254]
+            - row "COMPLETED quick 01:53:18 02:08 — $0.4764" [ref=e255] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e256]:
+                - generic [ref=e257]: COMPLETED
+              - cell "quick" [ref=e258]
+              - cell "01:53:18" [ref=e259]
+              - cell "02:08" [ref=e260]
+              - cell "—" [ref=e261]
+              - cell "$0.4764" [ref=e262]
+            - row "COMPLETED quick 01:51:58 00:19 — $0.0666" [ref=e263] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e264]:
+                - generic [ref=e265]: COMPLETED
+              - cell "quick" [ref=e266]
+              - cell "01:51:58" [ref=e267]
+              - cell "00:19" [ref=e268]
+              - cell "—" [ref=e269]
+              - cell "$0.0666" [ref=e270]
+            - row "COMPLETED quick 01:51:30 00:09 — $0.0604" [ref=e271] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e272]:
+                - generic [ref=e273]: COMPLETED
+              - cell "quick" [ref=e274]
+              - cell "01:51:30" [ref=e275]
+              - cell "00:09" [ref=e276]
+              - cell "—" [ref=e277]
+              - cell "$0.0604" [ref=e278]
+            - row "COMPLETED quick 01:47:44 00:35 — $0.1599" [ref=e279] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e280]:
+                - generic [ref=e281]: COMPLETED
+              - cell "quick" [ref=e282]
+              - cell "01:47:44" [ref=e283]
+              - cell "00:35" [ref=e284]
+              - cell "—" [ref=e285]
+              - cell "$0.1599" [ref=e286]
+            - row "COMPLETED quick 15:48:16 00:13 — $0.1333" [ref=e287] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e288]:
+                - generic [ref=e289]: COMPLETED
+              - cell "quick" [ref=e290]
+              - cell "15:48:16" [ref=e291]
+              - cell "00:13" [ref=e292]
+              - cell "—" [ref=e293]
+              - cell "$0.1333" [ref=e294]
+            - row "COMPLETED status 10:13:56 00:00 — $0.0000" [ref=e295] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e296]:
+                - generic [ref=e297]: COMPLETED
+              - cell "status" [ref=e298]
+              - cell "10:13:56" [ref=e299]
+              - cell "00:00" [ref=e300]
+              - cell "—" [ref=e301]
+              - cell "$0.0000" [ref=e302]
+            - row "INTERRUPTED quick 10:08:01 00:10 — $0.0000" [ref=e303] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e304]:
+                - generic [ref=e305]: INTERRUPTED
+              - cell "quick" [ref=e306]
+              - cell "10:08:01" [ref=e307]
+              - cell "00:10" [ref=e308]
+              - cell "—" [ref=e309]
+              - cell "$0.0000" [ref=e310]
+            - row "COMPLETED status 09:48:51 00:02 — $0.0186" [ref=e311] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e312]:
+                - generic [ref=e313]: COMPLETED
+              - cell "status" [ref=e314]
+              - cell "09:48:51" [ref=e315]
+              - cell "00:02" [ref=e316]
+              - cell "—" [ref=e317]
+              - cell "$0.0186" [ref=e318]
+            - row "COMPLETED quick 09:39:26 00:00 — $0.0000" [ref=e319] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e320]:
+                - generic [ref=e321]: COMPLETED
+              - cell "quick" [ref=e322]
+              - cell "09:39:26" [ref=e323]
+              - cell "00:00" [ref=e324]
+              - cell "—" [ref=e325]
+              - cell "$0.0000" [ref=e326]
+            - row "COMPLETED quick 09:33:04 00:19 — $0.0549" [ref=e327] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e328]:
+                - generic [ref=e329]: COMPLETED
+              - cell "quick" [ref=e330]
+              - cell "09:33:04" [ref=e331]
+              - cell "00:19" [ref=e332]
+              - cell "—" [ref=e333]
+              - cell "$0.0549" [ref=e334]
+            - row "COMPLETED quick 09:31:58 00:13 — $0.0594" [ref=e335] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e336]:
+                - generic [ref=e337]: COMPLETED
+              - cell "quick" [ref=e338]
+              - cell "09:31:58" [ref=e339]
+              - cell "00:13" [ref=e340]
+              - cell "—" [ref=e341]
+              - cell "$0.0594" [ref=e342]
+            - row "COMPLETED quick 09:31:35 00:05 — $0.0245" [ref=e343] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e344]:
+                - generic [ref=e345]: COMPLETED
+              - cell "quick" [ref=e346]
+              - cell "09:31:35" [ref=e347]
+              - cell "00:05" [ref=e348]
+              - cell "—" [ref=e349]
+              - cell "$0.0245" [ref=e350]
+            - row "INTERRUPTED quick 09:20:16 00:10 — $0.0000" [ref=e351] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e352]:
+                - generic [ref=e353]: INTERRUPTED
+              - cell "quick" [ref=e354]
+              - cell "09:20:16" [ref=e355]
+              - cell "00:10" [ref=e356]
+              - cell "—" [ref=e357]
+              - cell "$0.0000" [ref=e358]
+            - row "COMPLETED quick 09:13:47 00:14 — $0.0484" [ref=e359] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e360]:
+                - generic [ref=e361]: COMPLETED
+              - cell "quick" [ref=e362]
+              - cell "09:13:47" [ref=e363]
+              - cell "00:14" [ref=e364]
+              - cell "—" [ref=e365]
+              - cell "$0.0484" [ref=e366]
+            - row "COMPLETED quick 09:07:55 00:20 — $0.0418" [ref=e367] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e368]:
+                - generic [ref=e369]: COMPLETED
+              - cell "quick" [ref=e370]
+              - cell "09:07:55" [ref=e371]
+              - cell "00:20" [ref=e372]
+              - cell "—" [ref=e373]
+              - cell "$0.0418" [ref=e374]
+            - row "COMPLETED quick 09:06:14 00:12 — $0.0433" [ref=e375] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e376]:
+                - generic [ref=e377]: COMPLETED
+              - cell "quick" [ref=e378]
+              - cell "09:06:14" [ref=e379]
+              - cell "00:12" [ref=e380]
+              - cell "—" [ref=e381]
+              - cell "$0.0433" [ref=e382]
+            - row "COMPLETED quick 08:58:22 00:15 — $0.0411" [ref=e383] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e384]:
+                - generic [ref=e385]: COMPLETED
+              - cell "quick" [ref=e386]
+              - cell "08:58:22" [ref=e387]
+              - cell "00:15" [ref=e388]
+              - cell "—" [ref=e389]
+              - cell "$0.0411" [ref=e390]
+            - row "COMPLETED quick 08:57:02 00:09 — $0.0240" [ref=e391] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e392]:
+                - generic [ref=e393]: COMPLETED
+              - cell "quick" [ref=e394]
+              - cell "08:57:02" [ref=e395]
+              - cell "00:09" [ref=e396]
+              - cell "—" [ref=e397]
+              - cell "$0.0240" [ref=e398]
+            - row "INTERRUPTED quick 08:48:26 00:06 — $0.0000" [ref=e399] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e400]:
+                - generic [ref=e401]: INTERRUPTED
+              - cell "quick" [ref=e402]
+              - cell "08:48:26" [ref=e403]
+              - cell "00:06" [ref=e404]
+              - cell "—" [ref=e405]
+              - cell "$0.0000" [ref=e406]
+            - row "COMPLETED quick 08:48:13 00:02 — $0.0072" [ref=e407] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e408]:
+                - generic [ref=e409]: COMPLETED
+              - cell "quick" [ref=e410]
+              - cell "08:48:13" [ref=e411]
+              - cell "00:02" [ref=e412]
+              - cell "—" [ref=e413]
+              - cell "$0.0072" [ref=e414]
+            - row "COMPLETED quick 08:43:06 00:12 — $0.0484" [ref=e415] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e416]:
+                - generic [ref=e417]: COMPLETED
+              - cell "quick" [ref=e418]
+              - cell "08:43:06" [ref=e419]
+              - cell "00:12" [ref=e420]
+              - cell "—" [ref=e421]
+              - cell "$0.0484" [ref=e422]
+            - row "COMPLETED quick 08:42:17 00:12 — $0.0342" [ref=e423] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e424]:
+                - generic [ref=e425]: COMPLETED
+              - cell "quick" [ref=e426]
+              - cell "08:42:17" [ref=e427]
+              - cell "00:12" [ref=e428]
+              - cell "—" [ref=e429]
+              - cell "$0.0342" [ref=e430]
+            - row "COMPLETED quick 08:38:40 00:13 — $0.0499" [ref=e431] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e432]:
+                - generic [ref=e433]: COMPLETED
+              - cell "quick" [ref=e434]
+              - cell "08:38:40" [ref=e435]
+              - cell "00:13" [ref=e436]
+              - cell "—" [ref=e437]
+              - cell "$0.0499" [ref=e438]
+            - row "FAILED quick 08:31:37 00:07 — $0.0000" [ref=e439] [cursor=pointer]:
+              - cell "FAILED" [ref=e440]:
+                - generic [ref=e441]: FAILED
+              - cell "quick" [ref=e442]
+              - cell "08:31:37" [ref=e443]
+              - cell "00:07" [ref=e444]
+              - cell "—" [ref=e445]
+              - cell "$0.0000" [ref=e446]
+            - row "FAILED quick 08:30:20 00:03 — $0.0000" [ref=e447] [cursor=pointer]:
+              - cell "FAILED" [ref=e448]:
+                - generic [ref=e449]: FAILED
+              - cell "quick" [ref=e450]
+              - cell "08:30:20" [ref=e451]
+              - cell "00:03" [ref=e452]
+              - cell "—" [ref=e453]
+              - cell "$0.0000" [ref=e454]
+            - row "COMPLETED branding 07:53:39 00:14 — $0.0520" [ref=e455] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e456]:
+                - generic [ref=e457]: COMPLETED
+              - cell "branding" [ref=e458]
+              - cell "07:53:39" [ref=e459]
+              - cell "00:14" [ref=e460]
+              - cell "—" [ref=e461]
+              - cell "$0.0520" [ref=e462]
+            - row "COMPLETED quick 07:52:31 00:00 — $0.0000" [ref=e463] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e464]:
+                - generic [ref=e465]: COMPLETED
+              - cell "quick" [ref=e466]
+              - cell "07:52:31" [ref=e467]
+              - cell "00:00" [ref=e468]
+              - cell "—" [ref=e469]
+              - cell "$0.0000" [ref=e470]
+            - row "COMPLETED branding 07:48:32 00:09 — $0.0339" [ref=e471] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e472]:
+                - generic [ref=e473]: COMPLETED
+              - cell "branding" [ref=e474]
+              - cell "07:48:32" [ref=e475]
+              - cell "00:09" [ref=e476]
+              - cell "—" [ref=e477]
+              - cell "$0.0339" [ref=e478]
+            - row "COMPLETED branding 07:47:53 00:07 — $0.0231" [ref=e479] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e480]:
+                - generic [ref=e481]: COMPLETED
+              - cell "branding" [ref=e482]
+              - cell "07:47:53" [ref=e483]
+              - cell "00:07" [ref=e484]
+              - cell "—" [ref=e485]
+              - cell "$0.0231" [ref=e486]
+            - row "COMPLETED branding 07:44:53 00:10 — $0.0251" [ref=e487] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e488]:
+                - generic [ref=e489]: COMPLETED
+              - cell "branding" [ref=e490]
+              - cell "07:44:53" [ref=e491]
+              - cell "00:10" [ref=e492]
+              - cell "—" [ref=e493]
+              - cell "$0.0251" [ref=e494]
+            - row "COMPLETED branding 07:44:34 00:03 — $0.0182" [ref=e495] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e496]:
+                - generic [ref=e497]: COMPLETED
+              - cell "branding" [ref=e498]
+              - cell "07:44:34" [ref=e499]
+              - cell "00:03" [ref=e500]
+              - cell "—" [ref=e501]
+              - cell "$0.0182" [ref=e502]
+            - row "COMPLETED status 07:13:22 00:00 — $0.0000" [ref=e503] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e504]:
+                - generic [ref=e505]: COMPLETED
+              - cell "status" [ref=e506]
+              - cell "07:13:22" [ref=e507]
+              - cell "00:00" [ref=e508]
+              - cell "—" [ref=e509]
+              - cell "$0.0000" [ref=e510]
+            - row "INTERRUPTED rapid:quick 07:00:52 00:00 — $0.0000" [ref=e511] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e512]:
+                - generic [ref=e513]: INTERRUPTED
+              - cell "rapid:quick" [ref=e514]
+              - cell "07:00:52" [ref=e515]
+              - cell "00:00" [ref=e516]
+              - cell "—" [ref=e517]
+              - cell "$0.0000" [ref=e518]
+            - row "INTERRUPTED rapid:quick 07:00:52 00:00 — $0.0000" [ref=e519] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e520]:
+                - generic [ref=e521]: INTERRUPTED
+              - cell "rapid:quick" [ref=e522]
+              - cell "07:00:52" [ref=e523]
+              - cell "00:00" [ref=e524]
+              - cell "—" [ref=e525]
+              - cell "$0.0000" [ref=e526]
+            - row "INTERRUPTED rapid:quick 07:00:52 00:00 — $0.0000" [ref=e527] [cursor=pointer]:
+              - cell "INTERRUPTED" [ref=e528]:
+                - generic [ref=e529]: INTERRUPTED
+              - cell "rapid:quick" [ref=e530]
+              - cell "07:00:52" [ref=e531]
+              - cell "00:00" [ref=e532]
+              - cell "—" [ref=e533]
+              - cell "$0.0000" [ref=e534]
+            - row "COMPLETED status 07:00:43 00:00 — $0.0000" [ref=e535] [cursor=pointer]:
+              - cell "COMPLETED" [ref=e536]:
+                - generic [ref=e537]: COMPLETED
+              - cell "status" [ref=e538]
+              - cell "07:00:43" [ref=e539]
+              - cell "00:00" [ref=e540]
+              - cell "—" [ref=e541]
+              - cell "$0.0000" [ref=e542]
+        - generic [ref=e545]:
+          - generic [ref=e546]:
+            - navigation "Breadcrumb" [ref=e547]:
+              - generic [ref=e548]: Skills
+            - generic [ref=e549]:
+              - heading "discuss-set" [level=1] [ref=e550]
+              - generic [ref=e552]:
+                - button "Cancel" [ref=e553]
+                - button "Launch" [ref=e554]
+            - paragraph [ref=e555]: Capture developer implementation vision for a set via structured discussion or auto-generate context with --skip
+          - generic [ref=e557]:
+            - generic [ref=e558]: set*
+            - listbox [ref=e559]:
+              - option "Select a set..." [disabled] [ref=e560]
+              - option "agent-runtime-foundation" [ref=e561]
+              - option "web-tool-bridge" [ref=e562]
+              - option "skill-invocation-ui" [ref=e563]
+              - option "kanban-autopilot" [ref=e564]
+              - option "agents-chats-tabs" [selected] [ref=e565]
+              - option "wireframe-rollout" [ref=e566]
+            - paragraph [ref=e567]: Set to discuss
+  - generic [ref=e122]:
+    - img [ref=e124]
+    - button "Open Tanstack query devtools" [ref=e172] [cursor=pointer]:
+      - img [ref=e173]

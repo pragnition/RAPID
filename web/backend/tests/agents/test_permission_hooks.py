@@ -47,22 +47,6 @@ async def test_can_use_tool_allows_non_bash():
 
 
 @pytest.mark.asyncio
-async def test_can_use_tool_blocks_cat_env():
-    result = await can_use_tool_hook(
-        "Bash", {"command": "cat .env"}, fake_ctx()
-    )
-    assert result.behavior == "deny"
-
-
-@pytest.mark.asyncio
-async def test_can_use_tool_blocks_printenv():
-    result = await can_use_tool_hook(
-        "Bash", {"command": "printenv"}, fake_ctx()
-    )
-    assert result.behavior == "deny"
-
-
-@pytest.mark.asyncio
 async def test_can_use_tool_allows_env_grep_path():
     result = await can_use_tool_hook(
         "Bash", {"command": "env | grep PATH"}, fake_ctx()

@@ -200,10 +200,21 @@ export function useChatThread(chatId: string | null): UseChatThreadResult {
     const handler = (e: MessageEvent) => {
       try {
         const payload = JSON.parse(e.data) as SseEvent;
-        setStreamState((s) => ({
-          ...s,
-          events: [...s.events, payload],
-        }));
+        // On status "running", clear prior events so a new run starts fresh
+        if (
+          payload.kind === "status" &&
+          payload.status === "running"
+        ) {
+          setStreamState((s) => ({
+            ...s,
+            events: [payload],
+          }));
+        } else {
+          setStreamState((s) => ({
+            ...s,
+            events: [...s.events, payload],
+          }));
+        }
         // On run_complete, refetch messages so the materialized assistant
         // ChatMessage row appears.
         if (payload.kind === "run_complete") {

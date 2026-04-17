@@ -11,23 +11,31 @@ import { CreateCardModal } from "./CreateCardModal";
 interface KanbanColumnProps {
   column: KanbanColumnResponse;
   isDropTarget?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
   onEditCard: (card: KanbanCardResponse) => void;
   onDeleteCard: (cardId: string) => void;
   onAddCard: (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean; agent_type: string }) => void;
   onUpdateColumn: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
   onToggleAutopilot: (columnId: string, enabled: boolean) => void;
+  onUpdateAgentType: (columnId: string, agentType: string) => void;
+  onMoveColumn: (columnId: string, direction: "left" | "right") => void;
 }
 
 export function KanbanColumn({
   column,
   isDropTarget,
+  isFirst,
+  isLast,
   onEditCard,
   onDeleteCard,
   onAddCard,
   onUpdateColumn,
   onDeleteColumn,
   onToggleAutopilot,
+  onUpdateAgentType,
+  onMoveColumn,
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({ id: column.id });
 
@@ -59,6 +67,28 @@ export function KanbanColumn({
     <div className={`flex-shrink-0 w-72 bg-surface-0 border rounded-lg flex flex-col max-h-[calc(100vh-12rem)] transition-colors duration-150 ${isDropTarget ? "border-accent/60 bg-accent/5" : "border-border"}`}>
       {/* Column header */}
       <div className="group flex items-center gap-2 px-3 py-2.5 border-b border-border">
+        {/* Move arrows */}
+        <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={() => onMoveColumn(column.id, "left")}
+            disabled={isFirst}
+            className="text-xs text-muted hover:text-fg disabled:opacity-0 transition-colors"
+            aria-label="Move column left"
+          >
+            &#x25C0;
+          </button>
+          <button
+            type="button"
+            onClick={() => onMoveColumn(column.id, "right")}
+            disabled={isLast}
+            className="text-xs text-muted hover:text-fg disabled:opacity-0 transition-colors"
+            aria-label="Move column right"
+          >
+            &#x25B6;
+          </button>
+        </div>
+
         {editingTitle ? (
           <input
             type="text"
@@ -116,12 +146,18 @@ export function KanbanColumn({
         </button>
 
         {column.is_autopilot && (
-          <span
-            className="text-[10px] font-mono text-muted leading-none"
-            title={`Default agent: ${(column.default_agent_type ?? "quick") === "bug-fix" ? "Bug fix" : "Quick task"}`}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              const current = column.default_agent_type ?? "quick";
+              onUpdateAgentType(column.id, current === "quick" ? "bug-fix" : "quick");
+            }}
+            className="text-[10px] font-mono text-muted leading-none hover:text-accent transition-colors"
+            title={`Default agent: ${(column.default_agent_type ?? "quick") === "bug-fix" ? "Bug fix" : "Quick task"} (click to toggle)`}
           >
             {(column.default_agent_type ?? "quick") === "bug-fix" ? "B" : "Q"}
-          </span>
+          </button>
         )}
 
         <button

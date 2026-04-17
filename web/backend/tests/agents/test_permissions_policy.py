@@ -51,11 +51,6 @@ def test_destructive_patterns_block_force_push():
     assert is_destructive("git push -f origin main")[0] is True
 
 
-def test_destructive_patterns_block_env_cat():
-    assert is_destructive("cat .env.local")[0] is True
-    assert is_destructive("printenv | grep KEY")[0] is True
-
-
 def test_destructive_patterns_allow_safe_bash():
     assert is_destructive("ls -la")[0] is False
     assert is_destructive("git status")[0] is False

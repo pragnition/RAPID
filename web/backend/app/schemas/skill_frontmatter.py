@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class SkillArgType(str, Enum):
@@ -55,3 +55,10 @@ class SkillFrontmatter(BaseModel):
     allowed_tools: str = Field(default="", alias="allowed-tools")
     args: List[SkillArg] = Field(default_factory=list, max_length=10)
     categories: List[SkillCategory] = Field(min_length=1)
+
+    @field_validator("allowed_tools", mode="before")
+    @classmethod
+    def _coerce_allowed_tools(cls, v: object) -> str:
+        if isinstance(v, list):
+            return ",".join(str(i) for i in v)
+        return v

@@ -10,6 +10,20 @@
  *   - web/backend/app/schemas/agents.py (PendingPromptResponse)
  */
 
+export type QuestionOption = {
+  label: string;
+  description?: string | null;
+  preview?: string | null;
+};
+
+export type QuestionDef = {
+  question: string;
+  header?: string | null;
+  options?: QuestionOption[] | null;
+  multi_select?: boolean;
+  allow_free_text?: boolean;
+};
+
 export type AgentPromptPayload = {
   prompt_id: string;
   run_id: string;
@@ -21,6 +35,8 @@ export type AgentPromptPayload = {
   batch_id: string | null;
   batch_position: number | null;
   batch_total: number | null;
+  /** Multi-question support: when present, supersedes question/options/allow_free_text. */
+  questions?: QuestionDef[] | null;
 };
 
 /**

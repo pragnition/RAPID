@@ -31,7 +31,7 @@ from claude_agent_sdk import tool
 from sqlmodel import Session
 
 from app.models.agent_prompt import AgentPrompt
-from app.schemas.sse_events import AskUserEvent
+from app.schemas.sse_events import AskUserEvent, QuestionDef
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.agents.session_manager import AgentSessionManager
@@ -114,6 +114,7 @@ async def emit_and_await_prompt(
     batch_id: str | None = None,
     batch_position: int | None = None,
     tool_use_id: str = "",
+    questions: list[dict] | None = None,
 ) -> str:
     """Mint a prompt, persist + emit SSE, await the answer, mark consumed.
 
@@ -130,6 +131,8 @@ async def emit_and_await_prompt(
     }
     if n_of_m is not None:
         payload["n_of_m"] = list(n_of_m)
+    if questions is not None:
+        payload["questions"] = questions
     payload_json = json.dumps(payload)
 
     # Per-run lock ensures the DB insert + SSE emit + future registration are
@@ -174,6 +177,9 @@ async def emit_and_await_prompt(
             question=question,
             options=options,
             allow_free_text=allow_free_text,
+            questions=(
+                [QuestionDef(**q) for q in questions] if questions else None
+            ),
         )
         await manager.event_bus.publish(run_id, event)
 
@@ -230,18 +236,20 @@ def build_ask_user_tools(
 
     @tool(
         "webui_ask_user",
-        "Ask the user a structured question via the RAPID web UI. "
-        "Use when the skill needs multi-choice selection, free-form input, "
-        "or more than the 4 questions supported by the built-in "
-        "AskUserQuestion tool.",
+        "Ask the user one or more structured questions via the RAPID web UI. "
+        "Supports multi-choice selection (single or multi-select), free-form "
+        "input, headers, and option descriptions. Use the 'questions' param "
+        "for rich multi-question prompts, or the legacy 'question' param for "
+        "a single flat question.",
         {
             "type": "object",
             "properties": {
-                "question": {"type": "string"},
+                "question": {"type": "string", "description": "Legacy single-question text. Ignored when 'questions' is provided."},
                 "options": {
                     "type": ["array", "null"],
                     "items": {"type": "string"},
                     "default": None,
+                    "description": "Legacy flat options. Ignored when 'questions' is provided.",
                 },
                 "allow_free_text": {"type": "boolean", "default": True},
                 "n_of_m": {
@@ -251,16 +259,59 @@ def build_ask_user_tools(
                     "maxItems": 2,
                     "default": None,
                 },
+                "questions": {
+                    "type": ["array", "null"],
+                    "description": "Array of 1-4 questions. When provided, supersedes question/options/allow_free_text.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "question": {"type": "string"},
+                            "header": {"type": "string", "maxLength": 12, "description": "Short label displayed as chip/tag."},
+                            "options": {
+                                "type": ["array", "null"],
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "label": {"type": "string"},
+                                        "description": {"type": "string"},
+                                        "preview": {"type": "string"},
+                                    },
+                                    "required": ["label"],
+                                },
+                            },
+                            "multi_select": {"type": "boolean", "default": False},
+                            "allow_free_text": {"type": "boolean", "default": True},
+                        },
+                        "required": ["question"],
+                    },
+                    "default": None,
+                },
             },
-            "required": ["question"],
+            "required": [],
         },
     )
     async def webui_ask_user(args: dict[str, Any]) -> dict[str, Any]:
-        question = str(args.get("question") or "")
-        options = args.get("options")
-        if options is not None and not isinstance(options, list):
-            options = list(options)
-        allow_free_text = bool(args.get("allow_free_text", True))
+        questions_raw = args.get("questions")
+        if questions_raw and isinstance(questions_raw, list) and len(questions_raw) > 0:
+            # Multi-question mode: populate legacy fields from first question.
+            first_q = questions_raw[0]
+            question = str(first_q.get("question") or "")
+            raw_opts = first_q.get("options")
+            options: list[str] | None = (
+                [o["label"] if isinstance(o, dict) else str(o) for o in raw_opts]
+                if raw_opts else None
+            )
+            allow_free_text = bool(first_q.get("allow_free_text", True))
+            questions_dicts = questions_raw
+        else:
+            # Legacy single-question mode.
+            question = str(args.get("question") or "")
+            options = args.get("options")
+            if options is not None and not isinstance(options, list):
+                options = list(options)
+            allow_free_text = bool(args.get("allow_free_text", True))
+            questions_dicts = None
+
         n_of_m_raw = args.get("n_of_m")
         n_of_m: tuple[int, int] | None = None
         if n_of_m_raw is not None:
@@ -276,6 +327,7 @@ def build_ask_user_tools(
             options=options,
             allow_free_text=allow_free_text,
             n_of_m=n_of_m,
+            questions=questions_dicts,
         )
         return {
             "content": [{"type": "text", "text": answer}],

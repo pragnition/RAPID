@@ -19,18 +19,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("chat", sa.Column("active_run_id", sa.Uuid(), nullable=True))
-    op.create_foreign_key(
-        op.f("fk_chat_active_run_id_agentrun"),
-        "chat",
-        "agentrun",
-        ["active_run_id"],
-        ["id"],
-    )
-    op.create_index(op.f("ix_chat_active_run_id"), "chat", ["active_run_id"])
+    with op.batch_alter_table("chat") as batch_op:
+        batch_op.add_column(sa.Column("active_run_id", sa.Uuid(), nullable=True))
+        batch_op.create_foreign_key(
+            op.f("fk_chat_active_run_id_agentrun"),
+            "agentrun",
+            ["active_run_id"],
+            ["id"],
+        )
+        batch_op.create_index(op.f("ix_chat_active_run_id"), ["active_run_id"])
 
 
 def downgrade() -> None:
-    op.drop_index(op.f("ix_chat_active_run_id"), table_name="chat")
-    op.drop_constraint(op.f("fk_chat_active_run_id_agentrun"), "chat", type_="foreignkey")
-    op.drop_column("chat", "active_run_id")
+    with op.batch_alter_table("chat") as batch_op:
+        batch_op.drop_index(op.f("ix_chat_active_run_id"))
+        batch_op.drop_constraint(op.f("fk_chat_active_run_id_agentrun"), type_="foreignkey")
+        batch_op.drop_column("active_run_id")
