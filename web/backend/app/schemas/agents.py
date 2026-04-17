@@ -29,7 +29,7 @@ class AgentRunResponse(BaseModel):
     set_id: str | None
     skill_name: str
     status: Literal[
-        "pending", "running", "waiting", "interrupted", "failed", "completed"
+        "pending", "running", "waiting", "idle", "interrupted", "failed", "completed"
     ]
     pid: int | None
     started_at: datetime
@@ -72,6 +72,8 @@ class PendingPromptResponse(BaseModel):
     batch_id: str | None = None
     batch_position: int | None = None
     batch_total: int | None = None
+    # Multi-question support: when present, supersedes question/options/allow_free_text.
+    questions: list[dict] | None = None
 
 
 class AgentRunListResponse(BaseModel):

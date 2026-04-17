@@ -40,8 +40,24 @@ class ToolUseEvent(_BaseEvent):
 class ToolResultEvent(_BaseEvent):
     kind: Literal["tool_result"] = "tool_result"
     tool_use_id: str
-    output: dict | str | None
+    output: dict | list | str | None
     is_error: bool = False
+
+
+class QuestionOption(BaseModel):
+    """Rich option for a question: label + optional description and preview."""
+    label: str
+    description: str | None = None
+    preview: str | None = None
+
+
+class QuestionDef(BaseModel):
+    """Single question definition within a multi-question prompt."""
+    question: str
+    header: str | None = None  # max 12 chars, displayed as chip/tag
+    options: list[QuestionOption] | None = None
+    multi_select: bool = False
+    allow_free_text: bool = True
 
 
 class AskUserEvent(_BaseEvent):
@@ -53,6 +69,8 @@ class AskUserEvent(_BaseEvent):
     question: str
     options: list[str] | None = None
     allow_free_text: bool = True
+    # Multi-question support: when present, supersedes question/options/allow_free_text.
+    questions: list[QuestionDef] | None = None
 
 
 class PermissionReqEvent(_BaseEvent):
@@ -65,7 +83,7 @@ class PermissionReqEvent(_BaseEvent):
 
 class StatusEvent(_BaseEvent):
     kind: Literal["status"] = "status"
-    status: Literal["pending", "running", "waiting", "interrupted", "failed", "completed"]
+    status: Literal["pending", "running", "waiting", "idle", "interrupted", "failed", "completed"]
     detail: str | None = None
 
 
