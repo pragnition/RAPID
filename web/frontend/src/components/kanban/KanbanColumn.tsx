@@ -6,12 +6,13 @@ import {
 } from "@dnd-kit/sortable";
 import type { KanbanColumnResponse, KanbanCardResponse } from "@/types/api";
 import { KanbanCard } from "./KanbanCard";
+import { CreateCardModal } from "./CreateCardModal";
 
 interface KanbanColumnProps {
   column: KanbanColumnResponse;
   onEditCard: (card: KanbanCardResponse) => void;
   onDeleteCard: (cardId: string) => void;
-  onAddCard: (columnId: string, title: string) => void;
+  onAddCard: (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean }) => void;
   onUpdateColumn: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
   onToggleAutopilot: (columnId: string, enabled: boolean) => void;
@@ -31,8 +32,7 @@ export function KanbanColumn({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(column.title);
 
-  const [addingCard, setAddingCard] = useState(false);
-  const [newCardTitle, setNewCardTitle] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const cardIds = column.cards.map((c) => c.id);
 
@@ -50,24 +50,6 @@ export function KanbanColumn({
     } else if (e.key === "Escape") {
       setTitleDraft(column.title);
       setEditingTitle(false);
-    }
-  };
-
-  const handleAddCard = () => {
-    const trimmed = newCardTitle.trim();
-    if (trimmed) {
-      onAddCard(column.id, trimmed);
-      setNewCardTitle("");
-      setAddingCard(false);
-    }
-  };
-
-  const handleAddCardKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleAddCard();
-    } else if (e.key === "Escape") {
-      setNewCardTitle("");
-      setAddingCard(false);
     }
   };
 
@@ -163,61 +145,28 @@ export function KanbanColumn({
 
       {/* Add card */}
       <div className="px-2 pb-2">
-        {addingCard ? (
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={newCardTitle}
-              onChange={(e) => setNewCardTitle(e.target.value)}
-              onKeyDown={handleAddCardKeyDown}
-              onBlur={() => {
-                if (!newCardTitle.trim()) {
-                  setAddingCard(false);
-                }
-              }}
-              placeholder="Card title..."
-              autoFocus
-              className="
-                w-full px-2.5 py-1.5 text-sm
-                bg-surface-1 border border-border rounded
-                text-fg placeholder:text-muted
-                focus:outline-none focus:border-accent
-              "
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleAddCard}
-                className="px-3 py-1 text-xs font-medium bg-accent text-bg-0 rounded hover:opacity-90 transition-opacity"
-              >
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setNewCardTitle("");
-                  setAddingCard(false);
-                }}
-                className="px-3 py-1 text-xs text-muted hover:text-fg transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setAddingCard(true)}
-            className="
-              w-full py-1.5 text-xs text-muted
-              hover:text-fg hover:bg-hover
-              rounded transition-colors duration-100
-            "
-          >
-            + Add card
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowCreateModal(true)}
+          className="
+            w-full py-1.5 text-xs text-muted
+            hover:text-fg hover:bg-hover
+            rounded transition-colors duration-100
+          "
+        >
+          + Add card
+        </button>
       </div>
+
+      {showCreateModal && (
+        <CreateCardModal
+          onSubmit={(data) => {
+            onAddCard(column.id, data);
+            setShowCreateModal(false);
+          }}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
     </div>
   );
 }

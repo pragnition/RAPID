@@ -197,3 +197,37 @@ async def test_worker_catches_dispatch_errors(
     assert dispatched == 0
     # start_run was called for both cards (errors caught, continued)
     assert manager.start_run.call_count == 2
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_find_candidates_skips_ignored_cards(
+    engine,
+    tables,
+    session: Session,
+    autopilot_column: KanbanColumn,
+    mock_session_manager,
+):
+    """Cards with autopilot_ignore=True are not returned as candidates."""
+    normal_card = KanbanCard(
+        column_id=autopilot_column.id,
+        title="Normal",
+        position=0,
+        agent_status="idle",
+        autopilot_ignore=False,
+    )
+    ignored_card = KanbanCard(
+        column_id=autopilot_column.id,
+        title="Ignored",
+        position=1,
+        agent_status="idle",
+        autopilot_ignore=True,
+    )
+    session.add_all([normal_card, ignored_card])
+    session.commit()
+
+    worker = AutopilotWorker(engine, mock_session_manager, interval_s=999)
+    candidates = worker._find_candidates()
+
+    card_ids = [c[1] for c in candidates]
+    assert normal_card.id in card_ids
+    assert ignored_card.id not in card_ids

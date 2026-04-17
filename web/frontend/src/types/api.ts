@@ -203,6 +203,7 @@ export interface KanbanCardResponse {
   completed_by_run_id: string | null;
   agent_run_id: string | null;
   retry_count: number;
+  autopilot_ignore: boolean;
 }
 
 export interface KanbanColumnResponse {

@@ -93,6 +93,7 @@ def get_board(session: Session, project_id: UUID) -> dict:
                     "completed_by_run_id": str(card.completed_by_run_id) if card.completed_by_run_id else None,
                     "agent_run_id": str(card.agent_run_id) if card.agent_run_id else None,
                     "retry_count": card.retry_count,
+                    "autopilot_ignore": card.autopilot_ignore,
                 }
                 for card in cards
             ],
@@ -237,6 +238,7 @@ def create_card(
     title: str,
     description: str = "",
     created_by: str = "human",
+    autopilot_ignore: bool = False,
 ) -> KanbanCard:
     """Create a card at the bottom of the specified column."""
     # Verify column exists
@@ -255,6 +257,7 @@ def create_card(
         description=description,
         position=new_position,
         created_by=created_by,
+        autopilot_ignore=autopilot_ignore,
     )
     session.add(card)
     session.commit()
@@ -269,6 +272,7 @@ def update_card(
     title: str | None = None,
     description: str | None = None,
     rev: int | None = None,
+    autopilot_ignore: bool | None = None,
 ) -> KanbanCard:
     """Update card title and/or description.
 
@@ -289,6 +293,8 @@ def update_card(
         card.title = title
     if description is not None:
         card.description = description
+    if autopilot_ignore is not None:
+        card.autopilot_ignore = autopilot_ignore
 
     card.updated_at = _utcnow()
     session.add(card)

@@ -139,6 +139,7 @@ def update_column(
                 completed_by_run_id=str(c.completed_by_run_id) if c.completed_by_run_id else None,
                 agent_run_id=str(c.agent_run_id) if c.agent_run_id else None,
                 retry_count=c.retry_count,
+                autopilot_ignore=c.autopilot_ignore,
             )
             for c in cards
         ],
@@ -198,7 +199,8 @@ def create_card(
     _require_project(session, project_id)
     try:
         card = kanban_service.create_card(
-            session, column_id, body.title, body.description
+            session, column_id, body.title, body.description,
+            autopilot_ignore=body.autopilot_ignore,
         )
     except ValueError:
         raise HTTPException(status_code=404, detail="Column not found")
@@ -218,6 +220,7 @@ def create_card(
         completed_by_run_id=str(card.completed_by_run_id) if card.completed_by_run_id else None,
         agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
         retry_count=card.retry_count,
+        autopilot_ignore=card.autopilot_ignore,
     )
 
 
@@ -235,7 +238,8 @@ def update_card(
     _require_project(session, project_id)
     try:
         card = kanban_service.update_card(
-            session, card_id, title=body.title, description=body.description
+            session, card_id, title=body.title, description=body.description,
+            autopilot_ignore=body.autopilot_ignore,
         )
     except ValueError:
         raise HTTPException(status_code=404, detail="Card not found")
@@ -255,6 +259,7 @@ def update_card(
         completed_by_run_id=str(card.completed_by_run_id) if card.completed_by_run_id else None,
         agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
         retry_count=card.retry_count,
+        autopilot_ignore=card.autopilot_ignore,
     )
 
 
@@ -294,6 +299,7 @@ def move_card(
         completed_by_run_id=str(card.completed_by_run_id) if card.completed_by_run_id else None,
         agent_run_id=str(card.agent_run_id) if card.agent_run_id else None,
         retry_count=card.retry_count,
+        autopilot_ignore=card.autopilot_ignore,
     )
 
 

@@ -143,6 +143,7 @@ class AutopilotWorker:
                         .where(KanbanCard.agent_status == "idle")
                         .where(KanbanCard.locked_by_run_id.is_(None))  # type: ignore[union-attr]
                         .where(KanbanCard.retry_count < _MAX_RETRY_COUNT)
+                        .where(KanbanCard.autopilot_ignore == False)  # noqa: E712
                         .order_by(KanbanCard.position.asc())  # type: ignore[union-attr]
                     ).all()
                 )

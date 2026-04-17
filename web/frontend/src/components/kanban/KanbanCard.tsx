@@ -74,13 +74,23 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
 
       <p className="font-semibold text-fg text-sm pr-4">{card.title}</p>
 
-      <AgentStatusBadge
-        agentStatus={card.agent_status}
-        createdBy={card.created_by}
-        lockedByRunId={card.locked_by_run_id}
-        completedByRunId={card.completed_by_run_id}
-        retryCount={card.retry_count}
-      />
+      <div className="flex items-center gap-1">
+        <AgentStatusBadge
+          agentStatus={card.agent_status}
+          createdBy={card.created_by}
+          lockedByRunId={card.locked_by_run_id}
+          completedByRunId={card.completed_by_run_id}
+          retryCount={card.retry_count}
+        />
+        {card.autopilot_ignore && (
+          <span
+            className="text-xs text-muted"
+            title="Autopilot ignored"
+          >
+            {"\u2298"}
+          </span>
+        )}
+      </div>
 
       {card.description && (
         <p className="text-muted text-xs mt-1 line-clamp-3">

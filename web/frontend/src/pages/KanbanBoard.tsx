@@ -167,8 +167,13 @@ export function KanbanBoard() {
   );
 
   const handleAddCard = useCallback(
-    (columnId: string, title: string) => {
-      createCard.mutate({ columnId, title });
+    (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean }) => {
+      createCard.mutate({
+        columnId,
+        title: data.title,
+        description: data.description,
+        autopilot_ignore: data.autopilot_ignore,
+      });
     },
     [createCard],
   );
@@ -181,7 +186,7 @@ export function KanbanBoard() {
   );
 
   const handleSaveCard = useCallback(
-    (cardId: string, updates: { title?: string; description?: string }) => {
+    (cardId: string, updates: { title?: string; description?: string; autopilot_ignore?: boolean }) => {
       updateCard.mutate({ cardId, ...updates });
     },
     [updateCard],

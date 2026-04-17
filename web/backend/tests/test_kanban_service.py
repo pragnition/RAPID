@@ -317,3 +317,27 @@ def test_board_json_projection_matches_db(
     assert card_data["agent_status"] == "running"
     assert card_data["locked_by_run_id"] == str(agent_run.id)
     assert card_data["rev"] == 1  # bumped by set_card_agent_status
+
+
+# ---------------------------------------------------------------------------
+# autopilot_ignore field
+# ---------------------------------------------------------------------------
+
+
+def test_create_card_autopilot_ignore(session: Session, column: KanbanColumn):
+    """Card created with autopilot_ignore=True persists the flag."""
+    card = create_card(session, column.id, "Ignored task", autopilot_ignore=True)
+    assert card.autopilot_ignore is True
+
+    # Verify it round-trips through get_board
+    board = get_board(session, column.project_id)
+    card_data = board["columns"][0]["cards"][0]
+    assert card_data["autopilot_ignore"] is True
+
+
+def test_create_card_autopilot_ignore_defaults_false(
+    session: Session, column: KanbanColumn
+):
+    """Cards default to autopilot_ignore=False."""
+    card = create_card(session, column.id, "Normal task")
+    assert card.autopilot_ignore is False

@@ -84,7 +84,7 @@ export function useCreateCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { columnId: string; title: string; description?: string }
+    { columnId: string; title: string; description?: string; autopilot_ignore?: boolean }
   >({
     mutationFn: ({ columnId, ...body }) =>
       apiClient.post<KanbanCardResponse>(
@@ -104,7 +104,7 @@ export function useUpdateCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { cardId: string; title?: string; description?: string }
+    { cardId: string; title?: string; description?: string; autopilot_ignore?: boolean }
   >({
     mutationFn: ({ cardId, ...body }) =>
       apiClient.put<KanbanCardResponse>(

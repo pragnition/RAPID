@@ -1,46 +1,41 @@
 import { useState, useEffect, useCallback } from "react";
-import type { KanbanCardResponse } from "@/types/api";
 
-interface CardDetailModalProps {
-  card: KanbanCardResponse;
-  onSave: (cardId: string, updates: { title?: string; description?: string; autopilot_ignore?: boolean }) => void;
+interface CreateCardModalProps {
+  onSubmit: (data: {
+    title: string;
+    description: string;
+    autopilot_ignore: boolean;
+  }) => void;
   onClose: () => void;
 }
 
-export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps) {
-  const [title, setTitle] = useState(card.title);
-  const [description, setDescription] = useState(card.description);
-  const [autopilotIgnore, setAutopilotIgnore] = useState(card.autopilot_ignore);
+export function CreateCardModal({ onSubmit, onClose }: CreateCardModalProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [autopilotIgnore, setAutopilotIgnore] = useState(false);
 
-  const handleSave = useCallback(() => {
-    const updates: { title?: string; description?: string; autopilot_ignore?: boolean } = {};
-    if (title.trim() !== card.title) {
-      updates.title = title.trim();
-    }
-    if (description !== card.description) {
-      updates.description = description;
-    }
-    if (autopilotIgnore !== card.autopilot_ignore) {
-      updates.autopilot_ignore = autopilotIgnore;
-    }
-    if (Object.keys(updates).length > 0) {
-      onSave(card.id, updates);
-    }
-    onClose();
-  }, [title, description, autopilotIgnore, card, onSave, onClose]);
+  const handleSubmit = useCallback(() => {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    onSubmit({
+      title: trimmed,
+      description,
+      autopilot_ignore: autopilotIgnore,
+    });
+  }, [title, description, autopilotIgnore, onSubmit]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        handleSave();
+        handleSubmit();
         return;
       }
       if (e.key === "Escape") {
         onClose();
       }
     },
-    [onClose, handleSave],
+    [onClose, handleSubmit],
   );
 
   useEffect(() => {
@@ -66,6 +61,7 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          autoFocus
           className="
             w-full text-lg font-semibold
             bg-transparent border-b border-border
@@ -80,7 +76,7 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          rows={6}
+          rows={4}
           className="
             w-full px-3 py-2 text-sm
             bg-surface-1 border border-border rounded
@@ -105,40 +101,6 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
           Autopilot agents will skip this card
         </p>
 
-        {/* Agent metadata */}
-        {(card.agent_status !== "idle" || card.created_by !== "human") && (
-          <div className="mt-4 p-3 bg-surface-1 border border-border rounded space-y-1.5">
-            <p className="text-xs font-semibold text-fg">Agent Activity</p>
-            {card.created_by !== "human" && (
-              <p className="text-xs text-muted">
-                <span className="text-fg/60">Created by:</span>{" "}
-                {card.created_by}
-              </p>
-            )}
-            {card.agent_status !== "idle" && (
-              <p className="text-xs text-muted">
-                <span className="text-fg/60">Status:</span>{" "}
-                {card.agent_status}
-              </p>
-            )}
-            {card.agent_run_id && (
-              <p className="text-xs text-muted">
-                <span className="text-fg/60">Run ID:</span>{" "}
-                {card.agent_run_id.slice(0, 8)}
-              </p>
-            )}
-            {card.retry_count > 0 && (
-              <p className="text-xs text-muted">
-                <span className="text-fg/60">Retries:</span>{" "}
-                {card.retry_count}
-              </p>
-            )}
-            <p className="text-xs text-muted">
-              <span className="text-fg/60">Rev:</span> {card.rev}
-            </p>
-          </div>
-        )}
-
         {/* Actions */}
         <div className="flex justify-end gap-3 mt-4">
           <button
@@ -150,14 +112,16 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={handleSubmit}
+            disabled={!title.trim()}
             className="
               px-4 py-2 text-sm font-medium
               bg-accent text-bg-0 rounded
               hover:opacity-90 transition-opacity
+              disabled:opacity-50 disabled:cursor-not-allowed
             "
           >
-            Save
+            Create
           </button>
         </div>
       </div>

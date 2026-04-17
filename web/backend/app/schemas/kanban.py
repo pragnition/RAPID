@@ -22,6 +22,7 @@ class KanbanCardCreate(BaseModel):
 
     title: str
     description: str = ""
+    autopilot_ignore: bool = False
 
 
 class KanbanCardUpdate(BaseModel):
@@ -31,6 +32,7 @@ class KanbanCardUpdate(BaseModel):
     description: str | None = None
     column_id: str | None = None
     position: int | None = None
+    autopilot_ignore: bool | None = None
 
 
 class KanbanCardMove(BaseModel):
@@ -67,6 +69,7 @@ class KanbanCardResponse(BaseModel):
     completed_by_run_id: str | None = None
     agent_run_id: str | None = None
     retry_count: int
+    autopilot_ignore: bool
 
 
 class KanbanColumnResponse(BaseModel):

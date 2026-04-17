@@ -82,6 +82,7 @@ class KanbanCard(SQLModel, table=True):
     metadata_json: str = Field(default="{}")
     agent_run_id: UUID | None = Field(default=None, foreign_key="agentrun.id")
     retry_count: int = Field(default=0)
+    autopilot_ignore: bool = Field(default=False)
 
 
 class SyncState(SQLModel, table=True):
