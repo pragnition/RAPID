@@ -9,6 +9,10 @@
   <img src="https://img.shields.io/badge/Node.js-22%2B-a7c080?style=flat-square&labelColor=2d353b" alt="Node.js" />
 </p>
 
+<p align="center">
+  <sub>Made with :heart: by <a href="https://github.com/fishjojo1">@fishjojo1</a></sub>
+</p>
+
 > [!NOTE]
 > RAPID is still in beta. Therefore, features may be broken/unpolished. Feedback is **always** welcome.
 
