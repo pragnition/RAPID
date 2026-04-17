@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
@@ -14,7 +15,7 @@ from sqlmodel import Session
 
 from app.agents.errors import StateError
 from app.agents.session_manager import AgentSessionManager
-from app.database import Project
+from app.database import KanbanCard, KanbanColumn, Project
 from app.models.agent_run import AgentRun
 
 
@@ -28,6 +29,32 @@ def _seed_project(engine: sqlalchemy.Engine, path: str = "/tmp/manager-test") ->
         s.commit()
         s.refresh(p)
         return p.id
+
+
+def _seed_card(
+    engine: sqlalchemy.Engine,
+    project_id: UUID,
+    *,
+    agent_status: str = "running",
+    locked_by_run_id: UUID | None = None,
+) -> UUID:
+    """Create a column + card for kanban card status tests. Returns card_id."""
+    with Session(engine) as s:
+        col = KanbanColumn(project_id=project_id, title="In Progress", position=0)
+        s.add(col)
+        s.commit()
+        s.refresh(col)
+        card = KanbanCard(
+            column_id=col.id,
+            title="test card",
+            position=0,
+            agent_status=agent_status,
+            locked_by_run_id=locked_by_run_id,
+        )
+        s.add(card)
+        s.commit()
+        s.refresh(card)
+        return card.id
 
 
 async def _identity_aenter(self):  # noqa: D401 — returns the session itself
@@ -370,3 +397,158 @@ async def test_attach_events_streams_from_bus(
     assert "run_complete" in kinds
     # Should have seen at least 3 assistant_text + run_complete.
     assert kinds.count("assistant_text") >= 3
+
+
+# ---------- card status update on run completion ----------
+
+
+@pytest.mark.asyncio
+async def test_run_session_sets_card_completed_on_success(
+    manager: AgentSessionManager, tables: sqlalchemy.Engine
+) -> None:
+    """After a successful run with a card_id, the card's agent_status
+    should be 'completed' and completed_by_run_id should be set."""
+    project_id = _seed_project(tables)
+    card_id = _seed_card(tables, project_id, agent_status="running")
+
+    # Track the run_id assigned by start_run so the mock can update the
+    # correct row.  We capture it from the returned row after start_run.
+    captured_run_id: list[UUID] = []
+
+    async def _successful_run(*_args, **_kwargs):
+        """Mock AgentSession.run that marks the DB row as completed."""
+        rid = captured_run_id[0]
+        with Session(tables) as s:
+            row = s.get(AgentRun, rid)
+            if row is not None:
+                row.status = "completed"
+                row.ended_at = datetime.now(timezone.utc)
+                s.add(row)
+                s.commit()
+
+    with _patch_session(run_side_effect=_successful_run):
+        row = await manager.start_run(
+            project_id=project_id,
+            skill_name="execute-set",
+            skill_args={"card_id": str(card_id)},
+            prompt="do the thing",
+            set_id="card-test-1",
+        )
+        run_id = row.id
+        captured_run_id.append(run_id)
+
+        # Lock the card by the run_id (simulating what autopilot_worker does).
+        with Session(tables) as s:
+            card = s.get(KanbanCard, card_id)
+            card.locked_by_run_id = run_id
+            s.add(card)
+            s.commit()
+
+        # Wait for the dispatched task to complete.
+        task = manager._session_tasks.get(run_id)
+        if task is not None:
+            await asyncio.wait_for(task, timeout=5.0)
+        await asyncio.sleep(0.1)
+
+    with Session(tables) as s:
+        card = s.get(KanbanCard, card_id)
+        assert card is not None
+        assert card.agent_status == "completed"
+        assert card.completed_by_run_id == run_id
+
+
+@pytest.mark.asyncio
+async def test_run_session_sets_card_blocked_on_failure(
+    manager: AgentSessionManager, tables: sqlalchemy.Engine
+) -> None:
+    """After a failed run with a card_id, the card's agent_status should
+    be 'blocked', retry_count incremented, and locked_by_run_id cleared."""
+    project_id = _seed_project(tables)
+    card_id = _seed_card(tables, project_id, agent_status="running")
+    captured_run_id: list[UUID] = []
+
+    async def _failing_run(*_args, **_kwargs):
+        """Mock AgentSession.run that marks the DB row as failed then raises."""
+        rid = captured_run_id[0]
+        with Session(tables) as s:
+            row = s.get(AgentRun, rid)
+            if row is not None:
+                row.status = "failed"
+                row.ended_at = datetime.now(timezone.utc)
+                row.error_code = "sdk_error"
+                s.add(row)
+                s.commit()
+        raise RuntimeError("SDK crashed")
+
+    with _patch_session(run_side_effect=_failing_run):
+        row = await manager.start_run(
+            project_id=project_id,
+            skill_name="execute-set",
+            skill_args={"card_id": str(card_id)},
+            prompt="do the thing",
+            set_id="card-test-2",
+        )
+        run_id = row.id
+        captured_run_id.append(run_id)
+
+        # Lock the card by the run_id.
+        with Session(tables) as s:
+            card = s.get(KanbanCard, card_id)
+            card.locked_by_run_id = run_id
+            s.add(card)
+            s.commit()
+
+        task = manager._session_tasks.get(run_id)
+        if task is not None:
+            await asyncio.wait_for(task, timeout=5.0)
+        await asyncio.sleep(0.1)
+
+    with Session(tables) as s:
+        card = s.get(KanbanCard, card_id)
+        assert card is not None
+        assert card.agent_status == "blocked"
+        assert card.retry_count == 1
+        assert card.locked_by_run_id is None
+
+
+@pytest.mark.asyncio
+async def test_run_session_skips_card_update_when_no_card_id(
+    manager: AgentSessionManager, tables: sqlalchemy.Engine
+) -> None:
+    """When skill_args has no card_id (non-autopilot run), no card DB
+    queries are made and the session completes normally."""
+    project_id = _seed_project(tables)
+    captured_run_id: list[UUID] = []
+
+    async def _normal_run(*_args, **_kwargs):
+        """Mock AgentSession.run that marks the DB row as completed."""
+        rid = captured_run_id[0]
+        with Session(tables) as s:
+            row = s.get(AgentRun, rid)
+            if row is not None:
+                row.status = "completed"
+                row.ended_at = datetime.now(timezone.utc)
+                s.add(row)
+                s.commit()
+
+    with _patch_session(run_side_effect=_normal_run):
+        row = await manager.start_run(
+            project_id=project_id,
+            skill_name="plan-set",
+            skill_args={},
+            prompt="plan stuff",
+            set_id="no-card-test",
+        )
+        run_id = row.id
+        captured_run_id.append(run_id)
+
+        task = manager._session_tasks.get(run_id)
+        if task is not None:
+            await asyncio.wait_for(task, timeout=5.0)
+        await asyncio.sleep(0.1)
+
+    # The run should have completed successfully with no card-related errors.
+    with Session(tables) as s:
+        run_row = s.get(AgentRun, run_id)
+        assert run_row is not None
+        assert run_row.status == "completed"
