@@ -26,6 +26,7 @@ export { SearchInput, type SearchInputProps } from "./SearchInput";
 
 // Chat surface
 export { ToolCallCard, type ToolCallCardProps } from "./ToolCallCard";
+export { ToolCallDrawer, type ToolCallDrawerProps } from "./ToolCallDrawer";
 export { StructuredQuestion, type StructuredQuestionProps } from "./StructuredQuestion";
 export { ErrorCard, type ErrorCardProps } from "./ErrorCard";
 export { Composer, type ComposerProps } from "./Composer";
