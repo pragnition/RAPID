@@ -10,6 +10,7 @@ import { CreateCardModal } from "./CreateCardModal";
 
 interface KanbanColumnProps {
   column: KanbanColumnResponse;
+  isDropTarget?: boolean;
   onEditCard: (card: KanbanCardResponse) => void;
   onDeleteCard: (cardId: string) => void;
   onAddCard: (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean }) => void;
@@ -20,6 +21,7 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({
   column,
+  isDropTarget,
   onEditCard,
   onDeleteCard,
   onAddCard,
@@ -54,7 +56,7 @@ export function KanbanColumn({
   };
 
   return (
-    <div className="flex-shrink-0 w-72 bg-surface-0 border border-border rounded-lg flex flex-col max-h-[calc(100vh-12rem)]">
+    <div className={`flex-shrink-0 w-72 bg-surface-0 border rounded-lg flex flex-col max-h-[calc(100vh-12rem)] transition-colors duration-150 ${isDropTarget ? "border-accent/60 bg-accent/5" : "border-border"}`}>
       {/* Column header */}
       <div className="group flex items-center gap-2 px-3 py-2.5 border-b border-border">
         {editingTitle ? (
@@ -141,6 +143,11 @@ export function KanbanColumn({
             />
           ))}
         </SortableContext>
+        {isDropTarget && column.cards.length === 0 && (
+          <div className="border-2 border-dashed border-accent/40 rounded-lg p-4 text-center text-xs text-muted">
+            Drop here
+          </div>
+        )}
       </div>
 
       {/* Add card */}

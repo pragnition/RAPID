@@ -46,6 +46,7 @@ export function KanbanBoard() {
 
   const [activeCard, setActiveCard] = useState<KanbanCardResponse | null>(null);
   const [editingCard, setEditingCard] = useState<KanbanCardResponse | null>(null);
+  const [overColumnId, setOverColumnId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -79,16 +80,31 @@ export function KanbanBoard() {
   );
 
   const handleDragOver = useCallback(
-    (_event: DragOverEvent) => {
-      // Visual cross-column tracking is handled by dnd-kit's SortableContext
-      // The actual move happens in onDragEnd
+    (event: DragOverEvent) => {
+      if (!data) return;
+      const { over } = event;
+      if (!over) {
+        setOverColumnId(null);
+        return;
+      }
+      const overId = String(over.id);
+      // Check if over is a card — find its column
+      const col = findCardColumn(overId, data);
+      if (col) {
+        setOverColumnId(col.id);
+      } else {
+        // Over might be a column droppable directly
+        const targetCol = data.columns.find((c) => c.id === overId);
+        setOverColumnId(targetCol ? targetCol.id : null);
+      }
     },
-    [],
+    [data, findCardColumn],
   );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       setActiveCard(null);
+      setOverColumnId(null);
 
       if (!data) return;
 
@@ -282,6 +298,7 @@ export function KanbanBoard() {
             <KanbanColumn
               key={column.id}
               column={column}
+              isDropTarget={overColumnId === column.id && activeCard?.column_id !== column.id}
               onEditCard={handleEditCard}
               onDeleteCard={handleDeleteCard}
               onAddCard={handleAddCard}
