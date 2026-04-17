@@ -557,7 +557,7 @@ Items raised during discussion that fall outside this set's scope.
 
 ## Step 7: Write CONTEXT.md (Interactive Mode Only)
 
-**Note:** In --skip mode, CONTEXT.md was already written by the rapid-research-stack agent in Step 4. Skip this step and go directly to Step 8.
+**Note:** In --skip mode, CONTEXT.md was already written by the rapid-research-stack agent in Step 4 via the **self-interview** protocol. The resulting CONTEXT.md is **structurally identical** to the interactive path's output -- all 5 XML tags, populated `<decisions>` with real rationales, and a `<code_context>` sourced from actual codebase scans. Skip this step and go directly to Step 8.
 
 Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 
@@ -566,7 +566,7 @@ Write `.planning/sets/${SET_ID}/CONTEXT.md` using the Write tool. Format:
 
 **Set:** {SET_ID}
 **Generated:** {date}
-**Mode:** {interactive | auto-skip}
+**Mode:** {interactive | auto-skip (self-interview)}
 
 <domain>
 ## Set Boundary
@@ -688,7 +688,7 @@ Show what is done, what failed, and what to run next.
 - **"Claude decides" option:** Available as a prefilled option per question. Unselected gray areas in Step 5 automatically default to Claude's discretion.
 - **Deferred decisions:** Out-of-scope ideas raised during discussion are captured in DEFERRED.md, never silently dropped.
 - **Backlog capture:** When out-of-scope feature ideas emerge during discussion that are too concrete for DEFERRED.md (which tracks deferred decisions), suggest using `/rapid:backlog` to capture them as backlog items for future milestone review.
-- **--skip auto-context:** The --skip flag spawns a rapid-research-stack agent to auto-generate CONTEXT.md and an empty DEFERRED.md without user interaction.
+- **--skip self-interview:** The --skip flag spawns a rapid-research-stack agent that conducts a **self-interview** -- reproducing the Step 5/6 gray-area questions and answering each one from CONTRACT.json + SET-OVERVIEW.md + ROADMAP.md + source-file scans. Output is a fully-populated CONTEXT.md (all 5 XML tags, real rationales) and a DEFERRED.md populated from self-surfaced scope-mismatched ideas (empty only if none were surfaced). *"Claude's Discretion"* may appear per-question only when evidence for that question is genuinely absent, never as a blanket default.
 - **Read before asking:** Always read existing artifacts (CONTRACT.json, SET-OVERVIEW.md, DEFINITION.md) to avoid re-asking settled questions.
 - **CONTEXT.md output:** Written to `.planning/sets/{set-id}/CONTEXT.md` using the Write tool -- consumed by downstream plan-set. Includes decision rationale and deferred items summary.
 - **Set-level state transitions:** Only use `state transition set` to move from pending to discussed. Never use wave-level transitions.
@@ -720,3 +720,4 @@ Show what is done, what failed, and what to run next.
   Gray area batches are packed as structured questions within a single call, not as freeform prompts.
 - Do NOT present "Let Claude decide all" as a checkbox option -- use the implicit unselected model instead.
 - Do NOT prompt for every implementation detail -- capture vision/what, not implementation/how.
+- Do NOT emit a stub CONTEXT.md in `--skip` mode. `--skip` is a **self-interview**, not a skip. CONTEXT.md must have populated `<decisions>` entries with real per-question rationales and a `<code_context>` sourced from actual codebase scans, not placeholder text. Blanket *"Claude's Discretion"* across all decisions is a regression.
