@@ -154,43 +154,125 @@ Read set-level artifacts to build understanding:
 
 ---
 
-## Step 4: --skip Branch (Auto-Context)
+## Step 4: --skip Branch (Self-Interview)
 
-If the `--skip` flag is set:
+If the `--skip` flag is set, the skill runs a **self-interview**: the spawned agent asks itself the same gray-area questions Steps 5, 6, and 6.5 would ask a human, then answers each one using CONTRACT.json + SET-OVERVIEW.md + ROADMAP.md + codebase evidence. The output CONTEXT.md and DEFERRED.md are **structurally identical** to what the interactive path would produce -- same 5 XML tags, populated `<decisions>` entries with real per-question rationales, a non-placeholder `<code_context>` sourced from actual codebase scans, and a `<deferred>` section populated from self-surfaced scope-mismatched ideas.
 
-1. Display: "Auto-generating CONTEXT.md for set '{SET_ID}' (--skip mode)..."
+1. Display: "Auto-generating CONTEXT.md for set '{SET_ID}' (--skip mode, self-interview)..."
 
 2. Spawn a lightweight **rapid-research-stack** agent with this task:
 
    ```
-   Generate auto-context for set '{SET_ID}' (--skip mode).
+   Conduct a self-interview for set '{SET_ID}' (--skip mode).
 
-   ## Sources
-   1. ROADMAP.md set description: {set description from ROADMAP.md}
-   2. CONTRACT.json: {CONTRACT.json contents}
-   3. SET-OVERVIEW.md: {SET-OVERVIEW.md contents if exists}
-   4. Scan the codebase files in the set's file ownership
+   You are running in --skip mode, which is a SELF-INTERVIEW -- not a skip.
+   You will ask yourself the same questions the interactive path of
+   /rapid:discuss-set (Steps 5, 6, and 6.5) would ask a human, and you
+   will answer each one from evidence. The output CONTEXT.md must be
+   structurally identical to the interactive path: all 5 XML tags
+   (<domain>, <decisions>, <specifics>, <code_context>, <deferred>),
+   populated <decisions> with real rationales, and a <code_context>
+   reflecting patterns actually observed in the codebase.
 
-   ## Output
-   Write CONTEXT.md to .planning/sets/{SET_ID}/CONTEXT.md with this format:
-   - domain section: Set scope and boundary from ROADMAP.md
-   - decisions section: All items marked as "Claude's Discretion" (no user decisions captured)
-   - code_context section: Patterns discovered from codebase scan
-   - deferred section: Empty (no discussion to defer ideas from)
+   ## Sources to read first
+   1. .planning/sets/{SET_ID}/CONTRACT.json -- authoritative set contract
+   2. .planning/sets/{SET_ID}/DEFINITION.md -- set definition
+   3. .planning/sets/{SET_ID}/SET-OVERVIEW.md -- set overview (if exists)
+   4. .planning/ROADMAP.md -- set description in roadmap context
+   5. Source files referenced by CONTRACT.json exports.functions and
+      exports.types (follow the `file` fields). Use Grep/Glob to locate
+      them, then Read them. These are the files the set will modify.
 
-   Also write an empty DEFERRED.md to .planning/sets/{SET_ID}/DEFERRED.md:
-   - Use the standard DEFERRED.md format with an empty table
-   - Add note: "No deferred items identified (auto-skip mode)."
+   ## Phase A: Gray area identification (self-ask of Step 5)
+
+   Apply the 4n heuristic using CONTRACT.json definition.tasks.length:
+   - 1-3 tasks -> n=1 -> 4 gray areas
+   - 4-6 tasks -> n=2 -> 5-8 gray areas
+   - 7+ tasks  -> n=3 -> 9+ gray areas
+   The total must be at least 4 and either a multiple of 4 or 4n+{1..4}
+   per Step 5. You may adjust n by +/-1 based on overall set complexity.
+
+   Enumerate candidate gray areas across the same categories Step 5
+   uses:
+   - System architecture (data flow, component boundaries, integration)
+   - API/interface design (contract shapes, versioning, error handling)
+   - State management (where state lives, sync strategy, persistence)
+   - UI/UX (ONLY when the set has user-facing components per
+     SET-OVERVIEW.md / CONTRACT.json / ROADMAP.md; do NOT force UI/UX
+     gray areas for pure backend / CLI / infrastructure sets)
+   - Performance/scaling tradeoffs (architecture level, not micro)
+
+   Record each gray area with a title and a 1-sentence description.
+
+   ## Phase B: Per-area self-deep-dive (self-ask of Step 6)
+
+   For EACH gray area from Phase A (all of them -- there is no user
+   selection in --skip):
+   - Draft at least 2 concrete architect-level questions. Each question
+     asks about ONE thing. Same constraints as interactive Step 6:
+     architect-level, not implementation-level (no library choices, no
+     function signatures).
+   - For each question, pick the most appropriate of Format A / B / C:
+     * Default to Format A (pros/cons per option).
+     * Use Format B (preview panels) for visual/layout questions.
+     * Use Format C (key-factors block) for multi-factor tradeoffs.
+   - **Answer each question yourself** using codebase evidence +
+     CONTRACT.json + SET-OVERVIEW.md + ROADMAP.md. Each answer MUST
+     include a **rationale** of 1-2 sentences explaining WHY the chosen
+     option wins given the concrete evidence you gathered -- not
+     generic reasoning.
+   - ONLY if evidence is genuinely absent for a specific question (e.g.,
+     greenfield set with no existing code to scan), that specific
+     question may fall back to "Claude's Discretion" with a rationale
+     explaining what evidence was sought and not found. This is the
+     ONLY path to a "Claude's Discretion" entry in --skip mode. Do NOT
+     blanket-mark all decisions as Claude's Discretion.
+
+   ## Phase C: Self-surfaced deferred items (self-ask of Step 6.5)
+
+   - Read CONTRACT.json definition.scope to determine the scope boundary.
+   - Review everything surfaced during Phase A/B.
+   - Any idea raised during the self-interview that falls outside
+     definition.scope goes into DEFERRED.md using the same format
+     Step 6.5 documents (id | description | source | suggested target).
+   - If no deferred items were surfaced, write DEFERRED.md with an
+     empty table and the standard fallback note
+     "No deferred items identified during this discussion."
+   - DEFERRED.md is ALWAYS written -- it is not optional.
+
+   ## Phase D: Write CONTEXT.md (self-ask of Step 7)
+
+   Write .planning/sets/{SET_ID}/CONTEXT.md using the EXACT same format
+   as Step 7 of SKILL.md -- all 5 XML tags:
+   - <domain>    -- Set scope and boundary from DEFINITION.md/ROADMAP.md
+   - <decisions> -- Phase B questions with picked option + Rationale
+                    line per decision. Every decision carries a real
+                    **Rationale:** sourced from the Phase B answer,
+                    NOT a boilerplate string.
+   - <specifics> -- Specific ideas surfaced during Phase A/B
+   - <code_context> -- Patterns actually discovered during Phase A
+                       source-file scans (NOT a placeholder)
+   - <deferred>  -- Brief one-liner summary of DEFERRED.md entries
+
+   Frontmatter **Mode:** line must read: auto-skip (self-interview)
+
+   ## Done criteria for the agent
+   - CONTEXT.md has populated <decisions> entries with real rationales
+     per question, not blanket "Claude's Discretion".
+   - <code_context> reflects codebase patterns actually observed.
+   - DEFERRED.md is written (empty-with-note only if no items surfaced).
+   - Banner mentioned "self-interview".
    ```
 
-3. After agent completes, verify CONTEXT.md was written:
+3. After agent completes, verify BOTH CONTEXT.md and DEFERRED.md were written:
 
    ```bash
    # (env preamble here)
    [ -f ".planning/sets/${SET_ID}/CONTEXT.md" ] && echo "CONTEXT.md created" || echo "ERROR: CONTEXT.md not found"
+   [ -f ".planning/sets/${SET_ID}/DEFERRED.md" ] && echo "DEFERRED.md created" || echo "ERROR: DEFERRED.md not found"
    ```
 
-4. Skip to Step 8 (State Transition and Commit) -- CONTEXT.md was already written by the agent above.
+4. Skip to Step 8 (State Transition and Commit) -- CONTEXT.md and DEFERRED.md were already written by the self-interview agent above. The state transition and commit flow is shared by both interactive and --skip paths.
 
 If the `--skip` flag is NOT set, continue to Step 5.
 
