@@ -13,7 +13,7 @@ interface KanbanColumnProps {
   isDropTarget?: boolean;
   onEditCard: (card: KanbanCardResponse) => void;
   onDeleteCard: (cardId: string) => void;
-  onAddCard: (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean }) => void;
+  onAddCard: (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean; agent_type: string }) => void;
   onUpdateColumn: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
   onToggleAutopilot: (columnId: string, enabled: boolean) => void;
@@ -115,6 +115,15 @@ export function KanbanColumn({
           &#x26A1;
         </button>
 
+        {column.is_autopilot && (
+          <span
+            className="text-[10px] font-mono text-muted leading-none"
+            title={`Default agent: ${(column.default_agent_type ?? "quick") === "bug-fix" ? "Bug fix" : "Quick task"}`}
+          >
+            {(column.default_agent_type ?? "quick") === "bug-fix" ? "B" : "Q"}
+          </span>
+        )}
+
         <button
           type="button"
           onClick={() => onDeleteColumn(column.id)}
@@ -167,6 +176,7 @@ export function KanbanColumn({
 
       {showCreateModal && (
         <CreateCardModal
+          defaultAgentType={column.default_agent_type ?? "quick"}
           onSubmit={(data) => {
             onAddCard(column.id, data);
             setShowCreateModal(false);

@@ -3,7 +3,7 @@ import type { KanbanCardResponse } from "@/types/api";
 
 interface CardDetailModalProps {
   card: KanbanCardResponse;
-  onSave: (cardId: string, updates: { title?: string; description?: string; autopilot_ignore?: boolean }) => void;
+  onSave: (cardId: string, updates: { title?: string; description?: string; autopilot_ignore?: boolean; agent_type?: string }) => void;
   onClose: () => void;
 }
 
@@ -11,9 +11,10 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description);
   const [autopilotIgnore, setAutopilotIgnore] = useState(card.autopilot_ignore);
+  const [agentType, setAgentType] = useState(card.agent_type ?? "quick");
 
   const handleSave = useCallback(() => {
-    const updates: { title?: string; description?: string; autopilot_ignore?: boolean } = {};
+    const updates: { title?: string; description?: string; autopilot_ignore?: boolean; agent_type?: string } = {};
     if (title.trim() !== card.title) {
       updates.title = title.trim();
     }
@@ -23,11 +24,14 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
     if (autopilotIgnore !== card.autopilot_ignore) {
       updates.autopilot_ignore = autopilotIgnore;
     }
+    if (agentType !== (card.agent_type ?? "quick")) {
+      updates.agent_type = agentType;
+    }
     if (Object.keys(updates).length > 0) {
       onSave(card.id, updates);
     }
     onClose();
-  }, [title, description, autopilotIgnore, card, onSave, onClose]);
+  }, [title, description, autopilotIgnore, agentType, card, onSave, onClose]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -90,6 +94,22 @@ export function CardDetailModal({ card, onSave, onClose }: CardDetailModalProps)
           "
           placeholder="Add a description..."
         />
+
+        {/* Agent type */}
+        <label className="block text-xs text-muted mt-3 mb-1">Agent type</label>
+        <select
+          value={agentType}
+          onChange={(e) => setAgentType(e.target.value)}
+          className="
+            w-full px-3 py-1.5 text-sm
+            bg-surface-1 border border-border rounded
+            text-fg
+            focus:outline-none focus:border-accent
+          "
+        >
+          <option value="quick">Quick task</option>
+          <option value="bug-fix">Bug fix</option>
+        </select>
 
         {/* Autopilot ignore */}
         <label className="flex items-center gap-2 mt-3">

@@ -26,7 +26,7 @@ export function useKanbanBoard(projectId: string | null) {
 
 export function useCreateColumn(projectId: string) {
   const queryClient = useQueryClient();
-  return useMutation<KanbanColumnResponse, ApiError, { title: string }>({
+  return useMutation<KanbanColumnResponse, ApiError, { title: string; default_agent_type?: string }>({
     mutationFn: (body) =>
       apiClient.post<KanbanColumnResponse>(
         `/projects/${projectId}/kanban/columns`,
@@ -84,7 +84,7 @@ export function useCreateCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { columnId: string; title: string; description?: string; autopilot_ignore?: boolean }
+    { columnId: string; title: string; description?: string; autopilot_ignore?: boolean; agent_type?: string }
   >({
     mutationFn: ({ columnId, ...body }) =>
       apiClient.post<KanbanCardResponse>(
@@ -104,7 +104,7 @@ export function useUpdateCard(projectId: string) {
   return useMutation<
     KanbanCardResponse,
     ApiError,
-    { cardId: string; title?: string; description?: string; autopilot_ignore?: boolean }
+    { cardId: string; title?: string; description?: string; autopilot_ignore?: boolean; agent_type?: string }
   >({
     mutationFn: ({ cardId, ...body }) =>
       apiClient.put<KanbanCardResponse>(

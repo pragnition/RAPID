@@ -82,6 +82,12 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
           completedByRunId={card.completed_by_run_id}
           retryCount={card.retry_count}
         />
+        <span
+          className="text-[10px] font-mono text-muted leading-none"
+          title={card.agent_type === "bug-fix" ? "Bug fix" : "Quick task"}
+        >
+          {card.agent_type === "bug-fix" ? "B" : "Q"}
+        </span>
         {card.autopilot_ignore && (
           <span
             className="text-xs text-muted"

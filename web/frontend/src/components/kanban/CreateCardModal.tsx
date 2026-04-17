@@ -5,14 +5,17 @@ interface CreateCardModalProps {
     title: string;
     description: string;
     autopilot_ignore: boolean;
+    agent_type: string;
   }) => void;
   onClose: () => void;
+  defaultAgentType?: string;
 }
 
-export function CreateCardModal({ onSubmit, onClose }: CreateCardModalProps) {
+export function CreateCardModal({ onSubmit, onClose, defaultAgentType = "quick" }: CreateCardModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [autopilotIgnore, setAutopilotIgnore] = useState(false);
+  const [agentType, setAgentType] = useState(defaultAgentType);
 
   const handleSubmit = useCallback(() => {
     const trimmed = title.trim();
@@ -21,8 +24,9 @@ export function CreateCardModal({ onSubmit, onClose }: CreateCardModalProps) {
       title: trimmed,
       description,
       autopilot_ignore: autopilotIgnore,
+      agent_type: agentType,
     });
-  }, [title, description, autopilotIgnore, onSubmit]);
+  }, [title, description, autopilotIgnore, agentType, onSubmit]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -86,6 +90,22 @@ export function CreateCardModal({ onSubmit, onClose }: CreateCardModalProps) {
           "
           placeholder="Add a description..."
         />
+
+        {/* Agent type */}
+        <label className="block text-xs text-muted mt-3 mb-1">Agent type</label>
+        <select
+          value={agentType}
+          onChange={(e) => setAgentType(e.target.value)}
+          className="
+            w-full px-3 py-1.5 text-sm
+            bg-surface-1 border border-border rounded
+            text-fg
+            focus:outline-none focus:border-accent
+          "
+        >
+          <option value="quick">Quick task</option>
+          <option value="bug-fix">Bug fix</option>
+        </select>
 
         {/* Autopilot ignore */}
         <label className="flex items-center gap-2 mt-3">

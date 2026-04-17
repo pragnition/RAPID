@@ -204,6 +204,7 @@ export interface KanbanCardResponse {
   agent_run_id: string | null;
   retry_count: number;
   autopilot_ignore: boolean;
+  agent_type: string;
 }
 
 export interface KanbanColumnResponse {
@@ -213,6 +214,7 @@ export interface KanbanColumnResponse {
   position: number;
   created_at: string;
   is_autopilot: boolean;
+  default_agent_type: string;
   cards: KanbanCardResponse[];
 }
 

@@ -162,8 +162,8 @@ export function KanbanBoard() {
   // -----------------------------------------------------------------------
 
   const handleAddColumn = useCallback(
-    (title: string) => {
-      createColumn.mutate({ title });
+    (title: string, defaultAgentType: string) => {
+      createColumn.mutate({ title, default_agent_type: defaultAgentType });
     },
     [createColumn],
   );
@@ -183,12 +183,13 @@ export function KanbanBoard() {
   );
 
   const handleAddCard = useCallback(
-    (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean }) => {
+    (columnId: string, data: { title: string; description: string; autopilot_ignore: boolean; agent_type: string }) => {
       createCard.mutate({
         columnId,
         title: data.title,
         description: data.description,
         autopilot_ignore: data.autopilot_ignore,
+        agent_type: data.agent_type,
       });
     },
     [createCard],
@@ -202,7 +203,7 @@ export function KanbanBoard() {
   );
 
   const handleSaveCard = useCallback(
-    (cardId: string, updates: { title?: string; description?: string; autopilot_ignore?: boolean }) => {
+    (cardId: string, updates: { title?: string; description?: string; autopilot_ignore?: boolean; agent_type?: string }) => {
       updateCard.mutate({ cardId, ...updates });
     },
     [updateCard],
