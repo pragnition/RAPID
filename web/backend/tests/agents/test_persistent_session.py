@@ -263,3 +263,196 @@ async def test_active_states_includes_idle():
     """_ACTIVE_STATES must include 'idle' so orphan sweep doesn't reap idle sessions."""
     from app.agents.session_manager import _ACTIVE_STATES
     assert "idle" in _ACTIVE_STATES
+
+
+# ---------- idle-timeout pending-prompt guard (Quick Task 29) ----------
+
+
+def _insert_pending_prompt(
+    engine: sqlalchemy.Engine, run_id: UUID, prompt_id: str
+) -> None:
+    """Insert a single AgentPrompt row with status='pending' for *run_id*."""
+    from app.models.agent_prompt import AgentPrompt
+
+    with Session(engine) as s:
+        s.add(
+            AgentPrompt(
+                id=prompt_id,
+                run_id=run_id,
+                kind="ask_user",
+                payload="{}",
+                status="pending",
+            )
+        )
+        s.commit()
+
+
+def _resolve_prompt_in_db(
+    engine: sqlalchemy.Engine, prompt_id: str, status: str = "answered"
+) -> None:
+    """Flip an existing AgentPrompt row off of 'pending' via the real DB."""
+    from app.models.agent_prompt import AgentPrompt
+
+    with Session(engine) as s:
+        row = s.get(AgentPrompt, prompt_id)
+        assert row is not None, f"prompt {prompt_id} missing"
+        row.status = status
+        s.add(row)
+        s.commit()
+
+
+async def _drive_task_until(
+    task: asyncio.Task,
+    predicate,
+    *,
+    max_ticks: int = 30,
+    tick_s: float = 0.02,
+):
+    """Yield the event loop until ``predicate()`` is true or ``max_ticks`` elapse."""
+    for _ in range(max_ticks):
+        if predicate():
+            return
+        if task.done():
+            return
+        await asyncio.sleep(tick_s)
+
+
+async def _cleanup_idle_task(
+    task: asyncio.Task,
+    manager: AgentSessionManager,
+    run_id: UUID,
+    session,
+) -> None:
+    """Cancel + await the bare idle-timeout task and release references.
+
+    Leaves nothing dangling: the session is removed from the manager, the
+    session's _idle event is cleared (so any surviving ``await _idle.wait()``
+    returns immediately), the task is awaited to completion, and we yield
+    once so any trailing ``asyncio.to_thread`` completions resolve before the
+    fixture teardown disposes the test engine.
+    """
+    manager._sessions.pop(run_id, None)
+    session._idle.clear()
+    if not task.done():
+        task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    # Explicitly dispose the engine reference to release SQLite connections
+    # that may be held by in-flight `asyncio.to_thread(_load)` worker threads.
+    await asyncio.sleep(0)
+
+
+@pytest.mark.asyncio
+async def test_idle_timeout_fires_when_no_pending_prompt(
+    tables: sqlalchemy.Engine,
+    manager: AgentSessionManager,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    """With no pending prompt, the idle timeout interrupts the session."""
+    import logging
+
+    caplog.set_level(logging.WARNING, logger="rapid.agents.manager")
+    # Plan says 0.1s; we keep the value but also collapse the outer wait
+    # ``asyncio.sleep`` in ``_idle_timeout_task`` to a no-op so the test
+    # doesn't burn real wall-clock time between iterations.
+    monkeypatch.setattr("app.agents.session_manager._IDLE_TIMEOUT_S", 0.1)
+
+    run_id = uuid4()
+    _seed_run(tables, run_id)
+    bus = EventBus(tables)
+    session = _make_session(tables, run_id, bus, persistent=True)
+    session.interrupt = AsyncMock()
+    session._idle.set()
+    manager._sessions[run_id] = session
+
+    task = asyncio.create_task(manager._idle_timeout_task(run_id))
+    try:
+        await _drive_task_until(task, lambda: session.interrupt.await_count >= 1)
+        session.interrupt.assert_awaited_once()
+    finally:
+        await _cleanup_idle_task(task, manager, run_id, session)
+
+
+@pytest.mark.asyncio
+async def test_idle_timeout_deferred_while_prompt_pending(
+    tables: sqlalchemy.Engine,
+    manager: AgentSessionManager,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    """A pending AgentPrompt defers the interrupt; resolving it lets it fire."""
+    import logging
+
+    caplog.set_level(logging.WARNING, logger="rapid.agents.manager")
+    monkeypatch.setattr("app.agents.session_manager._IDLE_TIMEOUT_S", 0.1)
+
+    run_id = uuid4()
+    _seed_run(tables, run_id)
+    bus = EventBus(tables)
+    session = _make_session(tables, run_id, bus, persistent=True)
+    session.interrupt = AsyncMock()
+    session._idle.set()
+    manager._sessions[run_id] = session
+
+    prompt_id = f"pmt-{uuid4().hex[:8]}"
+    _insert_pending_prompt(tables, run_id, prompt_id)
+
+    task = asyncio.create_task(manager._idle_timeout_task(run_id))
+    try:
+        # Give the task ~2x the patched timeout — it should defer.
+        await asyncio.sleep(0.22)
+        assert session.interrupt.await_count == 0, (
+            "interrupt should be deferred while prompt is pending"
+        )
+
+        # Resolve the prompt via the real DB so get_pending_prompt returns None.
+        _resolve_prompt_in_db(tables, prompt_id, status="answered")
+
+        await _drive_task_until(task, lambda: session.interrupt.await_count >= 1)
+        session.interrupt.assert_awaited_once()
+    finally:
+        await _cleanup_idle_task(task, manager, run_id, session)
+
+
+@pytest.mark.asyncio
+async def test_idle_timeout_deferred_repeatedly_until_resolved(
+    tables: sqlalchemy.Engine,
+    manager: AgentSessionManager,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    """The loop re-arms on each idle tick until the pending prompt is resolved."""
+    import logging
+
+    caplog.set_level(logging.WARNING, logger="rapid.agents.manager")
+    monkeypatch.setattr("app.agents.session_manager._IDLE_TIMEOUT_S", 0.1)
+
+    run_id = uuid4()
+    _seed_run(tables, run_id)
+    bus = EventBus(tables)
+    session = _make_session(tables, run_id, bus, persistent=True)
+    session.interrupt = AsyncMock()
+    session._idle.set()
+    manager._sessions[run_id] = session
+
+    prompt_id = f"pmt-{uuid4().hex[:8]}"
+    _insert_pending_prompt(tables, run_id, prompt_id)
+
+    task = asyncio.create_task(manager._idle_timeout_task(run_id))
+    try:
+        # Let the timer fire at least twice (~3x the patched timeout).
+        await asyncio.sleep(0.32)
+        assert session.interrupt.await_count == 0, (
+            "interrupt should remain deferred across multiple idle cycles"
+        )
+
+        # Now resolve the prompt and wait for the next cycle.
+        _resolve_prompt_in_db(tables, prompt_id, status="answered")
+
+        await _drive_task_until(task, lambda: session.interrupt.await_count >= 1)
+        session.interrupt.assert_awaited_once()
+    finally:
+        await _cleanup_idle_task(task, manager, run_id, session)
