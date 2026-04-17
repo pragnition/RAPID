@@ -2,6 +2,7 @@
 
 import logging
 import socket
+import subprocess
 import time
 import traceback
 from contextlib import asynccontextmanager
@@ -253,13 +254,42 @@ app = create_app()
 # ---------------------------------------------------------------------------
 
 
+def _find_port_owner(port: int) -> str | None:
+    """Best-effort lookup of the process holding a TCP port. Never raises."""
+    try:
+        result = subprocess.run(
+            ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-Fpc"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0 or not result.stdout:
+        return None
+    pid: str | None = None
+    name: str | None = None
+    for line in result.stdout.splitlines():
+        if line.startswith("p"):
+            pid = line[1:]
+        elif line.startswith("c"):
+            name = line[1:]
+    if not pid:
+        return None
+    return f"PID {pid} ({name})" if name else f"PID {pid}"
+
+
 def check_port_available(host: str, port: int) -> None:
     """Raise SystemExit if the given host:port is already in use."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind((host, port))
     except OSError:
-        raise SystemExit(f"Port {port} is already in use. Check with: lsof -i :{port}")
+        owner = _find_port_owner(port)
+        held_by = f" Held by {owner}." if owner else ""
+        raise SystemExit(
+            f"Port {port} is already in use.{held_by} Check with: lsof -i :{port}"
+        )
     finally:
         sock.close()
 
